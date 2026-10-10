@@ -17,7 +17,7 @@ HERE = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 
 def load_tileset():
-    path = os.path.join(HERE, 'assets', 'glyphs_12x24.png')
+    path = os.path.join(HERE, 'assets', glyphs.SHEET)
     return tcod.tileset.load_tilesheet(path, glyphs.COLUMNS, glyphs.ROWS, glyphs.CHARMAP)
 
 
@@ -102,7 +102,11 @@ def main():
     tileset = load_tileset()
     console = tcod.console.Console(W, H, order='F')
     app = App(TcodCanvas(console))
-    with tcod.context.new(columns=W, rows=H, tileset=tileset, title='Cursed Vale', vsync=True) as ctx:
+    # Open resizable and maximized: the 8x16 font is then drawn at the largest whole-number
+    # scale that fits the screen (2x on a 1080p monitor), so pixels stay crisp.
+    flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20) | getattr(tcod.context, 'SDL_WINDOW_MAXIMIZED', 0x80)
+    with tcod.context.new(columns=W, rows=H, tileset=tileset, title='Cursed Vale', vsync=True,
+                          sdl_window_flags=flags) as ctx:
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)

@@ -16,7 +16,8 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Het spel opent een eigen venster van 100 bij 36 tekens. F11 of Alt+Enter schakelt naar volledig scherm.
+Het spel opent een gemaximaliseerd venster van 110 bij 30 tekens in het 8×16-pixelfont Classic Console Neue,
+op de grootste scherpe vergroting die op je scherm past (2× op een 1080p-scherm). F11 of Alt+Enter schakelt naar volledig scherm.
 Je held wordt bewaard in `savegame.dat` naast `main.py`. Als je sterft, wordt die verwijderd.
 
 ## Eén los bestand maken (zonder Python te hoeven draaien)
@@ -67,7 +68,8 @@ cursed_vale/engine.py    spelregels: beweging, gevechten, monster-AI, skills, ve
 cursed_vale/fov.py       zichtveld via libtcod (symmetric shadowcasting)
 cursed_vale/ui.py        alle schermen en het tekenen, los van tcod
 cursed_vale/canvas.py    dunne laag over de tcod-console
-assets/glyphs_12x24.png  tekenset, gemaakt uit DejaVu Sans Mono
+assets/glyphs_8x16.png   tekenset, gemaakt uit Classic Console Neue
+assets/fonts/            het font zelf en zijn licentie
 tools/make_tileset.py    maakt de tekenset opnieuw (Pillow nodig)
 tests/                   headless test en een bot die het spel uitspeelt
 ```
@@ -81,11 +83,12 @@ python tests/bot.py 4           # een bot speelt 4 keer per klasse alle kerkers 
 
 De tests draaien zonder venster en zonder tcod.
 
-Een andere tekenset maken, bijvoorbeeld met een ander lettertype:
+De tekenset opnieuw maken, of met een ander 8×16-pixelfont:
 
 ```bash
 pip install pillow
 python tools/make_tileset.py pad/naar/lettertype.ttf
 ```
 
-De tekenset gebruikt DejaVu Sans Mono (vrije licentie, Bitstream Vera).
+Het font is Classic Console Neue van DeeJayy (https://webdraft.hu/fonts/classic-console/), MIT-licentie,
+zie `assets/fonts/LICENSE-ClassicConsoleNeue.txt`.

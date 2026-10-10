@@ -9,10 +9,10 @@ from .canvas import scale, mix, wrap_text
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
 
-W, H = 100, 36
-MAP_W, MAP_H = 70, 28
-LOG_Y = 29
-PX = 72                 # panel x
+W, H = 110, 30
+MAP_W, MAP_H = 80, 23
+LOG_Y = 24
+PX = 82                 # panel x
 PW = W - PX - 1         # panel width
 
 BG = (13, 11, 10)
@@ -230,14 +230,14 @@ class ClassScreen(Screen):
         self.sel = 0
 
     def render(self, cv):
-        cv.text_center(W // 2, 3, f'Choose a class for {self.name}', GOLD)
+        cv.text_center(W // 2, 2, f'Choose a class for {self.name}', GOLD)
         for i, k in enumerate(D.CLASS_ORDER):
             c = D.CLASSES[k]
-            x = 4 + i * 32
+            x = 8 + i * 32
             sel = i == self.sel
-            cv.frame(x, 6, 30, 22, GOLD if sel else LINE, (34, 26, 18) if sel else PANEL, f'{i + 1}  {c["name"]}', GOLD if sel else FG)
-            n = cv.wrap(x + 2, 8, 26, c['desc'], FG)
-            y = 9 + n
+            cv.frame(x, 4, 30, 22, GOLD if sel else LINE, (34, 26, 18) if sel else PANEL, f'{i + 1}  {c["name"]}', GOLD if sel else FG)
+            n = cv.wrap(x + 2, 6, 26, c['desc'], FG)
+            y = 7 + n
             for st, label in (('str', 'Strength'), ('dex', 'Dexterity'), ('vit', 'Vitality'), ('ene', 'Energy')):
                 cv.text(x + 2, y, label, DIM)
                 cv.text_right(x + 26, y, str(c[st]), FG)
@@ -249,7 +249,7 @@ class ClassScreen(Screen):
                 cv.text(x + 2, y, f'{s.name}', FG)
                 cv.text_right(x + 26, y, f'lv {s.lvl}', DIM)
                 y += 1
-        cv.text_center(W // 2, 30, 'Left/Right or 1-3 to choose, Enter to begin, Esc to go back', DIM)
+        cv.text_center(W // 2, 27, 'Left/Right or 1-3 to choose, Enter to begin, Esc to go back', DIM)
 
     def on_key(self, tok, shift):
         if tok in ('left', 'h', 'np4'):
@@ -265,7 +265,7 @@ class ClassScreen(Screen):
 
     def on_click(self, x, y, button):
         for i in range(3):
-            if 4 + i * 32 <= x < 34 + i * 32 and 6 <= y < 28:
+            if 8 + i * 32 <= x < 38 + i * 32 and 4 <= y < 26:
                 if self.sel == i:
                     self.on_key('enter', False)
                 self.sel = i
@@ -405,26 +405,26 @@ class GameScreen(Screen):
         cv.text(x, 0, p.name, GOLD, PANEL, maxw=PW)
         cv.text(x, 1, f"{D.CLASSES[p.cls]['name']} · level {p.lvl}", DIM, PANEL)
         # orbs
-        self.orb(cv, x, 3, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
-        self.orb(cv, x + PW - 9, 3, p.mana / max(1, s['max_mana']), MANA)
-        cv.text_center(x + 4, 8, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
-        cv.text_center(x + PW - 5, 8, f"{p.mana}/{s['max_mana']}", FG, PANEL)
-        cv.text_center(x + PW // 2, 4, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
-        cv.text_center(x + PW // 2, 6, 'MANA', DIM, PANEL)
+        self.orb(cv, x, 2, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
+        self.orb(cv, x + PW - 9, 2, p.mana / max(1, s['max_mana']), MANA)
+        cv.text_center(x + 4, 7, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
+        cv.text_center(x + PW - 5, 7, f"{p.mana}/{s['max_mana']}", FG, PANEL)
+        cv.text_center(x + PW // 2, 3, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
+        cv.text_center(x + PW // 2, 5, 'MANA', DIM, PANEL)
         # xp
         prev = E.xp_for(p.lvl - 1) if p.lvl > 1 else 0
         frac = (p.xp - prev) / max(1, E.xp_for(p.lvl) - prev)
-        cv.text(x, 10, 'XP', DIM, PANEL)
+        cv.text(x, 9, 'XP', DIM, PANEL)
         bw = PW - 3
         filled = int(bw * max(0, min(1, frac)))
         for i in range(bw):
-            cv.put(x + 3 + i, 10, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
-        cv.text_right(x + PW - 1, 11, f'{p.xp} / {E.xp_for(p.lvl)}', DIM, PANEL)
+            cv.put(x + 3 + i, 9, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
+        cv.text_right(x + PW - 1, 10, f'{p.xp} / {E.xp_for(p.lvl)}', DIM, PANEL)
         # skills
-        cv.text(x, 13, 'SKILLS', DIM, PANEL)
+        cv.text(x, 11, 'SKILLS', DIM, PANEL)
         for i, k in enumerate(D.SKILLS[p.cls]):
             r = p.skills.get(k.id, 0)
-            y = 14 + i
+            y = 12 + i
             cv.text(x, y, str(i + 1), GOLD, PANEL)
             if r:
                 ok = p.mana >= k.cost
@@ -434,30 +434,30 @@ class GameScreen(Screen):
                 cv.text(x + 2, y, k.name, scale(DIM, .7), PANEL)
                 cv.text_right(x + PW - 1, y, f'lv {k.lvl}' if p.lvl < k.lvl else 'learn', scale(DIM, .7) if p.lvl < k.lvl else GOLD, PANEL)
         # belt
-        cv.text(x, 18, 'BELT', DIM, PANEL)
+        cv.text(x, 16, 'BELT', DIM, PANEL)
         hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
         mp = g.count('potion', 'mp') + g.count('potion', 'rejuv')
         tp = g.count('scroll')
-        cv.text(x, 19, 'Q', GOLD, PANEL)
-        cv.text(x + 2, 19, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
-        cv.text(x + 15, 19, 'W', GOLD, PANEL)
-        cv.text(x + 17, 19, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
-        cv.text(x, 20, 'P', GOLD, PANEL)
-        cv.text(x + 2, 20, f'Town Portal x{tp}', FG if tp else DIM, PANEL)
+        cv.text(x, 17, 'Q', GOLD, PANEL)
+        cv.text(x + 2, 17, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
+        cv.text(x + 14, 17, 'W', GOLD, PANEL)
+        cv.text(x + 16, 17, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
+        cv.text(x, 18, 'P', GOLD, PANEL)
+        cv.text(x + 2, 18, f'Town Portal x{tp}', FG if tp else DIM, PANEL)
         # numbers
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"), ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])),
-                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold)), ('Kills', str(g.kills))]
+                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold))]
         for i, (a, b) in enumerate(rows):
-            cv.text(x, 22 + i, a, DIM, PANEL)
-            cv.text_right(x + PW - 1, 22 + i, b, GOLD if a == 'Gold' else FG, PANEL)
+            cv.text(x, 20 + i, a, DIM, PANEL)
+            cv.text_right(x + PW - 1, 20 + i, b, GOLD if a == 'Gold' else FG, PANEL)
         if p.stat_pts or p.skill_pts:
             parts = []
             if p.stat_pts:
                 parts.append(f'{p.stat_pts} stat')
             if p.skill_pts:
                 parts.append(f'{p.skill_pts} skill')
-            cv.text(x, 28, f"C: spend {' + '.join(parts)} pts", GOLD, PANEL, maxw=PW)
-        self.draw_target(cv, x, 30)
+            cv.text(x, 25, f"C: {', '.join(parts)} points", GOLD, PANEL, maxw=PW)
+        self.draw_target(cv, x, 26)
         cv.text(x, H - 1, '? help · i bag · c hero', scale(DIM, .8), PANEL, maxw=PW)
 
     def orb(self, cv, x, y, frac, col, alt=None):
@@ -671,44 +671,65 @@ class InventoryScreen(Modal):
         out += [('bag', i, it) for i, it in enumerate(g.backpack())]
         return out
 
+    BOX_W, BOX_H = 104, 30
+    BAG_Y, BAG_ROWS = 11, 17
+
+    def bag_scroll(self):
+        i = self.sel - 5
+        if i < 0:
+            return getattr(self, 'scroll', 0)
+        sc = getattr(self, 'scroll', 0)
+        if i < sc:
+            sc = i
+        elif i >= sc + self.BAG_ROWS:
+            sc = i - self.BAG_ROWS + 1
+        self.scroll = sc
+        return sc
+
     def render(self, cv):
         g = self.game
         rows = self.rows()
         self.sel = max(0, min(self.sel, len(rows) - 1))
-        x, y = self.box(cv, 94, 34, 'Drop which item?' if self.drop_mode else 'Inventory')
+        x, y = self.box(cv, self.BOX_W, self.BOX_H, 'Drop which item?' if self.drop_mode else 'Inventory')
         cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {g.player.gold} gold', DIM, PANEL)
         cv.text(x + 2, y + 3, 'EQUIPPED', DIM, PANEL)
         cv.text(x + 2, y + 10, 'BACKPACK', DIM, PANEL)
+        sc = self.bag_scroll()
+        nbag = len(g.backpack())
+        if sc > 0:
+            cv.text(x + 50, y + 10, '▲', GOLD, PANEL)
+        if sc + self.BAG_ROWS < nbag:
+            cv.text(x + 50, y + self.BAG_Y + self.BAG_ROWS, '▼', GOLD, PANEL)
         for idx, (kind, key, it) in enumerate(rows):
             sel = idx == self.sel
             bg = (52, 40, 28) if sel else PANEL
             if kind == 'eq':
                 yy = y + 4 + idx
-                cv.fill(x + 2, yy, 50, 1, ' ', FG, bg)
+                cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
                 cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<7}', DIM, bg)
                 if it:
-                    cv.text(x + 12, yy, it.name, it.color(), bg, maxw=40)
+                    cv.text(x + 12, yy, it.name, it.color(), bg, maxw=42)
                 else:
                     cv.text(x + 12, yy, '-', DIM, bg)
             else:
-                yy = y + 11 + key
-                if yy >= y + 33:
+                if not sc <= key < sc + self.BAG_ROWS:
                     continue
-                cv.fill(x + 2, yy, 50, 1, ' ', FG, bg)
+                yy = y + self.BAG_Y + key - sc
+                cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
                 cv.text(x + 2, yy, LETTERS[key], GOLD, bg)
-                cv.text(x + 4, yy, it.display_name(), it.color(), bg, maxw=46)
+                cv.text(x + 4, yy, it.display_name(), it.color(), bg, maxw=48)
                 if it.k == 'gear' and it.req > g.player.lvl:
-                    cv.text(x + 50, yy, '!', BAD, bg)
-        if len(g.backpack()) == 0:
-            cv.text(x + 4, y + 11, 'Your backpack is empty.', DIM, PANEL)
-        for yy in range(y + 1, y + 33):
-            cv.put(x + 54, yy, '│', LINE, PANEL)
+                    cv.text(x + 54, yy, '!', BAD, bg)
+        if nbag == 0:
+            cv.text(x + 4, y + self.BAG_Y, 'Your backpack is empty.', DIM, PANEL)
+        for yy in range(y + 1, y + self.BOX_H - 1):
+            cv.put(x + 58, yy, '│', LINE, PANEL)
         if rows:
-            item_detail(cv, g, rows[self.sel][2], x + 56, y + 3, 36)
+            item_detail(cv, g, rows[self.sel][2], x + 60, y + 3, 42, 22)
         hint = 'letter: select · Enter: equip/use/remove · D: drop · Esc: close'
         if self.drop_mode:
             hint = 'letter or Enter: drop the item · Esc: close'
-        cv.text_center(W // 2, y + 33, f' {hint} ', DIM, PANEL)
+        cv.text_center(W // 2, y + self.BOX_H - 1, f' {hint} ', DIM, PANEL)
 
     def use(self):
         g, app = self.game, self.app
@@ -747,7 +768,7 @@ class InventoryScreen(Modal):
 
     def on_key(self, tok, shift):
         rows = self.rows()
-        if tok in ('esc', 'i'):
+        if tok == 'esc':
             self.app.pop()
         elif tok in ('up', 'np8'):
             self.sel = max(0, self.sel - 1)
@@ -766,12 +787,13 @@ class InventoryScreen(Modal):
                     self.use()
 
     def on_click(self, x, y, button):
-        bx, by = (W - 94) // 2, (H - 34) // 2
-        if bx + 2 <= x < bx + 52:
+        bx, by = (W - self.BOX_W) // 2, (H - self.BOX_H) // 2
+        sc = getattr(self, 'scroll', 0)
+        if bx + 2 <= x < bx + 56:
             if by + 4 <= y < by + 9:
                 self.sel = y - by - 4
-            elif by + 11 <= y < by + 33 and y - by - 11 < len(self.game.backpack()):
-                new = 5 + y - by - 11
+            elif by + self.BAG_Y <= y < by + self.BAG_Y + self.BAG_ROWS and y - by - self.BAG_Y + sc < len(self.game.backpack()):
+                new = 5 + y - by - self.BAG_Y + sc
                 if new == self.sel:
                     self.use()
                 self.sel = new
@@ -783,7 +805,7 @@ class CharacterScreen(Modal):
     def render(self, cv):
         g = self.game
         p, s = g.player, g.stats()
-        x, y = self.box(cv, 80, 32, f"{p.name} · level {p.lvl} {D.CLASSES[p.cls]['name']}")
+        x, y = self.box(cv, 80, 30, f"{p.name} · level {p.lvl} {D.CLASSES[p.cls]['name']}")
         cv.text(x + 2, y + 1, f'{p.stat_pts} stat points · {p.skill_pts} skill points to spend', GOLD if (p.stat_pts or p.skill_pts) else DIM, PANEL)
         cv.text(x + 2, y + 3, 'ATTRIBUTES', DIM, PANEL)
         helps = {
@@ -821,7 +843,7 @@ class CharacterScreen(Modal):
             cy = yy + 1 + i // 2
             cv.text(cx, cy, a, DIM, PANEL)
             cv.text_right(cx + 34, cy, b, FG, PANEL)
-        cv.text_center(W // 2, y + 31, ' 1-4: add a stat point · a-c: learn or rank up a skill · Esc: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + 29, ' 1-4: add a stat point · a-c: learn or rank up a skill · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         g = self.game
@@ -853,10 +875,10 @@ class ShopScreen(Modal):
 
     def render(self, cv):
         g = self.game
-        x, y = self.box(cv, 96, 34)
+        x, y = self.box(cv, 104, 30)
         cv.text(x + 2, y + 1, '"Fresh stock every time you come back to town."', DIM, PANEL)
-        cv.text(x + 67, y + 1, 'Your gold:', DIM, PANEL)
-        cv.text(x + 78, y + 1, str(g.player.gold), GOLD, PANEL)
+        cv.text(x + 82, y + 1, 'Your gold:', DIM, PANEL)
+        cv.text(x + 93, y + 1, str(g.player.gold), GOLD, PANEL)
         lists = [self.buy_rows(), self.sell_rows()]
         for pane, (title, lx) in enumerate((('BUY', x + 2), ('SELL', x + 34))):
             active = pane == self.pane
@@ -874,12 +896,12 @@ class ShopScreen(Modal):
                 cv.text_right(lx + 29, yy, str(price), GOLD if (pane == 1 or g.player.gold >= price) else BAD, bg)
             if not rows:
                 cv.text(lx, y + 4, 'Nothing to sell.' if pane else 'Sold out.', DIM, PANEL)
-        for yy in range(y + 1, y + 33):
+        for yy in range(y + 1, y + 29):
             cv.put(x + 65, yy, '│', LINE, PANEL)
         cur = lists[self.pane]
         if cur:
-            item_detail(cv, g, cur[self.sel[self.pane]], x + 67, y + 3, 27)
-        cv.text_center(W // 2, y + 33, ' Tab: switch buy/sell · letter or arrows: select · Enter: buy or sell · Esc: leave ', DIM, PANEL)
+            item_detail(cv, g, cur[self.sel[self.pane]], x + 67, y + 3, 35, 22)
+        cv.text_center(W // 2, y + 29, ' Tab: switch buy/sell · letter or arrows: select · Enter: buy or sell · Esc: leave ', DIM, PANEL)
 
     def activate(self):
         g = self.game
@@ -985,11 +1007,11 @@ class HelpScreen(Modal):
         ('Shift + direction', 'Run until something interesting happens'),
         ('1 2 3', 'Skills. They target the nearest visible enemy.'),
         ('Q   W', 'Drink a health or mana potion'),
-        ('P', 'Town Portal: back to Thornfield, step into the blue 0 to return'),
+        ('P', 'Town Portal to Thornfield. Step into the blue 0 to go back.'),
         ('X', 'Auto-explore until enemies appear'),
         ('T', 'Travel across the vale to a known place'),
         ('>  <  Enter', 'Use stairs, enter town or a dungeon'),
-        ('g  ,', 'Pick up items (gold, orbs, potions and magic items go in automatically)'),
+        ('g  ,', 'Pick up items. Gold, orbs, potions and magic items are automatic.'),
         ('I   D   C', 'Inventory, drop, character sheet'),
         ('R   5   .', 'Rest until healed, wait one turn'),
         ('mouse', 'Hover to inspect, click to step toward a spot'),
@@ -997,10 +1019,10 @@ class HelpScreen(Modal):
     ]
 
     def render(self, cv):
-        x, y = self.box(cv, 92, 32)
+        x, y = self.box(cv, 104, 30)
         for i, (k, d) in enumerate(self.KEYS):
             cv.text(x + 3, y + 2 + i, k, GOLD, PANEL)
-            cv.text(x + 32, y + 2 + i, d, FG, PANEL)
+            cv.text(x + 32, y + 2 + i, d, FG, PANEL, maxw=70)
         yy = y + 3 + len(self.KEYS)
         cv.text(x + 3, yy, 'MAP', DIM, PANEL)
         legend = [('#', (242, 196, 74), 'Thornfield'), ('>', (232, 96, 62), 'dungeon entrance'),
@@ -1017,8 +1039,8 @@ class HelpScreen(Modal):
         for r in ('normal', 'magic', 'rare', 'unique'):
             cv.text(cx, yy, r, D.RARITY_COLOR[r], PANEL)
             cx += len(r) + 2
-        cv.wrap(x + 3, yy + 1, 86, 'Each level gives 5 stat points and 1 skill point. Your hero is saved in savegame.dat next to the game; death erases it.', DIM, PANEL)
-        cv.text_center(W // 2, y + 31, ' any key to close ', DIM, PANEL)
+        cv.wrap(x + 3, yy + 1, 98, 'Each level gives 5 stat points and 1 skill point. Your hero is saved in savegame.dat next to the game; death erases it.', DIM, PANEL)
+        cv.text_center(W // 2, y + 29, ' any key to close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         self.app.pop()

@@ -98,6 +98,9 @@ class TcodCanvas(Canvas):
         c.bg[...] = (c.bg * f).astype(c.bg.dtype)
 
 
+from .glyphs import CHARS as _GLYPHS  # noqa: E402
+
+
 class FakeCanvas(Canvas):
     """Pure-Python canvas used by the headless tests. dump() returns the screen as text."""
 
@@ -106,6 +109,8 @@ class FakeCanvas(Canvas):
         self.clear()
 
     def put(self, x, y, ch, fg=None, bg=None):
+        if ch not in _GLYPHS:
+            raise ValueError(f'character {ch!r} is not in the tileset')
         if 0 <= x < self.w and 0 <= y < self.h:
             i = y * self.w + x
             self.ch[i] = ch
