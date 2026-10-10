@@ -68,7 +68,9 @@ def smoke(games=12, steps=1500):
 if __name__ == '__main__':
     random.seed(1)
     smoke()
-    app = new_app('barbarian')
-    app.hover = (35, 14)
-    app.render()
-    print(app.cv.dump())
+    if '--dump' in sys.argv:
+        app = new_app('barbarian')
+        app.hover = (35, 14)
+        app.render()
+        sys.stdout.reconfigure(encoding='utf-8')
+        print(app.cv.dump())
