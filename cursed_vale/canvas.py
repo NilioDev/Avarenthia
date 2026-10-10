@@ -15,6 +15,10 @@ class Canvas:
     """Common drawing helpers. Subclasses implement put/clear/dim."""
     w = h = 0
 
+    def put_bg(self, x, y, bg):
+        """Change only the background colour of a cell."""
+        raise NotImplementedError
+
     def text(self, x, y, s, fg=None, bg=None, maxw=None):
         if maxw is not None and len(s) > maxw:
             s = s[:max(0, maxw - 1)] + '…' if maxw > 0 else ''
@@ -89,6 +93,10 @@ class TcodCanvas(Canvas):
             if bg is not None:
                 c.bg[x, y] = bg
 
+    def put_bg(self, x, y, bg):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.con.bg[x, y] = bg
+
     def clear(self, bg=BLACK):
         self.con.clear(ch=ord(' '), fg=(255, 255, 255), bg=bg)
 
@@ -118,6 +126,10 @@ class FakeCanvas(Canvas):
                 self.fg[i] = fg
             if bg is not None:
                 self.bg[i] = bg
+
+    def put_bg(self, x, y, bg):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.bg[y * self.w + x] = bg
 
     def clear(self, bg=BLACK):
         n = self.w * self.h

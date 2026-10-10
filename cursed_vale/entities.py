@@ -22,6 +22,7 @@ class Item:
         self.dmg = None
         self.arm = None
         self.name = ''
+        self.mission = None
 
     # ---------------------------------------------------------- presentation
     def display_name(self):
@@ -44,6 +45,8 @@ class Item:
             return (242, 196, 67)
         if self.k == 'orb':
             return (255, 74, 74)
+        if self.k == 'quest':
+            return (255, 214, 92)
         return (238, 228, 194)
 
     def glyph(self):
@@ -55,6 +58,8 @@ class Item:
             return '!'
         if self.k == 'scroll':
             return '?'
+        if self.k == 'quest':
+            return '§'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -70,7 +75,9 @@ class Item:
                 out.append({'hp': 'Restores 45% of your life.', 'mp': 'Restores 50% of your mana.',
                             'rejuv': 'Restores 40% of life and mana.'}[self.t])
             elif self.k == 'scroll':
-                out.append('Opens a portal to Thornfield and back.')
+                out.append('Opens a portal to the last town you visited, and back.')
+            elif self.k == 'quest':
+                out.append('A relic someone is waiting for. Bring it back to claim your reward.')
             return out
         b = D.BASES[self.base]
         if self.dmg:
@@ -158,6 +165,10 @@ class Player:
         self.eq = {}
         self.gold = 50
         self.poison = None      # [turns, damage]
+        self.cargo = {}         # trade good -> quantity
+        self.cost_basis = {}    # trade good -> average purchase price
+        self.parcels = []       # job cargo: dict(mid, name, w)
+        self.mounts = []        # 'mule', 'cart'
         self.life = 1
         self.mana = 1
         self.last_target = None

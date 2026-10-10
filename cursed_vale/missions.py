@@ -1,0 +1,317 @@
+"""Jobs from the inn boards: courier, freight, bounty, escort and dungeon fetch."""
+import math
+import random
+
+from . import data as D
+from .data import ROAD, TOWN, CITY, ENTR, FLOOR, UP
+from .entities import Item
+from .wanderers import Wanderer, make_group, road_path, ESCORT_FG
+from .worldgen import cheb, free_around, rand_free, spawn_pack
+
+MAX_ACTIVE = 5
+PARCELS = ['a sealed letter', 'a parcel of deeds', 'a small locked chest', 'a bundle of contracts', "a jeweller's pouch"]
+
+
+class Mission:
+    def __init__(self, mid, kind, giver):
+        self.id, self.kind, self.giver = mid, kind, giver
+        self.target = None
+        self.title = ''
+        self.desc = ''
+        self.reward = 0
+        self.rep = 0
+        self.deadline = None
+        self.state = 'offer'
+        self.data = {}
+
+
+def travel_days(plen):
+    return max(1, math.ceil(plen * 9 / D.DAY_LEN))
+
+
+def _other_settlement(game, s, lo, hi):
+    w = game.world
+    cands = []
+    for o in w.settlements:
+        if o.id == s.id:
+            continue
+        p = road_path(game, s.id, o.id)
+        if p and lo <= len(p) <= hi:
+            cands.append((o, len(p)))
+    return random.choice(cands) if cands else (None, 0)
+
+
+def make_offer(game, s):
+    w = game.world
+    kinds = ['courier'] * 3 + ['freight'] * 3 + ['bounty'] * 2 + ['escort'] * 2
+    if any(d.relic is None and not d.main for d in w.dungeons.values()):
+        kinds += ['fetch'] * 2
+    kind = random.choice(kinds)
+    m = Mission(game.new_id(), kind, s.id)
+    if kind == 'courier':
+        o, plen = _other_settlement(game, s, 15, 110)
+        if not o:
+            return None
+        parcel = random.choice(PARCELS)
+        m.target = o.id
+        m.reward = round(25 + plen * 1.1 + w.region_at(o.x, o.y).danger * 8)
+        m.deadline = game.day + travel_days(plen) + 2
+        m.data = dict(parcel=parcel)
+        m.title = f'Courier to {o.name}'
+        m.desc = f'Deliver {parcel} to {o.name} ({plen} leagues by road) before day {m.deadline}.'
+    elif kind == 'freight':
+        goods = [g for g in s.produce if s.market[g][0] > 20]
+        if not goods:
+            return None
+        g = random.choice(goods)
+        buyers = [o for o in w.settlements if o.id != s.id and g in o.demand and road_path(game, s.id, o.id)]
+        if not buyers:
+            return None
+        o = random.choice(buyers)
+        plen = len(road_path(game, s.id, o.id))
+        q = random.randint(6, 20) if D.GOODS[g]['w'] > 1 else random.randint(10, 30)
+        m.target = o.id
+        m.reward = round(20 + plen * .9 + q * D.GOODS[g]['w'] * 1.6)
+        m.deadline = game.day + travel_days(plen) + 3
+        m.data = dict(good=g, qty=q, w=q * D.GOODS[g]['w'])
+        m.title = f"Haul {D.GOODS[g]['name']} to {o.name}"
+        m.desc = (f"Carry {q} {D.GOODS[g]['name']} ({q * D.GOODS[g]['w']} cargo) to {o.name} ({plen} leagues) "
+                  f'before day {m.deadline}. The goods are provided.')
+    elif kind == 'bounty':
+        reg_d = w.region_at(s.x, s.y).danger
+        spot = None
+        over = game.maps['over']
+        for _ in range(300):
+            x = s.x + random.randint(-36, 36)
+            y = s.y + random.randint(-24, 24)
+            if not over.inb(x, y) or cheb(x, y, s.x, s.y) < 12:
+                continue
+            t = over.tile(x, y)
+            if not D.TILES[t].walk or t in (ROAD, TOWN, CITY, ENTR):
+                continue
+            if any(cheb(x, y, o.x, o.y) < 6 for o in w.settlements):
+                continue
+            spot = (x, y)
+            break
+        if not spot:
+            return None
+        reg = w.region_at(*spot)
+        lvl = max(reg.danger, reg_d) + 2
+        if random.random() < .5:
+            leader = random.choice(D.BANDIT_LEADERS)
+            keys = ['bandit'] + [random.choice(['bandit', 'brigand']) for _ in range(random.randint(2, 4))]
+            what = f'the outlaw {leader}'
+        else:
+            k = random.choice(D.BIOME_MONSTERS[reg.biome])
+            a, b, c = D.UNIQUE_NAME
+            leader = random.choice(a) + random.choice(b) + ' ' + random.choice(c)
+            keys = [k] * random.randint(2, 4)
+            what = f"{leader}, a monstrous {D.MONSTERS[k]['name'].lower()}"
+        m.reward = round(60 + lvl * 30)
+        m.data = dict(spot=spot, lvl=lvl, keys=keys, leader=leader)
+        m.title = f'Bounty: {leader}'
+        m.desc = f'Hunt down {what}, last seen in {reg.name} to the {_dir(s, spot)}. Return to {s.name} for the reward.'
+    elif kind == 'escort':
+        o, plen = _other_settlement(game, s, 20, 110)
+        if not o:
+            return None
+        path = road_path(game, s.id, o.id)
+        danger = max(w.region_at(x, y).danger for x, y in path)
+        m.target = o.id
+        m.reward = round(50 + plen * 1.6 + danger * 12)
+        m.deadline = game.day + travel_days(plen) + 3
+        m.data = dict(hp=50 + 10 * danger, danger=danger)
+        m.title = f'Escort a caravan to {o.name}'
+        m.desc = (f'Guard a merchant caravan on the road to {o.name} ({plen} leagues) and arrive before day {m.deadline}. '
+                  f'It follows you; keep it alive when bandits strike.')
+    else:
+        ds = [d for d in w.dungeons.values() if d.relic is None and not d.main]
+        d = min(ds, key=lambda d: cheb(d.x, d.y, s.x, s.y))
+        relic = random.choice(D.RELICS)
+        m.reward = round(90 + (d.base + d.depth) * 25)
+        m.data = dict(dungeon=d.id, relic=relic)
+        m.title = f'Recover {relic}'
+        m.desc = f'{relic[0].upper() + relic[1:]} lies at the bottom of {d.name}, to the {_dir(s, (d.x, d.y))}. A guardian watches over it. Bring it back to {s.name}.'
+    m.rep = random.randint(5, 10)
+    return m
+
+
+def _dir(s, spot):
+    from .engine import dir_name
+    return dir_name(spot[0] - s.x, spot[1] - s.y)
+
+
+def refresh_board(game, s):
+    if s.board and game.day - s.board_day < 3:
+        return
+    s.board_day = game.day
+    s.board = []
+    tries = 0
+    want = random.randint(3, 5)
+    while len(s.board) < want and tries < 30:
+        tries += 1
+        m = make_offer(game, s)
+        if m and not any(o.kind == m.kind and o.target == m.target and o.target is not None for o in s.board):
+            s.board.append(m)
+
+
+def active(game):
+    return [m for m in game.missions if m.state in ('active', 'turnin')]
+
+
+def accept(game, s, m):
+    p = game.player
+    from .economy import free_cargo
+    if len(active(game)) >= MAX_ACTIVE:
+        game.msg(f'You already have {MAX_ACTIVE} jobs. Finish one first.', 'bad')
+        return False
+    if m.kind == 'escort' and any(x.kind == 'escort' and x.state == 'active' for x in game.missions):
+        game.msg('You can only escort one caravan at a time.', 'bad')
+        return False
+    if m.kind == 'freight' and free_cargo(p) < m.data['w']:
+        game.msg(f"You need {m.data['w']} free cargo space for this job.", 'bad')
+        return False
+    if m.kind == 'courier' and free_cargo(p) < 1:
+        game.msg('You need 1 free cargo space for the parcel.', 'bad')
+        return False
+    s.board.remove(m)
+    m.state = 'active'
+    game.missions.append(m)
+    w = game.world
+    if m.kind == 'courier':
+        p.parcels.append(dict(mid=m.id, name=m.data['parcel'], w=1))
+    elif m.kind == 'freight':
+        p.parcels.append(dict(mid=m.id, name=f"{m.data['qty']} {D.GOODS[m.data['good']]['name']} (freight)", w=m.data['w']))
+    elif m.kind == 'bounty':
+        x, y = m.data['spot']
+        kind = 'bandits' if m.data['keys'][0] in ('bandit', 'brigand') else 'monsters'
+        wd = make_group(game, kind, x, y, m.data['lvl'], m.data['keys'], 2, m.data['leader'])
+        wd.kind = 'bounty'
+        wd.mission = m.id
+        wd.fg = D.UNIQUE_FG
+        w.wanderers.append(wd)
+    elif m.kind == 'escort':
+        wd = Wanderer(game.new_id(), 'escort', s.x, s.y)
+        wd.ch, wd.fg, wd.name, wd.mission = '♦', ESCORT_FG, 'Your caravan', m.id
+        w.wanderers.append(wd)
+    elif m.kind == 'fetch':
+        d = w.dungeons[m.data['dungeon']]
+        d.relic = m.id
+        key = f'{d.id}:{d.depth}'
+        if key in game.maps:
+            place_relic(game, game.maps[key], m)
+    game.msg(f'Job accepted: {m.title}.', 'gold')
+    return True
+
+
+def place_relic(game, mp, m):
+    up = mp.t.index(UP) if UP in mp.t else 0
+    ux, uy = up % mp.w, up // mp.w
+    best = None
+    for _ in range(400):
+        c = rand_free(game, mp, lambda t: t == FLOOR)
+        if c and (best is None or cheb(*c, ux, uy) > cheb(*best, ux, uy)):
+            best = c
+    if not best:
+        return
+    it = Item(game.new_id(), 'quest', 'relic')
+    it.name = m.data['relic'][0].upper() + m.data['relic'][1:]
+    it.mission = m.id
+    it.x, it.y = best
+    mp.items.append(it)
+    d = game.world.dungeons[m.data['dungeon']]
+    spawn_pack(game, mp, d.base + d.depth + 1, d.tag, best, elite=2, awake=False)
+
+
+def complete(game, m, sids):
+    p = game.player
+    w = game.world
+    m.state = 'done'
+    bonus = round(m.reward * min(w.settlements[m.giver].rep, 100) / 200)
+    p.gold += m.reward + bonus
+    for sid in sids:
+        w.settlements[sid].rep = min(100, w.settlements[sid].rep + m.rep)
+    p.parcels = [pc for pc in p.parcels if pc['mid'] != m.id]
+    w.wanderers = [x for x in w.wanderers if x.mission != m.id]
+    p.inv = [it for it in p.inv if getattr(it, 'mission', None) != m.id]
+    game.msg(f"Job done: {m.title}. You receive {m.reward + bonus} gold{f' (+{bonus} reputation bonus)' if bonus else ''}.", 'gold')
+    game.num(p.x, p.y, f'+{m.reward + bonus}g', (242, 196, 67), True)
+
+
+def fail(game, m, why):
+    p = game.player
+    w = game.world
+    m.state = 'failed'
+    w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
+    p.parcels = [pc for pc in p.parcels if pc['mid'] != m.id]
+    w.wanderers = [x for x in w.wanderers if x.mission != m.id]
+    game.msg(f'Job failed: {m.title}. {why}', 'bad')
+
+
+def on_enter(game, sid):
+    for m in active(game):
+        if m.kind in ('courier', 'freight') and m.target == sid:
+            complete(game, m, [m.giver, sid])
+        elif m.kind == 'escort' and m.target == sid:
+            complete(game, m, [m.giver, sid])
+        elif m.kind in ('bounty', 'fetch') and m.state == 'turnin' and m.giver == sid:
+            complete(game, m, [sid])
+
+
+def on_group_defeated(game, wd):
+    m = find(game, wd.mission)
+    if m and m.kind == 'bounty' and m.state == 'active':
+        m.state = 'turnin'
+        game.msg(f'{wd.group["leader"]} is dead. Return to {game.world.settlements[m.giver].name} for your reward.', 'gold')
+
+
+def on_pickup(game, it):
+    m = find(game, getattr(it, 'mission', None))
+    if m and m.state == 'active':
+        m.state = 'turnin'
+        game.msg(f'You found {it.name}! Bring it back to {game.world.settlements[m.giver].name}.', 'unique')
+
+
+def on_escort_killed(game):
+    for m in active(game):
+        if m.kind == 'escort':
+            fail(game, m, 'The caravan was destroyed.')
+
+
+def find(game, mid):
+    if mid is None:
+        return None
+    for m in game.missions:
+        if m.id == mid:
+            return m
+    return None
+
+
+def daily(game):
+    for m in active(game):
+        if m.deadline is not None and game.day > m.deadline and m.state == 'active':
+            fail(game, m, 'You ran out of time.')
+    game.missions = [m for m in game.missions if m.state in ('active', 'turnin')] + \
+        [m for m in game.missions if m.state in ('done', 'failed')][-10:]
+
+
+def escort_wanderer(game):
+    for x in game.world.wanderers:
+        if x.kind == 'escort':
+            return x
+    return None
+
+
+def target_pos(game, m):
+    """Where on the overworld this job wants you to go next."""
+    w = game.world
+    if m.state == 'turnin':
+        s = w.settlements[m.giver]
+        return (s.x, s.y), s.name
+    if m.kind in ('courier', 'freight', 'escort'):
+        s = w.settlements[m.target]
+        return (s.x, s.y), s.name
+    if m.kind == 'bounty':
+        return tuple(m.data['spot']), m.data['leader']
+    d = w.dungeons[m.data['dungeon']]
+    return (d.x, d.y), d.name

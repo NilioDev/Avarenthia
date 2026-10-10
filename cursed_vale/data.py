@@ -7,14 +7,16 @@ def hexrgb(h):
 
 
 # ---------------------------------------------------------------- tiles
-WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK = range(17)
+WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND, CITY = range(21)
 
 
 class Tile:
-    __slots__ = ('ch', 'fg', 'walk', 'opaque', 'door', 'name')
+    __slots__ = ('ch', 'fg', 'walk', 'opaque', 'door', 'name', 'cost', 'bg')
 
-    def __init__(self, ch, fg, walk, opaque, name, door=False):
+    def __init__(self, ch, fg, walk, opaque, name, door=False, cost=10, bg=None):
         self.ch, self.fg, self.walk, self.opaque, self.name, self.door = ch, hexrgb(fg), walk, opaque, name, door
+        self.cost = cost          # overworld travel time in turns per step
+        self.bg = hexrgb(bg) if bg else None
 
 
 TILES = [
@@ -24,17 +26,21 @@ TILES = [
     Tile("'", '#b8803c', True, False, 'open door'),
     Tile('>', '#f0e8d2', True, False, 'stairs down'),
     Tile('<', '#f0e8d2', True, False, 'stairs up'),
-    Tile('~', '#4682c8', False, False, 'water'),
-    Tile('.', '#5f8c40', True, False, 'grass'),
-    Tile('&', '#2f8040', True, False, 'forest'),
-    Tile('^', '#a39c8e', False, True, 'mountains'),
-    Tile('"', '#76843f', True, False, 'swamp'),
-    Tile('#', '#f2c44a', True, False, 'Thornfield'),
-    Tile('>', '#e8603e', True, False, 'dungeon entrance'),
-    Tile('&', '#3c8c48', False, True, 'tree'),
+    Tile('≈', '#4682c8', False, False, 'water'),
+    Tile('.', '#5f8c40', True, False, 'grassland', cost=10),
+    Tile('♣', '#2f8040', True, False, 'forest', cost=14),
+    Tile('▲', '#a39c8e', False, True, 'mountains'),
+    Tile('"', '#76843f', True, False, 'swamp', cost=18),
+    Tile('⌂', '#f2c44a', True, False, 'village', cost=10),
+    Tile('>', '#e8603e', True, False, 'dungeon entrance', cost=10),
+    Tile('♠', '#3c8c48', False, True, 'tree'),
     Tile('.', '#957148', True, False, 'path'),
     Tile('o', '#6aa2d8', False, False, 'well'),
     Tile('#', '#7a644e', False, True, 'rock'),
+    Tile('·', '#c8a46a', True, False, 'road', cost=6, bg='#2a2116'),
+    Tile('∩', '#9a8a5a', True, False, 'hills', cost=14),
+    Tile('.', '#d8c47a', True, False, 'sand', cost=11),
+    Tile('■', '#ffd860', True, False, 'city', cost=10),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -199,3 +205,76 @@ RUMORS = [
     'Blue items have one or two magic properties, yellow ones many more.',
     'Shift + direction runs. X explores on its own until it spots trouble.',
 ]
+
+
+# ---------------------------------------------------------------- trade goods
+# base price in gold, weight per unit
+GOODS = {
+    'grain': dict(name='Grain', base=8, w=1),
+    'fish': dict(name='Salted Fish', base=11, w=1),
+    'timber': dict(name='Timber', base=12, w=3),
+    'ore': dict(name='Iron Ore', base=14, w=3),
+    'salt': dict(name='Salt', base=16, w=1),
+    'ale': dict(name='Ale', base=15, w=2),
+    'herbs': dict(name='Herbs', base=18, w=1),
+    'furs': dict(name='Furs', base=28, w=1),
+    'cloth': dict(name='Cloth', base=30, w=1),
+    'tools': dict(name='Tools', base=40, w=2),
+    'medicine': dict(name='Medicine', base=55, w=1),
+    'arms': dict(name='Arms', base=65, w=2),
+    'spice': dict(name='Spices', base=80, w=1),
+    'gems': dict(name='Gems', base=120, w=1),
+}
+GOOD_ORDER = list(GOODS)
+
+# what settlements in each biome tend to make and want
+BIOME_TRADE = {
+    'grass': (['grain', 'ale', 'cloth'], ['tools', 'salt', 'fish', 'medicine']),
+    'forest': (['timber', 'furs', 'herbs'], ['grain', 'tools', 'ale', 'salt']),
+    'swamp': (['herbs', 'fish'], ['grain', 'cloth', 'medicine', 'tools']),
+    'hills': (['ore', 'gems', 'ale'], ['grain', 'cloth', 'timber', 'fish']),
+    'coast': (['fish', 'salt', 'spice'], ['timber', 'grain', 'tools', 'furs']),
+}
+CITY_TRADE = (['tools', 'arms', 'cloth', 'medicine'], ['ore', 'timber', 'grain', 'furs', 'gems', 'herbs', 'spice'])
+
+BIOME_NAMES = {
+    'grass': ['Vale', 'Meadows', 'Downs', 'Fields'],
+    'forest': ['Greywood', 'Elderwood', 'Thornwood', 'Wolfwood'],
+    'swamp': ['Mirefen', 'Blackfen', 'Sumpmoor', 'Weeping Marsh'],
+    'hills': ['Ironhills', 'Stonereach', 'Grimtor', 'Highfells'],
+    'coast': ['Saltcoast', 'Gull Shore', 'Wrackstrand', 'Amber Coast'],
+}
+BIOME_MONSTERS = {
+    'grass': ['jackal', 'wolf', 'bandit', 'goblin'],
+    'forest': ['wolf', 'goblin', 'spider', 'ogre'],
+    'swamp': ['spider', 'zombie', 'goblin'],
+    'hills': ['goblin', 'orc', 'ogre', 'wolf'],
+    'coast': ['jackal', 'bandit', 'goblin'],
+}
+TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
+          'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
+TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
+CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm']
+SIDE_DUNGEONS = [('Howling Cave', 'cave', 'cave'), ('Sunken Chapel', 'rooms', 'crypt'), ('Old Barrow', 'rooms', 'crypt'),
+                 ('Gloomhollow', 'cave', 'cave'), ('Drowned Halls', 'rooms', 'dungeon'), ('Wyrm Den', 'cave', 'cave'),
+                 ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon')]
+RELICS = ["Saint Edda's Reliquary", 'the Silver Chalice', 'the Moonstone Idol', 'the Lost Charter', 'the Gilded Censer',
+          "the Old King's Signet", 'the Starmetal Ingot', 'the Book of Hours']
+BANDIT_LEADERS = ['Black Hal', 'Red Maeve', 'One-Eyed Joss', 'Grisel the Knife', 'Old Corbin', 'Mad Ulric', 'Sable Tom']
+
+EVENTS = {
+    'famine': dict(text='Famine grips {town}. Grain is desperately needed.', good='grain', target=2),
+    'harvest': dict(text='A bumper harvest in {town}. Grain is cheap there.', good='grain', target=180),
+    'festival': dict(text='{town} holds its harvest festival. Ale is in demand.', good='ale', target=3),
+    'plague': dict(text='Sickness spreads in {town}. Medicine and herbs fetch high prices.', good='medicine', target=2, also='herbs'),
+    'collapse': dict(text='A mine collapsed near {town}. Iron ore is scarce.', good='ore', target=3),
+    'war': dict(text='{town} arms its militia. Weapons sell for a fortune.', good='arms', target=2),
+    'fire': dict(text='Fire destroyed half of {town}. Timber is needed for rebuilding.', good='timber', target=2),
+}
+
+MOUNTS = {
+    'mule': dict(name='Pack Mule', price=150, cap=60, desc='Carries 60 more units of cargo.'),
+    'cart': dict(name='Mule Cart', price=500, cap=160, desc='Carries 160 more units. Needs a pack mule.'),
+}
+BASE_CARGO = 30
+DAY_LEN = 300

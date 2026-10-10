@@ -4,13 +4,17 @@ import pickle
 import random
 
 from . import data as D
+from . import economy as ECO
 from . import fov
+from . import missions as MS
+from . import wanderers as WA
+from . import world as WO
 from . import worldgen as W
-from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL)
+from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 3
+SAVE_VERSION = 4
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -82,7 +86,11 @@ class Game:
         self.max_depth = {}
         self.last_save = 0
         self.portal = None
-        self.shop = []
+        self.shops = {}
+        self.missions = []
+        self.price_log = {}
+        self.encounter = None
+        self.last_day = 1
         self.low_warned = False
         self.events = []        # transient effects for the UI
         self.request = None     # transient: a screen the UI should open
@@ -91,6 +99,7 @@ class Game:
 
         p = self.player = Player(name or 'Wanderer', cls)
         p.x = p.y = -5
+        self.cur = 'none'
 
         def gear(bk):
             it = make_gear(self, bk, 'normal', 1)
@@ -112,18 +121,34 @@ class Game:
         s = self.stats()
         p.life, p.mana = s['max_life'], s['max_mana']
 
-        over, town_pos, dlocs = W.gen_over()
+        over, world = WO.gen_world(self)
         self.maps['over'] = over
-        self.town_pos, self.dlocs, self.over_pos = town_pos, dlocs, town_pos
-        for y in range(town_pos[1] - 5, town_pos[1] + 6):
-            for x in range(town_pos[0] - 7, town_pos[0] + 8):
+        self.world = world
+        for st in world.settlements:
+            st.services = WO.settlement_services(st)
+        ECO.init_markets(world)
+        home = world.settlements[0]
+        self.over_pos = (home.x, home.y)
+        # the realm map you start with: every road and settlement, plus the land around Thornfield
+        for i, t in enumerate(over.t):
+            if t in (ROAD, TOWN, CITY):
+                over.seen[i] = 1
+        for y in range(home.y - 6, home.y + 7):
+            for x in range(home.x - 9, home.x + 10):
                 if over.inb(x, y):
                     over.seen[y * over.w + x] = 1
-        self.maps['town'] = W.gen_town(self)
-        p.x, p.y = self.maps['town'].entry[0], self.maps['town'].entry[1] - 1
-        self.shop = W.gen_shop(self)
+        rat = world.dungeons['rat']
+        over.seen[rat.y * over.w + rat.x] = 1
+        self.home = 0
+        self.cur = home.map_key
+        self.maps[self.cur] = WO.gen_settlement_map(self, home)
+        m = self.maps[self.cur]
+        p.x, p.y = m.entry[0] + 2, m.entry[1]
+        self.shops = {0: W.gen_shop(self)}
+        WA.populate(self)
+        MS.refresh_board(self, home)
         self.msg(f'Welcome to Thornfield, {p.name}. A curse lies over the vale.', 'gold')
-        self.msg('Talk to Elder Berend (the purple @) for your quest. Walk into people to talk.', 'info')
+        self.msg('Talk to Elder Berend (the purple @) for your quest, or find work on the board at the inn.', 'info')
         self.msg('Press ? or F1 for controls.')
         self.compute_fov()
 
@@ -135,6 +160,18 @@ class Game:
     @property
     def map(self):
         return self.maps[self.cur]
+
+    @property
+    def day(self):
+        return self.turn // D.DAY_LEN + 1
+
+    @property
+    def here(self):
+        """The settlement you are standing in, or None."""
+        m = self.maps.get(self.cur)
+        if m is not None and m.kind == 'town':
+            return self.world.settlements[m.sid]
+        return None
 
     def msg(self, text, cls=''):
         self.log.append((text, cls))
@@ -265,21 +302,31 @@ class Game:
         m = self.map
         if m.kind == 'dungeon':
             return f'{m.name} - level {m.depth}'
+        if m.kind == 'over':
+            p = self.player
+            return self.world.region_at(p.x, p.y).name
         return m.name
 
     def dir_to(self, k):
-        return dir_name(self.dlocs[k][0] - self.town_pos[0], self.dlocs[k][1] - self.town_pos[1])
+        d = self.world.dungeons[k]
+        h = self.world.settlements[0]
+        return dir_name(d.x - h.x, d.y - h.y)
 
     # ------------------------------------------------------------ map changes
     def enter_dungeon(self, did, depth, arrive):
         key = f'{did}:{depth}'
         p = self.player
+        dg = self.world.dungeons[did]
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
         self.cur = key
         p.x = p.y = -5
         if key not in self.maps:
             self.maps[key] = W.gen_dungeon(self, did, depth)
+            if depth == dg.depth and dg.relic is not None:
+                mi = MS.find(self, dg.relic)
+                if mi and mi.state == 'active':
+                    MS.place_relic(self, self.maps[key], mi)
         m = self.map
         want = DOWN if arrive == 'down' else UP
         if want in m.t:
@@ -288,41 +335,113 @@ class Game:
         first = self.max_depth.get(did, 0) < depth
         if first:
             self.max_depth[did] = depth
-        self.msg(f"{D.DUNGEONS[did]['name']}, level {depth}.", 'info')
-        if first and depth == D.DUNGEONS[did]['depth']:
+        self.msg(f"{dg.name}, level {depth}.", 'info')
+        if first and depth == dg.depth:
             self.msg('An evil presence fills the air. This is the deepest level.', 'bad')
         self.compute_fov()
         self.request = ('save',)
 
     def leave_to_over(self):
-        if self.cur == 'wild':
+        p = self.player
+        m = self.map
+        if m.kind == 'wild':
+            self.resolve_encounter()
             self.maps.pop('wild', None)
+        elif m.kind == 'town':
+            s = self.world.settlements[m.sid]
+            self.over_pos = (s.x, s.y)
         self.cur = 'over'
-        self.player.x, self.player.y = self.over_pos
-        self.msg('You are back in the vale.')
+        p.x, p.y = self.over_pos
+        esc = MS.escort_wanderer(self)
+        if esc and (esc.x, esc.y) != (p.x, p.y) and cheb(esc.x, esc.y, p.x, p.y) > 1:
+            esc.x, esc.y = p.x, p.y
+        self.msg(f'You are back on the road, in {self.loc_name()}.')
         self.compute_fov()
         self.request = ('save',)
 
-    def enter_town(self, from_portal=False):
+    def resolve_encounter(self):
+        wd = next((x for x in self.world.wanderers if x.id == self.encounter), None)
+        self.encounter = None
+        m = self.maps.get('wild')
+        esc = next((o for o in m.mons if o.role == 'escort'), None) if m else None
+        if esc:
+            for mi in MS.active(self):
+                if mi.kind == 'escort':
+                    mi.data['hp'] = esc.hp
+        if not wd:
+            return
+        alive = [o for o in m.mons if not o.is_npc] if m else []
+        if not alive:
+            self.world.wanderers.remove(wd)
+            self.msg(f'You have dealt with {wd.name[0].lower() + wd.name[1:]}.', 'good')
+            MS.on_group_defeated(self, wd)
+        else:
+            wd.cooldown = 4
+
+    def enter_town(self, sid, from_portal=False):
         p = self.player
+        s = self.world.settlements[sid]
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
-        self.cur = 'town'
+        if s.map_key not in self.maps:
+            self.maps[s.map_key] = WO.gen_settlement_map(self, s)
+        self.cur = s.map_key
+        self.home = sid
         m = self.map
         if from_portal:
             p.x, p.y = m.portal_pos[0], m.portal_pos[1] + 1
         else:
-            p.x, p.y = m.entry
-        self.shop = W.gen_shop(self)
-        self.msg('You enter Thornfield.', 'info')
+            p.x, p.y = m.entry[0] + (1 if m.entry[0] == 0 else 0), m.entry[1]
+        if 'shop' in s.services:
+            self.shops[sid] = W.gen_shop(self, s.is_city)
+        MS.refresh_board(self, s)
+        esc = MS.escort_wanderer(self)
+        if esc:
+            esc.x, esc.y = s.x, s.y
+        self.msg(f'You enter {s.name}.', 'info')
+        if s.event:
+            self.msg('News: ' + D.EVENTS[s.event[0]]['text'].format(town=s.name), 'info')
+        MS.on_enter(self, sid)
         self.compute_fov()
         self.request = ('save',)
 
+    def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None):
+        p = self.player
+        self.over_pos = (p.x, p.y)
+        if terrain is None:
+            terrain = self.maps['over'].tile(p.x, p.y)
+        if wd:
+            g = wd.group
+            lvl, keys, elite, leader = g['lvl'], g['keys'], g['elite'], g.get('leader')
+            self.encounter = wd.id
+        else:
+            elite, leader = 0, None
+            self.encounter = None
+        self.cur = 'wild'
+        p.x = p.y = -5
+        w = W.gen_wild(self, terrain, lvl, keys, elite, leader)
+        self.maps['wild'] = w
+        p.x, p.y = w.entry
+        for mi in MS.active(self):
+            if mi.kind == 'escort':
+                spot = W.free_around(self, w, p.x, p.y, 1)
+                if spot:
+                    from .entities import make_npc
+                    c = make_npc(self, 'Your caravan', 'escort', '#6ee2ec', spot[0][0], spot[0][1], True, ch='♦')
+                    c.hp = c.maxhp = mi.data['hp']
+                    w.mons.append(c)
+        if wd:
+            n = len(keys)
+            what = wd.name if n == 1 or wd.kind in ('bounty', 'bandits') else f"{n} {plural(D.MONSTERS[keys[0]]['name'])}"
+            self.msg(f'{what} attack{"s" if n == 1 or wd.kind in ("bounty", "bandits") else ""}!', 'bad')
+        else:
+            self.msg('You are ambushed!', 'bad')
+        self.msg('Defeat them, or walk off the edge of the map to escape.')
+        self.compute_fov()
+
     def dungeon_at(self, x, y):
-        for k, v in self.dlocs.items():
-            if v == (x, y):
-                return k
-        return None
+        d = self.world.dungeon_at(x, y)
+        return d.id if d else None
 
     # ------------------------------------------------------------ player actions (return turn cost)
     def try_move(self, dx, dy):
@@ -330,15 +449,30 @@ class Game:
         nx, ny = p.x + dx, p.y + dy
         if not m.inb(nx, ny):
             if m.kind in ('town', 'wild'):
-                if m.kind == 'wild' and any(o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
+                if m.kind == 'wild' and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
                     self.msg('You cannot flee with an enemy next to you.', 'bad')
                     return 0
                 self.leave_to_over()
                 return 1
             return 0
+        if m.kind == 'over':
+            wd = WA.wanderer_at(self, nx, ny)
+            if wd:
+                if wd.hostile:
+                    self.start_encounter(wd)
+                    return 1
+                if wd.kind == 'escort':
+                    wd.x, wd.y = p.x, p.y
+                    p.x, p.y = nx, ny
+                    return self.over_step(moved_escort=True)
+                self.msg(wd.describe(self), 'info')
+                return 0
         mon = m.mon_at(nx, ny)
         if mon:
             if mon.is_npc:
+                if mon.role == 'escort' or (not mon.stay and mon.role in ('villager', 'guard', 'dog') and random.random() < .5):
+                    mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
+                    return 1
                 self.talk(mon)
                 return 0
             self.melee(mon)
@@ -355,47 +489,44 @@ class Game:
             elif t == WELL:
                 self.msg('An old well. The water is cool and clear.')
             return 0
+        ox, oy = p.x, p.y
         p.x, p.y = nx, ny
         if m.kind == 'over':
+            esc = MS.escort_wanderer(self)
+            if esc:
+                esc.x, esc.y = ox, oy
             return self.over_step()
-        if m.kind == 'town' and self.portal and (nx, ny) == m.portal_pos:
+        if m.kind == 'town' and self.portal and self.portal.get('sid') == m.sid and (nx, ny) == m.portal_pos:
             self.use_portal_back()
             return 1
         self.auto_pickup()
         self.describe_here()
         return 1
 
-    def over_step(self):
+    def over_step(self, moved_escort=False):
         m, p = self.map, self.player
         t = m.tile(p.x, p.y)
-        if t == TOWN:
-            self.msg('You stand at the gates of Thornfield. Press > or Enter to go in.', 'info')
+        s = self.world.settlement_at(p.x, p.y)
+        if s:
+            kind = 'city' if s.is_city else 'village'
+            self.msg(f'You stand at the gates of {s.name} ({kind}). Press > or Enter to go in.', 'info')
             return 10
         if t == ENTR:
-            k = self.dungeon_at(p.x, p.y)
-            self.msg(f"You stand at the entrance of {D.DUNGEONS[k]['name']}. Press > or Enter to descend.", 'info')
+            d = self.world.dungeon_at(p.x, p.y)
+            self.msg(f"You stand at the entrance of {d.name}. Press > or Enter to descend.", 'info')
             return 10
-        near = cheb(p.x, p.y, *self.town_pos)
-        if near > 3 and random.random() < .04:
-            self.over_pos = (p.x, p.y)
-            danger = max(1, near // 10 + max(1, p.lvl - 1))
-            self.cur = 'wild'
-            p.x = p.y = -5
-            w = W.gen_wild(self, t, danger)
-            self.maps['wild'] = w
-            p.x, p.y = w.entry
-            if w.mons:
-                first = w.mons[0]
-                n = len(w.mons)
-                if n > 1:
-                    who = f'foes led by {first.name}' if first.elite == 2 else plural(D.MONSTERS[first.k]['name'])
-                    self.msg(f'Ambush! {n} {who} close in.', 'bad')
-                else:
-                    self.msg(f"You run into {first.the().replace('the ', 'a ', 1)}.", 'bad')
-            self.msg('Walk off the edge of the map to continue your journey.')
-            self.compute_fov()
+        cost = D.TILES[t].cost
+        reg = self.world.region_at(p.x, p.y)
+        if t != ROAD and cheb(p.x, p.y, *self._home_xy()) > 4 and random.random() < .008 * cost / 10:
+            k = random.choice(D.BIOME_MONSTERS[reg.biome])
+            n = random.randint(1, 2) if D.MONSTERS[k]['hp'] >= 2 else random.randint(2, 3)
+            self.start_encounter(None, t, reg.danger, [k] * n)
             return 1
-        return 10
+        return cost
+
+    def _home_xy(self):
+        h = self.world.settlements[0]
+        return h.x, h.y
 
     def auto_pickup(self):
         m, p = self.map, self.player
@@ -418,6 +549,8 @@ class Game:
                     self.msg('Your bag is full.', 'bad')
                     continue
                 self.msg(f'You pick up {it.display_name()}.', it.rar if it.k == 'gear' else '')
+                if it.k == 'quest':
+                    MS.on_pickup(self, it)
             m.items.remove(it)
 
     def describe_here(self):
@@ -455,8 +588,9 @@ class Game:
             if d == 'up':
                 self.msg('You are already on the surface.')
                 return 0
-            if t == TOWN:
-                self.enter_town()
+            s = self.world.settlement_at(p.x, p.y)
+            if s:
+                self.enter_town(s.id)
                 return 1
             if t == ENTR:
                 self.enter_dungeon(self.dungeon_at(p.x, p.y), 1, 'up')
@@ -476,7 +610,7 @@ class Game:
             else:
                 self.enter_dungeon(m.did, m.depth - 1, 'down')
             return 1
-        self.msg('There are no stairs here.' if m.kind == 'dungeon' else 'Walk off the edge of the map to return to the vale.')
+        self.msg('There are no stairs here.' if m.kind == 'dungeon' else 'Walk off the edge of the map to leave.')
         return 0
 
     def town_portal(self):
@@ -490,14 +624,15 @@ class Game:
             self.msg('You are already in town.')
             return 0
         if m.kind == 'over':
-            self.msg('Just walk to Thornfield. Town Portal works in dungeons and the wilderness.')
+            self.msg('Town Portal only works in dungeons and battles. Walk to a town instead.')
             return 0
         if any(cheb(o.x, o.y, p.x, p.y) <= 1 for o in self.visible_hostiles()):
             self.msg('The portal will not open with an enemy at your side.', 'bad')
             return 0
         self.remove_one(it)
-        self.portal = dict(map=self.cur, x=p.x, y=p.y, over=self.over_pos)
-        self.enter_town(from_portal=True)
+        home = self.world.settlements[self.home]
+        self.portal = dict(map=self.cur, x=p.x, y=p.y, over=self.over_pos, sid=home.id)
+        self.enter_town(home.id, from_portal=True)
         self.flash(ring(p.x, p.y - 1, 1), (90, 176, 255), '0', .3)
         self.msg('A shimmering blue portal opens. Step into it to return.', 'info')
         return 1
@@ -599,20 +734,37 @@ class Game:
         self.msg(f"You buy a {D.POTIONS[t]['name'] if k == 'potion' else 'Scroll of Town Portal'}.", 'gold')
 
     def buy_gear(self, i):
-        if i >= len(self.shop):
+        shop = self.shops.get(self.home, [])
+        if i >= len(shop):
             return
-        it, p = self.shop[i], self.player
+        it, p = shop[i], self.player
         if p.gold < it.value():
             return
         if not self.add_to_inv(it):
             self.msg('Your bag is full.', 'bad')
             return
-        self.shop.pop(i)
+        shop.pop(i)
         p.gold -= it.value()
         self.msg(f'You buy {it.name}.', it.rar)
 
+    def buy_mount(self, key):
+        p = self.player
+        mt = D.MOUNTS[key]
+        if key in p.mounts:
+            self.msg(f"You already own a {mt['name'].lower()}.")
+            return
+        if key == 'cart' and 'mule' not in p.mounts:
+            self.msg('A cart needs a pack mule to pull it. Buy the mule first.', 'bad')
+            return
+        if p.gold < mt['price']:
+            self.msg('You cannot afford that.', 'bad')
+            return
+        p.gold -= mt['price']
+        p.mounts.append(key)
+        self.msg(f"You buy a {mt['name'].lower()}. Your cargo space is now {ECO.cargo_capacity(p)}.", 'gold')
+
     def sell(self, it):
-        if self.is_equipped(it):
+        if self.is_equipped(it) or it.k == 'quest':
             return
         v = max(1, it.value() // 4)
         name = it.display_name() if it.n == 1 else (D.POTIONS[it.t]['name'] if it.k == 'potion' else 'Scroll of Town Portal')
@@ -873,6 +1025,30 @@ class Game:
         if d['erratic'] and random.random() < .5:
             self.random_step(mon)
             return
+        esc = next((o for o in m.mons if o.role == 'escort'), None)
+        if esc and cheb(mon.x, mon.y, esc.x, esc.y) < dist:
+            if cheb(mon.x, mon.y, esc.x, esc.y) <= 1:
+                if random.random() < .7:
+                    dmg = random.randint(*mon.dmg)
+                    esc.hp -= dmg
+                    self.num(esc.x, esc.y, f'-{dmg}', C_HURT)
+                    if esc.hp <= 0:
+                        m.mons.remove(esc)
+                        self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} destroys your caravan!', 'bad')
+                        MS.on_escort_killed(self)
+                    elif esc.hp < esc.maxhp * .4 and random.random() < .3:
+                        self.msg('Your caravan is under heavy attack!', 'bad')
+            else:
+                best = None
+                for ddx, ddy in D8:
+                    nx, ny = mon.x + ddx, mon.y + ddy
+                    if m.inb(nx, ny) and D.TILES[m.tile(nx, ny)].walk and not self.occupied(m, nx, ny):
+                        dd = cheb(nx, ny, esc.x, esc.y)
+                        if best is None or dd < best[0]:
+                            best = (dd, nx, ny)
+                if best:
+                    mon.x, mon.y = best[1], best[2]
+            return
         if dist <= 1:
             self.mon_attack(mon, df)
             return
@@ -930,9 +1106,20 @@ class Game:
                 if p.poison[0] <= 0:
                     p.poison = None
                     self.msg('The poison wears off.', 'good')
+        WA.tick(self, cost)
+        if self.day != self.last_day:
+            for _ in range(self.day - self.last_day):
+                ECO.daily(self)
+                WA.daily(self)
+                MS.daily(self)
+            self.last_day = self.day
         self.compute_fov()
         if self.map.kind != 'over':
             self.monsters_act()
+        elif self.cur == 'over':
+            wd = WA.hostile_adjacent(self)
+            if wd:
+                self.start_encounter(wd)
         if self.dead:
             return
         if self.turn - self.last_save > 40 and self.request is None:
@@ -1186,63 +1373,78 @@ class Game:
         if n:
             self.msg(f'You rest for {n} turns.')
 
-    def travel_to(self, k):
-        if self.cur == 'town':
+    def travel_to(self, kind, ref):
+        """Walk to a settlement ('s', id) or dungeon ('d', id), preferring roads."""
+        if self.map.kind == 'town':
             self.leave_to_over()
         if self.cur != 'over':
-            self.msg('You can only travel across the vale.')
+            self.msg('You can only travel across the open land.')
             return
-        tgt = self.town_pos if k == 'town' else self.dlocs[k]
-        m, p = self.map, self.player
-        dist = W.bfs(m, tgt[0], tgt[1], lambda t: D.TILES[t].walk)
-        n = 0
-        while self.cur == 'over' and (p.x, p.y) != tuple(tgt) and n < 300 and not self.dead:
-            best, bd = None, dist[p.y * m.w + p.x]
-            for dx, dy in D8:
-                nx, ny = p.x + dx, p.y + dy
-                if m.inb(nx, ny):
-                    d = dist[ny * m.w + nx]
-                    if 0 <= d < bd:
-                        bd, best = d, (dx, dy)
-            if not best:
-                self.msg('You cannot find a way there.')
+        w = self.world
+        obj = w.settlements[ref] if kind == 's' else w.dungeons[ref]
+        tgt = (obj.x, obj.y)
+        p = self.player
+        path = WO.dijkstra_path(self.map, (p.x, p.y), tgt, lambda t: D.TILES[t].cost if D.TILES[t].walk else None)
+        if not path:
+            self.msg('You cannot find a way there.')
+            return
+        self.msg(f'You set out for {obj.name}.')
+        for x, y in path:
+            if self.dead or self.cur != 'over':
                 break
-            used = self.try_move(*best)
+            near = [wd for wd in w.wanderers if wd.hostile and wd.cooldown == 0 and self.visible(wd.x, wd.y)
+                    and cheb(wd.x, wd.y, p.x, p.y) <= 7]
+            if near:
+                self.msg(f'You spot {near[0].name[0].lower() + near[0].name[1:]} nearby and stop.', 'bad')
+                break
+            used = self.try_move(x - p.x, y - p.y)
             if not used:
                 break
             self.end_turn(used, True)
-            n += 1
+            if self.request and self.request[0] not in ('save',):
+                break
+        if self.cur == 'over' and (p.x, p.y) == tgt:
+            self.over_step()
 
-    def known_place(self, k):
-        if k == 'town':
-            return True
+    def known_settlement(self, s):
         om = self.maps['over']
-        x, y = self.dlocs[k]
-        return bool(om.seen[y * om.w + x])
+        return bool(om.seen[s.y * om.w + s.x])
+
+    def known_dungeon(self, d):
+        om = self.maps['over']
+        return bool(om.seen[d.y * om.w + d.x])
 
     # ------------------------------------------------------------ talking
     def talk(self, npc):
         f, p = self.flags, self.player
-        if npc.role == 'shop':
-            self.request = ('shop',)
+        here = self.here
+        role = npc.role
+        if role in ('shop', 'market', 'inn', 'stables'):
+            self.request = (role, here.id if here else 0)
             return
-        if npc.role == 'healer':
+        if role == 'healer':
             s = self.stats()
             if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison:
-                self.request = ('dialog', 'Sister Ilse', '"You look well, child. Come back when the world has had its way with you."')
+                self.request = ('dialog', npc.name, '"You look well, child. Come back when the world has had its way with you."')
                 return
             p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
             self.num(p.x, p.y, 'healed', C_HEAL, True)
-            self.request = ('dialog', 'Sister Ilse', '"Hold still." She lays her hands on your wounds. You are fully restored.')
+            self.request = ('dialog', npc.name, '"Hold still." She lays her hands on your wounds. You are fully restored.')
             return
-        if npc.role == 'elder':
+        if role == 'elder':
             if not f.get('met_elder'):
                 f['met_elder'] = True
                 text = (f'"Welcome, traveller. Thornfield lives in fear.\n\n'
                         f'To the {self.dir_to("rat")} lie the Rat Warrens, where a monstrous Rat King sends his brood to plunder our stores. '
                         f'To the {self.dir_to("mine")}, at the foot of the mountains, the exiled dwarf Grolm the Digger has seized the old mine.\n\n'
                         f'But the true evil is Morvenna the Undying. From her crypt to the {self.dir_to("crypt")} she raises the dead. '
-                        f'Destroy her and the curse on this vale will be broken. Start with the rats, grow stronger, and carry Town Portal scrolls."')
+                        f'Destroy her and the curse on this land will be broken.\n\n'
+                        f'Start with the rats, grow stronger. And if you need coin, the board at the inn always has work, '
+                        f'and the traders pay well for goods hauled between towns."')
+                om = self.maps['over']
+                for k in ('rat', 'mine', 'crypt'):
+                    d = self.world.dungeons[k]
+                    om.seen[d.y * om.w + d.x] = 1
             elif f.get('ratking') and not f.get('reward_rat'):
                 f['reward_rat'] = True
                 p.gold += 100
@@ -1258,18 +1460,42 @@ class Game:
                 text = '"Grolm defeated! The mine is ours again. Here, 250 gold and a treasure worthy of you. Only Morvenna remains."'
                 self.msg(f'You receive 250 gold and {it.name}.', 'rare')
             elif not f.get('ratking'):
-                text = f'"The Rat Warrens lie to the {self.dir_to("rat")}. Look for the red > on the map, or press T to travel."'
+                text = f'"The Rat Warrens lie to the {self.dir_to("rat")}. They are marked on your map (M)."'
             elif not f.get('grolm'):
                 text = f'"The Lost Mine lies to the {self.dir_to("mine")}. Grolm leaps at his enemies. Wear good armor."'
             else:
                 text = f'"Morvenna waits to the {self.dir_to("crypt")}. Do not fight her at range; her bolts will find you anyway."'
             self.request = ('dialog', 'Elder Berend', text)
             return
-        if npc.role == 'dog':
+        if role == 'dog':
             self.msg('The dog wags its tail and sniffs your boots.')
             return
-        rumors = D.RUMORS + [f'The crypt lies to the {self.dir_to("crypt")}. I never go there.']
-        self.msg(f'A villager says: "{random.choice(rumors)}"', 'info')
+        self.msg(f'{npc.name} says: "{self.rumor()}"', 'info')
+
+    def rumor(self):
+        w = self.world
+        r = random.random()
+        if r < .45:
+            s = random.choice(w.settlements)
+            g = random.choice(s.demand)
+            return f"They say {s.name} pays well for {D.GOODS[g]['name'].lower()}."
+        if r < .65:
+            s = random.choice(w.settlements)
+            g = random.choice(s.produce)
+            return f"{D.GOODS[g]['name']} is cheap in {s.name}, they make plenty of it there."
+        if r < .8:
+            ev = [s for s in w.settlements if s.event]
+            if ev:
+                s = random.choice(ev)
+                return D.EVENTS[s.event[0]]['text'].format(town=s.name)
+        if r < .9:
+            sd = [d for d in w.dungeons.values() if not d.main]
+            d = random.choice(sd)
+            om = self.maps['over']
+            om.seen[d.y * om.w + d.x] = 1
+            here = self.here or w.settlements[0]
+            return f'There is an old place called {d.name} to the {dir_name(d.x - here.x, d.y - here.y)}. I marked it on your map.'
+        return random.choice(D.RUMORS)
 
 
 # ---------------------------------------------------------------- saving

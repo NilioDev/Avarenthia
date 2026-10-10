@@ -79,132 +79,6 @@ def free_around(game, m, x, y, r):
     return out
 
 
-# ------------------------------------------------------------------ overworld
-def gen_over():
-    w, h = 80, 40
-    for _ in range(30):
-        m = GameMap('over', 'over', 'The Vale', w, h, GRASS)
-        m.radius = 9
-        n1, n2, m1, m2 = noise_grid(w, h, 9), noise_grid(w, h, 4), noise_grid(w, h, 11), noise_grid(w, h, 5)
-        H, Mo = [], []
-        for y in range(h):
-            for x in range(w):
-                e = max(abs(x / (w - 1) - .5), abs(y / (h - 1) - .5)) * 2
-                H.append(.65 * n1(x, y) + .35 * n2(x, y) + e ** 3 * .9)
-                Mo.append(.6 * m1(x, y) + .4 * m2(x, y))
-        sH, sM = sorted(H), sorted(Mo)
-        qh = lambda p: sH[int(p * (len(sH) - 1))]
-        qm = lambda p: sM[int(p * (len(sM) - 1))]
-        water, low, mount, forest, wet = qh(.1), qh(.22), qh(.8), qm(.62), qm(.45)
-        for i in range(w * h):
-            x, y, hv, mo = i % w, i // w, H[i], Mo[i]
-            if x in (0, w - 1) or y in (0, h - 1) or hv > mount:
-                t = MOUNTAIN
-            elif hv < water:
-                t = WATER
-            elif hv < low and mo > wet:
-                t = SWAMP
-            elif mo > forest:
-                t = FOREST
-            else:
-                t = GRASS
-            m.t[i] = t
-        best, bd = None, 1e9
-        for y in range(1, h - 1):
-            for x in range(1, w - 1):
-                if m.tile(x, y) == GRASS:
-                    d = math.hypot(x - w / 2, y - h / 2)
-                    if d < bd:
-                        bd, best = d, (x, y)
-        if not best:
-            continue
-        dist = bfs(m, best[0], best[1], lambda t: D.TILES[t].walk)
-        reach = [i for i in range(w * h) if dist[i] > 0]
-        if len(reach) < 700:
-            continue
-        reach.sort(key=lambda i: dist[i])
-        xy = lambda i: (i % w, i // w)
-        used = set()
-
-        def near_mount(i):
-            x, y = xy(i)
-            return any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == MOUNTAIN for dx, dy in D8)
-
-        def choose(lst, fb):
-            l2 = [i for i in lst if i not in used]
-            r = random.choice(l2) if l2 else fb
-            used.add(r)
-            return xy(r)
-
-        rat = choose([i for i in reach if 7 <= dist[i] <= 14], reach[int(len(reach) * .15)])
-        mc = [i for i in reach if 15 <= dist[i] <= 30 and near_mount(i)] or [i for i in reach if 15 <= dist[i] <= 30]
-        mine = choose(mc, reach[int(len(reach) * .5)])
-        far = [i for i in reach[int(len(reach) * .85):] if cheb(*xy(i), *mine) >= 8]
-        far_wet = [i for i in far if m.t[i] in (SWAMP, FOREST)]
-        crypt = choose(far_wet or far, reach[-1])
-        m.set(best[0], best[1], TOWN)
-        dlocs = {'rat': rat, 'mine': mine, 'crypt': crypt}
-        for k, (x, y) in dlocs.items():
-            m.set(x, y, ENTR)
-        return m, best, dlocs
-    raise RuntimeError('World generation failed')
-
-
-# ------------------------------------------------------------------ town
-def gen_town(game):
-    m = GameMap('town', 'town', 'Thornfield', 56, 22, GRASS)
-    m.radius = 40
-    for i in range(len(m.t)):
-        if random.random() < .04:
-            m.t[i] = TREE
-    for x in range(2, 54):
-        m.set(x, 10, PATH)
-    for y in range(6, 22):
-        m.set(28, y, PATH)
-
-    def house(x, y, w, h, dx, dy):
-        for yy in range(y - 1, y + h + 1):
-            for xx in range(x - 1, x + w + 1):
-                if m.inb(xx, yy) and m.tile(xx, yy) == TREE:
-                    m.set(xx, yy, GRASS)
-        for yy in range(y, y + h):
-            for xx in range(x, x + w):
-                edge = yy in (y, y + h - 1) or xx in (x, x + w - 1)
-                m.set(xx, yy, WALL if edge else FLOOR)
-        m.set(dx, dy, DOOR)
-        step = -1 if dy > 10 else 1
-        yy = dy + step
-        while yy != 10:
-            m.set(dx, yy, PATH)
-            yy += step
-
-    house(5, 2, 13, 6, 11, 7)
-    house(37, 2, 13, 6, 43, 7)
-    house(5, 13, 11, 6, 10, 13)
-    house(19, 13, 7, 5, 22, 13)
-    house(36, 13, 12, 6, 41, 13)
-    m.set(28, 5, WELL)
-    m.portal_pos = (31, 8)
-    for y in range(7, 10):
-        for x in range(30, 33):
-            if m.tile(x, y) == TREE:
-                m.set(x, y, GRASS)
-    m.mons.append(make_npc(game, 'Dorien the Merchant', 'shop', '#f2c44a', 11, 4, True))
-    m.mons.append(make_npc(game, 'Sister Ilse', 'healer', '#f4f0e6', 43, 4, True))
-    m.mons.append(make_npc(game, 'Elder Berend', 'elder', '#c08cf0', 10, 16, True))
-    for _ in range(4):
-        c = rand_free(game, m, lambda t: t in (GRASS, PATH))
-        if c:
-            m.mons.append(make_npc(game, 'A villager', 'villager', '#9aa0aa', c[0], c[1], False))
-    c = rand_free(game, m, lambda t: t == GRASS)
-    if c:
-        m.mons.append(make_npc(game, 'The village dog', 'dog', '#c8a070', c[0], c[1], False, ch='d'))
-    m.entry = (28, 21)
-    for i in range(len(m.seen)):
-        m.seen[i] = 1
-    return m
-
-
 # ------------------------------------------------------------------ dungeons
 def gen_rooms(m):
     rooms = []
@@ -342,12 +216,12 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
 
 
 def gen_dungeon(game, did, depth):
-    d = D.DUNGEONS[did]
-    lvl = d['base'] + depth
-    last = depth == d['depth']
-    m = GameMap(f'{did}:{depth}', 'dungeon', d['name'], 70, 28, ROCK if d['style'] == 'cave' else WALL)
-    m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d['wall']
-    if d['style'] == 'cave':
+    d = game.world.dungeons[did]
+    lvl = d.base + depth
+    last = depth == d.depth
+    m = GameMap(f'{did}:{depth}', 'dungeon', d.name, 70, 28, ROCK if d.style == 'cave' else WALL)
+    m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
+    if d.style == 'cave':
         gen_cave(m)
         floors = [i for i, t in enumerate(m.t) if t == FLOOR]
         s = random.choice(floors)
@@ -360,7 +234,10 @@ def gen_dungeon(game, did, depth):
         up, far = centers[0], centers[-1]
     m.set(up[0], up[1], UP)
     if last:
-        m.mons.append(make_monster(game, d['boss'], far[0], far[1], lvl))
+        if d.boss:
+            m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
+        else:
+            spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
     else:
         m.set(far[0], far[1], DOWN)
     npacks = 4 + depth + random.randint(0, 1)
@@ -372,7 +249,7 @@ def gen_dungeon(game, did, depth):
         el = None
         if i == npacks - 1 and depth >= 2 and not elites:
             el = 2 if random.random() < .5 else 1
-        if spawn_pack(game, m, lvl, d['tag'], c, el, False):
+        if spawn_pack(game, m, lvl, d.tag, c, el, False):
             elites += 1
     for _ in range(1 + random.randint(0, 2)):
         c = rand_free(game, m, lambda t: t == FLOOR)
@@ -395,36 +272,59 @@ def gen_dungeon(game, did, depth):
     return m
 
 
-def gen_wild(game, terrain, danger):
-    m = GameMap('wild', 'wild', 'Wilderness', 48, 20, SWAMP if terrain == SWAMP else GRASS)
-    m.radius, m.level = 11, danger
-    dens = .24 if terrain == FOREST else .06
+def gen_wild(game, terrain, lvl, keys, elite=0, leader=None):
+    """A small battle map for an overworld encounter. keys lists the monster type of each enemy."""
+    base = {SWAMP: SWAMP, D.SAND: D.SAND}.get(terrain, GRASS)
+    m = GameMap('wild', 'wild', 'Wilderness', 48, 20, base)
+    m.radius, m.level = 11, lvl
     for i in range(len(m.t)):
+        r = random.random()
         if terrain == SWAMP:
-            if random.random() < .12:
+            if r < .12:
                 m.t[i] = WATER
-            elif random.random() < .05:
+            elif r < .17:
                 m.t[i] = TREE
-        elif random.random() < dens:
+        elif terrain == FOREST:
+            if r < .24:
+                m.t[i] = TREE
+        elif terrain == D.HILLS:
+            if r < .1:
+                m.t[i] = ROCK
+            elif r < .13:
+                m.t[i] = TREE
+        elif terrain == D.SAND:
+            if r < .06:
+                m.t[i] = WATER
+        elif r < .05:
             m.t[i] = TREE
     cx, cy = 24, 10
     for y in range(cy - 2, cy + 3):
         for x in range(cx - 2, cx + 3):
-            m.set(x, y, SWAMP if terrain == SWAMP else GRASS)
+            m.set(x, y, base)
     c = rand_free(game, m, lambda t: D.TILES[t].walk, (cx, cy, 7))
-    if c:
-        spawn_pack(game, m, danger, 'wild', c, None, True)
+    if c and keys:
+        pid = game.new_id()
+        spots = [c] + free_around(game, m, c[0], c[1], 3)
+        for i, k in enumerate(keys):
+            if i >= len(spots):
+                break
+            el = 2 if (elite == 2 and i == 0) else (1 if elite == 1 else 0)
+            mon = make_monster(game, k, spots[i][0], spots[i][1], lvl + (1 if random.random() < .3 else 0), el)
+            if el == 2 and leader:
+                mon.name = leader
+            mon.pack, mon.awake = pid, True
+            m.mons.append(mon)
     if random.random() < .4:
         c2 = rand_free(game, m, lambda t: D.TILES[t].walk)
         if c2:
-            it = Item(game.new_id(), 'gold', 'gold', random.randint(danger * 4, danger * 10 + 10))
+            it = Item(game.new_id(), 'gold', 'gold', random.randint(lvl * 4, lvl * 10 + 10))
             it.x, it.y = c2
             m.items.append(it)
     m.entry = (cx, cy)
     return m
 
 
-def gen_shop(game):
-    lvl = max(1, game.player.lvl)
+def gen_shop(game, city=False):
+    lvl = max(1, game.player.lvl) + (1 if city else 0)
     ks = [k for k, b in D.BASES.items() if b['lvl'] <= lvl + 2]
     return [make_gear(game, random.choice(ks), 'magic' if random.random() < .35 else 'normal', lvl) for _ in range(8)]

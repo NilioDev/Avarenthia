@@ -1,7 +1,19 @@
 # Cursed Vale
 
-Een ASCII action-roguelike in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
-Een ADOM-achtige wereld met Diablo-invloeden: klassen met skills, elite monsters en loot in vier zeldzaamheden.
+Een ASCII open-world RPG in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
+Een ADOM-achtige wereld met Diablo-gevechten en Privateer-achtige handel: klassen met skills, elite monsters,
+loot in vier zeldzaamheden, dertien dorpen en steden met een levende economie, banen op de prikborden van de herbergen,
+en karavanen, patrouilles en bandieten die zichtbaar over de kaart trekken.
+
+## Handel en banen
+
+- Elke plaats maakt bepaalde goederen (`+`, goedkoop) en wil andere hebben (`!`, duur). Koop bij de handelaar en verkoop elders.
+  Prijzen reageren op wat jij en de karavanen kopen en verkopen, en herstellen langzaam.
+- Nieuws (hongersnood, feest, mijnramp, brand, oorlog, ziekte) verschuift prijzen een paar dagen.
+- Je draagt 30 eenheden vracht. Een muilezel (+60) en een kar (+160) koop je bij de stalmeester.
+- Op het prikbord van de herberg vind je koeriersklussen, vrachtritten, premiejachten, escortes en kerkertochten.
+  Reputatie in een plaats geeft een bonus op beloningen en betere prijzen.
+- Bandieten overvallen karavanen; patrouilles uit de steden jagen bandieten weg.
 
 ## Installeren en starten
 
@@ -46,7 +58,9 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `Q` / `W` | health- of manadrankje |
 | `P` | Town Portal |
 | `X` | automatisch verkennen |
-| `T` | reizen door de vallei |
+| `T` | reizen naar een bekende plaats of kerker |
+| `M` | kaart van het rijk |
+| `E` of Tab | dagboek: banen, vracht en nieuws |
 | `>` `<` of Enter | trap nemen, dorp of kerker in |
 | `G` | oppakken |
 | `I` / `D` / `C` | tas, iets laten vallen, karakterscherm |

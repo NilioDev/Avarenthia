@@ -4,7 +4,9 @@ import random
 import time
 
 from . import data as D
+from . import economy as ECO
 from . import engine as E
+from . import missions as MS
 from .canvas import scale, mix, wrap_text
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
@@ -116,6 +118,12 @@ class App:
             E.save_game(g)
         elif req[0] == 'shop':
             self.push(ShopScreen(self))
+        elif req[0] == 'market':
+            self.push(MarketScreen(self, req[1]))
+        elif req[0] == 'inn':
+            self.push(BoardScreen(self, req[1]))
+        elif req[0] == 'stables':
+            self.push(StablesScreen(self))
         elif req[0] == 'dialog':
             self.push(DialogScreen(self, req[1], req[2]))
         elif req[0] == 'win':
@@ -308,7 +316,7 @@ class GameScreen(Screen):
         for it in m.items:
             items[(it.x, it.y)] = it
         torch = m.kind == 'dungeon'
-        portal = m.portal_pos if (m.kind == 'town' and g.portal) else None
+        portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
         for vy in range(MAP_H):
             my = vy + oy - sy
@@ -326,7 +334,7 @@ class GameScreen(Screen):
                 td = D.TILES[tid]
                 ch = td.ch
                 fg = m.wall_fg if (tid == WALL and m.wall_fg) else td.fg
-                bg = BG
+                bg = td.bg or BG
                 if portal and (mx, my) == portal:
                     ch, fg = '0', (90, 176, 255)
                 if v:
@@ -354,6 +362,16 @@ class GameScreen(Screen):
                 else:
                     fg = scale(fg, .42 if m.kind == 'over' else .3)
                 cv.put(vx, vy, ch, fg, bg)
+        if m.kind == 'over':
+            self.draw_overworld_extras(cv, ox, oy)
+        for sx_, sy_, text in getattr(m, 'signs', ()):
+            for j, ch in enumerate(text):
+                mx_, my_ = sx_ + j, sy_
+                if (mx_, my_) == (p.x, p.y) or (mx_, my_) in mons or not m.inb(mx_, my_):
+                    continue
+                vx, vy = mx_ - ox, my_ - oy
+                if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
+                    cv.put(vx, vy, ch, (230, 196, 120), (46, 34, 20))
         # effects
         for kind, t0, ev in app.effects:
             age = t - t0
@@ -372,6 +390,42 @@ class GameScreen(Screen):
                     for j, chh in enumerate(txt):
                         if 0 <= vx + j < MAP_W:
                             cv.put(vx + j, vy, chh, c)
+
+    def draw_overworld_extras(self, cv, ox, oy):
+        g = self.game
+        p = g.player
+        w = g.world
+        # settlement names
+        for s in w.settlements:
+            if not g.known_settlement(s):
+                continue
+            vx, vy = s.x - ox, s.y - oy - 1
+            label = s.name
+            lx = vx - len(label) // 2
+            if 0 <= vy < MAP_H and -len(label) < lx < MAP_W and not (p.y == s.y - 1 and lx <= p.x - ox < lx + len(label)):
+                for j, ch in enumerate(label):
+                    if 0 <= lx + j < MAP_W:
+                        cv.put(lx + j, vy, ch, (196, 160, 80))
+        # job markers
+        for mi in MS.active(g):
+            (tx, ty), _ = MS.target_pos(g, mi)
+            vx, vy = tx - ox, ty - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
+                if mi.kind == 'bounty' and mi.state == 'active' and not g.visible(tx, ty):
+                    cv.put(vx, vy, 'X', (255, 214, 92), (70, 50, 10))
+                else:
+                    self._tint(cv, vx, vy, (90, 66, 14))
+        # travellers
+        for wd in w.wanderers:
+            if not g.visible(wd.x, wd.y):
+                continue
+            vx, vy = wd.x - ox, wd.y - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (wd.x, wd.y) != (p.x, p.y):
+                bg = (70, 20, 16) if wd.hostile else (20, 30, 50) if wd.kind == 'patrol' else BG
+                cv.put(vx, vy, wd.ch, wd.fg, bg)
+
+    def _tint(self, cv, vx, vy, bg):
+        cv.put_bg(vx, vy, bg)
 
     def _put_map(self, cv, x, y, ch, col):
         ox, oy = self.origin
@@ -402,7 +456,8 @@ class GameScreen(Screen):
         s = g.stats()
         cv.fill(MAP_W + 1, 0, W - MAP_W - 1, H, ' ', FG, PANEL)
         x = PX
-        cv.text(x, 0, p.name, GOLD, PANEL, maxw=PW)
+        cv.text(x, 0, p.name, GOLD, PANEL, maxw=PW - 8)
+        cv.text_right(x + PW - 1, 0, f'Day {g.day}', DIM, PANEL)
         cv.text(x, 1, f"{D.CLASSES[p.cls]['name']} · level {p.lvl}", DIM, PANEL)
         # orbs
         self.orb(cv, x, 2, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
@@ -443,7 +498,9 @@ class GameScreen(Screen):
         cv.text(x + 14, 17, 'W', GOLD, PANEL)
         cv.text(x + 16, 17, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
         cv.text(x, 18, 'P', GOLD, PANEL)
-        cv.text(x + 2, 18, f'Town Portal x{tp}', FG if tp else DIM, PANEL)
+        cv.text(x + 2, 18, f'Portal x{tp}', FG if tp else DIM, PANEL)
+        cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
+        cv.text_right(x + PW - 1, 18, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
         # numbers
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"), ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])),
                 ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold))]
@@ -458,7 +515,7 @@ class GameScreen(Screen):
                 parts.append(f'{p.skill_pts} skill')
             cv.text(x, 25, f"C: {', '.join(parts)} points", GOLD, PANEL, maxw=PW)
         self.draw_target(cv, x, 26)
-        cv.text(x, H - 1, '? help · i bag · c hero', scale(DIM, .8), PANEL, maxw=PW)
+        cv.text(x, H - 1, '? help · m map · e jobs', scale(DIM, .8), PANEL, maxw=PW)
 
     def orb(self, cv, x, y, frac, col, alt=None):
         frac = max(0.0, min(1.0, frac))
@@ -487,6 +544,25 @@ class GameScreen(Screen):
         hv = self.app.hover
         if hv and hasattr(self, 'origin'):
             mx, my = hv[0] + self.origin[0], hv[1] + self.origin[1]
+            if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and m.kind == 'over' and m.seen[my * m.w + mx]:
+                from .wanderers import wanderer_at
+                wd = wanderer_at(g, mx, my) if g.visible(mx, my) else None
+                st = g.world.settlement_at(mx, my)
+                dg = g.world.dungeon_at(mx, my)
+                if wd:
+                    cv.text(x, y, wd.name, wd.fg, PANEL, maxw=PW)
+                    cv.wrap(x, y + 1, PW, wd.describe(g), DIM, PANEL, 2)
+                elif st:
+                    cv.text(x, y, f"{st.name} ({'city' if st.is_city else 'village'})", GOLD, PANEL, maxw=PW)
+                    cv.text(x, y + 1, 'Makes: ' + ', '.join(D.GOODS[k]['name'] for k in st.produce), DIM, PANEL, maxw=PW)
+                    cv.text(x, y + 2, 'Wants: ' + ', '.join(D.GOODS[k]['name'] for k in st.demand), DIM, PANEL, maxw=PW)
+                elif dg:
+                    cv.text(x, y, dg.name, (232, 96, 62), PANEL, maxw=PW)
+                    cv.text(x, y + 1, f'{dg.depth} levels, monster level {dg.base + 1}+', DIM, PANEL, maxw=PW)
+                else:
+                    cv.text(x, y, D.TILES[m.tile(mx, my)].name.capitalize(), DIM, PANEL, maxw=PW)
+                    cv.text(x, y + 1, g.world.region_at(mx, my).name, DIM, PANEL, maxw=PW)
+                return
             if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
                 o = m.mon_at(mx, my)
                 if o:
@@ -571,7 +647,11 @@ class GameScreen(Screen):
                 app.push(TravelScreen(app))
             else:
                 g.log_mark = len(g.log)
-                g.msg('You can only travel from the vale or from town.')
+                g.msg('You can only travel from the open land or from a town.')
+        elif tok == 'm':
+            app.push(WorldMapScreen(app))
+        elif tok in ('e', 'tab'):
+            app.push(JournalScreen(app))
         elif tok == 'i':
             app.push(InventoryScreen(app))
         elif tok == 'd':
@@ -868,7 +948,7 @@ class ShopScreen(Modal):
         g = self.game
         from .entities import Item
         rows = [Item(0, k, t) for k, t in self.SUPPLIES]
-        return rows + list(g.shop)
+        return rows + list(g.shops.get(g.home, []))
 
     def sell_rows(self):
         return self.game.backpack()
@@ -941,17 +1021,40 @@ class TravelScreen(Modal):
 
     def places(self):
         g = self.game
-        return [('town', 'Thornfield')] + [(k, D.DUNGEONS[k]['name']) for k in D.DUNGEON_ORDER]
+        p = g.player
+        here = g.here
+        ox, oy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
+        out = []
+        for st in g.world.settlements:
+            if g.known_settlement(st) and not (here and here.id == st.id):
+                out.append(('s', st.id, st.name, 'city' if st.is_city else 'village', st.x, st.y))
+        for d in g.world.dungeons.values():
+            if g.known_dungeon(d):
+                out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
+        out.sort(key=lambda r: cheb(r[4], r[5], ox, oy))
+        self.origin = (ox, oy)
+        return out[:24]
 
     def render(self, cv):
         g = self.game
-        x, y = self.box(cv, 56, 12)
-        cv.text(x + 2, y + 1, 'Walk to a known place. Ambushes can interrupt you.', DIM, PANEL)
-        for i, (k, n) in enumerate(self.places()):
-            ok = g.known_place(k)
-            cv.text(x + 2, y + 3 + i, LETTERS[i], GOLD if ok else DIM, PANEL)
-            cv.text(x + 4, y + 3 + i, n + ('' if ok else '  (not yet discovered)'), FG if ok else DIM, PANEL)
-        cv.text_center(W // 2, y + 11, ' letter: go · Esc: cancel ', DIM, PANEL)
+        pl = self.places()
+        x, y = self.box(cv, 76, min(30, len(pl) + 6))
+        cv.text(x + 2, y + 1, 'Walk to a known place, along roads where possible. Danger nearby stops you.', DIM, PANEL)
+        targets = {}
+        for mi in MS.active(g):
+            pos, _ = MS.target_pos(g, mi)
+            targets[tuple(pos)] = mi.title
+        ox, oy = self.origin
+        for i, (k, ref, name, kind, px, py) in enumerate(pl):
+            yy = y + 3 + i
+            cv.text(x + 2, yy, LETTERS[i], GOLD, PANEL)
+            cv.text(x + 4, yy, name, FG, PANEL)
+            cv.text(x + 25, yy, kind, DIM, PANEL)
+            d = cheb(px, py, ox, oy)
+            cv.text(x + 34, yy, f'{d:>3} {E.dir_name(px - ox, py - oy) if d else "here"}', DIM, PANEL)
+            if (px, py) in targets:
+                cv.text(x + 50, yy, '► ' + targets[(px, py)], GOLD, PANEL, maxw=24)
+        cv.text_center(W // 2, y + min(30, len(pl) + 6) - 1, ' letter: go · Esc: cancel ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         g = self.game
@@ -960,11 +1063,10 @@ class TravelScreen(Modal):
             return
         pl = self.places()
         if len(tok) == 1 and tok in LETTERS[:len(pl)]:
-            k = pl[LETTERS.index(tok)][0]
-            if g.known_place(k):
-                self.app.pop()
-                g.log_mark = len(g.log)
-                g.travel_to(k)
+            k, ref = pl[LETTERS.index(tok)][:2]
+            self.app.pop()
+            g.log_mark = len(g.log)
+            g.travel_to(k, ref)
 
 
 class DialogScreen(Modal):
@@ -1009,12 +1111,14 @@ class HelpScreen(Modal):
         ('Q   W', 'Drink a health or mana potion'),
         ('P', 'Town Portal to Thornfield. Step into the blue 0 to go back.'),
         ('X', 'Auto-explore until enemies appear'),
-        ('T', 'Travel across the vale to a known place'),
+        ('T', 'Travel to a known town or dungeon'),
+        ('M   E', 'Map of the realm, journal with jobs, cargo and news'),
         ('>  <  Enter', 'Use stairs, enter town or a dungeon'),
         ('g  ,', 'Pick up items. Gold, orbs, potions and magic items are automatic.'),
         ('I   D   C', 'Inventory, drop, character sheet'),
         ('R   5   .', 'Rest until healed, wait one turn'),
         ('mouse', 'Hover to inspect, click to step toward a spot'),
+        ('In towns', 'Talk to the trader to trade, the innkeeper for jobs, the stablemaster for a mule'),
         ('Esc', 'Save and quit'),
     ]
 
@@ -1025,7 +1129,7 @@ class HelpScreen(Modal):
             cv.text(x + 32, y + 2 + i, d, FG, PANEL, maxw=70)
         yy = y + 3 + len(self.KEYS)
         cv.text(x + 3, yy, 'MAP', DIM, PANEL)
-        legend = [('#', (242, 196, 74), 'Thornfield'), ('>', (232, 96, 62), 'dungeon entrance'),
+        legend = [('⌂ ■', (242, 196, 74), 'village, city'), ('>', (232, 96, 62), 'dungeon entrance'),
                   ('g', D.CHAMPION_FG, 'champion (blue)'), ('g', D.UNIQUE_FG, 'unique monster (gold)'),
                   ('*', (255, 74, 74), 'health orb'), ('$', (242, 196, 67), 'gold'),
                   (')', FG, 'weapon'), ('[ ]', FG, 'armor, helm'), ('= "', FG, 'ring, amulet'), ('!', (224, 74, 60), 'potion')]
@@ -1089,3 +1193,287 @@ class WinScreen(Modal):
             E.save_game(self.game)
             self.app.game = None
             self.app.screens = [NameScreen(self.app)]
+
+
+# ====================================================================== trade and jobs
+def _stock_word(s, g):
+    st = s.market[g][0]
+    return 'none' if st < 1 else 'scarce' if st < 12 else 'some' if st < 45 else 'plenty'
+
+
+class MarketScreen(Modal):
+    BOX_W, BOX_H = 104, 26
+
+    def __init__(self, app, sid):
+        super().__init__(app)
+        self.sid = sid
+        self.sel = 0
+        ECO.record_prices(self.game, self.settlement)
+
+    @property
+    def settlement(self):
+        return self.game.world.settlements[self.sid]
+
+    def render(self, cv):
+        g = self.game
+        s = self.settlement
+        p = g.player
+        x, y = self.box(cv, self.BOX_W, self.BOX_H, f'{s.name} market')
+        cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
+        cv.text(x + 2, y + 1, f'Gold {p.gold}', GOLD, PANEL)
+        cv.text(x + 16, y + 1, f'Cargo {used}/{cap}', BAD if used >= cap else FG, PANEL)
+        cv.text(x + 32, y + 1, f'Reputation here {s.rep}', DIM, PANEL)
+        if s.event:
+            cv.text(x + 56, y + 1, D.EVENTS[s.event[0]]['text'].format(town=s.name), INFO, PANEL, maxw=46)
+        hdr = y + 3
+        cols = [(4, 'Good'), (22, 'Buy'), (29, 'Sell'), (36, 'Stock'), (45, 'Yours'), (53, 'Paid'), (60, 'Best known sale elsewhere')]
+        for cx, t in cols:
+            cv.text(x + cx, hdr, t, DIM, PANEL)
+        for i, gk in enumerate(D.GOOD_ORDER):
+            yy = hdr + 1 + i
+            sel = i == self.sel
+            bg = (52, 40, 28) if sel else PANEL
+            cv.fill(x + 2, yy, self.BOX_W - 4, 1, ' ', FG, bg)
+            mark = '+' if gk in s.produce else '!' if gk in s.demand else ' '
+            cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark == '!' else DIM, bg)
+            cv.text(x + 4, yy, D.GOODS[gk]['name'], FG, bg)
+            cv.text(x + 22, yy, str(ECO.buy_price(s, gk)), FG, bg)
+            cv.text(x + 29, yy, str(ECO.sell_price(s, gk)), FG, bg)
+            sw = _stock_word(s, gk)
+            cv.text(x + 36, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
+            have = p.cargo.get(gk, 0)
+            cv.text(x + 45, yy, str(have) if have else '-', GOLD if have else DIM, bg)
+            if have and gk in p.cost_basis:
+                cv.text(x + 53, yy, f'{p.cost_basis[gk]:.0f}', DIM, bg)
+            best = ECO.best_known_sale(g, gk, s.id)
+            if best:
+                v, bsid, day = best
+                age = g.day - day
+                col = GOOD if v > ECO.buy_price(s, gk) else DIM
+                cv.text(x + 60, yy, f"{v} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
+        cv.text(x + 2, y + self.BOX_H - 3, '+ made here (cheap)   ! wanted here (sells high)   weight: ' +
+                f"{D.GOODS[D.GOOD_ORDER[self.sel]]['name']} {D.GOODS[D.GOOD_ORDER[self.sel]]['w']} per unit", DIM, PANEL)
+        cv.text_center(W // 2, y + self.BOX_H - 1, ' ↑↓ select · b/s buy or sell 1 · B/S buy or sell 10 · A sell all · Esc leave ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        s = self.settlement
+        gk = D.GOOD_ORDER[self.sel]
+        if tok == 'esc':
+            ECO.record_prices(g, s)
+            self.app.pop()
+            return
+        if tok in ('up', 'np8', 'k'):
+            self.sel = (self.sel - 1) % len(D.GOOD_ORDER)
+        elif tok in ('down', 'np2', 'j'):
+            self.sel = (self.sel + 1) % len(D.GOOD_ORDER)
+        elif tok in ('b', 'B', 's', 'S', 'A'):
+            g.log_mark = len(g.log)
+            if tok in ('b', 'B'):
+                ECO.buy(g, s, gk, 10 if tok == 'B' or shift else 1)
+            else:
+                n = g.player.cargo.get(gk, 0) if tok == 'A' else 10 if (tok == 'S' or shift) else 1
+                if n:
+                    ECO.sell(g, s, gk, n)
+
+
+class BoardScreen(Modal):
+    BOX_W, BOX_H = 100, 26
+
+    def __init__(self, app, sid):
+        super().__init__(app)
+        self.sid = sid
+        self.sel = 0
+        MS.refresh_board(self.game, self.settlement)
+
+    @property
+    def settlement(self):
+        return self.game.world.settlements[self.sid]
+
+    def render(self, cv):
+        g = self.game
+        s = self.settlement
+        x, y = self.box(cv, self.BOX_W, self.BOX_H, f'Job board · {s.name}')
+        cv.text(x + 2, y + 1, f'Reputation here {s.rep} (better rewards and prices) · {len(MS.active(g))}/{MS.MAX_ACTIVE} jobs taken', DIM, PANEL)
+        offers = s.board
+        self.sel = max(0, min(self.sel, len(offers) - 1))
+        if not offers:
+            cv.text(x + 4, y + 3, 'No work today. Come back in a few days.', DIM, PANEL)
+        for i, mi in enumerate(offers):
+            yy = y + 3 + i
+            sel = i == self.sel
+            bg = (52, 40, 28) if sel else PANEL
+            cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
+            cv.text(x + 2, yy, LETTERS[i], GOLD, bg)
+            cv.text(x + 4, yy, mi.title, FG, bg, maxw=42)
+            cv.text_right(x + 55, yy, f'{mi.reward}g', GOLD, bg)
+        for yy in range(y + 1, y + self.BOX_H - 1):
+            cv.put(x + 58, yy, '│', LINE, PANEL)
+        if offers:
+            mi = offers[self.sel]
+            cv.text(x + 60, y + 3, mi.title, GOLD, PANEL, maxw=38)
+            n = cv.wrap(x + 60, y + 5, 38, mi.desc, FG, PANEL, 10)
+            yy = y + 6 + n
+            cv.text(x + 60, yy, f'Reward: {mi.reward} gold', GOLD, PANEL)
+            if s.rep:
+                cv.text(x + 60, yy + 1, f'+{round(mi.reward * min(s.rep, 100) / 200)} reputation bonus', GOOD, PANEL)
+            if mi.deadline:
+                cv.text(x + 60, yy + 2, f'Deadline: day {mi.deadline} (today is {g.day})', DIM, PANEL)
+            kinds = {'courier': 'Courier', 'freight': 'Freight', 'bounty': 'Bounty hunt', 'escort': 'Escort', 'fetch': 'Dungeon delve'}
+            cv.text(x + 60, yy + 3, kinds[mi.kind], INFO, PANEL)
+        cv.text_center(W // 2, y + self.BOX_H - 1, ' letter or ↑↓ select · Enter accept · Esc leave ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        s = self.settlement
+        if tok == 'esc':
+            self.app.pop()
+        elif tok in ('up', 'np8'):
+            self.sel = max(0, self.sel - 1)
+        elif tok in ('down', 'np2'):
+            self.sel = min(len(s.board) - 1, self.sel + 1)
+        elif tok in ('enter', 'np_enter') and s.board:
+            g.log_mark = len(g.log)
+            MS.accept(g, s, s.board[self.sel])
+        elif len(tok) == 1 and tok in LETTERS and LETTERS.index(tok) < len(s.board):
+            i = LETTERS.index(tok)
+            if i == self.sel:
+                g.log_mark = len(g.log)
+                MS.accept(g, s, s.board[i])
+            self.sel = i
+
+
+class JournalScreen(Modal):
+    def render(self, cv):
+        g = self.game
+        p = g.player
+        x, y = self.box(cv, 100, 28, 'Journal')
+        here = g.here
+        ox, oy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
+        cv.text(x + 2, y + 1, 'ACTIVE JOBS', DIM, PANEL)
+        jobs = MS.active(g)
+        yy = y + 2
+        if not jobs:
+            cv.text(x + 4, yy, 'None. Visit the inn of any town to find work.', DIM, PANEL)
+            yy += 1
+        for mi in jobs:
+            (tx, ty), where = MS.target_pos(g, mi)
+            d = cheb(tx, ty, ox, oy)
+            status = 'return for reward' if mi.state == 'turnin' else 'in progress'
+            cv.text(x + 2, yy, '•', GOLD, PANEL)
+            cv.text(x + 4, yy, mi.title, FG, PANEL, maxw=44)
+            cv.text(x + 50, yy, f'{where}: {d} {E.dir_name(tx - ox, ty - oy) if d else "here"}', INFO, PANEL, maxw=30)
+            cv.text_right(x + 97, yy, f'{mi.reward}g', GOLD, PANEL)
+            extra = status
+            if mi.deadline and mi.state == 'active':
+                left = mi.deadline - g.day
+                extra += f' · {left} day{"s" if left != 1 else ""} left' if left >= 0 else ' · overdue'
+            if mi.kind == 'escort':
+                extra += f" · caravan health {mi.data['hp']}"
+            cv.text(x + 4, yy + 1, extra, DIM, PANEL)
+            yy += 2
+        yy += 1
+        cv.text(x + 2, yy, 'CARGO', DIM, PANEL)
+        yy += 1
+        line = ', '.join(f"{q} {D.GOODS[k]['name']}" for k, q in p.cargo.items()) or 'empty'
+        n = cv.wrap(x + 4, yy, 92, line + (f" · job cargo: {', '.join(pc['name'] for pc in p.parcels)}" if p.parcels else ''), FG, PANEL, 2)
+        yy += n
+        mounts = ', '.join(D.MOUNTS[k]['name'] for k in p.mounts) or 'none'
+        cv.text(x + 4, yy, f'Capacity {ECO.cargo_capacity(p)} · animals: {mounts}', DIM, PANEL)
+        yy += 2
+        cv.text(x + 2, yy, 'NEWS', DIM, PANEL)
+        yy += 1
+        evs = [st for st in g.world.settlements if st.event]
+        if not evs:
+            cv.text(x + 4, yy, 'All quiet across the land.', DIM, PANEL)
+        for st in evs[:6]:
+            if yy >= y + 26:
+                break
+            cv.text(x + 4, yy, D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)', FG, PANEL, maxw=92)
+            yy += 1
+        cv.text_center(W // 2, y + 27, ' Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('esc', 'e', 'tab', 'enter'):
+            self.app.pop()
+
+
+class WorldMapScreen(Modal):
+    """The whole overworld, each character covering 2x4 cells."""
+    PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
+
+    def render(self, cv):
+        g = self.game
+        om = g.maps['over']
+        w = g.world
+        x, y = self.box(cv, 84, 28, 'Map of the realm')
+        bx, by = x + 2, y + 2
+        p = g.player
+        here = g.here
+        px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
+        for cy in range(om.h // 4 + 1):
+            for cx in range(om.w // 2):
+                best, bt = 0, None
+                for yy in range(cy * 4, min(om.h, cy * 4 + 4)):
+                    for xx in range(cx * 2, cx * 2 + 2):
+                        i = yy * om.w + xx
+                        if not om.seen[i]:
+                            continue
+                        t = om.t[i]
+                        pr = self.PRIORITY.get(t, 0)
+                        if pr > best:
+                            best, bt = pr, t
+                if bt is None:
+                    continue
+                td = D.TILES[bt]
+                cv.put(bx + cx, by + cy, td.ch, td.fg, td.bg or PANEL)
+        taken = set()
+        for st in w.settlements:
+            taken.add((bx + st.x // 2, by + st.y // 4))
+        for st in sorted(w.settlements, key=lambda q: not q.is_city):
+            if not g.known_settlement(st):
+                continue
+            lx, ly = bx + st.x // 2 + 1, by + st.y // 4
+            name = st.name
+            if lx + len(name) > x + 83:
+                lx = bx + st.x // 2 - len(name)
+            cells = {(lx + j, ly) for j in range(len(name) + 1)}
+            if lx < x + 1 or cells & taken:
+                continue
+            taken |= cells
+            cv.text(lx, ly, name, (230, 196, 120) if st.is_city else (176, 146, 80), PANEL)
+        for mi in MS.active(g):
+            (tx, ty), _ = MS.target_pos(g, mi)
+            cv.put_bg(bx + tx // 2, by + ty // 4, (110, 80, 16))
+        cv.put(bx + px // 2, by + py // 4, '@', (255, 246, 220), (150, 40, 28))
+        cv.text(x + 2, y + 26, '⌂ village  ■ city  > dungeon  · road  highlighted: job targets  @ you', DIM, PANEL)
+        cv.text_center(W // 2, y + 27, ' any key to close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        self.app.pop()
+
+
+class StablesScreen(Modal):
+    def render(self, cv):
+        g = self.game
+        p = g.player
+        x, y = self.box(cv, 64, 12, 'Stables')
+        cv.text(x + 2, y + 1, f'"Need something to carry your goods?"   Gold {p.gold}', DIM, PANEL)
+        for i, k in enumerate(('mule', 'cart')):
+            mt = D.MOUNTS[k]
+            yy = y + 3 + i * 3
+            owned = k in p.mounts
+            cv.text(x + 2, yy, LETTERS[i], GOLD, PANEL)
+            cv.text(x + 4, yy, mt['name'], FG if not owned else DIM, PANEL)
+            cv.text_right(x + 60, yy, 'owned' if owned else f"{mt['price']} gold", DIM if owned else GOLD, PANEL)
+            cv.text(x + 4, yy + 1, mt['desc'], DIM, PANEL)
+        cv.text(x + 2, y + 9, f'Your cargo space: {ECO.cargo_capacity(p)}', FG, PANEL)
+        cv.text_center(W // 2, y + 11, ' a/b: buy · Esc: leave ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        if tok == 'esc':
+            self.app.pop()
+        elif tok in ('a', 'b'):
+            g.log_mark = len(g.log)
+            g.buy_mount('mule' if tok == 'a' else 'cart')
