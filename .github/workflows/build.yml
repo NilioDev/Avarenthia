@@ -1,0 +1,39 @@
+# Builds standalone executables for Windows, macOS and Linux on every push.
+# Download them from the run's "Artifacts" section on the Actions tab.
+name: Build executables
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            sep: ';'
+            file: dist/CursedVale.exe
+          - os: macos-latest
+            sep: ':'
+            file: dist/CursedVale
+          - os: ubuntu-latest
+            sep: ':'
+            file: dist/CursedVale
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+      - name: Run headless tests
+        run: python tests/test_headless.py
+      - name: Build
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name CursedVale --add-data "assets${{ matrix.sep }}assets" main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CursedVale-${{ matrix.os }}
+          path: ${{ matrix.file }}
