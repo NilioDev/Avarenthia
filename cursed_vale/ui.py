@@ -1,0 +1,1069 @@
+"""Screens, rendering and input handling. Independent of tcod: it draws on a Canvas
+and receives key tokens ('a', 'A', 'up', 'np7', 'enter', 'esc', '>' ...)."""
+import random
+import time
+
+from . import data as D
+from . import engine as E
+from .canvas import scale, mix, wrap_text
+from .data import DOWN, UP, TOWN, ENTR, WALL
+from .worldgen import cheb
+
+W, H = 100, 36
+MAP_W, MAP_H = 70, 28
+LOG_Y = 29
+PX = 72                 # panel x
+PW = W - PX - 1         # panel width
+
+BG = (13, 11, 10)
+PANEL = (22, 18, 15)
+LINE = (58, 46, 34)
+FG = (221, 211, 189)
+DIM = (143, 133, 115)
+GOLD = (217, 165, 71)
+BLOOD = (196, 58, 44)
+MANA = (60, 99, 200)
+GOOD = (134, 196, 111)
+INFO = (136, 182, 220)
+BAD = (236, 106, 92)
+LOGCOL = {'': FG, 'bad': BAD, 'good': GOOD, 'info': INFO, 'gold': GOLD,
+          'magic': D.RARITY_COLOR['magic'], 'rare': D.RARITY_COLOR['rare'], 'unique': D.RARITY_COLOR['unique'], 'normal': FG}
+
+DIRS = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0),
+        'k': (0, -1), 'j': (0, 1), 'h': (-1, 0), 'l': (1, 0), 'y': (-1, -1), 'u': (1, -1), 'b': (-1, 1), 'n': (1, 1),
+        'np8': (0, -1), 'np2': (0, 1), 'np4': (-1, 0), 'np6': (1, 0), 'np7': (-1, -1), 'np9': (1, -1), 'np1': (-1, 1), 'np3': (1, 1),
+        'home': (-1, -1), 'pageup': (1, -1), 'end': (-1, 1), 'pagedown': (1, 1)}
+RUN_LETTERS = {'K': 'k', 'J': 'j', 'H': 'h', 'L': 'l', 'Y': 'y', 'U': 'u', 'B': 'b', 'N': 'n'}
+LETTERS = 'abcdefghijklmnopqrstuvwx'
+
+ORB_MASK = ['  #####  ', ' ####### ', '#########', ' ####### ', '  #####  ']
+
+
+class App:
+    def __init__(self, canvas):
+        self.cv = canvas
+        self.game = None
+        self.running = True
+        self.screens = [MainMenu(self)]
+        self.effects = []          # (kind, t0, payload)
+        self.hit_times = {}
+        self.shake_until = 0
+        self.hover = None
+        self.reduced_motion = False
+
+    # ---------------------------------------------------------- plumbing
+    @property
+    def top(self):
+        return self.screens[-1]
+
+    def push(self, s):
+        self.screens.append(s)
+
+    def pop(self):
+        if len(self.screens) > 1:
+            self.screens.pop()
+
+    def replace(self, s):
+        self.screens[-1] = s
+
+    def start_game(self, game):
+        self.game = game
+        self.effects.clear()
+        self.screens = [GameScreen(self)]
+        E.save_game(game)
+
+    def quit(self):
+        if self.game and not self.game.dead:
+            E.save_game(self.game)
+        self.running = False
+
+    def animating(self):
+        t = time.monotonic()
+        return bool(self.effects) or self.shake_until > t or any(t - v < .15 for v in self.hit_times.values())
+
+    def key(self, tok, shift=False):
+        self.top.on_key(tok, shift)
+        self.after_action()
+
+    def click(self, tx, ty, button=1):
+        self.top.on_click(tx, ty, button)
+        self.after_action()
+
+    def after_action(self):
+        g = self.game
+        if not g:
+            return
+        now = time.monotonic()
+        for ev in g.events:
+            if ev[0] == 'shake':
+                if not self.reduced_motion:
+                    self.shake_until = now + .12
+            else:
+                self.effects.append((ev[0], now, ev))
+        g.events.clear()
+        for m in g.map.mons:
+            if m.hit_flash:
+                self.hit_times[m.id] = now
+                m.hit_flash = 0
+        req, g.request = g.request, None
+        if g.dead and not isinstance(self.top, DeathScreen):
+            E.delete_save()
+            self.screens = [GameScreen(self), DeathScreen(self)]
+            return
+        if not req:
+            return
+        if req[0] == 'save':
+            E.save_game(g)
+        elif req[0] == 'shop':
+            self.push(ShopScreen(self))
+        elif req[0] == 'dialog':
+            self.push(DialogScreen(self, req[1], req[2]))
+        elif req[0] == 'win':
+            E.save_game(g)
+            self.push(WinScreen(self))
+
+    def render(self):
+        cv = self.cv
+        cv.clear(BG)
+        # find the deepest opaque screen and draw from there
+        start = 0
+        for i, s in enumerate(self.screens):
+            if not s.overlay:
+                start = i
+        for i, s in enumerate(self.screens[start:]):
+            if s.overlay:
+                cv.dim(.35)
+            s.render(cv)
+        t = time.monotonic()
+        self.effects = [e for e in self.effects if t - e[1] < (e[2][4] if e[0] == 'flash' else .8)]
+        self.hit_times = {k: v for k, v in self.hit_times.items() if t - v < .15}
+
+
+class Screen:
+    overlay = False
+
+    def __init__(self, app):
+        self.app = app
+
+    @property
+    def game(self):
+        return self.app.game
+
+    def render(self, cv):
+        pass
+
+    def on_key(self, tok, shift):
+        pass
+
+    def on_click(self, x, y, button):
+        pass
+
+
+# ====================================================================== main menu
+TITLE = [
+    ' ▄▄▄ █  █ ████  ▄▄▄  ████ ███    █   █  ▄▄  █    ████',
+    '█    █  █ █▄▄▀ ▀▄▄▄  █▄▄  █  █   ▀▄ ▄▀ █▄▄█ █    █▄▄ ',
+    '▀▄▄▄ ▀▄▄▀ █  █ ▄▄▄▀  █▄▄▄ █▄▄▀    ▀█▀  █  █ █▄▄▄ █▄▄▄',
+]
+
+
+class MainMenu(Screen):
+    def __init__(self, app):
+        super().__init__(app)
+        self.saved = E.load_game()
+
+    def render(self, cv):
+        for i, ln in enumerate(TITLE):
+            cv.text_center(W // 2, 7 + i, ln, BLOOD)
+        cv.text_center(W // 2, 11, 'an ASCII action roguelike', DIM)
+        y = 15
+        if self.saved:
+            p = self.saved.player
+            cv.text_center(W // 2, y, f'[C] Continue as {p.name}, level {p.lvl} {D.CLASSES[p.cls]["name"]}', GOLD)
+            y += 2
+        cv.text_center(W // 2, y, '[N] New game', FG)
+        cv.text_center(W // 2, y + 2, '[Esc] Quit', DIM)
+        cv.wrap(25, 24, 50, 'Explore an ADOM-style vale, clear monster-packed dungeons, hunt magic, rare and unique loot, '
+                            'and destroy the lich Morvenna. Hardcore: death is permanent.', DIM)
+
+    def on_key(self, tok, shift):
+        if tok == 'c' and self.saved:
+            g = self.saved
+            g.msg('Welcome back.', 'info')
+            g.log_mark = len(g.log) - 1
+            self.app.start_game(g)
+        elif tok in ('n', 'enter'):
+            self.app.replace(NameScreen(self.app))
+        elif tok == 'esc':
+            self.app.quit()
+
+
+class NameScreen(Screen):
+    def __init__(self, app):
+        super().__init__(app)
+        self.name = ''
+
+    def render(self, cv):
+        cv.text_center(W // 2, 12, 'What is your name, wanderer?', GOLD)
+        box = (self.name + '_').ljust(20)
+        cv.text(W // 2 - 10, 15, box, FG, (40, 32, 26))
+        cv.text_center(W // 2, 18, 'Type a name and press Enter. Leave it empty to be called Wanderer.', DIM)
+        cv.text_center(W // 2, 20, 'Esc goes back', DIM)
+
+    def on_key(self, tok, shift):
+        if tok == 'enter':
+            self.app.replace(ClassScreen(self.app, self.name.strip() or 'Wanderer'))
+        elif tok == 'esc':
+            self.app.replace(MainMenu(self.app))
+        elif tok == 'backspace':
+            self.name = self.name[:-1]
+        elif tok == 'space' and len(self.name) < 18:
+            self.name += ' '
+        elif len(tok) == 1 and (tok.isalnum() or tok in "-'") and len(self.name) < 18:
+            self.name += tok
+
+
+class ClassScreen(Screen):
+    def __init__(self, app, name):
+        super().__init__(app)
+        self.name = name
+        self.sel = 0
+
+    def render(self, cv):
+        cv.text_center(W // 2, 3, f'Choose a class for {self.name}', GOLD)
+        for i, k in enumerate(D.CLASS_ORDER):
+            c = D.CLASSES[k]
+            x = 4 + i * 32
+            sel = i == self.sel
+            cv.frame(x, 6, 30, 22, GOLD if sel else LINE, (34, 26, 18) if sel else PANEL, f'{i + 1}  {c["name"]}', GOLD if sel else FG)
+            n = cv.wrap(x + 2, 8, 26, c['desc'], FG)
+            y = 9 + n
+            for st, label in (('str', 'Strength'), ('dex', 'Dexterity'), ('vit', 'Vitality'), ('ene', 'Energy')):
+                cv.text(x + 2, y, label, DIM)
+                cv.text_right(x + 26, y, str(c[st]), FG)
+                y += 1
+            y += 1
+            cv.text(x + 2, y, 'Skills', DIM)
+            y += 1
+            for s in D.SKILLS[k]:
+                cv.text(x + 2, y, f'{s.name}', FG)
+                cv.text_right(x + 26, y, f'lv {s.lvl}', DIM)
+                y += 1
+        cv.text_center(W // 2, 30, 'Left/Right or 1-3 to choose, Enter to begin, Esc to go back', DIM)
+
+    def on_key(self, tok, shift):
+        if tok in ('left', 'h', 'np4'):
+            self.sel = (self.sel - 1) % 3
+        elif tok in ('right', 'l', 'np6'):
+            self.sel = (self.sel + 1) % 3
+        elif tok in ('1', '2', '3'):
+            self.sel = int(tok) - 1
+        elif tok == 'enter':
+            self.app.start_game(E.Game(self.name, D.CLASS_ORDER[self.sel]))
+        elif tok == 'esc':
+            self.app.replace(NameScreen(self.app))
+
+    def on_click(self, x, y, button):
+        for i in range(3):
+            if 4 + i * 32 <= x < 34 + i * 32 and 6 <= y < 28:
+                if self.sel == i:
+                    self.on_key('enter', False)
+                self.sel = i
+
+
+# ====================================================================== game screen
+class GameScreen(Screen):
+    def view_origin(self):
+        g = self.game
+        m, p = g.map, g.player
+        ox = -((MAP_W - m.w) // 2) if m.w <= MAP_W else max(0, min(m.w - MAP_W, p.x - MAP_W // 2))
+        oy = -((MAP_H - m.h) // 2) if m.h <= MAP_H else max(0, min(m.h - MAP_H, p.y - MAP_H // 2))
+        return ox, oy
+
+    def render(self, cv):
+        g = self.game
+        self.draw_map(cv)
+        for x in range(MAP_W):
+            cv.put(x, MAP_H, '─', LINE, BG)
+        for y in range(H):
+            cv.put(MAP_W, y, '│', LINE, BG)
+        cv.put(MAP_W, MAP_H, '┤', LINE, BG)
+        cv.text(2, MAP_H, f' {g.loc_name()} ', DIM, BG)
+        cv.text_right(MAP_W - 2, MAP_H, f' turn {g.turn} ', DIM, BG)
+        self.draw_log(cv)
+        self.draw_panel(cv)
+
+    # ---------------------------------------------------------- map
+    def draw_map(self, cv):
+        g, app = self.game, self.app
+        m, p = g.map, g.player
+        t = time.monotonic()
+        ox, oy = self.view_origin()
+        sx = sy = 0
+        if app.shake_until > t:
+            sx, sy = random.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
+        self.origin = (ox, oy)
+        mons = {(o.x, o.y): o for o in m.mons}
+        items = {}
+        for it in m.items:
+            items[(it.x, it.y)] = it
+        torch = m.kind == 'dungeon'
+        portal = m.portal_pos if (m.kind == 'town' and g.portal) else None
+        vis = g.vis
+        for vy in range(MAP_H):
+            my = vy + oy - sy
+            if not 0 <= my < m.h:
+                continue
+            for vx in range(MAP_W):
+                mx = vx + ox - sx
+                if not 0 <= mx < m.w:
+                    continue
+                i = my * m.w + mx
+                v = vis[i] if i < len(vis) else 0
+                if not v and not m.seen[i]:
+                    continue
+                tid = m.t[i]
+                td = D.TILES[tid]
+                ch = td.ch
+                fg = m.wall_fg if (tid == WALL and m.wall_fg) else td.fg
+                bg = BG
+                if portal and (mx, my) == portal:
+                    ch, fg = '0', (90, 176, 255)
+                if v:
+                    if torch:
+                        d = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
+                        k = max(0.0, 1 - d / 8)
+                        bg = (13 + int(34 * k), 11 + int(20 * k), 10 + int(8 * k))
+                    it = items.get((mx, my))
+                    if it:
+                        ch, fg = it.glyph(), it.color()
+                        if it.k == 'gear' and it.rar != 'normal':
+                            bg = mix(bg, fg, .18)
+                    o = mons.get((mx, my))
+                    if o:
+                        ch, fg = o.ch, o.fg
+                        if not o.is_npc:
+                            if o.elite or o.is_boss:
+                                bg = mix(bg, o.fg, .25)
+                            if o.hold > 0:
+                                fg = (159, 216, 255)
+                            if t - app.hit_times.get(o.id, -9) < .13:
+                                fg, bg = (255, 255, 255), (120, 30, 20)
+                    if mx == p.x and my == p.y:
+                        ch, fg = '@', ((184, 240, 138) if p.poison else (255, 246, 220))
+                else:
+                    fg = scale(fg, .42 if m.kind == 'over' else .3)
+                cv.put(vx, vy, ch, fg, bg)
+        # effects
+        for kind, t0, ev in app.effects:
+            age = t - t0
+            if kind == 'flash':
+                _, cells, col, ch, dur = ev
+                for x, y in cells:
+                    if g.visible(x, y):
+                        self._put_map(cv, x, y, ch, col)
+            elif kind == 'num':
+                _, x, y, txt, col, big = ev
+                rise = int(age * 2.5)
+                fade = max(0.0, 1 - age / .8)
+                c = mix(BG, col, fade if not big else min(1, fade * 1.3))
+                vx, vy = x - ox - len(txt) // 2, y - oy - 1 - rise
+                if 0 <= vy < MAP_H:
+                    for j, chh in enumerate(txt):
+                        if 0 <= vx + j < MAP_W:
+                            cv.put(vx + j, vy, chh, c)
+
+    def _put_map(self, cv, x, y, ch, col):
+        ox, oy = self.origin
+        vx, vy = x - ox, y - oy
+        if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
+            cv.put(vx, vy, ch, col)
+
+    # ---------------------------------------------------------- log
+    def draw_log(self, cv):
+        g = self.game
+        lines = []
+        for idx in range(len(g.log) - 1, -1, -1):
+            text, cls = g.log[idx]
+            wrapped = wrap_text(text, MAP_W - 2)
+            for ln in reversed(wrapped):
+                lines.append((ln, cls, idx >= g.log_mark))
+            if len(lines) >= H - LOG_Y:
+                break
+        lines = lines[:H - LOG_Y][::-1]
+        for i, (ln, cls, new) in enumerate(lines):
+            col = LOGCOL.get(cls, FG) if new else scale(LOGCOL.get(cls, FG), .55)
+            cv.text(1, LOG_Y + i, ln, col)
+
+    # ---------------------------------------------------------- side panel
+    def draw_panel(self, cv):
+        g = self.game
+        p = g.player
+        s = g.stats()
+        cv.fill(MAP_W + 1, 0, W - MAP_W - 1, H, ' ', FG, PANEL)
+        x = PX
+        cv.text(x, 0, p.name, GOLD, PANEL, maxw=PW)
+        cv.text(x, 1, f"{D.CLASSES[p.cls]['name']} · level {p.lvl}", DIM, PANEL)
+        # orbs
+        self.orb(cv, x, 3, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
+        self.orb(cv, x + PW - 9, 3, p.mana / max(1, s['max_mana']), MANA)
+        cv.text_center(x + 4, 8, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
+        cv.text_center(x + PW - 5, 8, f"{p.mana}/{s['max_mana']}", FG, PANEL)
+        cv.text_center(x + PW // 2, 4, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
+        cv.text_center(x + PW // 2, 6, 'MANA', DIM, PANEL)
+        # xp
+        prev = E.xp_for(p.lvl - 1) if p.lvl > 1 else 0
+        frac = (p.xp - prev) / max(1, E.xp_for(p.lvl) - prev)
+        cv.text(x, 10, 'XP', DIM, PANEL)
+        bw = PW - 3
+        filled = int(bw * max(0, min(1, frac)))
+        for i in range(bw):
+            cv.put(x + 3 + i, 10, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
+        cv.text_right(x + PW - 1, 11, f'{p.xp} / {E.xp_for(p.lvl)}', DIM, PANEL)
+        # skills
+        cv.text(x, 13, 'SKILLS', DIM, PANEL)
+        for i, k in enumerate(D.SKILLS[p.cls]):
+            r = p.skills.get(k.id, 0)
+            y = 14 + i
+            cv.text(x, y, str(i + 1), GOLD, PANEL)
+            if r:
+                ok = p.mana >= k.cost
+                cv.text(x + 2, y, k.name, FG if ok else DIM, PANEL)
+                cv.text_right(x + PW - 1, y, f'r{r} {k.cost}mp', INFO if ok else DIM, PANEL)
+            else:
+                cv.text(x + 2, y, k.name, scale(DIM, .7), PANEL)
+                cv.text_right(x + PW - 1, y, f'lv {k.lvl}' if p.lvl < k.lvl else 'learn', scale(DIM, .7) if p.lvl < k.lvl else GOLD, PANEL)
+        # belt
+        cv.text(x, 18, 'BELT', DIM, PANEL)
+        hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
+        mp = g.count('potion', 'mp') + g.count('potion', 'rejuv')
+        tp = g.count('scroll')
+        cv.text(x, 19, 'Q', GOLD, PANEL)
+        cv.text(x + 2, 19, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
+        cv.text(x + 15, 19, 'W', GOLD, PANEL)
+        cv.text(x + 17, 19, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
+        cv.text(x, 20, 'P', GOLD, PANEL)
+        cv.text(x + 2, 20, f'Town Portal x{tp}', FG if tp else DIM, PANEL)
+        # numbers
+        rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"), ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])),
+                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold)), ('Kills', str(g.kills))]
+        for i, (a, b) in enumerate(rows):
+            cv.text(x, 22 + i, a, DIM, PANEL)
+            cv.text_right(x + PW - 1, 22 + i, b, GOLD if a == 'Gold' else FG, PANEL)
+        if p.stat_pts or p.skill_pts:
+            parts = []
+            if p.stat_pts:
+                parts.append(f'{p.stat_pts} stat')
+            if p.skill_pts:
+                parts.append(f'{p.skill_pts} skill')
+            cv.text(x, 28, f"C: spend {' + '.join(parts)} pts", GOLD, PANEL, maxw=PW)
+        self.draw_target(cv, x, 30)
+        cv.text(x, H - 1, '? help · i bag · c hero', scale(DIM, .8), PANEL, maxw=PW)
+
+    def orb(self, cv, x, y, frac, col, alt=None):
+        frac = max(0.0, min(1.0, frac))
+        level = frac * 5
+        dark = (30, 22, 18)
+        for r, row in enumerate(ORB_MASK):
+            from_bottom = 4 - r
+            for c, ch in enumerate(row):
+                if ch != '#':
+                    continue
+                fill = level - from_bottom
+                fc = alt or col
+                if fill >= 1:
+                    cv.put(x + c, y + r, ' ', FG, fc)
+                elif fill > .5:
+                    cv.put(x + c, y + r, '▄', fc, mix(dark, fc, .35))
+                elif fill > 0:
+                    cv.put(x + c, y + r, '▄', mix(dark, fc, .6), dark)
+                else:
+                    cv.put(x + c, y + r, ' ', FG, dark)
+
+    def draw_target(self, cv, x, y):
+        g = self.game
+        m, p = g.map, g.player
+        tgt = None
+        hv = self.app.hover
+        if hv and hasattr(self, 'origin'):
+            mx, my = hv[0] + self.origin[0], hv[1] + self.origin[1]
+            if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
+                o = m.mon_at(mx, my)
+                if o:
+                    tgt = o
+                else:
+                    its = [i for i in m.items if i.x == mx and i.y == my]
+                    if its:
+                        cv.text(x, y, its[-1].display_name(), its[-1].color(), PANEL, maxw=PW)
+                        lines = its[-1].lines()
+                        for i, ln in enumerate(lines[:4]):
+                            cv.text(x, y + 1 + i, ln, DIM, PANEL, maxw=PW)
+                        return
+                    cv.text(x, y, D.TILES[m.tile(mx, my)].name.capitalize(), DIM, PANEL, maxw=PW)
+                    return
+        if not tgt:
+            vis = g.visible_hostiles()
+            last = [o for o in vis if o.id == p.last_target]
+            tgt = last[0] if last else (min(vis, key=lambda o: cheb(o.x, o.y, p.x, p.y)) if vis else None)
+        if not tgt:
+            return
+        cv.text(x, y, tgt.name, tgt.fg, PANEL, maxw=PW)
+        if tgt.is_npc:
+            cv.text(x, y + 1, 'Walk into them to talk.', DIM, PANEL)
+            return
+        bw = PW
+        frac = max(0, tgt.hp) / tgt.maxhp
+        for i in range(bw):
+            cv.put(x + i, y + 1, ' ', FG, BLOOD if i < int(bw * frac + .99) else (40, 20, 16))
+        cv.text(x, y + 1, f'{max(0, tgt.hp)}/{tgt.maxhp}', (255, 240, 220))
+        extra = f'level {tgt.lvl}'
+        if tgt.mods:
+            extra += ' · ' + ', '.join(tgt.mods)
+        cv.text(x, y + 2, extra, DIM, PANEL, maxw=PW)
+
+    # ---------------------------------------------------------- input
+    def act(self, fn):
+        g = self.game
+        if g.dead:
+            return
+        g.log_mark = len(g.log)
+        used = fn()
+        if used and not g.dead:
+            g.end_turn(used)
+
+    def on_key(self, tok, shift):
+        g, app = self.game, self.app
+        if g.dead:
+            return
+        d = DIRS.get(tok)
+        if not d and tok in RUN_LETTERS:
+            d, shift = DIRS[RUN_LETTERS[tok]], True
+        if d:
+            if shift and not g.hostile_visible():
+                g.log_mark = len(g.log)
+                g.run(*d)
+            else:
+                self.act(lambda: g.try_move(*d))
+            return
+        if tok in ('np5', '.', 's'):
+            self.act(lambda: 1)
+        elif tok in ('1', '2', '3'):
+            self.act(lambda: g.use_skill(int(tok) - 1))
+        elif tok == 'q':
+            self.act(lambda: g.drink('hp'))
+        elif tok == 'w':
+            self.act(lambda: g.drink('mp'))
+        elif tok == 'p':
+            self.act(g.town_portal)
+        elif tok in ('g', ','):
+            self.act(g.pickup)
+        elif tok == '>':
+            self.act(lambda: g.use_stairs('down'))
+        elif tok == '<':
+            self.act(lambda: g.use_stairs('up'))
+        elif tok in ('enter', 'np_enter'):
+            self.act(lambda: g.use_stairs('auto'))
+        elif tok == 'x':
+            g.log_mark = len(g.log)
+            g.explore()
+        elif tok == 't':
+            if g.map.kind in ('over', 'town'):
+                app.push(TravelScreen(app))
+            else:
+                g.log_mark = len(g.log)
+                g.msg('You can only travel from the vale or from town.')
+        elif tok == 'i':
+            app.push(InventoryScreen(app))
+        elif tok == 'd':
+            app.push(InventoryScreen(app, drop=True))
+        elif tok == 'c':
+            app.push(CharacterScreen(app))
+        elif tok == 'R':
+            g.log_mark = len(g.log)
+            g.rest()
+        elif tok in ('?', 'f1'):
+            app.push(HelpScreen(app))
+        elif tok == 'esc':
+            app.push(QuitScreen(app))
+
+    def on_click(self, tx, ty, button):
+        g = self.game
+        if g.dead or tx >= MAP_W or ty >= MAP_H or not hasattr(self, 'origin'):
+            return
+        mx, my = tx + self.origin[0], ty + self.origin[1]
+        p = g.player
+        dx = (mx > p.x) - (mx < p.x)
+        dy = (my > p.y) - (my < p.y)
+        if not dx and not dy:
+            m = g.map
+            if any(i.x == p.x and i.y == p.y for i in m.items):
+                self.act(g.pickup)
+            elif m.tile(p.x, p.y) in (DOWN, UP, TOWN, ENTR):
+                self.act(lambda: g.use_stairs('auto'))
+            else:
+                self.act(lambda: 1)
+            return
+        self.act(lambda: g.try_move(dx, dy))
+
+
+# ====================================================================== modal screens
+class Modal(Screen):
+    overlay = True
+    title = ''
+
+    def box(self, cv, w, h, title=None):
+        x, y = (W - w) // 2, (H - h) // 2
+        cv.frame(x, y, w, h, LINE, PANEL, title or self.title, GOLD)
+        return x, y
+
+    def on_key(self, tok, shift):
+        if tok == 'esc':
+            self.app.pop()
+
+
+def item_detail(cv, g, it, x, y, w, max_h=14):
+    if not it:
+        return
+    cv.text(x, y, it.display_name(), it.color(), PANEL, maxw=w)
+    yy = y + 1
+    if it.k == 'gear':
+        cv.text(x, yy, f"{D.SLOTNAME[it.slot]}{'' if it.rar == 'normal' else ' · ' + it.rar}", DIM, PANEL)
+        yy += 1
+    for ln in it.lines():
+        if yy >= y + max_h:
+            break
+        yy += cv.wrap(x, yy, w, ln, FG, PANEL, 2)
+    if it.k == 'gear' and it.req > 1:
+        cv.text(x, yy, f'Requires level {it.req}', BAD if it.req > g.player.lvl else DIM, PANEL)
+        yy += 1
+    cv.text(x, yy, f'Value {it.value()} gold', DIM, PANEL)
+    yy += 1
+    if it.k == 'gear' and not g.is_equipped(it):
+        cur = g.eq_item(it.slot)
+        yy += 1
+        if cur:
+            cv.text(x, yy, 'Equipped now:', DIM, PANEL)
+            cv.text(x, yy + 1, cur.name, cur.color(), PANEL, maxw=w)
+            yy += 2
+            if it.dmg and cur.dmg:
+                d = (it.dmg[0] + it.dmg[1]) - (cur.dmg[0] + cur.dmg[1])
+                cv.text(x, yy, f'Base damage {"+" if d >= 0 else ""}{d / 2:g} avg', GOOD if d > 0 else BAD if d < 0 else DIM, PANEL)
+                yy += 1
+            if it.arm and cur.arm:
+                d = it.armor_value() - cur.armor_value()
+                cv.text(x, yy, f'Armor {"+" if d >= 0 else ""}{d}', GOOD if d > 0 else BAD if d < 0 else DIM, PANEL)
+                yy += 1
+        else:
+            cv.text(x, yy, f'Nothing equipped as {D.SLOTNAME[it.slot].lower()}.', DIM, PANEL)
+
+
+class InventoryScreen(Modal):
+    title = 'Inventory'
+
+    def __init__(self, app, drop=False):
+        super().__init__(app)
+        self.drop_mode = drop
+        self.sel = 0
+
+    def rows(self):
+        g = self.game
+        out = [('eq', s, g.eq_item(s)) for s in D.SLOTS]
+        out += [('bag', i, it) for i, it in enumerate(g.backpack())]
+        return out
+
+    def render(self, cv):
+        g = self.game
+        rows = self.rows()
+        self.sel = max(0, min(self.sel, len(rows) - 1))
+        x, y = self.box(cv, 94, 34, 'Drop which item?' if self.drop_mode else 'Inventory')
+        cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {g.player.gold} gold', DIM, PANEL)
+        cv.text(x + 2, y + 3, 'EQUIPPED', DIM, PANEL)
+        cv.text(x + 2, y + 10, 'BACKPACK', DIM, PANEL)
+        for idx, (kind, key, it) in enumerate(rows):
+            sel = idx == self.sel
+            bg = (52, 40, 28) if sel else PANEL
+            if kind == 'eq':
+                yy = y + 4 + idx
+                cv.fill(x + 2, yy, 50, 1, ' ', FG, bg)
+                cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<7}', DIM, bg)
+                if it:
+                    cv.text(x + 12, yy, it.name, it.color(), bg, maxw=40)
+                else:
+                    cv.text(x + 12, yy, '-', DIM, bg)
+            else:
+                yy = y + 11 + key
+                if yy >= y + 33:
+                    continue
+                cv.fill(x + 2, yy, 50, 1, ' ', FG, bg)
+                cv.text(x + 2, yy, LETTERS[key], GOLD, bg)
+                cv.text(x + 4, yy, it.display_name(), it.color(), bg, maxw=46)
+                if it.k == 'gear' and it.req > g.player.lvl:
+                    cv.text(x + 50, yy, '!', BAD, bg)
+        if len(g.backpack()) == 0:
+            cv.text(x + 4, y + 11, 'Your backpack is empty.', DIM, PANEL)
+        for yy in range(y + 1, y + 33):
+            cv.put(x + 54, yy, '│', LINE, PANEL)
+        if rows:
+            item_detail(cv, g, rows[self.sel][2], x + 56, y + 3, 36)
+        hint = 'letter: select · Enter: equip/use/remove · D: drop · Esc: close'
+        if self.drop_mode:
+            hint = 'letter or Enter: drop the item · Esc: close'
+        cv.text_center(W // 2, y + 33, f' {hint} ', DIM, PANEL)
+
+    def use(self):
+        g, app = self.game, self.app
+        rows = self.rows()
+        if not rows:
+            return
+        kind, key, it = rows[self.sel]
+        if kind == 'eq':
+            if it:
+                g.unequip(key)
+            return
+        if self.drop_mode:
+            self.drop()
+            return
+        g.log_mark = len(g.log)
+        if it.k == 'gear':
+            g.equip(it)
+            return
+        app.pop()
+        used = g.drink(it.t) if it.k == 'potion' else g.town_portal()
+        if used and not g.dead:
+            g.end_turn(used)
+
+    def drop(self):
+        g, app = self.game, self.app
+        rows = self.rows()
+        if not rows:
+            return
+        kind, key, it = rows[self.sel]
+        if not it:
+            return
+        g.log_mark = len(g.log)
+        app.pop()
+        g.drop(it)
+        g.end_turn(1)
+
+    def on_key(self, tok, shift):
+        rows = self.rows()
+        if tok in ('esc', 'i'):
+            self.app.pop()
+        elif tok in ('up', 'np8'):
+            self.sel = max(0, self.sel - 1)
+        elif tok in ('down', 'np2'):
+            self.sel = min(len(rows) - 1, self.sel + 1)
+        elif tok in ('enter', 'np_enter'):
+            self.use()
+        elif tok in ('D', 'delete'):
+            self.drop()
+        elif len(tok) == 1 and tok in LETTERS:
+            i = LETTERS.index(tok)
+            if i < len(self.game.backpack()):
+                already = self.sel == 5 + i
+                self.sel = 5 + i
+                if self.drop_mode or already:
+                    self.use()
+
+    def on_click(self, x, y, button):
+        bx, by = (W - 94) // 2, (H - 34) // 2
+        if bx + 2 <= x < bx + 52:
+            if by + 4 <= y < by + 9:
+                self.sel = y - by - 4
+            elif by + 11 <= y < by + 33 and y - by - 11 < len(self.game.backpack()):
+                new = 5 + y - by - 11
+                if new == self.sel:
+                    self.use()
+                self.sel = new
+
+
+class CharacterScreen(Modal):
+    title = 'Character'
+
+    def render(self, cv):
+        g = self.game
+        p, s = g.player, g.stats()
+        x, y = self.box(cv, 80, 32, f"{p.name} · level {p.lvl} {D.CLASSES[p.cls]['name']}")
+        cv.text(x + 2, y + 1, f'{p.stat_pts} stat points · {p.skill_pts} skill points to spend', GOLD if (p.stat_pts or p.skill_pts) else DIM, PANEL)
+        cv.text(x + 2, y + 3, 'ATTRIBUTES', DIM, PANEL)
+        helps = {
+            'str': '+1% damage' if p.cls != 'rogue' else 'no damage bonus for rogues',
+            'dex': 'accuracy, defense' + (', +1% damage' if p.cls == 'rogue' else ''),
+            'vit': '+2 life', 'ene': '+2 mana' + (', spell damage' if p.cls == 'sorceress' else ''),
+        }
+        for i, (st, nm) in enumerate((('str', 'Strength'), ('dex', 'Dexterity'), ('vit', 'Vitality'), ('ene', 'Energy'))):
+            yy = y + 4 + i
+            cv.text(x + 2, yy, f'{i + 1}', GOLD if p.stat_pts else DIM, PANEL)
+            cv.text(x + 4, yy, nm, FG, PANEL)
+            val = s[st]
+            cv.text_right(x + 20, yy, str(val), FG, PANEL)
+            if val != getattr(p, st):
+                cv.text(x + 22, yy, f'({getattr(p, st)} base)', DIM, PANEL)
+            cv.text(x + 34, yy, helps[st], DIM, PANEL)
+        cv.text(x + 2, y + 9, 'SKILLS', DIM, PANEL)
+        yy = y + 10
+        for i, k in enumerate(D.SKILLS[p.cls]):
+            r = p.skills.get(k.id, 0)
+            can = p.skill_pts > 0 and p.lvl >= k.lvl and r < 10
+            cv.text(x + 2, yy, 'abc'[i], GOLD if can else DIM, PANEL)
+            cv.text(x + 4, yy, k.name, FG, PANEL)
+            cv.text(x + 24, yy, f'rank {r}' if r else (f'unlocks at level {k.lvl}' if p.lvl < k.lvl else 'not learned'), INFO if r else DIM, PANEL)
+            cv.text_right(x + 77, yy, f'{k.cost} mana', DIM, PANEL)
+            n = cv.wrap(x + 4, yy + 1, 72, k.desc(max(1, r)), DIM, PANEL, 2)
+            yy += 2 + n
+        yy += 0
+        cv.text(x + 2, yy, 'TOTALS', DIM, PANEL)
+        tots = [('Life', f"{p.life}/{s['max_life']}"), ('Mana', f"{p.mana}/{s['max_mana']}"), ('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"),
+                ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])), ('Critical', f"{s['crit']}%"), ('Life leech', f"{s['leech']}%"),
+                ('Regeneration', f"+{s['regen']}")]
+        for i, (a, b) in enumerate(tots):
+            cx = x + 2 + (i % 2) * 38
+            cy = yy + 1 + i // 2
+            cv.text(cx, cy, a, DIM, PANEL)
+            cv.text_right(cx + 34, cy, b, FG, PANEL)
+        cv.text_center(W // 2, y + 31, ' 1-4: add a stat point · a-c: learn or rank up a skill · Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        if tok == 'esc':
+            self.app.pop()
+        elif tok in ('1', '2', '3', '4'):
+            g.add_stat(['str', 'dex', 'vit', 'ene'][int(tok) - 1])
+        elif tok in ('a', 'b', 'c'):
+            g.learn_skill('abc'.index(tok))
+
+
+class ShopScreen(Modal):
+    title = "Dorien's Wares"
+    SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp')]
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.pane = 0   # 0 = buy, 1 = sell
+        self.sel = [0, 0]
+
+    def buy_rows(self):
+        g = self.game
+        from .entities import Item
+        rows = [Item(0, k, t) for k, t in self.SUPPLIES]
+        return rows + list(g.shop)
+
+    def sell_rows(self):
+        return self.game.backpack()
+
+    def render(self, cv):
+        g = self.game
+        x, y = self.box(cv, 96, 34)
+        cv.text(x + 2, y + 1, '"Fresh stock every time you come back to town."', DIM, PANEL)
+        cv.text(x + 67, y + 1, 'Your gold:', DIM, PANEL)
+        cv.text(x + 78, y + 1, str(g.player.gold), GOLD, PANEL)
+        lists = [self.buy_rows(), self.sell_rows()]
+        for pane, (title, lx) in enumerate((('BUY', x + 2), ('SELL', x + 34))):
+            active = pane == self.pane
+            cv.text(lx, y + 3, title + (' ◄' if active else ''), GOLD if active else DIM, PANEL)
+            rows = lists[pane]
+            self.sel[pane] = max(0, min(self.sel[pane], len(rows) - 1))
+            for i, it in enumerate(rows[:24]):
+                yy = y + 4 + i
+                sel = active and i == self.sel[pane]
+                bg = (52, 40, 28) if sel else PANEL
+                cv.fill(lx, yy, 30, 1, ' ', FG, bg)
+                cv.text(lx, yy, LETTERS[i] if active else ' ', GOLD, bg)
+                price = it.value() if pane == 0 else max(1, it.value() // 4)
+                cv.text(lx + 2, yy, it.display_name(), it.color(), bg, maxw=22)
+                cv.text_right(lx + 29, yy, str(price), GOLD if (pane == 1 or g.player.gold >= price) else BAD, bg)
+            if not rows:
+                cv.text(lx, y + 4, 'Nothing to sell.' if pane else 'Sold out.', DIM, PANEL)
+        for yy in range(y + 1, y + 33):
+            cv.put(x + 65, yy, '│', LINE, PANEL)
+        cur = lists[self.pane]
+        if cur:
+            item_detail(cv, g, cur[self.sel[self.pane]], x + 67, y + 3, 27)
+        cv.text_center(W // 2, y + 33, ' Tab: switch buy/sell · letter or arrows: select · Enter: buy or sell · Esc: leave ', DIM, PANEL)
+
+    def activate(self):
+        g = self.game
+        g.log_mark = len(g.log)
+        i = self.sel[self.pane]
+        if self.pane == 0:
+            if i < 3:
+                g.buy_supply(i)
+            else:
+                g.buy_gear(i - 3)
+        else:
+            rows = self.sell_rows()
+            if i < len(rows):
+                g.sell(rows[i])
+
+    def on_key(self, tok, shift):
+        rows = self.buy_rows() if self.pane == 0 else self.sell_rows()
+        if tok == 'esc':
+            self.app.pop()
+        elif tok in ('tab', 'left', 'right', 'np4', 'np6'):
+            self.pane = 1 - self.pane
+        elif tok in ('up', 'np8'):
+            self.sel[self.pane] = max(0, self.sel[self.pane] - 1)
+        elif tok in ('down', 'np2'):
+            self.sel[self.pane] = min(len(rows) - 1, self.sel[self.pane] + 1)
+        elif tok in ('enter', 'np_enter'):
+            self.activate()
+        elif len(tok) == 1 and tok in LETTERS and LETTERS.index(tok) < len(rows):
+            i = LETTERS.index(tok)
+            if self.sel[self.pane] == i:
+                self.activate()
+            self.sel[self.pane] = i
+
+
+class TravelScreen(Modal):
+    title = 'Travel'
+
+    def places(self):
+        g = self.game
+        return [('town', 'Thornfield')] + [(k, D.DUNGEONS[k]['name']) for k in D.DUNGEON_ORDER]
+
+    def render(self, cv):
+        g = self.game
+        x, y = self.box(cv, 56, 12)
+        cv.text(x + 2, y + 1, 'Walk to a known place. Ambushes can interrupt you.', DIM, PANEL)
+        for i, (k, n) in enumerate(self.places()):
+            ok = g.known_place(k)
+            cv.text(x + 2, y + 3 + i, LETTERS[i], GOLD if ok else DIM, PANEL)
+            cv.text(x + 4, y + 3 + i, n + ('' if ok else '  (not yet discovered)'), FG if ok else DIM, PANEL)
+        cv.text_center(W // 2, y + 11, ' letter: go · Esc: cancel ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        if tok == 'esc':
+            self.app.pop()
+            return
+        pl = self.places()
+        if len(tok) == 1 and tok in LETTERS[:len(pl)]:
+            k = pl[LETTERS.index(tok)][0]
+            if g.known_place(k):
+                self.app.pop()
+                g.log_mark = len(g.log)
+                g.travel_to(k)
+
+
+class DialogScreen(Modal):
+    def __init__(self, app, title, text):
+        super().__init__(app)
+        self.title, self.text = title, text
+
+    def render(self, cv):
+        lines = wrap_text(self.text, 60)
+        h = len(lines) + 5
+        x, y = self.box(cv, 66, h)
+        for i, ln in enumerate(lines):
+            cv.text(x + 3, y + 2 + i, ln, FG, PANEL)
+        cv.text_center(W // 2, y + h - 1, ' Enter or Esc to continue ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('esc', 'enter', 'np_enter', 'space'):
+            self.app.pop()
+
+
+class QuitScreen(Modal):
+    title = 'Leave the vale?'
+
+    def render(self, cv):
+        x, y = self.box(cv, 50, 7)
+        cv.text(x + 3, y + 2, 'Your hero is saved and will be waiting.', FG, PANEL)
+        cv.text(x + 3, y + 4, '[Y] Save and quit    [N] Keep playing', GOLD, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('y', 'Y', 'enter'):
+            self.app.quit()
+        elif tok in ('n', 'N', 'esc'):
+            self.app.pop()
+
+
+class HelpScreen(Modal):
+    title = 'Controls'
+    KEYS = [
+        ('arrows / numpad / hjkl yubn', 'Move. Walking into a monster attacks it.'),
+        ('Shift + direction', 'Run until something interesting happens'),
+        ('1 2 3', 'Skills. They target the nearest visible enemy.'),
+        ('Q   W', 'Drink a health or mana potion'),
+        ('P', 'Town Portal: back to Thornfield, step into the blue 0 to return'),
+        ('X', 'Auto-explore until enemies appear'),
+        ('T', 'Travel across the vale to a known place'),
+        ('>  <  Enter', 'Use stairs, enter town or a dungeon'),
+        ('g  ,', 'Pick up items (gold, orbs, potions and magic items go in automatically)'),
+        ('I   D   C', 'Inventory, drop, character sheet'),
+        ('R   5   .', 'Rest until healed, wait one turn'),
+        ('mouse', 'Hover to inspect, click to step toward a spot'),
+        ('Esc', 'Save and quit'),
+    ]
+
+    def render(self, cv):
+        x, y = self.box(cv, 92, 32)
+        for i, (k, d) in enumerate(self.KEYS):
+            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL)
+            cv.text(x + 32, y + 2 + i, d, FG, PANEL)
+        yy = y + 3 + len(self.KEYS)
+        cv.text(x + 3, yy, 'MAP', DIM, PANEL)
+        legend = [('#', (242, 196, 74), 'Thornfield'), ('>', (232, 96, 62), 'dungeon entrance'),
+                  ('g', D.CHAMPION_FG, 'champion (blue)'), ('g', D.UNIQUE_FG, 'unique monster (gold)'),
+                  ('*', (255, 74, 74), 'health orb'), ('$', (242, 196, 67), 'gold'),
+                  (')', FG, 'weapon'), ('[ ]', FG, 'armor, helm'), ('= "', FG, 'ring, amulet'), ('!', (224, 74, 60), 'potion')]
+        for i, (ch, col, txt) in enumerate(legend):
+            cx, cy = x + 3 + (i % 2) * 30, yy + 1 + i // 2
+            cv.text(cx, cy, ch, col, PANEL)
+            cv.text(cx + 4, cy, txt, FG, PANEL)
+        yy += 7
+        cv.text(x + 3, yy, 'Item names are colored by rarity:', DIM, PANEL)
+        cx = x + 38
+        for r in ('normal', 'magic', 'rare', 'unique'):
+            cv.text(cx, yy, r, D.RARITY_COLOR[r], PANEL)
+            cx += len(r) + 2
+        cv.wrap(x + 3, yy + 1, 86, 'Each level gives 5 stat points and 1 skill point. Your hero is saved in savegame.dat next to the game; death erases it.', DIM, PANEL)
+        cv.text_center(W // 2, y + 31, ' any key to close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        self.app.pop()
+
+
+class DeathScreen(Modal):
+    title = 'You have died'
+
+    def render(self, cv):
+        g = self.game
+        p = g.player
+        x, y = self.box(cv, 60, 15)
+        cv.wrap(x + 3, y + 2, 54, f"{p.name} the {D.CLASSES[p.cls]['name'].lower()} was slain by {g.cause or 'fate'} in {g.loc_name()}.", FG, PANEL)
+        rows = [('Level', p.lvl), ('Experience', p.xp), ('Turns', g.turn), ('Kills', g.kills), ('Gold', p.gold)]
+        for i, (a, b) in enumerate(rows):
+            cv.text(x + 3, y + 5 + i, a, DIM, PANEL)
+            cv.text(x + 18, y + 5 + i, str(b), FG, PANEL)
+        cv.text(x + 3, y + 12, '[N] New game    [Esc] Quit', GOLD, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('n', 'enter'):
+            self.app.game = None
+            self.app.screens = [NameScreen(self.app)]
+        elif tok == 'esc':
+            self.app.running = False
+
+
+class WinScreen(Modal):
+    title = 'The curse is broken'
+
+    def render(self, cv):
+        g = self.game
+        p = g.player
+        x, y = self.box(cv, 64, 15)
+        cv.wrap(x + 3, y + 2, 58, f"{p.name} has destroyed Morvenna the Undying. Thornfield will sing of this {D.CLASSES[p.cls]['name'].lower()} for generations.", FG, PANEL)
+        rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Gold', p.gold)]
+        for i, (a, b) in enumerate(rows):
+            cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
+            cv.text(x + 18, y + 6 + i, str(b), FG, PANEL)
+        cv.text(x + 3, y + 12, '[Enter] Keep exploring    [N] New game', GOLD, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('enter', 'esc'):
+            self.app.pop()
+        elif tok == 'n':
+            E.save_game(self.game)
+            self.app.game = None
+            self.app.screens = [NameScreen(self.app)]
