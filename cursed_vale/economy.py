@@ -6,6 +6,11 @@ import random
 from . import data as D
 
 REF = 40.0
+faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
+
+
+def _discount(s):
+    return max(-.2, min(.3, min(s.rep, 100) / 400 + faction_rep(s) / 500))
 
 
 def init_markets(world):
@@ -37,12 +42,12 @@ def price(s, g):
 
 
 def buy_price(s, g):
-    return max(1, round(price(s, g) * 1.08 * (1 - min(s.rep, 100) / 400)))
+    return max(1, round(price(s, g) * 1.08 * (1 - _discount(s))))
 
 
 def sell_price(s, g):
     b = buy_price(s, g)
-    return max(1, min(b - 1, round(price(s, g) * .92 * (1 + min(s.rep, 100) / 400))))
+    return max(1, min(b - 1, round(price(s, g) * .92 * (1 + _discount(s)))))
 
 
 def cargo_capacity(p):

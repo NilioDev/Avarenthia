@@ -29,6 +29,9 @@ class Wanderer:
         self.mission = None
         self.cooldown = 0
         self.leg_start = (x, y)
+        self.faction = None
+        self.strength = 0
+        self.target_hold = None
 
     def describe(self, game):
         w = game.world
@@ -38,7 +41,11 @@ class Wanderer:
         if self.kind == 'escort':
             return 'The caravan you are escorting.'
         if self.kind == 'patrol':
-            return f'A patrol from {w.settlements[self.origin].name}.'
+            return f'A patrol from {w.settlements[self.origin].name}' + (' (hostile to you).' if self.hostile else '.')
+        if self.kind == 'warband':
+            h = w.holds[self.target_hold]
+            return (f"{self.strength} {D.FACTIONS[self.faction]['short']} troops marching on {h.title}"
+                    + (', hostile to you.' if self.hostile else '.'))
         if self.kind == 'bounty':
             return f'{self.name}, the target of your bounty.'
         return self.name + '.'
@@ -108,6 +115,14 @@ def step(game, wd):
     on_over = game.cur == 'over'
     if wd.cooldown > 0:
         wd.cooldown -= 1
+    if wd.kind == 'warband':
+        from .war import step_warband
+        step_warband(game, wd)
+        return
+    if wd.kind == 'patrol' and wd.hostile and on_over and wd.cooldown == 0 and cheb(wd.x, wd.y, p.x, p.y) <= 5 \
+            and game.visible(wd.x, wd.y):
+        greedy_step(game, wd, p.x, p.y)
+        return
     if wd.kind in ('caravan', 'patrol'):
         if wd.path_i < len(wd.path):
             nx, ny = wd.path[wd.path_i]
@@ -167,6 +182,8 @@ def tick(game, turns):
                 if game.cur == 'over' and (game.visible(c.x, c.y) or game.visible(b.x, b.y)):
                     game.msg(f'{b.name} plunder a caravan bound for {w.settlements[c.dest].name}!', 'bad')
                 break
+    from .war import tick_fights
+    tick_fights(game)
     for pt in [x for x in w.wanderers if x.kind == 'patrol']:
         for b in [x for x in w.wanderers if x.kind == 'bandits' and cheb(x.x, x.y, pt.x, pt.y) <= 1]:
             if random.random() < .5 and b in w.wanderers:
@@ -255,9 +272,15 @@ def spawn_patrol(game, city):
     if not villages:
         return
     path = road_path(game, city.id, villages[0].id)
+    from .war import is_hostile
     wd = Wanderer(game.new_id(), 'patrol', city.x, city.y)
     wd.ch, wd.fg, wd.name = '@', PATROL_FG, f'{city.name} patrol'
     wd.origin = city.id
+    wd.faction = city.faction
+    wd.fg = D.FACTIONS[city.faction]['fg']
+    wd.hostile = is_hostile(game, city.faction)
+    troops = D.FACTIONS[city.faction]['troops']
+    wd.group = dict(keys=[random.choice(troops) for _ in range(4)], lvl=4, elite=0, leader=None, faction=city.faction)
     wd.path = list(path)
     wd.home = (city.x, city.y)
     w.wanderers.append(wd)
@@ -292,7 +315,7 @@ def daily(game):
     for s in w.settlements:
         if random.random() < (.45 if s.is_city else .3):
             spawn_caravan(game, s)
-        if s.is_city and not any(x.kind == 'patrol' and x.origin == s.id for x in w.wanderers):
+        if s.is_city and s.faction in ('crown', 'league') and not any(x.kind == 'patrol' and x.origin == s.id for x in w.wanderers):
             spawn_patrol(game, s)
     if sum(1 for x in w.wanderers if x.kind == 'bandits') < 7:
         spawn_bandits(game)

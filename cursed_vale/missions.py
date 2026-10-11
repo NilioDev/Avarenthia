@@ -23,6 +23,8 @@ class Mission:
         self.deadline = None
         self.state = 'offer'
         self.data = {}
+        self.faction = None
+        self.hold = None          # stronghold that gave the job, if any
 
 
 def travel_days(plen):
@@ -133,7 +135,73 @@ def make_offer(game, s):
         m.title = f'Recover {relic}'
         m.desc = f'{relic[0].upper() + relic[1:]} lies at the bottom of {d.name}, to the {_dir(s, (d.x, d.y))}. A guardian watches over it. Bring it back to {s.name}.'
     m.rep = random.randint(5, 10)
+    m.faction = s.faction
     return m
+
+
+def make_hold_offer(game, h):
+    """Jobs from a castellan: war bounties, supply runs and assaults on enemy strongholds."""
+    from .wanderers import road_path as _rp  # noqa: F401
+    w = game.world
+    f = h.faction
+    enemies = [e for e in D.FACTIONS[f]['enemies']]
+    kind = random.choice(['war_bounty', 'supply', 'supply', 'assault'])
+    m = Mission(game.new_id(), kind, None)
+    m.hold, m.faction = h.id, f
+    fname = D.FACTIONS[f]['short']
+    if kind == 'supply':
+        g = random.choice(['arms', 'grain', 'tools', 'medicine', 'timber'])
+        q = random.randint(8, 20)
+        m.data = dict(good=g, qty=q)
+        m.reward = round(D.GOODS[g]['base'] * q * 1.7 + 40)
+        m.deadline = game.day + 8
+        m.title = f"Supply {q} {D.GOODS[g]['name']} to {h.name}"
+        m.desc = (f"The garrison of {h.title} needs {q} {D.GOODS[g]['name']}. Buy them wherever you can and bring them "
+                  f'here before day {m.deadline}. Pays well above market price.')
+    elif kind == 'assault':
+        targets = [o for o in w.holds if o.faction in enemies and o.faction != f and cheb(o.x, o.y, h.x, h.y) <= 80]
+        if not targets:
+            return None
+        t = min(targets, key=lambda o: cheb(o.x, o.y, h.x, h.y))
+        m.data = dict(target_hold=t.id)
+        m.reward = 300 + (150 if t.kind == 'castle' else 0)
+        m.title = f'Take {t.title}'
+        m.desc = (f"Storm {t.title} ({D.FACTIONS[t.faction]['short']}), to the {_dir(h, (t.x, t.y))}, and kill its commander. "
+                  f'The {fname} will reward you richly.')
+    else:
+        foes = [e for e in enemies if e != 'cult'] or enemies
+        foe = random.choice(foes)
+        spot = None
+        over = game.maps['over']
+        for _ in range(300):
+            x, y = h.x + random.randint(-30, 30), h.y + random.randint(-20, 20)
+            if over.inb(x, y) and cheb(x, y, h.x, h.y) >= 10 and D.TILES[over.tile(x, y)].walk and over.tile(x, y) not in (ROAD, TOWN, CITY, ENTR):
+                spot = (x, y)
+                break
+        if not spot:
+            return None
+        lvl = w.region_at(*spot).danger + 3
+        leader = f"{random.choice(['Sir', 'Captain', 'Marshal', 'Warlord'])} {random.choice(D.BANDIT_LEADERS).split()[-1]}"
+        troops = D.FACTIONS[foe]['troops']
+        m.data = dict(spot=spot, lvl=lvl, keys=[random.choice(troops) for _ in range(random.randint(3, 5))], leader=leader, foe=foe)
+        m.reward = 120 + lvl * 25
+        m.title = f"Hunt {leader} of the {D.FACTIONS[foe]['short']}"
+        m.desc = f"{leader} leads a {D.FACTIONS[foe]['short']} warband in {w.region_at(*spot).name}, to the {_dir(h, spot)}. End them."
+    m.rep = random.randint(8, 14)
+    return m
+
+
+def refresh_hold_board(game, h):
+    if h.board and game.day - h.board_day < 3:
+        return
+    h.board_day = game.day
+    h.board = []
+    for _ in range(12):
+        if len(h.board) >= 3:
+            break
+        m = make_hold_offer(game, h)
+        if m and not any(o.kind == m.kind == 'assault' for o in h.board):
+            h.board.append(m)
 
 
 def _dir(s, spot):
@@ -160,6 +228,7 @@ def active(game):
 
 
 def accept(game, s, m):
+    """s is whatever owns the board: a Settlement or a Stronghold."""
     p = game.player
     from .economy import free_cargo
     if len(active(game)) >= MAX_ACTIVE:
@@ -182,13 +251,16 @@ def accept(game, s, m):
         p.parcels.append(dict(mid=m.id, name=m.data['parcel'], w=1))
     elif m.kind == 'freight':
         p.parcels.append(dict(mid=m.id, name=f"{m.data['qty']} {D.GOODS[m.data['good']]['name']} (freight)", w=m.data['w']))
-    elif m.kind == 'bounty':
+    elif m.kind in ('bounty', 'war_bounty'):
         x, y = m.data['spot']
         kind = 'bandits' if m.data['keys'][0] in ('bandit', 'brigand') else 'monsters'
         wd = make_group(game, kind, x, y, m.data['lvl'], m.data['keys'], 2, m.data['leader'])
         wd.kind = 'bounty'
         wd.mission = m.id
         wd.fg = D.UNIQUE_FG
+        if m.kind == 'war_bounty':
+            wd.group['faction'] = m.data['foe']
+            wd.ch = '@'
         w.wanderers.append(wd)
     elif m.kind == 'escort':
         wd = Wanderer(game.new_id(), 'escort', s.x, s.y)
@@ -224,13 +296,17 @@ def place_relic(game, mp, m):
 
 
 def complete(game, m, sids):
+    from .war import change_rep
     p = game.player
     w = game.world
     m.state = 'done'
-    bonus = round(m.reward * min(w.settlements[m.giver].rep, 100) / 200)
+    local = w.settlements[m.giver].rep if m.giver is not None else max(0, p.rep.get(m.faction, 0))
+    bonus = round(m.reward * min(local, 100) / 200)
     p.gold += m.reward + bonus
     for sid in sids:
         w.settlements[sid].rep = min(100, w.settlements[sid].rep + m.rep)
+    if m.faction:
+        change_rep(game, m.faction, m.rep if m.hold is not None else 2)
     p.parcels = [pc for pc in p.parcels if pc['mid'] != m.id]
     w.wanderers = [x for x in w.wanderers if x.mission != m.id]
     p.inv = [it for it in p.inv if getattr(it, 'mission', None) != m.id]
@@ -242,7 +318,11 @@ def fail(game, m, why):
     p = game.player
     w = game.world
     m.state = 'failed'
-    w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
+    if m.giver is not None:
+        w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
+    elif m.faction:
+        from .war import change_rep
+        change_rep(game, m.faction, -5)
     p.parcels = [pc for pc in p.parcels if pc['mid'] != m.id]
     w.wanderers = [x for x in w.wanderers if x.mission != m.id]
     game.msg(f'Job failed: {m.title}. {why}', 'bad')
@@ -254,22 +334,54 @@ def on_enter(game, sid):
             complete(game, m, [m.giver, sid])
         elif m.kind == 'escort' and m.target == sid:
             complete(game, m, [m.giver, sid])
-        elif m.kind in ('bounty', 'fetch') and m.state == 'turnin' and m.giver == sid:
+        elif m.kind in ('bounty', 'fetch') and m.state == 'turnin' and m.giver == sid and m.hold is None:
             complete(game, m, [sid])
 
 
 def on_group_defeated(game, wd):
     m = find(game, wd.mission)
-    if m and m.kind == 'bounty' and m.state == 'active':
+    if m and m.kind in ('bounty', 'war_bounty') and m.state == 'active':
         m.state = 'turnin'
-        game.msg(f'{wd.group["leader"]} is dead. Return to {game.world.settlements[m.giver].name} for your reward.', 'gold')
+        game.msg(f'{wd.group["leader"]} is dead. Return to {giver_name(game, m)} for your reward.', 'gold')
 
 
 def on_pickup(game, it):
     m = find(game, getattr(it, 'mission', None))
     if m and m.state == 'active':
         m.state = 'turnin'
-        game.msg(f'You found {it.name}! Bring it back to {game.world.settlements[m.giver].name}.', 'unique')
+        game.msg(f'You found {it.name}! Bring it back to {giver_name(game, m)}.', 'unique')
+
+
+def giver_name(game, m):
+    if m.hold is not None:
+        return game.world.holds[m.hold].title
+    return game.world.settlements[m.giver].name
+
+
+def on_enter_hold(game, hid):
+    p = game.player
+    for m in active(game):
+        if m.hold != hid:
+            continue
+        if m.kind == 'supply' and m.state == 'active':
+            g, q = m.data['good'], m.data['qty']
+            if p.cargo.get(g, 0) >= q:
+                p.cargo[g] -= q
+                if not p.cargo[g]:
+                    del p.cargo[g]
+                    p.cost_basis.pop(g, None)
+                complete(game, m, [])
+            else:
+                game.msg(f"The quartermaster still waits for {q} {D.GOODS[g]['name']} (you carry {p.cargo.get(g, 0)}).", 'info')
+        elif m.state == 'turnin':
+            complete(game, m, [])
+
+
+def on_capture(game, hid):
+    for m in active(game):
+        if m.kind == 'assault' and m.data.get('target_hold') == hid:
+            m.state = 'turnin'
+            game.msg(f'Return to {giver_name(game, m)} to claim your reward.', 'gold')
 
 
 def on_escort_killed(game):
@@ -305,9 +417,17 @@ def escort_wanderer(game):
 def target_pos(game, m):
     """Where on the overworld this job wants you to go next."""
     w = game.world
-    if m.state == 'turnin':
+    if m.state == 'turnin' or m.kind == 'supply':
+        if m.hold is not None:
+            h = w.holds[m.hold]
+            return (h.x, h.y), h.title
         s = w.settlements[m.giver]
         return (s.x, s.y), s.name
+    if m.kind == 'assault':
+        h = w.holds[m.data['target_hold']]
+        return (h.x, h.y), h.title
+    if m.kind == 'war_bounty':
+        return tuple(m.data['spot']), m.data['leader']
     if m.kind in ('courier', 'freight', 'escort'):
         s = w.settlements[m.target]
         return (s.x, s.y), s.name

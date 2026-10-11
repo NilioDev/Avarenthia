@@ -272,7 +272,7 @@ def gen_dungeon(game, did, depth):
     return m
 
 
-def gen_wild(game, terrain, lvl, keys, elite=0, leader=None):
+def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
     """A small battle map for an overworld encounter. keys lists the monster type of each enemy."""
     base = {SWAMP: SWAMP, D.SAND: D.SAND}.get(terrain, GRASS)
     m = GameMap('wild', 'wild', 'Wilderness', 48, 20, base)
@@ -313,6 +313,7 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None):
             if el == 2 and leader:
                 mon.name = leader
             mon.pack, mon.awake = pid, True
+            mon.faction = faction
             m.mons.append(mon)
     if random.random() < .4:
         c2 = rand_free(game, m, lambda t: D.TILES[t].walk)

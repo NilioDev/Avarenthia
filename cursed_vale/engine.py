@@ -6,15 +6,18 @@ import random
 from . import data as D
 from . import economy as ECO
 from . import fov
+from . import skills as SK
 from . import missions as MS
 from . import wanderers as WA
+from . import war as WAR
+from . import towns as TW
 from . import world as WO
 from . import worldgen as W
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 4
+SAVE_VERSION = 5
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -30,7 +33,7 @@ def clamp(v, a, b):
 
 
 def xp_for(lvl):
-    return int(30 * lvl ** 2.1)
+    return int(60 * lvl ** 2.35)
 
 
 def line(x0, y0, x1, y1):
@@ -71,8 +74,10 @@ def dir_name(dx, dy):
 
 
 class Game:
-    def __init__(self, name, cls):
+    def __init__(self, name, hardcore=True, seed=None):
         self.version = SAVE_VERSION
+        self.seed = seed if seed is not None else random.randrange(1, 10 ** 9)
+        random.seed(self.seed)
         self._next_id = 1
         self.turn = 0
         self.maps = {}
@@ -97,26 +102,25 @@ class Game:
         self.vis = bytearray()
         self.dist = None
 
-        p = self.player = Player(name or 'Wanderer', cls)
+        self.corpses = []
+        self.turn = D.DAY_LEN * 7 // 24      # the story starts at seven in the morning
+        p = self.player = Player(name or 'Wanderer', hardcore)
         p.x = p.y = -5
         self.cur = 'none'
 
-        def gear(bk):
+        def gear(bk, equip=True):
             it = make_gear(self, bk, 'normal', 1)
             self.add_to_inv(it)
-            p.eq[it.slot] = it.id
+            if equip:
+                p.eq[it.slot] = it.id
 
-        if cls == 'barbarian':
-            gear('shortsword'); gear('quilted')
-            self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 4))
-        elif cls == 'rogue':
-            gear('dagger'); gear('quilted')
-            self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 3))
-            self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 2))
-        else:
-            gear('staff'); gear('cap')
-            self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 3))
-            self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 4))
+        gear('shortsword')
+        gear('quilted')
+        gear('shortbow', False)
+        gear('dagger', False)
+        gear('club', False)
+        self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 3))
+        self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 3))
         self.add_to_inv(Item(self.new_id(), 'scroll', 'tp', 2))
         s = self.stats()
         p.life, p.mana = s['max_life'], s['max_mana']
@@ -140,8 +144,9 @@ class Game:
         rat = world.dungeons['rat']
         over.seen[rat.y * over.w + rat.x] = 1
         self.home = 0
+        ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
         self.cur = home.map_key
-        self.maps[self.cur] = WO.gen_settlement_map(self, home)
+        self.maps[self.cur] = TW.gen_settlement_map(self, home)
         m = self.maps[self.cur]
         p.x, p.y = m.entry[0] + 2, m.entry[1]
         self.shops = {0: W.gen_shop(self)}
@@ -169,7 +174,7 @@ class Game:
     def here(self):
         """The settlement you are standing in, or None."""
         m = self.maps.get(self.cur)
-        if m is not None and m.kind == 'town':
+        if m is not None and m.kind == 'town' and getattr(m, 'sid', None) is not None:
             return self.world.settlements[m.sid]
         return None
 
@@ -241,9 +246,8 @@ class Game:
     # ------------------------------------------------------------ derived stats
     def stats(self):
         p = self.player
-        c = D.CLASSES[p.cls]
         s = dict(str=p.str, dex=p.dex, vit=p.vit, ene=p.ene, life=0, mana=0, dmg_flat=0, ed=0, hit=0,
-                 leech=0, crit=5, regen=0, armor=0)
+                 leech=0, crit=5, regen=0, armor=0, dr=0)
         for slot in D.SLOTS:
             it = self.eq_item(slot)
             if not it:
@@ -255,14 +259,29 @@ class Game:
             s['mana'] += b.get('mana', 0)
             s['hit'] += b.get('hit', 0)
             s['armor'] += it.armor_value()
-        s['max_life'] = int(10 + s['vit'] * 2 + (p.lvl - 1) * c['life_lvl'] + s['life'])
-        s['max_mana'] = int(s['ene'] * 2 + (p.lvl - 1) * c['mana_lvl'] + s['mana'])
+        buff_dmg = 0
+        for k, v, _t, _src in p.buffs:
+            if k == 'def':
+                s['armor'] += v
+            elif k == 'regen':
+                s['regen'] += v
+            elif k == 'dr':
+                s['dr'] = max(s['dr'], v)
+            elif k == 'dmg':
+                buff_dmg += v
+        s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
+        s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
         w = self.eq_item('weapon')
         bd = w.dmg if w else (1, 3)
-        mul = 1 + (s['dex'] if p.cls == 'rogue' else s['str']) / 100 + s['ed'] / 100
+        line = SK.WEAPON_LINE.get(w.base) if w else None
+        wr = p.disc[line][0] if line else 0
+        dexy = line in ('daggers', 'archery')
+        mul = 1 + (s['dex'] if dexy else s['str']) / 100 + s['ed'] / 100 + wr * .015 + buff_dmg / 100
         s['dmg'] = (max(1, int(bd[0] * mul + s['dmg_flat'])), max(1, int(bd[1] * mul + s['dmg_flat'])))
-        s['ar'] = 20 + s['dex'] * 2 + p.lvl * 5 + s['hit']
+        s['ar'] = 20 + s['dex'] * 2 + p.lvl * 4 + s['hit'] + wr * 2
         s['def'] = s['armor'] + s['dex'] // 2
+        s['line'] = line
+        s['ranged'] = bool(w and D.BASES[w.base].get('ranged'))
         return s
 
     def clamp_vitals(self):
@@ -273,7 +292,14 @@ class Game:
     # ------------------------------------------------------------ vision
     def compute_fov(self):
         m, p = self.map, self.player
-        self.vis = fov.compute(m, p.x, p.y, m.radius)
+        r = m.radius
+        if m.kind in ('over', 'town') and TW.is_night(self):
+            r = 5 if m.kind == 'over' else 9
+        self.vis = fov.compute(m, p.x, p.y, r)
+
+    def say(self, npc, line):
+        self.msg(f'{npc.name}: "{line}"', 'talk')
+        self.events.append(('speech', npc.x, npc.y, line))
 
     def visible(self, x, y):
         m = self.map
@@ -347,6 +373,11 @@ class Game:
         if m.kind == 'wild':
             self.resolve_encounter()
             self.maps.pop('wild', None)
+        elif getattr(m, 'hid', None) is not None:
+            h = self.world.holds[m.hid]
+            self.over_pos = (h.x, h.y)
+            if getattr(m, 'stale', False):
+                self.maps.pop(m.key, None)
         elif m.kind == 'town':
             s = self.world.settlements[m.sid]
             self.over_pos = (s.x, s.y)
@@ -384,7 +415,7 @@ class Game:
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
         if s.map_key not in self.maps:
-            self.maps[s.map_key] = WO.gen_settlement_map(self, s)
+            self.maps[s.map_key] = TW.gen_settlement_map(self, s)
         self.cur = s.map_key
         self.home = sid
         m = self.map
@@ -405,6 +436,28 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
 
+    def enter_hold(self, hid):
+        p = self.player
+        h = self.world.holds[hid]
+        hostile = WAR.is_hostile(self, h.faction)
+        if self.cur == 'over':
+            self.over_pos = (p.x, p.y)
+        m = self.maps.get(h.map_key)
+        if m is None or (m.kind == 'siege') != hostile:
+            m = TW.gen_hold_map(self, h, hostile)
+            self.maps[h.map_key] = m
+        self.cur = h.map_key
+        p.x, p.y = m.entry[0] + 1, m.entry[1]
+        if hostile:
+            self.msg(f'You storm the gate of {h.title}! Kill its commander to take the fortress.', 'bad')
+        else:
+            key = f'h{hid}'
+            self.shops[key] = W.gen_shop(self, True)
+            self.msg(f'You enter {h.title}.', 'info')
+            MS.on_enter_hold(self, hid)
+        self.compute_fov()
+        self.request = ('save',)
+
     def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None):
         p = self.player
         self.over_pos = (p.x, p.y)
@@ -413,13 +466,14 @@ class Game:
         if wd:
             g = wd.group
             lvl, keys, elite, leader = g['lvl'], g['keys'], g['elite'], g.get('leader')
+            faction = g.get('faction')
             self.encounter = wd.id
         else:
-            elite, leader = 0, None
+            elite, leader, faction = 0, None, None
             self.encounter = None
         self.cur = 'wild'
         p.x = p.y = -5
-        w = W.gen_wild(self, terrain, lvl, keys, elite, leader)
+        w = W.gen_wild(self, terrain, lvl, keys, elite, leader, faction)
         self.maps['wild'] = w
         p.x, p.y = w.entry
         for mi in MS.active(self):
@@ -448,8 +502,8 @@ class Game:
         m, p = self.map, self.player
         nx, ny = p.x + dx, p.y + dy
         if not m.inb(nx, ny):
-            if m.kind in ('town', 'wild'):
-                if m.kind == 'wild' and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
+            if m.kind in ('town', 'wild', 'siege'):
+                if m.kind in ('wild', 'siege') and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
                     self.msg('You cannot flee with an enemy next to you.', 'bad')
                     return 0
                 self.leave_to_over()
@@ -506,6 +560,8 @@ class Game:
     def over_step(self, moved_escort=False):
         m, p = self.map, self.player
         t = m.tile(p.x, p.y)
+        if any(i.x == p.x and i.y == p.y for i in m.items):
+            self.auto_pickup()
         s = self.world.settlement_at(p.x, p.y)
         if s:
             kind = 'city' if s.is_city else 'village'
@@ -514,6 +570,14 @@ class Game:
         if t == ENTR:
             d = self.world.dungeon_at(p.x, p.y)
             self.msg(f"You stand at the entrance of {d.name}. Press > or Enter to descend.", 'info')
+            return 10
+        h = self.world.hold_at(p.x, p.y)
+        if h:
+            f = D.FACTIONS[h.faction]
+            if WAR.is_hostile(self, h.faction):
+                self.msg(f"{h.title} ({f['short']}) bars its gates against you. Press > to storm it.", 'bad')
+            else:
+                self.msg(f"You stand before {h.title} ({f['short']}). Press > or Enter to go in.", 'info')
             return 10
         cost = D.TILES[t].cost
         reg = self.world.region_at(p.x, p.y)
@@ -535,6 +599,23 @@ class Game:
                 p.gold += it.n
                 self.num(p.x, p.y, f'+{it.n}g', C_GOLD)
                 self.msg(f'You pick up {it.n} gold.', 'gold')
+            elif it.k == 'corpse':
+                pl = it.payload
+                left = []
+                for o in pl['items']:
+                    if not self.add_to_inv(o):
+                        left.append(o)
+                for g, q in pl['cargo'].items():
+                    p.cargo[g] = p.cargo.get(g, 0) + q
+                for g, c in pl['cost'].items():
+                    p.cost_basis.setdefault(g, c)
+                p.gold += pl['gold']
+                self.corpses = [c for c in self.corpses if c[1] != it.id]
+                self.msg(f"You recover your belongings and {pl['gold']} gold from your body.", 'good')
+                if left:
+                    pl['items'], pl['cargo'], pl['gold'] = left, {}, 0
+                    self.msg('Your bag is full; some items stay with your body.', 'bad')
+                    continue
             elif it.k == 'orb':
                 s = self.stats()
                 h = round(s['max_life'] * .25)
@@ -590,7 +671,15 @@ class Game:
                 return 0
             s = self.world.settlement_at(p.x, p.y)
             if s:
+                ok, why = WAR.can_enter(self, s)
+                if not ok:
+                    self.msg(why, 'bad')
+                    return 0
                 self.enter_town(s.id)
+                return 1
+            h = self.world.hold_at(p.x, p.y)
+            if h:
+                self.enter_hold(h.id)
                 return 1
             if t == ENTR:
                 self.enter_dungeon(self.dungeon_at(p.x, p.y), 1, 'up')
@@ -712,15 +801,8 @@ class Game:
             p.mana += 2
 
     def learn_skill(self, i):
-        p = self.player
-        k = D.SKILLS[p.cls][i]
-        r = p.skills.get(k.id, 0)
-        if p.skill_pts > 0 and p.lvl >= k.lvl and r < 10:
-            p.skill_pts -= 1
-            p.skills[k.id] = r + 1
-            self.msg(f'{k.name} is now rank {r + 1}.', 'gold')
+        pass
 
-    # ------------------------------------------------------------ shop
     def buy_supply(self, i):
         k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp')][i]
         it = Item(self.new_id(), k, t)
@@ -733,8 +815,8 @@ class Game:
         p.gold -= it.value()
         self.msg(f"You buy a {D.POTIONS[t]['name'] if k == 'potion' else 'Scroll of Town Portal'}.", 'gold')
 
-    def buy_gear(self, i):
-        shop = self.shops.get(self.home, [])
+    def buy_gear(self, i, key=None):
+        shop = self.shops.get(self.home if key is None else key, [])
         if i >= len(shop):
             return
         it, p = shop[i], self.player
@@ -782,6 +864,8 @@ class Game:
 
     def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False):
         p = self.player
+        if 'vuln' in mon.effects:
+            dmg *= 1.25
         dmg = max(1, round(dmg * (2 if crit else 1)))
         mon.hp -= dmg
         mon.awake = True
@@ -802,6 +886,8 @@ class Game:
     def melee(self, mon):
         s = self.stats()
         self.player.last_target = mon.id
+        if s['ranged']:
+            s['dmg'] = (max(1, s['dmg'][0] // 2), max(1, s['dmg'][1] // 2))
         if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + mon.df), .25, .95):
             self.num(mon.x, mon.y, 'miss', C_MISS)
             self.msg(f'You miss {mon.the()}.')
@@ -809,19 +895,21 @@ class Game:
             self.wake_pack(mon)
             return
         crit = random.random() < s['crit'] / 100
+        if s['line'] and not s['ranged']:
+            SK.gain(self, s['line'], 1)
         if not self.damage_mon(mon, random.randint(*s['dmg']), crit, weapon=True):
             self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
 
-    def weapon_strike(self, mon, pct, force_crit=False):
+    def weapon_strike(self, mon, pct, force_crit=False, ranged=False):
         s = self.stats()
         crit = force_crit or random.random() < s['crit'] / 100
         return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100, crit, weapon=True)
 
     def hurt(self, dmg, src):
         p = self.player
-        dmg = max(1, round(dmg))
-        p.life -= dmg
         s = self.stats()
+        dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
+        p.life -= dmg
         big = dmg >= s['max_life'] * .2
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
         if big:
@@ -850,6 +938,10 @@ class Game:
             if cheb(mon.x, mon.y, p.x, p.y) <= 1:
                 self.hurt(mon.dmg[1] * .8, mon.name)
         self.drop_loot(mon)
+        if mon.faction:
+            WAR.on_kill(self, mon)
+        if getattr(mon, 'commander', False) and getattr(m, 'hid', None) is not None:
+            self.capture_hold(m.hid)
         if mon.k == 'ratking':
             self.flags['ratking'] = True
             self.msg('The rats scatter in every direction. Elder Berend will want to hear of this.', 'gold')
@@ -860,6 +952,19 @@ class Game:
             self.flags['lich'] = True
             self.msg('Morvenna shrieks and crumbles to dust. The curse is broken!', 'unique')
             self.request = ('win',)
+
+    def capture_hold(self, hid):
+        h = self.world.holds[hid]
+        old = h.faction
+        cands = [f for f in D.FACTIONS[old]['enemies'] if f != 'cult']
+        new = max(cands, key=lambda f: self.player.rep[f]) if cands else 'crown'
+        old_title = h.title
+        WAR.capture(self, h, new, 8)
+        self.map.stale = True
+        self.msg(f'{old_title} has fallen! You hand it to {D.FACTIONS[new]["name"]}. It is now {h.title}.', 'unique')
+        WAR.change_rep(self, old, -20)
+        WAR.change_rep(self, new, 20)
+        MS.on_capture(self, hid)
 
     def spill(self, m, x, y, it):
         p = self.player
@@ -907,16 +1012,12 @@ class Game:
         p.xp += n
         while p.xp >= xp_for(p.lvl):
             p.lvl += 1
-            p.stat_pts += 5
-            p.skill_pts += 1
+            p.stat_pts += D.LEVEL_STAT_POINTS
             s = self.stats()
             p.life, p.mana = s['max_life'], s['max_mana']
             self.num(p.x, p.y, 'LEVEL UP', C_GOLD, True)
             self.shake()
-            self.msg(f'You reach level {p.lvl}! Press C to spend your stat and skill points.', 'gold')
-            for k in D.SKILLS[p.cls]:
-                if k.lvl == p.lvl:
-                    self.msg(f'New skill available: {k.name}.', 'gold')
+            self.msg(f'You reach level {p.lvl}! Press C to spend {D.LEVEL_STAT_POINTS} attribute points.', 'gold')
 
     def mon_hit_chance(self, mon, df):
         return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6), .15, .9)
@@ -925,6 +1026,8 @@ class Game:
         p = self.player
         if random.random() < self.mon_hit_chance(mon, df):
             dmg = random.randint(*mon.dmg)
+            if 'weaken' in mon.effects:
+                dmg = round(dmg * .7)
             if 'Vampiric' in mon.mods:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 2))
             if mon.tpl['leech']:
@@ -1064,17 +1167,35 @@ class Game:
             if mon not in m.mons:
                 continue
             if mon.is_npc:
-                if not mon.stay and random.random() < .3:
+                if not mon.stay and not hasattr(mon, 'work_pos') and random.random() < .3:
                     self.random_step(mon)
                 continue
             d = mon.tpl
             if d['regen'] and mon.hp < mon.maxhp:
                 mon.hp = min(mon.maxhp, mon.hp + -(-mon.maxhp // 40))
+            if mon.effects:
+                for k in list(mon.effects):
+                    t, v = mon.effects[k]
+                    if k in ('burn', 'bleed', 'poison') and v:
+                        col = {'burn': (255, 140, 60), 'bleed': (220, 60, 60), 'poison': (143, 220, 90)}[k]
+                        mon.hp -= v
+                        self.num(mon.x, mon.y, str(v), col)
+                        if mon.hp <= 0:
+                            self.kill(mon)
+                            break
+                    if t <= 1:
+                        del mon.effects[k]
+                    else:
+                        mon.effects[k][0] = t - 1
+                if mon not in m.mons:
+                    continue
             if mon.hold > 0:
                 mon.hold -= 1
+                if mon.hold == 0:
+                    mon.frozen = False
                 continue
             if not mon.awake:
-                if self.visible(mon.x, mon.y) and random.random() < (.5 if p.cls == 'rogue' else .7):
+                if self.visible(mon.x, mon.y) and random.random() < .65:
                     mon.awake = True
                     self.wake_pack(mon)
                 else:
@@ -1090,9 +1211,23 @@ class Game:
         p = self.player
         for _ in range(cost):
             self.turn += 1
+            if p.cooldowns:
+                for k in list(p.cooldowns):
+                    p.cooldowns[k] -= 1
+                    if p.cooldowns[k] <= 0:
+                        del p.cooldowns[k]
+            if p.buffs:
+                for b in p.buffs:
+                    b[2] -= 1
+                ended = [b for b in p.buffs if b[2] <= 0]
+                p.buffs = [b for b in p.buffs if b[2] > 0]
+                for b in ended:
+                    self.msg(f'{b[3]} wears off.')
             s = self.stats()
             if self.turn % 4 == 0 and p.life < s['max_life']:
-                p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60 + s['regen'])
+                p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60)
+            if s['regen'] and p.life < s['max_life']:
+                p.life = min(s['max_life'], p.life + s['regen'])
             if self.turn % 2 == 0 and p.mana < s['max_mana']:
                 p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40)
             if p.poison:
@@ -1111,9 +1246,12 @@ class Game:
             for _ in range(self.day - self.last_day):
                 ECO.daily(self)
                 WA.daily(self)
+                WAR.daily(self)
                 MS.daily(self)
             self.last_day = self.day
         self.compute_fov()
+        if self.map.kind == 'town':
+            TW.live(self, self.map)
         if self.map.kind != 'over':
             self.monsters_act()
         elif self.cur == 'over':
@@ -1128,12 +1266,56 @@ class Game:
     def die(self, cause):
         if self.dead:
             return
+        p = self.player
+        if not p.hardcore:
+            self.respawn(cause)
+            return
         self.dead = True
-        self.player.life = 0
+        p.life = 0
         self.cause = cause
         self.msg('You have died.', 'bad')
 
-    # ------------------------------------------------------------ skills
+    def respawn(self, cause):
+        """Softcore death: wake in the nearest temple. Your backpack, cargo and gold stay with your body."""
+        p = self.player
+        p.deaths += 1
+        m = self.map
+        if m.kind == 'wild':
+            self.resolve_encounter()
+            self.maps.pop('wild', None)
+            key, cx, cy = 'over', self.over_pos[0], self.over_pos[1]
+        else:
+            key, cx, cy = self.cur, p.x, p.y
+        if m.kind == 'town':
+            key = None   # dying in town: nothing is lost
+        corpse = None
+        if key:
+            corpse = Item(self.new_id(), 'corpse', 'corpse')
+            corpse.name = f'your body (day {self.day})'
+            corpse.payload = dict(items=[it for it in p.inv if not self.is_equipped(it) and it.k != 'quest'],
+                                  cargo=dict(p.cargo), cost=dict(p.cost_basis), gold=p.gold)
+            corpse.x, corpse.y = cx, cy
+            self.maps[key].items.append(corpse)
+            self.corpses.append((key, corpse.id))
+            p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
+            p.cargo, p.cost_basis, p.gold = {}, {}, 0
+        here = self.world.settlements[self.home] if self.home is not None else None
+        ox, oy = self.over_pos if self.cur != 'over' else (p.x, p.y)
+        temples = [st for st in self.world.settlements if 'temple' in st.services]
+        dest = min(temples, key=lambda st: cheb(st.x, st.y, ox, oy)) if temples else here
+        s = self.stats()
+        p.life, p.mana = max(1, s['max_life'] // 2), s['max_mana'] // 2
+        p.poison = p.burn = None
+        p.buffs = []
+        self.cur = 'over'
+        p.x, p.y = dest.x, dest.y
+        self.enter_town(dest.id)
+        self.msg(f'You were slain by {cause}... and wake on the cold floor of the temple in {dest.name}.', 'bad')
+        if corpse:
+            where = 'in the wilds' if key == 'over' else self.maps[key].name
+            self.msg(f'Your backpack, cargo and gold lie with your body {where}. Go and get them back.', 'bad')
+        self.request = ('save',)
+
     def nearest_target(self, max_d, need_line):
         p = self.player
         lst = [o for o in self.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= max_d]
@@ -1147,133 +1329,51 @@ class Game:
         return min(lst, key=lambda o: cheb(o.x, o.y, p.x, p.y))
 
     def use_skill(self, n):
+        return SK.use(self, n)
+
+    def fire(self):
+        """Basic bow shot at the nearest enemy in sight."""
+        s = self.stats()
+        if not s['ranged']:
+            self.msg('You need a bow equipped to shoot. Walk into enemies to fight in melee.')
+            return 0
+        if self.map.kind in ('over', 'town'):
+            self.msg('There is nothing to shoot here.')
+            return 0
+        t = self.nearest_target(8, True)
+        if not t:
+            self.msg('No target in sight.')
+            return 0
         p = self.player
-        sks = D.SKILLS[p.cls]
-        if n >= len(sks):
-            return 0
-        sk = sks[n]
-        r = p.skills.get(sk.id, 0)
-        m = self.map
-        if not r:
-            self.msg(f'{sk.name} unlocks at level {sk.lvl}.' if p.lvl < sk.lvl else f'Spend a skill point on {sk.name} first (C).')
-            return 0
-        if m.kind in ('over', 'town'):
-            self.msg('Save your skills for the dungeons.')
-            return 0
-        if p.mana < sk.cost:
-            self.msg(f'Not enough mana for {sk.name} ({sk.cost} needed).', 'bad')
-            return 0
-        ene = self.stats()['ene']
-
-        def area(rad):
-            return [o for o in self.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= rad]
-
-        def landing(t):
-            sp = [c for c in W.free_around(self, m, t.x, t.y, 1) if self.visible(*c)]
-            return sp
-
-        sid = sk.id
-        if sid == 'cleave':
-            t = area(1)
-            if not t:
-                self.msg('No enemies next to you.')
-                return 0
-            self.flash(ring(p.x, p.y, 1), (255, 106, 74), '/', .16)
-            for o in t:
-                self.weapon_strike(o, 100 + r * 15)
-        elif sid == 'warcry':
-            t = area(3)
-            if not t:
-                self.msg('No enemies in range.')
-                return 0
-            self.flash(ring(p.x, p.y, 3) + ring(p.x, p.y, 2), (242, 196, 67), '!', .22)
-            self.msg('You let out a terrifying war cry!', 'info')
-            for o in t:
-                o.hold = 2
-                self.damage_mon(o, 6 + r * 5, col=(242, 196, 67))
-        elif sid == 'leap':
-            t = self.nearest_target(6, False)
-            if not t:
-                self.msg('No enemy within leaping range.')
-                return 0
-            if cheb(t.x, t.y, p.x, p.y) > 1:
-                sp = landing(t)
-                if not sp:
-                    self.msg('There is no room to land.')
-                    return 0
-                dst = min(sp, key=lambda c: cheb(c[0], c[1], p.x, p.y))
-                self.flash(line(p.x, p.y, *dst), (255, 106, 74), '*', .18)
-                p.x, p.y = dst
-            self.flash(ring(p.x, p.y, 1), (255, 106, 74), '*', .22)
-            self.shake()
-            for o in area(1):
-                self.weapon_strike(o, 150 + r * 25)
-        elif sid == 'knives':
-            t = self.nearest_target(8, True)
-            if not t:
-                self.msg('No target in sight.')
-                return 0
-            p.last_target = t.id
-            self.flash(line(p.x, p.y, t.x, t.y)[:-1], (216, 224, 240), '-', .15)
-            self.weapon_strike(t, 85 + r * 15)
-        elif sid == 'fan':
-            t = area(2)
-            if not t:
-                self.msg('No enemies within reach.')
-                return 0
-            self.flash(ring(p.x, p.y, 2) + ring(p.x, p.y, 1), (216, 224, 240), 'x', .18)
-            for o in t:
-                self.weapon_strike(o, 70 + r * 15)
-        elif sid == 'shadow':
-            t = self.nearest_target(8, False)
-            if not t:
-                self.msg('No target in sight.')
-                return 0
-            sp = landing(t)
-            if sp:
-                dst = max(sp, key=lambda c: cheb(c[0], c[1], p.x, p.y))
-                self.flash([(p.x, p.y)], (154, 124, 255), '%', .2)
-                p.x, p.y = dst
-            elif cheb(t.x, t.y, p.x, p.y) > 1:
-                self.msg('No shadows to step into.')
-                return 0
-            p.last_target = t.id
-            self.weapon_strike(t, 200 + r * 30, True)
-        elif sid == 'firebolt':
-            t = self.nearest_target(9, True)
-            if not t:
-                self.msg('No target in sight.')
-                return 0
-            p.last_target = t.id
-            self.flash(line(p.x, p.y, t.x, t.y)[:-1], (255, 122, 44), '*', .17)
-            self.damage_mon(t, random.randint(3 + r * 3, 7 + r * 4) + ene // 4, col=(255, 176, 112))
-        elif sid == 'nova':
-            t = area(2)
-            self.flash(ring(p.x, p.y, 2) + ring(p.x, p.y, 1), (159, 216, 255), '*', .24)
-            if not t:
-                self.msg('The frost dissipates harmlessly.')
-            for o in t:
-                o.hold = 3
-                self.damage_mon(o, random.randint(2 + r * 2, 5 + r * 3) + ene // 6, col=(191, 232, 255))
-        elif sid == 'chain':
-            t = self.nearest_target(9, True)
-            if not t:
-                self.msg('No target in sight.')
-                return 0
-            p.last_target = t.id
-            hit = set()
-            frm = (p.x, p.y)
-            jumps = 3 + r // 2
-            while t and jumps > 0:
-                jumps -= 1
-                self.flash(line(frm[0], frm[1], t.x, t.y), (242, 240, 122), '~', .2)
-                hit.add(t.id)
-                frm = (t.x, t.y)
-                self.damage_mon(t, random.randint(5 + r * 4, 11 + r * 5) + ene // 3, col=(255, 250, 154))
-                cand = [o for o in self.visible_hostiles() if o.id not in hit and cheb(o.x, o.y, *frm) <= 4]
-                t = min(cand, key=lambda o: cheb(o.x, o.y, *frm)) if cand else None
-        p.mana -= sk.cost
+        p.last_target = t.id
+        self.flash(self.path_to(t)[:-1], (216, 208, 176), '-', .15)
+        if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + t.df), .25, .95):
+            self.num(t.x, t.y, 'miss', C_MISS)
+            t.awake = True
+            self.wake_pack(t)
+            return 1
+        crit = random.random() < s['crit'] / 100
+        self.damage_mon(t, random.randint(*s['dmg']), crit, weapon=True)
+        SK.gain(self, 'archery', 1)
         return 1
+
+    def path_to(self, mon):
+        p = self.player
+        return line(p.x, p.y, mon.x, mon.y)
+
+    def cells_between(self, a, b):
+        return line(a[0], a[1], b[0], b[1])
+
+    def opaque(self, x, y):
+        return D.TILES[self.map.tile(x, y)].opaque
+
+    def heal(self, n, show=False):
+        p = self.player
+        s = self.stats()
+        before = p.life
+        p.life = min(s['max_life'], p.life + max(0, n))
+        if show and p.life > before:
+            self.num(p.x, p.y, f'+{p.life - before}', C_HEAL, True)
 
     # ------------------------------------------------------------ automation
     def explore_step(self):
@@ -1419,8 +1519,22 @@ class Game:
         f, p = self.flags, self.player
         here = self.here
         role = npc.role
-        if role in ('shop', 'market', 'inn', 'stables'):
+        m = self.map
+        hid = getattr(m, 'hid', None)
+        if role == 'castellan':
+            self.request = ('castellan', hid)
+            return
+        if role == 'shop':
+            self.request = ('shop', f'h{hid}' if hid is not None else (here.id if here else 0))
+            return
+        if role in ('market', 'inn', 'stables'):
             self.request = (role, here.id if here else 0)
+            return
+        if role == 'guard':
+            h = self.world.holds[hid] if hid is not None else None
+            f = h.faction if h else (here.faction if here else 'crown')
+            self.say(npc, random.choice([f"Long live the {D.FACTIONS[f]['short']}.", 'Keep your weapons sheathed.',
+                                         f"You are {WAR.standing(self.player.rep.get(f, 0)).lower()} among us.", self.rumor()]))
             return
         if role == 'healer':
             s = self.stats()
@@ -1470,7 +1584,8 @@ class Game:
         if role == 'dog':
             self.msg('The dog wags its tail and sniffs your boots.')
             return
-        self.msg(f'{npc.name} says: "{self.rumor()}"', 'info')
+        line = random.choice(TW.BARKS.get(getattr(npc, 'job', 'any'), TW.BARKS['any'])) if random.random() < .3 else self.rumor()
+        self.say(npc, line)
 
     def rumor(self):
         w = self.world
@@ -1525,6 +1640,7 @@ def load_game():
             g = pickle.load(f)
         if getattr(g, 'version', 0) == SAVE_VERSION and not g.dead:
             g.events, g.request = [], None
+            ECO.faction_rep = lambda st: g.player.rep.get(st.faction, 0)
             g.compute_fov()
             return g
     except Exception:

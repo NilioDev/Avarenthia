@@ -2,12 +2,15 @@
 
 
 def hexrgb(h):
+    if isinstance(h, tuple):
+        return h
     h = h.lstrip('#')
     return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
 
 
 # ---------------------------------------------------------------- tiles
-WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND, CITY = range(21)
+(WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK) = range(33)
 
 
 class Tile:
@@ -41,6 +44,18 @@ TILES = [
     Tile('∩', '#9a8a5a', True, False, 'hills', cost=14),
     Tile('.', '#d8c47a', True, False, 'sand', cost=11),
     Tile('■', '#ffd860', True, False, 'city', cost=10),
+    Tile('ⁿ', '#a8a050', True, False, 'field'),
+    Tile('═', '#8a6a40', False, False, 'fence'),
+    Tile('π', '#a07848', False, False, 'table'),
+    Tile('≡', '#b06060', False, False, 'bed'),
+    Tile('▬', '#d8a040', False, False, 'market stall'),
+    Tile('○', '#6aa2d8', False, False, 'fountain'),
+    Tile('Ω', '#e8e0d0', True, False, 'castle', cost=10),
+    Tile('╬', '#d0c8b8', True, False, 'fort', cost=10),
+    Tile('¥', '#9aa0aa', False, False, 'anvil'),
+    Tile('±', '#e8d070', False, False, 'altar'),
+    Tile('○', '#a07040', False, False, 'barrel'),
+    Tile('.', '#8a6a44', True, False, 'wooden floor'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -99,6 +114,9 @@ BASES = {
     'ringmail': dict(name='Ring Mail', slot='armor', arm=(13, 19), lvl=5, val=70),
     'chainmail': dict(name='Chain Mail', slot='armor', arm=(19, 27), lvl=8, val=120),
     'platemail': dict(name='Plate Mail', slot='armor', arm=(29, 41), lvl=12, val=220),
+    'shortbow': dict(name='Short Bow', slot='weapon', dmg=(2, 6), lvl=1, val=25, ranged=True),
+    'longbow': dict(name='Long Bow', slot='weapon', dmg=(4, 11), lvl=5, val=80, ranged=True),
+    'warbow': dict(name='War Bow', slot='weapon', dmg=(7, 17), lvl=10, val=170, ranged=True),
     'ring': dict(name='Ring', slot='ring', lvl=1, val=40, magic_only=True),
     'amulet': dict(name='Amulet', slot='amulet', lvl=3, val=60, magic_only=True),
 }
@@ -170,6 +188,14 @@ MONSTERS = {
     'ghost': dict(ch='G', fg='#a4ccec', name='Ghost', tags='crypt', min_l=8, hp=1, dmg=1.05, df=1.8, xp=1.6, fast=True),
     'troll': dict(ch='T', fg='#4c8e6c', name='Cave Troll', tags='dungeon', min_l=8, hp=2.2, dmg=1.4, df=1, xp=2.2, regen=True),
     'wraith': dict(ch='W', fg='#7494a4', name='Wraith', tags='crypt', min_l=9, hp=1.6, dmg=1.3, df=1.4, xp=2.2, leech=True),
+    'soldier': dict(ch='@', fg='#c8ccd8', name='Soldier', tags='faction', min_l=3, hp=1.2, dmg=1.1, df=1.2, xp=1.3),
+    'crossbow': dict(ch='@', fg='#a8b8d0', name='Crossbowman', tags='faction', min_l=3, hp=.9, dmg=1, df=1, xp=1.3, ranged=True),
+    'knight': dict(ch='K', fg='#e8e8f0', name='Knight', tags='faction', min_l=6, hp=2, dmg=1.4, df=1.8, xp=2.2),
+    'mercenary': dict(ch='@', fg='#d8b070', name='Mercenary', tags='faction', min_l=3, hp=1.2, dmg=1.2, df=1.1, xp=1.3),
+    'druid': dict(ch='@', fg='#70c060', name='Druid', tags='faction', min_l=4, hp=.9, dmg=1, df=1, xp=1.5, caster=True),
+    'warden': dict(ch='@', fg='#58a050', name='Warden', tags='faction', min_l=3, hp=1, dmg=1, df=1.2, xp=1.3, ranged=True),
+    'raider': dict(ch='@', fg='#c84040', name='Black Hand Raider', tags='faction', min_l=3, hp=1.1, dmg=1.2, df=1, xp=1.3),
+    'robber_knight': dict(ch='K', fg='#a02828', name='Robber Knight', tags='faction', min_l=6, hp=2, dmg=1.5, df=1.6, xp=2.2),
     'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
     'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
     'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags=''),
@@ -254,7 +280,7 @@ BIOME_MONSTERS = {
 TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
           'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
 TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
-CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm']
+CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm', 'Saltreach', 'Aldmark', 'Kingsbridge', 'Marrowgate', 'Vellhaven']
 SIDE_DUNGEONS = [('Howling Cave', 'cave', 'cave'), ('Sunken Chapel', 'rooms', 'crypt'), ('Old Barrow', 'rooms', 'crypt'),
                  ('Gloomhollow', 'cave', 'cave'), ('Drowned Halls', 'rooms', 'dungeon'), ('Wyrm Den', 'cave', 'cave'),
                  ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon')]
@@ -278,3 +304,30 @@ MOUNTS = {
 }
 BASE_CARGO = 30
 DAY_LEN = 300
+
+
+# ---------------------------------------------------------------- factions
+FACTIONS = {
+    'crown': dict(name='The Crown of Aldmark', short='Crown', fg='#e8d070', start=10, enemies=['blackhand', 'cult'],
+                  troops=['soldier', 'soldier', 'crossbow', 'knight'], castle='Castle', fort='Watchfort',
+                  desc='The old kingdom. Holds the heartland, its castles and most of its villages.'),
+    'league': dict(name='The Merchant League', short='League', fg='#e8a050', start=5, enemies=['blackhand', 'cult'],
+                   troops=['mercenary', 'mercenary', 'crossbow'], castle='Counting Keep', fort='Toll Fort',
+                   desc='Rich trading cities that pay mercenaries to keep the roads open.'),
+    'circle': dict(name='The Circle of Thorns', short='Circle', fg='#70c060', start=0, enemies=['cult', 'blackhand'],
+                   troops=['warden', 'druid', 'wolf'], castle='Grove Hold', fort='Thornwatch',
+                   desc='Druids and wardens of the deep woods and marshes. Distrust outsiders.'),
+    'blackhand': dict(name='The Black Hand', short='Black Hand', fg='#d04040', start=-40, enemies=['crown', 'league', 'circle'],
+                      troops=['raider', 'raider', 'brigand', 'robber_knight'], castle='Robber Keep', fort='Raider Fort',
+                      desc='Robber knights and outlaws who tax the roads with steel.'),
+    'cult': dict(name='The Cult of the Undying', short='Cult', fg='#b070ff', start=-100, enemies=['crown', 'league', 'circle', 'blackhand'],
+                 troops=['cultist', 'skeleton', 'zombie', 'skarcher'], castle='Black Spire', fort='Bone Tower',
+                 desc="Morvenna's servants. They raise the dead and answer to no one living."),
+}
+FACTION_ORDER = list(FACTIONS)
+for _f in FACTIONS.values():
+    _f['fg'] = hexrgb(_f['fg'])
+STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgard', 'Dunmere', 'Blackmoor', 'Wolfcrag',
+                    'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil']
+START_STATS = dict(str=15, dex=15, vit=15, ene=15)
+LEVEL_STAT_POINTS = 3

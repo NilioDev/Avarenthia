@@ -5,11 +5,12 @@ import random
 
 from . import data as D
 from .data import (WALL, FLOOR, DOOR, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROAD,
-                   HILLS, SAND, CITY)
+                   HILLS, SAND, CITY, CASTLE, FORT)
 from .entities import GameMap, make_npc
 from .worldgen import D8, cheb, bfs, noise_grid, rand_free
 
-WORLD_W, WORLD_H = 160, 90
+WORLD_W, WORLD_H = 200, 110
+N_CITIES, N_VILLAGES = 6, 20
 NPC_NAMES = ['Dorien', 'Ilse', 'Berend', 'Maud', 'Aldric', 'Petra', 'Hob', 'Wenna', 'Garrick', 'Tamsin', 'Osric', 'Lyra',
              'Bram', 'Edda', 'Corwin', 'Nell', 'Fenwick', 'Rowan', 'Sabine', 'Tobin', 'Agnes', 'Merrit', 'Jory', 'Hilde']
 
@@ -20,6 +21,7 @@ class Region:
         self.biome = 'grass'
         self.name = ''
         self.danger = 1
+        self.faction = 'crown'
 
 
 class Settlement:
@@ -34,6 +36,7 @@ class Settlement:
         self.board_day = -99
         self.rep = 0
         self.services = set()
+        self.faction = 'crown'
 
     @property
     def map_key(self):
@@ -51,6 +54,25 @@ class Dungeon:
         self.relic = None         # mission id of a fetch quest hidden at the bottom
 
 
+class Stronghold:
+    def __init__(self, hid, name, kind, faction, x, y):
+        self.id, self.name, self.kind, self.faction, self.x, self.y = hid, name, kind, faction, x, y
+        self.region = 0
+        self.max_garrison = 30 if kind == 'castle' else 16
+        self.garrison = self.max_garrison
+        self.board = []
+        self.board_day = -99
+
+    @property
+    def map_key(self):
+        return f'hold:{self.id}'
+
+    @property
+    def title(self):
+        f = D.FACTIONS[self.faction]
+        return f"{f['castle'] if self.kind == 'castle' else f['fort']} {self.name}"
+
+
 class World:
     """Everything about the overworld that is not a GameMap."""
 
@@ -62,6 +84,13 @@ class World:
         self.paths = {}           # (sid_a, sid_b) -> list of (x, y)
         self.wanderers = []
         self.start = 0
+        self.holds = []
+
+    def hold_at(self, x, y):
+        for h in self.holds:
+            if h.x == x and h.y == y:
+                return h
+        return None
 
     def region_at(self, x, y):
         return self.regions[self.region_of[y * WORLD_W + x]]
@@ -189,6 +218,10 @@ def gen_world(game):
             continue
         _build_roads(m, world)
         _place_dungeons(m, world, reach, dist, start)
+        _assign_factions(m, world, start)
+        _place_strongholds(m, world, reach)
+        for h in world.holds:
+            m.set(h.x, h.y, CASTLE if h.kind == 'castle' else FORT)
         for s in world.settlements:
             m.set(s.x, s.y, CITY if s.is_city else TOWN)
         for d in world.dungeons.values():
@@ -203,7 +236,7 @@ def _make_regions(m, world, reach, start):
     pool = reach[:]
     random.shuffle(pool)
     for i in pool:
-        if len(centers) >= 11:
+        if len(centers) >= 17:
             break
         x, y = i % w, i // w
         if all(math.hypot(x - cx, y - cy) > 24 for cx, cy in centers):
@@ -253,10 +286,10 @@ def _place_settlements(game, m, world, reach_set, dist, start):
     sett = [Settlement(0, 'Thornfield', 'village', start[0], start[1])]
     # cities: far from the start and from each other, one of them on the coast if possible
     cities = []
-    for want_coast in (True, False, False):
+    for want_coast in (True, True) + (False,) * (N_CITIES - 2):
         for i in cells:
             x, y = i % w, i // w
-            if dist[i] < 25 or not far_enough(x, y, 34):
+            if dist[i] < 22 or not far_enough(x, y, 30):
                 continue
             near_water = any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == WATER for dx in range(-2, 3) for dy in range(-2, 3))
             if want_coast and not near_water:
@@ -264,17 +297,17 @@ def _place_settlements(game, m, world, reach_set, dist, start):
             cities.append((x, y))
             taken.append((x, y))
             break
-    if len(cities) < 3:
+    if len(cities) < N_CITIES - 1:
         return False
-    city_names = random.sample(D.CITY_NAMES, 3)
+    city_names = random.sample(D.CITY_NAMES, len(cities))
     for (x, y), nm in zip(cities, city_names):
         sett.append(Settlement(len(sett), nm, 'city', x, y))
     # villages: spread over regions
     for i in cells:
-        if len(sett) >= 13:
+        if len(sett) >= 1 + len(cities) + N_VILLAGES:
             break
         x, y = i % w, i // w
-        if not far_enough(x, y, 13):
+        if not far_enough(x, y, 11):
             continue
         nm = None
         for _ in range(30):
@@ -285,7 +318,7 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         names.add(nm)
         taken.append((x, y))
         sett.append(Settlement(len(sett), nm, 'village', x, y))
-    if len(sett) < 11:
+    if len(sett) < 1 + len(cities) + N_VILLAGES - 4:
         return False
     for s in sett:
         s.region = world.region_of[s.y * w + s.x]
@@ -483,3 +516,102 @@ def gen_settlement_map(game, s):
     for i in range(len(m.seen)):
         m.seen[i] = 1
     return m
+
+
+
+# ------------------------------------------------------------------ factions
+def _assign_factions(m, world, start):
+    regs = world.regions
+    count = {r.id: 0 for r in regs}
+    for st in world.settlements:
+        count[st.region] += 1
+    crypt = world.dungeons['crypt']
+    crypt_reg = world.region_of[crypt.y * m.w + crypt.x]
+    owner = {0: 'crown'}
+    if crypt_reg != 0:
+        owner[crypt_reg] = 'cult'
+    free = [r for r in regs if r.id not in owner]
+    # outlaws take the dangerous, empty places
+    bh = sorted((r for r in free if r.danger >= 3), key=lambda r: (count[r.id], -r.danger, r.biome != 'hills'))[:3]
+    for r in bh:
+        owner[r.id] = 'blackhand'
+    free = [r for r in regs if r.id not in owner]
+    cult_extra = sorted((r for r in free if r.biome == 'swamp' and count[r.id] <= 1), key=lambda r: -r.danger)[:1]
+    for r in cult_extra:
+        owner[r.id] = 'cult'
+    if 'cult' not in owner.values() and free:
+        owner[max(free, key=lambda r: r.danger).id] = 'cult'
+    free = [r for r in regs if r.id not in owner]
+    for r in free:
+        if r.biome in ('forest', 'swamp'):
+            owner[r.id] = 'circle'
+    cities_by_reg = {}
+    for st in world.settlements:
+        if st.is_city:
+            cities_by_reg[st.region] = cities_by_reg.get(st.region, 0) + 1
+    free = [r for r in regs if r.id not in owner]
+    league = sorted((r for r in free if cities_by_reg.get(r.id)), key=lambda r: -cities_by_reg[r.id])[:3]
+    if not league and free:
+        league = [max(free, key=lambda r: count[r.id])]
+    for r in league:
+        owner[r.id] = 'league'
+    for r in regs:
+        r.faction = owner.get(r.id, 'crown')
+    for f in D.FACTION_ORDER:
+        if f not in (r.faction for r in regs):
+            cand = [r for r in regs if r.id != 0 and r.faction == 'crown']
+            if cand:
+                random.choice(cand).faction = f
+    for st in world.settlements:
+        st.faction = regs[st.region].faction
+    world.settlements[0].faction = 'crown'
+
+
+HOLD_PLAN = {'crown': (2, 2), 'league': (1, 1), 'circle': (1, 1), 'blackhand': (1, 2), 'cult': (1, 1)}
+
+
+def _place_strongholds(m, world, reach):
+    w = m.w
+    names = D.STRONGHOLD_NAMES[:]
+    random.shuffle(names)
+    taken = [(s.x, s.y) for s in world.settlements] + [(d.x, d.y) for d in world.dungeons.values()]
+    pool = reach[:]
+    random.shuffle(pool)
+    for f, (castles, forts) in HOLD_PLAN.items():
+        regs = [r.id for r in world.regions if r.faction == f and r.id != 0]
+        if not regs:
+            continue
+        for kind in ['castle'] * castles + ['fort'] * forts:
+            for i in pool:
+                x, y = i % w, i // w
+                if world.region_of[i] not in regs or m.t[i] in (ROAD, WATER, MOUNTAIN) or not D.TILES[m.t[i]].walk:
+                    continue
+                if any(cheb(x, y, a, b) < 9 for a, b in taken):
+                    continue
+                if not (3 <= x < m.w - 3 and 3 <= y < m.h - 3):
+                    continue
+                h = Stronghold(len(world.holds), names.pop() if names else f'Hold {len(world.holds)}', kind, f, x, y)
+                h.region = world.region_of[i]
+                world.holds.append(h)
+                taken.append((x, y))
+                break
+    # castles of the kingdom and the league are linked to the road network
+    for h in world.holds:
+        if h.faction in ('crown', 'league', 'circle'):
+            near = min(world.settlements, key=lambda s: cheb(s.x, s.y, h.x, h.y))
+            p = dijkstra_path(m, (h.x, h.y), (near.x, near.y))
+            for x, y in (p or []):
+                if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP):
+                    m.set(x, y, ROAD)
+
+
+def flip_region(game, rid, faction):
+    """A region changes hands: its settlements follow."""
+    w = game.world
+    reg = w.regions[rid]
+    old = reg.faction
+    reg.faction = faction
+    for st in w.settlements:
+        if st.region == rid and st.id != 0:
+            st.faction = faction
+    return old

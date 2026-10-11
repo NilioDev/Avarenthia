@@ -25,19 +25,18 @@ def score(it):
 
 
 def manage(g):
+    from cursed_vale import skills as SK
     p = g.player
     while p.stat_pts > 0:
-        main = {'sorceress': 'ene', 'rogue': 'dex', 'barbarian': 'str'}[p.cls]
-        g.add_stat('vit' if p.stat_pts % 2 else main)
-    sk = D.SKILLS[p.cls]
-    while p.skill_pts > 0:
-        c = [k for k in sk if p.lvl >= k.lvl and p.skills.get(k.id, 0) < 10]
-        if not c:
-            break
-        k = min(c, key=lambda k: p.skills.get(k.id, 0))
-        g.learn_skill(sk.index(k))
+        g.add_stat('vit' if p.stat_pts % 2 else 'str')
+    # keep the strongest known sword, fire and restoration skills on the bar
+    want = [k for k in p.known if SK.SKILLS[k].line in ('swords', 'fire', 'restoration', 'warcraft')]
+    want.sort(key=lambda k: -SK.SKILLS[k].unlock)
+    p.bar = (want + [None] * 6)[:6]
     for it in p.inv:
         if it.k != 'gear' or it.req > p.lvl:
+            continue
+        if it.slot == 'weapon' and SK.WEAPON_LINE.get(it.base) != 'swords':
             continue
         cur = g.eq_item(it.slot)
         if not cur or score(it) > score(cur):
@@ -63,7 +62,7 @@ def town_run(g):
     while p.gold >= 25 and potions(g, 'hp') < 8:
         p.gold -= 25
         g.add_to_inv(Item(g.new_id(), 'potion', 'hp'))
-    while p.gold >= 25 and potions(g, 'mp') < 4 and p.cls != 'barbarian':
+    while p.gold >= 25 and potions(g, 'mp') < 3:
         p.gold -= 25
         g.add_to_inv(Item(g.new_id(), 'potion', 'mp'))
     if p.gold >= 30 and not g.count('scroll'):
@@ -100,21 +99,25 @@ def turn(g):
     p, s = g.player, g.stats()
     if p.life < s['max_life'] * .4 and potions(g, 'hp'):
         return act(g, lambda: g.drink('hp'))
-    if p.mana < 12 and potions(g, 'mp') and p.cls == 'sorceress':
+    if p.mana < 6 and potions(g, 'mp'):
         return act(g, lambda: g.drink('mp'))
     hs = g.visible_hostiles()
     if hs:
         adj = [o for o in hs if WG.cheb(o.x, o.y, p.x, p.y) <= 1]
-        sk = D.SKILLS[p.cls]
-        for i in (2, 1, 0):
-            k = sk[i]
-            if p.skills.get(k.id, 0) and p.mana >= k.cost:
-                if k.id == 'cleave' and len(adj) < 2:
-                    continue
-                if k.id in ('fan', 'warcry', 'nova') and len([o for o in hs if WG.cheb(o.x, o.y, p.x, p.y) <= 2]) < 2:
-                    continue
-                if act(g, lambda: g.use_skill(i)):
-                    return 1
+        from cursed_vale import skills as SK
+        for i, sid in enumerate(p.bar):
+            if not sid:
+                continue
+            k = SK.SKILLS[sid]
+            if k.mode == 'self' and k.heal and p.life > s['max_life'] * .6:
+                continue
+            if k.mode in ('adjacent',) and len(adj) < 2:
+                continue
+            if p.mana < k.cost or p.cooldowns.get(sid):
+                continue
+            g.msg_quiet = True
+            if act(g, lambda: g.use_skill(i)):
+                return 1
         if adj:
             o = adj[0]
             return act(g, lambda: g.try_move(o.x - p.x, o.y - p.y))
@@ -134,7 +137,7 @@ def turn(g):
 
 
 def play(cls):
-    g = E.Game('Bot', cls)
+    g = E.Game('Bot', True)
     for did, depth in ORDER:
         for lv in range(1, depth + 1):
             g.enter_dungeon(did, lv, 'up')
@@ -171,7 +174,7 @@ def play(cls):
 
 if __name__ == '__main__':
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 4
-    for cls in D.CLASS_ORDER:
+    for cls in ['classless']:
         res = []
         for _ in range(n):
             out, g = play(cls)

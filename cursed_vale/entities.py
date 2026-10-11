@@ -23,6 +23,7 @@ class Item:
         self.arm = None
         self.name = ''
         self.mission = None
+        self.payload = None
 
     # ---------------------------------------------------------- presentation
     def display_name(self):
@@ -47,6 +48,8 @@ class Item:
             return (255, 74, 74)
         if self.k == 'quest':
             return (255, 214, 92)
+        if self.k == 'corpse':
+            return (240, 240, 240)
         return (238, 228, 194)
 
     def glyph(self):
@@ -60,6 +63,8 @@ class Item:
             return '?'
         if self.k == 'quest':
             return '§'
+        if self.k == 'corpse':
+            return '%'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -127,6 +132,9 @@ class Monster:
         self.pack = None
         self.summons = 0
         self.hit_flash = 0
+        self.effects = {}       # burn / bleed / poison / weaken / vuln -> [turns, value]
+        self.frozen = False
+        self.faction = None
         # npc fields
         self.role = None
         self.stay = False
@@ -150,25 +158,32 @@ class Monster:
 
 
 class Player:
-    def __init__(self, name, cls):
-        c = D.CLASSES[cls]
+    def __init__(self, name, hardcore=True):
+        from .skills import DISC_ORDER, STARTING_BAR, BAR_SIZE, UNLOCKS, SKILL_LIST
+        st = D.START_STATS
         self.name = name
-        self.cls = cls
+        self.hardcore = hardcore
         self.x = self.y = 0
         self.lvl = 1
         self.xp = 0
-        self.str, self.dex, self.vit, self.ene = c['str'], c['dex'], c['vit'], c['ene']
+        self.str, self.dex, self.vit, self.ene = st['str'], st['dex'], st['vit'], st['ene']
         self.stat_pts = 0
-        self.skill_pts = 0
-        self.skills = {D.SKILLS[cls][0].id: 1}
+        self.disc = {k: [0, 0] for k in DISC_ORDER}      # rank, progress
+        self.known = [s.id for s in SKILL_LIST if s.unlock == UNLOCKS[0]]
+        self.bar = list(STARTING_BAR) + [None] * (BAR_SIZE - len(STARTING_BAR))
+        self.cooldowns = {}
+        self.buffs = []          # [key, value, turns, source]
         self.inv = []
         self.eq = {}
         self.gold = 50
         self.poison = None      # [turns, damage]
+        self.burn = None
         self.cargo = {}         # trade good -> quantity
         self.cost_basis = {}    # trade good -> average purchase price
         self.parcels = []       # job cargo: dict(mid, name, w)
         self.mounts = []        # 'mule', 'cart'
+        self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
+        self.deaths = 0
         self.life = 1
         self.mana = 1
         self.last_target = None

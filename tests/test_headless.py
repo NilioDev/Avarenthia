@@ -15,16 +15,21 @@ E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_test.dat'
 
 TOKENS = ['up', 'down', 'left', 'right', 'y', 'u', 'b', 'n', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
-          's', 'S', 'B', 'A']
+          's', 'S', 'B', 'A', '5', '6', 'f', 'z']
 
 
-def new_app(cls):
+def new_app(mode='soft', seed=None):
     app = ui.App(FakeCanvas(ui.W, ui.H))
     app.key('n')
     for ch in 'Test':
         app.key(ch)
     app.key('enter')
-    app.key(str(D.CLASS_ORDER.index(cls) + 1))
+    if mode == 'hard':
+        app.key('space')
+    if seed:
+        app.key('down')
+        for ch in str(seed):
+            app.key(ch)
     app.key('enter')
     assert isinstance(app.top, ui.GameScreen), app.top
     return app
@@ -40,14 +45,15 @@ def to_over(g, sid=0):
 
 def smoke(games=9, steps=1200):
     for gi in range(games):
-        cls = D.CLASS_ORDER[gi % 3]
-        app = new_app(cls)
+        app = new_app('hard' if gi % 2 else 'soft')
         g = app.game
         g.player.vit = 400
         g.player.lvl = 8
         g.player.gold = 5000
-        for s in D.SKILLS[cls]:
-            g.player.skills[s.id] = 3
+        from cursed_vale import skills as SK
+        g.player.known = [k.id for k in SK.SKILL_LIST]
+        g.player.bar = random.sample(g.player.known, 6)
+        g.player.inv[2:2] = []
         dids = list(g.world.dungeons)
         for step in range(steps):
             if step % 150 == 0:
@@ -57,6 +63,19 @@ def smoke(games=9, steps=1200):
             if step % 300 == 100:
                 app.screens = [ui.GameScreen(app)]
                 to_over(g, random.randrange(len(g.world.settlements)))
+            if step % 300 == 250:
+                app.screens = [ui.GameScreen(app)]
+                h = random.choice(g.world.holds)
+                to_over(g, 0)
+                g.player.x, g.player.y = h.x, h.y
+                g.enter_hold(h.id)
+                for npc in [o for o in g.map.mons if o.role in ('castellan', 'shop')]:
+                    g.talk(npc)
+                    app.after_action()
+                    for tok in random.sample(TOKENS, 6):
+                        app.key(tok)
+                        app.render()
+                    app.screens = [ui.GameScreen(app)]
             if step % 300 == 200:
                 app.screens = [ui.GameScreen(app)]
                 g.enter_town(random.randrange(len(g.world.settlements)))
@@ -74,7 +93,7 @@ def smoke(games=9, steps=1200):
                 app.running = True
             if g.dead or isinstance(app.top, ui.WinScreen):
                 break
-        for S in (ui.InventoryScreen, ui.CharacterScreen, ui.ShopScreen, ui.TravelScreen, ui.HelpScreen,
+        for S in (ui.InventoryScreen, ui.CharacterScreen, ui.ShopScreen, ui.TravelScreen, ui.HelpScreen, ui.SkillsScreen,
                   ui.DeathScreen, ui.WinScreen, ui.QuitScreen, ui.JournalScreen, ui.WorldMapScreen, ui.StablesScreen):
             app.screens = [ui.GameScreen(app), S(app)]
             app.render()
@@ -88,7 +107,7 @@ def smoke(games=9, steps=1200):
 
 def trade_and_jobs():
     random.seed(11)
-    g = E.Game('Trader', 'barbarian')
+    g = E.Game('Trader', False, 4242)
     g.player.vit = 300
     s0 = g.world.settlements[0]
     g.player.gold = 400
@@ -161,12 +180,68 @@ def trade_and_jobs():
     print('job kinds tested:', sorted(kinds_done))
 
 
+def factions_and_death():
+    random.seed(5)
+    g = E.Game('Hero', False, 777)
+    p = g.player
+    p.vit, p.str, p.lvl = 200, 80, 12
+    s = g.stats()
+    p.life = s['max_life']
+    # storm the nearest hostile fortress
+    hostile = [h for h in g.world.holds if h.faction in ('blackhand', 'cult')]
+    h = hostile[0]
+    to_over(g, 0)
+    p.x, p.y = h.x, h.y
+    old = h.faction
+    g.enter_hold(h.id)
+    assert g.map.kind == 'siege'
+    boss = next(o for o in g.map.mons if getattr(o, 'commander', False))
+    for o in [o for o in g.map.mons if not o.is_npc]:
+        g.kill(o)
+    assert h.faction != old, 'fortress should change hands'
+    g.leave_to_over()
+    print(f'captured {h.name}: {old} -> {h.faction}; rep', {k: v for k, v in p.rep.items()})
+    # castellan jobs
+    friendly = next(x for x in g.world.holds if x.faction in ('crown', 'league', 'circle'))
+    MS.refresh_hold_board(g, friendly)
+    print('castellan offers:', [m.title for m in friendly.board])
+    # softcore death: corpse holds backpack and gold
+    g.enter_dungeon('rat', 1, 'up')
+    p.gold = 123
+    n_bag = len(g.backpack())
+    g.die('a test')
+    assert not g.dead and p.gold == 0 and len(g.corpses) == 1
+    key, cid = g.corpses[0]
+    corpse = next(i for i in g.maps[key].items if i.id == cid)
+    g.enter_dungeon('rat', 1, 'up')
+    p.x, p.y = corpse.x, corpse.y
+    g.auto_pickup()
+    assert p.gold == 123 and len(g.backpack()) == n_bag and not g.corpses
+    print('softcore corpse run ok')
+    # disciplines grow by use
+    r0 = p.disc['fire'][0]
+    for _ in range(40):
+        from cursed_vale import skills as SK
+        SK.gain(g, 'fire', 3)
+    print('fire discipline', r0, '->', p.disc['fire'][0], 'known fire skills', [k for k in p.known if SK.SKILLS[k].line == 'fire'])
+    # a month of war
+    for _ in range(30):
+        g.end_turn(D.DAY_LEN, True)
+        if g.cur not in ('over',):
+            g.maps.pop('wild', None)
+            to_over(g, 0)
+    from collections import Counter
+    print('after 30 days of war:', dict(Counter(h.faction for h in g.world.holds)),
+          'warbands', sum(1 for w in g.world.wanderers if w.kind == 'warband'))
+
+
 if __name__ == '__main__':
     random.seed(1)
     smoke()
     trade_and_jobs()
+    factions_and_death()
     if '--dump' in sys.argv:
-        app = new_app('barbarian')
+        app = new_app()
         app.render()
         sys.stdout.reconfigure(encoding='utf-8')
         print(app.cv.dump())

@@ -2,8 +2,27 @@
 
 Een ASCII open-world RPG in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
 Een ADOM-achtige wereld met Diablo-gevechten en Privateer-achtige handel: klassen met skills, elite monsters,
-loot in vier zeldzaamheden, dertien dorpen en steden met een levende economie, banen op de prikborden van de herbergen,
+loot in vier zeldzaamheden, zo'n 27 dorpen en steden met een levende economie, kastelen en forten van vijf facties, banen op de prikborden van de herbergen,
 en karavanen, patrouilles en bandieten die zichtbaar over de kaart trekken.
+
+## Geen klassen
+
+Je kiest geen klasse. Je wordt wat je doet: tien disciplines (zwaard, bijl en knots, dolk, boog, vuur, ijs, storm,
+genezing, schaduw, strijdkunst) stijgen door ze te gebruiken. Hogere rangen ontgrendelen nieuwe skills uit die
+discipline, 50 in totaal. Je neemt er zes tegelijk mee en wisselt ze alleen in een stad of burcht (`Z`).
+Wapenskills werken alleen met het bijpassende wapen in je handen. Levelen gaat langzaam en geeft attribuutpunten.
+
+Bij een nieuw spel kies je **hardcore** (dood is definitief) of **softcore**: je ontwaakt in de dichtstbijzijnde tempel,
+maar je rugzak, vracht en goud liggen bij je lijk, dat je terug moet halen. Je kunt ook een **seed** invoeren om
+dezelfde wereld nog eens te spelen; zonder seed is elke wereld anders.
+
+## Facties en oorlog
+
+Vijf facties bezitten de regio's: de Kroon van Aldmark, de Handelsliga, de Kring van Doornen, de Zwarte Hand en de
+Cultus van de Ondoden. Ze hebben kastelen (`Ω`) en forten (`╬`). Legertjes trekken zichtbaar over de kaart naar vijandige
+burchten; een geslaagd beleg verovert de burcht en de regio, met de dorpen erin. Vijandige burchten kun je zelf
+bestormen: dood de bevelhebber en geef de burcht aan een bondgenoot. Castellanen geven oorlogsbanen.
+Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanvalt. `M` en dan `F` toont de gebieden.
 
 ## Handel en banen
 
@@ -54,7 +73,9 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 |---|---|
 | pijltjes, numpad, `hjklyubn` | lopen, tegen een monster aanlopen is aanvallen |
 | Shift + richting | rennen |
-| `1` `2` `3` | skills, richten automatisch op de dichtstbijzijnde vijand |
+| `1` - `6` | skills, richten automatisch op de dichtstbijzijnde vijand |
+| `F` | schieten met een boog |
+| `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
 | `P` | Town Portal |
 | `X` | automatisch verkennen |
