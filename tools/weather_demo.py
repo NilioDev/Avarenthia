@@ -27,7 +27,11 @@ CATALOG = [
     ('clouds', 'land'), ('wind', 'land'), ('warm', 'land'), ('heat', 'land'),
     ('sandstorm', 'land'), ('ash', 'land'), ('blood', 'village'), ('fireflies', 'night'),
 ]
-EXTRA = [('aurora', 'night')]
+CATALOG2 = [
+    ('dust', 'land'), ('sandstorm', 'land'), ('haboob', 'land'), ('drystorm', 'land'),
+    ('freezing', 'village'), ('sleet', 'village'), ('dew', 'land'), ('whirlwind', 'land'),
+    ('leaves', 'land'), ('blossom', 'village'), ('smoke', 'village'), ('meteors', 'night'),
+]
 
 
 def scene(where):
@@ -83,9 +87,10 @@ def frame(piece, kind, t):
     return Image.open(tmp).convert('RGB')
 
 
-def catalog(scenes, frames=30, dt=.12, pw=34, ph=22, cols=4):
-    pieces = {k: cut(scenes[s][0], *scenes[s][1], pw, ph) for k, s in CATALOG}
-    rows = (len(CATALOG) + cols - 1) // cols
+def catalog(scenes, frames=30, dt=.12, pw=34, ph=22, cols=4, items=None, name='weather_catalog'):
+    items = items or CATALOG
+    pieces = {k: cut(scenes[s][0], *scenes[s][1], pw, ph) for k, s in items}
+    rows = (len(items) + cols - 1) // cols
     cw, chh = pw * TILE_W, ph * TILE_H
     gap, label = 6, 14
     imgs = []
@@ -93,13 +98,13 @@ def catalog(scenes, frames=30, dt=.12, pw=34, ph=22, cols=4):
         t = 50 + f * dt
         sheet = Image.new('RGB', (cols * (cw + gap) + gap, rows * (chh + gap + label) + gap), (12, 10, 9))
         d = ImageDraw.Draw(sheet)
-        for i, (kind, _s) in enumerate(CATALOG):
+        for i, (kind, _s) in enumerate(items):
             x = gap + (i % cols) * (cw + gap)
             y = gap + (i // cols) * (chh + gap + label)
             d.text((x + 2, y), WX.NAMES[kind], fill=(236, 200, 130))
             sheet.paste(frame(pieces[kind], kind, t), (x, y + label))
         imgs.append(sheet.convert('P', palette=Image.ADAPTIVE, colors=255))
-    path = os.path.join(OUT, 'weather_catalog.gif')
+    path = os.path.join(OUT, f'{name}.gif')
     imgs[0].save(path, save_all=True, append_images=imgs[1:], duration=int(dt * 1000), loop=0)
     return path
 
@@ -118,8 +123,16 @@ def single(scenes, kind, where, frames=36, dt=.1):
 
 if __name__ == '__main__':
     scenes = {w: scene(w) for w in ('village', 'land', 'night')}
-    print(catalog(scenes))
-    for kind, where in (('blizzard', 'land'), ('sandstorm', 'land'), ('ash', 'land'), ('aurora', 'night'),
-                        ('fireflies', 'night'), ('wind', 'land'), ('clouds', 'land'), ('hail', 'village')):
+    what = sys.argv[2] if len(sys.argv) > 2 else 'all'
+    if what in ('all', '1'):
+        print(catalog(scenes))
+    if what in ('all', '2'):
+        print(catalog(scenes, frames=40, items=CATALOG2, name='weather_catalog2'))
+    singles = (('blizzard', 'land'), ('sandstorm', 'land'), ('ash', 'land'), ('aurora', 'night'),
+               ('fireflies', 'night'), ('wind', 'land'), ('clouds', 'land'), ('hail', 'village'))
+    if what in ('all', '2'):
+        singles = (('haboob', 'land'), ('drystorm', 'land'), ('smoke', 'village'), ('whirlwind', 'land'),
+                   ('meteors', 'night'), ('freezing', 'village'))
+    for kind, where in singles:
         print(single(scenes, kind, where))
     os.remove(os.path.join(OUT, '_p.png'))

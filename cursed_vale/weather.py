@@ -6,7 +6,10 @@ smoothly on its own clock, whatever the player does. Colours shift too: rain gre
 whitens it, fog swallows what is far away, heat bleaches everything and makes the air wobble.
 
 Weather comes in families with grades: drizzle, rain, downpour and thunderstorm; light snow, snow and blizzard;
-morning mist, fog and thick fog; warm and scorching. Then there are the odd ones: hail, a sandstorm, drifting
+morning mist, fog and thick fog; warm and scorching; blowing dust, a sandstorm and a great sandstorm. Freezing
+rain glazes the ground with ice, sleet turns it to slush, dew glitters in the morning; dry lightning strikes
+without rain and sets the grass alight; a dust devil wanders over a plain; leaves fall in autumn and blossom
+in spring; a burning village sends plumes of smoke over the land. Then there are the odd ones: hail, a sandstorm, drifting
 cloud shadows, an autumn wind, and the ones that mean trouble: falling ash near a dragon, a sickly miasma over
 the marshes, blood rain. On clear summer nights there are fireflies, and in the far north the northern lights.
 
@@ -25,7 +28,12 @@ KINDS = {
     'hail': ('Hail', 'hail', 2),
     'mist': ('Morning mist', 'fog', 1), 'fog': ('Fog', 'fog', 2), 'fog_thick': ('Thick fog', 'fog', 3),
     'clouds': ('Cloud shadows', 'clouds', 1), 'wind': ('Autumn wind', 'wind', 2),
-    'warm': ('Warm', 'heat', 1), 'heat': ('Scorching heat', 'heat', 3), 'sandstorm': ('Sandstorm', 'sand', 3),
+    'warm': ('Warm', 'heat', 1), 'heat': ('Scorching heat', 'heat', 3),
+    'dust': ('Blowing dust', 'sand', 1), 'sandstorm': ('Sandstorm', 'sand', 2), 'haboob': ('Great sandstorm', 'sand', 3),
+    'freezing': ('Freezing rain', 'ice', 2), 'sleet': ('Sleet', 'sleet', 2), 'dew': ('Morning dew', 'dew', 1),
+    'drystorm': ('Dry lightning', 'drystorm', 2), 'meteors': ('Shooting stars', 'night', 1),
+    'whirlwind': ('Whirlwind', 'whirl', 2), 'smoke': ('Smoke of a burning village', 'smoke', 2),
+    'leaves': ('Falling leaves', 'leaves', 1), 'blossom': ('Spring blossom', 'leaves', 1),
     'ash': ('Falling ash', 'ash', 2), 'miasma': ('Miasma', 'miasma', 2), 'blood': ('Blood rain', 'rain', 2),
     'fireflies': ('Fireflies', 'night', 1), 'aurora': ('Northern lights', 'night', 2),
 }
@@ -275,19 +283,42 @@ def heat_cell(kind, ch, fg, bg, lx, ly, t, w, h, neighbour):
     return ch, fg, bg
 
 
-def sand_cell(ch, fg, bg, lx, ly, t, dist):
-    # walls of dust race across the land; you see a few steps, then only ochre
-    band = _noise2(lx * .12 - t * 2.6, ly * .5, 81) * .65 + _noise2(lx * .3 - t * 4, ly * .9, 82) * .35
-    k = max(0.0, min(1.0, (dist - 2) / 7)) * .7 + band * .5
-    fg = _mix(fg, (214, 170, 100), min(1, k))
-    bg = _mix(bg, _mix((90, 62, 28), (150, 110, 56), band), min(1, k * .95))
-    if ch in GROUND | set('♣♠↑∩n"') and band > .55:
-        ch = '░' if band > .72 else ('~' if _h(lx, ly, 83) % 3 else ' ')
-        fg = _mix(bg, (236, 200, 140), .4)
-    u = lx - t * 30
-    if _h(int(math.floor(u)), ly, 84) % 19 == 0 and ch in GROUND | set('░~'):
-        ch, fg = '─', (240, 210, 150)
+SAND = {  # grade: how far you see, how thick the dust, colours (light, dark), streak density
+    1: (16, .35, (226, 196, 140), (120, 90, 50), 41),
+    2: (7, .7, (214, 170, 100), (110, 76, 36), 19),
+    3: (3.5, 1.0, (170, 96, 52), (66, 32, 16), 9),
+}
+
+
+def sand_cell(kind, ch, fg, bg, lx, ly, t, dist):
+    """Dust on the wind, from a haze to a wall of sand that swallows the sun."""
+    grade = KINDS[kind][2]
+    reach, thick, light, dark, gap = SAND[grade]
+    speed = (1.6, 2.6, 3.4)[grade - 1]
+    band = _noise2(lx * .12 - t * speed, ly * .5, 81) * .65 + _noise2(lx * .3 - t * speed * 1.5, ly * .9, 82) * .35
+    k = (max(0.0, min(1.0, (dist - 2) / reach)) * .7 + band * .5) * thick
+    fg = _mix(fg, light, min(1, k))
+    bg = _mix(bg, _mix(dark, _mix(dark, light, .45), band), min(1, k * .95))
+    ground = ch in GROUND
+    if grade == 1:
+        # dust runs low along the ground in thin snakes
+        if ground and band > .62 and _h(lx, ly, 83) % 2:
+            ch, fg = '~', _mix(bg, light, .45)
+    elif (ground or ch in '♣♠↑∩n"') and band > (.55, .45)[grade - 2]:
+        ch = '░' if band > (.72, .6)[grade - 2] else ('~' if _h(lx, ly, 83) % 3 else ' ')
+        if grade == 3 and band > .78:
+            ch = '▒'
+        fg = _mix(bg, light, .4)
+    u = lx - t * (18, 30, 44)[grade - 1]
+    if _h(int(math.floor(u)), ly, 84) % gap == 0 and (ground or ch in '░~▒ '):
+        ch, fg = '─', _mix(light, (255, 236, 190), .4)
+    if grade == 3 and _h(int(math.floor(u * .7)), ly, 85) % 53 == 0:
+        ch, fg = random_debris(lx, ly), (120, 90, 60)        # twigs and stones in the wind
     return ch, fg, bg
+
+
+def random_debris(lx, ly):
+    return ',`\\\''[_h(lx, ly, 86) % 4]
 
 
 # ------------------------------------------------------------------ omens
@@ -348,6 +379,257 @@ def aurora_cell(ch, fg, bg, lx, ly, t):
     return ch, fg, bg
 
 
+# ------------------------------------------------------------------ more kinds
+def freezing_cell(ch, fg, bg, lx, ly, t, dist):
+    """Freezing rain: a fine cold rain, and the ground glazed with ice that catches the light."""
+    fg = _mix(_mix(fg, _grey(fg), .35), (150, 180, 210), .2)
+    bg = _mix(bg, (16, 22, 32), .35)
+    ground = ch in GROUND
+    if ground or ch in '♣♠↑"':
+        sheen = math.sin(lx * .35 + ly * .2 - t * 1.2) * .5 + .5          # light sliding over the ice
+        bg = _mix(bg, (90, 120, 150), .25 + sheen ** 4 * .35)
+        if ground and _h(lx, ly, int(t * 3)) % 41 == 0:
+            ch, fg = '·', (230, 244, 255)                                 # a glint
+    a = _streak(lx, ly, t, ((.8, 24, 2, 17, .28),), .12)
+    if a > 0:
+        bg = _mix(bg, (190, 215, 240), a * .2)
+        if ground and a > .6:
+            ch, fg = '|', _mix(bg, (210, 230, 250), .6)
+    return ch, fg, bg
+
+
+def sleet_cell(ch, fg, bg, lx, ly, t, dist):
+    """Sleet: rain and wet snow at once, the ground turned to grey slush."""
+    fg = _mix(_mix(fg, _grey(fg), .4), (120, 130, 150), .2)
+    bg = _mix(bg, (18, 20, 26), .4)
+    ground = ch in GROUND
+    slush = _noise2(lx * .35, ly * .45, 121)
+    if ground and slush > .55:
+        bg = _mix(bg, (70, 74, 82), min(1, (slush - .55) * 3) * .5)       # grey slush in the ruts
+        if _h(lx, ly, 122) % 4 == 0:
+            ch, fg = ',', (130, 136, 146)
+    a = _streak(lx, ly, t, ((1.0, 21, 3, 17, .25),), .2)
+    if a > 0:
+        bg = _mix(bg, (170, 190, 225), a * .2)
+        if ground and a > .6:
+            ch, fg = '|', _mix(bg, (170, 190, 225), .7)
+    u = ly - t * 4
+    sway = math.sin(t * 1.4 + u * .4) * 1.0
+    if _h(int(round(lx + sway)), int(math.floor(u)), 123) % 37 == 0 and (ground or ch in ', '):
+        ch, fg = '∙', (220, 226, 236)                                     # wet flakes, falling faster than snow
+    return ch, fg, bg
+
+
+def dew_cell(ch, fg, bg, lx, ly, t, dist):
+    """Morning dew: the low sun is soft and pink, and the wet grass glitters."""
+    fg = _mix(fg, (255, 214, 200), .15)
+    bg = _mix(bg, (40, 30, 34), .15)
+    if ch in GROUND or ch in '"\'':
+        k = math.sin(t * 2.2 + (_h(lx, ly, 131) % 628) / 100)
+        if _h(lx, ly, 132) % 9 == 0 and k > .75:
+            ch = '∙' if k > .96 and _h(lx, ly, 134) % 3 == 0 else '·'
+            fg = _mix((140, 190, 230), (240, 250, 255), (k - .75) / .25)
+    low = max(0.0, _noise2(lx * .1 + t * .05, ly * .2, 133) - .5) * 1.2  # a little mist in the hollows
+    bg = _mix(bg, (120, 110, 120), low)
+    return ch, fg, bg
+
+
+def drystorm_cell(ch, fg, bg, lx, ly, t, dist):
+    """Dry lightning: a hot, heavy, dark sky without a drop of rain."""
+    fg = _mix(fg, (200, 150, 110), .15)
+    fg = _mix(fg, _grey(fg), .2)
+    bg = _mix(bg, (30, 18, 24), .45)
+    return ch, fg, bg
+
+
+def _bolt_path(k, w, h):
+    """The jagged path of strike k, from the top edge down to where it hits."""
+    x = 4 + _h(k, 1, 141) % max(1, w - 8)
+    end = h // 3 + _h(k, 2, 141) % max(1, h // 2)
+    pts = []
+    for y in range(end + 1):
+        pts.append((x, y))
+        r = _h(k, y, 142) % 5
+        x += -1 if r == 0 else 1 if r == 1 else 0
+    return pts
+
+
+def drystorm_pass(cv, x0, y0, w, h, t):
+    period = 2.4
+    k = int(t / period)
+    if _h(k, 3, 143) % 3 == 0:
+        return
+    dt = t - k * period - (_h(k, 4, 143) % 1000) / 1000 * 1.2
+    if not (0 <= dt < .35):
+        return
+    k2 = 1 - dt / .35
+    pts = _bolt_path(k, w, h)
+    ex, ey = pts[-1]
+    for y in range(h):                       # the strike lights the land around it
+        for x in range(w):
+            d = math.hypot(x - ex, (y - ey) * 1.2)
+            light = max(0.0, 1 - d / 22) * k2
+            if light > 0:
+                ch, fg, bg = cv.get(x0 + x, y0 + y)
+                cv.put(x0 + x, y0 + y, ch, _mix(fg, (255, 240, 255), light * .6), _mix(bg, (120, 100, 150), light * .5))
+    if dt < .2:
+        prev = pts[0][0]
+        for x, y in pts:
+            if 0 <= x < w and 0 <= y < h:
+                glyph = '│' if x == prev else ('/' if x < prev else '\\')
+                cv.put(x0 + x, y0 + y, glyph, (255, 255, 240), None)
+            prev = x
+    if 0 <= ex < w and 0 <= ey < h:          # and sets the grass alight
+        cv.put(x0 + ex, y0 + ey, '☼', (255, 150 + int(80 * k2), 50), (90, 30, 10))
+
+
+def meteors_pass(cv, x0, y0, w, h, t):
+    """Shooting stars: now and then a streak of light crosses the night."""
+    for lane in range(3):
+        period = 2.6 + lane * .9
+        k = int((t + lane * 1.3) / period)
+        if _h(k, lane, 151) % 2:
+            continue
+        dt = (t + lane * 1.3) - k * period
+        dur = .6
+        if dt > dur:
+            continue
+        sx = _h(k, lane + 10, 152) % max(1, w)
+        sy = _h(k, lane + 20, 152) % max(1, h // 2)
+        head = dt / dur * 26
+        for j in range(8):                   # the head and a fading tail, going down and to the right
+            p = head - j * 1.2
+            if p < 0:
+                break
+            x, y = int(sx + p), int(sy + p * .5)
+            if 0 <= x < w and 0 <= y < h:
+                ch, fg, bg = cv.get(x0 + x, y0 + y)
+                fade = 1 - j / 8
+                glyph = '*' if j == 0 else ('─' if j < 3 else '·')
+                cv.put(x0 + x, y0 + y, glyph, _mix((90, 110, 160), (255, 255, 230), fade),
+                       _mix(bg, (40, 50, 90), fade * .4))
+
+
+def whirl_cell(ch, fg, bg, lx, ly, t, dist):
+    """A dry, windy day: the dust devil itself is drawn in a pass of its own."""
+    fg = _mix(fg, (230, 210, 160), .12)
+    return ch, fg, bg
+
+
+def whirlwind_pass(cv, x0, y0, w, h, t):
+    """A dust devil wanders over the plain, spinning."""
+    cx = w * .5 + math.sin(t * .35) * w * .3
+    cy = h * .5 + math.sin(t * .23 + 1) * h * .25
+    spin = '|/─\\'
+    for y in range(h):
+        for x in range(w):
+            dx, dy = x - cx, (y - cy) * 1.3
+            r = math.hypot(dx, dy)
+            if r > 6:
+                continue
+            ch, fg, bg = cv.get(x0 + x, y0 + y)
+            ang = math.atan2(dy, dx) + t * 7 - r * .6
+            k = 1 - r / 6
+            arm = math.sin(ang * 3) * .5 + .5
+            bg = _mix(bg, (130, 100, 60), k * .45)
+            if arm > .6 and r > .8:
+                ch = spin[int((ang / math.pi * 2) % 4)]
+                fg = _mix((180, 150, 100), (240, 220, 170), k)
+            elif r <= .8:
+                ch, fg = '@' if int(t * 8) % 2 else 'O', (210, 180, 120)
+            else:
+                fg = _mix(fg, (210, 180, 120), k * .5)
+            cv.put(x0 + x, y0 + y, ch, fg, bg)
+
+
+def smoke_cell(ch, fg, bg, lx, ly, t, dist):
+    """A village burning: the light goes orange and dim, and soot drifts down."""
+    fg = _mix(fg, (200, 130, 80), .15)
+    bg = _mix(bg, (30, 16, 10), .35)
+    return ch, fg, bg
+
+
+def smoke_pass(cv, x0, y0, w, h, t):
+    """Plumes of smoke rolling away on the wind from fires, with sparks and a red glow at their feet."""
+    fires = [(w * .3, h * .65), (w * .55, h * .55), (w * .7, h * .75)]
+    for y in range(h):
+        for x in range(w):
+            best = 0.0
+            for i, (fx, fy) in enumerate(fires):
+                dx, dy = x - fx, fy - y                 # the plume rises (up the screen) and leans downwind
+                if dy < -2:
+                    continue
+                along = dy + max(0, dx) * .5
+                lean = dx - dy * .9
+                spread = 1.5 + along * .35
+                wob = (_noise2(x * .2 + t * .8, y * .25 - t * 1.4, 160 + i) - .5) * 4
+                k = max(0.0, 1 - abs(lean + wob) / spread) * max(0.0, 1 - along / 28)
+                best = max(best, k)
+            ch, fg, bg = cv.get(x0 + x, y0 + y)
+            if best > 0:
+                g = _noise2(x * .3 + t * .6, y * .3 - t, 165)
+                smoke = _mix((26, 24, 24), (90, 84, 80), g)
+                bg = _mix(bg, smoke, best * .8)
+                fg = _mix(fg, smoke, best * .55)
+                if best > .5 and ch in GROUND and g > .6:
+                    ch, fg = '░', _mix(smoke, (120, 112, 106), .5)
+            for i, (fx, fy) in enumerate(fires):
+                d = math.hypot(x - fx, (y - fy) * 1.2)
+                if d < 5:
+                    glow = (1 - d / 5) * (.75 + .25 * math.sin(t * 9 + i * 2))
+                    bg = _mix(bg, (150, 50, 14), glow * .6)
+                    fg = _mix(fg, (255, 160, 70), glow * .5)
+                if d < 1.2:
+                    ch, fg = ('▲' if int(t * 6 + i) % 2 else '^'), (255, 170 + int(60 * math.sin(t * 11 + i)), 40)
+            u = y + t * 5                              # sparks climbing
+            if _h(int(x - u * .4), int(math.floor(u)), 166) % 89 == 0 and best > .3:
+                ch, fg = '·', (255, 180, 80)
+            cv.put(x0 + x, y0 + y, ch, fg, bg)
+
+
+LEAVES = {'leaves': [(220, 120, 40), (200, 80, 30), (230, 180, 60), (160, 60, 30)],
+          'blossom': [(255, 190, 215), (245, 160, 195), (255, 220, 235), (225, 140, 185)]}
+
+
+def _petal_cell(kind, ch, fg, bg, lx, ly, t, dist):
+    """Leaves in autumn or blossom in spring, drifting down and settling on the ground."""
+    cols = LEAVES[kind]
+    tint = (60, 30, 10) if kind == 'leaves' else (60, 30, 44)
+    bg = _mix(bg, tint, .12)
+    ground = ch in GROUND
+    lie = _noise2(lx * .25, ly * .25, 171 if kind == 'leaves' else 172)
+    if ground and lie > (.62 if kind == 'leaves' else .7) and _h(lx, ly, 178) % (1 if kind == 'leaves' else 3) == 0:
+        ch, fg = (',' if _h(lx, ly, 173) % 2 else '.'), cols[_h(lx, ly, 174) % len(cols)]   # fallen ones
+    for layer, speed in enumerate((2.0, 1.3)):
+        u = ly - t * speed
+        sway = math.sin(t * 1.1 + u * .5 + layer * 3) * 2.5 + t * (1.5 if kind == 'blossom' else .6)
+        x = int(round(lx - sway))
+        if _h(x, int(math.floor(u)), 175 + layer) % (29 if kind == 'leaves' else 23) == 0:
+            if ground or ch in ',.':
+                ch = ('`' if math.sin(t * 4 + lx) > 0 else ',') if kind == 'leaves' else ('∙' if layer else '·')
+            fg = cols[_h(x, int(u), 177) % len(cols)]
+            break
+    return ch, fg, bg
+
+
+def leaves_cell(ch, fg, bg, lx, ly, t, dist):
+    return _petal_cell('leaves', ch, fg, bg, lx, ly, t, dist)
+
+
+def blossom_cell(ch, fg, bg, lx, ly, t, dist):
+    return _petal_cell('blossom', ch, fg, bg, lx, ly, t, dist)
+
+
+def night_cell(ch, fg, bg, lx, ly, t, dist):
+    return ch, fg, bg
+
+
+EXTRA_CELLS = {'freezing': freezing_cell, 'sleet': sleet_cell, 'dew': dew_cell, 'drystorm': drystorm_cell,
+               'whirlwind': whirl_cell, 'smoke': smoke_cell, 'leaves': leaves_cell, 'blossom': blossom_cell,
+               'meteors': night_cell}
+EXTRA_PASSES = {'drystorm': drystorm_pass, 'meteors': meteors_pass, 'whirlwind': whirlwind_pass, 'smoke': smoke_pass}
+
+
 # ------------------------------------------------------------------ the painter
 def apply(cv, x0, y0, w, h, kind, t, centre=None):
     """Paint weather over the rectangle (x0, y0, w, h) of a canvas. centre: the player's cell, for fog and snow."""
@@ -376,8 +658,10 @@ def apply(cv, x0, y0, w, h, kind, t, centre=None):
             elif fam == 'heat':
                 nb = cv.get(x + 1, y) if lx + 1 < w else None
                 ch, fg, bg = heat_cell(kind, ch, fg, bg, lx, ly, t, w, h, nb)
-            elif kind == 'sandstorm':
-                ch, fg, bg = sand_cell(ch, fg, bg, lx, ly, t, dist)
+            elif fam == 'sand':
+                ch, fg, bg = sand_cell(kind, ch, fg, bg, lx, ly, t, dist)
+            elif kind in EXTRA_CELLS:
+                ch, fg, bg = EXTRA_CELLS[kind](ch, fg, bg, lx, ly, t, dist)
             elif kind == 'ash':
                 ch, fg, bg = ash_cell(ch, fg, bg, lx, ly, t)
             elif kind == 'aurora':
@@ -387,3 +671,5 @@ def apply(cv, x0, y0, w, h, kind, t, centre=None):
             cv.put(x, y, ch, fg, bg)
     if kind == 'fireflies':
         fireflies(cv, x0, y0, w, h, t)
+    if kind in EXTRA_PASSES:
+        EXTRA_PASSES[kind](cv, x0, y0, w, h, t)
