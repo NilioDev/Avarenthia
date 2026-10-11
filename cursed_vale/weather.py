@@ -49,6 +49,62 @@ def flash(t, seed=0):
     return 0.0
 
 
+GROUND = set(' .,\'`"·∙')        # cells with nothing in them but the ground: rain may draw here
+
+
+def _ripple(lx, ly, t, rate):
+    """A ring spreading on a puddle where a drop landed: '' or one of · ∘ o ○ as it grows and fades."""
+    slot = int(t * rate + (_h(lx, ly, 33) % 100) / 100 * 7)
+    if _h(lx, ly, 34 + slot) % 9:
+        return None, 0.0
+    age = (t * rate + (_h(lx, ly, 33) % 100) / 100 * 7) - slot      # 0..1 within this drop's life
+    stage = int(age * 4)
+    return '·∙o○'[min(3, stage)], 1 - age
+
+
+def rain_cell(ch, fg, bg, lx, ly, t, heavy, lightning):
+    """Rain over one cell, see-through: streaks of light pass over what is there instead of hiding it."""
+    # the land under the clouds: greyer, darker, a little blue; wet ground gleams
+    fg = _mix(_mix(fg, _grey(fg), .3), (70, 84, 110), .15 if not heavy else .25)
+    bg = _mix(_mix(bg, (12, 16, 24), .3 if not heavy else .45), _grey(bg), .15)
+    ground = ch in GROUND
+    # puddles in the hollows, with rings where drops land
+    if ground:
+        pool = _noise2(lx * .16, ly * .22, 37)
+        if pool > .66:
+            bg = _mix(bg, (30, 40, 58), min(1, (pool - .66) * 5))
+            ring, life = _ripple(lx, ly, t, 2.6 if heavy else 1.8)
+            if ring:
+                ch, fg = ring, _mix(bg, (170, 190, 225), .3 + .6 * life)
+    # streaks: every lane of rain slides down and a little sideways; a drop is a bright head with a fading tail,
+    # and only some of the drops in a lane fall at all, so the rain is a veil and not a wall
+    slant = .45 if heavy else .2
+    a = 0.0
+    curtains = ((1.0, 30, 3, 15, .42, 0), (.75, 23, 2, 12, .3, 1)) if heavy else ((1.0, 22, 3, 17, .3, 0), (.6, 17, 2, 13, .18, 1))
+    for strength, speed, tail, period, chance, sd in curtains:
+        lane = round(lx - ly * slant + sd * 7)
+        off = (_h(lane, sd, 41) % 1000) / 1000 * period
+        pos = t * speed + off - ly
+        k = math.floor(pos / period)
+        if (_h(lane, k, 42 + sd) % 100) >= chance * 100:
+            continue
+        d = pos - k * period
+        if d < tail:
+            a = max(a, (1 - d / tail) * strength)
+    if a > 0:
+        rc = (170, 192, 232)
+        bg = _mix(bg, rc, a * .22)                                # the streak lightens the cell behind it
+        if ground and a > .6:                                     # on open ground, the drop itself
+            ch = '/' if heavy else '|'
+            fg = _mix(bg, rc, .35 + a * .5)
+        else:                                                     # over things: tint them, never hide them
+            fg = _mix(fg, rc, a * .3)
+    if lightning:
+        fg = _mix(fg, (240, 244, 255), lightning * .7)
+        bg = _mix(bg, (150, 160, 200), lightning * .75)
+    return ch, fg, bg
+
+
 def apply(cv, x0, y0, w, h, kind, t, strength=1.0, centre=None):
     """Paint weather over the rectangle (x0, y0, w, h) of a canvas. centre: the player's cell, for fog."""
     if kind == 'clear':
@@ -60,25 +116,7 @@ def apply(cv, x0, y0, w, h, kind, t, strength=1.0, centre=None):
             ch, fg, bg = cv.get(x, y)
             lx, ly = x - x0, y - y0
             if kind in ('rain', 'storm'):
-                heavy = kind == 'storm'
-                # the land goes grey and dark under the clouds, and wet things gleam
-                fg = _mix(_mix(fg, _grey(fg), .35), (60, 74, 96), .18 if not heavy else .3)
-                bg = _mix(_mix(bg, (14, 18, 26), .35 if not heavy else .5), _grey(bg), .2)
-                if lightning:
-                    fg = _mix(fg, (240, 244, 255), lightning * .75)
-                    bg = _mix(bg, (150, 160, 200), lightning * .8)
-                # falling streaks: each column of rain slides down and a little to the side
-                speed = 26 if heavy else 18
-                slant = .45 if heavy else .25
-                u = ly - t * speed
-                col = lx + u * slant
-                cell = (_h(int(math.floor(col)), int(math.floor(u / 3)), 41) % (9 if heavy else 15))
-                if cell == 0:
-                    ch, fg = ('/' if slant > .3 else '│') if (int(u) % 3) else '\'', _mix((150, 170, 210), fg, .2)
-                elif cell == 1 and heavy:
-                    ch, fg = '/', (110, 128, 170)
-                elif (_h(lx, ly, int(t * 7)) % (60 if heavy else 110)) == 0:
-                    ch, fg = ('°' if _h(lx, ly, 3) % 2 else '·'), (170, 190, 230)     # a splash
+                ch, fg, bg = rain_cell(ch, fg, bg, lx, ly, t, kind == 'storm', lightning)
             elif kind == 'snow':
                 # everything whitens; open ground lies under a blanket of snow, in drifts
                 drift = _noise2(lx * .18, ly * .25, 18)
