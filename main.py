@@ -1,4 +1,4 @@
-"""Umbrathyn - an ASCII action roguelike built on python-tcod.
+"""Avarenthia - an ASCII action roguelike built on python-tcod.
 
 Run:  python main.py
 """
@@ -8,9 +8,9 @@ import time
 
 import tcod
 
-from cursed_vale import glyphs
-from cursed_vale.canvas import TcodCanvas
-from cursed_vale.ui import App, W, H
+from avarenthia import glyphs
+from avarenthia.canvas import TcodCanvas
+from avarenthia.ui import App, W, H
 
 # When frozen by PyInstaller, bundled files live in sys._MEIPASS.
 HERE = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -132,7 +132,7 @@ def main():
     k = window_scale()
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
     with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
-                          tileset=tileset, title='Umbrathyn', vsync=True, sdl_window_flags=flags) as ctx:
+                          tileset=tileset, title='Avarenthia', vsync=True, sdl_window_flags=flags) as ctx:
         last_tick = 0.0
         while app.running:
             app.render()

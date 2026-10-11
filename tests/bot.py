@@ -8,10 +8,10 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from cursed_vale import engine as E, data as D, worldgen as WG  # noqa: E402
-from cursed_vale.entities import Item  # noqa: E402
+from avarenthia import engine as E, data as D, worldgen as WG  # noqa: E402
+from avarenthia.entities import Item  # noqa: E402
 
-E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_bot.dat')
+E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'avarenthia_bot.dat')
 ORDER = [('rat', 3), ('mine', 4)]   # followed by the lairs of this world's great evils
 
 
@@ -25,7 +25,7 @@ def score(it):
 
 
 def manage(g):
-    from cursed_vale import skills as SK
+    from avarenthia import skills as SK
     p = g.player
     while p.stat_pts > 0:
         g.add_stat('vit' if p.stat_pts % 2 else 'str')
@@ -114,7 +114,7 @@ def turn(g):
     hs = g.visible_hostiles()
     if hs:
         adj = [o for o in hs if WG.cheb(o.x, o.y, p.x, p.y) <= 1]
-        from cursed_vale import skills as SK
+        from avarenthia import skills as SK
         for i, sid in enumerate(p.bar):
             if not sid:
                 continue

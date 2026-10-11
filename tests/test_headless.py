@@ -8,11 +8,11 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from cursed_vale import engine as E, data as D, ui, economy as ECO, missions as MS, wanderers as WA  # noqa: E402
-from cursed_vale.canvas import FakeCanvas  # noqa: E402
-from cursed_vale.worldgen import cheb  # noqa: E402
+from avarenthia import engine as E, data as D, ui, economy as ECO, missions as MS, wanderers as WA  # noqa: E402
+from avarenthia.canvas import FakeCanvas  # noqa: E402
+from avarenthia.worldgen import cheb  # noqa: E402
 
-E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_test.dat')
+E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'avarenthia_test.dat')
 
 TOKENS = ['up', 'down', 'left', 'right', 'y', 'u', 'b', 'n', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
@@ -55,7 +55,7 @@ def smoke(games=9, steps=1200):
         g.player.vit = 400
         g.player.lvl = 8
         g.player.gold = 500000
-        from cursed_vale import skills as SK
+        from avarenthia import skills as SK
         g.player.known = [k.id for k in SK.SKILL_LIST]
         g.player.bar = random.sample(g.player.known, 6)
         g.player.inv[2:2] = []
@@ -230,7 +230,7 @@ def factions_and_death():
     # disciplines grow by use
     r0 = p.disc['fire'][0]
     for _ in range(40):
-        from cursed_vale import skills as SK
+        from avarenthia import skills as SK
         SK.gain(g, 'fire', 3)
     print('fire discipline', r0, '->', p.disc['fire'][0], 'known fire skills', [k for k in p.known if SK.SKILLS[k].line == 'fire'])
     # a month of war
@@ -263,7 +263,7 @@ def clear_wild(g):
 
 
 def wilds():
-    from cursed_vale import events as EV
+    from avarenthia import events as EV
     from collections import Counter
     random.seed(21)
     app = new_app('soft', 31337)
@@ -375,7 +375,7 @@ def wilds():
     # bestiary knowledge
     app.screens = [ui.GameScreen(app)]
     g.enter_dungeon('rat', 1, 'up')
-    from cursed_vale.entities import make_monster
+    from avarenthia.entities import make_monster
     for _ in range(12):
         o = make_monster(g, 'rat', p.x, p.y, 1)
         g.map.mons.append(o)
@@ -394,8 +394,8 @@ def wilds():
 
 
 def items_skills_curse():
-    from cursed_vale.entities import make_tome, random_gear, make_gear, add_curse
-    from cursed_vale import skills as SK, evils as EVL
+    from avarenthia.entities import make_tome, random_gear, make_gear, add_curse
+    from avarenthia import skills as SK, evils as EVL
     random.seed(8)
     app = new_app('soft', 555)
     g = app.game
@@ -487,7 +487,7 @@ def items_skills_curse():
 
 
 def world_and_people():
-    from cursed_vale import races as RC, evils as EVL, lifeskills as LS
+    from avarenthia import races as RC, evils as EVL, lifeskills as LS
     random.seed(3)
     # character creation: people, gender, a random name
     app = ui.App(FakeCanvas(ui.W, ui.H))
@@ -572,8 +572,8 @@ def world_and_people():
 
 
 def crime_and_coin():
-    from cursed_vale import crime as CR, events as EV
-    from cursed_vale.money import fmt
+    from avarenthia import crime as CR, events as EV
+    from avarenthia.money import fmt
     random.seed(17)
     assert fmt(0) == '0c' and fmt(12345) == '1g 23s 45c' and fmt(205) == '2s 5c', fmt(12345)
     app = new_app('soft', 2024)
@@ -583,7 +583,7 @@ def crime_and_coin():
     p.life = g.stats()['max_life']
     # coins are rare: kill a pack of wolves, no coins; bandits sometimes
     g.enter_dungeon('rat', 1, 'up')
-    from cursed_vale.entities import make_monster
+    from avarenthia.entities import make_monster
     g.map.items = []
     for k in ['wolf'] * 30:
         o = make_monster(g, k, p.x, p.y, 3)
@@ -639,7 +639,7 @@ def crime_and_coin():
 
 
 def start_and_survival():
-    from cursed_vale import hunger as HU, crime as CR
+    from avarenthia import hunger as HU, crime as CR
     random.seed(29)
     app = new_app('soft', 4711)
     g = app.game
@@ -726,8 +726,8 @@ def start_and_survival():
 
 
 def countryside():
-    from cursed_vale import foraging as FG, lifeskills as LS, sites as ST
-    from cursed_vale.entities import make_monster
+    from avarenthia import foraging as FG, lifeskills as LS, sites as ST
+    from avarenthia.entities import make_monster
     random.seed(41)
     app = new_app('soft', 5150)
     g = app.game
@@ -798,8 +798,8 @@ def countryside():
 def thornfield_and_faith():
     """The calendar, the fisherman's first catch, the kobold den, people you can inspect, the gods,
     brewing, signposts that only point the way, and the Tab menu."""
-    from cursed_vale import calendar as CAL, gods as GD, brewing as BR, hunger as HU, lifeskills as LS
-    from cursed_vale import describe as DS, worldgen as WG
+    from avarenthia import calendar as CAL, gods as GD, brewing as BR, hunger as HU, lifeskills as LS
+    from avarenthia import describe as DS, worldgen as WG
     assert CAL.short(1) == '3 Seedwake', CAL.short(1)
     assert 'Seedwake' in CAL.long(1)
     app = new_app()
@@ -825,7 +825,7 @@ def thornfield_and_faith():
             if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in (D.PATH, D.GRASS, D.SIGNPOST, D.WELL):
                 seen.add((nx, ny))
                 q.append((nx, ny))
-    from cursed_vale import towns as TWN
+    from avarenthia import towns as TWN
     s0 = g.world.settlements[0]
     assert len({e[2] for e in m.exits}) == len(TWN.road_dirs(g, s0)), (m.exits, TWN.road_dirs(g, s0))
     for ex, ey, _o in m.exits:
@@ -833,7 +833,7 @@ def thornfield_and_faith():
         assert (ex, ey) in seen, 'every road out leads to the middle of town'
     assert m.w >= ui.MAP_W and m.h >= ui.MAP_H, 'villages fill the screen'
     # street lamps and the lamplighter who lights them at dusk
-    from cursed_vale import towns as TW, dress as DR
+    from avarenthia import towns as TW, dress as DR
     assert len(m.lamps) >= 8
     ll = next(o for o in m.mons if getattr(o, 'job', '') == 'lamplighter')
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * 18.2 / 24)     # just after six in the evening
@@ -942,8 +942,8 @@ def thornfield_and_faith():
 
 def world_life():
     """Settlement sizes, farms and inns along the roads, weather, quest marks, menus and monster habits."""
-    from cursed_vale import weather as WX, ai as AI, missions as MS2
-    from cursed_vale.entities import make_monster
+    from avarenthia import weather as WX, ai as AI, missions as MS2
+    from avarenthia.entities import make_monster
     app = new_app()
     g = app.game
     p = g.player

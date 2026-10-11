@@ -19,6 +19,8 @@ from . import calendar as CAL
 from . import crime as CR
 from . import hunger as HU
 from . import gods as GD
+from . import lore as LORE
+from . import lifeskills as LS
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -2185,8 +2187,7 @@ class Game:
                    [(f'A bowl of stew ({fmt(self.STEW)})', 'stew'), (f'A hot meal and a bed for the night ({fmt(self.MEAL)})', 'meal'),
                     ('Any news from the road?', 'news'), ('Just passing through', 'leave')], npc=npc.id)
             return
-        line = random.choice(TW.BARKS.get(getattr(npc, 'job', 'any'), TW.BARKS['any'])) if random.random() < .3 else self.rumor()
-        self.say(npc, line)
+        self.say(npc, LORE.chatter(self, npc))
 
     def weather_word(self):
         from . import weather as WX
@@ -2246,6 +2247,34 @@ class Game:
         self.say(npc, random.choice(['Caught anything big yet?', 'They say a golden carp lives in the deep rivers. I never saw it.',
                                      'The pike in the lakes will take your finger off. Mind it.', self.rumor()]))
 
+    def usable_here(self):
+        """Is there a way in, up or down where you stand?"""
+        m, p = self.map, self.player
+        if m.kind == 'over':
+            w = self.world
+            return bool(w.settlement_at(p.x, p.y) or w.hold_at(p.x, p.y) or ST.site_at(w, p.x, p.y)
+                        or m.tile(p.x, p.y) == ENTR or EV.poi_at(self, p.x, p.y))
+        return m.tile(p.x, p.y) in (DOWN, UP)
+
+    def act_here(self):
+        """The one action key: do the obvious thing where you stand. Go in or take the stairs, pick things up,
+        talk to whoever is near, read a signpost or open a chest next to you, or fish if you stand by water."""
+        m, p = self.map, self.player
+        if self.usable_here():
+            return self.use_stairs('auto')
+        if any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb') for i in m.items):
+            return self.pickup()
+        if self.nearby_people():
+            return self.talk_nearby()
+        for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0), (1, -1), (1, 1), (-1, 1), (-1, -1)):
+            x, y = p.x + dx, p.y + dy
+            if m.inb(x, y) and m.tile(x, y) in (D.SIGNPOST, D.CHEST):
+                return self.try_move(dx, dy)
+        if LS.has_pole(self) and LS.water_here(self) and not self.hostile_visible():
+            return self.fish()
+        self.msg('Nothing to do here. Tab opens the menu, with everything else.')
+        return 0
+
     def nearby_people(self):
         """Who you could talk to from where you stand: people within two steps (across a counter or a table)."""
         m, p = self.map, self.player
@@ -2303,33 +2332,7 @@ class Game:
             f = D.FACTIONS[s.faction]['short']
             return (f"There is a {kind} called {s.name} to the {dir_name(s.x - ox, s.y - oy)}, "
                     f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land.")
-        r = random.random()
-        if r < .45:
-            s = random.choice(w.settlements)
-            g = random.choice(s.demand)
-            return f"They say {s.name} pays well for {D.GOODS[g]['name'].lower()}."
-        if r < .65:
-            s = random.choice(w.settlements)
-            g = random.choice(s.produce)
-            return f"{D.GOODS[g]['name']} is cheap in {s.name}, they make plenty of it there."
-        if r < .8:
-            ev = [s for s in w.settlements if s.event]
-            if ev:
-                s = random.choice(ev)
-                return D.EVENTS[s.event[0]]['text'].format(town=s.name)
-        if r < .85 and EVL.rumor(self):
-            return EVL.rumor(self)
-        if r < .9:
-            sd = [d for d in w.dungeons.values() if not d.main]
-            d = random.choice(sd)
-            om = self.maps['over']
-            om.seen[d.y * om.w + d.x] = 1
-            for poi in w.pois:
-                if poi.did == d.id:
-                    EV.reveal(self, poi)
-            here = self.here or w.settlements[0]
-            return f'There is an old place called {d.name} to the {dir_name(d.x - here.x, d.y - here.y)}. Never been there myself.'
-        return random.choice(D.RUMORS)
+        return LORE.hint(self)
 
 
 # ---------------------------------------------------------------- saving

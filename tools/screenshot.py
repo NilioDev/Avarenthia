@@ -3,7 +3,7 @@ import os
 
 from PIL import Image
 
-from cursed_vale.glyphs import CHARS, COLUMNS, TILE_W, TILE_H, SHEET
+from avarenthia.glyphs import CHARS, COLUMNS, TILE_W, TILE_H, SHEET
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

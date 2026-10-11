@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
-from cursed_vale.glyphs import CHARS, COLUMNS, ROWS, TILE_W, TILE_H, SHEET  # noqa: E402
+from avarenthia.glyphs import CHARS, COLUMNS, ROWS, TILE_W, TILE_H, SHEET  # noqa: E402
 
 FONT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'assets', 'fonts', 'Px437_IBM_CGA.ttf')
 OUT = os.path.join(ROOT, 'assets', SHEET)

@@ -253,8 +253,13 @@ FONT = {
     'H': ["█   █", "█   █", "█████", "█   █", "█   █"],
     'Y': ["█   █", "▀▄ ▄▀", "  █  ", "  █  ", "  █  "],
     'N': ["█▄  █", "██▄ █", "█ ▀▄█", "█  ▀█", "█   █"],
+    'V': ["█   █", "█   █", "█   █", "▀▄ ▄▀", " ▀█▀ "],
+    'E': ["█████", "█    ", "████ ", "█    ", "█████"],
+    'I': ["█████", "  █  ", "  █  ", "  █  ", "█████"],
 }
-GAME_TITLE = 'UMBRATHYN'
+GAME_TITLE = 'AVARENTHIA'
+SUBTITLE = 'Tales of Fortune, Fame and Folly'
+AUTHOR = 'Nilio'
 
 
 def title_rows(word=GAME_TITLE, tall=2):
@@ -306,28 +311,53 @@ class MainMenu(Screen):
                     cv.put(x0 + j, y0 + k, ' ', None, tops[k])
                 elif c != ' ':
                     cv.put(x0 + j, y0 + k, c, tops[k])
-        opts = []
-        if self.saved:
-            p = self.saved.player
-            opts.append(('C', f"Continue as {p.name}, level {p.lvl}", GOLD))
-        opts += [('N', 'New game', FG), ('Esc', 'Quit', DIM)]
+        # the subtitle, on a dark band so it reads over the sky
+        sub = f'─────  {SUBTITLE}  ─────'
+        sx, sy = (cv.w - len(sub)) // 2, y0 + len(rows) + 2
+        for j, c in enumerate(sub):
+            _c, _f, bg = cv.get(sx + j, sy)
+            cv.put(sx + j, sy, c, (236, 206, 150) if c != '─' else (170, 120, 80), mix(bg, (10, 8, 14), .55))
         # the menu sits on the dark rock of the cliff, bottom left
-        bw = max(len(o[1]) + len(o[0]) + 3 for o in opts) + 6
+        opts = self.options()
+        self.sel = min(getattr(self, 'sel', 0), len(opts) - 1)
+        bw = max(len(o[1]) for o in opts) + 10
         bx, by = 4, cv.h - len(opts) * 2 - 5
         for yy in range(by, by + len(opts) * 2 + 1):
             for xx in range(bx, bx + bw):
                 cv.put(xx, yy, ' ', None, (14, 12, 18))
         for k, (key, lab, col) in enumerate(opts):
-            cv.text(bx + 3, by + 1 + k * 2, f'[{key}]', GOLD, (14, 12, 18))
-            cv.text(bx + 3 + len(key) + 3, by + 1 + k * 2, lab, col if key != 'C' else FG, (14, 12, 18))
+            on = k == self.sel
+            bg = (52, 40, 28) if on else (14, 12, 18)
+            cv.fill(bx + 1, by + 1 + k * 2, bw - 2, 1, ' ', None, bg)
+            cv.text(bx + 3, by + 1 + k * 2, '►' if on else ' ', GOLD, bg)
+            cv.text(bx + 5, by + 1 + k * 2, lab, GOLD if on else col, bg)
+        credit = f'a game by {AUTHOR}'
+        cv.text(cv.w - len(credit) - 2, cv.h - 2, credit, (150, 136, 120))
+
+    def options(self):
+        opts = []
+        if self.saved:
+            p = self.saved.player
+            opts.append(('c', f"Continue as {p.name}, level {p.lvl}", FG))
+        opts += [('n', 'New game', FG), ('esc', 'Quit', DIM)]
+        return opts
 
     def on_key(self, tok, shift):
+        opts = self.options()
+        if tok in ('up', 'np8', 'k'):
+            self.sel = (getattr(self, 'sel', 0) - 1) % len(opts)
+            return
+        if tok in ('down', 'np2', 'j'):
+            self.sel = (getattr(self, 'sel', 0) + 1) % len(opts)
+            return
+        if tok in ('enter', 'space', 'np_enter'):
+            tok = opts[getattr(self, 'sel', 0)][0]
         if tok == 'c' and self.saved:
             g = self.saved
             g.msg('Welcome back.', 'info')
             g.log_mark = len(g.log) - 1
             self.app.start_game(g)
-        elif tok in ('n', 'enter'):
+        elif tok == 'n':
             self.app.replace(NameScreen(self.app))
         elif tok == 'esc':
             self.app.quit()
@@ -766,10 +796,12 @@ class GameScreen(Screen):
                 cv.text_right(x + PW - 1, 2, f'{lab} {WX.PANEL_ICON.get(wk, "")}', INFO, PANEL)
         self.orb(cv, x, 3, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
         self.orb(cv, x + PW - 9, 3, p.mana / max(1, s['max_mana']), MANA)
-        cv.text_center(x + 4, 13, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
-        cv.text_center(x + PW - 5, 13, f"{p.mana}/{s['max_mana']}", FG, PANEL)
-        cv.text_center(x + PW // 2, 6, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
-        cv.text_center(x + PW // 2, 10, 'MANA', DIM, PANEL)
+        cv.text_center(x + 4, 12, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else scale(BLOOD, 1.3), PANEL)
+        cv.text_center(x + PW - 5, 12, 'MANA', scale(MANA, 1.3), PANEL)
+        cv.text_center(x + 4, 13, f"{max(0, int(p.life))}/{s['max_life']}", FG, PANEL)
+        cv.text_center(x + PW - 5, 13, f"{max(0, int(p.mana))}/{s['max_mana']}", FG, PANEL)
+        for i, ch in enumerate('·♦·'):                  # a small ornament between the globes
+            cv.put(x + PW // 2 - 1 + i, 7, ch, scale(GOLD, .6 if ch == '·' else .9), PANEL)
         prev = E.xp_for(p.lvl - 1) if p.lvl > 1 else 0
         frac = (p.xp - prev) / max(1, E.xp_for(p.lvl) - prev)
         cv.text(x, 15, 'XP', DIM, PANEL)
@@ -824,28 +856,54 @@ class GameScreen(Screen):
         elif p.buffs:
             cv.text(x, 49, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
         self.draw_target(cv, x, 51)
-        cv.text(x, H - 1, '? help · Tab menu', scale(DIM, .8), PANEL, maxw=PW)
+        cv.text(x, H - 1, 'Enter act  Tab menu  ? help', scale(DIM, .8), PANEL, maxw=PW)
 
-    def orb(self, cv, x, y, frac, col, alt=None):
+    def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
+        """A glass globe of life or mana, drawn with half blocks at twice the height: shaded liquid with a
+        rippling surface, a dark empty top, a highlight on the glass and a gold rim."""
+        import math
         frac = max(0.0, min(1.0, frac))
-        n = len(ORB_MASK)
-        level = frac * n
-        dark = (30, 22, 18)
-        for r, row in enumerate(ORB_MASK):
-            from_bottom = n - 1 - r
-            for c, ch in enumerate(row):
-                if ch != '#':
+        liquid = alt or col
+        t = time.monotonic()
+        ph = h * 2
+        cx, cy = (w - 1) / 2, (ph - 1) / 2
+        rx, ry = w / 2, ph / 2
+        level = ph - frac * (ph - 1.5) - .75          # the row of the liquid's surface
+
+        def pixel(px, py):
+            dx, dy = (px - cx) / rx, (py - cy) / ry
+            d = dx * dx + dy * dy
+            if d > 1.0:
+                return None
+            if d > .78:                              # the rim, lit from the top left
+                k = .5 - .5 * (dx + dy) / 1.4
+                return mix((70, 50, 26), (230, 186, 110), k)
+            shade = 1 - .55 * d                      # rounder: darker towards the edge
+            wave = math.sin(px * 1.3 + t * 2.4) * .45 + math.sin(px * .7 - t * 1.6) * .3
+            if py >= level + wave:
+                depth = (py - level) / max(1.0, ph - level)
+                c = mix(scale(liquid, 1.25), scale(liquid, .55), depth)
+                c = scale(c, shade)
+                if py < level + wave + 1:            # the bright surface line
+                    c = mix(c, (255, 240, 220), .35)
+            else:
+                c = scale(mix((26, 20, 26), scale(liquid, .25), .35), shade)
+            hx, hy = (px - (cx - rx * .38)) / (rx * .28), (py - (cy - ry * .45)) / (ry * .22)
+            if hx * hx + hy * hy < 1:                # a highlight on the glass
+                c = mix(c, (255, 255, 255), .55 * (1 - (hx * hx + hy * hy)))
+            return c
+
+        for row in range(h):
+            for c_ in range(w):
+                top, bot = pixel(c_, row * 2), pixel(c_, row * 2 + 1)
+                if top is None and bot is None:
                     continue
-                fill = level - from_bottom
-                fc = alt or col
-                if fill >= 1:
-                    cv.put(x + c, y + r, ' ', FG, fc)
-                elif fill > .5:
-                    cv.put(x + c, y + r, '▄', fc, mix(dark, fc, .35))
-                elif fill > 0:
-                    cv.put(x + c, y + r, '▄', mix(dark, fc, .6), dark)
+                if top is None:
+                    cv.put(x + c_, y + row, '▄', bot, PANEL)
+                elif bot is None:
+                    cv.put(x + c_, y + row, '▀', top, PANEL)
                 else:
-                    cv.put(x + c, y + r, ' ', FG, dark)
+                    cv.put(x + c_, y + row, '▀', top, bot)
 
     def draw_target(self, cv, x, y):
         g = self.game
@@ -986,8 +1044,8 @@ class GameScreen(Screen):
             self.act(lambda: g.use_stairs('down'))
         elif tok == '<':
             self.act(lambda: g.use_stairs('up'))
-        elif tok in ('enter', 'np_enter'):
-            self.act(lambda: g.use_stairs('auto'))
+        elif tok in ('enter', 'np_enter', 'space'):
+            self.act(g.act_here)
         elif tok == 'x':
             g.log_mark = len(g.log)
             app.start_auto(g.explore_iter(), .055, 'Exploring')
@@ -1633,29 +1691,25 @@ class HelpScreen(Modal):
     title = 'Help'
     PAGES = [
         ('Controls', [
-            ('arrows / numpad / hjkl yubn', 'Move. Walk into a monster to attack, into a person to talk.'),
-            ('Shift + direction  HJKL..', 'Run until something interesting happens'),
-            ('1 2 3 4 5 6', 'Use the skill in that slot (aims at the nearest enemy)'),
-            ('F', 'Shoot the nearest enemy (needs a bow)'),
-            ('A', 'Fish, standing next to water (needs a fishing pole from an outfitter)'),
-            ('Z', 'Skills: choose your six (only in a town or stronghold)'),
-            ('Q   W', 'Drink a health or mana potion'),
-            ('Shift+E', 'Eat something (bread, rations, fish, meat). Hunger shows by the skill bar.'),
-            ('Shift+F', 'Forage for food and herbs in the wild. Unknown plants: taste at your own risk.'),
-            ('Shift+P', 'Alchemy and brewing: potions from herbs; ale, wine and mead at an inn'),
-            ('P', 'Read a Town Portal scroll. Step into the blue 0 to go back.'),
-            ('G  ,', 'Pick up items. Gold, orbs and magic items are picked up for you.'),
-            ('>  <  Enter', 'Enter a town, dungeon, ruin or stronghold · use stairs'),
-            ('X', 'Auto-explore a dungeon until enemies appear'),
-            ('t', 'Travel to a known town or dungeon (stops when danger shows up)'),
-            ('R   S   5   .', 'Rest until healed · wait one turn'),
-            ('I  D  C  Shift+C', 'Inventory · drop · character sheet · life skills'),
-            ('Shift+T', 'Talk to someone near you (also across a counter)'),
-            ('E   Tab', 'Journal: story, jobs, cargo, factions, faith · Tab: the menu'),
-            ('M', 'Map of the realm: arrows scroll, Z whole realm, F faction lands'),
-            ('V  F2', 'Bestiary: the creatures you have met'),
-            ('O  ;', 'Inspect: look at anything on the map (Tab jumps between things)'),
-            ('?  F1  F11  Esc', 'This help · fullscreen (or Alt+Enter) · close a window, save and quit'),
+            ('arrows · numpad · hjkl yubn', 'Move. Walk into a monster to fight it, into a door to open it.'),
+            ('Shift + direction', 'Run, until something interesting happens'),
+            ('Enter  or  Space', 'Do the obvious thing here: go in, take the stairs, pick up,'),
+            ('', 'talk to whoever is near, read a signpost, open a chest, fish.'),
+            ('1  2  3  4  5  6', 'Use a skill from your bar (it aims at the nearest enemy)'),
+            ('Q   W', 'Drink a health or a mana potion'),
+            ('I', 'Your bag: what you carry and wear'),
+            ('M', 'The map of the realm'),
+            ('Tab', 'The menu: everything else you can do or look at'),
+            ('Esc', 'Back, close a window; on the map: save and quit'),
+            ('?', 'This help'),
+            ('.  or  5', 'Wait a turn'),
+            ('', ''),
+            ('That is all you need.', 'Everything else is in the menu (Tab). Each item there shows'),
+            ('', 'a shortcut of its own, for when you know your way around:'),
+            ('', 'C character, Shift+C life skills, Z skills, E journal,'),
+            ('', 'T talk, O look, X explore, Shift+F forage, A fish, F shoot...'),
+            ('', ''),
+            ('F11  Alt+Enter', 'Fullscreen'),
         ]),
         ('The world', [
             ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
@@ -1679,10 +1733,10 @@ class HelpScreen(Modal):
             ('Calendar', 'Twelve months of thirty days, from Deepfrost to Longnight; seven days in a week.'),
         ]),
         ('Weather', [
-            ('Seasons', 'Each region has its own weather: the cold north and the mountains, the hot dry south,'),
+            ('Seasons', 'Each region has its own weather: the cold north and mountains, the hot dry south,'),
             ('', 'the marshes and the mild middle. It changes with the seasons, and by steps: drizzle'),
             ('', 'grows into rain before it pours, a blizzard dies down to snow before the sky clears.'),
-            ('Sight', 'Rain, snow, mist, fog and dust shorten how far you see; thick fog and sandstorms a lot.'),
+            ('Sight', 'Rain, snow, mist, fog and dust shorten your sight; thick fog and sandstorms a lot.'),
             ('Travel', 'Snow, storms and sand slow you down; ambushes are likelier when you cannot see.'),
             ('Body', 'Cold weather makes you hungry sooner, and so does scorching heat.'),
             ('Magic', 'Fire sputters in the wet and burns hotter in the heat; storm magic loves a storm.'),
@@ -1967,13 +2021,14 @@ class IntroScreen(Modal):
              'how you got here, there is nothing. No road, no home, no faces. Nothing at all.'),
             ('A name',
              f'Only one thing is left: your name. {p.name}. You hold on to it like a rope in deep water.\n\n'
-             f'Your hands are the hands of a {r["name"].lower()}. A sword and a bow lie beside your cot, and a padded '
-             'coat that might be yours. Whatever you were before, nobody here knows it. Neither do you.'),
+             f'Your hands are the hands of a {r["name"].lower()}. A padded coat lies beside your cot, the only thing '
+             'that might be yours. Whatever you were before, nobody here knows it. Neither do you.'),
             ('{name}',
-             'You are nobody, in a land you do not know. What you become now is up to you: a sellsword, a trader, '
-             'a scholar of forgotten magic, a thief on the roads, or something else entirely.\n\n'
-             'Talk to people. Read the signposts. Listen to what travellers say. The world is wide, and it does not wait.\n\n'
-             'Press ? at any time for help.'),
+             'This is Avarenthia, in the year 1172 After the Ruin: an old land built on the bones of an older one. '
+             'You are nobody here. What you become now is up to you: a sellsword, a trader, a scholar of forgotten '
+             'magic, a thief on the roads, or something else entirely. Fortune, fame or folly.\n\n'
+             'Talk to people, and listen: they know more than they think. The world is wide, and it does not wait.\n\n'
+             'Enter does the obvious thing, Tab opens the menu, ? is help.'),
         ]
 
     def __init__(self, app):
@@ -2245,6 +2300,16 @@ class JournalScreen(Modal):
                 cv.text(x + 4, yy, title, GOLD, PANEL, maxw=24)
                 yy += cv.wrap(x + 30, yy, 67, text, FG, PANEL, 2)
             yy += 1
+        heard = getattr(g, 'rumours', [])[-4:]
+        if heard:
+            cv.text(x + 2, yy, 'HEARD ON THE ROAD', DIM, PANEL)
+            yy += 1
+            for line in reversed(heard):
+                cv.text(x + 2, yy, '·', GOLD, PANEL)
+                n = len(wrap_text(line, 93)[:2])
+                cv.wrap(x + 4, yy, 93, line, scale(FG, .85), PANEL, 2)
+                yy += n
+            yy += 1
         cv.text(x + 2, yy, 'ACTIVE JOBS', DIM, PANEL)
         jobs = MS.active(g)
         yy += 1
@@ -2287,7 +2352,7 @@ class JournalScreen(Modal):
             regs = sum(1 for rg in g.world.regions if rg.faction == f)
             cv.text(x + 4, yy, fd['name'], fd['fg'], PANEL)
             cv.text(x + 32, yy, f'{WAR.standing(r)} ({r})', BAD if WAR.is_hostile(g, f) else GOOD if r >= 10 else FG, PANEL)
-            cv.text(x + 52, yy, f'{regs} regions, {holds} strongholds', DIM, PANEL)
+            cv.text(x + 52, yy, f"{regs} region{'s' if regs != 1 else ''}, {holds} stronghold{'s' if holds != 1 else ''}", DIM, PANEL)
             pat = GD.PATRON.get(f)
             if pat:
                 cv.text_right(x + 97, yy, f"worships {GD.GODS[pat]['name']}", scale(GD.GODS[pat]['fg'], .75), PANEL)
@@ -2598,16 +2663,22 @@ class TempleScreen(Modal):
 
 
 class MenuScreen(Modal):
-    """Everything you can open, grouped, with its hotkey (Tab). Left and right pick a group, up and down an item."""
+    """Everything you can do or open, grouped (Tab). Left and right pick a group, up and down an item, Enter does it.
+    Each item also shows its own shortcut key, for those who like them."""
     GROUPS = [
-        ('Hero', [('c', 'Character', 'who you are, attributes and numbers'), ('C', 'Life skills', 'fishing, foraging, crafts'),
-                  ('z', 'Skills', 'your spells and abilities'), ('i', 'Inventory', 'what you carry and wear'),
+        ('Hero', [('i', 'Inventory', 'what you carry and wear'), ('c', 'Character', 'who you are, attributes and numbers'),
+                  ('C', 'Life skills', 'fishing, foraging, herbalism, alchemy, brewing'),
+                  ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
                   ('v', 'Bestiary', 'the creatures you have met')]),
-        ('World', [('e', 'Journal', 'story, jobs, cargo, factions, faith'), ('m', 'World map', 'the lands you have seen'),
-                   ('t', 'Travel', 'walk the roads to a place you know')]),
-        ('Actions', [('T', 'Talk', 'to someone near you'), ('o', 'Look around', 'inspect what you see'),
-                     ('P', 'Alchemy & brewing', 'potions, ale, wine and mead'), ('R', 'Rest', 'sleep until healed')]),
-        ('Game', [('?', 'Help', 'keys and how things work'), ('esc', 'Save and quit', '')]),
+        ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'story, jobs, rumours, cargo, factions, faith'),
+                   ('t', 'Travel', 'walk the roads to a place you know'), ('x', 'Explore', 'wander a dungeon until something turns up')]),
+        ('Actions', [('T', 'Talk', 'to someone near you'), ('o', 'Look around', 'inspect anything you can see'),
+                     ('g', 'Pick up', 'what lies at your feet'), ('d', 'Drop', 'something from your bag'),
+                     ('E', 'Eat', 'the food that fits your hunger best'), ('F', 'Forage', 'search the wild for food and herbs'),
+                     ('a', 'Fish', 'by water, with a fishing pole'), ('f', 'Shoot', 'at the nearest enemy, with a bow'),
+                     ('P', 'Alchemy & brewing', 'potions, ale, wine and mead'), ('p', 'Town portal', 'read a scroll of town portal'),
+                     ('R', 'Rest', 'until you are healed')]),
+        ('Game', [('?', 'Help', 'keys and how things work'), ('esc', 'Save and quit', 'your hero waits for you')]),
     ]
 
     def __init__(self, app):
@@ -2616,25 +2687,26 @@ class MenuScreen(Modal):
         self.sel = 0
 
     def render(self, cv):
-        x, y = self.box(cv, 64, 13, ' Menu ')
+        n = max(len(items) for _g, items in self.GROUPS)
+        x, y = self.box(cv, 64, n + 6, ' Menu ')
         for i, (name, _items) in enumerate(self.GROUPS):
             on = i == self.group
             cv.text(x + 2, y + 2 + i * 2, (' ► ' if on else '   ') + name.ljust(9), GOLD if on else DIM,
                     (52, 40, 28) if on else PANEL)
-        for yy in range(y + 1, y + 12):
+        for yy in range(y + 1, y + n + 3):
             cv.put(x + 16, yy, '│', LINE, PANEL)
         items = self.GROUPS[self.group][1]
         for j, (k, name, desc) in enumerate(items):
-            yy = y + 2 + j * 2
+            yy = y + 2 + j
             on = j == self.sel
             bg = (52, 40, 28) if on else PANEL
             if on:
                 cv.fill(x + 17, yy, 46, 1, ' ', None, bg)
-            cv.text(x + 19, yy, 'Esc' if k == 'esc' else k, GOLD, bg)
-            cv.text(x + 24, yy, name, FG if on else scale(FG, .85), bg)
-            if on and desc:
-                cv.text(x + 24, yy + 1, desc, DIM, PANEL, maxw=38)
-        cv.text_center(W // 2, y + 12, ' ←→ group · ↑↓ item · Enter or hotkey · Tab: close ', DIM, PANEL)
+            cv.text(x + 19, yy, name, FG if on else scale(FG, .85), bg)
+            cv.text_right(x + 61, yy, 'Esc' if k == 'esc' else k, scale(GOLD, .8), bg)
+        k, name, desc = items[self.sel]
+        cv.text(x + 3, y + n + 3, desc, DIM, PANEL, maxw=58)
+        cv.text_center(W // 2, y + n + 5, ' ←→ group · ↑↓ item · Enter: do it · Tab: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         items = self.GROUPS[self.group][1]

@@ -22,21 +22,7 @@ def town_names(race):
 
 
 JOBS = ['farmer', 'farmer', 'baker', 'weaver', 'woodcutter', 'fisher', 'tanner', 'carter', 'cooper', 'miller', 'potter']
-BARKS = {
-    'shepherd': ['Come by, come by! Daft animals.', 'Wolves took two lambs last week.', 'Mind the gate, stranger.'],
-    'acolyte': ['The light keeps us.', 'Have you prayed today, traveller?'],
-    'monk': ['Silence is a prayer too.', 'The herb garden needs weeding again.'],
-    'farmer': ['Rain is coming, I can smell it.', 'These turnips won\'t dig themselves.', 'The crows took half the seed again.'],
-    'baker': ['Fresh bread! Still warm!', 'Mind the flour, love.'],
-    'weaver': ['Finest cloth this side of the river.', 'My loom has been clacking since dawn.'],
-    'woodcutter': ['Wolves in the deep woods again.', 'My back aches like an old cart.'],
-    'fisher': ['The nets came up empty this morning.', 'Smells like a storm out on the water.'],
-    'guard': ['Move along.', 'Keep your blade sheathed in town.', 'Quiet night. I like quiet nights.'],
-    'child': ['Are you an adventurer? Have you killed a dragon?', 'Tag! You\'re it!', 'Mum says I can\'t go past the fence.'],
-    'drinker': ['Another round!', 'I tell you, I saw a ghost on the old road.', 'Hic.'],
-    'any': ['Lovely day, isn\'t it?', 'Prices keep going up, I swear.', 'Did you hear about the bandits on the east road?',
-            'Mind how you go.', 'The temple bell woke me again.'],
-}
+from .lore import BARKS  # noqa: E402  (what people say lives with the rest of the lore)
 
 DAY_START, DAY_END = 6, 20
 
@@ -1188,8 +1174,8 @@ def live(game, m):
         near = [n for n in m.mons if n.is_npc and hasattr(n, 'job') and cheb(n.x, n.y, p.x, p.y) <= 6 and game.visible(n.x, n.y)]
         if near:
             n = random.choice(near)
-            line = random.choice(BARKS.get(n.job, BARKS['any']) + BARKS['any'][:2])
-            game.say(n, line)
+            from .lore import chatter
+            game.say(n, chatter(game, n))
     # close doors behind people at night now and then
     if is_night(game) and random.random() < .05:
         for i, t in enumerate(m.t):

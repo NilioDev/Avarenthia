@@ -10,9 +10,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 
 from PIL import Image, ImageDraw  # noqa: E402
 
-from cursed_vale import ui, engine as E, weather as WX  # noqa: E402
-from cursed_vale.canvas import FakeCanvas  # noqa: E402
-from cursed_vale.glyphs import TILE_W, TILE_H  # noqa: E402
+from avarenthia import ui, engine as E, weather as WX  # noqa: E402
+from avarenthia.canvas import FakeCanvas  # noqa: E402
+from avarenthia.glyphs import TILE_W, TILE_H  # noqa: E402
 from tools.screenshot import save  # noqa: E402
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else '.'
@@ -62,7 +62,7 @@ def scene(where):
     app.screens = [ui.GameScreen(app)]
     app.render()
     ox, oy = app.top.origin
-    from cursed_vale import data as D
+    from avarenthia import data as D
     roofed = {D.FLOOR, D.PLANK, D.BED, D.TABLE, D.BARREL, D.ALTAR, D.ANVIL}
     shelter = set()
     if m.kind == 'town':

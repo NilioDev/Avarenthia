@@ -14,13 +14,13 @@ jobs:
         include:
           - os: windows-latest
             sep: ';'
-            file: dist/Umbrathyn.exe
+            file: dist/Avarenthia.exe
           - os: macos-latest
             sep: ':'
-            file: dist/Umbrathyn
+            file: dist/Avarenthia
           - os: ubuntu-latest
             sep: ':'
-            file: dist/Umbrathyn
+            file: dist/Avarenthia
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +32,8 @@ jobs:
       - name: Run headless tests
         run: python tests/test_headless.py
       - name: Build
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name Umbrathyn --add-data "assets${{ matrix.sep }}assets" main.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia --add-data "assets${{ matrix.sep }}assets" main.py
       - uses: actions/upload-artifact@v4
         with:
-          name: Umbrathyn-${{ matrix.os }}
+          name: Avarenthia-${{ matrix.os }}
           path: ${{ matrix.file }}

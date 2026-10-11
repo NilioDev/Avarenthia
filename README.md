@@ -1,155 +1,161 @@
-# Umbrathyn
+# Avarenthia
+### *Tales of Fortune, Fame and Folly*
 
-Een ASCII open-world RPG in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
-Je wordt wakker zonder geheugen en bent niemand. Een willekeurige open wereld met snelle gevechten, handel tussen
-dorpen en steden, facties in oorlog, banen op de prikborden, karavanen, patrouilles, bandieten en reizigers die
-zichtbaar over de kaart trekken, en een wereld die op de achtergrond verandert.
+An ASCII open-world RPG in Python, built on [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
+A game by **Nilio**.
 
-## Je held
+You wake in a temple outside Thornfield with no memory and no name worth mentioning. Around you lies a random
+open world: fast combat, trade between hamlets and cities, factions at war, jobs on the notice boards, caravans,
+patrols, bandits and travellers moving visibly across the land, weather rolling in from the hills, and great evils
+growing quietly in the background while you are busy elsewhere.
 
-Je wordt wakker in een tempel even buiten Thornfield, zonder geheugen en zonder wapens: kobolds hebben je zwaard en schild
-meegenomen naar de Hollow Den. Tot je die terughaalt vecht je met je vuisten (de discipline Unarmed groeit daarmee),
-en bij hun aanvoerder Snagtooth ligt ook je eerste spreukenboek. Je bent niemand; wat je wordt, bepaal je zelf.
+## The world
 
-**Buiten de dorpen** staan tempels, kloosters en wachttorens (en de ruïnes ervan, met een weg naar beneden).
-Priesters genezen en heffen vloeken op; in een klooster leert de kruidenmonnik je de eerste recepten; van een
-wachttoren kijk je ver over het land. Dorpen zijn groter, met akkers, weides met vee en boomgaarden; steden zijn
-grote ommuurde steden met meerdere herbergen, winkels en kazernes.
+**Avarenthia, 1172 After the Ruin.** Once the Varnish Empire ruled everything from the Sky-Seat; then came the Ruin,
+and what is left are broken roads, old ruins and young kingdoms quarrelling over the pieces. The history, the gods and
+the peoples are told by the people you meet, a little at a time, and in the help pages.
 
-**Foerageren en kruidenkunde.** Met `Shift+F` zoek je in de wildernis naar eten en kruiden. Planten die je niet kent
-zie je alleen aan hun uiterlijk (dat is per wereld anders): proef ze op eigen risico, sommige zijn dodelijk. Hoe beter
-je foerageert, hoe vaker je herkent wat je plukt; een kruidenmonnik vertelt je wat je gevonden hebt. Met `Shift+P`
-brouw je drankjes van kruiden (genezing, mana, tegengif, elixer).
+**You learn the world by travelling.** At the start you only know the country around Thornfield. Signposts (`┬`)
+tell you where the roads go, and rumours tell you where a place lies, but the road and the land in between only appear
+on your map once you have walked them.
 
-**Honger.** Je verbruikt voedsel; eet brood, rantsoenen, vis of vlees (`Shift+E`, of vanuit je tas) of neem een warme
-kom eten in een herberg: een kom stoofpot (`m`, 40 koper) of een maaltijd met een bed (`M`). Met honger word je zwakker en uiteindelijk verhonger je.
+**Listen to people.** Everyone has something to say, and an attentive player picks up hints: an overgrown shrine past
+the old mill, a ruin two days east, herbs that grow by the lake, a war going badly in the north, prices rising in the
+capital, strange lights in the marsh. Some of it is idle talk; some of it points to hidden places, and some of it
+tells you how the world is faring. The last few things you heard are kept in your journal under *Heard on the road*.
 
-**Dwergenrijken.** In de bergen liggen ondergrondse dwergensteden (`▼` op de kaart) met hallen, smidsen, een troonzaal
-en een trap naar de Deep Roads, de oude dwergentunnels die nu vol goblins en erger zitten.
+**Settlements come in five sizes**: hamlet, village, town, city and metropolis.
+A hamlet is a few houses along the road where the farmer sells from his kitchen; a village has a green, a town a paved
+market square with a fountain; cities and the metropolis are walled with gates. The roads inside a settlement run
+exactly as on the world map: if a village sits at the end of a road, the road ends there too, and you enter by the road
+you came on. Along the roads lie farms (where you are often welcome at the table) and the odd lonely roadside inn.
+Outside the villages stand temples, monasteries and watchtowers, and the ruins of them, with a way down.
 
-**Inspecteren.** Met `O` of `;` beweeg je een cursor over de kaart en lees je wat er is: monsters, mensen, voorwerpen,
-terrein en plaatsen. Tab springt naar het volgende.
+**Dwarven holds.** In the mountains lie underground dwarven cities (`▼`) with halls, forges, a throne room and stairs
+down to the Deep Roads, old dwarven tunnels now full of goblins and worse.
 
-Bij een nieuw spel kies je je volk (mens, elf, dwerg, halfling, gnoom, half-ork of goblin), je geslacht (man, vrouw of
-ongedefinieerd) en je voor- en achternaam; met Tab krijg je een willekeurige naam die bij je volk past. Elk volk heeft eigen attributen, voordelen en
-nadelen, en andere volkeren en facties reageren anders op je: andere prijzen en een andere beginreputatie.
+**Weather.** Every region has its own climate that changes with the seasons and moves in steps: drizzle turns to rain
+turns to a downpour. Over thirty kinds of weather, from mist, fog and snow to blizzards, sandstorms, haboobs, freezing
+rain, hail, falling leaves and blossom. The north and the mountains are cold, the south hot and dry, marshes misty.
+Rain, snow, fog and dust limit your sight; snow and storms slow you down; cold and heat make you hungry; fire sputters
+in the rain, and lightning strikes open ground. Ash rain, miasma and smoke betray a great evil nearby. Under a roof you
+stay dry.
 
-De facties zijn in elke wereld anders: een rijk, kooplieden, woudvolk, vogelvrijen en een sekte, vaak aangevuld met
-dwergenclans en orkenstammen, elk met een eigen volk, naam, kleur en vijanden.
+**Light and dark.** Torches, campfires, crystals and glowing mushrooms flicker and pulse. Towns have street lamps: at
+dusk the lamplighter makes his round and lights them one by one, and at dawn he puts them out again. At night you see
+the lit streets from afar; the rest is dark.
 
-Je kent aan het begin alleen de omgeving van Thornfield. Lees de **wegwijzer** (`┬`) in elk dorp om te weten waar de wegen
-heen gaan, en praat met mensen: zij vertellen over andere plaatsen. De wereldkaart (`M`) kun je met de pijltjes scrollen;
-`Z` wisselt tussen close-up en het hele rijk.
+**The calendar.** Twelve months of thirty days (Deepfrost to Longnight) and a seven-day week; the story begins on
+Stonesday, the 3rd of Seedwake, 1172 AR.
 
-**Geld** is schaars: 100 koper is 1 zilver, 100 zilver is 1 goud. Beesten dragen geen geld, mensen een beetje,
-handelaren veel. Munten vind je vooral in schatkisten (`■`) in kerkers en ruïnes.
+## Your hero
 
-**Misdaad.** Je kunt reizigers en karavanen beroven (loop ertegenaan). Elk dorp onthoudt wat er in de buurt gebeurt:
-zakt je aanzien daar te ver, dan ben je er gezocht, in vijf niveaus (`*` in het paneel): eerst de dorpswacht, dan
-de sheriff met zijn hulpsheriffs, dan de soldaten van de heer, dan ridders en ten slotte een heel leger. Er hangen
-opsporingsberichten aan de prikborden en houden de wachters je aan bij de poort: boete betalen, drie dagen in de
-schandpaal, of vluchten. Mensen vergeten langzaam.
+When you start a new game you choose your people (human, elf, dwarf, halfling, gnome, half-orc or goblin), your gender
+and your name; Tab gives you a random name that suits your people. Each people has its own attributes, strengths and
+weaknesses, and other peoples and factions treat you differently: other prices, another starting reputation.
 
-**Life skills** groeien door ze te doen, zoals in Project Gorgon. De eerste is **vissen**: koop een hengel bij een outfitter
-en druk `A` naast water (rivier, meer, zee of een poel in een grot). Hoe beter je wordt, hoe meer soorten vis toehappen.
+You start with nothing: kobolds took your sword and shield to the Hollow Den. Until you get them back you fight with
+your fists. Their chief Snagtooth also keeps your first spellbook. You are nobody; what you become is up to you.
 
-## Geen klassen
+Choose **hardcore** (death is final) or **softcore** (you wake in the nearest temple, but your pack, cargo and gold
+lie by your corpse until you fetch them). Enter a **seed** to play the same world again.
 
-Je kiest geen klasse. Je wordt wat je doet: tien disciplines (zwaard, bijl en knots, dolk, boog, vuur, ijs, storm,
-genezing, schaduw, strijdkunst) stijgen door ze te gebruiken. Je begint met alleen een kort zwaard en een boog, zonder skills.
-Skills (50 in totaal) leer je uit **boeken** (`≡`): van monsters, diep in ruïnes, bij staande stenen, van marskramers
-en soms bij een outfitter in een stad. Moeilijkere boeken vragen een hogere discipline. Je neemt zes skills tegelijk mee
-en wisselt ze alleen in een stad of burcht (`Z`). Wapenskills werken alleen met het bijpassende wapen in je handen.
+### No classes
 
-Magische items zijn zeldzaam en **ongeïdentificeerd** als je ze vindt; hun krachten werken pas na identificatie bij een
-outfitter of priester. Sommige zijn **vervloekt**: eenmaal aangetrokken krijg je ze niet meer af tot een priester de vloek opheft.
+You become what you do. Ten disciplines (sword, axe and mace, dagger, bow, fire, ice, storm, healing, shadow and
+unarmed) grow by use. Skills (fifty of them) are learnt from **books** (`≡`): from monsters, deep in ruins, at standing
+stones, from pedlars and sometimes at a city outfitter. Harder books ask for a higher discipline. You carry six skills
+at a time and swap them in a town or castle. Weapon skills only work with the matching weapon in hand.
 
-**Op de achtergrond** gebeurt meer dan je denkt. De wereld verandert langzaam, ook als jij ergens anders mee bezig
-bent. Let op het nieuws en op wat mensen vertellen; pas na lang spelen wordt duidelijk wat er speelt, en wat je
-ermee doet (of niet) is aan jou.
+Magic items are rare and **unidentified** when found; their powers only work after an outfitter or priest identifies
+them. Some are **cursed**: once worn, they will not come off until a priest lifts the curse.
 
-Bij een nieuw spel kies je **hardcore** (dood is definitief) of **softcore**: je ontwaakt in de dichtstbijzijnde tempel,
-maar je rugzak, vracht en goud liggen bij je lijk, dat je terug moet halen. Je kunt ook een **seed** invoeren om
-dezelfde wereld nog eens te spelen; zonder seed is elke wereld anders.
+### Life skills
 
-## Facties en oorlog
+Like in Project Gorgon, life skills grow by doing them: **fishing**, **foraging**, **herbalism**, **alchemy** and
+**brewing**. Buy a fishing pole and fish by any water; the better you get, the more kinds of fish bite. Forage in the
+wild for food and herbs. Plants you do not know look different in every world: taste them at your own risk, some are
+deadly. A herb monk tells you what you found. Brew potions from herbs, and ale, berry wine and mead at an inn or in a
+monastery cellar.
 
-Vijf facties bezitten de regio's: de Kroon van Aldmark, de Handelsliga, de Kring van Doornen, de Zwarte Hand en de
-Cultus van de Ondoden. Ze hebben kastelen (`Ω`) en forten (`╬`). Legertjes trekken zichtbaar over de kaart naar vijandige
-burchten; een geslaagd beleg verovert de burcht en de regio, met de dorpen erin. Vijandige burchten kun je zelf
-bestormen: dood de bevelhebber en geef de burcht aan een bondgenoot. Castellanen geven oorlogsbanen.
-Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanvalt. `M` en dan `F` toont de gebieden.
+### Hunger
 
-## Handel en banen
+You use up food. Eat bread, rations, fish or meat, or have a hot meal at an inn (a bowl of stew, or a meal with a bed).
+On a full stomach you last about a week; after a day or two you get hungry, then weak, then faint.
 
-- Elke plaats maakt bepaalde goederen (`+`, goedkoop) en wil andere hebben (`!`, duur). Koop bij de handelaar en verkoop elders.
-  Prijzen reageren op wat jij en de karavanen kopen en verkopen, en herstellen langzaam.
-- Nieuws (hongersnood, feest, mijnramp, brand, oorlog, ziekte) verschuift prijzen een paar dagen.
-- Je draagt 30 eenheden vracht. Een muilezel (+60) en een kar (+160) koop je bij de stalmeester.
-- Op het prikbord van de herberg vind je koeriersklussen, vrachtritten, premiejachten, escortes en kerkertochten.
-  Reputatie in een plaats geeft een bonus op beloningen en betere prijzen.
-- Bandieten overvallen karavanen; patrouilles uit de steden jagen bandieten weg.
+### Gods
 
-**Thornfield** heeft een vijver met een oude visser. Praat met hem voor je eerste hengel en je eerste opdracht: vang een vis.
-De Hollow Den is een smerige kobold-grot met kampvuurtjes, botten en vuil; de kobolds komen alleen of met z'n tweeën.
+A small pantheon: Solmara (light and mercy), Valdric (law, protector of the crown), Thessa (the wild), Durnak (forge
+and stone, god of the dwarves), Skell (luck, roads, trade and thieves) and Morrak (death and hunger). In a temple you
+can devote yourself to its god. Prayer, offerings and deeds your god likes earn favour, and with it blessings. But
+factions that worship a rival god trust you less, and priests of a hostile god will not help you.
 
-**Vaardigheden van het leven** groeien door ze te doen: vissen, foerageren, kruidenkunde (kruiden plukken en herkennen),
-alchemie (drankjes uit kruiden, `Shift+P`) en brouwen (bier, bessenwijn en mede, bij een herberg of in een kloosterkelder).
+## Coin, trade and jobs
 
-**Goden.** Een klein pantheon: Solmara (licht en genade), Valdric (wet, beschermer van de kroon), Thessa (de wilde natuur),
-Durnak (smidse en steen, de god van de dwergen), Skell (geluk, wegen, handel en dieven) en Morrak (dood en honger).
-In een tempel kun je je aan de god van die tempel wijden. Bidden, offers en daden die je god bevalt geven gunst, en
-daarmee zegeningen. Maar facties die een rivaliserende god aanbidden vertrouwen je minder, en de priesters van een
-vijandige god helpen je niet.
+- **Coin is rare.** 100 copper is 1 silver, 100 silver is 1 gold. Beasts carry no money, people a little, traders a lot.
+  Most coin is found in chests (`■`) in dungeons and ruins. Drops are realistic: beasts do not carry swords.
+- Every place makes certain goods (`+`, cheap) and wants others (`!`, dear). Buy low and sell elsewhere. Prices react
+  to what you and the caravans buy and sell, and recover slowly. News (famine, feast, mine disaster, fire, war,
+  plague) shifts prices for a few days.
+- You carry 30 units of cargo; a mule (+60) and a cart (+160) are sold by the stablemaster.
+- The inn's notice board has courier jobs, freight runs, bounties, escorts and dungeon delves. A blinking yellow `!`
+  above someone means work; a `?` means you can hand something in.
+- **Thornfield** has a pond with an old fisherman. Talk to him for your first pole and your first job: catch a fish.
 
-**Bewoning in vijf maten**: gehucht, dorp, stad, grote stad en metropool. Een gehucht is een paar huizen langs de weg,
-de boer verkoopt vanuit zijn keuken; een dorp heeft een brink, een stad een geplaveid marktplein met fontein; steden en de
-metropool zijn ommuurd. De wegen in een dorp lopen precies zoals op de wereldkaart: ligt een dorp aan het eind van een
-weg, dan houdt de weg daar ook op; je komt binnen via de weg waarover je aankwam. Langs de wegen liggen boerderijen
-(waar je vaak mee mag eten) en hier en daar een eenzame herberg.
+## Factions, war and crime
 
-**Weer.** Elke streek heeft haar eigen weer, dat verandert met de seizoenen en per stap (motregen wordt regen wordt een
-stortbui). Het noorden en de bergen zijn koud, het zuiden heet en droog, moerassen nevelig. Regen, sneeuw, mist en stof
-beperken je zicht; sneeuw en storm vertragen je; kou en hitte maken hongerig; vuur sputtert in de regen; bij onweer slaat
-de bliksem in op open land. Asregen, miasma en rook verraden een groot kwaad in de buurt. Onder een dak blijf je droog.
+The factions are different in every world: an empire, merchants, forest folk, outlaws and a cult, often joined by
+dwarf clans and orc tribes, each with its own people, name, colour and enemies. They hold castles (`Ω`) and forts
+(`╬`). Small armies march visibly across the map; a successful siege takes the castle and its region, villages and all.
+You can storm hostile castles yourself: kill the commander and hand the castle to an ally. Your standing with each
+faction sets prices, which gates open and who attacks you.
 
-**Vijanden** hebben elk hun gewoontes: lafaards slaan op de vlucht als ze gewond zijn, roedels omsingelen je, boogschutters
-houden afstand, spinnen liggen onzichtbaar op de loer, wolven huilen de roedel wakker, orks raken razend, cultisten
-genezen hun maten, ogers en trollen stormen op je af (na een waarschuwing), en de doden dwalen rond.
+You can rob travellers and caravans. Every settlement remembers what happens nearby: let your name sink too far and
+you are wanted, in five levels (the village watch, the sheriff, the lord's soldiers, knights and finally an army).
+Wanted posters go up on the boards, and guards stop you at the gate: pay the fine, three days in the stocks, or run.
+People forget, slowly.
 
-**Opdrachten**: een knipperend gele `!` boven iemand betekent werk, een `?` dat je iets kunt inleveren.
+## The wild
 
-**Honger** gaat langzamer: met een volle maag kom je ongeveer een week toe; na een dag of twee krijg je honger.
+- On the roads you are fairly safe. The further you stray, the more dangerous it gets: bigger packs, stronger
+  monsters, more champions. At night the dead walk.
+- **Enemies have habits**: cowards flee when hurt, packs surround you, archers keep their distance, spiders lie in wait
+  unseen, wolves howl the pack awake, orcs fly into a rage, cultists heal their friends, ogres and trolls charge you
+  (after a warning).
+- Hidden places: ruins (`Π`), shrines (`†`), bandit camps (`∆`), standing stones (`Ψ`) and abandoned wagons (`¤`).
+- On the road anything can happen: wounded travellers, pedlars, Black Hand toll roads, storms, will-o'-wisps.
+  Travellers (`☺`) sometimes have a job for you and wait for you afterwards at an inn.
+- **Fog of war**: in the open you see about 8 tiles, further from hills, much less in forest and marsh, and half as far
+  at night. Land you saw earlier is shown grey: what happens there now, you do not see.
+- The bestiary remembers the monsters you have met. Every kill teaches you more: more damage against that kind, and
+  they hit you less often.
 
-**Licht en donker.** Fakkels, kampvuren, kristallen en lichtgevende zwammen flikkeren of pulseren vanzelf. In dorpen en
-steden staan straatlantaarns: bij de schemering loopt de lantaarnopsteker zijn ronde en steekt ze een voor een aan,
-en bij het ochtendgloren dooft hij ze weer. 's Nachts zie je de verlichte straten van ver; de rest is donker.
+## Controls
 
-**De kalender.** Twaalf maanden van dertig dagen (van Deepfrost tot Longnight) en een week van zeven dagen; het verhaal
-begint op Stonesday, de 3e van Seedwake, 1172 AR.
+Avarenthia is played with the keyboard alone, and with as few keys as possible, so that one day it can be played on a
+controller or a phone.
 
-## De wildernis
+| Key | Action |
+|---|---|
+| arrows, numpad, `hjklyubn` | walk; walking into a monster attacks it |
+| Shift + direction | run |
+| **Enter** (or Space) | **do the obvious thing here**: take the stairs, enter a place, pick up, talk to someone nearby, read a signpost, open a chest, fish |
+| **Tab** | **the menu**: everything else, grouped as Hero, World, Actions and Game |
+| `1` - `6` | your six skills, aimed at the nearest enemy |
+| `Q` / `W` | health or mana potion |
+| `I` | inventory |
+| `M` | world map |
+| `?` | help |
+| Esc | save and quit |
 
-- Op de wegen ben je redelijk veilig. Hoe verder je van de weg afdwaalt, hoe gevaarlijker het wordt: grotere roedels,
-  sterkere monsters, meer champions. 's Nachts komen de doden tevoorschijn. Inspecteer het land (O) om het gevaar te zien.
-- Verborgen plekken om te ontdekken: ruïnes (`Π`, kleine kerkers), heiligdommen (`†`, zegeningen), bandietenkampen (`∆`),
-  staande stenen (`Ψ`) en verlaten wagens (`¤`).
-- Onderweg gebeurt van alles: gewonde reizigers, marskramers, tolwegen van de Zwarte Hand, stormen, dwaallichtjes.
-- Mist van oorlog: in het open land zie je zo'n 8 vakjes ver, vanaf heuvels verder, in bossen en moerassen veel minder,
-  en 's nachts de helft. Bossen ontnemen je het zicht. Land dat je eerder zag, zie je grijs en in de mist: wat daar nu gebeurt zie je niet.
-- Wegwijzers en praatjes vertellen je wáár een plaats ligt; de weg en het land ernaartoe ontdek je pas door er langs te komen.
-- Reizigers (`☺` op de weg) kun je aanspreken door ertegenaan te lopen. Sommigen hebben een klus voor je
-  (brief bezorgen, goederen halen, een beest doden, iets terughalen uit een ruïne). Daarna wachten ze op je in de herberg
-  van de plaats waar ze heen liepen; dat staat in je dagboek en op de kaart.
-- Het bestiarium (`V`) houdt bij welke monsters je hebt gezien. Elke kill leert je meer: hogere kennis geeft meer schade
-  tegen dat soort monster en ze raken je minder vaak.
+Every menu item shows its own shortcut on the right (`T` talk, `E` eat, `F` forage, `C` life skills, `X` explore,
+and so on). You never need them, but once you know them they are faster.
 
-## Installeren en starten
+## Install and run
 
-Je hebt Python 3.10 of nieuwer nodig.
+You need Python 3.10 or newer.
 
 ```bash
-cd cursed_vale
 python -m venv .venv
 # Windows:      .venv\Scripts\activate
 # macOS/Linux:  source .venv/bin/activate
@@ -157,19 +163,20 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Het spel opent een gewoon venster van 110 bij 60 vierkante tekens in het IBM CGA 8×8-font,
-op de grootste scherpe vergroting die op je scherm past (2× op een 1080p-scherm). F11 of Alt+Enter schakelt naar volledig scherm.
-Je held wordt bewaard in `savegame.dat` naast `main.py`. Als je sterft, wordt die verwijderd.
+The game opens a window of 110 × 60 square cells in the IBM CGA 8×8 font, at the largest sharp scale that fits your
+screen (2× on a 1080p screen). F11 or Alt+Enter toggles full screen. Your hero is saved in `savegame.dat` next to
+`main.py`; when you die in hardcore, it is deleted.
 
-## Starten op Windows met Smart App Control
+### Windows with Smart App Control
 
-Smart App Control blokkeert het `.exe`-bestand, omdat het niet digitaal ondertekend is. Speel het spel dan via Python:
+Smart App Control blocks the `.exe` because it is not digitally signed. Play through Python instead:
 
-1. Installeer Python 3.10 of nieuwer van [python.org](https://www.python.org/downloads/) en vink "Add python.exe to PATH" aan.
-2. Download de broncode (op GitHub: *Code → Download ZIP*) en pak die uit.
-3. Dubbelklik op `start_windows.bat`. De eerste keer installeert het de benodigdheden (ongeveer een minuut), daarna start het spel direct.
+1. Install Python 3.10 or newer from [python.org](https://www.python.org/downloads/) and tick "Add python.exe to PATH".
+2. Download the source (on GitHub: *Code → Download ZIP*) and unpack it.
+3. Double-click `start_windows.bat`. The first time it installs what it needs (about a minute); after that the game
+   starts straight away.
 
-Blokkeert Windows ook het `.bat`-bestand, open dan een terminal in de map en typ:
+If Windows also blocks the `.bat`, open a terminal in the folder and type:
 
 ```
 py -m venv .venv
@@ -177,97 +184,79 @@ py -m venv .venv
 .venv\Scripts\python main.py
 ```
 
-## Eén los bestand maken (zonder Python te hoeven draaien)
+### Building a single executable
 
-Een uitvoerbaar bestand moet je bouwen op het besturingssysteem waarop het moet draaien.
+An executable has to be built on the operating system it will run on.
 
-**Windows:** dubbelklik op `build_windows.bat`. Na een paar minuten staat `dist\Umbrathyn.exe` klaar.
-Dat bestand kun je overal neerzetten en starten. Je savegame komt ernaast te staan.
+- **Windows:** double-click `build_windows.bat`; after a few minutes `dist\Avarenthia.exe` is ready.
+- **macOS / Linux:** `bash build.sh`, then `dist/Avarenthia` is ready.
+- **Through GitHub:** the workflow in `.github/workflows/build.yml` builds Windows, macOS and Linux versions on every
+  push. Download them under *Actions*, at the latest run, under *Artifacts*.
 
-**macOS / Linux:** `bash build.sh`, daarna staat `dist/Umbrathyn` klaar.
+Windows SmartScreen may warn because the file is not signed; choose *More info* and *Run anyway*.
 
-**Via GitHub, zonder zelf iets te installeren:** zet deze map in een GitHub-repository.
-De workflow in `.github/workflows/build.yml` bouwt bij elke push automatisch een versie voor
-Windows, macOS en Linux. Je downloadt ze onder het tabblad *Actions*, bij de laatste run, onder *Artifacts*.
-
-Windows SmartScreen kan waarschuwen omdat het bestand niet digitaal ondertekend is.
-Kies dan *Meer info* en *Toch uitvoeren*.
-
-## Besturing
-
-| Toets | Actie |
-|---|---|
-| pijltjes, numpad, `hjklyubn` | lopen, tegen een monster aanlopen is aanvallen |
-| Shift + richting | rennen |
-| `1` - `6` | skills, richten automatisch op de dichtstbijzijnde vijand |
-| `F` | schieten met een boog |
-| `A` | vissen (naast water, met een hengel) |
-| `Shift+E` | eten |
-| `Shift+F` | foerageren |
-| `Shift+P` | alchemie en brouwen |
-| `O` of `;` | inspecteren |
-| `Z` | skills kiezen (in een stad of burcht) |
-| `Q` / `W` | health- of manadrankje |
-| `P` | Town Portal |
-| `X` | automatisch verkennen (stap voor stap te zien, elke toets stopt) |
-| `T` | reizen naar een bekende plaats of kerker |
-| `M` | kaart van het rijk (pijltjes scrollen, `Z` heel rijk, `F` facties) |
-| `Shift+T` | praten met iemand vlakbij (ook over een toonbank heen) |
-| `E` | dagboek: verhaal, banen, vracht, facties en geloof |
-| Tab | menu met alle schermen en hun sneltoetsen |
-| `>` `<` of Enter | trap nemen, dorp of kerker in |
-| `G` | oppakken |
-| `I` / `D` / `C` | tas, iets laten vallen, karakterscherm |
-| `R`, `5`, `.` | rusten, een beurt wachten |
-| `V` of F2 | bestiarium |
-| `Shift+C` | levensvaardigheden |
-| `?` of F1 | hulp (toetsen, de wereld, je held, het weer, de goden) |
-| Esc | opslaan en afsluiten |
-
-`>` en `<` gaan uit van een Amerikaanse toetsenbordindeling (Shift + punt/komma). Enter werkt altijd.
-
-## Projectstructuur
+## Project structure
 
 ```
-main.py                  venster, tileset, toetsenbord (alles wat tcod-specifiek is)
-cursed_vale/data.py      tegels, klassen, skills, items, affixen, monsters, kerkers
-cursed_vale/entities.py  Item, Monster, Player, GameMap en het maken van loot en monsters
-cursed_vale/worldgen.py  vallei, dorp, kerkers (kamers en grotten), wildernis, winkel
-cursed_vale/events.py    ruïnes en andere plekken, gebeurtenissen onderweg, reizigers
-cursed_vale/evils.py     wat er op de achtergrond gebeurt (spoilers!)
-cursed_vale/crime.py     misdaad, aanzien per dorp, premiejagers
-cursed_vale/money.py     koper, zilver en goud
-cursed_vale/factions.py  facties, per wereld opnieuw gemaakt
-cursed_vale/races.py     volkeren, hun verhoudingen en namen
-cursed_vale/lifeskills.py life skills (vissen)
-cursed_vale/look.py      hoe het land eruitziet (hoogte, vocht, klimaat)
-cursed_vale/dress.py     aankleding en licht in kerkers
-cursed_vale/engine.py    spelregels: beweging, gevechten, monster-AI, skills, verkennen, opslaan
-cursed_vale/fov.py       zichtveld via libtcod (symmetric shadowcasting)
-cursed_vale/ui.py        alle schermen en het tekenen, los van tcod
-cursed_vale/canvas.py    dunne laag over de tcod-console
-assets/glyphs.png        tekenset, gemaakt uit het IBM CGA 8x8-font (Px437, alle tekens)
-assets/fonts/            het font zelf en zijn licentie
-tools/make_tileset.py    maakt de tekenset opnieuw (Pillow nodig)
-tests/                   headless test en een bot die het spel uitspeelt
+main.py                    window, tileset, keyboard (everything tcod-specific)
+avarenthia/ui.py           all screens and drawing, independent of tcod
+avarenthia/canvas.py       thin layer over the tcod console
+avarenthia/titleart.py     the animated title screen
+avarenthia/engine.py       game rules: movement, combat, skills, exploring, saving
+avarenthia/data.py         tiles, skills, items, affixes, monsters, dungeons
+avarenthia/entities.py     Item, Monster, Player, GameMap; loot and monsters
+avarenthia/ai.py           monster habits and traits
+avarenthia/world.py        the realm: regions, roads, settlement sizes and services
+avarenthia/worldgen.py     wilderness, dungeons (rooms and caves), shops
+avarenthia/towns.py        hamlets, villages, towns, cities and the metropolis
+avarenthia/sites.py        farms, roadside inns, temples, monasteries, watchtowers
+avarenthia/deephold.py     dwarven holds and the Deep Roads
+avarenthia/weather.py      climates, seasons and every weather effect
+avarenthia/lore.py         history, gods and peoples; what people say; rumours and hints
+avarenthia/gods.py         the pantheon, devotion, favour and blessings
+avarenthia/events.py       ruins and other places, road events, travellers
+avarenthia/evils.py        what happens in the background (spoilers!)
+avarenthia/war.py          armies and sieges
+avarenthia/factions.py     factions, made anew for every world
+avarenthia/races.py        peoples, their relations and names
+avarenthia/crime.py        crime, standing per settlement, bounty hunters
+avarenthia/economy.py      goods and prices
+avarenthia/money.py        copper, silver and gold
+avarenthia/missions.py     jobs and quest marks
+avarenthia/lifeskills.py   fishing and the other life skills
+avarenthia/foraging.py     plants, foraging and herbalism
+avarenthia/brewing.py      alchemy and brewing
+avarenthia/hunger.py       food and hunger
+avarenthia/calendar.py     months, weeks and seasons
+avarenthia/look.py         how the land looks (height, moisture, climate)
+avarenthia/dress.py        dungeon dressing and light
+avarenthia/fov.py          field of view through libtcod (symmetric shadowcasting)
+assets/glyphs.png          tileset made from the IBM CGA 8×8 font (Px437, every glyph)
+assets/fonts/              the font and its licence
+tools/                     tileset maker, screenshots, weather demo
+tests/                     headless test and a bot that plays the game
 ```
 
 ## Tests
 
 ```bash
-python tests/test_headless.py   # speelt met willekeurige toetsen en tekent alle schermen
-python tests/bot.py 4           # een bot speelt 4 keer per klasse alle kerkers uit
+python tests/test_headless.py   # plays with random keys and draws every screen
+python tests/bot.py 4           # a bot plays through the dungeons
 ```
 
-De tests draaien zonder venster en zonder tcod.
+The tests run without a window and without tcod.
 
-De tekenset opnieuw maken, of met een ander 8×16-pixelfont:
+To rebuild the tileset:
 
 ```bash
 pip install pillow
-python tools/make_tileset.py pad/naar/lettertype.ttf
+python tools/make_tileset.py path/to/font.ttf
 ```
 
-Het font is Px437 IBM CGA uit The Ultimate Oldschool PC Font Pack van VileR (https://int10h.org/oldschool-pc-fonts/),
-CC BY-SA 4.0, zie `assets/fonts/LICENSE-Px437.txt`. Alle tekens van het font zitten in de tekenset (`cursed_vale/glyphs.py`);
-`python tools/make_tileset.py` maakt `assets/glyphs.png` opnieuw.
+## Credits
+
+Design and direction: **Nilio**.
+
+The font is Px437 IBM CGA from The Ultimate Oldschool PC Font Pack by VileR
+(https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0; see `assets/fonts/LICENSE-Px437.txt`. Every glyph of the font
+is in the tileset (`avarenthia/glyphs.py`).

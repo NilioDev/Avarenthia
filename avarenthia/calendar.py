@@ -1,4 +1,4 @@
-"""The reckoning of days in Umbrathyn: twelve months of thirty days, seven days to the week."""
+"""The reckoning of days in Avarenthia: twelve months of thirty days, seven days to the week."""
 
 MONTHS = ['Deepfrost', 'Thawmoon', 'Seedwake', 'Greentide', 'Blossomreign', 'Highsun',
           'Emberwane', 'Goldfield', 'Harvestmoon', 'Leaffall', 'Mistwane', 'Longnight']
