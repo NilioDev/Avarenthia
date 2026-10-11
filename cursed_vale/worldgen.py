@@ -245,6 +245,8 @@ def gen_dungeon(game, did, depth):
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
     npacks = 4 + depth + random.randint(0, 1)
+    if d.tag == 'den':
+        npacks = 3                      # the first fight should teach, not punish
     elites = 0
     for i in range(npacks):
         c = rand_free(game, m, lambda t: t == FLOOR, (up[0], up[1], 9))

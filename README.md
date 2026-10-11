@@ -7,12 +7,22 @@ zichtbaar over de kaart trekken, en een wereld die op de achtergrond verandert.
 
 ## Je held
 
-Je wordt wakker in de tempel van Thornfield, zonder geheugen en zonder wapens: goblins hebben je zwaard en schild
+Je wordt wakker in een tempel even buiten Thornfield, zonder geheugen en zonder wapens: goblins hebben je zwaard en schild
 meegenomen naar de Hollow Den. Tot je die terughaalt vecht je met je vuisten (de discipline Unarmed groeit daarmee),
 en bij hun aanvoerder Snagtooth ligt ook je eerste spreukenboek. Je bent niemand; wat je wordt, bepaal je zelf.
 
+**Buiten de dorpen** staan tempels, kloosters en wachttorens (en de ruïnes ervan, met een weg naar beneden).
+Priesters genezen en heffen vloeken op; in een klooster leert de kruidenmonnik je de eerste recepten; van een
+wachttoren kijk je ver over het land. Dorpen zijn groter, met akkers, weides met vee en boomgaarden; steden zijn
+grote ommuurde steden met meerdere herbergen, winkels en kazernes.
+
+**Foerageren en kruidenkunde.** Met `Shift+F` zoek je in de wildernis naar eten en kruiden. Planten die je niet kent
+zie je alleen aan hun uiterlijk (dat is per wereld anders): proef ze op eigen risico, sommige zijn dodelijk. Hoe beter
+je foerageert, hoe vaker je herkent wat je plukt; een kruidenmonnik vertelt je wat je gevonden hebt. Met `Shift+P`
+brouw je drankjes van kruiden (genezing, mana, tegengif, elixer).
+
 **Honger.** Je verbruikt voedsel; eet brood, rantsoenen, vis of vlees (`Shift+E`, of vanuit je tas) of neem een warme
-maaltijd en een bed in een herberg (`M` bij de herbergier). Met honger word je zwakker en uiteindelijk verhonger je.
+kom eten in een herberg: een kom stoofpot (`m`, 40 koper) of een maaltijd met een bed (`M`). Met honger word je zwakker en uiteindelijk verhonger je.
 
 **Dwergenrijken.** In de bergen liggen ondergrondse dwergensteden (`▼` op de kaart) met hallen, smidsen, een troonzaal
 en een trap naar de Deep Roads, de oude dwergentunnels die nu vol goblins en erger zitten.
@@ -83,7 +93,7 @@ Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanval
 ## De wildernis
 
 - Op de wegen ben je redelijk veilig. Hoe verder je van de weg afdwaalt, hoe gevaarlijker het wordt: grotere roedels,
-  sterkere monsters, meer champions. 's Nachts komen de doden tevoorschijn. Beweeg de muis over het land om het gevaar te zien.
+  sterkere monsters, meer champions. 's Nachts komen de doden tevoorschijn. Inspecteer het land (O) om het gevaar te zien.
 - Verborgen plekken om te ontdekken: ruïnes (`Π`, kleine kerkers), heiligdommen (`†`, zegeningen), bandietenkampen (`∆`),
   staande stenen (`Ψ`) en verlaten wagens (`¤`).
 - Onderweg gebeurt van alles: gewonde reizigers, marskramers, tolwegen van de Zwarte Hand, stormen, dwaallichtjes.
@@ -152,6 +162,8 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `F` | schieten met een boog |
 | `A` | vissen (naast water, met een hengel) |
 | `Shift+E` | eten |
+| `Shift+F` | foerageren |
+| `Shift+P` | drankjes brouwen |
 | `O` of `;` | inspecteren |
 | `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
@@ -167,14 +179,13 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `V` of F2 | bestiarium |
 | `?` of F1 | hulp (twee pagina's: toetsen en de wereld) |
 | Esc | opslaan en afsluiten |
-| muis | eroverheen bewegen om te bekijken, klikken om een stap te zetten |
 
 `>` en `<` gaan uit van een Amerikaanse toetsenbordindeling (Shift + punt/komma). Enter werkt altijd.
 
 ## Projectstructuur
 
 ```
-main.py                  venster, tileset, toetsenbord en muis (alles wat tcod-specifiek is)
+main.py                  venster, tileset, toetsenbord (alles wat tcod-specifiek is)
 cursed_vale/data.py      tegels, klassen, skills, items, affixen, monsters, kerkers
 cursed_vale/entities.py  Item, Monster, Player, GameMap en het maken van loot en monsters
 cursed_vale/worldgen.py  vallei, dorp, kerkers (kamers en grotten), wildernis, winkel

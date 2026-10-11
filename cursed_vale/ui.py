@@ -527,6 +527,14 @@ class GameScreen(Screen):
                 for j, ch in enumerate(' ' + label + ' '):
                     if 0 <= lx + j - 1 < MAP_W:
                         cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
+        # temples, monasteries and watchtowers
+        om = g.map
+        for st in getattr(w, 'sites', ()):
+            if om.seen[st.y * om.w + st.x]:
+                vx, vy = st.x - ox, st.y - oy
+                if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (st.x, st.y) != (p.x, p.y):
+                    ch, col = st.glyph
+                    cv.put(vx, vy, ch, col, (40, 34, 26))
         # dwarven holds: a gate in the mountainside
         for s in w.settlements:
             if s.kind == 'deephold' and g.known_settlement(s):
@@ -718,7 +726,7 @@ class GameScreen(Screen):
                 elif EV.poi_at(g, mx, my) and EV.poi_at(g, mx, my).found:
                     poi = EV.poi_at(g, mx, my)
                     cv.text(x, y, poi.name, poi.glyph[1], PANEL, maxw=PW)
-                    if poi.kind == 'ruin':
+                    if poi.kind in EV.RUIN_KINDS:
                         dd = g.world.dungeons[poi.did]
                         info = f'{dd.depth} level{"s" if dd.depth > 1 else ""}, monster level {dd.base + 1}+'
                     elif poi.ready_day >= 10 ** 9:
@@ -811,6 +819,10 @@ class GameScreen(Screen):
             self.act(g.fish)
         elif tok == 'E':
             self.act(g.eat_best)
+        elif tok == 'F':
+            self.act(g.forage)
+        elif tok == 'P':
+            app.push(BrewScreen(app))
         elif tok == 'z':
             app.push(SkillsScreen(app))
         elif tok == 'q':
@@ -1027,6 +1039,12 @@ class InventoryScreen(Modal):
         if it.k in ('fish', 'food'):
             app.pop()
             if g.eat(it):
+                g.end_turn(1)
+            return
+        if it.k == 'plant':
+            from . import foraging as FG
+            app.pop()
+            if FG.eat_plant(g, it):
                 g.end_turn(1)
             return
         if it.k not in ('potion', 'scroll'):
@@ -1335,6 +1353,10 @@ class TravelScreen(Modal):
         for st in g.world.settlements:
             if g.known_settlement(st) and not (here and here.id == st.id):
                 out.append(('s', st.id, st.name, st.kind_name, st.x, st.y))
+        om = g.maps['over']
+        for st in getattr(g.world, 'sites', ()):
+            if om.seen[st.y * om.w + st.x]:
+                out.append(('site', st.id, st.name, st.kind, st.x, st.y))
         for d in g.world.dungeons.values():
             if g.known_dungeon(d) and getattr(d, 'town', None) is None:
                 out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
@@ -1421,6 +1443,8 @@ class HelpScreen(Modal):
             ('Z', 'Skills: choose your six (only in a town or stronghold)'),
             ('Q   W', 'Drink a health or mana potion'),
             ('Shift+E', 'Eat something (bread, rations, fish, meat). Hunger shows by the skill bar.'),
+            ('Shift+F', 'Forage for food and herbs in the wild. Unknown plants: taste at your own risk.'),
+            ('Shift+P', 'Brew potions from herbs (Herbalism; learn recipes from monastery herbalists)'),
             ('P', 'Read a Town Portal scroll. Step into the blue 0 to go back.'),
             ('G  ,', 'Pick up items. Gold, orbs and magic items are picked up for you.'),
             ('>  <  Enter', 'Enter a town, dungeon, ruin or stronghold · use stairs'),
@@ -1434,12 +1458,11 @@ class HelpScreen(Modal):
             ('O  ;', 'Inspect: look at anything on the map (Tab jumps between things)'),
             ('?  F1', 'This help'),
             ('F11  Alt+Enter', 'Toggle fullscreen'),
-            ('mouse', 'Hover to inspect, click to step toward a spot'),
             ('Esc', 'Close a window · save and quit'),
         ]),
         ('The world', [
             ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
-            ('Danger', 'Hover over the land to see its danger. Night brings the dead and bigger packs.'),
+            ('Danger', 'Inspect the land (O) to see its danger. Night brings the dead and bigger packs.'),
             ('Knowledge', 'You only know the land around Thornfield. Read the signpost (┬) in each town to'),
             ('', 'learn where its roads lead; townsfolk and travellers tell you of other places.'),
             ('Π ruin', 'An old ruin with a way down. Small, with a skill tome at the bottom.'),
@@ -1944,6 +1967,7 @@ class BoardScreen(Modal):
             cv.text(x + 2, y + self.BOX_H - 3, f'WANTED: {g.player.name}, for {what} near {st.name}. Reward {fmt(CR.bounty(st))}.',
                     BAD, PANEL, maxw=56)
         if not self.hold:
+            cv.text(x + 60, y + self.BOX_H - 4, f'm: a bowl of stew ({fmt(g.STEW)})', GOLD, PANEL)
             cv.text(x + 60, y + self.BOX_H - 3, f'M: a hot meal and a bed ({fmt(g.MEAL)})', GOLD, PANEL)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' letter or ↑↓ select · Enter accept · Esc leave ', DIM, PANEL)
 
@@ -1955,6 +1979,9 @@ class BoardScreen(Modal):
         elif tok == 'M' and not self.hold:
             g.log_mark = len(g.log)
             g.inn_meal()
+        elif tok == 'm' and not self.hold:
+            g.log_mark = len(g.log)
+            g.inn_stew()
         elif tok in ('up', 'np8'):
             self.sel = max(0, self.sel - 1)
         elif tok in ('down', 'np2'):
@@ -2111,6 +2138,9 @@ class WorldMapScreen(Modal):
 
         def inview(px, py):
             return ox <= px < ox + vw and oy <= py < oy + vh
+        for st in getattr(w, 'sites', ()):
+            if om.seen[st.y * om.w + st.x] and inview(st.x, st.y):
+                cv.put(bx + st.x - ox, by + st.y - oy, st.glyph[0], st.glyph[1], (40, 34, 26))
         for poi in w.pois:
             if poi.found and inview(poi.x, poi.y):
                 cv.put(bx + poi.x - ox, by + poi.y - oy, poi.glyph[0], poi.glyph[1], (34, 28, 22))
@@ -2278,6 +2308,41 @@ class TempleScreen(Modal):
             g.uncurse_all()
             if n and not g.uncurse_all(dry=True)[0]:
                 self.said = '"Begone, darkness!" The priest\'s prayer burns the curse away.'
+
+
+class BrewScreen(Modal):
+    """Herbalism: brew potions from the herbs you carry."""
+
+    def render(self, cv):
+        from . import foraging as FG
+        from . import lifeskills as LS
+        g = self.game
+        x, y = self.box(cv, 74, 16, ' Herbalism ')
+        rs = FG.recipes(g)
+        cv.text(x + 3, y + 1, f'Herbalism {LS.rank(g, "herbalism")}', GOLD, PANEL)
+        if not rs:
+            cv.wrap(x + 3, y + 3, 68, 'You know no recipes yet. The herbalist monks in the monasteries teach the basics '
+                    'to those who ask.', DIM, PANEL)
+        for i, (k, (name, rank, ing, res)) in enumerate(rs):
+            yy = y + 3 + i * 2
+            ok = FG.can_brew(g, k)
+            cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
+            cv.text(x + 5, yy, name, FG if ok else DIM, PANEL)
+            cv.text(x + 26, yy, ' + '.join(f'{n} {FG.PLANTS[h][0]}' for h, n in ing.items()), GOOD if ok else DIM, PANEL, maxw=44)
+            cv.text(x + 5, yy + 1, f"makes: {D.POTIONS[res]['name']}", scale(DIM, .85), PANEL)
+        cv.text_center(W // 2, y + 15, ' letter: brew · Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        from . import foraging as FG
+        g = self.game
+        rs = FG.recipes(g)
+        if tok == 'esc':
+            self.app.pop()
+        elif len(tok) == 1 and tok in LETTERS[:len(rs)]:
+            g.log_mark = len(g.log)
+            used = FG.brew(g, rs[LETTERS.index(tok)][0])
+            if used:
+                g.end_turn(used, True)
 
 
 class StablesScreen(Modal):

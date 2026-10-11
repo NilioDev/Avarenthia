@@ -5,7 +5,6 @@ Run:  python main.py
 import os
 import sys
 import time
-import warnings
 
 import tcod
 
@@ -77,20 +76,6 @@ def key_token(ev):
     if sym == 32:
         return 'space', shift
     return None, shift
-
-
-def tile_of(ctx, ev):
-    """Tile coordinates of a mouse event, across tcod versions."""
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        conv = ctx.convert_event(ev)
-        e = conv if conv is not None else ev
-        pos = getattr(e, 'tile', None)
-        if pos is None:
-            pos = getattr(e, 'position', None)
-    if pos is None:
-        return None
-    return int(pos[0]), int(pos[1])
 
 
 def toggle_fullscreen(ctx):
@@ -166,12 +151,6 @@ def main():
                         toggle_fullscreen(ctx)
                     elif tok:
                         app.key(tok, shift)
-                elif isinstance(ev, tcod.event.MouseMotion):
-                    app.hover = tile_of(ctx, ev)
-                elif isinstance(ev, tcod.event.MouseButtonDown):
-                    t = tile_of(ctx, ev)
-                    if t:
-                        app.click(t[0], t[1], int(getattr(ev, 'button', 1)))
                 if not app.running:
                     break
             if app.auto and not pressed and time.monotonic() - last_tick >= app.auto_delay * .9:

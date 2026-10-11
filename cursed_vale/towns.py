@@ -23,6 +23,9 @@ def town_names(race):
 
 JOBS = ['farmer', 'farmer', 'baker', 'weaver', 'woodcutter', 'fisher', 'tanner', 'carter', 'cooper', 'miller', 'potter']
 BARKS = {
+    'shepherd': ['Come by, come by! Daft animals.', 'Wolves took two lambs last week.', 'Mind the gate, stranger.'],
+    'acolyte': ['The light keeps us.', 'Have you prayed today, traveller?'],
+    'monk': ['Silence is a prayer too.', 'The herb garden needs weeding again.'],
     'farmer': ['Rain is coming, I can smell it.', 'These turnips won\'t dig themselves.', 'The crows took half the seed again.'],
     'baker': ['Fresh bread! Still warm!', 'Mind the flour, love.'],
     'weaver': ['Finest cloth this side of the river.', 'My loom has been clacking since dawn.'],
@@ -215,8 +218,57 @@ def townsfolk(game, m, home, work, names, job=None, fg='#a8aab4', ch='@', role='
 
 
 # ------------------------------------------------------------------ villages
+LIVESTOCK = [('A cow', 'C', '#d8c8b0'), ('A sheep', 's', '#f0f0f0'), ('A pig', 'p', '#f0a8a8'), ('A goat', 'g', '#c8b890'),
+             ('A hen', 'c', '#e8d090')]
+
+
+def farmland(game, m, plots, sy, names, avoid=None):
+    """Fields of crops, fenced pastures with livestock and orchards around a village."""
+    w, h = m.w, m.h
+    fields, pastures = [], []
+    want = [('field', 9), ('pasture', 3), ('orchard', 2)]
+    for kind, n in want:
+        made = 0
+        for _ in range(400):
+            if made >= n:
+                break
+            fw, fh = (random.randint(9, 16), random.randint(4, 7)) if kind == 'field' else (random.randint(8, 13), random.randint(5, 7))
+            fx, fy = random.randint(1, w - fw - 2), random.randint(1, h - fh - 2)
+            fp = Plot(fx, fy, fw, fh, kind)
+            if any(fp.overlaps(o, 1) for o in plots) or fy <= sy <= fy + fh or abs(fy + fh // 2 - sy) < 3:
+                continue
+            if avoid and avoid(fx, fy, fw, fh):
+                continue
+            plots.append(fp)
+            made += 1
+            inner = [(xx, yy) for yy in range(fy + 1, fy + fh - 1) for xx in range(fx + 1, fx + fw - 1)]
+            for yy in range(fy, fy + fh):
+                for xx in range(fx, fx + fw):
+                    edge = yy in (fy, fy + fh - 1) or xx in (fx, fx + fw - 1)
+                    if kind == 'field':
+                        m.set(xx, yy, FENCE if edge and random.random() < .5 else FIELD)
+                    elif kind == 'pasture':
+                        m.set(xx, yy, FENCE if edge else GRASS)
+                    else:
+                        m.set(xx, yy, TREE if not edge and (xx - fx) % 2 == 1 and (yy - fy) % 2 == 1 else GRASS)
+            gx = fx + fw // 2
+            gy = fy + fh - 1 if fy < sy else fy
+            m.set(gx, gy, PATH)
+            if kind == 'field':
+                fields.append(inner)
+            elif kind == 'pasture':
+                name, ch, fg = random.choice(LIVESTOCK)
+                spots = [c for c in inner if m.tile(*c) == GRASS]
+                random.shuffle(spots)
+                for c in spots[:random.randint(3, 6)]:
+                    a = make_npc(game, name, 'livestock', fg, c[0], c[1], False, ch=ch)
+                    m.mons.append(a)
+                pastures.append(inner)
+    return fields, pastures
+
+
 def gen_village(game, s):
-    w, h = 64, 23
+    w, h = 104, 38
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
     for i in range(len(m.t)):
@@ -239,11 +291,11 @@ def gen_village(game, s):
     kinds = [k for k in ('inn', 'shop', 'temple', 'stables') if k in s.services]
     if s.id == 0:
         kinds.append('elder')
-    kinds += ['home'] * random.randint(5, 8)
+    kinds += ['home'] * random.randint(10, 14)
     for k in kinds:
-        for _ in range(200):
+        for _ in range(300):
             pw, ph = (random.randint(11, 14), random.randint(6, 8)) if k in ('inn', 'temple') else (random.randint(7, 10), random.randint(5, 6))
-            px = random.randint(2, w - pw - 2)
+            px = random.randint(max(2, cx - 36), min(w - pw - 2, cx + 36 - pw))
             py = random.choice([random.randint(1, sy - ph - 1), random.randint(sy + 2, h - ph - 1)])
             pl = Plot(px, py, pw, ph, k)
             if py < 1 or py + ph > h - 1 or any(pl.overlaps(o) for o in plots):
@@ -258,23 +310,9 @@ def gen_village(game, s):
         furnish(m, pl)
         if pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
-    # fields around the edges
-    fields = []
-    for _ in range(4):
-        fw, fh = random.randint(7, 12), random.randint(3, 5)
-        fx, fy = random.choice([1, w - fw - 2]), random.randint(1, h - fh - 2)
-        fp = Plot(fx, fy, fw, fh, 'field')
-        if any(fp.overlaps(o, 1) for o in plots) or abs(fy + fh // 2 - sy) < 3:
-            continue
-        plots.append(fp)
-        for yy in range(fy, fy + fh):
-            for xx in range(fx, fx + fw):
-                edge = yy in (fy, fy + fh - 1) or xx in (fx, fx + fw - 1)
-                m.set(xx, yy, FENCE if edge else FIELD)
-        gx = fx + fw // 2
-        gy = fy + fh - 1 if fy < sy else fy
-        m.set(gx, gy, PATH)
-        fields.append([(xx, yy) for yy in range(fy + 1, fy + fh - 1) for xx in range(fx + 1, fx + fw - 1)])
+    # farmland all around: fields, pastures with livestock, orchards
+    fields, pastures = farmland(game, m, plots, sy, names)
+    fields = fields + pastures
     # the people who run things
     for pl in buildings:
         if pl.kind in ROLE_OF:
@@ -289,8 +327,8 @@ def gen_village(game, s):
         beds = [c for c in pl.inside if m.tile(*c) in (FLOOR, PLANK)]
         for _ in range(random.randint(1, 2)):
             r = random.random()
-            if r < .45 and fields:
-                work, job = random.choice(random.choice(fields)), 'farmer'
+            if r < .5 and fields:
+                work, job = random.choice(random.choice(fields)), random.choice(['farmer', 'farmer', 'shepherd'])
             elif r < .6:
                 work, job = (cx + random.randint(-4, 4), sy + random.choice([-1, 1])), 'child'
             elif r < .75 and inn:
@@ -316,7 +354,7 @@ def gen_village(game, s):
 
 # ------------------------------------------------------------------ cities
 def gen_city(game, s):
-    w, h = 96, 34
+    w, h = 150, 50
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
     for x in range(w):
@@ -325,8 +363,8 @@ def gen_city(game, s):
     for y in range(h):
         for x in (0, w - 1):
             m.set(x, y, WALL)
-    streets_y = [h // 3, 2 * h // 3]
-    streets_x = [w // 4, w // 2, 3 * w // 4]
+    streets_y = [h // 4, h // 2, 3 * h // 4]
+    streets_x = [w // 6, 2 * w // 6, w // 2, 4 * w // 6, 5 * w // 6]
     for y in streets_y:
         for x in range(1, w - 1):
             m.set(x, y, PATH)
@@ -338,7 +376,7 @@ def gen_city(game, s):
     m.set(w - 1, streets_y[1], PATH)
     m.set(streets_x[1], h - 1, PATH)
     # plaza
-    px, py = streets_x[1], (streets_y[0] + streets_y[1]) // 2
+    px, py = streets_x[2], (streets_y[0] + streets_y[1]) // 2
     for yy in range(py - 3, py + 4):
         for xx in range(px - 8, px + 9):
             m.set(xx, yy, PATH)
@@ -348,7 +386,7 @@ def gen_city(game, s):
     stall_spots = [(px - 6, py - 2), (px - 6, py + 2), (px + 6, py - 2), (px + 6, py + 2), (px - 3, py - 3), (px + 3, py + 3)]
     for c in stall_spots:
         m.set(c[0], c[1], STALL)
-    kinds = ['inn', 'inn', 'shop', 'temple', 'stables', 'barracks'] + ['home'] * 14
+    kinds = ['inn', 'inn', 'inn', 'shop', 'shop', 'temple', 'stables', 'barracks', 'barracks'] + ['home'] * 34
     for k in kinds:
         for _ in range(300):
             pw, ph = (random.randint(12, 16), random.randint(6, 8)) if k in ('inn', 'temple', 'barracks') else (random.randint(7, 11), random.randint(5, 7))
@@ -411,7 +449,7 @@ def gen_city(game, s):
                       fg='#c8b8a0' if job == 'child' else '#a8aab4')
     barracks = next((p for p in buildings if p.kind == 'barracks'), None)
     gfg = D.FACTIONS[s.faction]['fg']
-    for i in range(5):
+    for i in range(9):
         home = free_inside(m, barracks) if barracks else [(px, py + 1)]
         post = (random.choice(streets_x), random.choice(streets_y)) if i % 2 else (px + random.randint(-7, 7), py + random.choice([-3, 3]))
         if not D.TILES[m.tile(*post)].walk:
@@ -605,6 +643,9 @@ def live(game, m):
     """Move townsfolk one step along their day."""
     p = game.player
     for npc in m.mons:
+        if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
+            game.random_step(npc)
+            continue
         if not npc.is_npc or not hasattr(npc, 'work_pos'):
             continue
         tgt = target_for(game, npc)

@@ -10,7 +10,7 @@ def hexrgb(h):
 
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
- CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN) = range(39)
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE) = range(40)
 
 
 class Tile:
@@ -62,6 +62,7 @@ TILES = [
     Tile('ß', '#cfcac0', False, False, 'statue'),
     Tile('■', '#d8a040', False, False, 'treasure chest', bg='#2a1c0c'),
     Tile('□', '#8a7050', False, False, 'open chest'),
+    Tile('┼', '#9a9aa0', False, False, 'gravestone'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -181,6 +182,7 @@ POTIONS = {
     'hp': dict(name='Health Potion', col=hexrgb('#e04a3c'), val=18),
     'mp': dict(name='Mana Potion', col=hexrgb('#4f78ff'), val=18),
     'rejuv': dict(name='Rejuvenation Potion', col=hexrgb('#b45ae0'), val=60),
+    'cure': dict(name='Antidote', col=hexrgb('#80d060'), val=20),
 }
 
 # ---------------------------------------------------------------- monsters
@@ -212,7 +214,7 @@ MONSTERS = {
     'warden': dict(ch='@', fg='#58a050', name='Warden', tags='faction', min_l=3, hp=1, dmg=1, df=1.2, xp=1.3, ranged=True),
     'raider': dict(ch='@', fg='#c84040', name='Black Hand Raider', tags='faction', min_l=3, hp=1.1, dmg=1.2, df=1, xp=1.3),
     'robber_knight': dict(ch='K', fg='#a02828', name='Robber Knight', tags='faction', min_l=6, hp=2, dmg=1.5, df=1.6, xp=2.2),
-    'snagtooth': dict(ch='g', fg='#f0b040', name='Snagtooth the Goblin Chief', boss=True, lvl_fix=2, hp=3.2, dmg=.8, df=1, xp=6,
+    'snagtooth': dict(ch='g', fg='#f0b040', name='Snagtooth the Goblin Chief', boss=True, lvl_fix=1, hp=2.6, dmg=.7, df=.8, xp=6,
                       tags='', summon='rat', summon_msg='{name} shrieks, and a rat scurries out of the dark!'),
     'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
     'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
@@ -241,7 +243,7 @@ MONSTERS = {
     'clansman': dict(ch='h', fg='#d8a070', name='Dwarf Clansman', tags='faction', min_l=3, hp=1.4, dmg=1.15, df=1.5, xp=1.4),
     'thunderer': dict(ch='h', fg='#b0b8c8', name='Dwarf Thunderer', tags='faction', min_l=4, hp=1.1, dmg=1.2, df=1.3, xp=1.5, ranged=True),
 }
-for _k, _extra in (('rat', 'den'), ('jackal', 'den'), ('kobold', 'den'), ('bat', 'den'),
+for _k, _extra in (('rat', 'den'), ('jackal', 'den'), ('bat', 'den'),
                    ('goblin', 'deep'), ('gobarcher', 'deep'), ('orc', 'deep'), ('troll', 'deep'), ('ogre', 'deep'),
                    ('spider', 'deep'), ('kobold', 'deep'), ('bat', 'deep'), ('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
                    ('goblin', 'lair_orc'), ('gobarcher', 'lair_orc'), ('ogre', 'lair_orc'), ('zombie', 'lair_drowned'),
@@ -255,7 +257,7 @@ for _m in MONSTERS.values():
     _m.setdefault('min_l', 1)
 
 DUNGEONS = {
-    'den': dict(name='The Hollow Den', depth=2, base=0, style='cave', tag='den', boss='snagtooth', wall=None),
+    'den': dict(name='The Hollow Den', depth=1, base=0, style='cave', tag='den', boss='snagtooth', wall=None),
     'rat': dict(name='The Rat Warrens', depth=3, base=0, style='cave', tag='cave', boss='ratking', wall=None),
     'mine': dict(name='The Lost Mine', depth=4, base=3, style='rooms', tag='dungeon', boss='grolm', wall=hexrgb('#a0835e')),
     'crypt': dict(name='Crypt of Morvenna', depth=5, base=7, style='rooms', tag='crypt', boss='lich', wall=hexrgb('#7e869c')),
@@ -381,6 +383,29 @@ for _f in FACTIONS.values():
 STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgard', 'Dunmere', 'Blackmoor', 'Wolfcrag',
                     'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil', 'Harrowgate', 'Emberfall',
                     'Coldwater', 'Ravenhold', 'Bleakstone', 'Hawksreach', 'Duskwall', 'Grimhold', 'Stonecairn', 'Mirewatch']
+# what each monster carries and could drop: only things it could actually use
+GEAR_USERS = {
+    'kobold': ['dagger', 'club', 'cap'], 'goblin': ['dagger', 'club', 'shortsword', 'cap', 'buckler', 'quilted'],
+    'gobarcher': ['shortbow', 'dagger', 'cap', 'leather'],
+    'bandit': ['dagger', 'shortsword', 'club', 'quilted', 'leather', 'cap', 'buckler'],
+    'brigand': ['shortbow', 'longbow', 'dagger', 'leather', 'cap'],
+    'orc': ['waraxe', 'mace', 'club', 'leather', 'ringmail', 'skullcap', 'roundshield'], 'ogre': ['club', 'mace'],
+    'skeleton': ['shortsword', 'longsword', 'buckler', 'roundshield', 'ringmail', 'skullcap'], 'skarcher': ['shortbow', 'longbow'],
+    'cultist': ['staff', 'warstaff', 'dagger', 'ring', 'amulet'], 'zombie': ['quilted'],
+    'soldier': ['longsword', 'shortsword', 'roundshield', 'chainmail', 'ringmail', 'skullcap', 'fullhelm'],
+    'crossbow': ['longbow', 'shortbow', 'leather', 'cap'],
+    'knight': ['bastard', 'longsword', 'kiteshield', 'platemail', 'chainmail', 'fullhelm', 'greathelm'],
+    'mercenary': ['longsword', 'mace', 'waraxe', 'ringmail', 'roundshield', 'skullcap'],
+    'druid': ['staff', 'warstaff', 'amulet', 'ring'], 'warden': ['longbow', 'shortbow', 'leather', 'cap'],
+    'raider': ['waraxe', 'mace', 'shortsword', 'leather', 'ringmail', 'buckler'],
+    'robber_knight': ['bastard', 'longsword', 'chainmail', 'kiteshield', 'fullhelm'],
+    'clansman': ['waraxe', 'mace', 'roundshield', 'ringmail', 'chainmail', 'fullhelm'], 'thunderer': ['longbow', 'chainmail', 'skullcap'],
+    'watchman': ['club', 'shortsword', 'quilted', 'cap'], 'huntsman': ['shortbow', 'longbow', 'leather'],
+    'deputy': ['shortsword', 'longsword', 'buckler', 'leather'], 'sheriff': ['longsword', 'roundshield', 'chainmail', 'skullcap'],
+    'merchant': ['dagger', 'ring', 'amulet'],
+    'grolm': ['waraxe', 'mace', 'fullhelm'], 'lich': ['warstaff', 'amulet', 'ring'], 'dragon': ['ring', 'amulet', 'greathelm', 'platemail'],
+    'warlord': ['waraxe', 'mace', 'platemail', 'greathelm'], 'drowned_king': ['amulet', 'ring', 'warstaff'],
+}
 START_STATS = dict(str=15, dex=15, vit=15, ene=15)
 LEVEL_STAT_POINTS = 3
 

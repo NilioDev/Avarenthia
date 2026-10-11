@@ -17,6 +17,7 @@ from . import factions as FA
 from . import races as RC
 from . import crime as CR
 from . import hunger as HU
+from . import sites as ST
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -24,7 +25,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 10
+SAVE_VERSION = 11
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -169,10 +170,17 @@ class Game:
         # how the factions see you depends on who you are
         p.rep = {f: fd['start'] + (RC.relation(fd.get('race'), race) if f != 'cult' else 0) for f, fd in D.FACTIONS.items()}
         self.hook()
-        self.cur = home.map_key
-        self.maps[self.cur] = TW.gen_settlement_map(self, home)
+        # you wake on the floor of a temple near Thornfield, with no memory of how you got here
+        ts = world.sites[world.start_temple] if getattr(world, 'start_temple', None) is not None else None
+        if ts:
+            self.over_pos = (ts.x, ts.y)
+            self.cur = ts.map_key
+            self.maps[self.cur] = ST.gen_site_map(self, ts)
+            over.seen[ts.y * over.w + ts.x] = 1
+        else:
+            self.cur = home.map_key
+            self.maps[self.cur] = TW.gen_settlement_map(self, home)
         m = self.maps[self.cur]
-        # you wake on the floor of the temple, with no memory of how you got here
         p.x, p.y = m.entry[0] + 2, m.entry[1]
         priest = next((o for o in m.mons if o.role == 'healer'), None)
         if priest:
@@ -193,6 +201,8 @@ class Game:
         """Install this world's factions, boss names and price rules (after creating or loading)."""
         FA.install(self.world.factions)
         EVL.setup_monsters(self.world)
+        from . import foraging as FG
+        FG.GAME = self
         ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
         ECO.race_factor = lambda st: RC.price_factor(self, getattr(st, 'race', 'human'))
 
@@ -451,6 +461,9 @@ class Game:
             self.over_pos = (h.x, h.y)
             if getattr(m, 'stale', False):
                 self.maps.pop(m.key, None)
+        elif getattr(m, 'site', None) is not None:
+            st = self.world.sites[m.site]
+            self.over_pos = (st.x, st.y)
         elif m.kind == 'town':
             s = self.world.settlements[m.sid]
             self.over_pos = (s.x, s.y)
@@ -523,6 +536,20 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
         CR.at_gate(self, s)
+
+    def enter_site(self, sid):
+        p = self.player
+        site = self.world.sites[sid]
+        if self.cur == 'over':
+            self.over_pos = (p.x, p.y)
+        if site.map_key not in self.maps:
+            self.maps[site.map_key] = ST.gen_site_map(self, site)
+        self.cur = site.map_key
+        m = self.map
+        p.x, p.y = m.entry[0] + 1, m.entry[1]
+        self.msg(f'You come to {site.name}.', 'info')
+        self.compute_fov()
+        self.request = ('save',)
 
     def enter_hold(self, hid):
         p = self.player
@@ -618,7 +645,7 @@ class Game:
         mon = m.mon_at(nx, ny)
         if mon:
             if mon.is_npc:
-                if mon.role == 'escort' or (not mon.stay and mon.role in ('villager', 'guard', 'dog') and random.random() < .5):
+                if mon.role == 'escort' or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
                     mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
                     return 1
                 self.talk(mon)
@@ -671,6 +698,10 @@ class Game:
         if t == ENTR:
             d = self.world.dungeon_at(p.x, p.y)
             self.msg(f"You stand at the entrance of {d.name}. Press > or Enter to descend.", 'info')
+            return 10
+        site = ST.site_at(self.world, p.x, p.y)
+        if site:
+            self.msg(f'{site.name}. Press > or Enter to go in.', 'info')
             return 10
         h = self.world.hold_at(p.x, p.y)
         if h:
@@ -735,6 +766,8 @@ class Game:
                 p.gold += pl['gold']
                 self.corpses = [c for c in self.corpses if c[1] != it.id]
                 self.msg(f"You recover your belongings and {fmt(pl['gold'])} from your body.", 'good')
+                if pl.get('stolen'):
+                    self.msg('Some of your things are gone. Someone got here first.', 'bad')
                 if left:
                     pl['items'], pl['cargo'], pl['gold'] = left, {}, 0
                     self.msg('Your bag is full; some items stay with your body.', 'bad')
@@ -804,11 +837,15 @@ class Game:
             if h:
                 self.enter_hold(h.id)
                 return 1
+            site = ST.site_at(self.world, p.x, p.y)
+            if site:
+                self.enter_site(site.id)
+                return 1
             if t == ENTR:
                 self.enter_dungeon(self.dungeon_at(p.x, p.y), 1, 'up')
                 return 1
             poi = EV.poi_at(self, p.x, p.y)
-            if poi and poi.kind == 'ruin':
+            if poi and poi.kind in EV.RUIN_KINDS:
                 self.enter_dungeon(poi.did, 1, 'up')
                 return 1
             if poi:
@@ -819,6 +856,9 @@ class Game:
         if t == DOWN and d != 'up':
             self.enter_dungeon(m.did, m.depth + 1, 'up')
             return 1
+        if t == UP and getattr(m, 'site', None) is not None:
+            ST.climb_tower(self)
+            return 5
         if t == UP and d != 'down':
             dg = self.world.dungeons.get(m.did)
             if m.depth == 1 and getattr(dg, 'town', None) is not None:
@@ -896,11 +936,15 @@ class Game:
             p.life = min(s['max_life'], p.life + h)
             p.poison = None
             self.num(p.x, p.y, f'+{h}', C_HEAL, True)
+        if it.t == 'cure':
+            p.poison = None
+            p.life = min(s['max_life'], p.life + 10)
         if it.t in ('mp', 'rejuv'):
             h = round(s['max_mana'] * (.5 if it.t == 'mp' else .4)) + 8
             p.mana = min(s['max_mana'], p.mana + h)
             self.num(p.x, p.y + (1 if it.t == 'rejuv' else 0), f'+{h}', C_MANA, True)
-        self.msg({'hp': 'You drink a health potion.', 'mp': 'You drink a mana potion.', 'rejuv': 'You drink a rejuvenation potion.'}[it.t], 'good')
+        self.msg({'hp': 'You drink a health potion.', 'mp': 'You drink a mana potion.', 'rejuv': 'You drink a rejuvenation potion.',
+                  'cure': 'You drink the antidote. The poison loses its grip.'}[it.t], 'good')
         return 1
 
     def stuck(self, slot):
@@ -953,6 +997,20 @@ class Game:
     def eat(self, it):
         return HU.eat(self, it)
 
+    STEW = 40
+
+    def inn_stew(self):
+        p = self.player
+        if p.gold < self.STEW:
+            self.msg('You cannot afford even a bowl of stew.', 'bad')
+            return
+        if p.food >= HU.MAX - 50:
+            self.msg('You are not hungry.')
+            return
+        p.gold -= self.STEW
+        p.food = min(HU.MAX, p.food + 450)
+        self.msg('A bowl of hot stew and a heel of bread. That hits the spot.', 'good')
+
     def inn_meal(self):
         p = self.player
         if p.gold < self.MEAL:
@@ -967,6 +1025,10 @@ class Game:
 
     def eat_best(self):
         return HU.eat_best(self)
+
+    def forage(self):
+        from . import foraging as FG
+        return FG.forage(self)
 
     def read_tome(self, it):
         if SK.learn(self, it.t):
@@ -1211,6 +1273,9 @@ class Game:
             for it in (sword, shield, tome):
                 it.dropped = False
             self.msg('Among the chief\'s filthy hoard: your sword and shield! And a small book, its pages full of strange signs.', 'gold')
+            self.msg('Now go to Thornfield and report to Elder Berend. Sister Ilse said he wanted to meet you.', 'info')
+            th = self.world.settlements[0]
+            self.reveal_place(th.x, th.y, 2)
         if mon.k == 'ratking':
             self.flags['ratking'] = True
             self.msg('The rats scatter in every direction. Elder Berend will want to hear of this.', 'gold')
@@ -1244,22 +1309,29 @@ class Game:
         m, lvl = self.map, mon.lvl
         boss = mon.is_boss
         boost = 4 if boss else 3 if mon.elite == 2 else 2 if mon.elite == 1 else 1
-        n = 4 if boss else random.randint(2, 3) if mon.elite == 2 else random.randint(1, 2) if mon.elite == 1 else (1 if random.random() < .2 else 0)
+        # only those who use gear drop gear, and what they drop is what they use
+        uses = D.GEAR_USERS.get(mon.k)
+        if not uses:
+            n = 0
+        elif boss:
+            n = random.randint(2, 3)
+        else:
+            n = (random.randint(1, 2) if random.random() < .8 else 0) if mon.elite == 2 else \
+                (1 if random.random() < .45 else 0) if mon.elite == 1 else (1 if random.random() < .08 else 0)
         if boss:
             u = next((u for u in D.UNIQUES if u.get('boss') == mon.k), None)
             if u:
                 it = make_unique(self, u)
                 self.spill(m, mon.x, mon.y, it)
                 self.announce(it)
-            n = 3
         for _ in range(n):
-            it = random_gear(self, lvl, boost)
-            if boost > 2 and it.rar == 'normal':
+            it = random_gear(self, lvl, boost, uses)
+            if boost > 3 and it.rar == 'normal':
                 up = make_gear(self, it.base, 'magic', lvl)
                 it.rar, it.aff, it.name, it.ided = up.rar, up.aff, up.name, False
             self.spill(m, mon.x, mon.y, it)
             self.announce(it)
-        if random.random() < (1 if boss else .3 if mon.elite == 2 else .12 if mon.elite == 1 else .012):
+        if (uses or boss) and random.random() < (1 if boss else .2 if mon.elite == 2 else .06 if mon.elite == 1 else .006):
             from .entities import make_tome
             t = make_tome(self, lvl)
             self.spill(m, mon.x, mon.y, t)
@@ -1276,7 +1348,7 @@ class Game:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
         if mon.k in HU.BEASTS and random.random() < .35:
             self.spill(m, mon.x, mon.y, HU.make_food(self, 'meat'))
-        if random.random() < (.6 if special else .1):
+        if (uses or carrier) and random.random() < (.5 if special else .06):
             t = 'rejuv' if random.random() < .12 else 'hp' if random.random() < .6 else 'mp'
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'potion', t))
 
@@ -1588,13 +1660,27 @@ class Game:
             corpse.payload = dict(items=[it for it in p.inv if not self.is_equipped(it) and it.k != 'quest'],
                                   cargo=dict(p.cargo), cost=dict(p.cost_basis), gold=p.gold)
             corpse.x, corpse.y = cx, cy
+            # whoever is around may help themselves
+            dm = self.maps[key]
+            thieves = [o for o in dm.mons if not o.is_npc and (o.k in D.GEAR_USERS or o.tpl['ch'] in '@hgk')] if key != 'over' else []
+            risk = min(.85, .2 * len(thieves)) if key != 'over' else .3
+            pl = corpse.payload
+            kept = [o for o in pl['items'] if random.random() >= risk]
+            stolen = len(pl['items']) - len(kept)
+            pl['items'] = kept
+            if random.random() < risk:
+                taken = pl['gold'] * random.randint(50, 100) // 100
+                pl['gold'] -= taken
+                stolen += 1
+            pl['stolen'] = stolen
             self.maps[key].items.append(corpse)
             self.corpses.append((key, corpse.id))
             p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
             p.cargo, p.cost_basis, p.gold = {}, {}, 0
         here = self.world.settlements[self.home] if self.home is not None else None
         ox, oy = self.over_pos if self.cur != 'over' else (p.x, p.y)
-        temples = [st for st in self.world.settlements if 'temple' in st.services]
+        temples = [st for st in self.world.settlements if 'temple' in st.services] + \
+            [st for st in getattr(self.world, 'sites', []) if st.kind in ('temple', 'monastery')]
         dest = min(temples, key=lambda st: cheb(st.x, st.y, ox, oy)) if temples else here
         s = self.stats()
         p.life, p.mana = max(1, s['max_life'] // 2), s['max_mana'] // 2
@@ -1602,8 +1688,12 @@ class Game:
         p.buffs = []
         self.cur = 'over'
         p.x, p.y = dest.x, dest.y
-        self.enter_town(dest.id)
-        self.msg(f'You were slain by {cause}... and wake on the cold floor of the temple in {dest.name}.', 'bad')
+        if isinstance(dest, ST.Site):
+            self.enter_site(dest.id)
+            self.msg(f'You were slain by {cause}... and wake on the cold floor of {dest.name}.', 'bad')
+        else:
+            self.enter_town(dest.id)
+            self.msg(f'You were slain by {cause}... and wake on the cold floor of the temple in {dest.name}.', 'bad')
         if corpse:
             where = 'in the wilds' if key == 'over' else self.maps[key].name
             self.msg(f'Your backpack, cargo and gold lie with your body {where}. Go and get them back.', 'bad')
@@ -1786,7 +1876,7 @@ class Game:
             self.msg('You can only travel across the open land.')
             return
         w = self.world
-        obj = w.settlements[ref] if kind == 's' else w.dungeons[ref]
+        obj = w.settlements[ref] if kind == 's' else w.sites[ref] if kind == 'site' else w.dungeons[ref]
         tgt = (obj.x, obj.y)
         p = self.player
         path = WO.dijkstra_path(self.map, (p.x, p.y), tgt, lambda t: D.TILES[t].cost if D.TILES[t].walk else None)
@@ -1923,13 +2013,15 @@ class Game:
                                          f"You are {WAR.standing(self.player.rep.get(f, 0)).lower()} among us.", self.rumor()]))
             return
         if role == 'healer':
-            if here is not None and here.id == 0 and not f.get('met_priest'):
+            if getattr(m, 'site', None) is not None and m.site == getattr(self.world, 'start_temple', None) \
+                    and not f.get('met_priest'):
                 f['met_priest'] = True
                 s = self.stats()
                 p.life = s['max_life']
                 p.gold += 520
                 self.request = ('dialog', npc.name,
-                                f'"Easy now, easy. You are safe. You are in the temple of Thornfield.\n\n'
+                                f'"Easy now, easy. You are safe. This is the {self.world.sites[m.site].name}, '
+                                f'a short walk from Thornfield.\n\n'
                                 f'A farmer found you three days ago, lying in the ditch by the road. No horse, no purse, '
                                 f'nothing but the clothes on your back, and a name you kept repeating: {p.name}.\n\n'
                                 f'You do not remember? No... I thought not. It may come back in time. It may not.\n\n'
@@ -2003,6 +2095,18 @@ class Game:
             return
         if role == 'dog':
             self.msg('The dog wags its tail and sniffs your boots.')
+            return
+        if role == 'livestock':
+            self.msg(random.choice([f'{npc.name} chews and ignores you.', f'{npc.name} looks at you with mild suspicion.',
+                                    f'{npc.name} shuffles away.']))
+            return
+        if role == 'tower':
+            self.say(npc, random.choice(['Climb the stairs to the top and you can see half the province.',
+                                         'Quiet watch so far. Keep it that way.', self.rumor()]))
+            return
+        if role == 'herbalist':
+            from . import foraging as FG
+            FG.herbalist_talk(self, npc)
             return
         line = random.choice(TW.BARKS.get(getattr(npc, 'job', 'any'), TW.BARKS['any'])) if random.random() < .3 else self.rumor()
         self.say(npc, line)

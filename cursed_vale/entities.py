@@ -55,6 +55,9 @@ class Item:
         if self.k == 'food':
             from .hunger import FOODS
             return (f'{self.n}x ' if self.n > 1 else '') + FOODS[self.t][0]
+        if self.k == 'plant':
+            from . import foraging as FG
+            return (f'{self.n}x ' if self.n > 1 else '') + FG.plant_name(FG.GAME, self.t)
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
@@ -85,6 +88,8 @@ class Item:
         if self.k == 'food':
             from .hunger import FOODS
             return FOODS[self.t][3]
+        if self.k == 'plant':
+            return (140, 200, 110)
         if self.k == 'fish':
             return (255, 214, 92) if self.t == 'golden' else (150, 200, 220)
         return (238, 228, 194)
@@ -108,6 +113,8 @@ class Item:
             return '/'
         if self.k == 'food':
             return '%'
+        if self.k == 'plant':
+            return '"'
         if self.k == 'fish':
             return '~'
         return D.SLOTGLYPH[self.slot]
@@ -128,6 +135,17 @@ class Item:
                 out.append('Opens a portal to the last town you visited, and back.')
             elif self.k == 'quest':
                 out.append('A relic someone is waiting for. Bring it back to claim your reward.')
+            elif self.k == 'plant':
+                from . import foraging as FG
+                if FG.known(FG.GAME, self.t):
+                    name, grp, food, eff, _w = FG.PLANTS[self.t]
+                    out.append({'deadly': 'Deadly poison. Do not eat.', 'poison': 'Poisonous.', 'sick': 'Makes you sick.',
+                                'sleep': 'Puts you to sleep.', 'heal': 'A healing herb.', 'heal2': 'A strong healing herb.',
+                                'mana': 'Restores a little mana.', 'cure': 'Settles the stomach and cures poison.'}.get(eff, 'Edible.'))
+                    if grp == 'herb':
+                        out.append('Used in herbalism (P to brew).')
+                else:
+                    out.append('You do not know what this is. Eat it to find out, or show it to a herbalist.')
             elif self.k == 'food':
                 from .hunger import FOODS
                 out.append(f'Food. Eat it to still your hunger (+{FOODS[self.t][1]}).')
@@ -182,6 +200,9 @@ class Item:
         if self.k == 'food':
             from .hunger import FOODS
             return FOODS[self.t][2] / 100
+        if self.k == 'plant':
+            from .foraging import PLANTS
+            return .5 if PLANTS[self.t][1] == 'herb' else .2
         if self.k == 'fish':
             from .lifeskills import FISH
             return FISH[self.t][4] * .5
@@ -202,7 +223,7 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll', 'fish', 'food')
+        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant')
 
 
 class Monster:
@@ -280,6 +301,8 @@ class Player:
         self.deaths = 0
         self.life_sk = {'fishing': [0, 0]}     # life skills: rank, progress
         self.food = 450                        # hunger: 0 starving .. 1000 full
+        self.known_plants = set()              # plants you can recognise
+        self.recipes = set()                   # herbalism recipes you know
         self.race, self.gender = 'human', 'other'
         self.life = 1
         self.mana = 1
@@ -394,17 +417,23 @@ def add_curse(it):
         it.curse.append([st, random.randint(lo, hi) + it.ilvl // 3])
 
 
-def random_gear(game, ilvl, boost=1):
-    """Loot. Magic items are rare, arrive unidentified, and now and then carry a hidden curse."""
+def random_gear(game, ilvl, boost=1, bases=None):
+    """Loot. Magic items are rare, arrive unidentified, and now and then carry a hidden curse.
+    bases: the kinds of items this source could have (what a monster actually uses)."""
     r = random.random()
     it = None
-    if r < .005 * boost:
+    if r < .004 * boost and bases is None:
         us = [u for u in D.UNIQUES if not u.get('boss') and u['lvl'] <= ilvl + 2]
         if us:
             it = make_unique(game, random.choice(us))
     if it is None:
-        rar = 'rare' if r < .03 * boost else 'magic' if r < .13 * boost else 'normal'
-        ks = [k for k, b in D.BASES.items() if b['lvl'] <= ilvl + 1 and not (rar == 'normal' and b.get('magic_only'))]
+        rar = 'rare' if r < .025 * boost else 'magic' if r < .1 * boost else 'normal'
+        pool = bases or list(D.BASES)
+        ks = [k for k in pool if D.BASES[k]['lvl'] <= ilvl + 1 and not (rar == 'normal' and D.BASES[k].get('magic_only'))]
+        if not ks:
+            ks = sorted(pool, key=lambda k: D.BASES[k]['lvl'])[:1]
+            if rar == 'normal' and D.BASES[ks[0]].get('magic_only'):
+                rar = 'magic'
         it = make_gear(game, random.choice(ks), rar, ilvl)
     if it.rar != 'normal':
         it.ided = False

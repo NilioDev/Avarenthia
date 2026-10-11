@@ -14,7 +14,15 @@ POI_LOOK = {
     'stones': ('Ψ', (196, 126, 255)),
     'wagon': ('¤', (204, 164, 104)),
 }
-POI_PLAN = {'ruin': 10, 'shrine': 7, 'camp': 9, 'stones': 6, 'wagon': 12}
+POI_LOOK.update({'ruined_temple': ('π', (130, 124, 116)), 'ruined_monastery': ('Θ', (130, 116, 100)),
+                 'ruined_tower': ('¡', (130, 130, 136))})
+POI_PLAN = {'ruin': 8, 'ruined_temple': 3, 'ruined_monastery': 2, 'ruined_tower': 4, 'shrine': 7, 'camp': 9, 'stones': 6,
+            'wagon': 12}
+RUIN_KINDS = ('ruin', 'ruined_temple', 'ruined_monastery', 'ruined_tower')
+RUIN_STYLE = {'ruined_temple': ('rooms', 'crypt', ['Fallen Temple of the Dawn', 'Desecrated Temple', 'Roofless Temple',
+                                                   'Temple of the Drowned Saint']),
+              'ruined_monastery': ('rooms', 'crypt', ['Burned Abbey', 'Ruined Priory', 'Abandoned Monastery']),
+              'ruined_tower': ('rooms', 'dungeon', ['Broken Watchtower', 'Toppled Tower', 'Black Tower Ruin', 'Old Signal Tower'])}
 RUIN_NAMES = ['Ruins of Kaer Mor', 'Collapsed Watchtower', 'Sunken Temple', 'Forgotten Barrow', 'Abandoned Mine',
               "Smugglers' Cave", 'Burned Manor', 'Drowned Chapel', 'Hollow Hill', "Witch's Cellar", 'Broken Abbey',
               'Old Wolf Den']
@@ -44,6 +52,7 @@ def gen_pois(game, m, world):
     from .world import Dungeon
     w = m.w
     taken = [(s.x, s.y) for s in world.settlements] + [(h.x, h.y) for h in world.holds] + \
+            [(q.x, q.y) for q in getattr(world, 'sites', [])] + \
             [(d.x, d.y) for d in world.dungeons.values()]
     start = world.settlements[0]
     ruins = RUIN_NAMES[:]
@@ -71,15 +80,21 @@ def gen_pois(game, m, world):
                 continue
             if kind == 'ruin':
                 name = ruins.pop() if ruins else f'Old Ruin {n_ruin}'
+            elif kind in RUIN_STYLE:
+                pool = [n for n in RUIN_STYLE[kind][2] if n not in {q.name for q in world.pois}]
+                name = random.choice(pool) if pool else RUIN_STYLE[kind][2][0]
             elif kind == 'shrine':
                 name = shrines.pop() if shrines else 'Wayside Shrine'
             else:
                 name = {'camp': 'Bandit Camp', 'stones': 'Standing Stones', 'wagon': 'Abandoned Wagon'}[kind]
             poi = POI(len(world.pois), kind, x, y, name)
-            if kind == 'ruin':
+            if kind in RUIN_KINDS:
                 danger = world.danger_at(x, y)
-                style = random.choice(['cave', 'rooms'])
-                tag = 'cave' if style == 'cave' else random.choice(['dungeon', 'crypt'])
+                if kind in RUIN_STYLE:
+                    style, tag = RUIN_STYLE[kind][:2]
+                else:
+                    style = random.choice(['cave', 'rooms'])
+                    tag = 'cave' if style == 'cave' else random.choice(['dungeon', 'crypt'])
                 did = f'ruin{n_ruin}'
                 wall = {'crypt': D.hexrgb('#7e869c'), 'dungeon': D.hexrgb('#a0835e')}.get(tag)
                 dg = Dungeon(did, name, random.randint(1, 2), max(0, danger - 1), style, tag, None, wall, x, y, False)
@@ -134,7 +149,7 @@ def resolve(game, choice):
 
 
 def on_poi(game, poi):
-    if poi.kind == 'ruin':
+    if poi.kind in RUIN_KINDS:
         game.msg(f'{poi.name}. A way down leads into the dark. Press > to enter.', 'info')
         return
     if game.day < poi.ready_day:
@@ -293,7 +308,7 @@ def r_hurt(game, choice, ctx):
             p.gold += g
             game.msg(f'"Bless you." He presses {fmt(g)} into your hand.', 'good')
         else:
-            hidden = [poi for poi in game.world.pois if not poi.found and poi.kind == 'ruin']
+            hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS]
             if hidden:
                 poi = min(hidden, key=lambda q: cheb(q.x, q.y, p.x, p.y))
                 reveal(game, poi)
@@ -386,7 +401,7 @@ def r_lights(game, choice, ctx):
     if choice != 'follow':
         return
     p = game.player
-    hidden = [poi for poi in game.world.pois if not poi.found and poi.kind == 'ruin']
+    hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS]
     if hidden and random.random() < .55:
         poi = min(hidden, key=lambda q: cheb(q.x, q.y, p.x, p.y))
         reveal(game, poi)
@@ -500,7 +515,7 @@ def make_personal_offer(game, wd):
     elif sub == 'hunt':
         data.update(reward=random.randint(90, 160) * 100)
     else:
-        ruins = [p for p in w.pois if p.kind == 'ruin' and w.dungeons[p.did].relic is None]
+        ruins = [p for p in w.pois if p.kind in RUIN_KINDS and w.dungeons[p.did].relic is None]
         if not ruins:
             return None
         poi = min(ruins, key=lambda q: cheb(q.x, q.y, wd.x, wd.y))

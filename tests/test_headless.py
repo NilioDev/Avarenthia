@@ -215,6 +215,7 @@ def factions_and_death():
     print('castellan offers:', [m.title for m in friendly.board])
     # softcore death: corpse holds backpack and gold
     g.enter_dungeon('rat', 1, 'up')
+    g.map.mons = []                      # nobody around to rob the body
     p.gold = 123
     n_bag = len(g.backpack())
     g.die('a test')
@@ -425,7 +426,8 @@ def items_skills_curse():
     g.unequip('ring')
     assert g.is_equipped(ring), 'cursed items stay on'
     p.gold = 500000
-    g.enter_town(0)
+    to_over(g, 0)
+    g.enter_site(g.world.start_temple)
     temple = next((o for o in g.map.mons if o.role == 'healer'), None)
     g.talk(temple)
     app.after_action()
@@ -723,8 +725,79 @@ def start_and_survival():
     app.render()
 
 
+def countryside():
+    from cursed_vale import foraging as FG, lifeskills as LS, sites as ST
+    from cursed_vale.entities import make_monster
+    random.seed(41)
+    app = new_app('soft', 5150)
+    g = app.game
+    p = g.player
+    assert g.map.site == g.world.start_temple, 'you wake in the temple outside Thornfield'
+    # beasts never drop gear
+    g.enter_dungeon('rat', 1, 'up')
+    g.map.items = []
+    for _ in range(60):
+        o = make_monster(g, 'bat', p.x, p.y, 3, 1)
+        g.map.mons.append(o)
+        g.kill(o)
+    assert not any(i.k == 'gear' for i in g.map.items), 'bats do not carry swords'
+    # sites: a monastery herbalist, a watchtower
+    mon = next(st for st in g.world.sites if st.kind == 'monastery')
+    to_over(g, 0)
+    g.enter_site(mon.id)
+    herb = next(o for o in g.map.mons if o.role == 'herbalist')
+    g.talk(herb)
+    app.after_action()
+    app.key('esc')
+    assert 'healing' in p.recipes
+    tower = next(st for st in g.world.sites if st.kind == 'watchtower')
+    g.enter_site(tower.id)
+    i = g.map.t.index(D.UP)
+    p.x, p.y = i % g.map.w, i // g.map.w
+    om = g.maps['over']
+    before = sum(om.seen)
+    g.use_stairs('up')
+    assert sum(om.seen) > before
+    # forage in the woods until something is found, taste it
+    g.leave_to_over()
+    forest = [k for k, t in enumerate(om.t) if t == D.FOREST]
+    found = 0
+    for _ in range(120):
+        k = random.choice(forest)
+        p.x, p.y = k % om.w, k // om.w
+        g.compute_fov()
+        p.life = g.stats()['max_life']
+        g.forage()
+        if g.cur != 'over':
+            g.cur = 'over'
+    plants = [it for it in p.inv if it.k == 'plant']
+    print('foraged:', [it.display_name() for it in plants], 'foraging', LS.rank(g, 'foraging'))
+    assert plants
+    for it in list(plants):
+        p.life = g.stats()['max_life']
+        FG.eat_plant(g, it)
+    print('known plants:', sorted(p.known_plants))
+    # brew a healing draught
+    p.inv.append(FG.make_plant(g, 'yarrow', 2))
+    n0 = g.count('potion')
+    FG.brew(g, 'healing')
+    app.screens = [ui.GameScreen(app), ui.BrewScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
+    app.render()
+    # a bigger village with fields and livestock
+    g.enter_town(0)
+    assert g.map.w >= 100 and any(o.role == 'livestock' for o in g.map.mons)
+    for _ in range(30):
+        g.end_turn(1)
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    print('countryside ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    countryside()
     start_and_survival()
     crime_and_coin()
     world_and_people()

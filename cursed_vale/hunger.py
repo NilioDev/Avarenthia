@@ -47,6 +47,10 @@ def weak(game):
 
 
 def food_value(it):
+    if it.k == 'plant':
+        from . import foraging as FG
+        name, grp, food, eff, _w = FG.PLANTS[it.t]
+        return food if FG.known(FG.GAME, it.t) and eff in (None, 'heal', 'heal2', 'mana', 'cure') else 0
     if it.k == 'food':
         return FOODS[it.t][1]
     if it.k == 'fish':
@@ -63,6 +67,9 @@ def eat(game, it):
     if p.food >= MAX - 30:
         game.msg('You are too full to eat another bite.')
         return 0
+    if it.k == 'plant':
+        from . import foraging as FG
+        return FG.eat_plant(game, it)
     game.remove_one(it)
     p.food = min(MAX, p.food + v)
     if it.k == 'fish':

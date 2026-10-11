@@ -92,7 +92,11 @@ def cell(m, i, depth=None):
         base = _mix(base, (150, 166, 152), cold * .8)
         base = _mix(base, (196, 170, 96), hot * .7)
         base = _mix(base, scale(base, .8), max(0, elev - .6))
-        ch = _pick(r, [(24, '.'), (20, ','), (16, "'"), (10, '`'), (18 if mo > .45 else 6, '"'), (6, ' ')])
+        if over:
+            ch = _pick(r, [(24, '.'), (20, ','), (16, "'"), (10, '`'), (18 if mo > .45 else 6, '"'), (6, ' ')])
+        else:       # town greens and meadows: calmer, so buildings and fields stand out
+            ch = _pick(r, [(45, ' '), (25, '.'), (15, ','), (10, "'"), (5, '"')])
+            return ch, _jit((96, 150, 70), r2, .15), (14, 20, 11)
         if cold > .5 and r2 % 5 == 0:
             ch = '·'
         bgc = _mix((15, 20, 10), (20, 18, 10), 1 - mo) if over else BG
@@ -141,7 +145,13 @@ def cell(m, i, depth=None):
         return _pick(r, [(60, '.'), (20, ','), (12, '`'), (8, ' ')]), _jit(base, r2, .08), (34, 28, 18) if over else BG
     if t == ROAD:
         return td.ch, _jit(td.fg, r2, .06), td.bg or BG
-    if t in (FLOOR, PATH, PLANK, FIELD):
+    if t == FIELD:          # rows of crops and furrows
+        if y % 2:
+            return _pick(r, [(70, 'ⁿ'), (30, '"')]), _jit((200, 180, 70), r2, .12), (30, 24, 12)
+        return '.', _jit((120, 90, 50), r2, .1), (36, 26, 14)
+    if t == D.FENCE:
+        return '═' if r % 7 else '╬', _jit((150, 110, 66), r2, .08), BG
+    if t in (FLOOR, PATH, PLANK):
         return td.ch, _jit(td.fg, r2, .08), td.bg or BG
     if t in (WALL, ROCK):
         fg = m.wall_fg if (t == WALL and m.wall_fg) else td.fg

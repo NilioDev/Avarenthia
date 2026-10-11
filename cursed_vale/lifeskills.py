@@ -9,8 +9,13 @@ LIFE = {
                     perks={3: 'Trout and carp start to bite', 5: 'Casts take less time', 8: 'Pike bite in deep water',
                            12: 'Salmon run in the rivers', 15: 'Casts take much less time',
                            18: 'The legendary golden carp may bite', 25: 'Master angler: almost every cast lands a fish'}),
+    'foraging': dict(name='Foraging', desc='Search the wild for food (Shift+F). Unknown plants must be tasted... carefully.',
+                     perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once', 8: 'Poisonous plants make you uneasy',
+                            10: 'Searching takes less time', 15: 'You rarely come back empty-handed'}),
+    'herbalism': dict(name='Herbalism', desc='Brew potions from herbs (P). The monastery herbalists teach the basics.',
+                      perks={3: 'Recipe: Antidote', 5: 'Fewer ruined brews', 8: 'Recipe: Kingsfoil Elixir', 10: 'Brews rarely fail'}),
 }
-LIFE_ORDER = ['fishing']
+LIFE_ORDER = ['fishing', 'foraging', 'herbalism']
 
 # key: name, minimum rank, waters, weight, value, healing
 FISH = {

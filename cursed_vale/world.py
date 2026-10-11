@@ -313,6 +313,10 @@ def gen_world(game):
         for d in world.dungeons.values():
             if getattr(d, 'town', None) is None:
                 m.set(d.x, d.y, ENTR)
+        from .foraging import setup_world
+        setup_world(world)
+        from .sites import gen_sites
+        gen_sites(game, m, world)
         from .events import gen_pois
         gen_pois(game, m, world)
         return m, world
@@ -510,7 +514,7 @@ def settlement_services(s):
     if s.kind == 'deephold':
         return {'inn', 'market', 'shop', 'temple'}
     if s.id == 0:
-        return {'inn', 'market', 'shop', 'temple', 'stables'}
+        return {'inn', 'market', 'shop', 'stables'}      # Thornfield's temple stands outside the village
     sv = {'inn', 'market'}
     if s.is_city:
         sv |= {'shop', 'temple', 'stables'}

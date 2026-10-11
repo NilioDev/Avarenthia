@@ -41,6 +41,7 @@ TILE_DESC = {
     'statue': 'A statue of some forgotten hero, its face worn smooth.',
     'treasure chest': 'A treasure chest! Walk into it to open it.',
     'open chest': 'An open, empty chest.',
+    'gravestone': 'A weathered gravestone. The name has worn away.',
 }
 DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.', 3: 'Glowing fungus casts an eerie light.',
              4: 'Old bones lie scattered about.', 5: 'Rubble and broken stone.', 6: 'Blood. Fresh, or nearly.',
@@ -59,6 +60,9 @@ ROLE_DESC = {
     'dog': 'A dog. It seems friendly.',
     'client': 'Someone who is waiting for you.',
     'thane': 'The thane, lord of this dwarven hold.',
+    'herbalist': 'A herbalist monk. Knows every plant that grows, and teaches the art of brewing.',
+    'tower': 'The captain of the watchtower.',
+    'livestock': 'Farm animals, grazing.',
     'escort': 'The caravan you are guarding.',
 }
 
@@ -123,16 +127,24 @@ def over(game, x, y):
         return s.name, (242, 196, 74), [f"A {s.kind_name} of {RACES[s.race]['plural'].lower()}, held by {f['name']}.",
                                          'Makes ' + ', '.join(D.GOODS[k]['name'].lower() for k in s.produce) + '; wants '
                                          + ', '.join(D.GOODS[k]['name'].lower() for k in s.demand) + '.']
+    from .sites import site_at
+    site = site_at(w, x, y)
+    if site and m.seen[y * m.w + x]:
+        return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
+                                           'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
+                                           'watchtower': 'A watchtower. From the top you can see far over the land.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]
     poi = EV.poi_at(game, x, y)
     if poi and poi.found:
-        return poi.name, poi.glyph[1], [{'ruin': 'An old ruin. A way leads down into the dark.',
+        if poi.kind in EV.RUIN_KINDS:
+            return poi.name, poi.glyph[1], ['A ruin, long abandoned. A way leads down into the dark.']
+        return poi.name, poi.glyph[1], [{
                                           'shrine': 'A wayside shrine. You could pray here.',
                                           'camp': 'A camp of outlaws, and their loot.',
                                           'stones': 'A ring of standing stones, humming with old power.',
-                                          'wagon': 'An abandoned wagon.'}[poi.kind]]
+                                          'wagon': 'An abandoned wagon.'}.get(poi.kind, '')]
     dg = w.dungeon_at(x, y)
     if dg:
         return dg.name, (232, 96, 62), ['A way down into the dark.', f'{dg.depth} levels deep.']
