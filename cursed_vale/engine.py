@@ -1159,10 +1159,11 @@ class Game:
 
     def monsters_act(self):
         m, p = self.map, self.player
+        key = self.cur
         self.compute_dist()
         df = self.stats()['def']
         for mon in m.mons[:]:
-            if self.dead or self.flags.get('lich') and self.request == ('win',):
+            if self.dead or self.cur != key or self.flags.get('lich') and self.request == ('win',):
                 return
             if mon not in m.mons:
                 continue
@@ -1203,7 +1204,7 @@ class Game:
             if d['slow'] and self.turn % 2 == 0:
                 continue
             acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Fast' in mon.mods else 0)
-            while acts > 0 and not self.dead and mon in m.mons:
+            while acts > 0 and not self.dead and mon in m.mons and self.cur == key:
                 acts -= 1
                 self.mon_turn(mon, df)
 
