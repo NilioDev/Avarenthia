@@ -51,6 +51,22 @@ Het spel opent een gemaximaliseerd venster van 110 bij 30 tekens in het 8×16-pi
 op de grootste scherpe vergroting die op je scherm past (2× op een 1080p-scherm). F11 of Alt+Enter schakelt naar volledig scherm.
 Je held wordt bewaard in `savegame.dat` naast `main.py`. Als je sterft, wordt die verwijderd.
 
+## Starten op Windows met Smart App Control
+
+Smart App Control blokkeert het `.exe`-bestand, omdat het niet digitaal ondertekend is. Speel het spel dan via Python:
+
+1. Installeer Python 3.10 of nieuwer van [python.org](https://www.python.org/downloads/) en vink "Add python.exe to PATH" aan.
+2. Download de broncode (op GitHub: *Code → Download ZIP*) en pak die uit.
+3. Dubbelklik op `start_windows.bat`. De eerste keer installeert het de benodigdheden (ongeveer een minuut), daarna start het spel direct.
+
+Blokkeert Windows ook het `.bat`-bestand, open dan een terminal in de map en typ:
+
+```
+py -m venv .venv
+.venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\python main.py
+```
+
 ## Eén los bestand maken (zonder Python te hoeven draaien)
 
 Een uitvoerbaar bestand moet je bouwen op het besturingssysteem waarop het moet draaien.
