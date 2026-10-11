@@ -138,6 +138,11 @@ class TcodCanvas(Canvas):
         c.fg[...] = (c.fg * f).astype(c.fg.dtype)
         c.bg[...] = (c.bg * f).astype(c.bg.dtype)
 
+    def get(self, x, y):
+        """(ch, fg, bg) of a cell, for effects drawn over what is already there."""
+        c = self.con
+        return chr(c.ch[x, y]), tuple(int(v) for v in c.fg[x, y]), tuple(int(v) for v in c.bg[x, y])
+
 
 from .glyphs import CHARS as _GLYPHS  # noqa: E402
 
@@ -173,6 +178,10 @@ class FakeCanvas(Canvas):
     def dim(self, f):
         self.fg = [scale(c, f) for c in self.fg]
         self.bg = [scale(c, f) for c in self.bg]
+
+    def get(self, x, y):
+        i = y * self.w + x
+        return self.ch[i], tuple(self.fg[i]), tuple(self.bg[i])
 
     def dump(self):
         return '\n'.join(''.join(self.ch[y * self.w:(y + 1) * self.w]) for y in range(self.h))
