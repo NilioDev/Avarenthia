@@ -151,7 +151,7 @@ def daily(game):
         cands = [s for s in w.settlements if not s.event]
         if cands:
             s = random.choice(cands)
-            key = random.choice(list(D.EVENTS))
+            key = random.choice([k for k in D.EVENTS if k != 'undead'])
             ev = D.EVENTS[key]
             s.event = (key, random.randint(5, 9))
             for g in (ev['good'], ev.get('also')):

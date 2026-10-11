@@ -328,4 +328,8 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
 def gen_shop(game, city=False):
     lvl = max(1, game.player.lvl) + (1 if city else 0)
     ks = [k for k, b in D.BASES.items() if b['lvl'] <= lvl + 2]
-    return [make_gear(game, random.choice(ks), 'magic' if random.random() < .35 else 'normal', lvl) for _ in range(8)]
+    stock = [make_gear(game, random.choice(ks), 'magic' if random.random() < .2 else 'normal', lvl) for _ in range(8)]
+    if city and random.random() < .5:
+        from .entities import make_tome
+        stock.append(make_tome(game, 0))
+    return stock

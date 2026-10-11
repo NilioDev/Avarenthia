@@ -4,6 +4,7 @@ Run:  python main.py
 """
 import os
 import sys
+import time
 import warnings
 
 import tcod
@@ -145,15 +146,20 @@ def main():
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
     with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
                           tileset=tileset, title='Cursed Vale', vsync=True, sdl_window_flags=flags) as ctx:
+        last_tick = 0.0
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)
             timeout = 1 / 30 if app.animating() else None
+            if app.auto:
+                timeout = max(.005, app.auto_delay - (time.monotonic() - last_tick))
+            pressed = False
             for ev in tcod.event.wait(timeout):
                 if isinstance(ev, tcod.event.Quit):
                     app.quit()
                 elif isinstance(ev, tcod.event.KeyDown):
                     tok, shift = key_token(ev)
+                    pressed = True
                     if tok == 'f11' or (tok == 'enter' and int(ev.mod) & int(getattr(tcod.event.Modifier, 'ALT', 0x0300))):
                         toggle_fullscreen(ctx)
                     elif tok:
@@ -166,6 +172,9 @@ def main():
                         app.click(t[0], t[1], int(getattr(ev, 'button', 1)))
                 if not app.running:
                     break
+            if app.auto and not pressed and time.monotonic() - last_tick >= app.auto_delay * .9:
+                last_tick = time.monotonic()
+                app.tick()
 
 
 if __name__ == '__main__':

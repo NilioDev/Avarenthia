@@ -121,6 +121,15 @@ def step(game, wd):
         from .war import step_warband
         step_warband(game, wd)
         return
+    if wd.kind == 'hunt':
+        # Morvenna's hunters always know where you are
+        if on_over and wd.cooldown == 0 and random.random() < .8:
+            greedy_step(game, wd, p.x, p.y)
+        elif not on_over:
+            tx, ty = game.over_pos
+            if cheb(wd.x, wd.y, tx, ty) > 6:
+                greedy_step(game, wd, tx, ty)
+        return
     if wd.kind == 'patrol' and wd.hostile and on_over and wd.cooldown == 0 and cheb(wd.x, wd.y, p.x, p.y) <= 5 \
             and game.visible(wd.x, wd.y):
         greedy_step(game, wd, p.x, p.y)

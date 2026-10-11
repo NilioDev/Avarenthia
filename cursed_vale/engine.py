@@ -12,13 +12,14 @@ from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
 from . import events as EV
+from . import curse as CU
 from . import world as WO
 from . import worldgen as W
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 6
+SAVE_VERSION = 7
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -132,8 +133,6 @@ class Game:
         gear('shortsword')
         gear('quilted')
         gear('shortbow', False)
-        gear('dagger', False)
-        gear('club', False)
         self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 3))
         self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 3))
         self.add_to_inv(Item(self.new_id(), 'scroll', 'tp', 2))
@@ -159,6 +158,7 @@ class Game:
         rat = world.dungeons['rat']
         over.seen[rat.y * over.w + rat.x] = 1
         self.home = 0
+        CU.update(self, announce=False)
         ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
         self.cur = home.map_key
         self.maps[self.cur] = TW.gen_settlement_map(self, home)
@@ -268,9 +268,13 @@ class Game:
             it = self.eq_item(slot)
             if not it:
                 continue
-            for st, v in it.aff:
+            if it.identified:
+                for st, v in it.aff:
+                    if st != 'edef':
+                        s[st] = s.get(st, 0) + v
+            for st, v in getattr(it, 'curse', ()):
                 if st != 'edef':
-                    s[st] = s.get(st, 0) + v
+                    s[st] = s.get(st, 0) - v
             b = D.BASES[it.base]
             s['mana'] += b.get('mana', 0)
             s['hit'] += b.get('hit', 0)
@@ -374,6 +378,13 @@ class Game:
         p.x = p.y = -5
         if key not in self.maps:
             self.maps[key] = W.gen_dungeon(self, did, depth)
+            if depth == dg.depth and getattr(dg, 'poi', False):
+                from .entities import make_tome
+                c = W.rand_free(self, self.maps[key], lambda t: t == FLOOR)
+                if c:
+                    tm = make_tome(self, dg.base + depth + 2)
+                    tm.x, tm.y = c
+                    self.maps[key].items.append(tm)
             if depth == dg.depth and dg.relic is not None:
                 mi = MS.find(self, dg.relic)
                 if mi and mi.state == 'active':
@@ -435,7 +446,10 @@ class Game:
         alive = [o for o in m.mons if not o.is_npc] if m else []
         if not alive:
             self.world.wanderers.remove(wd)
-            self.msg(f'You have dealt with {wd.name[0].lower() + wd.name[1:]}.', 'good')
+            if wd.kind == 'hunt':
+                self.msg("Morvenna's hunters fall. Somewhere far away, a woman screams in rage.", 'unique')
+            else:
+                self.msg(f'You have dealt with {wd.name[0].lower() + wd.name[1:]}.', 'good')
             MS.on_group_defeated(self, wd)
         else:
             wd.cooldown = 4
@@ -623,7 +637,7 @@ class Game:
         w = self.world
         reg = w.region_at(p.x, p.y)
         off = w.off_road(p.x, p.y)
-        night = TW.is_night(self)
+        night = TW.is_night(self) or CU.blighted(self, p.x, p.y)
         if t == ROAD:
             chance = .003 * (2 if night else 1)
         else:
@@ -821,23 +835,88 @@ class Game:
         self.msg({'hp': 'You drink a health potion.', 'mp': 'You drink a mana potion.', 'rejuv': 'You drink a rejuvenation potion.'}[it.t], 'good')
         return 1
 
+    def stuck(self, slot):
+        """A cursed item in this slot that cannot be taken off."""
+        cur = self.eq_item(slot)
+        if cur and cur.cursed:
+            cur.curse_known = True
+            self.msg(f'{cur.display_name()} is cursed and will not leave you. A priest in a temple can lift the curse.', 'bad')
+            return True
+        return False
+
     def equip(self, it):
         p = self.player
         if it.req > p.lvl:
             self.msg(f'You need to be level {it.req} to use that.', 'bad')
             return False
+        if self.stuck(it.slot):
+            return False
         p.eq[it.slot] = it.id
         self.clamp_vitals()
-        self.msg(f'You equip {it.name}.', it.rar)
+        self.msg(f'You equip {it.display_name()}.', it.rar)
+        if it.cursed:
+            it.curse_known = True
+            self.msg('A cold grip closes around you. The item is cursed!', 'bad')
+            self.shake()
         return True
 
     def unequip(self, slot):
+        if self.stuck(slot):
+            return
         if self.player.eq.pop(slot, None) is not None:
             self.clamp_vitals()
             self.msg('You remove the item.')
 
+    def read_tome(self, it):
+        if SK.learn(self, it.t):
+            self.remove_one(it)
+            return 1
+        return 0
+
+    def identify_all(self, dry=False):
+        its = [it for it in self.player.inv if it.k == 'gear' and not it.identified]
+        cost = sum(it.id_cost() for it in its)
+        if dry:
+            return len(its), cost
+        if not its:
+            self.msg('You have nothing that needs identifying.')
+            return
+        if self.player.gold < cost:
+            self.msg(f'Identifying everything costs {cost} gold. You cannot afford it.', 'bad')
+            return
+        self.player.gold -= cost
+        for it in its:
+            it.ided = True
+            if it.cursed:
+                it.curse_known = True
+            self.msg(f'Identified: {it.display_name()}.', it.rar)
+        if any(it.cursed for it in its):
+            self.msg('Something you carry is cursed. Do not wear it, or have a priest lift the curse.', 'bad')
+        self.clamp_vitals()
+
+    def uncurse_all(self, dry=False):
+        its = [it for it in self.player.inv if it.k == 'gear' and it.cursed and (it.curse_known or self.is_equipped(it))]
+        cost = sum(it.uncurse_cost() for it in its)
+        if dry:
+            return len(its), cost
+        if not its:
+            self.msg('You carry nothing known to be cursed.')
+            return
+        if self.player.gold < cost:
+            self.msg(f'Lifting the curses costs {cost} gold. You cannot afford it.', 'bad')
+            return
+        self.player.gold -= cost
+        for it in its:
+            it.curse = []
+            it.curse_known = False
+            self.msg(f'The curse on {it.display_name()} is lifted.', 'good')
+        self.clamp_vitals()
+
     def drop(self, it):
         p = self.player
+        if self.is_equipped(it) and it.cursed:
+            self.stuck(it.slot)
+            return 0
         for k, v in list(p.eq.items()):
             if v == it.id:
                 del p.eq[k]
@@ -1018,6 +1097,8 @@ class Game:
         elif mon.k == 'lich':
             self.flags['lich'] = True
             self.msg('Morvenna shrieks and crumbles to dust. The curse is broken!', 'unique')
+            CU.update(self)
+            self.world.wanderers = [x for x in self.world.wanderers if x.kind != 'hunt']
             self.request = ('win',)
 
     def capture_hold(self, hid):
@@ -1044,7 +1125,7 @@ class Game:
         m, lvl = self.map, mon.lvl
         boss = mon.is_boss
         boost = 4 if boss else 3 if mon.elite == 2 else 2 if mon.elite == 1 else 1
-        n = 4 if boss else random.randint(2, 3) if mon.elite == 2 else random.randint(1, 2) if mon.elite == 1 else (1 if random.random() < .28 else 0)
+        n = 4 if boss else random.randint(2, 3) if mon.elite == 2 else random.randint(1, 2) if mon.elite == 1 else (1 if random.random() < .2 else 0)
         if boss:
             u = next((u for u in D.UNIQUES if u.get('boss') == mon.k), None)
             if u:
@@ -1054,11 +1135,16 @@ class Game:
             n = 3
         for _ in range(n):
             it = random_gear(self, lvl, boost)
-            if boost > 1 and it.rar == 'normal':
+            if boost > 2 and it.rar == 'normal':
                 up = make_gear(self, it.base, 'magic', lvl)
-                it.rar, it.aff, it.name = up.rar, up.aff, up.name
+                it.rar, it.aff, it.name, it.ided = up.rar, up.aff, up.name, False
             self.spill(m, mon.x, mon.y, it)
             self.announce(it)
+        if random.random() < (1 if boss else .3 if mon.elite == 2 else .12 if mon.elite == 1 else .012):
+            from .entities import make_tome
+            t = make_tome(self, lvl)
+            self.spill(m, mon.x, mon.y, t)
+            self.msg('A skill tome drops!', 'gold')
         special = mon.elite or boss
         if random.random() < (1 if boss else .9 if mon.elite else .4):
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', round(random.randint(lvl * 2, lvl * 6 + 5) * boost)))
@@ -1070,9 +1156,9 @@ class Game:
 
     def announce(self, it):
         if it.rar == 'unique':
-            self.msg(f'A unique item drops: {it.name}!', 'unique')
+            self.msg('A unique item drops!', 'unique')
         elif it.rar == 'rare':
-            self.msg(f'A rare item drops: {it.name}.', 'rare')
+            self.msg('A rare item drops.', 'rare')
 
     def gain_xp(self, n):
         p = self.player
@@ -1085,6 +1171,7 @@ class Game:
             self.num(p.x, p.y, 'LEVEL UP', C_GOLD, True)
             self.shake()
             self.msg(f'You reach level {p.lvl}! Press C to spend {D.LEVEL_STAT_POINTS} attribute points.', 'gold')
+            CU.update(self)
 
     def mon_hit_chance(self, mon, df):
         return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6) - .02 * self.lore(mon.k), .12, .9)
@@ -1320,7 +1407,9 @@ class Game:
                 WA.daily(self)
                 WAR.daily(self)
                 MS.daily(self)
+                CU.daily(self)
             self.last_day = self.day
+        CU.whisper(self)
         self.compute_fov()
         if self.map.kind == 'town':
             TW.live(self, self.map)
@@ -1328,6 +1417,7 @@ class Game:
             self.monsters_act()
         elif self.cur == 'over':
             EV.discover(self)
+            CU.sense(self)
             wd = WA.hostile_adjacent(self) if not self.pending else None
             if wd:
                 self.start_encounter(wd)
@@ -1454,7 +1544,7 @@ class Game:
         w, n = m.w, m.w * m.h
         want = set()
         for it in m.items:
-            if self.visible(it.x, it.y) and (it.k in ('gold', 'orb') or (not it.dropped and (it.k in ('potion', 'scroll') or (it.k == 'gear' and it.rar != 'normal')))):
+            if self.visible(it.x, it.y) and (it.k in ('gold', 'orb') or (not it.dropped and (it.k in ('potion', 'scroll', 'tome') or (it.k == 'gear' and it.rar != 'normal')))):
                 want.add(it.y * w + it.x)
         npc = {(o.x, o.y) for o in m.mons if o.is_npc}
         par = [-2] * n
@@ -1488,6 +1578,11 @@ class Game:
         return None
 
     def explore(self):
+        for _ in self.explore_iter():
+            pass
+
+    def explore_iter(self):
+        """Auto-explore one step at a time (a generator), so the UI can show every step."""
         m = self.map
         if m.kind == 'over':
             self.msg('Press T to travel across the vale.')
@@ -1511,6 +1606,9 @@ class Game:
                 break
             self.end_turn(used, True)
             n += 1
+            if self.request and self.request[0] != 'save':
+                break
+            yield n
         if n and self.hostile_visible():
             self.msg('You spot enemies!', 'bad')
 
@@ -1547,7 +1645,11 @@ class Game:
             self.msg(f'You rest for {n} turns.')
 
     def travel_to(self, kind, ref):
-        """Walk to a settlement ('s', id) or dungeon ('d', id), preferring roads."""
+        for _ in self.travel_iter(kind, ref):
+            pass
+
+    def travel_iter(self, kind, ref):
+        """Walk to a settlement ('s', id) or dungeon ('d', id), preferring roads. One step per yield."""
         if self.map.kind == 'town':
             self.leave_to_over()
         if self.cur != 'over':
@@ -1576,6 +1678,8 @@ class Game:
             self.end_turn(used, True)
             if self.request and self.request[0] not in ('save',):
                 break
+            if self.cur == 'over' and (p.x, p.y) != tgt:
+                yield 1
         if self.cur == 'over' and (p.x, p.y) == tgt:
             self.over_step()
 
@@ -1610,13 +1714,7 @@ class Game:
                                          f"You are {WAR.standing(self.player.rep.get(f, 0)).lower()} among us.", self.rumor()]))
             return
         if role == 'healer':
-            s = self.stats()
-            if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison:
-                self.request = ('dialog', npc.name, '"You look well, child. Come back when the world has had its way with you."')
-                return
-            p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
-            self.num(p.x, p.y, 'healed', C_HEAL, True)
-            self.request = ('dialog', npc.name, '"Hold still." She lays her hands on your wounds. You are fully restored.')
+            self.request = ('temple', npc.name)
             return
         if role == 'elder':
             if not f.get('met_elder'):
@@ -1637,8 +1735,12 @@ class Game:
                 p.gold += 100
                 it = make_gear(self, random.choice([k for k, b in D.BASES.items() if b['lvl'] <= p.lvl + 1]), 'rare', p.lvl + 1)
                 self.add_to_inv(it)
-                text = '"The Rat King is dead? Then we eat this winter! Take this: a hundred gold and something from my old adventuring days."'
-                self.msg(f'You receive 100 gold and {it.name}.', 'rare')
+                from .entities import make_tome
+                tome = make_tome(self, 6)
+                self.add_to_inv(tome)
+                text = ('"The Rat King is dead? Then we eat this winter! Take this: a hundred gold, something from my old '
+                        'adventuring days, and a book I never could make sense of. Perhaps you can."')
+                self.msg(f'You receive 100 gold, {it.name} and the {tome.display_name()}.', 'rare')
             elif f.get('grolm') and not f.get('reward_grolm'):
                 f['reward_grolm'] = True
                 p.gold += 250
@@ -1679,6 +1781,11 @@ class Game:
             if ev:
                 s = random.choice(ev)
                 return D.EVENTS[s.event[0]]['text'].format(town=s.name)
+        if r < .85 and getattr(w, 'curse_lvl', 0) >= 2 and not self.flags.get('lich'):
+            return random.choice(['The graves are restless lately. They say Morvenna is waking.',
+                                  'Nothing grows near the old crypt any more. The blight spreads every season.',
+                                  'My cousin saw the dead walking on the road at night. Walking, I tell you.',
+                                  "They say the Undying One has a name for everyone who stands against her."])
         if r < .9:
             sd = [d for d in w.dungeons.values() if not d.main]
             d = random.choice(sd)

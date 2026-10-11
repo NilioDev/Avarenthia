@@ -19,6 +19,9 @@ DISCIPLINES = {
     'shadow': dict(name='Shadow Magic', kind='magic'),
     'warcraft': dict(name='Warcraft', kind='magic'),
 }
+DISC_COLOR = {'swords': (220, 220, 230), 'axes': (210, 170, 120), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
+              'fire': (255, 122, 44), 'frost': (159, 216, 255), 'storm': (242, 240, 122), 'restoration': (150, 255, 170),
+              'shadow': (176, 110, 255), 'warcraft': (242, 196, 67)}
 DISC_ORDER = list(DISCIPLINES)
 WEAPON_LINE = {'dagger': 'daggers', 'shortsword': 'swords', 'longsword': 'swords', 'bastard': 'swords', 'runeblade': 'swords',
                'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'axes', 'warstaff': 'axes',
@@ -211,12 +214,30 @@ def gain(game, line, amount):
         d[1] -= need_for(d[0])
         d[0] += 1
         game.msg(f"Your {DISCIPLINES[line]['name']} rises to {d[0]}.", 'good')
-        for sk in by_line(line):
-            if sk.unlock == d[0] and sk.id not in p.known:
-                p.known.append(sk.id)
-                game.msg(f'You have learned {sk.name}! Change your skills in a town (Z).', 'gold')
-                if None in p.bar and game.here is not None:
-                    p.bar[p.bar.index(None)] = sk.id
+        if d[0] in UNLOCKS:
+            game.msg(f"You can now study harder {DISCIPLINES[line]['name']} tomes.", 'gold')
+
+
+def learn(game, sid):
+    """Learn a skill from a tome. Returns True if the tome was used up."""
+    p = game.player
+    sk = SKILLS[sid]
+    if sid in p.known:
+        game.msg(f'You already know {sk.name}.')
+        return False
+    r = p.disc[sk.line][0]
+    if r < sk.unlock:
+        game.msg(f"The words swim before your eyes. You need {DISCIPLINES[sk.line]['name']} {sk.unlock} "
+                 f"to understand this tome (you have {r}).", 'bad')
+        return False
+    p.known.append(sid)
+    game.msg(f'You study the tome and learn {sk.name}!', 'gold')
+    if None in p.bar:
+        p.bar[p.bar.index(None)] = sid
+        game.msg(f'{sk.name} is now on your skill bar.', 'info')
+    else:
+        game.msg('Change your skills in a town or stronghold (Z).', 'info')
+    return True
 
 
 # ------------------------------------------------------------------ using
@@ -224,7 +245,8 @@ def use(game, slot):
     p = game.player
     sid = p.bar[slot] if slot < len(p.bar) else None
     if not sid:
-        game.msg('That skill slot is empty. Press Z in a town to choose your skills.')
+        game.msg('That skill slot is empty. Skills are learned from tomes; choose them in a town with Z.' if p.known else
+                 'You know no skills yet. Skill tomes are found on monsters, in ruins and with traders.')
         return 0
     sk = SKILLS[sid]
     m = game.map

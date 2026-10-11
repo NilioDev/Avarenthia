@@ -24,6 +24,17 @@ class Item:
         self.name = ''
         self.mission = None
         self.payload = None
+        self.ided = True         # unidentified magic items hide their properties
+        self.curse = []          # hidden negative properties: list of [stat, value]
+        self.curse_known = False
+
+    @property
+    def cursed(self):
+        return bool(getattr(self, 'curse', None))
+
+    @property
+    def identified(self):
+        return getattr(self, 'ided', True)
 
     # ---------------------------------------------------------- presentation
     def display_name(self):
@@ -35,6 +46,13 @@ class Item:
             return (f'{self.n}x ' if self.n > 1 else '') + 'Scroll of Town Portal'
         if self.k == 'orb':
             return 'health orb'
+        if self.k == 'tome':
+            from .skills import SKILLS
+            return f'Tome of {SKILLS[self.t].name}'
+        if self.k == 'gear' and not self.identified:
+            return f"{D.BASES[self.base]['name']} (unidentified)"
+        if self.k == 'gear' and self.cursed and self.curse_known:
+            return self.name + ' (cursed)'
         return self.name
 
     def color(self):
@@ -50,6 +68,9 @@ class Item:
             return (255, 214, 92)
         if self.k == 'corpse':
             return (240, 240, 240)
+        if self.k == 'tome':
+            from .skills import SKILLS, DISC_COLOR
+            return DISC_COLOR[SKILLS[self.t].line]
         return (238, 228, 194)
 
     def glyph(self):
@@ -65,6 +86,8 @@ class Item:
             return '§'
         if self.k == 'corpse':
             return '%'
+        if self.k == 'tome':
+            return '≡'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -83,6 +106,13 @@ class Item:
                 out.append('Opens a portal to the last town you visited, and back.')
             elif self.k == 'quest':
                 out.append('A relic someone is waiting for. Bring it back to claim your reward.')
+            elif self.k == 'tome':
+                from .skills import SKILLS, DISCIPLINES, describe
+                sk = SKILLS[self.t]
+                out.append(f"A {DISCIPLINES[sk.line]['name']} skill. {sk.cost} mana, recharge {sk.cd} turns.")
+                out.append(describe(sk, 0))
+                out.append(f"Needs {DISCIPLINES[sk.line]['name']} {sk.unlock} to learn." if sk.unlock else 'Anyone can learn it.')
+                out.append('Read it from your inventory to learn the skill.')
             return out
         b = D.BASES[self.base]
         if self.dmg:
@@ -93,8 +123,16 @@ class Item:
             out.append(f"+{b['hit']} to accuracy")
         if b.get('mana'):
             out.append(f"+{b['mana']} to mana")
+        if not self.identified:
+            out.append('Unidentified. Its powers are hidden until a sage, outfitter or priest in a town identifies it.')
+            if self.cursed and self.curse_known:
+                out.append('It is cursed!')
+            return out
         for s, v in self.aff:
             out.append(D.AFFTXT[s].format(v))
+        if self.cursed:
+            out.append('CURSED: ' + ', '.join(D.CURSETXT[s].format(v) for s, v in self.curse) +
+                       '. Once worn it cannot be removed until a priest lifts the curse.')
         return out
 
     def value(self):
@@ -102,9 +140,23 @@ class Item:
             return D.POTIONS[self.t]['val']
         if self.k == 'scroll':
             return 30
+        if self.k == 'tome':
+            from .skills import SKILLS, UNLOCKS
+            return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
         if self.k != 'gear':
             return 0
-        return round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
+        v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
+        if not self.identified:
+            v = round(D.BASES[self.base]['val'] * (1 + (D.RARITY_MULT[self.rar] - 1) * .4))
+        elif self.cursed:
+            v //= 3
+        return v
+
+    def id_cost(self):
+        return round((12 + self.ilvl * 3) * {'magic': 1, 'rare': 2, 'unique': 3}.get(self.rar, 1))
+
+    def uncurse_cost(self):
+        return 40 + self.ilvl * 6
 
     @property
     def stackable(self):
@@ -169,8 +221,8 @@ class Player:
         self.str, self.dex, self.vit, self.ene = st['str'], st['dex'], st['vit'], st['ene']
         self.stat_pts = 0
         self.disc = {k: [0, 0] for k in DISC_ORDER}      # rank, progress
-        self.known = [s.id for s in SKILL_LIST if s.unlock == UNLOCKS[0]]
-        self.bar = list(STARTING_BAR) + [None] * (BAR_SIZE - len(STARTING_BAR))
+        self.known = []                  # skills are learned from tomes found in the world
+        self.bar = [None] * BAR_SIZE
         self.cooldowns = {}
         self.buffs = []          # [key, value, turns, source]
         self.inv = []
@@ -203,6 +255,12 @@ class GameMap:
         self.wall_fg = None
         self.entry = None
         self.portal_pos = None
+
+    def __getstate__(self):
+        st = self.__dict__.copy()
+        st.pop('_look', None)          # drawing cache, rebuilt on demand
+        st.pop('_look_t', None)
+        return st
 
     def inb(self, x, y):
         return 0 <= x < self.w and 0 <= y < self.h
@@ -285,15 +343,44 @@ def make_unique(game, u):
     return it
 
 
+def add_curse(it):
+    for st, lo, hi in random.sample(D.CURSES, random.randint(1, 2)):
+        it.curse.append([st, random.randint(lo, hi) + it.ilvl // 3])
+
+
 def random_gear(game, ilvl, boost=1):
+    """Loot. Magic items are rare, arrive unidentified, and now and then carry a hidden curse."""
     r = random.random()
-    if r < .012 * boost:
+    it = None
+    if r < .005 * boost:
         us = [u for u in D.UNIQUES if not u.get('boss') and u['lvl'] <= ilvl + 2]
         if us:
-            return make_unique(game, random.choice(us))
-    rar = 'rare' if r < .09 * boost else 'magic' if r < .34 * boost else 'normal'
-    ks = [k for k, b in D.BASES.items() if b['lvl'] <= ilvl + 1]
-    return make_gear(game, random.choice(ks), rar, ilvl)
+            it = make_unique(game, random.choice(us))
+    if it is None:
+        rar = 'rare' if r < .03 * boost else 'magic' if r < .13 * boost else 'normal'
+        ks = [k for k, b in D.BASES.items() if b['lvl'] <= ilvl + 1 and not (rar == 'normal' and b.get('magic_only'))]
+        it = make_gear(game, random.choice(ks), rar, ilvl)
+    if it.rar != 'normal':
+        it.ided = False
+        if it.rar in ('magic', 'rare') and random.random() < (.1 if it.rar == 'magic' else .14):
+            add_curse(it)
+    elif random.random() < .03:
+        add_curse(it)
+        it.ided = False
+    return it
+
+
+def make_tome(game, lvl, line=None):
+    """A skill tome suited to monsters of this level, preferring skills you do not know yet."""
+    from .skills import SKILL_LIST, UNLOCKS
+    top = min(4, max(0, lvl // 4))
+    cands = [s for s in SKILL_LIST if UNLOCKS.index(s.unlock) <= top and (line is None or s.line == line)]
+    known = set(game.player.known)
+    wts = [(4 if s.id not in known else 1) * (3 if UNLOCKS.index(s.unlock) == 0 else 1) for s in cands]
+    sk = random.choices(cands, wts)[0]
+    it = Item(game.new_id(), 'tome', sk.id)
+    it.name = f'Tome of {sk.name}'
+    return it
 
 
 def make_monster(game, k, x, y, lvl, elite=0):

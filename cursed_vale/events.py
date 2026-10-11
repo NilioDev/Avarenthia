@@ -57,7 +57,7 @@ def gen_pois(game, m, world):
                 break
             x, y = random.randint(3, m.w - 4), random.randint(3, m.h - 4)
             t = m.tile(x, y)
-            if not D.TILES[t].walk or t in (ROAD, TOWN, CITY, ENTR, D.CASTLE, D.FORT):
+            if not D.TILES[t].walk or t in (ROAD, TOWN, CITY, ENTR, D.CASTLE, D.FORT, D.RIVER):
                 continue
             if world.road_dist[y * w + x] > 60:
                 continue
@@ -218,6 +218,11 @@ def r_stones(game, choice, ctx):
     line = random.choice(['fire', 'frost', 'storm', 'restoration', 'shadow', 'warcraft'])
     game.msg(f"Visions of old battles flood your mind. Your {SK.DISCIPLINES[line]['name']} grows.", 'gold')
     SK.gain(game, line, 30)
+    if random.random() < .6:
+        from .entities import make_tome
+        t = make_tome(game, game.world.danger_at(poi.x, poi.y) * 2, line)
+        if game.add_to_inv(t):
+            game.msg(f'When the visions fade, the words of a spell remain. You write them down: {t.display_name()}.', 'gold')
     game.gain_xp(20 + game.world.danger_at(poi.x, poi.y) * 10)
 
 
@@ -303,17 +308,26 @@ def r_hurt(game, choice, ctx):
 
 
 def e_peddler(game):
-    from .entities import random_gear
+    from .entities import random_gear, make_gear, make_tome
     lvl = max(1, game.player.lvl)
-    it = random_gear(game, lvl + 1, 3)
-    if it.rar == 'normal':
-        it.rar = 'magic'
-    price = round(it.value() * 1.2)
-    lines = ' · '.join(it.lines()[:3])
+    if random.random() < .4:
+        it = make_tome(game, lvl + 2)
+        price = round(it.value() * 1.3)
+        what = f'the {it.display_name()}'
+        lines = it.lines()[1]
+    else:
+        it = random_gear(game, lvl + 1, 3)
+        if it.rar == 'normal':
+            it = make_gear(game, it.base, 'magic', lvl + 1)
+        it.ided = True
+        it.curse = []
+        price = round(it.value() * 1.2)
+        what = it.name
+        lines = ' · '.join(it.lines()[:3])
     opts = [(f'Buy it for {price} gold', 'buy')] if game.player.gold >= price else []
     opts.append(('No thanks', 'leave'))
     ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "Something special for you, '
-        f'friend: {it.name}." ({lines})', opts, item=it, price=price)
+        f'friend: {what}." ({lines})', opts, item=it, price=price)
 
 
 def r_peddler(game, choice, ctx):
@@ -322,7 +336,7 @@ def r_peddler(game, choice, ctx):
     it, price = ctx['item'], ctx['price']
     if game.add_to_inv(it):
         game.player.gold -= price
-        game.msg(f'You buy {it.name}.', it.rar)
+        game.msg(f'You buy {it.display_name()}.', it.rar)
     else:
         game.msg('Your bag is full.', 'bad')
 

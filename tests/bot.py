@@ -29,6 +29,16 @@ def manage(g):
     p = g.player
     while p.stat_pts > 0:
         g.add_stat('vit' if p.stat_pts % 2 else 'str')
+    # the bot reads every tome it finds, and pretends it found the skills its disciplines allow
+    for it in [i for i in p.inv if i.k == 'tome']:
+        g.read_tome(it)
+    for sk in SK.SKILL_LIST:
+        if sk.line in ('swords', 'fire', 'restoration', 'warcraft') and p.disc[sk.line][0] >= sk.unlock and sk.id not in p.known \
+                and (sk.unlock == 0 or p.lvl >= 4):
+            p.known.append(sk.id)
+    for it in p.inv:
+        if it.k == 'gear' and not it.identified and not it.cursed:
+            it.ided = True
     # keep the strongest known sword, fire and restoration skills on the bar
     want = [k for k in p.known if SK.SKILLS[k].line in ('swords', 'fire', 'restoration', 'warcraft')]
     want.sort(key=lambda k: -SK.SKILLS[k].unlock)

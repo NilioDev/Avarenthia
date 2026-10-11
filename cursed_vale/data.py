@@ -10,7 +10,7 @@ def hexrgb(h):
 
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
- CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK) = range(33)
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER) = range(34)
 
 
 class Tile:
@@ -56,6 +56,7 @@ TILES = [
     Tile('±', '#e8d070', False, False, 'altar'),
     Tile('○', '#a07040', False, False, 'barrel'),
     Tile('.', '#8a6a44', True, False, 'wooden floor'),
+    Tile('≈', '#4f9fe0', True, False, 'river (ford)', cost=24),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -161,6 +162,12 @@ RARE_A = ['Doom', 'Grim', 'Blood', 'Storm', 'Bone', 'Dread', 'Shadow', 'Rune', '
 RARE_B = ['Bite', 'Song', 'Shell', 'Visage', 'Loop', 'Mark', 'Edge', 'Ward', 'Brand', 'Coil', 'Fang', 'Call', 'Hide', 'Eye']
 RARITY_COLOR = {'normal': hexrgb('#e6dfcf'), 'magic': hexrgb('#7f9bff'), 'rare': hexrgb('#efe065'), 'unique': hexrgb('#d9a547')}
 RARITY_MULT = {'normal': 1, 'magic': 2.5, 'rare': 5, 'unique': 8}
+# curses hidden on some magic and rare items: (stat, low, high), always negative
+CURSES = [('life', 6, 18), ('str', 3, 8), ('dex', 3, 8), ('vit', 3, 7), ('ene', 3, 8), ('hit', 10, 30), ('ed', 10, 30),
+          ('edef', 15, 40), ('crit', 2, 4), ('mana', 6, 15)]
+CURSETXT = {'dmg_flat': '-{} damage', 'ed': '-{}% damage', 'edef': '-{}% defense', 'hit': '-{} to accuracy',
+            'mana': '-{} to mana', 'life': '-{} to life', 'str': '-{} to Strength', 'dex': '-{} to Dexterity',
+            'vit': '-{} to Vitality', 'ene': '-{} to Energy', 'crit': '-{}% critical strike chance', 'regen': '-{} life regeneration'}
 POTIONS = {
     'hp': dict(name='Health Potion', col=hexrgb('#e04a3c'), val=25),
     'mp': dict(name='Mana Potion', col=hexrgb('#4f78ff'), val=25),
@@ -297,6 +304,8 @@ EVENTS = {
     'collapse': dict(text='A mine collapsed near {town}. Iron ore is scarce.', good='ore', target=3),
     'war': dict(text='{town} arms its militia. Weapons sell for a fortune.', good='arms', target=2),
     'fire': dict(text='Fire destroyed half of {town}. Timber is needed for rebuilding.', good='timber', target=2),
+    'undead': dict(text='The dead rise from the graves around {town}. Arms and medicine are scarce.', good='arms', target=2,
+                   also='medicine'),
 }
 
 MOUNTS = {

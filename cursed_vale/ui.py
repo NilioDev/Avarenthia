@@ -7,6 +7,8 @@ from . import data as D
 from . import economy as ECO
 from . import engine as E
 from . import events as EV
+from . import look as LOOK
+from . import curse as CU
 from . import missions as MS
 from . import skills as SK
 from . import towns as TW
@@ -56,6 +58,9 @@ class App:
         self.shake_until = 0
         self.hover = None
         self.reduced_motion = False
+        self.auto = None           # a running step-by-step action (auto-explore, travel)
+        self.auto_delay = .06
+        self.auto_label = ''
 
     # ---------------------------------------------------------- plumbing
     @property
@@ -88,8 +93,38 @@ class App:
         return bool(self.effects) or self.shake_until > t or any(t - v < .15 for v in self.hit_times.values())
 
     def key(self, tok, shift=False):
+        if self.auto:
+            self.stop_auto()           # any key interrupts auto-explore or travel
+            return
         self.top.on_key(tok, shift)
         self.after_action()
+
+    def start_auto(self, gen, delay, label):
+        self.auto, self.auto_delay, self.auto_label = gen, delay, label
+        self.tick()
+
+    def stop_auto(self):
+        if self.auto:
+            self.auto.close()
+        self.auto = None
+
+    def tick(self):
+        """Advance a running auto action by one step."""
+        if not self.auto:
+            return
+        try:
+            next(self.auto)
+        except StopIteration:
+            self.auto = None
+        self.after_action()
+        if self.game and (self.game.dead or not isinstance(self.top, GameScreen)):
+            self.stop_auto()
+
+    def run_auto(self, limit=2000):
+        """Finish a running auto action at once (tests)."""
+        while self.auto and limit:
+            self.tick()
+            limit -= 1
 
     def click(self, tx, ty, button=1):
         self.top.on_click(tx, ty, button)
@@ -131,6 +166,8 @@ class App:
             self.push(BoardScreen(self, req[1]))
         elif req[0] == 'stables':
             self.push(StablesScreen(self))
+        elif req[0] == 'temple':
+            self.push(TempleScreen(self, req[1]))
         elif req[0] == 'castellan':
             self.push(BoardScreen(self, req[1], hold=True))
         elif req[0] == 'dialog':
@@ -301,6 +338,8 @@ class GameScreen(Screen):
             cv.put(MAP_W, y, '│', LINE, BG)
         cv.put(MAP_W, MAP_H, '┤', LINE, BG)
         cv.text(2, MAP_H, f' {g.loc_name()} ', DIM, BG)
+        if self.app.auto:
+            cv.text_center(MAP_W // 2, MAP_H, f' {self.app.auto_label}... any key to stop ', GOLD, BG)
         cv.text_right(MAP_W - 2, MAP_H, f' turn {g.turn} ', DIM, BG)
         self.draw_log(cv)
         self.draw_panel(cv)
@@ -323,6 +362,7 @@ class GameScreen(Screen):
         night = TW.is_night(g)
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
+        blight = getattr(g.world, 'blight', None) if m.kind == 'over' else None
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -335,11 +375,9 @@ class GameScreen(Screen):
                 v = vis[i] if i < len(vis) else 0
                 if not v and not m.seen[i]:
                     continue
-                tid = m.t[i]
-                td = D.TILES[tid]
-                ch = td.ch
-                fg = m.wall_fg if (tid == WALL and m.wall_fg) else td.fg
-                bg = td.bg or BG
+                ch, fg, bg = LOOK.get(m, i)
+                if blight and blight[i]:
+                    ch, fg, bg = LOOK.blighted((ch, fg, bg))
                 if portal and (mx, my) == portal:
                     ch, fg = '0', (90, 176, 255)
                 if v:
@@ -365,7 +403,8 @@ class GameScreen(Screen):
                     if mx == p.x and my == p.y:
                         ch, fg = '@', ((184, 240, 138) if p.poison else (255, 246, 220))
                 else:
-                    fg = scale(fg, .42 if m.kind == 'over' else .3)
+                    fg = scale(fg, .5 if m.kind == 'over' else .3)
+                    bg = scale(bg, .55)
                 if night and m.kind in ('over', 'town'):
                     fg = mix(fg, (40, 50, 110), .35)
                     bg = scale(bg, .7)
@@ -457,7 +496,7 @@ class GameScreen(Screen):
                 continue
             vx, vy = wd.x - ox, wd.y - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (wd.x, wd.y) != (p.x, p.y):
-                bg = (70, 20, 16) if wd.hostile else (20, 30, 50) if wd.kind == 'patrol' else BG
+                bg = (50, 16, 60) if wd.kind == 'hunt' else (70, 20, 16) if wd.hostile else (20, 30, 50) if wd.kind == 'patrol' else BG
                 cv.put(vx, vy, wd.ch, wd.fg, bg)
 
     def _tint(self, cv, vx, vy, bg):
@@ -534,6 +573,10 @@ class GameScreen(Screen):
         cv.text(x + 2, 18, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
         cv.text_right(x + PW - 1, 18, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
+        if not g.flags.get('lich'):
+            cl = getattr(g.world, 'curse_lvl', 0)
+            cv.text(x, 19, 'Morvenna', scale(CU.HUNT_FG, .8), PANEL)
+            cv.text_right(x + PW - 1, 19, CU.stage(g), CU.HUNT_FG if cl >= 4 else scale(CU.HUNT_FG, .55 + cl * .1), PANEL)
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
                 ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
                 ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold))]
@@ -616,6 +659,8 @@ class GameScreen(Screen):
                     dz = g.world.danger_at(mx, my)
                     cv.text(x, y + 2, f"Danger {dz}" + (' (road)' if m.tile(mx, my) == D.ROAD else ''),
                             GOOD if dz <= 2 else FG if dz <= 5 else BAD, PANEL, maxw=PW)
+                    if CU.blighted(g, mx, my):
+                        cv.text(x, y + 3, "Blighted by Morvenna's curse", CU.HUNT_FG, PANEL, maxw=PW)
                 return
             if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
                 o = m.mon_at(mx, my)
@@ -699,7 +744,7 @@ class GameScreen(Screen):
             self.act(lambda: g.use_stairs('auto'))
         elif tok == 'x':
             g.log_mark = len(g.log)
-            g.explore()
+            app.start_auto(g.explore_iter(), .055, 'Exploring')
         elif tok == 't':
             if g.map.kind in ('over', 'town'):
                 app.push(TravelScreen(app))
@@ -783,7 +828,7 @@ def item_detail(cv, g, it, x, y, w, max_h=14):
         yy += 1
         if cur:
             cv.text(x, yy, 'Equipped now:', DIM, PANEL)
-            cv.text(x, yy + 1, cur.name, cur.color(), PANEL, maxw=w)
+            cv.text(x, yy + 1, cur.display_name(), cur.color(), PANEL, maxw=w)
             yy += 2
             if it.dmg and cur.dmg:
                 d = (it.dmg[0] + it.dmg[1]) - (cur.dmg[0] + cur.dmg[1])
@@ -848,7 +893,7 @@ class InventoryScreen(Modal):
                 cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
                 cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<7}', DIM, bg)
                 if it:
-                    cv.text(x + 12, yy, it.name, it.color(), bg, maxw=42)
+                    cv.text(x + 12, yy, it.display_name(), it.color(), bg, maxw=42)
                 else:
                     cv.text(x + 12, yy, '-', DIM, bg)
             else:
@@ -887,6 +932,11 @@ class InventoryScreen(Modal):
         g.log_mark = len(g.log)
         if it.k == 'gear':
             g.equip(it)
+            return
+        if it.k == 'tome':
+            g.read_tome(it)
+            return
+        if it.k not in ('potion', 'scroll'):
             return
         app.pop()
         used = g.drink(it.t) if it.k == 'potion' else g.town_portal()
@@ -1010,7 +1060,7 @@ class SkillsScreen(Modal):
         p = g.player
         x, y = self.box(cv, 104, 30, 'Skills')
         in_town = g.map.kind == 'town'
-        cv.text(x + 2, y + 1, 'Your bar' + ('' if in_town else ' (you can only change it in a town or stronghold)'),
+        cv.text(x + 2, y + 1, 'Your bar' + ('' if in_town else ' · change it in a town or stronghold'),
                 DIM if in_town else BAD, PANEL)
         for i, sid in enumerate(p.bar):
             yy = y + 2 + i
@@ -1044,8 +1094,11 @@ class SkillsScreen(Modal):
             d = SK.DISCIPLINES[sk.line]
             if d['kind'] == 'weapon':
                 cv.wrap(x + 54, y + 6 + n, 47, f"Needs {d['weapon']} in your hands.", DIM, PANEL, 2)
-        cv.text(x + 54, y + 20, 'Locked skills unlock as their discipline', DIM, PANEL)
-        cv.text(x + 54, y + 21, 'rises. Use a discipline to raise it.', DIM, PANEL)
+        if not known:
+            cv.wrap(x + 4, y + 10, 46, 'You know no skills yet. Fight with your weapon for now.', DIM, PANEL)
+        cv.wrap(x + 54, y + 20, 47, 'New skills are learned from tomes: found on monsters, deep in ruins, at standing stones, '
+                'and now and then sold by peddlers and city outfitters. Harder tomes need a higher discipline, '
+                'which grows as you use it.', DIM, PANEL, 6)
         cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 1-6: put it in that slot · Del: clear slot · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -1122,7 +1175,10 @@ class ShopScreen(Modal):
         cur = lists[self.pane]
         if cur:
             item_detail(cv, g, cur[self.sel[self.pane]], x + 67, y + 3, 35, 22)
-        cv.text_center(W // 2, y + 29, ' Tab: switch buy/sell · letter or arrows: select · Enter: buy or sell · Esc: leave ', DIM, PANEL)
+        n, cost = g.identify_all(dry=True)
+        if n:
+            cv.text(x + 67, y + 27, f'I: identify {n} item{"s" if n > 1 else ""} ({cost}g)', GOLD, PANEL)
+        cv.text_center(W // 2, y + 29, ' Tab: buy/sell · letter or arrows: select · Enter: buy or sell · I: identify · Esc: leave ', DIM, PANEL)
 
     def activate(self):
         g = self.game
@@ -1140,6 +1196,10 @@ class ShopScreen(Modal):
 
     def on_key(self, tok, shift):
         rows = self.buy_rows() if self.pane == 0 else self.sell_rows()
+        if tok == 'I':
+            self.game.log_mark = len(self.game.log)
+            self.game.identify_all()
+            return
         if tok == 'esc':
             self.app.pop()
         elif tok in ('tab', 'left', 'right', 'np4', 'np6'):
@@ -1207,7 +1267,7 @@ class TravelScreen(Modal):
             k, ref = pl[LETTERS.index(tok)][:2]
             self.app.pop()
             g.log_mark = len(g.log)
-            g.travel_to(k, ref)
+            self.app.start_auto(g.travel_iter(k, ref), .025, 'Travelling')
 
 
 class DialogScreen(Modal):
@@ -1284,9 +1344,15 @@ class HelpScreen(Modal):
             ('Factions', 'Work for a faction to gain its favour; hurt them and their gates close.'),
             ('Bestiary', 'Every kill teaches you. Higher knowledge: more damage against that kind,'),
             ('', 'and they hit you less often.'),
-            ('Skills', 'You have no class. Use a discipline and it grows, unlocking new skills.'),
+            ('Skills', 'You start with none. Learn them from tomes (≡) found on monsters, in ruins,'),
+            ('', 'at standing stones, from peddlers and city outfitters. Disciplines grow by use.'),
+            ('Magic items', 'Rare, and unidentified when found. Outfitters and priests identify them.'),
+            ('', 'Some are cursed: once worn they stay on until a priest lifts the curse.'),
+            ('Morvenna', 'She grows stronger as you do. Her blight spreads from the crypt (purple land:'),
+            ('', 'more danger, the dead walk by day). In time she sends hunters after you.'),
             ('Death', 'Hardcore: final. Softcore: you wake in a temple; your pack stays with your body.'),
             ('Rarity', 'normal · magic (blue) · rare (yellow) · unique (gold)'),
+            ('X  T', 'Auto-explore and travel play out step by step; press any key to stop.'),
         ]),
     ]
 
@@ -1757,6 +1823,9 @@ class JournalScreen(Modal):
             cv.text(x + 52, yy, f'{regs} regions, {holds} strongholds', DIM, PANEL)
             yy += 1
         yy += 1
+        cv.text(x + 2, yy, 'MORVENNA', DIM, PANEL)
+        cv.text(x + 14, yy, f'{CU.stage(g)}: {CU.describe(g)}', CU.HUNT_FG, PANEL, maxw=84)
+        yy += 2
         cv.text(x + 2, yy, 'NEWS', DIM, PANEL)
         yy += 1
         evs = [st for st in g.world.settlements if st.event]
@@ -1785,29 +1854,35 @@ class WorldMapScreen(Modal):
         w = g.world
         x, y = self.box(cv, 84, 28, 'Map of the realm')
         bx, by = x + 2, y + 2
+        blight = getattr(w, 'blight', None)
         p = g.player
         here = g.here
         px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
         for cy in range(om.h // 4 + 1):
             for cx in range(om.w // 2):
-                best, bt = 0, None
+                best, bt, bi, nbl = 0, None, 0, 0
                 for yy in range(cy * 4, min(om.h, cy * 4 + 4)):
                     for xx in range(cx * 2, cx * 2 + 2):
                         i = yy * om.w + xx
                         if not om.seen[i]:
                             continue
+                        if blight and blight[i]:
+                            nbl += 1
                         t = om.t[i]
                         pr = self.PRIORITY.get(t, 0)
                         if pr > best:
-                            best, bt = pr, t
+                            best, bt, bi = pr, t, i
                 if bt is None:
                     continue
-                td = D.TILES[bt]
-                bg = td.bg or PANEL
+                ch, fg, bg = LOOK.get(om, bi)
+                if bg == LOOK.BG:
+                    bg = PANEL
+                if nbl >= 3:
+                    ch, fg, bg = LOOK.blighted((ch, fg, bg), .4)
                 if WorldMapScreen.show_factions:
                     rf = w.regions[w.region_of[min(om.h - 1, cy * 4 + 1) * om.w + cx * 2]].faction
                     bg = mix(PANEL, D.FACTIONS[rf]['fg'], .28)
-                cv.put(bx + cx, by + cy, td.ch, td.fg, bg)
+                cv.put(bx + cx, by + cy, ch, fg, bg)
         taken = set()
         for st in w.settlements:
             taken.add((bx + st.x // 2, by + st.y // 4))
@@ -1848,6 +1923,60 @@ class WorldMapScreen(Modal):
             WorldMapScreen.show_factions = not WorldMapScreen.show_factions
             return
         self.app.pop()
+
+
+class TempleScreen(Modal):
+    """The priest: healing, identifying and lifting curses."""
+
+    def __init__(self, app, name):
+        super().__init__(app)
+        self.name = name
+        self.said = '"Peace be with you, traveller. What troubles you?"'
+
+    def render(self, cv):
+        g = self.game
+        p = g.player
+        s = g.stats()
+        x, y = self.box(cv, 70, 14, f' {self.name} ')
+        cv.wrap(x + 3, y + 2, 64, self.said, FG, PANEL, 2)
+        hurt = p.life < s['max_life'] or p.mana < s['max_mana'] or p.poison
+        ni, ci = g.identify_all(dry=True)
+        nc, cc = g.uncurse_all(dry=True)
+        rows = [('a', 'Heal my wounds', 'free' if hurt else 'you are well', hurt),
+                ('b', f'Identify my unknown items ({ni})', f'{ci} gold' if ni else 'nothing to identify', ni > 0),
+                ('c', f'Lift the curses I carry ({nc})', f'{cc} gold' if nc else 'no known curses', nc > 0)]
+        for i, (k, a, b, ok) in enumerate(rows):
+            yy = y + 5 + i * 2
+            cv.text(x + 3, yy, k, GOLD, PANEL)
+            cv.text(x + 5, yy, a, FG if ok else DIM, PANEL)
+            cv.text_right(x + 66, yy, b, GOLD if ok else DIM, PANEL)
+        cv.text(x + 3, y + 11, f'Your gold: {p.gold}', DIM, PANEL)
+        cv.text_center(W // 2, y + 13, ' a/b/c: choose · Esc: leave ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g = self.game
+        p = g.player
+        g.log_mark = len(g.log)
+        if tok == 'esc':
+            self.app.pop()
+        elif tok == 'a':
+            s = g.stats()
+            if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison:
+                self.said = '"You look well, child. Come back when the world has had its way with you."'
+                return
+            p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
+            g.num(p.x, p.y, 'healed', E.C_HEAL, True)
+            self.said = '"Hold still." The priest lays hands on your wounds. You are fully restored.'
+        elif tok == 'b':
+            n, _c = g.identify_all(dry=True)
+            g.identify_all()
+            if n and not g.identify_all(dry=True)[0]:
+                self.said = '"Let me see... yes. Every item has a story, and now you know it."'
+        elif tok == 'c':
+            n, _c = g.uncurse_all(dry=True)
+            g.uncurse_all()
+            if n and not g.uncurse_all(dry=True)[0]:
+                self.said = '"Begone, darkness!" The priest\'s prayer burns the curse away.'
 
 
 class StablesScreen(Modal):

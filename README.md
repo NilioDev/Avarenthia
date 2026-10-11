@@ -8,9 +8,17 @@ en karavanen, patrouilles en bandieten die zichtbaar over de kaart trekken.
 ## Geen klassen
 
 Je kiest geen klasse. Je wordt wat je doet: tien disciplines (zwaard, bijl en knots, dolk, boog, vuur, ijs, storm,
-genezing, schaduw, strijdkunst) stijgen door ze te gebruiken. Hogere rangen ontgrendelen nieuwe skills uit die
-discipline, 50 in totaal. Je neemt er zes tegelijk mee en wisselt ze alleen in een stad of burcht (`Z`).
-Wapenskills werken alleen met het bijpassende wapen in je handen. Levelen gaat langzaam en geeft attribuutpunten.
+genezing, schaduw, strijdkunst) stijgen door ze te gebruiken. Je begint met alleen een kort zwaard en een boog, zonder skills.
+Skills (50 in totaal) leer je uit **boeken** (`≡`): van monsters, diep in ruïnes, bij staande stenen, van marskramers
+en soms bij een outfitter in een stad. Moeilijkere boeken vragen een hogere discipline. Je neemt zes skills tegelijk mee
+en wisselt ze alleen in een stad of burcht (`Z`). Wapenskills werken alleen met het bijpassende wapen in je handen.
+
+Magische items zijn zeldzaam en **ongeïdentificeerd** als je ze vindt; hun krachten werken pas na identificatie bij een
+outfitter of priester. Sommige zijn **vervloekt**: eenmaal aangetrokken krijg je ze niet meer af tot een priester de vloek opheft.
+
+**Morvenna** groeit mee met jou. Haar vervloeking (paars land op de kaart) breidt zich uit vanaf haar crypte: daar is het
+gevaarlijker en lopen de doden ook overdag. Ze fluistert 's nachts, laat de doden opstaan bij dorpen in haar schaduw
+en stuurt uiteindelijk jagers op je af. In het paneel zie je hoe sterk ze is.
 
 Bij een nieuw spel kies je **hardcore** (dood is definitief) of **softcore**: je ontwaakt in de dichtstbijzijnde tempel,
 maar je rugzak, vracht en goud liggen bij je lijk, dat je terug moet halen. Je kunt ook een **seed** invoeren om
@@ -107,7 +115,7 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
 | `P` | Town Portal |
-| `X` | automatisch verkennen |
+| `X` | automatisch verkennen (stap voor stap te zien, elke toets stopt) |
 | `T` | reizen naar een bekende plaats of kerker |
 | `M` | kaart van het rijk |
 | `E` of Tab | dagboek: banen, vracht en nieuws |

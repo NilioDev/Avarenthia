@@ -5,7 +5,7 @@ import random
 
 from . import data as D
 from .data import (WALL, FLOOR, DOOR, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROAD,
-                   HILLS, SAND, CITY, CASTLE, FORT)
+                   HILLS, SAND, CITY, CASTLE, FORT, RIVER)
 from .entities import GameMap, make_npc
 from .worldgen import D8, cheb, bfs, noise_grid, rand_free
 
@@ -91,7 +91,8 @@ class World:
     def danger_at(self, x, y):
         """Region danger plus a bonus for being far from the roads."""
         rd = self.road_dist[y * WORLD_W + x] if self.road_dist else 0
-        return self.region_at(x, y).danger + min(5, rd // 5)
+        bl = getattr(self, 'blight', None)
+        return self.region_at(x, y).danger + min(5, rd // 5) + (2 if bl and bl[y * WORLD_W + x] else 0)
 
     def off_road(self, x, y):
         return self.road_dist[y * WORLD_W + x] if self.road_dist else 0
@@ -119,9 +120,57 @@ class World:
 
 
 # ------------------------------------------------------------------ generation
+def _carve_rivers(m, H, n=9):
+    """Rivers spring from the hills below the mountains and run downhill to a lake or the sea."""
+    w, h = m.w, m.h
+    m.river = bytearray(w * h)
+    srcs = [i for i in range(w * h) if m.t[i] == HILLS and any(
+        m.inb(i % w + dx, i // w + dy) and m.t[(i // w + dy) * w + i % w + dx] == MOUNTAIN for dx, dy in D8)]
+    random.shuffle(srcs)
+    made = 0
+    for s in srcs:
+        if made >= n:
+            break
+        x, y = s % w, s // w
+        if any(m.river[(y + dy) * w + x + dx] for dy in range(-6, 7) for dx in range(-6, 7) if m.inb(x + dx, y + dy)):
+            continue
+        path, seen = [s], {s}
+        ok = False
+        for _ in range(220):
+            c = path[-1]
+            cx, cy = c % w, c // w
+            best = None
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nx, ny = cx + dx, cy + dy
+                if not (0 < nx < w - 1 and 0 < ny < h - 1):
+                    continue
+                ni = ny * w + nx
+                if ni in seen or m.t[ni] == MOUNTAIN:
+                    continue
+                v = H[ni] + random.random() * .015
+                if best is None or v < best[0]:
+                    best = (v, ni)
+            if best is None:
+                break
+            ni = best[1]
+            if m.t[ni] == WATER or m.river[ni]:
+                ok = True
+                break
+            path.append(ni)
+            seen.add(ni)
+        if not ok or len(path) < 14:
+            continue
+        for c in path:
+            m.t[c] = RIVER
+            m.river[c] = 1
+        made += 1
+
+
 def _road_cost(t):
     if t == ROAD:
         return 1
+    if t == RIVER:
+        return 9
     if t in (GRASS, SAND, TOWN, CITY, ENTR):
         return 3
     if t in (FOREST, HILLS):
@@ -210,6 +259,12 @@ def gen_world(game):
                 x, y = i % w, i // w
                 if any(m.inb(x + dx, y + dy) and m.t[(y + dy) * w + x + dx] == WATER for dx, dy in D8) and random.random() < .7:
                     m.t[i] = SAND
+        # elevation and moisture, kept for drawing the land
+        import bisect
+        n_all = len(sH)
+        m.elev = bytearray(min(255, bisect.bisect_left(sH, H[i]) * 256 // n_all) for i in range(w * h))
+        m.moist = bytearray(min(255, bisect.bisect_left(sM, Mo[i]) * 256 // n_all) for i in range(w * h))
+        _carve_rivers(m, H)
         # start: walkable grass near the middle with a large reachable area
         cands = sorted((i for i in range(w * h) if m.t[i] == GRASS), key=lambda i: math.hypot(i % w - w / 2, i // w - h / 2))
         start = None
@@ -356,8 +411,8 @@ def _build_roads(m, world):
         if not p:
             continue
         for x, y in p:
-            if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP):
-                m.set(x, y, ROAD)
+            if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP, RIVER):
+                m.set(x, y, ROAD)        # over a river this is a bridge (m.river stays marked)
 
 
 def _place_dungeons(m, world, reach, dist, start):
@@ -367,7 +422,7 @@ def _place_dungeons(m, world, reach, dist, start):
 
     def ok(i):
         x, y = i % w, i // w
-        return (x, y) not in blocked and m.t[i] not in (ROAD, WATER, MOUNTAIN) and all(cheb(x, y, s.x, s.y) >= 5 for s in world.settlements) \
+        return (x, y) not in blocked and m.t[i] not in (ROAD, WATER, MOUNTAIN, RIVER) and all(cheb(x, y, s.x, s.y) >= 5 for s in world.settlements) \
             and all(cheb(x, y, o[0], o[1]) >= 8 for o in used)
 
     def choose(lst, fb):

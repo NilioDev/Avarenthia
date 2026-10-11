@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from cursed_vale import engine as E, data as D, ui, economy as ECO, missions as MS, wanderers as WA  # noqa: E402
 from cursed_vale.canvas import FakeCanvas  # noqa: E402
+from cursed_vale.worldgen import cheb  # noqa: E402
 
 E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_test.dat')
 
@@ -100,6 +101,8 @@ def smoke(games=9, steps=1200):
         for S in (ui.InventoryScreen, ui.CharacterScreen, ui.ShopScreen, ui.TravelScreen, ui.HelpScreen, ui.SkillsScreen,
                   ui.DeathScreen, ui.WinScreen, ui.QuitScreen, ui.JournalScreen, ui.WorldMapScreen, ui.StablesScreen,
                   ui.BestiaryScreen, ui.IntroScreen):
+            if S is ui.ShopScreen:
+                g.player.inv.append(E.random_gear(g, 5, 9))
             app.screens = [ui.GameScreen(app), S(app)]
             app.render()
         for S in (ui.MarketScreen, ui.BoardScreen):
@@ -389,8 +392,94 @@ def wilds():
     assert E.load_game() is not None
 
 
+def items_skills_curse():
+    from cursed_vale.entities import make_tome, random_gear, make_gear, add_curse
+    from cursed_vale import skills as SK, curse as CU
+    random.seed(8)
+    app = new_app('soft', 555)
+    g = app.game
+    p = g.player
+    assert p.known == [] and not any(p.bar), (p.known, p.bar)
+    assert sorted(i.base for i in p.inv if i.k == 'gear') == ['quilted', 'shortbow', 'shortsword']
+    # tomes
+    t0 = make_tome(g, 0)
+    g.add_to_inv(t0)
+    assert g.read_tome(t0) == 1 and t0.t in p.known and t0.t in p.bar
+    hard = next(s for s in SK.SKILL_LIST if s.unlock == SK.UNLOCKS[3])
+    it = E.Item(g.new_id(), 'tome', hard.id)
+    g.add_to_inv(it)
+    assert g.read_tome(it) == 0 and hard.id not in p.known
+    # loot is mostly plain
+    from collections import Counter
+    c = Counter(random_gear(g, 5).rar for _ in range(3000))
+    print('loot rarity per 3000 drops:', dict(c))
+    assert c['normal'] > 2400
+    # unidentified and cursed
+    ring = make_gear(g, 'ring', 'magic', 5)
+    ring.ided = False
+    add_curse(ring)
+    g.add_to_inv(ring)
+    life0 = g.stats()['max_life']
+    g.equip(ring)
+    assert ring.curse_known and g.stats()['max_life'] <= life0
+    g.unequip('ring')
+    assert g.is_equipped(ring), 'cursed items stay on'
+    p.gold = 5000
+    g.enter_town(0)
+    temple = next((o for o in g.map.mons if o.role == 'healer'), None)
+    g.talk(temple)
+    app.after_action()
+    assert isinstance(app.top, ui.TempleScreen), app.top
+    for k in 'bca':
+        app.key(k)
+        app.render()
+    app.key('esc')
+    assert ring.identified and not ring.cursed
+    g.unequip('ring')
+    assert not g.is_equipped(ring)
+    # Morvenna grows with you
+    print('curse at start:', CU.stage(g), 'blighted cells', sum(g.world.blight))
+    p.lvl = 14
+    CU.update(g)
+    to_over(g, 0)
+    for _ in range(30):
+        CU.daily(g)
+    hunts = [w for w in g.world.wanderers if w.kind == 'hunt']
+    print('curse at level 14:', CU.stage(g), 'blighted cells', sum(g.world.blight), 'hunters', len(hunts))
+    assert hunts and sum(g.world.blight) > 300
+    h = hunts[0]
+    d0 = cheb(h.x, h.y, p.x, p.y)
+    for _ in range(30):
+        WA.step(g, h)
+    assert cheb(h.x, h.y, p.x, p.y) < d0
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    for S in (ui.WorldMapScreen, ui.JournalScreen):
+        app.screens = [ui.GameScreen(app), S(app)]
+        app.render()
+    # auto-explore runs step by step and stops on a key
+    app.screens = [ui.GameScreen(app)]
+    g.enter_dungeon('rat', 1, 'up')
+    for o in g.map.mons:
+        o.awake = False
+        o.x = o.y = 0
+    g.map.mons = []
+    app.key('x')
+    assert app.auto is not None
+    t = g.turn
+    app.tick()
+    app.tick()
+    assert g.turn > t
+    app.key('space')
+    assert app.auto is None
+    app.key('x')
+    app.run_auto()
+    print('auto-explore ok, turn', g.turn)
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    items_skills_curse()
     smoke()
     trade_and_jobs()
     factions_and_death()
