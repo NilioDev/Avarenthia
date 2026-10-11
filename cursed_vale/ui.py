@@ -16,13 +16,13 @@ from . import missions as MS
 from . import skills as SK
 from . import towns as TW
 from . import war as WAR
-from .canvas import scale, mix, wrap_text
+from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
 
-W, H = 110, 30
-MAP_W, MAP_H = 80, 23
-LOG_Y = 24
+W, H = 110, 60          # square 8x8 cells: 880 x 480 pixels before scaling
+MAP_W, MAP_H = 80, 51
+LOG_Y = 52
 PX = 82                 # panel x
 PW = W - PX - 1         # panel width
 
@@ -47,7 +47,7 @@ DIRS = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0),
 RUN_LETTERS = {'K': 'k', 'J': 'j', 'H': 'h', 'L': 'l', 'Y': 'y', 'U': 'u', 'B': 'b', 'N': 'n'}
 LETTERS = 'abcdefghijklmnopqrstuvwx'
 
-ORB_MASK = ['  #####  ', ' ####### ', '#########', ' ####### ', '  #####  ']
+ORB_MASK = ['  #####  ', ' ####### ', '#########', '#########', '#########', '#########', '#########', ' ####### ', '  #####  ']
 
 
 class App:
@@ -193,7 +193,7 @@ class App:
         for i, s in enumerate(self.screens[start:]):
             if s.overlay and getattr(s, 'dim', True):
                 cv.dim(.35)
-            s.render(cv)
+            s.render(TallCanvas(cv) if s.tall else cv)
         t = time.monotonic()
         self.effects = [e for e in self.effects if t - e[1] < (e[2][4] if e[0] == 'flash' else 2.5 if e[0] == 'speech' else .8)]
         self.hit_times = {k: v for k, v in self.hit_times.items() if t - v < .15}
@@ -201,6 +201,7 @@ class App:
 
 class Screen:
     overlay = False
+    tall = False        # laid out in text rows: drawn with every row doubled (see TallCanvas)
 
     def __init__(self, app):
         self.app = app
@@ -234,8 +235,17 @@ FONT = {
 GAME_TITLE = 'UMBRATHYN'
 
 
-def title_rows(word=GAME_TITLE):
-    return [' '.join(FONT[c][r] for c in word) for r in range(5)]
+def title_rows(word=GAME_TITLE, tall=2):
+    """The title in block letters. With square cells every row is drawn twice as tall: half blocks become
+    a full cell in the top or bottom row."""
+    rows = [' '.join(FONT[c][r] for c in word) for r in range(5)]
+    if tall == 1:
+        return rows
+    out = []
+    for ln in rows:
+        out.append(''.join('█' if c in '█▀' else ' ' for c in ln))
+        out.append(''.join('█' if c in '█▄' else ' ' for c in ln))
+    return out
 
 
 def _hash(x, y, s=0):
@@ -253,37 +263,42 @@ def night_scene(w, h):
     import math
     cells = []
     sky_top, sky_low = (4, 4, 12), (40, 30, 52)
-    hz = h - 9
-    far = [_ridge(x, hz - 3, 5.5, .07, .19, 1.3) for x in range(w)]
-    near = [_ridge(x, hz + 3, 2.2, .05, .13, 4.1) for x in range(w)]
+    k2 = h / 30                            # rows per old 8x16 row: the scene was laid out for 30 rows
+    hz = round(h - 9 * k2)
+    far = [_ridge(x, hz - 3 * k2, 5.5 * k2, .07, .19, 1.3) for x in range(w)]
+    near = [_ridge(x, hz + 3 * k2, 2.2 * k2, .05, .13, 4.1) for x in range(w)]
     cx0 = 12                               # the crag the castle sits on
     for x in range(w):
         d = abs(x - (cx0 + 8))
         if d < 18:
-            near[x] = min(near[x], hz - 1 + (d / 18) ** 2 * 5)
-    forest = [h - 4 - (1 if _hash(x, 0, 5) % 3 == 0 else 0) - (1 if _hash(x // 2, 1, 5) % 4 == 0 else 0) for x in range(w)]
-    mx, my, mr = w - 20, 5, 2.4
+            near[x] = min(near[x], hz - k2 + (d / 18) ** 2 * 5 * k2)
+    forest = [round(h - 4 * k2 - (k2 if _hash(x, 0, 5) % 3 == 0 else 0) - (k2 if _hash(x // 2, 1, 5) % 4 == 0 else 0))
+              for x in range(w)]
+    mx, my, mr = w - 20, round(5 * k2), 2.4 * k2
     top = round(min(near[cx0:cx0 + 17]))
     castle = set()
     merlons = set()
     for rx, ht in [(0, 7), (1, 7), (2, 7), (3, 4), (4, 4), (5, 4), (6, 4), (7, 9), (8, 10), (9, 10), (10, 9), (11, 4),
                    (12, 4), (13, 4), (14, 6), (15, 6), (16, 6)]:
+        ht = round(ht * k2)
         for k in range(ht):
             castle.add((cx0 + rx, top - k))
         if rx in (0, 2, 3, 5, 7, 10, 11, 13, 14, 16):
             merlons.add((cx0 + rx, top - ht))
-    windows = {(cx0 + 8, top - 7), (cx0 + 9, top - 5), (cx0 + 1, top - 4), (cx0 + 15, top - 3), (cx0 + 5, top - 2)}
+    windows = {(cx0 + 8, top - round(7 * k2)), (cx0 + 9, top - round(5 * k2)), (cx0 + 1, top - round(4 * k2)),
+               (cx0 + 15, top - round(3 * k2)), (cx0 + 5, top - round(2 * k2))}
+    flag = (cx0 + 8, top - round(10 * k2) - 1)
     stone = (14, 14, 20)
     for y in range(h):
         t = min(1, y / hz)
         sky = LOOK._mix(sky_top, sky_low, t ** 1.6)
         for x in range(w):
             r = _hash(x, y, 9)
-            dx, dy = (x - mx) / 2, y - my
+            dx, dy = (x - mx) / (2 / k2), y - my
             dist = math.hypot(dx, dy)
-            bg = LOOK._mix(sky, (90, 90, 120), max(0, 1 - dist / 9) ** 2 * .45)     # moon glow
+            bg = LOOK._mix(sky, (90, 90, 120), max(0, 1 - dist / (9 * k2)) ** 2 * .45)     # moon glow
             ch, fg = ' ', bg
-            if y < hz - 1 and r % 19 == 0 and dist > mr + 3:
+            if y < hz - 1 and r % 19 == 0 and dist > mr + 3 * k2:
                 b = 70 + r % 170
                 ch = '·' if r % 5 else '.' if r % 3 else '*' if r % 7 == 0 else '+'
                 fg = (b, b, min(255, b + 30))
@@ -294,16 +309,16 @@ def night_scene(w, h):
                     bg = LOOK.scale(bg, .88)
             if y >= far[x]:                     # far mountains
                 d = y - far[x]
-                ch, fg, bg = ' ', bg, LOOK._mix((58, 54, 88), (30, 28, 48), min(1, d / 7))
+                ch, fg, bg = ' ', bg, LOOK._mix((58, 54, 88), (30, 28, 48), min(1, d / (7 * k2)))
                 if d < 1:
                     ch, fg = '▄', (58, 54, 88)
                     bg = sky
-                    if far[x] < hz - 6:
+                    if far[x] < hz - 6 * k2:
                         ch, fg, bg = '▄', (150, 152, 182), sky       # snow
-                elif d < 2 and far[x] < hz - 6:
+                elif d < 1 + k2 and far[x] < hz - 6 * k2:
                     bg = (110, 110, 140)
-            if hz - 2 <= y <= hz + 2:          # mist in the valley
-                k = (1 - abs(y - hz) / 3) * (.35 + (_hash(x // 3, y, 13) % 100) / 400)
+            if abs(y - hz) <= 2 * k2:          # mist in the valley
+                k = (1 - abs(y - hz) / (3 * k2)) * (.35 + (_hash(x // 3, y, 13) % 100) / 400)
                 bg = LOOK._mix(bg, (100, 100, 122), k)
                 if ch not in ' ▄':
                     ch = ' '
@@ -318,7 +333,7 @@ def night_scene(w, h):
                 ch, fg, bg = ' ', stone, stone
             if (x, y) in merlons:
                 ch, fg = '▄', stone
-            if (x, y) == (cx0 + 8, top - 11):
+            if (x, y) == flag:
                 ch, fg = '¡', (170, 40, 40)
             if (x, y) in windows:
                 ch, fg, bg = '■', (250, 186, 80), stone
@@ -348,8 +363,8 @@ class MainMenu(Screen):
             cv.put(x, y, ch, fg, bg)
         rows = title_rows()
         x0 = (cv.w - len(rows[0])) // 2
-        y0 = 4
-        tops = [(255, 214, 120), (236, 170, 80), (214, 116, 56), (186, 66, 44), (140, 36, 34)]
+        y0 = 7
+        tops = [mix((255, 214, 120), (140, 36, 34), i / max(1, len(rows) - 1)) for i in range(len(rows))]
         for k, ln in enumerate(rows):
             for j, c in enumerate(ln):
                 if c == '█':
@@ -368,7 +383,7 @@ class MainMenu(Screen):
             opts.append(('C', f"Continue as {p.name}, level {p.lvl}", GOLD))
         opts += [('N', 'New game', FG), ('Esc', 'Quit', DIM)]
         bw = max(len(o[1]) + len(o[0]) + 6 for o in opts) + 4
-        bx, by = (cv.w - bw) // 2, 12
+        bx, by = (cv.w - bw) // 2, y0 + len(rows) + 6
         bh = len(opts) * 2 + 1
         for yy in range(by, by + bh):
             for xx in range(bx, bx + bw):
@@ -390,6 +405,7 @@ class MainMenu(Screen):
 
 
 class NameScreen(Screen):
+    tall = True
     """Character creation: name, people and gender."""
     ROWS = ['Name', 'People', 'Gender']
 
@@ -465,6 +481,7 @@ class NameScreen(Screen):
 
 
 class OptionsScreen(Screen):
+    tall = True
     def __init__(self, app, name, race='human', gender='other'):
         super().__init__(app)
         self.name = name
@@ -750,28 +767,28 @@ class GameScreen(Screen):
         hr = TW.hour(g)
         cv.text(x, 1, f"Level {p.lvl} · {'hardcore' if p.hardcore else 'softcore'}", DIM, PANEL)
         cv.text_right(x + PW - 1, 1, f"{hr:02d}:00 {'○' if TW.is_night(g) else '☼'}", (150, 160, 220) if TW.is_night(g) else GOLD, PANEL)
-        self.orb(cv, x, 2, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
-        self.orb(cv, x + PW - 9, 2, p.mana / max(1, s['max_mana']), MANA)
-        cv.text_center(x + 4, 7, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
-        cv.text_center(x + PW - 5, 7, f"{p.mana}/{s['max_mana']}", FG, PANEL)
-        cv.text_center(x + PW // 2, 3, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
-        cv.text_center(x + PW // 2, 5, 'MANA', DIM, PANEL)
+        self.orb(cv, x, 3, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
+        self.orb(cv, x + PW - 9, 3, p.mana / max(1, s['max_mana']), MANA)
+        cv.text_center(x + 4, 13, f"{max(0, p.life)}/{s['max_life']}", FG, PANEL)
+        cv.text_center(x + PW - 5, 13, f"{p.mana}/{s['max_mana']}", FG, PANEL)
+        cv.text_center(x + PW // 2, 6, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else DIM, PANEL)
+        cv.text_center(x + PW // 2, 10, 'MANA', DIM, PANEL)
         prev = E.xp_for(p.lvl - 1) if p.lvl > 1 else 0
         frac = (p.xp - prev) / max(1, E.xp_for(p.lvl) - prev)
-        cv.text(x, 8, 'XP', DIM, PANEL)
+        cv.text(x, 15, 'XP', DIM, PANEL)
         bw = PW - 3
         filled = int(bw * max(0, min(1, frac)))
         for i in range(bw):
-            cv.put(x + 3 + i, 8, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
-        cv.text(x, 9, 'SKILLS', DIM, PANEL)
+            cv.put(x + 3 + i, 15, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
+        cv.text(x, 18, 'SKILLS', DIM, PANEL)
         from . import hunger as HU
         hs = HU.state(getattr(p, 'food', 500))
         if hs:
-            cv.text_right(x + PW - 1, 9, hs, GOOD if hs == 'Satiated' else GOLD if hs == 'Hungry' else BAD, PANEL)
+            cv.text_right(x + PW - 1, 18, hs, GOOD if hs == 'Satiated' else GOLD if hs == 'Hungry' else BAD, PANEL)
         else:
-            cv.text_right(x + PW - 1, 9, 'Z: change', scale(DIM, .8), PANEL)
+            cv.text_right(x + PW - 1, 18, 'Z: change', scale(DIM, .8), PANEL)
         for i, sid in enumerate(p.bar):
-            y = 10 + i
+            y = 20 + i * 2
             cv.text(x, y, str(i + 1), GOLD, PANEL)
             if not sid:
                 cv.text(x + 2, y, '-', scale(DIM, .6), PANEL)
@@ -784,40 +801,41 @@ class GameScreen(Screen):
         hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
         mp = g.count('potion', 'mp') + g.count('potion', 'rejuv')
         tp = g.count('scroll')
-        cv.text(x, 17, 'Q', GOLD, PANEL)
-        cv.text(x + 2, 17, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
-        cv.text(x + 14, 17, 'W', GOLD, PANEL)
-        cv.text(x + 16, 17, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
-        cv.text(x, 18, 'P', GOLD, PANEL)
-        cv.text(x + 2, 18, f'Portal x{tp}', FG if tp else DIM, PANEL)
+        cv.text(x, 33, 'Q', GOLD, PANEL)
+        cv.text(x + 2, 33, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
+        cv.text(x + 14, 33, 'W', GOLD, PANEL)
+        cv.text(x + 16, 33, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
+        cv.text(x, 35, 'P', GOLD, PANEL)
+        cv.text(x + 2, 35, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
-        cv.text_right(x + PW - 1, 18, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
+        cv.text_right(x + PW - 1, 35, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
         from . import crime as CR
         wanted = CR.wanted_in(g)
         if wanted:
             st = CR.max_heat(g)
-            cv.text(x, 19, 'WANTED', BAD, PANEL)
-            cv.text(x + 7, 19, '*' * st, GOLD, PANEL)
-            cv.text_right(x + PW - 1, 19, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
+            cv.text(x, 37, 'WANTED', BAD, PANEL)
+            cv.text(x + 7, 37, '*' * st, GOLD, PANEL)
+            cv.text_right(x + PW - 1, 37, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
                 ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
                 ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Money', fmt(p.gold, True))]
         for i, (a, b) in enumerate(rows):
-            cv.text(x, 20 + i, a, DIM, PANEL)
-            cv.text_right(x + PW - 1, 20 + i, b, GOLD if a == 'Money' else FG, PANEL)
+            cv.text(x, 39 + i * 2, a, DIM, PANEL)
+            cv.text_right(x + PW - 1, 39 + i * 2, b, GOLD if a == 'Money' else FG, PANEL)
         if p.stat_pts:
-            cv.text(x, 25, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
+            cv.text(x, 49, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
         elif p.buffs:
-            cv.text(x, 25, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
-        self.draw_target(cv, x, 26)
+            cv.text(x, 49, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
+        self.draw_target(cv, x, 51)
         cv.text(x, H - 1, '? help · Tab menu', scale(DIM, .8), PANEL, maxw=PW)
 
     def orb(self, cv, x, y, frac, col, alt=None):
         frac = max(0.0, min(1.0, frac))
-        level = frac * 5
+        n = len(ORB_MASK)
+        level = frac * n
         dark = (30, 22, 18)
         for r, row in enumerate(ORB_MASK):
-            from_bottom = 4 - r
+            from_bottom = n - 1 - r
             for c, ch in enumerate(row):
                 if ch != '#':
                     continue
@@ -1029,10 +1047,11 @@ class GameScreen(Screen):
 # ====================================================================== modal screens
 class Modal(Screen):
     overlay = True
+    tall = True
     title = ''
 
     def box(self, cv, w, h, title=None):
-        x, y = (W - w) // 2, (H - h) // 2
+        x, y = (W - w) // 2, (cv.h - h) // 2
         cv.frame(x, y, w, h, LINE, PANEL, title or self.title, GOLD)
         return x, y
 
@@ -1224,7 +1243,7 @@ class InventoryScreen(Modal):
                     self.use()
 
     def on_click(self, x, y, button):
-        bx, by = (W - self.BOX_W) // 2, (H - self.BOX_H) // 2
+        bx, by = (W - self.BOX_W) // 2, (cv.h - self.BOX_H) // 2
         sc = getattr(self, 'scroll', 0)
         if bx + 2 <= x < bx + 56:
             if by + 4 <= y < by + 4 + self.NE:
@@ -1676,6 +1695,7 @@ class HelpScreen(Modal):
 
 
 class LookScreen(Modal):
+    tall = False
     """Inspect: move a cursor over the map and read what is there."""
     dim = False
 
@@ -2254,7 +2274,8 @@ class JournalScreen(Modal):
 
 
 class WorldMapScreen(Modal):
-    """The whole overworld, each character covering 2x4 cells."""
+    tall = False
+    """The overworld: a scrollable close-up, or the whole realm with each character covering 2x2 cells."""
     show_factions = False
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
     zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
@@ -2276,8 +2297,8 @@ class WorldMapScreen(Modal):
         g = self.game
         om = g.maps['over']
         w = g.world
-        x, y = self.box(cv, 84, 28, 'Map of the realm (close-up)')
-        vw, vh = 80, 24
+        x, y = self.box(cv, 104, 58, 'Map of the realm (close-up)')
+        vw, vh = 100, 55
         self.cx = max(vw // 2, min(om.w - vw // 2, self.cx))
         self.cy = max(vh // 2, min(om.h - vh // 2, self.cy))
         ox, oy = self.cx - vw // 2, self.cy - vh // 2
@@ -2325,22 +2346,22 @@ class WorldMapScreen(Modal):
                 if by <= ly < by + vh:
                     lx = max(bx, min(bx + vw - len(st.name) - 2, lx))
                     cv.text(lx, ly, f' {st.name} ', (255, 226, 140) if st.is_city else (236, 210, 150), (30, 22, 14))
-        cv.text_center(W // 2, y + 27, ' arrows/hjkl: scroll (Shift: faster) · Z: whole realm · F: factions · Esc: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + 57, ' arrows/hjkl: scroll (Shift: faster) · Z: whole realm · F: factions · Esc: close ', DIM, PANEL)
 
     def render_overview(self, cv):
         g = self.game
         om = g.maps['over']
         w = g.world
-        x, y = self.box(cv, 84, 28, 'Map of the realm')
-        bx, by = x + 2, y + 2
+        x, y = self.box(cv, 104, 60, 'Map of the realm')
+        bx, by = x + 2, y + 1
         taint = getattr(w, 'taint', None)
         p = g.player
         here = g.here
         px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
-        for cy in range(om.h // 4 + 1):
+        for cy in range(om.h // 2):
             for cx in range(om.w // 2):
                 best, bt, bi, nbl = 0, None, 0, 0
-                for yy in range(cy * 4, min(om.h, cy * 4 + 4)):
+                for yy in range(cy * 2, min(om.h, cy * 2 + 2)):
                     for xx in range(cx * 2, cx * 2 + 2):
                         i = yy * om.w + xx
                         if not om.seen[i]:
@@ -2359,18 +2380,18 @@ class WorldMapScreen(Modal):
                 if nbl:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[nbl - 1].d['taint'], bi)
                 if WorldMapScreen.show_factions:
-                    rf = w.regions[w.region_of[min(om.h - 1, cy * 4 + 1) * om.w + cx * 2]].faction
+                    rf = w.regions[w.region_of[min(om.h - 1, cy * 2 + 1) * om.w + cx * 2]].faction
                     bg = mix(PANEL, D.FACTIONS[rf]['fg'], .28)
                 cv.put(bx + cx, by + cy, ch, fg, bg)
         taken = set()
         for st in w.settlements:
-            taken.add((bx + st.x // 2, by + st.y // 4))
+            taken.add((bx + st.x // 2, by + st.y // 2))
         for st in sorted(w.settlements, key=lambda q: not q.is_city):
             if not g.known_settlement(st):
                 continue
-            lx, ly = bx + st.x // 2 + 1, by + st.y // 4
+            lx, ly = bx + st.x // 2 + 1, by + st.y // 2
             name = st.name
-            if lx + len(name) > x + 83:
+            if lx + len(name) > x + 103:
                 lx = bx + st.x // 2 - len(name)
             cells = {(lx + j, ly) for j in range(len(name) + 1)}
             if lx < x + 1 or cells & taken:
@@ -2379,23 +2400,23 @@ class WorldMapScreen(Modal):
             cv.text(lx, ly, name, (230, 196, 120) if st.is_city else (176, 146, 80), PANEL)
         for mi in MS.active(g):
             (tx, ty), _ = MS.target_pos(g, mi)
-            cv.put_bg(bx + tx // 2, by + ty // 4, (110, 80, 16))
-        cv.put(bx + px // 2, by + py // 4, '@', (255, 246, 220), (150, 40, 28))
+            cv.put_bg(bx + tx // 2, by + ty // 2, (110, 80, 16))
+        cv.put(bx + px // 2, by + py // 2, '@', (255, 246, 220), (150, 40, 28))
         for poi in w.pois:
             if poi.found:
                 ch, col = poi.glyph
-                cv.put(bx + poi.x // 2, by + poi.y // 4, ch, col if poi.ready_day < 10 ** 9 else scale(col, .5), PANEL)
+                cv.put(bx + poi.x // 2, by + poi.y // 2, ch, col if poi.ready_day < 10 ** 9 else scale(col, .5), PANEL)
         for hd in w.holds:
             if om.seen[hd.y * om.w + hd.x]:
-                cv.put(bx + hd.x // 2, by + hd.y // 4, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
+                cv.put(bx + hd.x // 2, by + hd.y // 2, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
         if WorldMapScreen.show_factions:
             lx = x + 2
             for f in D.FACTION_ORDER:
-                cv.text(lx, y + 26, '■ ' + D.FACTIONS[f]['short'], D.FACTIONS[f]['fg'], PANEL)
+                cv.text(lx, y + 57, '■ ' + D.FACTIONS[f]['short'], D.FACTIONS[f]['fg'], PANEL)
                 lx += len(D.FACTIONS[f]['short']) + 4
         else:
-            cv.text(x + 2, y + 26, '⌂ village ■ city Ω castle ╬ fort > dungeon Π ruin † shrine ∆ camp Ψ stones ¤ wagon', DIM, PANEL)
-        cv.text_center(W // 2, y + 27, ' Z or arrows: close-up · F: factions · Esc: close ', DIM, PANEL)
+            cv.text(x + 2, y + 57, '⌂ village ■ city Ω castle ╬ fort > dungeon Π ruin † shrine ∆ camp Ψ stones ¤ wagon', DIM, PANEL)
+        cv.text_center(W // 2, y + 59, ' Z or arrows: close-up · F: factions · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         if tok in ('f', 'F'):

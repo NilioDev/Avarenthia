@@ -1,9 +1,8 @@
-"""Regenerate assets/glyphs_8x16.png from the bundled pixel font.
+"""Regenerate assets/glyphs.png from the bundled pixel font.
 
 Usage: python tools/make_tileset.py [path/to/font.ttf]
-Needs Pillow. The default font is Classic Console Neue (assets/fonts/clacon2.ttf),
-an 8x16 pixel font: rendered at 16 px without anti-aliasing every glyph lands
-exactly on the pixel grid.
+Needs Pillow. The font is the IBM CGA 8x8 font (assets/fonts/Px437_IBM_CGA.ttf): rendered at 8 px without
+anti-aliasing every glyph lands exactly on the 8x8 grid, one glyph per 8x8 tile. The few characters the game uses that the font lacks are drawn by hand below.
 """
 import os
 import sys
@@ -14,23 +13,54 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
 from cursed_vale.glyphs import CHARS, COLUMNS, ROWS, TILE_W, TILE_H, SHEET  # noqa: E402
 
-FONT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'assets', 'fonts', 'clacon2.ttf')
+FONT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'assets', 'fonts', 'Px437_IBM_CGA.ttf')
 OUT = os.path.join(ROOT, 'assets', SHEET)
+GRID = 8
+
+# glyphs the CGA font does not have, drawn in its style (8x8, two-pixel strokes)
+HAND = {
+    '…': ['........', '........', '........', '........', '........', '##.##.##', '##.##.##', '........'],
+    '×': ['........', '##...##.', '.##.##..', '..###...', '.##.##..', '##...##.', '........', '........'],
+    'Π': ['########', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '.##..##.', '........'],
+    '†': ['..##....', '..##....', '######..', '..##....', '..##....', '..##....', '..##....', '........'],
+    '∆': ['........', '...##...', '..####..', '.##..##.', '##....##', '########', '........', '........'],
+    'Ψ': ['##.##.##', '##.##.##', '##.##.##', '.######.', '...##...', '...##...', '..####..', '........'],
+    '¤': ['........', '##....##', '.######.', '.##..##.', '.##..##.', '.######.', '##....##', '........'],
+    '□': ['........', '.######.', '.#....#.', '.#....#.', '.#....#.', '.#....#.', '.######.', '........'],
+}
+
+
+def glyph(font, ch):
+    """The 8x8 bitmap of one character."""
+    if ch in HAND:
+        im = Image.new('L', (GRID, GRID), 0)
+        for y, row in enumerate(HAND[ch]):
+            for x, c in enumerate(row):
+                if c == '#':
+                    im.putpixel((x, y), 255)
+        return im
+    im = Image.new('L', (GRID, GRID), 0)
+    d = ImageDraw.Draw(im)
+    d.fontmode = '1'          # no anti-aliasing: crisp pixels
+    d.text((0, 0), ch, font=font, fill=255)
+    return im
 
 
 def main():
-    font = ImageFont.truetype(FONT, TILE_H)
+    from fontTools.ttLib import TTFont
+    have = TTFont(FONT).getBestCmap()
+    missing = [c for c in CHARS if ord(c) not in have and c not in HAND and c != ' ']
+    if missing:
+        print('warning: not in the font and not drawn by hand:', ''.join(missing))
+    font = ImageFont.truetype(FONT, GRID)
     sheet = Image.new('RGBA', (COLUMNS * TILE_W, ROWS * TILE_H), (0, 0, 0, 0))
     for i, ch in enumerate(CHARS):
-        glyph = Image.new('L', (TILE_W, TILE_H), 0)
-        d = ImageDraw.Draw(glyph)
-        d.fontmode = '1'          # no anti-aliasing: crisp pixels
-        d.text((0, 0), ch, font=font, fill=255)
+        g = glyph(font, ch)
         tile = Image.new('RGBA', (TILE_W, TILE_H), (255, 255, 255, 0))
-        tile.putalpha(glyph)
+        tile.putalpha(g)
         sheet.paste(tile, ((i % COLUMNS) * TILE_W, (i // COLUMNS) * TILE_H))
     sheet.save(OUT)
-    print('wrote', os.path.abspath(OUT), sheet.size)
+    print('wrote', os.path.abspath(OUT), sheet.size, len(CHARS), 'characters')
 
 
 if __name__ == '__main__':

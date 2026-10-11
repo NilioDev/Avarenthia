@@ -132,7 +132,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Het spel opent een gewoon venster van 110 bij 30 tekens in het 8×16-pixelfont Classic Console Neue,
+Het spel opent een gewoon venster van 110 bij 60 vierkante tekens in het IBM CGA 8×8-font,
 op de grootste scherpe vergroting die op je scherm past (2× op een 1080p-scherm). F11 of Alt+Enter schakelt naar volledig scherm.
 Je held wordt bewaard in `savegame.dat` naast `main.py`. Als je sterft, wordt die verwijderd.
 
@@ -219,7 +219,7 @@ cursed_vale/engine.py    spelregels: beweging, gevechten, monster-AI, skills, ve
 cursed_vale/fov.py       zichtveld via libtcod (symmetric shadowcasting)
 cursed_vale/ui.py        alle schermen en het tekenen, los van tcod
 cursed_vale/canvas.py    dunne laag over de tcod-console
-assets/glyphs_8x16.png   tekenset, gemaakt uit Classic Console Neue
+assets/glyphs.png        tekenset, gemaakt uit het IBM CGA 8x8-font (Px437, alle tekens)
 assets/fonts/            het font zelf en zijn licentie
 tools/make_tileset.py    maakt de tekenset opnieuw (Pillow nodig)
 tests/                   headless test en een bot die het spel uitspeelt
@@ -241,5 +241,6 @@ pip install pillow
 python tools/make_tileset.py pad/naar/lettertype.ttf
 ```
 
-Het font is Classic Console Neue van DeeJayy (https://webdraft.hu/fonts/classic-console/), MIT-licentie,
-zie `assets/fonts/LICENSE-ClassicConsoleNeue.txt`.
+Het font is Px437 IBM CGA uit The Ultimate Oldschool PC Font Pack van VileR (https://int10h.org/oldschool-pc-fonts/),
+CC BY-SA 4.0, zie `assets/fonts/LICENSE-Px437.txt`. Alle tekens van het font zitten in de tekenset (`cursed_vale/glyphs.py`);
+`python tools/make_tileset.py` maakt `assets/glyphs.png` opnieuw.

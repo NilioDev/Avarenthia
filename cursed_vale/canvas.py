@@ -60,6 +60,39 @@ class Canvas:
         return min(len(lines), max_lines)
 
 
+# what the lower half of a doubled row shows, so lines and boxes stay joined
+_DOWN = {'│': '│', '┌': '│', '┐': '│', '├': '│', '┤': '│', '┼': '│', '┬': '│', '║': '║', '╔': '║', '╗': '║',
+         '╠': '║', '╣': '║', '╬': '║', '╦': '║', '█': '█', '▌': '▌', '▐': '▐', '░': '░', '▒': '▒', '▓': '▓'}
+
+
+class TallCanvas(Canvas):
+    """Draws on another canvas with every row two rows tall. Screens laid out in rows of text (menus, sheets,
+    dialogs) look roomy this way with the square 8x8 font: each line of text gets a blank line under it."""
+
+    def __init__(self, base):
+        self.base = base
+        self.w, self.h = base.w, base.h // 2
+
+    def put(self, x, y, ch, fg=None, bg=None):
+        b = self.base
+        b.put(x, y * 2, ch, fg, bg)
+        low = _DOWN.get(ch)
+        if low:
+            b.put(x, y * 2 + 1, low, fg, bg)
+        elif bg is not None:
+            b.put(x, y * 2 + 1, ' ', fg, bg)
+
+    def put_bg(self, x, y, bg):
+        self.base.put_bg(x, y * 2, bg)
+        self.base.put_bg(x, y * 2 + 1, bg)
+
+    def clear(self, bg=BLACK):
+        self.base.clear(bg)
+
+    def dim(self, f):
+        self.base.dim(f)
+
+
 def wrap_text(s, w):
     out = []
     for para in s.split('\n'):

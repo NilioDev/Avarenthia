@@ -111,7 +111,7 @@ def screen_size():
 
 
 def window_scale():
-    """The largest whole-number scale of the 8x16 font whose window still fits on screen with room to spare."""
+    """The largest whole-number scale of the font (square 8x8 cells) whose window still fits on screen with room to spare."""
     tw, th = W * glyphs.TILE_W, H * glyphs.TILE_H
     size = screen_size()
     if not size:
@@ -128,7 +128,7 @@ def main():
     console = tcod.console.Console(W, H, order='F')
     app = App(TcodCanvas(console))
     # A normal window (not maximized, not fullscreen), sized to the largest whole-number scale of the
-    # 8x16 font that fits the screen so the pixels stay crisp. It can still be resized; F11 goes fullscreen.
+    # font that fits the screen so the pixels stay crisp. It can still be resized; F11 goes fullscreen.
     k = window_scale()
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
     with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,

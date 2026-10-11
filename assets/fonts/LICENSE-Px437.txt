@@ -1,0 +1,6 @@
+Px437 IBM CGA
+From "The Ultimate Oldschool PC Font Pack" by VileR, https://int10h.org/oldschool-pc-fonts/
+Licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+The tile sheet assets/glyphs.png is generated from this font (tools/make_tileset.py), with a few extra
+glyphs drawn in the same style.
