@@ -6,6 +6,7 @@ import time
 from . import data as D
 from . import economy as ECO
 from . import engine as E
+from . import events as EV
 from . import missions as MS
 from . import skills as SK
 from . import towns as TW
@@ -134,6 +135,9 @@ class App:
             self.push(BoardScreen(self, req[1], hold=True))
         elif req[0] == 'dialog':
             self.push(DialogScreen(self, req[1], req[2]))
+        elif req[0] == 'choice':
+            if g.pending:
+                self.push(ChoiceScreen(self))
         elif req[0] == 'win':
             E.save_game(g)
             self.push(WinScreen(self))
@@ -274,6 +278,7 @@ class OptionsScreen(Screen):
             self.seed = self.seed[:-1]
         elif tok == 'enter':
             self.app.start_game(E.Game(self.name, self.hardcore, int(self.seed) if self.seed else None))
+            self.app.push(IntroScreen(self.app))
         elif tok == 'esc':
             self.app.replace(NameScreen(self.app))
 
@@ -434,6 +439,18 @@ class GameScreen(Screen):
                     cv.put(vx, vy, 'X', (255, 214, 92), (70, 50, 10))
                 else:
                     self._tint(cv, vx, vy, (90, 66, 14))
+        # places found in the wilds
+        for poi in w.pois:
+            if not poi.found:
+                continue
+            vx, vy = poi.x - ox, poi.y - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (poi.x, poi.y) != (p.x, p.y):
+                ch, col = poi.glyph
+                if poi.ready_day >= 10 ** 9 or g.day < poi.ready_day:
+                    col = scale(col, .5)
+                elif not g.visible(poi.x, poi.y):
+                    col = scale(col, .7)
+                cv.put(vx, vy, ch, col, (34, 28, 22))
         # travellers
         for wd in w.wanderers:
             if not g.visible(wd.x, wd.y):
@@ -528,7 +545,7 @@ class GameScreen(Screen):
         elif p.buffs:
             cv.text(x, 25, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
         self.draw_target(cv, x, 26)
-        cv.text(x, H - 1, '? help · m map · e jobs', scale(DIM, .8), PANEL, maxw=PW)
+        cv.text(x, H - 1, '? help · v beasts · e jobs', scale(DIM, .8), PANEL, maxw=PW)
 
     def orb(self, cv, x, y, frac, col, alt=None):
         frac = max(0.0, min(1.0, frac))
@@ -575,12 +592,30 @@ class GameScreen(Screen):
                     cv.text(x, y, f"{st.name} ({'city' if st.is_city else 'village'})", D.FACTIONS[st.faction]['fg'], PANEL, maxw=PW)
                     cv.text(x, y + 1, 'Makes: ' + ', '.join(D.GOODS[k]['name'] for k in st.produce), DIM, PANEL, maxw=PW)
                     cv.text(x, y + 2, 'Wants: ' + ', '.join(D.GOODS[k]['name'] for k in st.demand), DIM, PANEL, maxw=PW)
+                elif EV.poi_at(g, mx, my) and EV.poi_at(g, mx, my).found:
+                    poi = EV.poi_at(g, mx, my)
+                    cv.text(x, y, poi.name, poi.glyph[1], PANEL, maxw=PW)
+                    if poi.kind == 'ruin':
+                        dd = g.world.dungeons[poi.did]
+                        info = f'{dd.depth} level{"s" if dd.depth > 1 else ""}, monster level {dd.base + 1}+'
+                    elif poi.ready_day >= 10 ** 9:
+                        info = 'Nothing left here.'
+                    elif g.day < poi.ready_day:
+                        info = 'Quiet for now.'
+                    else:
+                        info = {'shrine': 'A place to pray.', 'camp': 'Outlaws and their loot.',
+                                'stones': 'Old power sleeps here.', 'wagon': 'Might hold something.'}[poi.kind]
+                    cv.text(x, y + 1, info, DIM, PANEL, maxw=PW)
+                    cv.text(x, y + 2, f'Danger {g.world.danger_at(mx, my)}', BAD, PANEL, maxw=PW)
                 elif dg:
                     cv.text(x, y, dg.name, (232, 96, 62), PANEL, maxw=PW)
                     cv.text(x, y + 1, f'{dg.depth} levels, monster level {dg.base + 1}+', DIM, PANEL, maxw=PW)
                 else:
                     cv.text(x, y, D.TILES[m.tile(mx, my)].name.capitalize(), DIM, PANEL, maxw=PW)
                     cv.text(x, y + 1, g.world.region_at(mx, my).name, DIM, PANEL, maxw=PW)
+                    dz = g.world.danger_at(mx, my)
+                    cv.text(x, y + 2, f"Danger {dz}" + (' (road)' if m.tile(mx, my) == D.ROAD else ''),
+                            GOOD if dz <= 2 else FG if dz <= 5 else BAD, PANEL, maxw=PW)
                 return
             if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
                 o = m.mon_at(mx, my)
@@ -686,6 +721,8 @@ class GameScreen(Screen):
             g.rest()
         elif tok in ('?', 'f1'):
             app.push(HelpScreen(app))
+        elif tok in ('v', 'f2'):
+            app.push(BestiaryScreen(app))
         elif tok == 'esc':
             app.push(QuitScreen(app))
 
@@ -1207,52 +1244,261 @@ class QuitScreen(Modal):
 
 
 class HelpScreen(Modal):
-    title = 'Controls'
-    KEYS = [
-        ('arrows / numpad / hjkl yubn', 'Move. Walking into a monster attacks it.'),
-        ('Shift + direction', 'Run until something interesting happens'),
-        ('1 - 6   F', 'Use a skill (targets the nearest enemy) · F: shoot with a bow'),
-        ('Z', 'Choose your six skills (only in a town or stronghold)'),
-        ('Q   W', 'Drink a health or mana potion'),
-        ('P', 'Town Portal to Thornfield. Step into the blue 0 to go back.'),
-        ('X', 'Auto-explore until enemies appear'),
-        ('T', 'Travel to a known town or dungeon'),
-        ('M   E', 'Map of the realm, journal with jobs, cargo and news'),
-        ('>  <  Enter', 'Use stairs, enter town or a dungeon'),
-        ('g  ,', 'Pick up items. Gold, orbs, potions and magic items are automatic.'),
-        ('I   D   C', 'Inventory, drop, character sheet'),
-        ('R   5   .', 'Rest until healed, wait one turn'),
-        ('mouse', 'Hover to inspect, click to step toward a spot'),
-        ('In towns', 'Trader: trade · innkeeper: jobs · stablemaster: mules · castellan: war jobs'),
-        ('Esc', 'Save and quit'),
+    title = 'Help'
+    PAGES = [
+        ('Controls', [
+            ('arrows / numpad / hjkl yubn', 'Move. Walk into a monster to attack, into a person to talk.'),
+            ('Shift + direction  HJKL..', 'Run until something interesting happens'),
+            ('1 2 3 4 5 6', 'Use the skill in that slot (aims at the nearest enemy)'),
+            ('F', 'Shoot the nearest enemy (needs a bow)'),
+            ('Z', 'Skills: choose your six (only in a town or stronghold)'),
+            ('Q   W', 'Drink a health or mana potion'),
+            ('P', 'Read a Town Portal scroll. Step into the blue 0 to go back.'),
+            ('G  ,', 'Pick up items. Gold, orbs and magic items are picked up for you.'),
+            ('>  <  Enter', 'Enter a town, dungeon, ruin or stronghold · use stairs'),
+            ('X', 'Auto-explore a dungeon until enemies appear'),
+            ('T', 'Travel to a known town or dungeon (stops when danger shows up)'),
+            ('R   S   5   .', 'Rest until healed · wait one turn'),
+            ('I   D   C', 'Inventory · drop items · character sheet and attributes'),
+            ('E  Tab', 'Journal: jobs, cargo, factions and news'),
+            ('M', 'Map of the realm (F on the map shows faction lands)'),
+            ('V  F2', 'Bestiary: the creatures you have met'),
+            ('?  F1', 'This help'),
+            ('F11  Alt+Enter', 'Toggle fullscreen'),
+            ('mouse', 'Hover to inspect, click to step toward a spot'),
+            ('Esc', 'Close a window · save and quit'),
+        ]),
+        ('The world', [
+            ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
+            ('Danger', 'Hover over the land to see its danger. Night brings the dead and bigger packs.'),
+            ('Π ruin', 'An old ruin with a way down. Smaller than a dungeon, but loot is loot.'),
+            ('† shrine', 'Pray for a blessing. An offering makes it last longer.'),
+            ('∆ camp', 'A bandit camp. Kill them all and the strongbox is yours.'),
+            ('Ψ stones', 'Standing stones. Touch them to learn from old memories.'),
+            ('¤ wagon', 'An abandoned wagon. Loot, or a trap.'),
+            ('Events', 'On the road things happen: wounded travellers, peddlers, tolls, storms...'),
+            ('@ travellers', 'Walk into a traveller to talk. Some have a job for you, and wait for'),
+            ('', 'you afterwards at the inn of the town they were going to (see the journal).'),
+            ('Towns', 'Trader: goods · innkeeper: jobs · outfitter: gear · temple: healing'),
+            ('', 'stablemaster: mules and carts · castellan (in strongholds): war jobs'),
+            ('Factions', 'Work for a faction to gain its favour; hurt them and their gates close.'),
+            ('Bestiary', 'Every kill teaches you. Higher knowledge: more damage against that kind,'),
+            ('', 'and they hit you less often.'),
+            ('Skills', 'You have no class. Use a discipline and it grows, unlocking new skills.'),
+            ('Death', 'Hardcore: final. Softcore: you wake in a temple; your pack stays with your body.'),
+            ('Rarity', 'normal · magic (blue) · rare (yellow) · unique (gold)'),
+        ]),
     ]
 
+    def __init__(self, app):
+        super().__init__(app)
+        self.page = 0
+
     def render(self, cv):
-        x, y = self.box(cv, 104, 30)
-        for i, (k, d) in enumerate(self.KEYS):
-            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL)
-            cv.text(x + 32, y + 2 + i, d, FG, PANEL, maxw=70)
-        yy = y + 3 + len(self.KEYS)
-        cv.text(x + 3, yy, 'MAP', DIM, PANEL)
-        legend = [('⌂ ■', (242, 196, 74), 'village, city'), ('>', (232, 96, 62), 'dungeon entrance'),
-                  ('g', D.CHAMPION_FG, 'champion (blue)'), ('g', D.UNIQUE_FG, 'unique monster (gold)'),
-                  ('*', (255, 74, 74), 'health orb'), ('$', (242, 196, 67), 'gold'),
-                  (')', FG, 'weapon'), ('[ ]', FG, 'armor, helm'), ('= "', FG, 'ring, amulet'), ('!', (224, 74, 60), 'potion')]
-        for i, (ch, col, txt) in enumerate(legend):
-            cx, cy = x + 3 + (i % 2) * 30, yy + 1 + i // 2
-            cv.text(cx, cy, ch, col, PANEL)
-            cv.text(cx + 4, cy, txt, FG, PANEL)
-        yy += 7
-        cv.text(x + 3, yy, 'Item names are colored by rarity:', DIM, PANEL)
-        cx = x + 38
-        for r in ('normal', 'magic', 'rare', 'unique'):
-            cv.text(cx, yy, r, D.RARITY_COLOR[r], PANEL)
-            cx += len(r) + 2
-        cv.wrap(x + 3, yy + 1, 98, 'Each level gives 5 stat points and 1 skill point. Your hero is saved in savegame.dat next to the game; death erases it.', DIM, PANEL)
-        cv.text_center(W // 2, y + 29, ' any key to close ', DIM, PANEL)
+        name, rows = self.PAGES[self.page]
+        x, y = self.box(cv, 104, 28, f'Help: {name} ({self.page + 1}/{len(self.PAGES)})')
+        for i, (k, d) in enumerate(rows):
+            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL, maxw=27)
+            cv.text(x + 31, y + 2 + i, d, FG, PANEL, maxw=71)
+        cv.text_center(W // 2, y + 27, ' Left/Right or Space: next page · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
+        if tok in ('right', 'space', 'np6', 'tab', 'l', 'enter', 'pagedown'):
+            self.page = (self.page + 1) % len(self.PAGES)
+        elif tok in ('left', 'np4', 'h', 'pageup'):
+            self.page = (self.page - 1) % len(self.PAGES)
+        else:
+            self.app.pop()
+
+
+class ChoiceScreen(Modal):
+    """A small event: some text and a few lettered choices."""
+
+    def render(self, cv):
+        ev = self.game.pending
+        if not ev:
+            return
+        lines = wrap_text(ev['text'], 60)
+        h = len(lines) + len(ev['options']) + 7
+        x, y = self.box(cv, 66, h, ev['title'])
+        for i, ln in enumerate(lines):
+            cv.text(x + 3, y + 2 + i, ln, FG, PANEL)
+        yy = y + 3 + len(lines)
+        for i, (label, _k) in enumerate(ev['options']):
+            cv.text(x + 3, yy + i, LETTERS[i], GOLD, PANEL)
+            cv.text(x + 5, yy + i, label, FG, PANEL, maxw=58)
+        cv.text_center(W // 2, y + h - 1, ' press a letter to choose ', DIM, PANEL)
+
+    def choose(self, key):
+        g = self.game
         self.app.pop()
+        g.log_mark = len(g.log)
+        EV.resolve(g, key)
+
+    def on_key(self, tok, shift):
+        ev = self.game.pending
+        if not ev:
+            self.app.pop()
+            return
+        opts = ev['options']
+        if len(tok) == 1 and tok in LETTERS[:len(opts)]:
+            self.choose(opts[LETTERS.index(tok)][1])
+        elif tok == 'esc':
+            leave = [k for _l, k in opts if k == 'leave']
+            if leave or len(opts) == 1:
+                self.choose(leave[0] if leave else opts[0][1])
+
+
+class BestiaryScreen(Modal):
+    def __init__(self, app):
+        super().__init__(app)
+        self.sel = 0
+
+    def entries(self):
+        b = self.game.bestiary
+        return sorted(b, key=lambda k: (D.MONSTERS[k].get('min_l', 1), D.MONSTERS[k]['name']))
+
+    def render(self, cv):
+        g = self.game
+        x, y = self.box(cv, 100, 28, 'Bestiary')
+        keys = self.entries()
+        if not keys:
+            cv.wrap(x + 3, y + 3, 90, 'You have not met any creatures yet. Every monster you see is recorded here, '
+                    'and every one you kill teaches you more about its kind.', DIM, PANEL)
+            cv.text_center(W // 2, y + 27, ' Esc: close ', DIM, PANEL)
+            return
+        self.sel = max(0, min(self.sel, len(keys) - 1))
+        top = max(0, self.sel - 22)
+        for i, k in enumerate(keys[top:top + 24]):
+            d = D.MONSTERS[k]
+            yy = y + 2 + i
+            sel = top + i == self.sel
+            if sel:
+                cv.fill(x + 1, yy, 34, 1, ' ', FG, (50, 40, 30))
+            bg = (50, 40, 30) if sel else PANEL
+            cv.text(x + 2, yy, d['ch'], d['fg'], bg)
+            cv.text(x + 4, yy, d['name'], FG if sel else DIM, bg, maxw=22)
+            r = g.lore(k)
+            cv.text_right(x + 34, yy, str(r), GOLD if r else DIM, bg)
+        for yy in range(y + 1, y + 27):
+            cv.put(x + 36, yy, '│', LINE, PANEL)
+        k = keys[self.sel]
+        d = D.MONSTERS[k]
+        seen, kills = g.bestiary[k]
+        r = g.lore(k)
+        rx, w = x + 38, 59
+        cv.text(rx, y + 2, d['ch'], d['fg'], PANEL)
+        cv.text(rx + 2, y + 2, d['name'], d['fg'], PANEL)
+        cv.text_right(rx + w - 1, y + 2, f'{E.LORE_RANKS[r][1]}', GOLD, PANEL)
+        nxt = E.LORE_RANKS[r + 1][0] if r + 1 < len(E.LORE_RANKS) else None
+        cv.text(rx, y + 3, f'First seen on day {seen} · {kills} slain' + (f' · next rank at {nxt}' if nxt else ' · mastered'), DIM, PANEL)
+        lore = D.LORE.get(k, ('A creature of the vale.', 'Unknown.', 'No advice yet.'))
+        yy = y + 5
+        yy += cv.wrap(rx, yy, w, lore[0], FG, PANEL, 3) + 1
+        if r >= 1:
+            cv.text(rx, yy, 'HABITAT', DIM, PANEL)
+            yy += 1
+            yy += cv.wrap(rx, yy, w, lore[1], FG, PANEL, 2) + 1
+            traits = [t for t, on in (('fast', d['fast']), ('slow', d['slow']), ('ranged', d['ranged']),
+                                      ('spellcaster', d['caster']), ('poisonous', d['poison']), ('regenerates', d['regen']),
+                                      ('drains life', d['leech']), ('erratic', d['erratic']), ('summoner', bool(d['summon'])))
+                      if on]
+            cv.text(rx, yy, 'TRAITS', DIM, PANEL)
+            cv.text(rx + 8, yy, ', '.join(traits) or 'none to speak of', FG, PANEL, maxw=w - 8)
+            yy += 2
+        else:
+            cv.text(rx, yy, 'Slay 3 to learn where they live and how they fight.', DIM, PANEL)
+            yy += 2
+        if r >= 2:
+            cv.text(rx, yy, 'STRENGTH', DIM, PANEL)
+
+            def word(v):
+                return 'very low' if v < .7 else 'low' if v < .95 else 'average' if v < 1.25 else 'high' if v < 1.7 else 'very high'
+            cv.text(rx + 10, yy, f"health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}", FG, PANEL, maxw=w - 10)
+            yy += 1
+            if d.get('min_l'):
+                cv.text(rx + 10, yy, f"found from danger level {d['min_l']} and up", FG, PANEL, maxw=w - 10)
+                yy += 1
+            yy += 1
+        elif r == 1:
+            cv.text(rx, yy, 'Slay 10 to judge their strength.', DIM, PANEL)
+            yy += 2
+        if r >= 3:
+            cv.text(rx, yy, "HUNTER'S TIP", DIM, PANEL)
+            yy += 1
+            yy += cv.wrap(rx, yy, w, lore[2], GOOD, PANEL, 2) + 1
+        elif r == 2:
+            cv.text(rx, yy, "Slay 25 to learn a hunter's secret.", DIM, PANEL)
+            yy += 2
+        cv.text(rx, y + 24, 'YOUR KNOWLEDGE', DIM, PANEL)
+        cv.text(rx, y + 25, f'+{3 * r}% damage against them · they hit you {2 * r}% less often', GOLD if r else DIM, PANEL)
+        cv.text_center(W // 2, y + 27, ' Up/Down: browse · Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('up', 'np8', 'k'):
+            self.sel -= 1
+        elif tok in ('down', 'np2', 'j'):
+            self.sel += 1
+        elif tok == 'pageup':
+            self.sel -= 10
+        elif tok == 'pagedown':
+            self.sel += 10
+        elif tok in ('esc', 'v', 'f2', 'enter'):
+            self.app.pop()
+        n = len(self.entries())
+        self.sel = max(0, min(self.sel, n - 1)) if n else 0
+
+
+class IntroScreen(Modal):
+    """A short opening for a new game."""
+    PAGES = [
+        ('The Cursed Vale',
+         'For three winters the vale has known no peace. The dead do not stay in their graves, wolves come down from '
+         'the hills in packs no hunter has ever seen, and the old roads are the only places left where honest folk '
+         'still dare to walk.\n\n'
+         'The cause has a name: Morvenna the Undying, a sorceress who would not die, sleeping and scheming in a crypt '
+         'somewhere in the wilds. Her curse seeps into the land a little further every year.'),
+        ('A land at war with itself',
+         'As if that were not enough, the lords of the vale fight each other. The Crown holds the heartland, the '
+         'Merchant League buys what it cannot conquer, the Circle guards its old groves, and the Black Hand takes '
+         'whatever is left on the roads. Castles and forts change hands. Patrols keep the roads, but beyond them '
+         'the land grows wilder and more dangerous with every step.\n\n'
+         'Ruins, shrines and hidden camps wait out there for those brave enough to leave the road.'),
+        ('{name}',
+         'You arrive in Thornfield, a small village at the heart of the vale, with a sword, a padded coat and a few '
+         'coins. You are nobody yet. What you become is up to you: warrior, archer, mage, merchant, sellsword, '
+         'or all of these at once.\n\n'
+         'Speak with Elder Berend, find work on the inn board, trade goods between towns, talk to the travellers you '
+         'meet, and grow strong enough to face what waits in the crypt.\n\n'
+         'Press ? at any time for help.'),
+    ]
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.page = 0
+
+    def render(self, cv):
+        title, text = self.PAGES[self.page]
+        title = title.format(name=self.game.player.name if self.game else 'You')
+        x, y = self.box(cv, 72, 24, f' {title} ')
+        yy = y + 2
+        for para in text.split('\n\n'):
+            yy += cv.wrap(x + 4, yy, 64, para, FG, PANEL) + 1
+        dots = '  '.join('•' if i == self.page else '○' for i in range(len(self.PAGES)))
+        cv.text_center(W // 2, y + 21, dots, GOLD, PANEL)
+        last = self.page == len(self.PAGES) - 1
+        cv.text_center(W // 2, y + 23, ' Enter: begin your journey ' if last else ' Enter: continue · Esc: skip ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok == 'esc':
+            self.app.pop()
+        elif tok in ('enter', 'space', 'right', 'np_enter', 'np6'):
+            if self.page < len(self.PAGES) - 1:
+                self.page += 1
+            else:
+                self.app.pop()
+        elif tok in ('left', 'np4', 'backspace') and self.page:
+            self.page -= 1
 
 
 class DeathScreen(Modal):
@@ -1581,6 +1827,10 @@ class WorldMapScreen(Modal):
             (tx, ty), _ = MS.target_pos(g, mi)
             cv.put_bg(bx + tx // 2, by + ty // 4, (110, 80, 16))
         cv.put(bx + px // 2, by + py // 4, '@', (255, 246, 220), (150, 40, 28))
+        for poi in w.pois:
+            if poi.found:
+                ch, col = poi.glyph
+                cv.put(bx + poi.x // 2, by + poi.y // 4, ch, col if poi.ready_day < 10 ** 9 else scale(col, .5), PANEL)
         for hd in w.holds:
             if om.seen[hd.y * om.w + hd.x]:
                 cv.put(bx + hd.x // 2, by + hd.y // 4, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
@@ -1590,7 +1840,7 @@ class WorldMapScreen(Modal):
                 cv.text(lx, y + 26, '■ ' + D.FACTIONS[f]['short'], D.FACTIONS[f]['fg'], PANEL)
                 lx += len(D.FACTIONS[f]['short']) + 4
         else:
-            cv.text(x + 2, y + 26, '⌂ village  ■ city  Ω castle  ╬ fort  > dungeon  · road  highlighted: jobs  @ you', DIM, PANEL)
+            cv.text(x + 2, y + 26, '⌂ village ■ city Ω castle ╬ fort > dungeon Π ruin † shrine ∆ camp Ψ stones ¤ wagon', DIM, PANEL)
         cv.text_center(W // 2, y + 27, ' F: show or hide factions · any other key: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):

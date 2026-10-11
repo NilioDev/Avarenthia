@@ -11,13 +11,14 @@ from . import missions as MS
 from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
+from . import events as EV
 from . import world as WO
 from . import worldgen as W
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 5
+SAVE_VERSION = 6
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -73,6 +74,17 @@ def dir_name(dx, dy):
     return ['east', 'southeast', 'south', 'southwest', 'west', 'northwest', 'north', 'northeast'][int(a // 45)]
 
 
+LORE_RANKS = [(0, 'Glimpsed'), (3, 'Familiar'), (10, 'Studied'), (25, 'Hunter'), (50, 'Slayer'), (100, 'Bane')]
+
+
+def lore_rank(kills):
+    r = 0
+    for i, (n, _name) in enumerate(LORE_RANKS):
+        if kills >= n:
+            r = i
+    return r
+
+
 class Game:
     def __init__(self, name, hardcore=True, seed=None):
         self.version = SAVE_VERSION
@@ -101,6 +113,9 @@ class Game:
         self.request = None     # transient: a screen the UI should open
         self.vis = bytearray()
         self.dist = None
+        self.pending = None     # an open choice (travel events, places, travellers)
+        self.encounter_poi = None
+        self.bestiary = {}      # monster key -> [seen, kills]
 
         self.corpses = []
         self.turn = D.DAY_LEN * 7 // 24      # the story starts at seven in the morning
@@ -203,6 +218,7 @@ class Game:
         st['request'] = None
         st['vis'] = bytearray()
         st['dist'] = None
+        st['pending'] = None
         return st
 
     # ------------------------------------------------------------ inventory
@@ -296,10 +312,19 @@ class Game:
         if m.kind in ('over', 'town') and TW.is_night(self):
             r = 5 if m.kind == 'over' else 9
         self.vis = fov.compute(m, p.x, p.y, r)
+        if m.kind not in ('over', 'town'):
+            for o in m.mons:
+                if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y):
+                    self.bestiary[o.k] = [self.day, 0]
+                    self.msg(f"New bestiary entry: {D.MONSTERS[o.k]['name']}. (V)", 'info')
 
     def say(self, npc, line):
         self.msg(f'{npc.name}: "{line}"', 'talk')
         self.events.append(('speech', npc.x, npc.y, line))
+
+    def say_text(self, name, line):
+        self.msg(f'{name}: "{line}"', 'talk')
+        self.request = ('dialog', name, f'"{line}"')
 
     def visible(self, x, y):
         m = self.map
@@ -399,6 +424,12 @@ class Game:
             for mi in MS.active(self):
                 if mi.kind == 'escort':
                     mi.data['hp'] = esc.hp
+        if self.encounter_poi is not None:
+            poi = self.world.pois[self.encounter_poi]
+            self.encounter_poi = None
+            if m and not any(not o.is_npc for o in m.mons):
+                poi.ready_day = 10 ** 9
+                self.msg(f'The {poi.name.lower()} is cleared.', 'good')
         if not wd:
             return
         alive = [o for o in m.mons if not o.is_npc] if m else []
@@ -433,6 +464,7 @@ class Game:
         if s.event:
             self.msg('News: ' + D.EVENTS[s.event[0]]['text'].format(town=s.name), 'info')
         MS.on_enter(self, sid)
+        MS.place_clients(self, sid, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -458,7 +490,7 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
 
-    def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None):
+    def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None, elite=0):
         p = self.player
         self.over_pos = (p.x, p.y)
         if terrain is None:
@@ -469,7 +501,7 @@ class Game:
             faction = g.get('faction')
             self.encounter = wd.id
         else:
-            elite, leader, faction = 0, None, None
+            leader, faction = None, None
             self.encounter = None
         self.cur = 'wild'
         p.x = p.y = -5
@@ -519,6 +551,9 @@ class Game:
                     wd.x, wd.y = p.x, p.y
                     p.x, p.y = nx, ny
                     return self.over_step(moved_escort=True)
+                if wd.kind == 'traveler':
+                    EV.talk_traveller(self, wd)
+                    return 0
                 self.msg(wd.describe(self), 'info')
                 return 0
         mon = m.mon_at(nx, ny)
@@ -579,13 +614,31 @@ class Game:
             else:
                 self.msg(f"You stand before {h.title} ({f['short']}). Press > or Enter to go in.", 'info')
             return 10
+        poi = EV.poi_at(self, p.x, p.y)
+        if poi:
+            EV.reveal(self, poi)
+            EV.on_poi(self, poi)
+            return D.TILES[t].cost
         cost = D.TILES[t].cost
-        reg = self.world.region_at(p.x, p.y)
-        if t != ROAD and cheb(p.x, p.y, *self._home_xy()) > 4 and random.random() < .008 * cost / 10:
-            k = random.choice(D.BIOME_MONSTERS[reg.biome])
-            n = random.randint(1, 2) if D.MONSTERS[k]['hp'] >= 2 else random.randint(2, 3)
-            self.start_encounter(None, t, reg.danger, [k] * n)
+        w = self.world
+        reg = w.region_at(p.x, p.y)
+        off = w.off_road(p.x, p.y)
+        night = TW.is_night(self)
+        if t == ROAD:
+            chance = .003 * (2 if night else 1)
+        else:
+            chance = min(.11, .012 + off * .004) * cost / 10 * (1.6 if night else 1)
+        if cheb(p.x, p.y, *self._home_xy()) <= 4:
+            chance = 0
+        if random.random() < chance:
+            lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
+            keys = WA.wild_pack(reg.biome, lvl, night)
+            r = random.random()
+            elite = 1 if r < .08 + off * .004 else 0
+            self.start_encounter(None, t, lvl, keys, elite)
             return 1
+        if cheb(p.x, p.y, *self._home_xy()) > 4:
+            EV.maybe_event(self, t == ROAD)
         return cost
 
     def _home_xy(self):
@@ -684,6 +737,13 @@ class Game:
             if t == ENTR:
                 self.enter_dungeon(self.dungeon_at(p.x, p.y), 1, 'up')
                 return 1
+            poi = EV.poi_at(self, p.x, p.y)
+            if poi and poi.kind == 'ruin':
+                self.enter_dungeon(poi.did, 1, 'up')
+                return 1
+            if poi:
+                EV.on_poi(self, poi)
+                return 0
             self.msg('There is nothing to enter here.')
             return 0
         if t == DOWN and d != 'up':
@@ -866,6 +926,7 @@ class Game:
         p = self.player
         if 'vuln' in mon.effects:
             dmg *= 1.25
+        dmg *= 1 + .03 * self.lore(mon.k)
         dmg = max(1, round(dmg * (2 if crit else 1)))
         mon.hp -= dmg
         mon.awake = True
@@ -929,6 +990,12 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        if not mon.is_npc:
+            e = self.bestiary.setdefault(mon.k, [self.day, 0])
+            before = lore_rank(e[1])
+            e[1] += 1
+            if lore_rank(e[1]) > before:
+                self.msg(f"Your knowledge of the {D.MONSTERS[mon.k]['name'].lower()} grows: {LORE_RANKS[lore_rank(e[1])][1]}. (V)", 'gold')
         special = mon.elite or mon.is_boss
         self.msg(f"{mon.the()[0].upper() + mon.the()[1:]} {'is slain!' if mon.is_boss or mon.elite == 2 else 'dies.'}", 'gold' if special else '')
         self.gain_xp(max(1, round(mon.xp * clamp(1 - (p.lvl - mon.lvl - 1) * .15, .05, 1))))
@@ -1020,7 +1087,11 @@ class Game:
             self.msg(f'You reach level {p.lvl}! Press C to spend {D.LEVEL_STAT_POINTS} attribute points.', 'gold')
 
     def mon_hit_chance(self, mon, df):
-        return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6), .15, .9)
+        return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6) - .02 * self.lore(mon.k), .12, .9)
+
+    def lore(self, k):
+        e = self.bestiary.get(k)
+        return lore_rank(e[1]) if e else 0
 
     def mon_attack(self, mon, df):
         p = self.player
@@ -1256,7 +1327,8 @@ class Game:
         if self.map.kind != 'over':
             self.monsters_act()
         elif self.cur == 'over':
-            wd = WA.hostile_adjacent(self)
+            EV.discover(self)
+            wd = WA.hostile_adjacent(self) if not self.pending else None
             if wd:
                 self.start_encounter(wd)
         if self.dead:
@@ -1582,6 +1654,9 @@ class Game:
                 text = f'"Morvenna waits to the {self.dir_to("crypt")}. Do not fight her at range; her bolts will find you anyway."'
             self.request = ('dialog', 'Elder Berend', text)
             return
+        if role == 'client':
+            MS.client_talk(self, npc)
+            return
         if role == 'dog':
             self.msg('The dog wags its tail and sniffs your boots.')
             return
@@ -1609,6 +1684,9 @@ class Game:
             d = random.choice(sd)
             om = self.maps['over']
             om.seen[d.y * om.w + d.x] = 1
+            for poi in w.pois:
+                if poi.did == d.id:
+                    EV.reveal(self, poi)
             here = self.here or w.settlements[0]
             return f'There is an old place called {d.name} to the {dir_name(d.x - here.x, d.y - here.y)}. I marked it on your map.'
         return random.choice(D.RUMORS)

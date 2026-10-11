@@ -48,6 +48,8 @@ class Wanderer:
                     + (', hostile to you.' if self.hostile else '.'))
         if self.kind == 'bounty':
             return f'{self.name}, the target of your bounty.'
+        if self.kind == 'traveler':
+            return f'{self.name}, on the way to {w.settlements[self.dest].name}.' + (' (has work)' if getattr(self, 'offer', None) else '')
         return self.name + '.'
 
 
@@ -123,7 +125,10 @@ def step(game, wd):
             and game.visible(wd.x, wd.y):
         greedy_step(game, wd, p.x, p.y)
         return
-    if wd.kind in ('caravan', 'patrol'):
+    if wd.kind in ('caravan', 'patrol', 'traveler'):
+        if wd.kind == 'traveler' and getattr(wd, 'wait', 0) > 0:
+            wd.wait -= 1
+            return
         if wd.path_i < len(wd.path):
             nx, ny = wd.path[wd.path_i]
             if on_over and (nx, ny) == (p.x, p.y):
@@ -134,6 +139,9 @@ def step(game, wd):
             return
         if wd.kind == 'caravan':
             arrive(game, wd)
+        elif wd.kind == 'traveler':
+            if wd in game.world.wanderers:
+                game.world.wanderers.remove(wd)
         else:
             if wd.path:
                 end = wd.path[-1]
@@ -142,7 +150,7 @@ def step(game, wd):
             wd.path_i = 0
         return
     # hostile groups
-    chase = 7 if wd.kind == 'bandits' else 5 if wd.kind == 'bounty' else 6
+    chase = 7 if wd.kind == 'bandits' else 5 if wd.kind == 'bounty' else 6 + min(4, game.world.off_road(wd.x, wd.y) // 6)
     if on_over and wd.cooldown == 0 and cheb(wd.x, wd.y, p.x, p.y) <= chase and game.visible(wd.x, wd.y) \
             and game.maps['over'].tile(p.x, p.y) not in (TOWN, CITY):
         greedy_step(game, wd, p.x, p.y)
@@ -253,17 +261,39 @@ def spawn_bandits(game):
     w.wanderers.append(make_group(game, 'bandits', c[0], c[1], lvl, keys, elite, leader))
 
 
+def wild_pack(biome, lvl, night=False):
+    """Monster keys for a wilderness pack: tougher kinds and bigger packs the more dangerous the spot."""
+    pool = [k for k in D.BIOME_MONSTERS[biome] if D.MONSTERS[k]['min_l'] <= lvl + 1]
+    if night:
+        pool += [k for k in D.NIGHT_MONSTERS if D.MONSTERS[k]['min_l'] <= lvl + 1]
+    pool = pool or D.BIOME_MONSTERS[biome][:1]
+    k = random.choices(pool, [1 + D.MONSTERS[x]['min_l'] for x in pool])[0]
+    big = D.MONSTERS[k]['hp'] >= 2
+    n = random.randint(1, 2 + lvl // 6) if big else random.randint(2, 3 + lvl // 3)
+    if random.random() < .3 and len(pool) > 1:
+        k2 = random.choice(pool)
+        return [k] * n + [k2] * random.randint(1, 2)
+    return [k] * n
+
+
 def spawn_monsters(game):
     w = game.world
-    c = _far_cell(game, lambda x, y, t: t not in (ROAD, TOWN, CITY) and D.TILES[t].walk)
+    # far from the roads is where the beasts live
+    c = None
+    for _ in range(6):
+        c = _far_cell(game, lambda x, y, t: t not in (ROAD, TOWN, CITY) and D.TILES[t].walk)
+        if c and random.random() < min(1.0, .15 + w.off_road(*c) / 12):
+            break
     if not c:
         return
     reg = w.region_at(*c)
-    k = random.choice(D.BIOME_MONSTERS[reg.biome])
-    n = random.randint(1, 2) if D.MONSTERS[k]['hp'] >= 2 else random.randint(2, 4)
+    lvl = w.danger_at(*c) + random.randint(0, 1)
+    keys = wild_pack(reg.biome, lvl)
     r = random.random()
-    elite = 2 if r < .05 else 1 if r < .15 else 0
-    w.wanderers.append(make_group(game, 'monsters', c[0], c[1], reg.danger + random.randint(0, 1), [k] * n, elite))
+    elite = 2 if r < .04 + lvl * .01 else 1 if r < .15 + lvl * .015 else 0
+    wd = make_group(game, 'monsters', c[0], c[1], lvl, keys, elite)
+    wd.home = c
+    w.wanderers.append(wd)
 
 
 def spawn_patrol(game, city):
@@ -317,9 +347,14 @@ def daily(game):
             spawn_caravan(game, s)
         if s.is_city and s.faction in ('crown', 'league') and not any(x.kind == 'patrol' and x.origin == s.id for x in w.wanderers):
             spawn_patrol(game, s)
+    from .events import spawn_traveller
+    for _ in range(4):
+        if sum(1 for x in w.wanderers if x.kind == 'traveler') >= 10:
+            break
+        spawn_traveller(game)
     if sum(1 for x in w.wanderers if x.kind == 'bandits') < 7:
         spawn_bandits(game)
-    while sum(1 for x in w.wanderers if x.kind == 'monsters') < 12:
+    while sum(1 for x in w.wanderers if x.kind == 'monsters') < 34:
         before = len(w.wanderers)
         spawn_monsters(game)
         if len(w.wanderers) == before:

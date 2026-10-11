@@ -34,6 +34,19 @@ Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanval
   Reputatie in een plaats geeft een bonus op beloningen en betere prijzen.
 - Bandieten overvallen karavanen; patrouilles uit de steden jagen bandieten weg.
 
+## De wildernis
+
+- Op de wegen ben je redelijk veilig. Hoe verder je van de weg afdwaalt, hoe gevaarlijker het wordt: grotere roedels,
+  sterkere monsters, meer champions. 's Nachts komen de doden tevoorschijn. Beweeg de muis over het land om het gevaar te zien.
+- Verborgen plekken om te ontdekken: ruïnes (`Π`, kleine kerkers), heiligdommen (`†`, zegeningen), bandietenkampen (`∆`),
+  staande stenen (`Ψ`) en verlaten wagens (`¤`).
+- Onderweg gebeurt van alles: gewonde reizigers, marskramers, tolwegen van de Zwarte Hand, stormen, dwaallichtjes.
+- Reizigers (`@` op de weg) kun je aanspreken door ertegenaan te lopen. Sommigen hebben een klus voor je
+  (brief bezorgen, goederen halen, een beest doden, iets terughalen uit een ruïne). Daarna wachten ze op je in de herberg
+  van de plaats waar ze heen liepen; dat staat in je dagboek en op de kaart.
+- Het bestiarium (`V`) houdt bij welke monsters je hebt gezien. Elke kill leert je meer: hogere kennis geeft meer schade
+  tegen dat soort monster en ze raken je minder vaak.
+
 ## Installeren en starten
 
 Je hebt Python 3.10 of nieuwer nodig.
@@ -47,7 +60,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Het spel opent een gemaximaliseerd venster van 110 bij 30 tekens in het 8×16-pixelfont Classic Console Neue,
+Het spel opent een gewoon venster van 110 bij 30 tekens in het 8×16-pixelfont Classic Console Neue,
 op de grootste scherpe vergroting die op je scherm past (2× op een 1080p-scherm). F11 of Alt+Enter schakelt naar volledig scherm.
 Je held wordt bewaard in `savegame.dat` naast `main.py`. Als je sterft, wordt die verwijderd.
 
@@ -102,7 +115,8 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `G` | oppakken |
 | `I` / `D` / `C` | tas, iets laten vallen, karakterscherm |
 | `R`, `5`, `.` | rusten, een beurt wachten |
-| `?` of F1 | hulp |
+| `V` of F2 | bestiarium |
+| `?` of F1 | hulp (twee pagina's: toetsen en de wereld) |
 | Esc | opslaan en afsluiten |
 | muis | eroverheen bewegen om te bekijken, klikken om een stap te zetten |
 
@@ -115,6 +129,7 @@ main.py                  venster, tileset, toetsenbord en muis (alles wat tcod-s
 cursed_vale/data.py      tegels, klassen, skills, items, affixen, monsters, kerkers
 cursed_vale/entities.py  Item, Monster, Player, GameMap en het maken van loot en monsters
 cursed_vale/worldgen.py  vallei, dorp, kerkers (kamers en grotten), wildernis, winkel
+cursed_vale/events.py    ruïnes en andere plekken, gebeurtenissen onderweg, reizigers
 cursed_vale/engine.py    spelregels: beweging, gevechten, monster-AI, skills, verkennen, opslaan
 cursed_vale/fov.py       zichtveld via libtcod (symmetric shadowcasting)
 cursed_vale/ui.py        alle schermen en het tekenen, los van tcod

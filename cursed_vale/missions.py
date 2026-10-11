@@ -268,6 +268,11 @@ def accept(game, s, m):
         w.wanderers.append(wd)
     elif m.kind == 'fetch':
         d = w.dungeons[m.data['dungeon']]
+        if getattr(d, 'poi', False):
+            from .events import reveal
+            for poi in w.pois:
+                if poi.did == d.id:
+                    reveal(game, poi)
         d.relic = m.id
         key = f'{d.id}:{d.depth}'
         if key in game.maps:
@@ -330,6 +335,14 @@ def fail(game, m, why):
 
 def on_enter(game, sid):
     for m in active(game):
+        if m.kind == 'personal':
+            d = m.data
+            if d['sub'] == 'letter' and d['rtown'] == sid:
+                game.msg(f"You find {d['recipient']} at the inn and hand over the letter.", 'good')
+                complete(game, m, [sid])
+            elif d['wait'] == sid and d['sub'] != 'letter':
+                game.msg(f"{d['client'].split()[0]} is waiting for you at the inn.", 'info')
+            continue
         if m.kind in ('courier', 'freight') and m.target == sid:
             complete(game, m, [m.giver, sid])
         elif m.kind == 'escort' and m.target == sid:
@@ -340,7 +353,7 @@ def on_enter(game, sid):
 
 def on_group_defeated(game, wd):
     m = find(game, wd.mission)
-    if m and m.kind in ('bounty', 'war_bounty') and m.state == 'active':
+    if m and m.kind in ('bounty', 'war_bounty', 'personal') and m.state == 'active':
         m.state = 'turnin'
         game.msg(f'{wd.group["leader"]} is dead. Return to {giver_name(game, m)} for your reward.', 'gold')
 
@@ -353,6 +366,8 @@ def on_pickup(game, it):
 
 
 def giver_name(game, m):
+    if m.kind == 'personal':
+        return f"{m.data['client'].split()[0]} at the inn in {game.world.settlements[m.data['wait']].name}"
     if m.hold is not None:
         return game.world.holds[m.hold].title
     return game.world.settlements[m.giver].name
@@ -417,6 +432,18 @@ def escort_wanderer(game):
 def target_pos(game, m):
     """Where on the overworld this job wants you to go next."""
     w = game.world
+    if m.kind == 'personal':
+        d = m.data
+        if m.state == 'active' and d['sub'] == 'letter':
+            s = w.settlements[d['rtown']]
+            return (s.x, s.y), s.name
+        if m.state == 'active' and d['sub'] == 'hunt':
+            return tuple(d['spot']), d['leader']
+        if m.state == 'active' and d['sub'] == 'rescue':
+            dg = w.dungeons[d['dungeon']]
+            return (dg.x, dg.y), dg.name
+        s = w.settlements[d['wait']]
+        return (s.x, s.y), s.name
     if m.state == 'turnin' or m.kind == 'supply':
         if m.hold is not None:
             h = w.holds[m.hold]
@@ -435,3 +462,134 @@ def target_pos(game, m):
         return tuple(m.data['spot']), m.data['leader']
     d = w.dungeons[m.data['dungeon']]
     return (d.x, d.y), d.name
+
+
+# ------------------------------------------------------------------ personal jobs from travellers
+def accept_personal(game, wd, o):
+    """A job from someone met on the road. They wait at the inn of the town they were heading for."""
+    from .economy import free_cargo
+    from .events import reveal
+    p = game.player
+    w = game.world
+    if len(active(game)) >= MAX_ACTIVE:
+        game.msg(f'You already have {MAX_ACTIVE} jobs. Finish one first.', 'bad')
+        return False
+    sub = o['sub']
+    if sub == 'letter' and free_cargo(p) < 1:
+        game.msg('You need 1 free cargo space for the letter.', 'bad')
+        return False
+    m = Mission(game.new_id(), 'personal', None)
+    m.data = dict(o)
+    m.reward = o['reward']
+    m.rep = 0
+    m.deadline = game.day + 14
+    first = o['client'].split()[0]
+    town = w.settlements[o['wait']].name
+    if sub == 'letter':
+        rt = w.settlements[o['rtown']].name
+        m.title = f"{first}'s letter to {rt}"
+        m.desc = f"Carry {first}'s letter to {o['recipient']} at the inn in {rt} before day {m.deadline}. Paid on delivery."
+        p.parcels.append(dict(mid=m.id, name=f"{first}'s letter", w=1))
+    elif sub == 'gather':
+        g = D.GOODS[o['good']]['name']
+        m.title = f"{o['qty']} {g} for {first}"
+        m.desc = f"Bring {o['qty']} {g} to {first} at the inn in {town} before day {m.deadline}."
+    elif sub == 'hunt':
+        over = game.maps['over']
+        spot = None
+        for _ in range(400):
+            x, y = wd.x + random.randint(-22, 22), wd.y + random.randint(-16, 16)
+            if not over.inb(x, y) or cheb(x, y, wd.x, wd.y) < 8:
+                continue
+            t = over.tile(x, y)
+            if D.TILES[t].walk and t not in (ROAD, TOWN, CITY, ENTR) and w.off_road(x, y) >= 3:
+                spot = (x, y)
+                break
+        if not spot:
+            game.msg('"Never mind, I think it has lost my trail."')
+            return False
+        reg = w.region_at(*spot)
+        k = random.choice([k for k in D.BIOME_MONSTERS[reg.biome] if D.MONSTERS[k]['hp'] >= 2] or D.BIOME_MONSTERS[reg.biome])
+        a, b, c = D.UNIQUE_NAME
+        leader = random.choice(a) + random.choice(b) + ' ' + random.choice(c)
+        lvl = w.danger_at(*spot) + 1
+        keys = [k] + [random.choice(D.BIOME_MONSTERS[reg.biome]) for _ in range(random.randint(1, 3))]
+        m.data.update(spot=spot, leader=leader, lvl=lvl)
+        g = make_group(game, 'monsters', spot[0], spot[1], lvl, keys, 2, leader)
+        g.kind = 'bounty'
+        g.mission = m.id
+        g.fg = D.UNIQUE_FG
+        w.wanderers.append(g)
+        over.seen[spot[1] * over.w + spot[0]] = 1
+        m.title = f'Slay {leader}'
+        m.desc = (f"Kill {leader}, a monstrous {D.MONSTERS[k]['name'].lower()} stalking {reg.name}, then find {first} "
+                  f"at the inn in {town} before day {m.deadline}.")
+    else:
+        d = w.dungeons[o['dungeon']]
+        if d.relic is not None:
+            game.msg('"Someone else already went after it. Never mind."')
+            return False
+        d.relic = m.id
+        for poi in w.pois:
+            if poi.did == d.id:
+                reveal(game, poi)
+        key = f'{d.id}:{d.depth}'
+        if key in game.maps:
+            place_relic(game, game.maps[key], m)
+        m.title = f"Recover {o['relic']} for {first}"
+        m.desc = (f"Fetch {o['relic']} from the bottom of {d.name} and bring it to {first} at the inn in {town} "
+                  f"before day {m.deadline}.")
+    m.state = 'active'
+    game.missions.append(m)
+    game.msg(f'Job accepted: {m.title}. {first} will wait at the inn in {town}.', 'gold')
+    return True
+
+
+def place_clients(game, sid, mp):
+    """Put the people waiting for you next to the innkeeper."""
+    from .entities import make_npc
+    from .worldgen import free_around as fa
+    mp.mons = [o for o in mp.mons if getattr(o, 'role', None) != 'client']
+    inn = next((o for o in mp.mons if o.role == 'inn'), None)
+    for m in active(game):
+        if m.kind != 'personal' or m.data['wait'] != sid or m.data['sub'] == 'letter':
+            continue
+        cx, cy = (inn.x, inn.y) if inn else mp.entry
+        spots = fa(game, mp, cx, cy, 2)
+        if not spots:
+            continue
+        x, y = random.choice(spots)
+        npc = make_npc(game, m.data['client'], 'client', '#f0e68c', x, y, True)
+        npc.mission = m.id
+        mp.mons.append(npc)
+
+
+def client_talk(game, npc):
+    m = find(game, getattr(npc, 'mission', None))
+    first = npc.name.split()[0]
+    if not m or m.state not in ('active', 'turnin'):
+        game.request = ('dialog', npc.name, '"Thank you again, friend. Safe travels."')
+        return
+    d = m.data
+    p = game.player
+    if d['sub'] == 'gather' and m.state == 'active':
+        g, q = d['good'], d['qty']
+        if p.cargo.get(g, 0) >= q:
+            p.cargo[g] -= q
+            if not p.cargo[g]:
+                del p.cargo[g]
+                p.cost_basis.pop(g, None)
+            m.state = 'turnin'
+        else:
+            game.request = ('dialog', npc.name, f'"Did you bring the {q} {D.GOODS[g]["name"].lower()}? '
+                            f'You only carry {p.cargo.get(g, 0)}. Any market should sell them."')
+            return
+    if m.state != 'turnin':
+        what = {'hunt': f'"Is {d.get("leader", "the beast")} dead yet? I can still hear it howling at night."',
+                'rescue': f'"Please, find {d.get("relic", "it")}. It means the world to me."'}.get(d['sub'], '"Any news?"')
+        game.request = ('dialog', npc.name, what)
+        return
+    complete(game, m, [d['wait']])
+    npc.mission = None
+    game.request = ('dialog', npc.name, f'"You did it! I knew I could trust you. Here, {m.reward} gold, as promised." '
+                    f'{first} shakes your hand warmly.')

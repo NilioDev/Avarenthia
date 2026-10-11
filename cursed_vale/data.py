@@ -271,12 +271,13 @@ BIOME_NAMES = {
     'coast': ['Saltcoast', 'Gull Shore', 'Wrackstrand', 'Amber Coast'],
 }
 BIOME_MONSTERS = {
-    'grass': ['jackal', 'wolf', 'bandit', 'goblin'],
-    'forest': ['wolf', 'goblin', 'spider', 'ogre'],
-    'swamp': ['spider', 'zombie', 'goblin'],
-    'hills': ['goblin', 'orc', 'ogre', 'wolf'],
-    'coast': ['jackal', 'bandit', 'goblin'],
+    'grass': ['jackal', 'wolf', 'bandit', 'goblin', 'ogre'],
+    'forest': ['wolf', 'goblin', 'spider', 'ogre', 'troll'],
+    'swamp': ['spider', 'zombie', 'goblin', 'ghost', 'wraith'],
+    'hills': ['goblin', 'orc', 'ogre', 'wolf', 'troll'],
+    'coast': ['jackal', 'bandit', 'goblin', 'orc'],
 }
+NIGHT_MONSTERS = ['zombie', 'ghost', 'wraith', 'skeleton', 'wolf']
 TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
           'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
 TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
@@ -331,3 +332,64 @@ STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgar
                     'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil']
 START_STATS = dict(str=15, dex=15, vit=15, ene=15)
 LEVEL_STAT_POINTS = 3
+
+
+# ---------------------------------------------------------------- bestiary
+# monster key -> (what it is, where it lives, a hunter's tip)
+LORE = {
+    'rat': ('Rats the size of dogs, grown fat on cellar grain and worse.', 'Caves, sewers and the Rat Warrens.',
+            'Weak alone, dangerous in swarms. Fight them in corridors.'),
+    'bat': ('Leathery wings, needle teeth, and no sense of direction.', 'Caves and old dungeons.',
+            'They flit about at random. Let them come to you.'),
+    'kobold': ('Small, scaly scavengers that worship anything shiny.', 'Caves and dungeons.',
+               'Cowards at heart; kill the first and the rest falter.'),
+    'goblin': ('Green-skinned raiders with crude blades and cruder manners.', 'Caves, dungeons and the wild hills.',
+               'Goblins travel with archers. Close the distance fast.'),
+    'gobarcher': ('A goblin with a bow and a surprising aim.', 'Caves and dungeons, behind other goblins.',
+                  'Break line of sight around corners, then strike up close.'),
+    'jackal': ('Lean scavengers of the open plains.', 'Grassland and desert, in packs.',
+               'Fast but frail. A single good hit drops one.'),
+    'wolf': ('Grey hunters as big as ponies, eyes like lamps in the dark.', 'Forests, hills and plains, worst at night.',
+             'They are faster than you. Never run, stand and fight with your back to a wall.'),
+    'bandit': ('Outlaws who decided the road owes them a living.', 'Along the roads and in hidden camps.',
+               'Bandits carry gold. Their camps hold strongboxes.'),
+    'brigand': ('A bandit who prefers to kill from a distance.', 'With bandit gangs.',
+                'Kill the archers first; they will not stand in melee.'),
+    'orc': ('Hulking brutes with iron jaws and iron cleavers.', 'Dungeons, caves and the far wilds.',
+            'They hit hard but tire; armor pays for itself here.'),
+    'spider': ('Bloated, hairy and dripping with venom.', 'Caves, swamps and forests.',
+               'Their bite poisons. A health potion purges the venom.'),
+    'zombie': ('The restless dead, slow and stubborn.', 'Crypts and graveyards, and the wilds at night.',
+               'Slow as a funeral. Hit, step back, hit again.'),
+    'skeleton': ('Bones bound together by old hate.', 'Crypts, and the open land when the moon is up.',
+                 'Blunt and heavy blows serve best against bone.'),
+    'skarcher': ('A skeleton that still remembers the bow.', 'Deep crypts.',
+                 'Pin them in melee; their arrows fly true at range.'),
+    'ogre': ('Twice the height of a man, three times the appetite.', 'Dungeons and remote hills.',
+             'Slow to swing, deadly when it lands. Keep potions ready.'),
+    'cultist': ("Morvenna's faithful, robed and chanting.", 'Crypts and dark places.',
+                'Their bolts burn. Rush them before they finish the words.'),
+    'ghost': ('A cold shape that drifts through stone and courage alike.', 'Crypts, ruins and haunted wilds at night.',
+              'Hard to hit. Magic and steady accuracy win the day.'),
+    'troll': ('Grey-green giants whose wounds close as you watch.', 'Deep caves, mountains and the far wilds.',
+              'They regenerate. Burn them or never let up.'),
+    'wraith': ('Hunger given shape, wrapped in shadow.', 'Deep crypts and the darkest wilds at night.',
+               'They drink your life with every strike. End it quickly.'),
+    'soldier': ('A trained soldier in the colours of a lord.', 'Strongholds and patrols.',
+                'Disciplined, armored. Fight them one at a time.'),
+    'crossbow': ('A soldier with a heavy crossbow.', 'Castle walls and patrols.', 'Slow to reload. Charge after the shot.'),
+    'knight': ('A mounted noble in full plate.', 'Castles and warbands.', 'Very tough. Weaken or burn them first.'),
+    'mercenary': ('Sellsword of the Merchant League.', 'League forts and caravans.', 'Loyal only to coin.'),
+    'druid': ('A keeper of the old groves who calls down fire.', 'Circle groves and forests.',
+              'Spellcasters fall quickly once you reach them.'),
+    'warden': ('A Circle ranger, quiet and deadly with a bow.', 'Forests and Circle holds.',
+               'Use trees and walls to break their line of fire.'),
+    'raider': ('A Black Hand cutthroat.', 'Black Hand forts, toll roads and raids.', 'They come in numbers. Do not get surrounded.'),
+    'robber_knight': ('A fallen knight who leads the Black Hand.', 'Black Hand strongholds.', 'Armored and cruel. Bring potions.'),
+    'ratking': ('A writhing mass of rats fused into one hateful king.', 'The bottom of the Rat Warrens.',
+                'He calls more rats. Kill him fast, then the brood.'),
+    'grolm': ('An exiled dwarf who dug too deep and found madness.', 'The bottom of the Lost Mine.',
+              'He leaps across the room at you. Keep your guard up.'),
+    'lich': ('Morvenna the Undying, author of the curse.', 'The bottom of her crypt.',
+             'Her bolts and frost waves strike from anywhere. Close in and do not stop.'),
+}

@@ -85,6 +85,16 @@ class World:
         self.wanderers = []
         self.start = 0
         self.holds = []
+        self.road_dist = None     # bytearray: steps to the nearest road or settlement (capped)
+        self.pois = []
+
+    def danger_at(self, x, y):
+        """Region danger plus a bonus for being far from the roads."""
+        rd = self.road_dist[y * WORLD_W + x] if self.road_dist else 0
+        return self.region_at(x, y).danger + min(5, rd // 5)
+
+    def off_road(self, x, y):
+        return self.road_dist[y * WORLD_W + x] if self.road_dist else 0
 
     def hold_at(self, x, y):
         for h in self.holds:
@@ -222,10 +232,13 @@ def gen_world(game):
         _place_strongholds(m, world, reach)
         for h in world.holds:
             m.set(h.x, h.y, CASTLE if h.kind == 'castle' else FORT)
+        _road_distance(m, world)
         for s in world.settlements:
             m.set(s.x, s.y, CITY if s.is_city else TOWN)
         for d in world.dungeons.values():
             m.set(d.x, d.y, ENTR)
+        from .events import gen_pois
+        gen_pois(game, m, world)
         return m, world
     raise RuntimeError('World generation failed')
 
@@ -615,3 +628,28 @@ def flip_region(game, rid, faction):
         if st.region == rid and st.id != 0:
             st.faction = faction
     return old
+
+
+def _road_distance(m, world):
+    from collections import deque
+    w, h = m.w, m.h
+    dist = bytearray([255]) * (w * h)
+    q = deque()
+    for i, t in enumerate(m.t):
+        if t in (ROAD, TOWN, CITY):
+            dist[i] = 0
+            q.append(i)
+    while q:
+        c = q.popleft()
+        d = dist[c] + 1
+        if d > 60:
+            continue
+        x, y = c % w, c // w
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < w and 0 <= ny < h:
+                ni = ny * w + nx
+                if dist[ni] > d:
+                    dist[ni] = d
+                    q.append(ni)
+    world.road_dist = dist

@@ -30,7 +30,7 @@ def _ks(name):
 NAMED = {}
 for _name, _tok in [('UP', 'up'), ('DOWN', 'down'), ('LEFT', 'left'), ('RIGHT', 'right'),
                     ('HOME', 'home'), ('END', 'end'), ('PAGEUP', 'pageup'), ('PAGEDOWN', 'pagedown'),
-                    ('KP_ENTER', 'np_enter'), ('KP_PERIOD', '.'), ('F1', 'f1'), ('F11', 'f11'), ('DELETE', 'delete'),
+                    ('KP_ENTER', 'np_enter'), ('KP_PERIOD', '.'), ('F1', 'f1'), ('F2', 'f2'), ('F11', 'f11'), ('DELETE', 'delete'),
                     ('RETURN', 'enter'), ('ESCAPE', 'esc'), ('BACKSPACE', 'backspace'), ('TAB', 'tab'), ('SPACE', 'space')]:
     _v = _ks(_name)
     if _v is not None:
@@ -98,15 +98,53 @@ def toggle_fullscreen(ctx):
         pass
 
 
+def screen_size():
+    """Usable size of the main screen in window units, or None if it cannot be found."""
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            class RECT(ctypes.Structure):
+                _fields_ = [('l', ctypes.c_long), ('t', ctypes.c_long), ('r', ctypes.c_long), ('b', ctypes.c_long)]
+            r = RECT()
+            if ctypes.windll.user32.SystemParametersInfoW(0x30, 0, ctypes.byref(r), 0):   # SPI_GETWORKAREA
+                return r.r - r.l, r.b - r.t
+        except Exception:
+            pass
+    try:
+        import importlib
+        tkinter = importlib.import_module('tkinter')   # not bundled into the executable; optional
+        root = tkinter.Tk()
+        root.withdraw()
+        size = root.winfo_screenwidth(), root.winfo_screenheight() - 80
+        root.destroy()
+        return size
+    except Exception:
+        return None
+
+
+def window_scale():
+    """The largest whole-number scale of the 8x16 font whose window still fits on screen with room to spare."""
+    tw, th = W * glyphs.TILE_W, H * glyphs.TILE_H
+    size = screen_size()
+    if not size:
+        return 1
+    sw, sh = size
+    k = 1
+    while tw * (k + 1) <= sw * .96 and th * (k + 1) <= sh * .94:
+        k += 1
+    return k
+
+
 def main():
     tileset = load_tileset()
     console = tcod.console.Console(W, H, order='F')
     app = App(TcodCanvas(console))
-    # Open resizable and maximized: the 8x16 font is then drawn at the largest whole-number
-    # scale that fits the screen (2x on a 1080p monitor), so pixels stay crisp.
-    flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20) | getattr(tcod.context, 'SDL_WINDOW_MAXIMIZED', 0x80)
-    with tcod.context.new(columns=W, rows=H, tileset=tileset, title='Cursed Vale', vsync=True,
-                          sdl_window_flags=flags) as ctx:
+    # A normal window (not maximized, not fullscreen), sized to the largest whole-number scale of the
+    # 8x16 font that fits the screen so the pixels stay crisp. It can still be resized; F11 goes fullscreen.
+    k = window_scale()
+    flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
+    with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
+                          tileset=tileset, title='Cursed Vale', vsync=True, sdl_window_flags=flags) as ctx:
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)

@@ -15,7 +15,7 @@ E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_test.dat'
 
 TOKENS = ['up', 'down', 'left', 'right', 'y', 'u', 'b', 'n', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
-          's', 'S', 'B', 'A', '5', '6', 'f', 'z']
+          's', 'S', 'B', 'A', '5', '6', 'f', 'z', 'v', 'f2', 'a', 'c']
 
 
 def new_app(mode='soft', seed=None):
@@ -31,6 +31,10 @@ def new_app(mode='soft', seed=None):
         for ch in str(seed):
             app.key(ch)
     app.key('enter')
+    assert isinstance(app.top, ui.IntroScreen), app.top
+    for _ in range(len(ui.IntroScreen.PAGES)):
+        app.render()
+        app.key('enter')
     assert isinstance(app.top, ui.GameScreen), app.top
     return app
 
@@ -94,7 +98,8 @@ def smoke(games=9, steps=1200):
             if g.dead or isinstance(app.top, ui.WinScreen):
                 break
         for S in (ui.InventoryScreen, ui.CharacterScreen, ui.ShopScreen, ui.TravelScreen, ui.HelpScreen, ui.SkillsScreen,
-                  ui.DeathScreen, ui.WinScreen, ui.QuitScreen, ui.JournalScreen, ui.WorldMapScreen, ui.StablesScreen):
+                  ui.DeathScreen, ui.WinScreen, ui.QuitScreen, ui.JournalScreen, ui.WorldMapScreen, ui.StablesScreen,
+                  ui.BestiaryScreen, ui.IntroScreen):
             app.screens = [ui.GameScreen(app), S(app)]
             app.render()
         for S in (ui.MarketScreen, ui.BoardScreen):
@@ -235,11 +240,161 @@ def factions_and_death():
           'warbands', sum(1 for w in g.world.wanderers if w.kind == 'warband'))
 
 
+def choose(app, key):
+    """Answer the open choice dialog with the option whose key is `key` (or the first one)."""
+    app.after_action()
+    top = app.top
+    assert isinstance(top, ui.ChoiceScreen), top
+    app.render()
+    opts = app.game.pending['options']
+    i = next((n for n, (_l, k) in enumerate(opts) if k == key), 0)
+    app.key(ui.LETTERS[i])
+    app.render()
+
+
+def clear_wild(g):
+    for o in [o for o in g.map.mons if not o.is_npc]:
+        g.kill(o)
+    g.leave_to_over()
+
+
+def wilds():
+    from cursed_vale import events as EV
+    from collections import Counter
+    random.seed(21)
+    app = new_app('soft', 31337)
+    g = app.game
+    p = g.player
+    p.vit, p.str, p.lvl = 300, 90, 10
+    p.life = g.stats()['max_life']
+    p.gold = 2000
+    w = g.world
+    print('places:', dict(Counter(q.kind for q in w.pois)))
+    assert all(q.kind != 'ruin' or q.did in w.dungeons for q in w.pois)
+    # danger rises away from the roads
+    road = [w.danger_at(x, y) for (x, y) in random.sample([(i % 200, i // 200) for i in range(len(g.maps['over'].t))
+                                                          if g.maps['over'].t[i] == D.ROAD], 50)]
+    far = [w.danger_at(q.x, q.y) for q in w.pois]
+    print(f'danger on roads avg {sum(road) / len(road):.1f}, at hidden places avg {sum(far) / len(far):.1f}')
+    # visit one place of each kind
+    for kind in ('shrine', 'stones', 'wagon', 'camp', 'ruin'):
+        poi = next(q for q in w.pois if q.kind == kind)
+        app.screens = [ui.GameScreen(app)]
+        to_over(g, 0)
+        p.x, p.y = poi.x, poi.y
+        g.over_step()
+        if kind == 'ruin':
+            g.use_stairs('down')
+            assert g.map.kind == 'dungeon', g.cur
+            g.cur = 'over'
+            p.x, p.y = poi.x, poi.y
+            continue
+        key = {'shrine': 'offer', 'stones': 'touch', 'wagon': 'search', 'camp': 'attack'}[kind]
+        choose(app, key)
+        if g.cur == 'wild':
+            camp = g.encounter_poi is not None
+            clear_wild(g)
+            if camp:
+                assert poi.ready_day >= 10 ** 9
+        print(f'  {kind:7} ok, buffs {[b[3] for b in p.buffs]}')
+    # every travel event, every option
+    for k, fn in EV.EVENTS.items():
+        n_opts = None
+        i = 0
+        while True:
+            app.screens = [ui.GameScreen(app)]
+            to_over(g, 0)
+            p.x += 6
+            p.life = g.stats()['max_life']
+            p.inv.append(E.Item(g.new_id(), 'potion', 'hp', 1)) if not g.count('potion', 'hp') else None
+            fn(g)
+            opts = g.pending['options']
+            n_opts = len(opts)
+            choose(app, opts[i][1])
+            if g.cur == 'wild':
+                clear_wild(g)
+            i += 1
+            if i >= n_opts:
+                break
+    print('  travel events ok:', ', '.join(EV.EVENTS))
+    # travellers: every kind of personal job, finished
+    done = set()
+    for attempt in range(80):
+        if len(done) == 4:
+            break
+        app.screens = [ui.GameScreen(app)]
+        to_over(g, 0)
+        before = len(w.wanderers)
+        EV.spawn_traveller(g)
+        if len(w.wanderers) == before:
+            continue
+        wd = w.wanderers[-1]
+        if not wd.offer or wd.offer['sub'] in done:
+            w.wanderers.remove(wd)
+            continue
+        sub = wd.offer['sub']
+        w.wanderers = [x for x in w.wanderers if x is wd or abs(x.x - wd.x) > 2 or abs(x.y - wd.y) > 2]
+        p.x, p.y = wd.x + 1, wd.y
+        g.try_move(-1, 0)
+        choose(app, 'help')
+        choose(app, 'accept')
+        mi = next(m for m in MS.active(g) if m.kind == 'personal' and m.data['sub'] == sub)
+        if sub == 'letter':
+            g.enter_town(mi.data['rtown'])
+        else:
+            if sub == 'gather':
+                p.cargo[mi.data['good']] = mi.data['qty']
+            elif sub == 'hunt':
+                beast = next(x for x in w.wanderers if x.mission == mi.id)
+                to_over(g, 0)
+                p.x, p.y = beast.x, beast.y
+                g.start_encounter(beast)
+                clear_wild(g)
+                assert mi.state == 'turnin', mi.state
+            else:
+                d = w.dungeons[mi.data['dungeon']]
+                to_over(g, 0)
+                g.enter_dungeon(d.id, d.depth, 'up')
+                relic = next(i for i in g.map.items if i.k == 'quest')
+                p.x, p.y = relic.x, relic.y
+                g.auto_pickup()
+                assert mi.state == 'turnin'
+            g.enter_town(mi.data['wait'])
+            client = next(o for o in g.map.mons if o.role == 'client' and o.mission == mi.id)
+            g.talk(client)
+            app.after_action()
+            app.render()
+        assert mi.state == 'done', (sub, mi.state)
+        done.add(sub)
+        print(f'  traveller job ok: {sub:6} {mi.title} ({mi.reward}g)')
+    assert len(done) == 4, done
+    # bestiary knowledge
+    app.screens = [ui.GameScreen(app)]
+    g.enter_dungeon('rat', 1, 'up')
+    from cursed_vale.entities import make_monster
+    for _ in range(12):
+        o = make_monster(g, 'rat', p.x, p.y, 1)
+        g.map.mons.append(o)
+        g.compute_fov()
+        g.kill(o)
+    assert g.lore('rat') == 2, g.bestiary
+    for page in range(2):
+        app.screens = [ui.GameScreen(app), ui.HelpScreen(app)]
+        app.top.page = page
+        app.render()
+    app.screens = [ui.GameScreen(app), ui.BestiaryScreen(app)]
+    app.render()
+    print('bestiary:', {k: v for k, v in g.bestiary.items()})
+    E.save_game(g)
+    assert E.load_game() is not None
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     smoke()
     trade_and_jobs()
     factions_and_death()
+    wilds()
 
 
 if __name__ == '__main__':
