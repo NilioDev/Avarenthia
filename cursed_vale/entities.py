@@ -335,6 +335,8 @@ class GameMap:
         st.pop('_look', None)          # drawing cache, rebuilt on demand
         st.pop('_look_t', None)
         st.pop('_light', None)
+        st.pop('_light_dom', None)
+        st.pop('_light_dyn', None)
         return st
 
     def inb(self, x, y):

@@ -10,7 +10,7 @@ def hexrgb(h):
 
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
- CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE) = range(40)
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE, LAMP) = range(41)
 
 
 class Tile:
@@ -63,6 +63,7 @@ TILES = [
     Tile('■', '#d8a040', False, False, 'treasure chest', bg='#2a1c0c'),
     Tile('□', '#8a7050', False, False, 'open chest'),
     Tile('┼', '#9a9aa0', False, False, 'gravestone'),
+    Tile('Γ', '#8a7a60', False, False, 'lamp post'),
 ]
 
 # ---------------------------------------------------------------- classes and skills

@@ -42,6 +42,7 @@ TILE_DESC = {
     'treasure chest': 'A treasure chest! Walk into it to open it.',
     'open chest': 'An open, empty chest.',
     'gravestone': 'A weathered gravestone. The name has worn away.',
+    'lamp post': 'An iron lamp post. The lamplighter comes by at dusk.',
 }
 DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.', 3: 'Glowing fungus casts an eerie light.',
              4: 'Old bones lie scattered about.', 5: 'Rubble and broken stone.', 6: 'Blood. Fresh, or nearly.',

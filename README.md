@@ -102,6 +102,10 @@ In een tempel kun je je aan de god van die tempel wijden. Bidden, offers en dade
 daarmee zegeningen. Maar facties die een rivaliserende god aanbidden vertrouwen je minder, en de priesters van een
 vijandige god helpen je niet.
 
+**Licht en donker.** Fakkels, kampvuren, kristallen en lichtgevende zwammen flikkeren of pulseren vanzelf. In dorpen en
+steden staan straatlantaarns: bij de schemering loopt de lantaarnopsteker zijn ronde en steekt ze een voor een aan,
+en bij het ochtendgloren dooft hij ze weer. 's Nachts zie je de verlichte straten van ver; de rest is donker.
+
 **De kalender.** Twaalf maanden van dertig dagen (van Deepfrost tot Longnight) en een week van zeven dagen; het verhaal
 begint op Stonesday, de 3e van Seedwake, 1172 AR.
 
@@ -189,6 +193,7 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `X` | automatisch verkennen (stap voor stap te zien, elke toets stopt) |
 | `T` | reizen naar een bekende plaats of kerker |
 | `M` | kaart van het rijk (pijltjes scrollen, `Z` heel rijk, `F` facties) |
+| `Shift+T` | praten met iemand vlakbij (ook over een toonbank heen) |
 | `E` | dagboek: verhaal, banen, vracht, facties en geloof |
 | Tab | menu met alle schermen en hun sneltoetsen |
 | `>` `<` of Enter | trap nemen, dorp of kerker in |

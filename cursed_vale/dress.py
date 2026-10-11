@@ -145,7 +145,7 @@ def dress(game, m, d):
     elif tag == 'lair_drowned':
         patch(SLIME, random.randint(4, 8), 14)
     # torches on walls next to floors
-    n_torch = {'cave': random.randint(0, 3), 'crypt': random.randint(3, 6)}.get(style if style == 'cave' else tag, random.randint(5, 9))
+    n_torch = {'cave': random.randint(0, 3), 'crypt': random.randint(4, 8)}.get(style if style == 'cave' else tag, random.randint(8, 14))
     walls = [i for i, t in enumerate(m.t) if t == WALL and any(
         0 <= i + o < len(m.t) and m.t[i + o] in (FLOOR, SHALLOW) for o in (1, -1, m.w, -m.w))]
     for i in random.sample(walls, min(n_torch, len(walls))):
@@ -176,10 +176,14 @@ def deco_look(m, i, look):
     """Apply decoration i of map m to a (glyph, fg, bg) look."""
     v = m.deco[i]
     ch, fg, bg = look
-    if v == TORCH:
-        return '#', (255, 176, 90), (90, 40, 10)
-    if v == FIRE and m.t[i] == FLOOR:
-        return '☼', (255, 150, 60), (70, 26, 8)
+    if v in (TORCH, FIRE):
+        import time
+        f = .5 + .5 * _wave(time.monotonic() * 2.2, i % 97)
+        fg = (255, int(130 + 70 * f), int(40 + 60 * f))
+        if v == TORCH:
+            return '#', fg, (int(70 + 30 * f), int(30 + 14 * f), 10)
+        if m.t[i] == FLOOR:
+            return ('☼' if f > .2 else '*'), fg, (int(56 + 24 * f), int(20 + 10 * f), 8)
     spec = DECO_LOOK.get(v)
     if not spec or m.t[i] not in (FLOOR, SHALLOW, D.GRASS, D.PATH, D.SAND):
         return look
@@ -199,8 +203,12 @@ def light_map(m):
         return cache
     from . import fov
     amb = getattr(m, 'ambient', .3)
-    lm = [[amb, amb, amb] for _ in range(m.w * m.h)]
-    for lx, ly, col, r in getattr(m, 'lights', ()):
+    ar, ag, ab = amb if isinstance(amb, tuple) else (amb, amb, amb)
+    lm = [[ar, ag, ab] for _ in range(m.w * m.h)]
+    dom = [-1] * (m.w * m.h)          # the strongest light on each cell, which flickers
+    dyn = [None] * (m.w * m.h)
+    best = [0.0] * (m.w * m.h)
+    for li, (lx, ly, col, r) in enumerate(getattr(m, 'lights', ())):
         vis = fov.cells(m, lx, ly, r)
         for y in range(max(0, ly - r), min(m.h, ly + r + 1)):
             for x in range(max(0, lx - r), min(m.w, lx + r + 1)):
@@ -213,8 +221,43 @@ def light_map(m):
                 c[0] += col[0] / 255 * k
                 c[1] += col[1] / 255 * k
                 c[2] += col[2] / 255 * k
+                if k > best[i]:
+                    best[i], dom[i] = k, li
+                    dyn[i] = (col[0] / 255 * k, col[1] / 255 * k, col[2] / 255 * k)
     m._light = lm
+    m._light_dom, m._light_dyn = dom, dyn
     return lm
+
+
+def _wave(t, seed):
+    """Smooth random wobble in -1..1, the same for everyone looking at the same light."""
+    import math
+    a = math.sin(t * 2.3 + seed * 1.7) + math.sin(t * 5.1 + seed * 3.1) * .6 + math.sin(t * 11.7 + seed * .7) * .35
+    return a / 1.95
+
+
+def flicker(m, li, t):
+    """How bright light li is right now: fires and torches flicker, crystals and fungus pulse slowly."""
+    import math
+    lights = getattr(m, 'lights', ())
+    if not 0 <= li < len(lights):
+        return 1.0
+    col = lights[li][2]
+    if col[0] > col[2] + 60:              # warm: a flame
+        return .84 + .16 * _wave(t * 1.4, li)
+    return .86 + .14 * math.sin(t * (0.9 + (li % 5) * .17) + li * 2.3)
+
+
+def light_at(m, i, t):
+    """The light on cell i at time t, flicker included."""
+    lm = light_map(m)
+    dom = getattr(m, '_light_dom', None)
+    c = lm[i]
+    if not dom or dom[i] < 0:
+        return c
+    f = flicker(m, dom[i], t)
+    d = m._light_dyn[i]
+    return (c[0] - d[0] * (1 - f), c[1] - d[1] * (1 - f), c[2] - d[2] * (1 - f))
 
 
 def lit(look, light, glow=None):

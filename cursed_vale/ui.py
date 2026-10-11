@@ -95,6 +95,22 @@ class App:
         t = time.monotonic()
         return bool(self.effects) or self.shake_until > t or any(t - v < .15 for v in self.hit_times.values())
 
+    def frame_delay(self):
+        """How soon to draw the next frame without a key press: fast while effects play, slowly for the
+        living world (flickering fires, twinkling stars), or never (None) when nothing moves."""
+        if self.animating():
+            return 1 / 30
+        top = self.top
+        if getattr(top, 'ambient', False):
+            return 1 / 10
+        g = self.game
+        if g and isinstance(top, GameScreen):
+            m = g.map
+            if getattr(m, 'lights', None) and (m.kind == 'dungeon' or getattr(m, 'underground', False)
+                                                or (m.kind == 'town' and TW.lamp_light(g) > 0)):
+                return 1 / 10
+        return None
+
     def key(self, tok, shift=False):
         if self.auto:
             self.stop_auto()           # any key interrupts auto-explore or travel
@@ -178,6 +194,8 @@ class App:
         elif req[0] == 'choice':
             if g.pending:
                 self.push(ChoiceScreen(self))
+        elif req[0] == 'talkpick':
+            self.push(TalkScreen(self, req[1]))
         elif req[0] == 'win':
             E.save_game(g)
             self.push(WinScreen(self))
@@ -253,6 +271,7 @@ def _hash(x, y, s=0):
 
 
 class MainMenu(Screen):
+    ambient = True          # the title picture moves a little: stars, water
     def __init__(self, app):
         super().__init__(app)
         self.saved = E.load_game()
@@ -264,10 +283,9 @@ class MainMenu(Screen):
             self._bg = paint(cv.w, cv.h)
         t = time.monotonic()
         for i, (ch, fg, bg) in enumerate(self._bg):
-            x, y = i % cv.w, i // cv.w
-            if ch in '·.*+' and (_hash(x, y, int(t * 2)) % 9 == 0):
-                fg = scale(fg, .45)        # a few stars twinkle
-            cv.put(x, y, ch, fg, bg)
+            cv.put(i % cv.w, i // cv.w, ch, fg, bg)
+        from .titleart import animate
+        animate(cv, self._bg, t)
         rows = title_rows()
         x0 = (cv.w - len(rows[0])) // 2
         y0 = 4
@@ -469,6 +487,10 @@ class GameScreen(Screen):
             items[(it.x, it.y)] = it
         torch = m.kind == 'siege'
         lighting = m.kind == 'dungeon' or getattr(m, 'underground', False)
+        lamps = {}
+        if m.kind == 'town' and not lighting and TW.town_ambient(g, m) > 0:
+            lighting = True                 # dusk and night in town: the street lamps light the way
+            lamps = {xy: k for k, xy in enumerate(getattr(m, 'lamps', ()))}
         lmap = DR.light_map(m) if lighting else None
         deco = getattr(m, 'deco', None)
         night = TW.is_night(g)
@@ -495,8 +517,11 @@ class GameScreen(Screen):
                     ch, fg, bg = DR.deco_look(m, i, (ch, fg, bg))
                 if portal and (mx, my) == portal:
                     ch, fg = '0', (90, 176, 255)
+                if lamps and (mx, my) in lamps and lamps[(mx, my)] in m.lamp_on:
+                    fl = DR.flicker(m, 0, t + lamps[(mx, my)])
+                    ch, fg, bg = 'Γ', (255, int(200 * fl), int(110 * fl)), (int(90 * fl), int(52 * fl), 16)
                 if v and lighting:
-                    lr, lg, lb = lmap[i]
+                    lr, lg, lb = DR.light_at(m, i, t)
                     dd = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
                     k = max(0.0, 1 - dd / 7.5) * .95
                     ch, fg, bg = DR.lit((ch, fg, bg), (lr + k, lg + k * .82, lb + k * .55))
@@ -927,6 +952,9 @@ class GameScreen(Screen):
             app.push(JournalScreen(app))
         elif tok == 'tab':
             app.push(MenuScreen(app))
+        elif tok == 'T':
+            g.log_mark = len(g.log)
+            g.talk_nearby()
         elif tok == 'i':
             app.push(InventoryScreen(app))
         elif tok == 'd':
@@ -1529,9 +1557,10 @@ class HelpScreen(Modal):
             ('G  ,', 'Pick up items. Gold, orbs and magic items are picked up for you.'),
             ('>  <  Enter', 'Enter a town, dungeon, ruin or stronghold · use stairs'),
             ('X', 'Auto-explore a dungeon until enemies appear'),
-            ('T', 'Travel to a known town or dungeon (stops when danger shows up)'),
+            ('t', 'Travel to a known town or dungeon (stops when danger shows up)'),
             ('R   S   5   .', 'Rest until healed · wait one turn'),
             ('I   D   C', 'Inventory · drop items · character sheet and attributes'),
+            ('Shift+T', 'Talk to someone near you (also across a counter)'),
             ('E', 'Journal: story, jobs, cargo, factions and faith'),
             ('Tab', 'Menu: every screen with its hotkey'),
             ('M', 'Map of the realm: arrows scroll, Z whole realm, F faction lands'),
@@ -2470,6 +2499,7 @@ class MenuScreen(Modal):
              ('z', 'Skills', 'your spells and abilities'), ('e', 'Journal', 'story, jobs, cargo, factions and faith'),
              ('m', 'World map', 'the lands you have seen'), ('v', 'Bestiary', 'the creatures you have met'),
              ('P', 'Alchemy & brewing', 'potions, ale, wine and mead'), ('o', 'Look around', 'inspect what you see'),
+             ('T', 'Talk', 'to someone near you, even across a counter'),
              ('t', 'Travel', 'walk the roads to a place you know'), ('R', 'Rest', 'sleep until healed'),
              ('?', 'Help', 'keys and how things work'), ('esc', 'Save and quit', '')]
 
@@ -2509,6 +2539,34 @@ class MenuScreen(Modal):
         gs = self.app.top
         if isinstance(gs, GameScreen):
             gs.on_key(k, False)
+
+
+class TalkScreen(Modal):
+    """Who do you want to talk to?"""
+
+    def __init__(self, app, ids):
+        super().__init__(app)
+        g = app.game
+        pool = g.world.wanderers if g.map.kind == 'over' else g.map.mons
+        self.people = [o for i in ids for o in pool if o.id == i]
+
+    def render(self, cv):
+        x, y = self.box(cv, 56, len(self.people) + 4, ' Talk to whom? ')
+        for i, o in enumerate(self.people):
+            cv.text(x + 3, y + 2 + i, LETTERS[i], GOLD, PANEL)
+            cv.text(x + 5, y + 2 + i, getattr(o, 'ch', '☺'), o.fg, PANEL)
+            cv.text(x + 7, y + 2 + i, o.name, FG, PANEL, maxw=46)
+        cv.text_center(W // 2, y + len(self.people) + 3, ' letter: talk · Esc: never mind ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok == 'esc':
+            self.app.pop()
+        elif len(tok) == 1 and tok in LETTERS[:len(self.people)]:
+            who = self.people[LETTERS.index(tok)]
+            self.app.pop()
+            g = self.game
+            g.log_mark = len(g.log)
+            g.talk_to(who)
 
 
 class ConfirmScreen(Modal):

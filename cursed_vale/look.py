@@ -73,6 +73,13 @@ FENCE_GLYPH = {  # (up, down, left, right) -> glyph
 }
 
 
+WALL_GLYPH = {  # (up, down, left, right) -> glyph
+    (1, 1, 0, 0): '║', (0, 0, 1, 1): '═', (1, 0, 0, 0): '║', (0, 1, 0, 0): '║', (0, 0, 1, 0): '═', (0, 0, 0, 1): '═',
+    (0, 1, 0, 1): '╔', (0, 1, 1, 0): '╗', (1, 0, 0, 1): '╚', (1, 0, 1, 0): '╝',
+    (1, 1, 0, 1): '╠', (1, 1, 1, 0): '╣', (0, 1, 1, 1): '╦', (1, 0, 1, 1): '╩', (1, 1, 1, 1): '╬', (0, 0, 0, 0): '■',
+}
+
+
 def _wet(m, x, y):
     if not m.inb(x, y):
         return 0
@@ -164,6 +171,12 @@ def cell(m, i, depth=None):
         return _pick(r, [(50, '.'), (25, ','), (15, '·'), (10, ' ')]), _jit((150, 118, 76), r2, .1), _jit((40, 31, 20), r, .06)
     if t in (FLOOR, PATH, PLANK):
         return td.ch, _jit(td.fg, r2, .08), td.bg or BG
+    if t == WALL and m.kind == 'town':     # buildings: walls that join up, like a plan of the house
+        join = (WALL, D.DOOR, D.ODOOR)
+        key = tuple(1 if m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] in join else 0
+                    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
+        fg = m.wall_fg or (176, 166, 150)
+        return WALL_GLYPH.get(key, '■'), _jit(fg, r2, .05), (30, 27, 24)
     if t in (WALL, ROCK):
         fg = m.wall_fg if (t == WALL and m.wall_fg) else td.fg
         if m.kind == 'dungeon':

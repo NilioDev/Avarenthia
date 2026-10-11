@@ -120,6 +120,17 @@ def _base(site, w, h):
 
 
 def gen_site_map(game, site):
+    """A temple, monastery or watchtower in its own stretch of countryside, with lamps by the door."""
+    from .towns import embed, place_lamps
+    m = _site_map(game, site)
+    ex, ey = m.entry
+    lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS
+             and any(m.tile(x + dx, ey) == DOOR for dx in (1, 2, 3))]
+    place_lamps(m, lamps[:2])
+    return embed(m, 96, 62)
+
+
+def _site_map(game, site):
     from .towns import town_names, townsfolk
     races = D.FACTIONS.get(site.faction, {}).get('race', 'human') if site.faction else 'human'
     names = town_names(races)

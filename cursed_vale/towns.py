@@ -45,6 +45,104 @@ def hour(game):
     return (game.turn % D.DAY_LEN) * 24 // D.DAY_LEN
 
 
+def lamp_light(game):
+    """How dark it is in the streets, 0 (day) to 1 (night): dusk from six to nine, dawn from five to seven."""
+    t = (game.turn % D.DAY_LEN) * 24 / D.DAY_LEN
+    if 7 <= t < 18:
+        return 0.0
+    if 18 <= t < 21:
+        return (t - 18) / 3
+    if 5 <= t < 7:
+        return 1 - (t - 5) / 2
+    return 1.0
+
+
+def lamps_wanted(game):
+    """Should the street lamps burn now?"""
+    h = hour(game)
+    return h >= 18 or h < 6
+
+
+LAMP_COL = (255, 176, 90)
+
+
+def set_lamp(m, k, on):
+    """Light or put out lamp k of a town map."""
+    lit = m.lamp_on
+    if on:
+        lit.add(k)
+    else:
+        lit.discard(k)
+    m.lights = [(m.lamps[j][0], m.lamps[j][1], LAMP_COL, 6) for j in sorted(lit)] + list(getattr(m, 'glows', []))
+    m._light = None
+
+
+def sync_lamps(game, m):
+    """Coming into a town: the lamps are as the lamplighter left them."""
+    if not getattr(m, 'lamps', None):
+        return
+    on = lamps_wanted(game)
+    m.lamp_on = set(range(len(m.lamps))) if on else set()
+    set_lamp(m, 0, on) if m.lamps else None
+
+
+def town_ambient(game, m):
+    """Daylight in a town map, bluish at night. Updates the cached light when it changes."""
+    k = lamp_light(game)
+    amb = (round(1 - .74 * k, 2), round(1 - .7 * k, 2), round(1 - .58 * k, 2))
+    if getattr(m, 'ambient', None) != amb:
+        m.ambient = amb
+        m._light = None
+    return k
+
+
+def place_lamps(m, cells):
+    """Put lamp posts on these cells (where there is room) and remember them."""
+    m.lamps = getattr(m, 'lamps', [])
+    m.lamp_on = getattr(m, 'lamp_on', set())
+    for x, y in cells:
+        if m.inb(x, y) and m.tile(x, y) in (GRASS, PATH) and not any(abs(x - a) + abs(y - b) < 3 for a, b in m.lamps):
+            m.set(x, y, D.LAMP)
+            m.lamps.append((x, y))
+
+
+def hearths(m, buildings):
+    """Fires and candles inside inns, temples and the elder's house: warm light at night."""
+    m.glows = []
+    for pl in buildings:
+        if pl.kind in ('inn', 'temple', 'elder', 'barracks') and pl.inside:
+            cx = sum(c[0] for c in pl.inside) // len(pl.inside)
+            cy = sum(c[1] for c in pl.inside) // len(pl.inside)
+            col = (255, 150, 70) if pl.kind != 'temple' else (255, 220, 150)
+            m.glows.append((cx, cy, col, max(4, min(pl.w, pl.h))))
+    m.lamp_on = getattr(m, 'lamp_on', set())
+    m.lights = list(m.glows)
+
+
+def lamplighter(game, m, npc):
+    """The lamplighter walks from lamp to lamp at dusk, and again at dawn to put them out."""
+    lamps = getattr(m, 'lamps', [])
+    want = lamps_wanted(game)
+    todo = [k for k in range(len(lamps)) if (k in m.lamp_on) != want]
+    h = hour(game)
+    if todo and (h in (18, 19, 20) or h in (5, 6)):
+        k = min(todo, key=lambda j: cheb(lamps[j][0], lamps[j][1], npc.x, npc.y))
+        lx, ly = lamps[k]
+        if cheb(lx, ly, npc.x, npc.y) <= 1:
+            set_lamp(m, k, want)
+            if game.visible(npc.x, npc.y) and random.random() < .15:
+                game.say(npc, random.choice(['Evening! Light against the dark.', 'There we are.', 'One more lit.'])
+                         if want else random.choice(['Morning already.', 'Out you go, little flame.']))
+            return None
+        spots = [(lx + dx, ly + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                 if m.inb(lx + dx, ly + dy) and D.TILES[m.tile(lx + dx, ly + dy)].walk]
+        return min(spots, key=lambda c: cheb(c[0], c[1], npc.x, npc.y)) if spots else npc.home_pos
+    if todo and h not in (18, 19, 20, 5, 6):        # the night came on, or the morning: the rest follow
+        for k in todo:
+            set_lamp(m, k, want)
+    return npc.home_pos
+
+
 def is_night(game):
     h = hour(game)
     return h >= 21 or h < 5
@@ -222,20 +320,23 @@ LIVESTOCK = [('A cow', 'C', '#d8c8b0'), ('A sheep', 's', '#f0f0f0'), ('A pig', '
              ('A hen', 'c', '#e8d090')]
 
 
-def farmland(game, m, plots, sy, names, avoid=None):
+def farmland(game, m, plots, sy, names, avoid=None, want=None):
     """Fields of crops, fenced pastures with livestock and orchards around a village."""
     w, h = m.w, m.h
     fields, pastures = [], []
-    want = [('field', 9), ('pasture', 3), ('orchard', 2)]
+    want = want or [('field', 9), ('pasture', 3), ('orchard', 2)]
     for kind, n in want:
         made = 0
         for _ in range(400):
             if made >= n:
                 break
-            fw, fh = (random.randint(9, 16), random.randint(4, 7)) if kind == 'field' else (random.randint(8, 13), random.randint(5, 7))
+            fw, fh = (random.randint(9, 15), random.randint(6, 10)) if kind == 'field' else (random.randint(8, 13), random.randint(6, 9))
             fx, fy = random.randint(1, w - fw - 2), random.randint(1, h - fh - 2)
             fp = Plot(fx, fy, fw, fh, kind)
-            if any(fp.overlaps(o, 1) for o in plots) or (fy <= sy + 2 and fy + fh >= sy - 2):
+            if any(fp.overlaps(o, 1) for o in plots) or (fy <= sy + 3 and fy + fh >= sy - 3):
+                continue
+            if any(m.tile(xx, yy) in (PATH, WALL, FLOOR, PLANK, WATER, SHALLOW, D.LAMP, WELL, STALL)
+                   for yy in range(fy - 1, fy + fh + 1) for xx in range(fx - 1, fx + fw + 1) if m.inb(xx, yy)):
                 continue
             if avoid and avoid(fx, fy, fw, fh):
                 continue
@@ -267,14 +368,17 @@ def farmland(game, m, plots, sy, names, avoid=None):
     return fields, pastures
 
 
-def fishing_pond(game, m, plots, sy, names):
+def fishing_pond(game, m, plots, sy, names, fisher=True):
     """A reedy pond by the village, with an old fisherman who will teach you to fish."""
     for _ in range(300):
         pw, ph = random.randint(11, 15), random.randint(6, 7)
         px = random.randint(4, m.w - pw - 4)
-        py = random.choice([random.randint(2, sy - ph - 3), random.randint(sy + 4, m.h - ph - 2)])
+        py = random.choice([random.randint(max(2, sy - 24), sy - ph - 3), random.randint(sy + 4, min(m.h - ph - 2, sy + 20))])
         pl = Plot(px - 1, py - 1, pw + 2, ph + 2, 'pond')
         if any(pl.overlaps(o, 1) for o in plots):
+            continue
+        if any(m.tile(xx, yy) in (PATH, WALL, FLOOR, PLANK, FENCE, FIELD) for yy in range(py - 1, py + ph + 1)
+               for xx in range(px - 1, px + pw + 1)):
             continue
         plots.append(pl)
         cx, cy = px + pw / 2 - .5, py + ph / 2 - .5
@@ -296,6 +400,8 @@ def fishing_pond(game, m, plots, sy, names):
             m.set(jx, shore + k * step, PLANK)
         fy = shore + 2 * step
         carve_path(m, (jx, shore - step), (jx, sy))
+        if not fisher:
+            return pl
         full = names.pop()
         from .races import who
         gender, race = who(full)
@@ -306,89 +412,267 @@ def fishing_pond(game, m, plots, sy, names):
     return None
 
 
+def wooded(m, belt=9, inner=.03):
+    """Grass with trees: a forest belt along the edges of the map, copses here and there."""
+    w, h = m.w, m.h
+    copses = [(random.randint(0, w), random.randint(0, h), random.randint(2, 5)) for _ in range(w * h // 700)]
+    for y in range(h):
+        for x in range(w):
+            d = min(x, y, w - 1 - x, h - 1 - y)
+            p = inner + max(0.0, (belt - d) / belt) * .55
+            if any((x - cx) ** 2 + (y - cy) ** 2 < r * r for cx, cy, r in copses):
+                p = max(p, .45)
+            if random.random() < p:
+                m.set(x, y, TREE)
+
+
+def lay_road(m, pts, width):
+    """A road through a list of points, `width` cells wide."""
+    half = width // 2
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        n = max(abs(x1 - x0), abs(y1 - y0), 1)
+        for k in range(n + 1):
+            x = round(x0 + (x1 - x0) * k / n)
+            y = round(y0 + (y1 - y0) * k / n)
+            for dy in range(-half, width - half):
+                for dx in range(-half, width - half):
+                    if abs(x1 - x0) >= abs(y1 - y0) and dx:
+                        continue        # a road running east-west is wide north-south, and the other way round
+                    if abs(x1 - x0) < abs(y1 - y0) and dy:
+                        continue
+                    if m.inb(x + dx, y + dy):
+                        m.set(x + dx, y + dy, PATH)
+
+
+def meander(a, b, step, wobble, horizontal=True):
+    """Points from a to b that wander a little sideways."""
+    pts = [a]
+    off = 0
+    n = max(1, int(abs((b[0] - a[0]) if horizontal else (b[1] - a[1])) // step))
+    for k in range(1, n):
+        off = max(-wobble, min(wobble, off + random.choice([-1, 0, 0, 1])))
+        t = k / n
+        if horizontal:
+            pts.append((round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t) + off))
+        else:
+            pts.append((round(a[0] + (b[0] - a[0]) * t) + off, round(a[1] + (b[1] - a[1]) * t)))
+    pts.append(b)
+    return pts
+
+
+def road_cells(m):
+    return {(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == PATH}
+
+
+def house_plot(kind, x, y):
+    """A plot for a building: homes are often L-shaped, with an annex on one side."""
+    if kind in ('inn', 'temple'):
+        pw, ph = random.randint(11, 14), random.randint(8, 10)
+    elif kind in ('shop', 'stables', 'elder'):
+        pw, ph = random.randint(8, 11), random.randint(6, 8)
+    else:
+        pw, ph = random.randint(6, 9), random.randint(5, 8)
+    pl = Plot(x, y, pw, ph, kind)
+    pl.annex = None
+    if kind in ('home', 'elder', 'inn') and random.random() < .5:
+        aw, ah = random.randint(4, 6), random.randint(4, 6)
+        side = random.choice(['l', 'r'])
+        ay = y + ph - ah if random.random() < .5 else y
+        ax = x - aw + 1 if side == 'l' else x + pw - 1
+        pl.annex = (ax, ay, aw, ah)
+    return pl
+
+
+def plot_box(pl):
+    """The bounding box of a building with its annex: (x, y, w, h)."""
+    x0, y0, x1, y1 = pl.x, pl.y, pl.x + pl.w, pl.y + pl.h
+    if getattr(pl, 'annex', None):
+        ax, ay, aw, ah = pl.annex
+        x0, y0, x1, y1 = min(x0, ax), min(y0, ay), max(x1, ax + aw), max(y1, ay + ah)
+    return Plot(x0, y0, x1 - x0, y1 - y0, pl.kind)
+
+
+def build_house(m, pl):
+    """Walls and floor for a building, joining an annex into one L-shaped room."""
+    build(m, pl)
+    inside = list(pl.inside)
+    if getattr(pl, 'annex', None):
+        ax, ay, aw, ah = pl.annex
+        sub = Plot(ax, ay, aw, ah, pl.kind)
+        for yy in range(ay, ay + ah):
+            for xx in range(ax, ax + aw):
+                if (xx, yy) in set(inside):
+                    continue
+                edge = yy in (ay, ay + ah - 1) or xx in (ax, ax + aw - 1)
+                m.set(xx, yy, WALL if edge else FLOOR)
+        sub_inside = [(xx, yy) for yy in range(ay + 1, ay + ah - 1) for xx in range(ax + 1, ax + aw - 1)]
+        # open up the shared wall so the two parts make one room
+        for yy in range(min(ay, pl.y), max(ay + ah, pl.y + pl.h)):
+            for xx in range(min(ax, pl.x), max(ax + aw, pl.x + pl.w)):
+                if m.tile(xx, yy) != WALL:
+                    continue
+                ns = m.tile(xx, yy - 1) == FLOOR and m.tile(xx, yy + 1) == FLOOR
+                ew = m.tile(xx - 1, yy) == FLOOR and m.tile(xx + 1, yy) == FLOOR
+                if ns or ew:
+                    m.set(xx, yy, FLOOR)
+                    inside.append((xx, yy))
+        inside += [c for c in sub_inside if c not in inside]
+    pl.inside = inside
+
+
+def garden(m, pl, away_y, plots=()):
+    """A small fenced garden behind a house, with vegetables or a fruit tree."""
+    bx = plot_box(pl)
+    gw, gh = random.randint(5, 8), random.randint(4, 5)
+    gx = bx.x + random.randint(0, max(0, bx.w - gw))
+    gy = bx.y - gh if away_y < 0 else bx.y + bx.h
+    cells = [(xx, yy) for yy in range(gy, gy + gh) for xx in range(gx, gx + gw)]
+    if not all(m.inb(*c) and m.tile(*c) in (GRASS, TREE) for c in cells):
+        return None
+    gp = Plot(gx, gy, gw, gh, 'garden')
+    if any(gp.overlaps(o, 1) for o in plots if o is not bx and not (o.x == bx.x and o.y == bx.y)):
+        return None
+    veg = random.random() < .6
+    for xx, yy in cells:
+        edge = yy in (gy, gy + gh - 1) or xx in (gx, gx + gw - 1)
+        if edge:
+            m.set(xx, yy, FENCE)
+        else:
+            m.set(xx, yy, FIELD if veg else GRASS)
+    if not veg:
+        m.set(gx + gw // 2, gy + gh // 2, TREE)
+    gate = (gx + gw // 2, gy + gh - 1 if away_y < 0 else gy)
+    m.set(*gate, GRASS)
+    return Plot(gx, gy, gw, gh, 'garden')
+
+
 def gen_village(game, s):
-    w, h = 104, 38
+    w, h = 112, 72
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
-    for i in range(len(m.t)):
-        if random.random() < .04:
-            m.t[i] = TREE
-    sy = h // 2
-    for x in range(w):                  # the high street: three wide
-        for yy in (sy - 1, sy, sy + 1):
-            m.set(x, yy, PATH)
-    cx = w // 2
-    # the green with a well and market stalls
-    for yy in range(sy - 2, sy + 3):
-        for xx in range(cx - 5, cx + 6):
-            m.set(xx, yy, PATH if abs(yy - sy) <= 1 else GRASS)
-    m.set(cx, sy - 2, WELL)
-    stalls = [(cx - 4, sy + 2), (cx - 3, sy + 2), (cx + 3, sy + 2), (cx + 4, sy + 2)]
+    wooded(m)
+    sy, cx = h // 2, w // 2
+    # the high street, three wide and winding a little, and a lane crossing it at the green
+    street = meander((0, sy), (w - 1, sy), 6, 1, True)
+    lay_road(m, street, 3)
+    lane = meander((cx, 4), (cx, h - 5), 5, 2, False)
+    lay_road(m, lane, 2)
+    # the green: a round lawn with a well and market stalls
+    for yy in range(sy - 7, sy + 8):
+        for xx in range(cx - 10, cx + 11):
+            d = ((xx - cx) / 10) ** 2 + ((yy - sy) / 7) ** 2
+            if d < 1 and m.tile(xx, yy) != PATH:
+                m.set(xx, yy, GRASS)
+    m.set(cx - 4, sy - 4, WELL)
+    stalls = [(cx + 3, sy + 3), (cx + 4, sy + 3), (cx + 6, sy + 3), (cx + 7, sy + 3)]
     for c in stalls:
         m.set(c[0], c[1], STALL)
     names = town_names(getattr(s, 'race', 'human'))
-    plots = [Plot(cx - 6, sy - 3, 13, 7, 'green')]
+    plots = [Plot(cx - 11, sy - 8, 23, 17, 'green')]
+    if s.id == 0 or random.random() < .3:
+        pond = fishing_pond(game, m, plots, sy, names, fisher=s.id == 0)
+        if pond:
+            plots.append(pond)
+    roads = road_cells(m)
     kinds = [k for k in ('inn', 'shop', 'temple', 'stables') if k in s.services]
     if s.id == 0:
         kinds.append('elder')
-    kinds += ['home'] * random.randint(10, 14)
+    kinds += ['home'] * random.randint(14, 19)
+    buildings = []
     for k in kinds:
-        for _ in range(300):
-            pw, ph = (random.randint(11, 14), random.randint(6, 8)) if k in ('inn', 'temple') else (random.randint(7, 10), random.randint(5, 6))
-            px = random.randint(max(2, cx - 36), min(w - pw - 2, cx + 36 - pw))
-            py = random.choice([random.randint(1, sy - ph - 2), random.randint(sy + 3, h - ph - 1)])
-            pl = Plot(px, py, pw, ph, k)
-            if py < 1 or py + ph > h - 1 or any(pl.overlaps(o) for o in plots):
+        for _ in range(400):
+            near_lane = random.random() < .35
+            if near_lane:
+                ry = random.randint(6, h - 14)
+                ly = min((c for c in roads if c[1] == ry), key=lambda c: abs(c[0] - cx), default=(cx, ry))
+                px = ly[0] + random.choice([3, -12])
+                py = ry
+            else:
+                px = random.randint(6, w - 18)
+                py = random.choice([random.randint(sy - 22, sy - 10), random.randint(sy + 4, sy + 12)])
+            pl = house_plot(k, px, py)
+            bx = plot_box(pl)
+            if bx.x < 3 or bx.y < 3 or bx.x + bx.w > w - 3 or bx.y + bx.h > h - 3:
                 continue
-            plots.append(pl)
+            if any(bx.overlaps(o, 2) for o in plots):
+                continue
+            cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
+            if any(c in roads for c in cells):
+                continue
+            plots.append(bx)
+            buildings.append(pl)
             break
-    buildings = [p for p in plots if p.kind != 'green']
     for pl in buildings:
-        build(m, pl)
-        out = place_door(m, pl, pl.x + pl.w // 2, sy)
-        carve_path(m, out, (out[0], sy))
+        build_house(m, pl)
+        bx = plot_box(pl)
+        tgt = min(roads, key=lambda c: cheb(c[0], c[1], pl.x + pl.w // 2, pl.y + pl.h // 2))
+        out = place_door(m, pl, tgt[0], tgt[1])
+        carve_path(m, out, tgt)
         furnish(m, pl)
         if pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
-    if s.id == 0:
-        fishing_pond(game, m, plots, sy, names)
+        if pl.kind == 'home' and random.random() < .55:
+            gd = garden(m, pl, -1 if tgt[1] > pl.y + pl.h // 2 else 1, plots)
+            if gd:
+                plots.append(gd)
     # farmland all around: fields, pastures with livestock, orchards
-    fields, pastures = farmland(game, m, plots, sy, names)
+    fields, pastures = farmland(game, m, plots, sy, names, want=[('field', 14), ('pasture', 4), ('orchard', 3)])
     fields = fields + pastures
+    # street lamps along the roads, at the green and by the doors that matter
+    lamp_spots = []
+    for x in range(4, w - 4, 9):
+        ys = [c[1] for c in roads if c[0] == x]
+        if ys:
+            lamp_spots.append((x, (min(ys) - 1) if (x // 9) % 2 else (max(ys) + 1)))
+    for y in range(6, h - 6, 8):
+        xs = [c[0] for c in roads if c[1] == y and abs(c[0] - cx) < 8]
+        if xs:
+            lamp_spots.append((max(xs) + 1, y))
+    lamp_spots += [(cx - 3, sy - 4), (cx + 8, sy + 2)]
+    for pl in buildings:
+        if pl.kind in ('inn', 'temple', 'elder') and pl.door:
+            dx, dy = pl.door
+            lamp_spots += [(dx + 2, dy + (1 if dy >= pl.y + pl.h - 1 else -1))]
+    place_lamps(m, lamp_spots)
+    hearths(m, buildings)
     # the people who run things
     for pl in buildings:
         if pl.kind in ROLE_OF:
             staff(game, m, pl, pl.kind, names, s)
-    trader_spot = (cx - 3, sy + 3) if m.tile(cx - 3, sy + 3) in (GRASS, PATH) else (cx - 3, sy + 1)
+    trader_spot = (cx + 5, sy + 4) if m.tile(cx + 5, sy + 4) in (GRASS, PATH) else (cx + 5, sy + 2)
     m.set(*trader_spot, GRASS)
     nm, col = TITLE['market']
     m.mons.append(make_npc(game, nm.format(n=names.pop()), 'market', col, trader_spot[0], trader_spot[1], True))
     homes = [p for p in buildings if p.kind == 'home']
     inn = next((p for p in buildings if p.kind == 'inn'), None)
-    for pl in homes:
+    street_cells = sorted(roads)
+    for i, pl in enumerate(homes):
         beds = [c for c in pl.inside if m.tile(*c) in (FLOOR, PLANK)]
+        if i == 0:
+            townsfolk(game, m, beds, (cx, sy), names, 'lamplighter', fg='#e0c080')
+            continue
         for _ in range(random.randint(1, 2)):
             r = random.random()
             if r < .5 and fields:
                 work, job = random.choice(random.choice(fields)), random.choice(['farmer', 'farmer', 'shepherd'])
             elif r < .6:
-                work, job = (cx + random.randint(-4, 4), sy + random.choice([-1, 1])), 'child'
+                work, job = (cx + random.randint(-6, 6), sy + random.randint(-5, 5)), 'child'
             elif r < .75 and inn:
                 work, job = random.choice(free_inside(m, inn) or [inn.door]), 'drinker'
             else:
-                work = (random.randint(2, w - 3), sy + random.choice([-1, 0, 1]))
+                work = random.choice(street_cells)
                 job = random.choice(JOBS)
             if not m.inb(*work) or not D.TILES[m.tile(*work)].walk:
                 work = (cx, sy)
-            townsfolk(game, m, beds, work, names, job, ch='☺',
-                      fg='#c8b8a0' if job == 'child' else '#a8aab4')
-    c = rand_free(game, m, lambda t: t == GRASS)
-    if c:
-        dog = make_npc(game, 'A village dog', 'dog', '#c8a070', c[0], c[1], False, ch='d')
-        m.mons.append(dog)
-    m.portal_pos = (cx + 3, sy - 1)
-    m.set(cx + 3, sy - 1, GRASS)
-    m.entry = (0, sy)
+            townsfolk(game, m, beds, work, names, job, fg='#c8b8a0' if job == 'child' else '#a8aab4')
+    for _ in range(2):
+        c = rand_free(game, m, lambda t: t == GRASS)
+        if c:
+            m.mons.append(make_npc(game, 'A village dog' if _ == 0 else 'A cat', 'dog', '#c8a070' if _ == 0 else '#a0a0a0',
+                                   c[0], c[1], False, ch='d' if _ == 0 else 'c'))
+    m.portal_pos = (cx + 2, sy - 3)
+    m.set(cx + 2, sy - 3, GRASS)
+    m.entry = (0, street[0][1])
     for i in range(len(m.seen)):
         m.seen[i] = 1
     return m
@@ -396,7 +680,7 @@ def gen_village(game, s):
 
 # ------------------------------------------------------------------ cities
 def gen_city(game, s):
-    w, h = 150, 50
+    w, h = 150, 80
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
     for x in range(w):
@@ -434,20 +718,24 @@ def gen_city(game, s):
     stall_spots = [(px - 6, py - 2), (px - 6, py + 2), (px + 6, py - 2), (px + 6, py + 2), (px - 3, py - 3), (px + 3, py + 3)]
     for c in stall_spots:
         m.set(c[0], c[1], STALL)
-    kinds = ['inn', 'inn', 'inn', 'shop', 'shop', 'temple', 'stables', 'barracks', 'barracks'] + ['home'] * 34
+    kinds = ['inn', 'inn', 'inn', 'shop', 'shop', 'temple', 'stables', 'barracks', 'barracks'] + ['home'] * 58
+    buildings = []
     for k in kinds:
         for _ in range(300):
-            pw, ph = (random.randint(12, 16), random.randint(6, 8)) if k in ('inn', 'temple', 'barracks') else (random.randint(7, 11), random.randint(5, 7))
-            x0, y0 = random.randint(2, w - pw - 2), random.randint(2, h - ph - 2)
-            pl = Plot(x0, y0, pw, ph, k)
-            cells = [(xx, yy) for yy in range(y0 - 1, y0 + ph + 1) for xx in range(x0 - 1, x0 + pw + 1)]
-            if any(m.tile(*c) in (PATH, WALL, STALL, FOUNTAIN) for c in cells) or any(pl.overlaps(o, 1) for o in plots):
+            x0, y0 = random.randint(2, w - 16), random.randint(2, h - 12)
+            pl = house_plot('inn' if k == 'barracks' else k, x0, y0)
+            pl.kind = k
+            bx = plot_box(pl)
+            cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
+            if bx.x < 2 or bx.x + bx.w > w - 2 or bx.y + bx.h > h - 2:
                 continue
-            plots.append(pl)
+            if any(m.tile(*c) in (PATH, WALL, STALL, FOUNTAIN) for c in cells) or any(bx.overlaps(o, 1) for o in plots):
+                continue
+            plots.append(bx)
+            buildings.append(pl)
             break
-    buildings = [p for p in plots if p.kind != 'plaza']
     for pl in buildings:
-        build(m, pl)
+        build_house(m, pl)
         tx = min(streets_x, key=lambda sx: abs(sx - (pl.x + pl.w // 2)))
         ty = min(streets_y, key=lambda sy_: abs(sy_ - (pl.y + pl.h // 2)))
         if abs(ty - (pl.y + pl.h // 2)) <= abs(tx - (pl.x + pl.w // 2)):
@@ -462,6 +750,13 @@ def gen_city(game, s):
     for i in range(len(m.t)):
         if m.t[i] == GRASS and random.random() < .03:
             m.t[i] = TREE
+    spots = []
+    for y in streets_y:
+        spots += [(x, y + (2 if y == streets_y[1] else 1) * (1 if (x // 10) % 2 else -1)) for x in range(5, w - 5, 10)]
+    for x in streets_x:
+        spots += [(x + (2 if x == streets_x[2] else 1) * (1 if (y // 9) % 2 else -1), y) for y in range(5, h - 5, 9)]
+    place_lamps(m, spots)
+    hearths(m, buildings)
     first = {}
     for pl in buildings:
         if pl.kind in ROLE_OF and pl.kind not in first:
@@ -495,6 +790,10 @@ def gen_city(game, s):
                 work = (px, py + 1)
             townsfolk(game, m, beds, work, names, job, ch='☺',
                       fg='#c8b8a0' if job == 'child' else '#a8aab4')
+    if homes:
+        beds = [c for c in homes[0].inside if m.tile(*c) in (FLOOR, PLANK)]
+        for _ in range(2):
+            townsfolk(game, m, beds, (px, py + 1), names, 'lamplighter', fg='#e0c080')
     barracks = next((p for p in buildings if p.kind == 'barracks'), None)
     gfg = D.FACTIONS[s.faction]['fg']
     for i in range(9):
@@ -533,8 +832,74 @@ def place_signpost(m):
                 return
 
 
+def embed(m, W, H, fields=True):
+    """Set a small map in the middle of a bigger stretch of countryside: woods, a few fields and the road in.
+    Everything on the small map moves with it."""
+    if m.w >= W and m.h >= H:
+        return m
+    W, H = max(W, m.w), max(H, m.h)
+    ox, oy = (W - m.w) // 2, (H - m.h) // 2
+    big = GameMap(m.key, m.kind, m.name, W, H, GRASS)
+    wooded(big, belt=10, inner=.06)
+    ex, ey = m.entry if m.entry else (0, m.h // 2)
+    # the road in, from the edge of the big map to where the old one began
+    lay_road(big, meander((0, ey + oy), (ex + ox, ey + oy), 5, 1, True), 1)
+    for y in range(m.h):
+        for x in range(m.w):
+            big.t[(y + oy) * W + x + ox] = m.t[y * m.w + x]
+    st = m.__dict__.copy()
+    for k in ('w', 'h', 't', 'seen', '_look', '_look_t', '_light', '_light_dom', '_light_dyn'):
+        st.pop(k, None)
+    big.__dict__.update(st)
+    big.w, big.h = W, H
+    big.seen = bytearray([1]) * (W * H) if m.seen and min(m.seen) == 1 else bytearray(W * H)
+    for o in big.mons + big.items:
+        o.x += ox
+        o.y += oy
+        for a in ('home_pos', 'work_pos'):
+            if hasattr(o, a) and getattr(o, a):
+                v = getattr(o, a)
+                setattr(o, a, (v[0] + ox, v[1] + oy))
+        if hasattr(o, 'path'):
+            o.path = []
+    big.signs = [(x + ox, y + oy, t) for x, y, t in getattr(m, 'signs', [])]
+    big.entry = (0, ey + oy)
+    if m.portal_pos:
+        big.portal_pos = (m.portal_pos[0] + ox, m.portal_pos[1] + oy)
+    if getattr(m, 'lamps', None):
+        big.lamps = [(x + ox, y + oy) for x, y in m.lamps]
+    if getattr(m, 'lights', None):
+        big.lights = [(x + ox, y + oy) + tuple(rest) for x, y, *rest in m.lights]
+    if getattr(m, 'signpost', None):
+        big.signpost = (m.signpost[0] + ox, m.signpost[1] + oy)
+    if fields:                                  # a few fields and meadows on the land around
+        plots = [Plot(ox - 1, oy - 1, m.w + 2, m.h + 2, 'site')]
+        for _ in range(60):
+            fw, fh = random.randint(8, 14), random.randint(5, 8)
+            fx, fy = random.randint(10, W - fw - 10), random.randint(10, H - fh - 10)
+            fp = Plot(fx, fy, fw, fh, 'field')
+            if any(fp.overlaps(o, 2) for o in plots):
+                continue
+            if any(big.tile(xx, yy) == PATH for yy in range(fy - 1, fy + fh + 1) for xx in range(fx - 1, fx + fw + 1)):
+                continue
+            plots.append(fp)
+            for yy in range(fy, fy + fh):
+                for xx in range(fx, fx + fw):
+                    edge = yy in (fy, fy + fh - 1) or xx in (fx, fx + fw - 1)
+                    big.set(xx, yy, FENCE if edge else FIELD)
+            big.set(fx + fw // 2, fy if fy > oy else fy + fh - 1, GRASS)
+            if len(plots) > 5:
+                break
+    return big
+
+
 # ------------------------------------------------------------------ strongholds
 def gen_hold_map(game, hd, hostile):
+    """A castle or fort, out in its own stretch of land."""
+    return embed(_hold_map(game, hd, hostile), 96, 62)
+
+
+def _hold_map(game, hd, hostile):
     castle = hd.kind == 'castle'
     w, h = (60, 23) if castle else (44, 19)
     m = GameMap(hd.map_key, 'siege' if hostile else 'town', hd.title, w, h, GRASS)
@@ -690,13 +1055,24 @@ def path_between(m, a, b):
 def live(game, m):
     """Move townsfolk one step along their day."""
     p = game.player
+    if getattr(m, 'lamps', None) and not any(getattr(o, 'job', '') == 'lamplighter' for o in m.mons):
+        want = lamps_wanted(game)            # no lamplighter here: the monks or the guards see to the lamps
+        if (len(m.lamp_on) == len(m.lamps)) != want:
+            m.lamp_on = set()
+            for k in range(len(m.lamps)):
+                set_lamp(m, k, want)
     for npc in m.mons:
         if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
             game.random_step(npc)
             continue
         if not npc.is_npc or not hasattr(npc, 'work_pos'):
             continue
-        tgt = target_for(game, npc)
+        if npc.job == 'lamplighter':
+            tgt = lamplighter(game, m, npc)
+            if tgt is None:
+                continue
+        else:
+            tgt = target_for(game, npc)
         if (npc.x, npc.y) == tuple(tgt):
             if npc.job not in ('guard',) and random.random() < .15:
                 game.random_step(npc)

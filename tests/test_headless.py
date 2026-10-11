@@ -813,8 +813,34 @@ def thornfield_and_faith():
     g.enter_town(0)
     g.request = None
     m = g.map
-    sy = m.h // 2
-    assert all(m.tile(5, yy) == D.PATH for yy in (sy - 1, sy, sy + 1))
+    ex, ey = m.entry
+    assert sum(1 for yy in range(ey - 2, ey + 3) if m.tile(3, yy) == D.PATH) >= 3, 'the high street is three wide'
+    assert m.w >= ui.MAP_W and m.h >= ui.MAP_H, 'villages fill the screen'
+    # street lamps and the lamplighter who lights them at dusk
+    from cursed_vale import towns as TW, dress as DR
+    assert len(m.lamps) >= 8
+    ll = next(o for o in m.mons if getattr(o, 'job', '') == 'lamplighter')
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * 18.2 / 24)     # just after six in the evening
+    m.lamp_on = set()
+    TW.set_lamp(m, 0, False)
+    for _ in range(40):
+        g.end_turn(1)
+    assert m.lamp_on, 'the lamplighter lit some lamps'
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * 23 / 24)
+    g.end_turn(1)
+    assert len(m.lamp_on) == len(m.lamps)
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    assert app.frame_delay() is not None, 'lamps flicker at night'
+    # talking across the inn counter
+    inn = next(o for o in m.mons if o.role == 'inn')
+    spot = next(((inn.x + dx, inn.y + dy) for dx in (-2, -1, 0, 1, 2) for dy in (2, -2)
+                 if m.inb(inn.x + dx, inn.y + dy) and D.TILES[m.tile(inn.x + dx, inn.y + dy)].walk), None)
+    if spot:
+        p.x, p.y = spot
+        g.compute_fov()
+        assert inn in g.nearby_people(), 'you can talk across the counter'
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + D.DAY_LEN // 2
     fisher = next(o for o in m.mons if o.role == 'fisher')
     assert any(m.tile(fisher.x + dx, fisher.y + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
     p.inv = [i for i in p.inv if not (i.k == 'tool')]
@@ -835,6 +861,17 @@ def thornfield_and_faith():
     p.inv.append(HU.make_food(g, 'barley', 2))
     random.seed(5)
     BR.brew(g, 'ale')
+    # bigger dungeons with flickering lights
+    mm = WG.gen_dungeon(g, 'mine', 1)
+    assert mm.w >= ui.MAP_W and mm.h >= 40
+    DR.light_map(mm)
+    lights = [i for i, d in enumerate(mm._light_dom) if d >= 0]
+    if lights:
+        a, b = DR.light_at(mm, lights[0], 0.0), DR.light_at(mm, lights[0], 0.7)
+        assert a != b, 'lights flicker over time'
+    # the title moves
+    t2 = ui.App(FakeCanvas(ui.W, ui.H))
+    assert t2.frame_delay() is not None
     # the den: kobolds only, in ones and twos
     dm = WG.gen_dungeon(g, 'den', 1)
     keys = {o.k for o in dm.mons}

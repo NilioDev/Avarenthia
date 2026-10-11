@@ -137,7 +137,7 @@ def main():
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)
-            timeout = 1 / 30 if app.animating() else None
+            timeout = app.frame_delay()
             if app.auto:
                 timeout = max(.005, app.auto_delay - (time.monotonic() - last_tick))
             pressed = False

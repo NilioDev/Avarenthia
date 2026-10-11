@@ -19,6 +19,7 @@ from . import calendar as CAL
 from . import crime as CR
 from . import hunger as HU
 from . import gods as GD
+from . import dress as DR
 from . import sites as ST
 from .money import fmt, purse
 from . import world as WO
@@ -363,6 +364,13 @@ class Game:
             r += 2
         if m.kind == 'over':
             self.vis = fov.compute(m, p.x, p.y, self.over_sight(), dense={D.FOREST})
+        elif m.kind == 'town' and getattr(m, 'lights', None) and TW.town_ambient(self, m) > .3:
+            # at night you see as far as the lamps light the streets
+            near = fov.compute(m, p.x, p.y, r)
+            far = fov.cells(m, p.x, p.y, 45)
+            lm = DR.light_map(m)
+            amb = m.ambient
+            self.vis = bytearray(1 if (near[i] or (far[i] and lm[i][0] > amb[0] + .18)) else 0 for i in range(len(far)))
         else:
             self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind not in ('over', 'town'):
@@ -554,6 +562,7 @@ class Game:
             self.msg('News: ' + D.EVENTS[s.event[0]]['text'].format(town=s.name), 'info')
         MS.on_enter(self, sid)
         MS.place_clients(self, sid, m)
+        TW.sync_lamps(self, m)
         self.compute_fov()
         self.request = ('save',)
         CR.at_gate(self, s)
@@ -568,6 +577,7 @@ class Game:
         self.cur = site.map_key
         m = self.map
         p.x, p.y = m.entry[0] + 1, m.entry[1]
+        TW.sync_lamps(self, m)
         self.msg(f'You come to {site.name}.', 'info')
         self.compute_fov()
         self.request = ('save',)
@@ -2172,6 +2182,49 @@ class Game:
             return
         self.say(npc, random.choice(['Caught anything big yet?', 'They say a golden carp lives in the deep rivers. I never saw it.',
                                      'The pike in the lakes will take your finger off. Mind it.', self.rumor()]))
+
+    def nearby_people(self):
+        """Who you could talk to from where you stand: people within two steps (across a counter or a table)."""
+        m, p = self.map, self.player
+        out = []
+        if m.kind == 'over':
+            for wd in self.world.wanderers:
+                if not wd.hostile and cheb(wd.x, wd.y, p.x, p.y) <= 1 and wd.kind in ('traveler', 'caravan'):
+                    out.append(wd)
+            return out
+        for o in m.mons:
+            if o.is_npc and cheb(o.x, o.y, p.x, p.y) <= 2 and self.visible(o.x, o.y):
+                if cheb(o.x, o.y, p.x, p.y) == 2:
+                    mid = ((p.x + o.x) // 2, (p.y + o.y) // 2), ((p.x + o.x + 1) // 2, (p.y + o.y + 1) // 2)
+                    if all(D.TILES[m.tile(*c)].opaque for c in mid):
+                        continue            # a wall between you
+                out.append(o)
+        animals = ('livestock', 'dog', 'escort')
+        out.sort(key=lambda o: (o.role in animals, cheb(o.x, o.y, p.x, p.y)))
+        return out
+
+    def talk_to(self, who):
+        """Talk to a person (or a traveller on the road)."""
+        if self.map.kind == 'over':
+            if who.kind == 'traveler':
+                EV.talk_traveller(self, who)
+            else:
+                EV.talk_caravan(self, who)
+            return
+        self.talk(who)
+
+    def talk_nearby(self):
+        """The talk key: talk to the person next to you, or ask who."""
+        people = self.nearby_people()
+        if not people:
+            self.msg('There is nobody near enough to talk to.')
+            return 0
+        humans = [o for o in people if getattr(o, 'role', 'traveler') not in ('livestock', 'dog', 'escort')]
+        if len(humans) == 1 or (len(people) == 1):
+            self.talk_to(humans[0] if humans else people[0])
+            return 0
+        self.request = ('talkpick', [o.id for o in people])
+        return 0
 
     def rumor(self):
         w = self.world

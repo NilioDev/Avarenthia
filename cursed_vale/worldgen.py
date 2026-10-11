@@ -82,17 +82,29 @@ def free_around(game, m, x, y, r):
 # ------------------------------------------------------------------ dungeons
 def gen_rooms(m):
     rooms = []
-    for _ in range(400):
-        if len(rooms) >= 11:
+    want = max(8, m.w * m.h // 280)
+    for _ in range(600):
+        if len(rooms) >= want:
             break
-        rw, rh = random.randint(5, 12), random.randint(3, 6)
+        rw, rh = random.randint(5, 12), random.randint(4, 9)
         x, y = random.randint(2, m.w - rw - 3), random.randint(2, m.h - rh - 3)
         if any(x - 2 < r[0] + r[2] and x + rw + 2 > r[0] and y - 2 < r[1] + r[3] and y + rh + 2 > r[1] for r in rooms):
             continue
         rooms.append((x, y, rw, rh))
     for x0, y0, rw, rh in rooms:
+        shape = random.random()
+        cxr, cyr = x0 + (rw - 1) / 2, y0 + (rh - 1) / 2
         for yy in range(y0, y0 + rh):
             for xx in range(x0, x0 + rw):
+                if shape < .3 and rw >= 6 and rh >= 5:      # a round hall
+                    if ((xx - cxr) / (rw / 2)) ** 2 + ((yy - cyr) / (rh / 2)) ** 2 > 1.05:
+                        continue
+                elif shape < .45 and rw >= 7 and rh >= 6:   # a cross-shaped chamber
+                    if abs(xx - cxr) > rw / 5 + .5 and abs(yy - cyr) > rh / 5 + .5:
+                        continue
+                elif shape < .6:                            # pillars
+                    if (xx - x0) % 3 == 1 and (yy - y0) % 3 == 1 and 0 < xx - x0 < rw - 1 and 0 < yy - y0 < rh - 1:
+                        continue
                 m.set(xx, yy, FLOOR)
     rooms.sort(key=lambda r: r[0])
     c = lambda r: (r[0] + r[2] // 2, r[1] + r[3] // 2)
@@ -221,7 +233,8 @@ def gen_dungeon(game, did, depth):
     d = game.world.dungeons[did]
     lvl = d.base + depth
     last = depth == d.depth
-    m = GameMap(f'{did}:{depth}', 'dungeon', d.name, 70, 28, ROCK if d.style == 'cave' else WALL)
+    dw, dh = (60, 36) if d.tag == 'den' else (84, 50)       # square cells: maps as tall as they are wide
+    m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if d.style == 'cave' else WALL)
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
     if d.style == 'cave':
         gen_cave(m)
@@ -246,7 +259,7 @@ def gen_dungeon(game, did, depth):
             m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
-    npacks = 4 + depth + random.randint(0, 1)
+    npacks = round((4 + depth + random.randint(0, 1)) * 1.5)
     if d.tag == 'den':
         npacks = 4                      # the first fight should teach, not punish (packs of one or two)
     elites = 0
@@ -315,7 +328,7 @@ def open_chest(game, x, y):
 def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
     """A small battle map for an overworld encounter. keys lists the monster type of each enemy."""
     base = {SWAMP: SWAMP, D.SAND: D.SAND}.get(terrain, GRASS)
-    m = GameMap('wild', 'wild', 'Wilderness', 48, 20, base)
+    m = GameMap('wild', 'wild', 'Wilderness', 80, 51, base)
     m.radius, m.level = 11, lvl
     for i in range(len(m.t)):
         r = random.random()
@@ -337,7 +350,7 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
                 m.t[i] = WATER
         elif r < .05:
             m.t[i] = TREE
-    cx, cy = 24, 10
+    cx, cy = m.w // 2, m.h // 2
     for y in range(cy - 2, cy + 3):
         for x in range(cx - 2, cx + 3):
             m.set(x, y, base)

@@ -45,6 +45,35 @@ WANDERER = [
 ]
 
 
+WATER = {}          # cell index -> (top, bottom) colour of the water there, for the shimmer
+SUN_X = 0.0
+
+
+def animate(cv, cells, t):
+    """Draw the moving parts of the picture over it: twinkling stars, glittering water, flapping birds."""
+    w = cv.w
+    for i, (ch, fg, bg) in enumerate(cells):
+        x, y = i % w, i // w
+        if ch in '·+':
+            k = .5 + .5 * math.sin(t * (1.3 + (_h(x, y, 91) % 7) * .35) + _h(x, y, 92) % 40)
+            cv.put(x, y, '+' if k > .85 and ch == '+' else '·', _lerp(bg, fg, .25 + .75 * k), bg)
+        elif ch == 'v':
+            cv.put(x, y, 'v' if int(t * 2.5 + x) % 2 else '^', fg, bg)
+    for i, (top, bot) in WATER.items():
+        x, y = i % w, i // w
+        wave = math.sin(t * 1.6 + x * .55 - y * 1.9) + .6 * math.sin(t * 2.7 - x * .9 + y * .7)
+        near_sun = abs(x - SUN_X) < 3 + y * .12
+        glint = near_sun and (_h(x, y, int(t * 5)) % 7 == 0)
+        if glint:
+            cv.put(x, y, '*' if _h(x, y, int(t * 5) + 1) % 2 else '·', (255, 244, 210), _lerp(top, bot, .5))
+        elif wave > 1.05:
+            cv.put(x, y, '≈', _lerp(top, (255, 236, 190), .55), _lerp(top, bot, .5))
+        elif wave > .55:
+            cv.put(x, y, '~', _lerp(top, (255, 236, 190), .35), _lerp(top, bot, .5))
+        else:
+            cv.put(x, y, '▀', top, bot)
+
+
 def _lerp(a, b, t):
     return (round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t), round(a[2] + (b[2] - a[2]) * t))
 
@@ -252,11 +281,15 @@ def paint(w, h):
 
     # -- to cells
     out = []
+    global WATER, SUN_X
+    WATER, SUN_X = {}, sunx
     for cy in range(h):
         for cx in range(w):
             t, b = px[cy * 2][cx], px[cy * 2 + 1][cx]
             kt, kb = kind[cy * 2][cx], kind[cy * 2 + 1][cx]
             r = _h(cx, cy, 81)
+            if kt in ('water', 'river') and kb in ('water', 'river'):
+                WATER[cy * w + cx] = (t, b)
             if kt == kb == 'sky' and not (_h(cx, cy, 82) % 41) and cy * 2 < hz * .45:
                 out.append(('·' if r % 3 else '+', _lerp(t, (255, 255, 255), .6), t))     # a few last stars
                 continue
