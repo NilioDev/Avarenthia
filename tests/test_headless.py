@@ -235,11 +235,22 @@ def factions_and_death():
           'warbands', sum(1 for w in g.world.wanderers if w.kind == 'warband'))
 
 
-if __name__ == '__main__':
-    random.seed(1)
+def main():
+    random.seed(int(os.environ.get('TEST_SEED', '1')))
     smoke()
     trade_and_jobs()
     factions_and_death()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception:
+        import traceback
+        tb = traceback.format_exc()
+        if os.environ.get('GITHUB_ACTIONS'):
+            print('::error title=Headless test failed::' + tb.replace('%', '%25').replace('\r', '').replace('\n', '%0A'))
+        raise
     if '--dump' in sys.argv:
         app = new_app()
         app.render()
