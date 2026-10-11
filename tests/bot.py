@@ -1,4 +1,4 @@
-"""Balance check: a scripted bot plays through all three dungeons.
+"""Balance check: a scripted bot plays through the story dungeons and the evil lairs.
 Run from the project folder:  python tests/bot.py [games_per_class]
 """
 import os
@@ -12,7 +12,7 @@ from cursed_vale import engine as E, data as D, worldgen as WG  # noqa: E402
 from cursed_vale.entities import Item  # noqa: E402
 
 E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_bot.dat')
-ORDER = [('rat', 3), ('mine', 4), ('crypt', 5)]
+ORDER = [('rat', 3), ('mine', 4)]   # followed by the lairs of this world's great evils
 
 
 def score(it):
@@ -148,7 +148,8 @@ def turn(g):
 
 def play(cls):
     g = E.Game('Bot', True)
-    for did, depth in ORDER:
+    order = ORDER + [(e.did, g.world.dungeons[e.did].depth) for e in g.world.evils]
+    for did, depth in order:
         for lv in range(1, depth + 1):
             g.enter_dungeon(did, lv, 'up')
             for _ in range(3000):
@@ -159,7 +160,7 @@ def play(cls):
                 r = turn(g)
                 if g.dead:
                     return f'died {did}{lv} L{g.player.lvl} by {g.cause}', g
-                if g.flags.get('lich'):
+                if g.flags.get('saved'):
                     return 'WIN', g
                 if r == 'done':
                     m = g.map
@@ -179,7 +180,7 @@ def play(cls):
                     if not st:
                         break
                     act(g, lambda: g.try_move(*st))
-    return ('WIN' if g.flags.get('lich') else 'stuck'), g
+    return ('WIN' if g.flags.get('saved') else 'stuck'), g
 
 
 if __name__ == '__main__':

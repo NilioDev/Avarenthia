@@ -209,6 +209,9 @@ def describe(sk, r):
 def gain(game, line, amount):
     p = game.player
     d = p.disc[line]
+    from .races import RACES
+    rc = RACES.get(getattr(p, 'race', 'human'), RACES['human'])
+    amount = amount * rc['learn'].get(line, 1.1 if p.race == 'human' else 1)
     d[1] += amount
     while d[0] < 100 and d[1] >= need_for(d[0]):
         d[1] -= need_for(d[0])

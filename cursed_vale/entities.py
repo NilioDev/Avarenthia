@@ -49,6 +49,11 @@ class Item:
         if self.k == 'tome':
             from .skills import SKILLS
             return f'Tome of {SKILLS[self.t].name}'
+        if self.k == 'tool':
+            return 'Fishing Pole'
+        if self.k == 'fish':
+            from .lifeskills import FISH
+            return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
         if self.k == 'gear' and self.cursed and self.curse_known:
@@ -71,6 +76,10 @@ class Item:
         if self.k == 'tome':
             from .skills import SKILLS, DISC_COLOR
             return DISC_COLOR[SKILLS[self.t].line]
+        if self.k == 'tool':
+            return (190, 150, 100)
+        if self.k == 'fish':
+            return (255, 214, 92) if self.t == 'golden' else (150, 200, 220)
         return (238, 228, 194)
 
     def glyph(self):
@@ -88,6 +97,10 @@ class Item:
             return '%'
         if self.k == 'tome':
             return '≡'
+        if self.k == 'tool':
+            return '/'
+        if self.k == 'fish':
+            return '~'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -106,6 +119,11 @@ class Item:
                 out.append('Opens a portal to the last town you visited, and back.')
             elif self.k == 'quest':
                 out.append('A relic someone is waiting for. Bring it back to claim your reward.')
+            elif self.k == 'tool':
+                out.append('Stand next to water and press A to fish. Fishing grows the more you do it.')
+            elif self.k == 'fish':
+                from .lifeskills import FISH
+                out.append(f'Eat it to heal {FISH[self.t][5]} life, or sell it.')
             elif self.k == 'tome':
                 from .skills import SKILLS, DISCIPLINES, describe
                 sk = SKILLS[self.t]
@@ -143,6 +161,11 @@ class Item:
         if self.k == 'tome':
             from .skills import SKILLS, UNLOCKS
             return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
+        if self.k == 'tool':
+            return 20
+        if self.k == 'fish':
+            from .lifeskills import FISH
+            return FISH[self.t][4] * 4
         if self.k != 'gear':
             return 0
         v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
@@ -160,7 +183,7 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll')
+        return self.k in ('potion', 'scroll', 'fish')
 
 
 class Monster:
@@ -236,6 +259,8 @@ class Player:
         self.mounts = []        # 'mule', 'cart'
         self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
         self.deaths = 0
+        self.life_sk = {'fishing': [0, 0]}     # life skills: rank, progress
+        self.race, self.gender = 'human', 'other'
         self.life = 1
         self.mana = 1
         self.last_target = None
@@ -260,6 +285,7 @@ class GameMap:
         st = self.__dict__.copy()
         st.pop('_look', None)          # drawing cache, rebuilt on demand
         st.pop('_look_t', None)
+        st.pop('_light', None)
         return st
 
     def inb(self, x, y):

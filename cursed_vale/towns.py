@@ -12,6 +12,15 @@ from .worldgen import cheb, rand_free
 NAMES = ['Dorien', 'Ilse', 'Berend', 'Maud', 'Aldric', 'Petra', 'Hob', 'Wenna', 'Garrick', 'Tamsin', 'Osric', 'Lyra',
          'Bram', 'Edda', 'Corwin', 'Nell', 'Fenwick', 'Rowan', 'Sabine', 'Tobin', 'Agnes', 'Merrit', 'Jory', 'Hilde',
          'Alwin', 'Bess', 'Cuthbert', 'Dunstan', 'Elsa', 'Gilles', 'Hester', 'Ivo', 'Jessamy', 'Kit', 'Leofric', 'Mabel']
+
+
+def town_names(race):
+    from .races import names_for
+    names = names_for(race, 40) + NAMES[:4]
+    random.shuffle(names)
+    return names
+
+
 JOBS = ['farmer', 'farmer', 'baker', 'weaver', 'woodcutter', 'fisher', 'tanner', 'carter', 'cooper', 'miller', 'potter']
 BARKS = {
     'farmer': ['Rain is coming, I can smell it.', 'These turnips won\'t dig themselves.', 'The crows took half the seed again.'],
@@ -225,8 +234,7 @@ def gen_village(game, s):
     stalls = [(cx - 4, sy + 2), (cx - 3, sy + 2), (cx + 3, sy + 2), (cx + 4, sy + 2)]
     for c in stalls:
         m.set(c[0], c[1], STALL)
-    names = NAMES[:]
-    random.shuffle(names)
+    names = town_names(getattr(s, 'race', 'human'))
     plots = [Plot(cx - 6, sy - 3, 13, 7, 'green')]
     kinds = [k for k in ('inn', 'shop', 'temple', 'stables') if k in s.services]
     if s.id == 0:
@@ -335,8 +343,7 @@ def gen_city(game, s):
         for xx in range(px - 8, px + 9):
             m.set(xx, yy, PATH)
     m.set(px, py, FOUNTAIN)
-    names = NAMES[:]
-    random.shuffle(names)
+    names = town_names(getattr(s, 'race', 'human'))
     plots = [Plot(px - 9, py - 4, 19, 9, 'plaza')]
     stall_spots = [(px - 6, py - 2), (px - 6, py + 2), (px + 6, py - 2), (px + 6, py + 2), (px - 3, py - 3), (px + 3, py + 3)]
     for c in stall_spots:
@@ -420,7 +427,21 @@ def gen_city(game, s):
 
 
 def gen_settlement_map(game, s):
-    return gen_city(game, s) if s.is_city else gen_village(game, s)
+    m = gen_city(game, s) if s.is_city else gen_village(game, s)
+    place_signpost(m)
+    return m
+
+
+def place_signpost(m):
+    """A signpost by the road into town, telling where the roads lead."""
+    ex, ey = m.entry
+    for dx in range(2, 8):
+        for dy in (-1, 1, -2, 2):
+            x, y = ex + dx, ey + dy
+            if m.inb(x, y) and m.tile(x, y) in (GRASS, PATH, D.FLOOR) and not m.mon_at(x, y):
+                m.set(x, y, D.SIGNPOST)
+                m.signpost = (x, y)
+                return
 
 
 # ------------------------------------------------------------------ strongholds
@@ -500,8 +521,7 @@ def gen_hold_map(game, hd, hostile):
             m.mons.append(mon)
         m.entry = (0, gate_y)
     else:
-        names = NAMES[:]
-        random.shuffle(names)
+        names = town_names(D.FACTIONS[hd.faction].get('race', 'human'))
         spot = free_inside(m, keep)[0]
         m.mons.append(make_npc(game, f"Castellan {names.pop()}", 'castellan', '#f0e0a0', spot[0], spot[1], True))
         if armory:

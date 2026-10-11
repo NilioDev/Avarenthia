@@ -247,6 +247,12 @@ def accept(game, s, m):
     m.state = 'active'
     game.missions.append(m)
     w = game.world
+    if m.kind in ('courier', 'freight', 'escort') and m.target is not None:
+        t = w.settlements[m.target]
+        game.reveal_place(t.x, t.y, 2)
+    elif m.kind == 'fetch':
+        d = w.dungeons[m.data['dungeon']]
+        game.reveal_place(d.x, d.y, 1)
     if m.kind == 'courier':
         p.parcels.append(dict(mid=m.id, name=m.data['parcel'], w=1))
     elif m.kind == 'freight':
@@ -541,6 +547,9 @@ def accept_personal(game, wd, o):
                   f"before day {m.deadline}.")
     m.state = 'active'
     game.missions.append(m)
+    for sid in (o['wait'], o.get('rtown')):
+        if sid is not None:
+            game.reveal_place(w.settlements[sid].x, w.settlements[sid].y, 2)
     game.msg(f'Job accepted: {m.title}. {first} will wait at the inn in {town}.', 'gold')
     return True
 

@@ -7,6 +7,7 @@ from . import data as D
 
 REF = 40.0
 faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
+race_factor = lambda s: 1.0  # set by the game: how the townsfolk's race feels about yours
 
 
 def _discount(s):
@@ -42,16 +43,16 @@ def price(s, g):
 
 
 def buy_price(s, g):
-    return max(1, round(price(s, g) * 1.08 * (1 - _discount(s))))
+    return max(1, round(price(s, g) * 1.08 * (1 - _discount(s)) * race_factor(s)))
 
 
 def sell_price(s, g):
     b = buy_price(s, g)
-    return max(1, min(b - 1, round(price(s, g) * .92 * (1 + _discount(s)))))
+    return max(1, min(b - 1, round(price(s, g) * .92 * (1 + _discount(s)) / race_factor(s))))
 
 
 def cargo_capacity(p):
-    return D.BASE_CARGO + sum(D.MOUNTS[k]['cap'] for k in p.mounts)
+    return D.BASE_CARGO + sum(D.MOUNTS[k]['cap'] for k in p.mounts) + (20 if getattr(p, 'race', '') == 'dwarf' else 0)
 
 
 def cargo_weight(p):

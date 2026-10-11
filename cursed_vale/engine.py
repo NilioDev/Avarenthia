@@ -12,14 +12,16 @@ from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
 from . import events as EV
-from . import curse as CU
+from . import evils as EVL
+from . import factions as FA
+from . import races as RC
 from . import world as WO
 from . import worldgen as W
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 7
+SAVE_VERSION = 8
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -87,7 +89,7 @@ def lore_rank(kills):
 
 
 class Game:
-    def __init__(self, name, hardcore=True, seed=None):
+    def __init__(self, name, hardcore=True, seed=None, race='human', gender='other'):
         self.version = SAVE_VERSION
         self.seed = seed if seed is not None else random.randrange(1, 10 ** 9)
         random.seed(self.seed)
@@ -121,6 +123,9 @@ class Game:
         self.corpses = []
         self.turn = D.DAY_LEN * 7 // 24      # the story starts at seven in the morning
         p = self.player = Player(name or 'Wanderer', hardcore)
+        p.race, p.gender = race, gender
+        for st, v in RC.RACES[race]['stats'].items():
+            setattr(p, st, getattr(p, st) + v)
         p.x = p.y = -5
         self.cur = 'none'
 
@@ -147,19 +152,19 @@ class Game:
         ECO.init_markets(world)
         home = world.settlements[0]
         self.over_pos = (home.x, home.y)
-        # the realm map you start with: every road and settlement, plus the land around Thornfield
-        for i, t in enumerate(over.t):
-            if t in (ROAD, TOWN, CITY):
-                over.seen[i] = 1
-        for y in range(home.y - 6, home.y + 7):
-            for x in range(home.x - 9, home.x + 10):
+        # you only know the land around Thornfield; the rest you learn from people and signposts
+        for y in range(home.y - 7, home.y + 8):
+            for x in range(home.x - 11, home.x + 12):
                 if over.inb(x, y):
                     over.seen[y * over.w + x] = 1
         rat = world.dungeons['rat']
         over.seen[rat.y * over.w + rat.x] = 1
         self.home = 0
-        CU.update(self, announce=False)
-        ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
+        EVL.setup_monsters(world)
+        EVL.update(self, announce=False)
+        # how the factions see you depends on who you are
+        p.rep = {f: fd['start'] + (RC.relation(fd.get('race'), race) if f != 'cult' else 0) for f, fd in D.FACTIONS.items()}
+        self.hook()
         self.cur = home.map_key
         self.maps[self.cur] = TW.gen_settlement_map(self, home)
         m = self.maps[self.cur]
@@ -173,6 +178,13 @@ class Game:
         self.compute_fov()
 
     # ------------------------------------------------------------ basics
+    def hook(self):
+        """Install this world's factions, boss names and price rules (after creating or loading)."""
+        FA.install(self.world.factions)
+        EVL.setup_monsters(self.world)
+        ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
+        ECO.race_factor = lambda st: RC.price_factor(self, getattr(st, 'race', 'human'))
+
     def new_id(self):
         self._next_id += 1
         return self._next_id
@@ -297,6 +309,8 @@ class Game:
         wr = p.disc[line][0] if line else 0
         dexy = line in ('daggers', 'archery')
         mul = 1 + (s['dex'] if dexy else s['str']) / 100 + s['ed'] / 100 + wr * .015 + buff_dmg / 100
+        if getattr(p, 'race', '') == 'orc' and not (w and D.BASES[w.base].get('ranged')):
+            mul += .1
         s['dmg'] = (max(1, int(bd[0] * mul + s['dmg_flat'])), max(1, int(bd[1] * mul + s['dmg_flat'])))
         s['ar'] = 20 + s['dex'] * 2 + p.lvl * 4 + s['hit'] + wr * 2
         s['def'] = s['armor'] + s['dex'] // 2
@@ -315,6 +329,8 @@ class Game:
         r = m.radius
         if m.kind in ('over', 'town') and TW.is_night(self):
             r = 5 if m.kind == 'over' else 9
+            if self.player.race == 'elf':
+                r += 2
         self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
@@ -447,7 +463,7 @@ class Game:
         if not alive:
             self.world.wanderers.remove(wd)
             if wd.kind == 'hunt':
-                self.msg("Morvenna's hunters fall. Somewhere far away, a woman screams in rage.", 'unique')
+                self.msg(f"{self.world.evils[wd.evil].name}'s hunters fall. Somewhere far away, something howls in rage.", 'unique')
             else:
                 self.msg(f'You have dealt with {wd.name[0].lower() + wd.name[1:]}.', 'good')
             MS.on_group_defeated(self, wd)
@@ -591,6 +607,8 @@ class Game:
                 self.msg('The mountains are too steep to climb.')
             elif t == WELL:
                 self.msg('An old well. The water is cool and clear.')
+            elif t == D.SIGNPOST:
+                self.read_signpost()
             return 0
         ox, oy = p.x, p.y
         p.x, p.y = nx, ny
@@ -637,16 +655,20 @@ class Game:
         w = self.world
         reg = w.region_at(p.x, p.y)
         off = w.off_road(p.x, p.y)
-        night = TW.is_night(self) or CU.blighted(self, p.x, p.y)
+        evil = EVL.taint_at(self, p.x, p.y)
+        night = TW.is_night(self) or bool(evil)
+        cost += EVL.DIVE_COST.get(evil.d['taint'], 0) if evil else 0
         if t == ROAD:
             chance = .003 * (2 if night else 1)
         else:
             chance = min(.11, .012 + off * .004) * cost / 10 * (1.6 if night else 1)
+        if p.race == 'halfling':
+            chance *= .75
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
         if random.random() < chance:
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
-            keys = WA.wild_pack(reg.biome, lvl, night)
+            keys = EVL.wild_keys(self, p.x, p.y, lvl) or WA.wild_pack(reg.biome, lvl, night)
             r = random.random()
             elite = 1 if r < .08 + off * .004 else 0
             self.start_encounter(None, t, lvl, keys, elite)
@@ -867,6 +889,14 @@ class Game:
             self.clamp_vitals()
             self.msg('You remove the item.')
 
+    def fish(self):
+        from . import lifeskills as LS
+        return LS.fish(self)
+
+    def eat(self, it):
+        from . import lifeskills as LS
+        return LS.eat(self, it)
+
     def read_tome(self, it):
         if SK.learn(self, it.t):
             self.remove_one(it)
@@ -943,7 +973,10 @@ class Game:
         pass
 
     def buy_supply(self, i):
-        k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp')][i]
+        k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod')][i]
+        if k == 'tool' and any(x.k == 'tool' for x in self.player.inv):
+            self.msg('You already have a fishing pole.')
+            return
         it = Item(self.new_id(), k, t)
         p = self.player
         if p.gold < it.value():
@@ -952,7 +985,7 @@ class Game:
             self.msg('Your bag is full.', 'bad')
             return
         p.gold -= it.value()
-        self.msg(f"You buy a {D.POTIONS[t]['name'] if k == 'potion' else 'Scroll of Town Portal'}.", 'gold')
+        self.msg(f"You buy a {it.display_name()}.", 'gold')
 
     def buy_gear(self, i, key=None):
         shop = self.shops.get(self.home if key is None else key, [])
@@ -1069,6 +1102,9 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher'):
+            from .dress import add_blood
+            add_blood(m, mon.x, mon.y, 2 if (mon.elite or mon.is_boss) else random.randint(0, 1))
         if not mon.is_npc:
             e = self.bestiary.setdefault(mon.k, [self.day, 0])
             before = lore_rank(e[1])
@@ -1094,12 +1130,8 @@ class Game:
         elif mon.k == 'grolm':
             self.flags['grolm'] = True
             self.msg('The Lost Mine falls silent.', 'gold')
-        elif mon.k == 'lich':
-            self.flags['lich'] = True
-            self.msg('Morvenna shrieks and crumbles to dust. The curse is broken!', 'unique')
-            CU.update(self)
-            self.world.wanderers = [x for x in self.world.wanderers if x.kind != 'hunt']
-            self.request = ('win',)
+        if mon.tpl.get('boss'):
+            EVL.on_kill(self, mon)
 
     def capture_hold(self, hid):
         h = self.world.holds[hid]
@@ -1162,6 +1194,7 @@ class Game:
 
     def gain_xp(self, n):
         p = self.player
+        n = max(1, round(n * RC.RACES[p.race]['xp']))
         p.xp += n
         while p.xp >= xp_for(p.lvl):
             p.lvl += 1
@@ -1171,7 +1204,7 @@ class Game:
             self.num(p.x, p.y, 'LEVEL UP', C_GOLD, True)
             self.shake()
             self.msg(f'You reach level {p.lvl}! Press C to spend {D.LEVEL_STAT_POINTS} attribute points.', 'gold')
-            CU.update(self)
+            EVL.update(self)
 
     def mon_hit_chance(self, mon, df):
         return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6) - .02 * self.lore(mon.k), .12, .9)
@@ -1192,7 +1225,7 @@ class Game:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 3))
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} hits you.', 'bad')
             if mon.tpl['poison'] and random.random() < .4:
-                p.poison = [6, max(1, round(mon.lvl / 2))]
+                p.poison = [3 if getattr(p, 'race', '') == 'dwarf' else 6, max(1, round(mon.lvl / 2))]
                 self.msg('Venom burns in your veins!', 'bad')
             self.hurt(dmg, mon.the())
         else:
@@ -1206,7 +1239,7 @@ class Game:
         self.flash(path[:-1], (255, 122, 60) if spell else (216, 208, 176), '*' if spell else '-', .2)
         name = mon.the()[0].upper() + mon.the()[1:]
         if spell or random.random() < self.mon_hit_chance(mon, df):
-            self.msg(f"{name}'s {'firebolt' if spell else 'arrow'} hits you.", 'bad')
+            self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else 'arrow'} hits you.", 'bad')
             self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8), mon.the())
         else:
             self.num(p.x, p.y, 'miss', C_MISS)
@@ -1262,12 +1295,11 @@ class Game:
                 m.mons.append(o)
                 mon.summons += 1
                 self.flash([(x, y)], (196, 134, 255), '*', .2)
-                self.msg('Morvenna beckons, and a skeleton claws its way out of the ground!' if mon.k == 'lich'
-                         else 'The Rat King squeals. A rat scurries out of the dark!', 'bad')
+                self.msg(d.get('summon_msg', '{name} squeals. A rat scurries out of the dark!').format(name=mon.name), 'bad')
                 return
         if d['nova'] and dist <= 2 and random.random() < .22:
-            self.flash(ring(mon.x, mon.y, 2), (159, 216, 255), '*', .26)
-            self.msg('Morvenna unleashes a wave of grave-cold!', 'bad')
+            self.flash(ring(mon.x, mon.y, 2), d.get('nova_col', (159, 216, 255)), '*', .26)
+            self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=mon.name), 'bad')
             self.hurt(random.randint(*mon.dmg) * .8, mon.name)
             return
         if d['leap'] and seen and 2 <= dist <= 5 and random.random() < .3:
@@ -1276,7 +1308,7 @@ class Game:
                 x, y = min(sp, key=lambda c: cheb(c[0], c[1], mon.x, mon.y))
                 self.flash(line(mon.x, mon.y, x, y), (232, 128, 60), '*', .2)
                 mon.x, mon.y = x, y
-                self.msg('Grolm leaps at you with a roar!', 'bad')
+                self.msg(d.get('leap_msg', '{name} leaps at you with a roar!').format(name=mon.name), 'bad')
                 if random.random() < self.mon_hit_chance(mon, df):
                     self.hurt(random.randint(*mon.dmg) * 1.4, mon.name)
                 return
@@ -1321,7 +1353,7 @@ class Game:
         self.compute_dist()
         df = self.stats()['def']
         for mon in m.mons[:]:
-            if self.dead or self.cur != key or self.flags.get('lich') and self.request == ('win',):
+            if self.dead or self.cur != key or self.request == ('win',):
                 return
             if mon not in m.mons:
                 continue
@@ -1407,9 +1439,9 @@ class Game:
                 WA.daily(self)
                 WAR.daily(self)
                 MS.daily(self)
-                CU.daily(self)
+                EVL.daily(self)
             self.last_day = self.day
-        CU.whisper(self)
+        EVL.whisper(self)
         self.compute_fov()
         if self.map.kind == 'town':
             TW.live(self, self.map)
@@ -1417,7 +1449,7 @@ class Game:
             self.monsters_act()
         elif self.cur == 'over':
             EV.discover(self)
-            CU.sense(self)
+            EVL.sense(self)
             wd = WA.hostile_adjacent(self) if not self.pending else None
             if wd:
                 self.start_encounter(wd)
@@ -1683,6 +1715,48 @@ class Game:
         if self.cur == 'over' and (p.x, p.y) == tgt:
             self.over_step()
 
+    def reveal_route(self, a, b):
+        """Mark the road from settlement a to settlement b, and b itself, on the map."""
+        om = self.maps['over']
+        path = WA.road_path(self, a, b) or []
+        for x, y in path:
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    if om.inb(x + dx, y + dy):
+                        om.seen[(y + dy) * om.w + x + dx] = 1
+        s = self.world.settlements[b]
+        om.seen[s.y * om.w + s.x] = 1
+        return len(path)
+
+    def reveal_place(self, x, y, r=3):
+        om = self.maps['over']
+        for yy in range(y - r, y + r + 1):
+            for xx in range(x - r, x + r + 1):
+                if om.inb(xx, yy):
+                    om.seen[yy * om.w + xx] = 1
+
+    def read_signpost(self):
+        here = self.here
+        if not here:
+            return
+        w = self.world
+        nbrs = [b if a == here.id else a for a, b in getattr(w, 'road_edges', []) if here.id in (a, b)]
+        if not nbrs:
+            self.request = ('dialog', 'Signpost', 'The signpost is weathered blank.')
+            return
+        lines = []
+        new = 0
+        for b in nbrs:
+            s = w.settlements[b]
+            if not self.known_settlement(s):
+                new += 1
+            n = self.reveal_route(here.id, b)
+            lines.append(f'{dir_name(s.x - here.x, s.y - here.y).capitalize():10} {s.name} ({n} leagues)')
+        self.request = ('dialog', f'Signpost of {here.name}', 'The arms of the signpost point down the roads:\n\n' + '\n'.join(lines) +
+                        ('\n\nYou mark the roads on your map.' if new else ''))
+        if new:
+            self.msg(f'You learn of {new} new place{"s" if new > 1 else ""} and the roads to them.', 'info')
+
     def known_settlement(self, s):
         om = self.maps['over']
         return bool(om.seen[s.y * om.w + s.x])
@@ -1719,17 +1793,22 @@ class Game:
         if role == 'elder':
             if not f.get('met_elder'):
                 f['met_elder'] = True
-                text = (f'"Welcome, traveller. Thornfield lives in fear.\n\n'
+                evs = self.world.evils
+                dark = ' '.join(f'{e.name}, {e.d["lore"]} Its lair lies far to the {self.dir_to(e.did)}.' for e in evs)
+                text = (f'"Welcome, {RC.address(self)}. Thornfield lives in fear.\n\n'
                         f'To the {self.dir_to("rat")} lie the Rat Warrens, where a monstrous Rat King sends his brood to plunder our stores. '
                         f'To the {self.dir_to("mine")}, at the foot of the mountains, the exiled dwarf Grolm the Digger has seized the old mine.\n\n'
-                        f'But the true evil is Morvenna the Undying. From her crypt to the {self.dir_to("crypt")} she raises the dead. '
-                        f'Destroy her and the curse on this land will be broken.\n\n'
+                        f'But worse things stir in this land. {dark} '
+                        f'{"It grows" if len(evs) == 1 else "They grow"} stronger every season. Someone must stop '
+                        f'{"it" if len(evs) == 1 else "them"}, or the vale is lost.\n\n'
                         f'Start with the rats, grow stronger. And if you need coin, the board at the inn always has work, '
                         f'and the traders pay well for goods hauled between towns."')
                 om = self.maps['over']
-                for k in ('rat', 'mine', 'crypt'):
+                for k in ['rat', 'mine'] + [e.did for e in evs]:
                     d = self.world.dungeons[k]
                     om.seen[d.y * om.w + d.x] = 1
+                for e in evs:
+                    e.known = True
             elif f.get('ratking') and not f.get('reward_rat'):
                 f['reward_rat'] = True
                 p.gold += 100
@@ -1746,14 +1825,20 @@ class Game:
                 p.gold += 250
                 it = make_gear(self, random.choice([k for k, b in D.BASES.items() if b['lvl'] <= p.lvl + 1]), 'rare', p.lvl + 2)
                 self.add_to_inv(it)
-                text = '"Grolm defeated! The mine is ours again. Here, 250 gold and a treasure worthy of you. Only Morvenna remains."'
+                text = '"Grolm defeated! The mine is ours again. Here, 250 gold and a treasure worthy of you. Now the true darkness remains."'
                 self.msg(f'You receive 250 gold and {it.name}.', 'rare')
             elif not f.get('ratking'):
                 text = f'"The Rat Warrens lie to the {self.dir_to("rat")}. They are marked on your map (M)."'
             elif not f.get('grolm'):
                 text = f'"The Lost Mine lies to the {self.dir_to("mine")}. Grolm leaps at his enemies. Wear good armor."'
             else:
-                text = f'"Morvenna waits to the {self.dir_to("crypt")}. Do not fight her at range; her bolts will find you anyway."'
+                act = EVL.active(self)
+                if act:
+                    e = EVL.strongest(self)
+                    text = (f'"{e.name} grows bolder every day. Its lair lies to the {self.dir_to(e.did)}. '
+                            f'Prepare well; there is no shame in growing stronger first."')
+                else:
+                    text = '"The darkness is gone from the vale, thanks to you. Thornfield will sing of you for generations."'
             self.request = ('dialog', 'Elder Berend', text)
             return
         if role == 'client':
@@ -1768,6 +1853,18 @@ class Game:
     def rumor(self):
         w = self.world
         r = random.random()
+        p = self.player
+        here = self.here
+        ox, oy = (here.x, here.y) if here else ((p.x, p.y) if self.cur == 'over' else self.over_pos)
+        unknown = [s for s in w.settlements if not self.known_settlement(s) and cheb(s.x, s.y, ox, oy) < 60]
+        if unknown and r < .35:
+            s = min(unknown, key=lambda q: cheb(q.x, q.y, ox, oy) + random.randint(0, 15))
+            self.reveal_place(s.x, s.y, 2)
+            kind = 'city' if s.is_city else 'village'
+            f = D.FACTIONS[s.faction]['short']
+            return (f"There is a {kind} called {s.name} to the {dir_name(s.x - ox, s.y - oy)}, "
+                    f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land. I marked it on your map.")
+        r = random.random()
         if r < .45:
             s = random.choice(w.settlements)
             g = random.choice(s.demand)
@@ -1781,11 +1878,8 @@ class Game:
             if ev:
                 s = random.choice(ev)
                 return D.EVENTS[s.event[0]]['text'].format(town=s.name)
-        if r < .85 and getattr(w, 'curse_lvl', 0) >= 2 and not self.flags.get('lich'):
-            return random.choice(['The graves are restless lately. They say Morvenna is waking.',
-                                  'Nothing grows near the old crypt any more. The blight spreads every season.',
-                                  'My cousin saw the dead walking on the road at night. Walking, I tell you.',
-                                  "They say the Undying One has a name for everyone who stands against her."])
+        if r < .85 and EVL.rumor(self):
+            return EVL.rumor(self)
         if r < .9:
             sd = [d for d in w.dungeons.values() if not d.main]
             d = random.choice(sd)
@@ -1826,7 +1920,7 @@ def load_game():
             g = pickle.load(f)
         if getattr(g, 'version', 0) == SAVE_VERSION and not g.dead:
             g.events, g.request = [], None
-            ECO.faction_rep = lambda st: g.player.rep.get(st.faction, 0)
+            g.hook()
             g.compute_fov()
             return g
     except Exception:

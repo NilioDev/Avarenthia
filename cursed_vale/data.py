@@ -10,7 +10,7 @@ def hexrgb(h):
 
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
- CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER) = range(34)
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE) = range(37)
 
 
 class Tile:
@@ -57,6 +57,9 @@ TILES = [
     Tile('○', '#a07040', False, False, 'barrel'),
     Tile('.', '#8a6a44', True, False, 'wooden floor'),
     Tile('≈', '#4f9fe0', True, False, 'river (ford)', cost=24),
+    Tile('┬', '#d0a060', False, False, 'signpost'),
+    Tile('~', '#8cc0f0', True, False, 'shallow water', cost=14, bg='#173252'),
+    Tile('ß', '#cfcac0', False, False, 'statue'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -205,8 +208,30 @@ MONSTERS = {
     'robber_knight': dict(ch='K', fg='#a02828', name='Robber Knight', tags='faction', min_l=6, hp=2, dmg=1.5, df=1.6, xp=2.2),
     'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
     'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
-    'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags=''),
+    'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags='',
+                 summon_msg='{name} beckons, and a skeleton claws its way out of the ground!', nova_msg='{name} unleashes a wave of grave-cold!',
+                 bolt='bolt of darkness'),
+    # the great evils of the world (only some appear in each game)
+    'dragon': dict(ch='D', fg='#ff5a30', name='The Dragon', boss=True, lvl_fix=16, hp=8.5, dmg=1.6, df=1.7, xp=18, caster=True, nova=True,
+                   summon='drake', tags='', summon_msg='{name} roars, and a drake answers the call!',
+                   nova_msg='{name} breathes a torrent of fire!', bolt='gout of flame', nova_col=(255, 120, 40)),
+    'broodmother': dict(ch='S', fg='#d080f0', name='The Brood Mother', boss=True, lvl_fix=12, hp=6.5, dmg=1.3, df=1.3, xp=14, poison=True,
+                        summon='spider', fast=True, tags='', summon_msg='Eggs burst around {name}. More spiders!'),
+    'warlord': dict(ch='O', fg='#ff6040', name='The Warlord', boss=True, lvl_fix=13, hp=7.5, dmg=1.7, df=1.5, xp=15, leap=True,
+                    summon='goblin', tags='', summon_msg='{name} bellows, and a goblin rushes to his side!',
+                    leap_msg='{name} charges at you with a war cry!'),
+    'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.5, xp=15, caster=True,
+                         nova=True, summon='drowned', tags='', summon_msg='Something wet crawls out of the dark water. A drowned one!',
+                         nova_msg='{name} calls a wave of black water!', bolt='lance of brine', nova_col=(90, 200, 200)),
+    'drake': dict(ch='d', fg='#f08040', name='Fire Drake', tags='lair_dragon', min_l=6, hp=1.3, dmg=1.3, df=1.3, xp=1.8, fast=True),
+    'drowned': dict(ch='z', fg='#70b0a0', name='Drowned One', tags='lair_drowned', min_l=4, hp=1.6, dmg=1.2, df=.8, xp=1.3, slow=True),
+    'clansman': dict(ch='h', fg='#d8a070', name='Dwarf Clansman', tags='faction', min_l=3, hp=1.4, dmg=1.15, df=1.5, xp=1.4),
+    'thunderer': dict(ch='h', fg='#b0b8c8', name='Dwarf Thunderer', tags='faction', min_l=4, hp=1.1, dmg=1.2, df=1.3, xp=1.5, ranged=True),
 }
+for _k, _extra in (('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
+                   ('goblin', 'lair_orc'), ('gobarcher', 'lair_orc'), ('ogre', 'lair_orc'), ('zombie', 'lair_drowned'),
+                   ('ghost', 'lair_drowned')):
+    MONSTERS[_k]['tags'] += ' ' + _extra
 for _m in MONSTERS.values():
     _m['fg'] = hexrgb(_m['fg'])
     for _k in ('boss', 'erratic', 'fast', 'ranged', 'poison', 'slow', 'caster', 'regen', 'leech', 'leap', 'nova'):
@@ -338,7 +363,8 @@ FACTION_ORDER = list(FACTIONS)
 for _f in FACTIONS.values():
     _f['fg'] = hexrgb(_f['fg'])
 STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgard', 'Dunmere', 'Blackmoor', 'Wolfcrag',
-                    'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil']
+                    'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil', 'Harrowgate', 'Emberfall',
+                    'Coldwater', 'Ravenhold', 'Bleakstone', 'Hawksreach', 'Duskwall', 'Grimhold', 'Stonecairn', 'Mirewatch']
 START_STATS = dict(str=15, dex=15, vit=15, ene=15)
 LEVEL_STAT_POINTS = 3
 

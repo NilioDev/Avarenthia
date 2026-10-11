@@ -421,7 +421,8 @@ def e_toll(game):
     fee = 15 * game.world.danger_at(p.x, p.y)
     opts = [(f'Pay {fee} gold', 'pay')] if p.gold >= fee else []
     opts += [('Draw your weapon', 'fight'), ('Try to run', 'run')]
-    ask(game, 'toll', 'Black Hand toll', f'Armed men in black step onto the road. "Toll for the Black Hand. {fee} gold, or blood."', opts, fee=fee)
+    bh = D.FACTIONS['blackhand']['name']
+    ask(game, 'toll', 'A toll on the road', f'Armed men step onto the road. "Toll for {bh}. {fee} gold, or blood."', opts, fee=fee)
 
 
 def r_toll(game, choice, ctx):
@@ -486,7 +487,7 @@ def make_personal_offer(game, wd):
                     reward=random.randint(40, 90))
     elif sub == 'gather':
         g = random.choice(['herbs', 'furs', 'salt', 'cloth', 'fish', 'ale', 'medicine'])
-        q = random.randint(4, 10)
+        q = max(3, min(10, round(random.uniform(60, 140) / D.GOODS[g]['base'])))
         data.update(good=g, qty=q, reward=round(D.GOODS[g]['base'] * q * 1.8 + 30))
     elif sub == 'hunt':
         data.update(reward=random.randint(90, 160))

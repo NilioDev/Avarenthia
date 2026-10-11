@@ -32,6 +32,7 @@ class Settlement:
         self.produce, self.demand = [], []
         self.market = {}          # good -> [stock, target, normal_target]
         self.event = None         # (event key, days left)
+        self.race = 'human'
         self.board = []           # mission offers
         self.board_day = -99
         self.rep = 0
@@ -221,7 +222,11 @@ def dijkstra_path(m, a, b, cost_fn=_road_cost):
 
 
 def gen_world(game):
+    from . import evils as EVL, factions as FA
     w, h = WORLD_W, WORLD_H
+    evils = EVL.choose()
+    factions = FA.generate(EVL.info(evils[0]))
+    FA.install(factions)
     for _attempt in range(40):
         m = GameMap('over', 'over', 'The Wilds', w, h, GRASS)
         m.radius = 10
@@ -276,6 +281,8 @@ def gen_world(game):
         if not start:
             continue
         world = World()
+        world.evils = evils
+        world.factions = factions
         reach = [i for i in range(w * h) if dist[i] > 0]
         reach_set = set(reach)
         _make_regions(m, world, reach, start)
@@ -406,10 +413,12 @@ def _build_roads(m, world):
         in_tree.add(b)
     extra = sorted(((a, b) for a in range(n) for b in range(a + 1, n) if (a, b) not in edges and (b, a) not in edges), key=lambda e: d(*e))
     edges += extra[:4]
+    world.road_edges = []
     for a, b in edges:
         p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y))
         if not p:
             continue
+        world.road_edges.append((a, b))
         for x, y in p:
             if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP, RIVER):
                 m.set(x, y, ROAD)        # over a river this is a bridge (m.river stays marked)
@@ -434,10 +443,20 @@ def _place_dungeons(m, world, reach, dist, start):
     near_mount = lambda i: any(m.inb(i % w + dx, i // w + dy) and m.tile(i % w + dx, i // w + dy) in (MOUNTAIN, HILLS) for dx, dy in D8)
     rat = choose([i for i in reach if 7 <= dist[i] <= 14], reach[len(reach) // 10])
     mine = choose([i for i in reach if 16 <= dist[i] <= 32 and near_mount(i)] or [i for i in reach if 16 <= dist[i] <= 32], reach[len(reach) // 4])
-    crypt = choose([i for i in reach if 26 <= dist[i] <= 45 and m.t[i] in (SWAMP, FOREST)] or [i for i in reach if 26 <= dist[i] <= 45], reach[len(reach) // 3])
-    for did, (x, y) in (('rat', rat), ('mine', mine), ('crypt', crypt)):
+    for did, (x, y) in (('rat', rat), ('mine', mine)):
         t = D.DUNGEONS[did]
         world.dungeons[did] = Dungeon(did, t['name'], t['depth'], t['base'], t['style'], t['tag'], t['boss'], t['wall'], x, y, True)
+    # the lairs of the great evils, far from home and in the land that suits them
+    terr = {'swamp': (SWAMP,), 'forest': (FOREST,), 'hills': (HILLS,), 'grass': (GRASS,), 'coast': (SAND, SWAMP)}
+    for e in world.evils:
+        d = e.d
+        want = set(t for k in d['terrain'] for t in terr[k])
+        far = [i for i in reach if 30 <= dist[i] <= 60]
+        x, y = choose([i for i in far if m.t[i] in want] or far, reach[len(reach) // 3])
+        did = 'crypt' if e.key == 'lich' else f'lair_{e.key}'
+        world.dungeons[did] = Dungeon(did, d['lair'].format(short=e.short), d['depth'], d['base'], d['style'], d['tag'],
+                                      d['boss'], D.hexrgb(d['wall']), x, y, True)
+        e.did, e.x, e.y = did, x, y
     sides = D.SIDE_DUNGEONS[:]
     random.shuffle(sides)
     pool = reach[:]
@@ -593,12 +612,23 @@ def _assign_factions(m, world, start):
     count = {r.id: 0 for r in regs}
     for st in world.settlements:
         count[st.region] += 1
-    crypt = world.dungeons['crypt']
-    crypt_reg = world.region_of[crypt.y * m.w + crypt.x]
+    lair = world.evils[0]
+    crypt_reg = world.region_of[lair.y * m.w + lair.x]
     owner = {0: 'crown'}
     if crypt_reg != 0:
         owner[crypt_reg] = 'cult'
     free = [r for r in regs if r.id not in owner]
+    # dwarf clans hold the hills, orc tribes the far badlands
+    if 'clan' in D.FACTIONS:
+        hills = sorted((r for r in free if r.biome == 'hills'), key=lambda r: -r.danger)[:3] or \
+            sorted(free, key=lambda r: -r.danger)[2:3]
+        for r in hills:
+            owner[r.id] = 'clan'
+        free = [r for r in regs if r.id not in owner]
+    if 'horde' in D.FACTIONS:
+        for r in sorted(free, key=lambda r: (-r.danger, count[r.id]))[:2]:
+            owner[r.id] = 'horde'
+        free = [r for r in regs if r.id not in owner]
     # outlaws take the dangerous, empty places
     bh = sorted((r for r in free if r.danger >= 3), key=lambda r: (count[r.id], -r.danger, r.biome != 'hills'))[:3]
     for r in bh:
@@ -633,9 +663,12 @@ def _assign_factions(m, world, start):
     for st in world.settlements:
         st.faction = regs[st.region].faction
     world.settlements[0].faction = 'crown'
+    for st in world.settlements:
+        st.race = D.FACTIONS[st.faction].get('race', 'human') if random.random() < .8 or st.id == 0 else \
+            random.choice(['human', 'human', 'halfling', 'dwarf', 'elf'])
 
 
-HOLD_PLAN = {'crown': (2, 2), 'league': (1, 1), 'circle': (1, 1), 'blackhand': (1, 2), 'cult': (1, 1)}
+HOLD_PLAN = {'crown': (2, 2), 'league': (1, 1), 'circle': (1, 1), 'clan': (1, 1), 'horde': (1, 2), 'blackhand': (1, 2), 'cult': (1, 1)}
 
 
 def _place_strongholds(m, world, reach):
@@ -665,7 +698,7 @@ def _place_strongholds(m, world, reach):
                 break
     # castles of the kingdom and the league are linked to the road network
     for h in world.holds:
-        if h.faction in ('crown', 'league', 'circle'):
+        if h.faction in ('crown', 'league', 'circle', 'clan'):
             near = min(world.settlements, key=lambda s: cheb(s.x, s.y, h.x, h.y))
             p = dijkstra_path(m, (h.x, h.y), (near.x, near.y))
             for x, y in (p or []):

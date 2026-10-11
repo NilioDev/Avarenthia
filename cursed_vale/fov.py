@@ -16,6 +16,16 @@ except Exception:  # pragma: no cover - depends on the environment
 
 def compute(m, px, py, radius):
     """Return a bytearray (index y*w+x) of visible cells and mark them as seen."""
+    out = cells(m, px, py, radius)
+    seen = m.seen
+    for i, v in enumerate(out):
+        if v:
+            seen[i] = 1
+    return out
+
+
+def cells(m, px, py, radius):
+    """Visible cells from a point, without marking anything as seen (used for lights)."""
     if HAVE_TCOD:
         tiles = np.asarray(m.t, dtype=np.int16).reshape(m.h, m.w)
         transparency = ~_OPAQUE[tiles]
@@ -24,10 +34,6 @@ def compute(m, px, py, radius):
         out = bytearray(flat.astype(np.uint8).tobytes())
     else:
         out = _shadowcast(m, px, py, radius)
-    seen = m.seen
-    for i, v in enumerate(out):
-        if v:
-            seen[i] = 1
     return out
 
 

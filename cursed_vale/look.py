@@ -145,6 +145,8 @@ def cell(m, i, depth=None):
         return td.ch, _jit(td.fg, r2, .08), td.bg or BG
     if t in (WALL, ROCK):
         fg = m.wall_fg if (t == WALL and m.wall_fg) else td.fg
+        if m.kind == 'dungeon':
+            return td.ch, _jit(fg, r2, .07), _jit(scale(fg, .32), r, .1)
         return td.ch, _jit(fg, r2, .07), td.bg or BG
     return td.ch, td.fg, td.bg or BG
 
@@ -167,18 +169,36 @@ def get(m, i):
     return cache[i]
 
 
-BLIGHT_FG = (128, 104, 136)
-BLIGHT_BG = (30, 14, 34)
+TAINT = {
+    # kind: (fg tint, bg tint, ground glyphs, tree glyph, tree colour)
+    'blight': ((128, 104, 136), (30, 14, 34), [(60, ','), (25, '.'), (15, "'")], '♠', (96, 84, 100)),
+    'scorch': ((96, 84, 76), (34, 14, 8), [(45, '.'), (25, ','), (15, '`'), (15, '·')], '♠', (70, 50, 40)),
+    'web': ((214, 214, 228), (28, 28, 34), [(35, '"'), (25, '░'), (20, ','), (20, '.')], '♣', (190, 196, 200)),
+    'warpath': ((150, 104, 66), (32, 16, 10), [(45, ','), (25, '.'), (15, '~'), (15, 'x')], '♠', (100, 80, 60)),
+    'mire': ((92, 112, 72), (14, 24, 20), [(35, '~'), (30, '"'), (20, ','), (15, '≈')], '♣', (70, 96, 70)),
+}
+
+
+def tainted(look, kind, i=0):
+    """How a cell looks under the mark of a great evil."""
+    ch, fg, bg = look
+    tfg, tbg, ground, tree_ch, tree_fg = TAINT[kind]
+    r = _h(i, 3, 11)
+    if ch in ('♣', '♠', '↑'):
+        ch, fg = tree_ch, _mix(fg, tree_fg, .8)
+        if kind == 'web' and r % 3 == 0:
+            ch = '░'
+    elif ch in ('▲', '^', '∩', 'n', '~', '≈', '═', '║', '·') and fg[2] > 60 and kind != 'mire':
+        fg = _mix(fg, tfg, .5)
+    else:
+        ch = _pick(r, ground)
+        fg = _jit(tfg, r, .18)
+        if kind == 'scorch' and r % 4 == 0:
+            ch, fg = '·', (220, 90, 40)          # embers
+        if kind == 'warpath' and ch == '~':
+            fg = (150, 40, 34)                   # blood
+    return ch, fg, _mix(bg, tbg, .7)
 
 
 def blighted(look, strength=.55):
-    ch, fg, bg = look
-    if ch in ('♣', '♠', '↑'):
-        ch = '♠'
-        fg = _mix(fg, (96, 84, 100), .75)
-    elif ch in ("'", '`', '"', ' '):
-        ch = ','
-        fg = _mix(fg, BLIGHT_FG, strength)
-    else:
-        fg = _mix(fg, BLIGHT_FG, strength)
-    return ch, fg, _mix(bg, BLIGHT_BG, .6)
+    return tainted(look, 'blight')

@@ -8,7 +8,8 @@ from . import economy as ECO
 from . import engine as E
 from . import events as EV
 from . import look as LOOK
-from . import curse as CU
+from . import dress as DR
+from . import evils as EVL
 from . import missions as MS
 from . import skills as SK
 from . import towns as TW
@@ -241,7 +242,7 @@ class MainMenu(Screen):
         cv.text_center(W // 2, y, '[N] New game', FG)
         cv.text_center(W // 2, y + 2, '[Esc] Quit', DIM)
         cv.wrap(25, 24, 50, 'Explore an ADOM-style vale, clear monster-packed dungeons, hunt magic, rare and unique loot, '
-                            'and destroy the lich Morvenna. Hardcore: death is permanent.', DIM)
+                            'and face the great evils that stir in the wilds. Hardcore: death is permanent.', DIM)
 
     def on_key(self, tok, shift):
         if tok == 'c' and self.saved:
@@ -256,22 +257,72 @@ class MainMenu(Screen):
 
 
 class NameScreen(Screen):
+    """Character creation: name, people and gender."""
+    ROWS = ['Name', 'People', 'Gender']
+
     def __init__(self, app):
         super().__init__(app)
+        from . import races as RC
+        self.RC = RC
         self.name = ''
+        self.race = 0
+        self.gender = 2
+        self.sel = 0
+
+    @property
+    def race_key(self):
+        return self.RC.RACE_ORDER[self.race]
 
     def render(self, cv):
-        cv.text_center(W // 2, 12, 'What is your name, wanderer?', GOLD)
-        box = (self.name + '_').ljust(20)
-        cv.text(W // 2 - 10, 15, box, FG, (40, 32, 26))
-        cv.text_center(W // 2, 18, 'Type a name and press Enter. Leave it empty to be called Wanderer.', DIM)
-        cv.text_center(W // 2, 20, 'Esc goes back', DIM)
+        RC = self.RC
+        cv.text_center(W // 2, 3, 'Who are you, wanderer?', GOLD)
+        x0, y0 = 14, 7
+        vals = [(self.name + ('_' if self.sel == 0 else '')).ljust(22),
+                f"◄ {RC.RACES[self.race_key]['name']} ►", f"◄ {RC.GENDER_NAME[RC.GENDERS[self.gender]]} ►"]
+        for i, (lab, v) in enumerate(zip(self.ROWS, vals)):
+            y = y0 + i * 3
+            sel = i == self.sel
+            cv.text(x0, y, ('► ' if sel else '  ') + lab, GOLD if sel else FG)
+            cv.text(x0 + 12, y, v, FG, (40, 32, 26) if i == 0 else None)
+        cv.text(x0 + 12, y0 + 1, 'Tab: a random name for your people', DIM)
+        r = RC.RACES[self.race_key]
+        rx = 58
+        cv.text(rx, y0, r['name'], r['fg'])
+        n = cv.wrap(rx, y0 + 2, 46, r['desc'], FG)
+        yy = y0 + 3 + n
+        mods = ', '.join(f"{'+' if v > 0 else ''}{v} {k}" for k, v in r['stats'].items() if v) or 'no attribute changes'
+        cv.text(rx, yy, mods, INFO)
+        yy += 2
+        for pk in r['perks']:
+            cv.text(rx, yy, '• ' + pk, GOOD if 'more' not in pk and 'charge' not in pk else BAD, maxw=46)
+            yy += 1
+        yy += 1
+        likes = [(RC.RACES[o]['plural'], v) for o, v in RC.RELATIONS.items() if o != self.race_key and RC.relation(o, self.race_key)]
+        for nm, _v in likes:
+            v = RC.relation([k for k in RC.RACES if RC.RACES[k]['plural'] == nm][0], self.race_key)
+            cv.text(rx, yy, f"{nm} {'like' if v > 0 else 'distrust' if v > -15 else 'despise'} you", GOOD if v > 0 else BAD)
+            yy += 1
+        cv.text_center(W // 2, 24, 'Up/Down: choose a line · Left/Right: change · type your name · Enter: continue · Esc: back', DIM)
 
     def on_key(self, tok, shift):
+        RC = self.RC
         if tok == 'enter':
-            self.app.replace(OptionsScreen(self.app, self.name.strip() or 'Wanderer'))
+            name = self.name.strip() or RC.random_name(self.race_key, RC.GENDERS[self.gender])
+            self.app.replace(OptionsScreen(self.app, name, self.race_key, RC.GENDERS[self.gender]))
         elif tok == 'esc':
             self.app.replace(MainMenu(self.app))
+        elif tok in ('up', 'np8'):
+            self.sel = (self.sel - 1) % 3
+        elif tok in ('down', 'np2'):
+            self.sel = (self.sel + 1) % 3
+        elif tok in ('left', 'right', 'np4', 'np6') and self.sel:
+            d = -1 if tok in ('left', 'np4') else 1
+            if self.sel == 1:
+                self.race = (self.race + d) % len(RC.RACE_ORDER)
+            else:
+                self.gender = (self.gender + d) % 3
+        elif tok == 'tab':
+            self.name = RC.random_name(self.race_key, RC.GENDERS[self.gender])[:18]
         elif tok == 'backspace':
             self.name = self.name[:-1]
         elif tok == 'space' and len(self.name) < 18:
@@ -281,9 +332,10 @@ class NameScreen(Screen):
 
 
 class OptionsScreen(Screen):
-    def __init__(self, app, name):
+    def __init__(self, app, name, race='human', gender='other'):
         super().__init__(app)
         self.name = name
+        self.race, self.gender = race, gender
         self.hardcore = False
         self.seed = ''
         self.sel = 0
@@ -291,8 +343,8 @@ class OptionsScreen(Screen):
     def render(self, cv):
         cv.text_center(W // 2, 4, f'A new life for {self.name}', GOLD)
         cv.wrap(28, 6, 54, 'You have no class. You become what you practise: swing a sword and you grow into a swordsman, '
-                          'cast fire and the flames answer you. Every discipline unlocks new skills as it rises, '
-                          'and you carry six of them at a time.', DIM)
+                          'cast fire and the flames answer you. Skills are learned from tomes you find, and you carry '
+                          'six of them at a time.', DIM)
         rows = [('Mode', ('HARDCORE: death is permanent.' if self.hardcore else
                           'SOFTCORE: you wake in a temple, but your backpack, cargo and gold stay with your body.')),
                 ('World seed', (self.seed or 'random') + (' _' if self.sel == 1 else ''))]
@@ -314,7 +366,7 @@ class OptionsScreen(Screen):
         elif self.sel == 1 and tok == 'backspace':
             self.seed = self.seed[:-1]
         elif tok == 'enter':
-            self.app.start_game(E.Game(self.name, self.hardcore, int(self.seed) if self.seed else None))
+            self.app.start_game(E.Game(self.name, self.hardcore, int(self.seed) if self.seed else None, self.race, self.gender))
             self.app.push(IntroScreen(self.app))
         elif tok == 'esc':
             self.app.replace(NameScreen(self.app))
@@ -358,11 +410,14 @@ class GameScreen(Screen):
         items = {}
         for it in m.items:
             items[(it.x, it.y)] = it
-        torch = m.kind in ('dungeon', 'siege')
+        torch = m.kind == 'siege'
+        lighting = m.kind == 'dungeon'
+        lmap = DR.light_map(m) if lighting else None
+        deco = getattr(m, 'deco', None)
         night = TW.is_night(g)
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
-        blight = getattr(g.world, 'blight', None) if m.kind == 'over' else None
+        taint = getattr(g.world, 'taint', None) if m.kind == 'over' else None
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -376,10 +431,20 @@ class GameScreen(Screen):
                 if not v and not m.seen[i]:
                     continue
                 ch, fg, bg = LOOK.get(m, i)
-                if blight and blight[i]:
-                    ch, fg, bg = LOOK.blighted((ch, fg, bg))
+                if taint and taint[i]:
+                    ch, fg, bg = LOOK.tainted((ch, fg, bg), g.world.evils[taint[i] - 1].d['taint'], i)
+                if deco and deco[i]:
+                    ch, fg, bg = DR.deco_look(m, i, (ch, fg, bg))
                 if portal and (mx, my) == portal:
                     ch, fg = '0', (90, 176, 255)
+                if v and lighting:
+                    lr, lg, lb = lmap[i]
+                    dd = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
+                    k = max(0.0, 1 - dd / 7.5) * .95
+                    ch, fg, bg = DR.lit((ch, fg, bg), (lr + k, lg + k * .82, lb + k * .55))
+                elif lighting:
+                    fg = mix(scale(fg, .42), (40, 52, 96), .4)
+                    bg = mix(scale(bg, .35), (8, 10, 22), .5)
                 if v:
                     if torch:
                         d = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
@@ -402,7 +467,7 @@ class GameScreen(Screen):
                                 fg, bg = (255, 255, 255), (120, 30, 20)
                     if mx == p.x and my == p.y:
                         ch, fg = '@', ((184, 240, 138) if p.poison else (255, 246, 220))
-                else:
+                elif not lighting:
                     fg = scale(fg, .5 if m.kind == 'over' else .3)
                     bg = scale(bg, .55)
                 if night and m.kind in ('over', 'town'):
@@ -458,9 +523,10 @@ class GameScreen(Screen):
             label = s.name
             lx = vx - len(label) // 2
             if 0 <= vy < MAP_H and -len(label) < lx < MAP_W and not (p.y == s.y - 1 and lx <= p.x - ox < lx + len(label)):
-                for j, ch in enumerate(label):
-                    if 0 <= lx + j < MAP_W:
-                        cv.put(lx + j, vy, ch, (196, 160, 80))
+                col = (255, 226, 140) if s.is_city else (236, 210, 150)
+                for j, ch in enumerate(' ' + label + ' '):
+                    if 0 <= lx + j - 1 < MAP_W:
+                        cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
         # strongholds in their faction colour
         for h in w.holds:
             om = g.map
@@ -573,10 +639,11 @@ class GameScreen(Screen):
         cv.text(x + 2, 18, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
         cv.text_right(x + PW - 1, 18, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
-        if not g.flags.get('lich'):
-            cl = getattr(g.world, 'curse_lvl', 0)
-            cv.text(x, 19, 'Morvenna', scale(CU.HUNT_FG, .8), PANEL)
-            cv.text_right(x + PW - 1, 19, CU.stage(g), CU.HUNT_FG if cl >= 4 else scale(CU.HUNT_FG, .55 + cl * .1), PANEL)
+        ev = EVL.strongest(g)
+        if ev:
+            cl = ev.lvl
+            cv.text(x, 19, ev.short if ev.known else 'Darkness', scale(ev.fg, .8), PANEL, maxw=PW - 11)
+            cv.text_right(x + PW - 1, 19, EVL.stage(ev), ev.fg if cl >= 4 else scale(ev.fg, .55 + cl * .1), PANEL)
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
                 ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
                 ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold))]
@@ -659,8 +726,9 @@ class GameScreen(Screen):
                     dz = g.world.danger_at(mx, my)
                     cv.text(x, y + 2, f"Danger {dz}" + (' (road)' if m.tile(mx, my) == D.ROAD else ''),
                             GOOD if dz <= 2 else FG if dz <= 5 else BAD, PANEL, maxw=PW)
-                    if CU.blighted(g, mx, my):
-                        cv.text(x, y + 3, "Blighted by Morvenna's curse", CU.HUNT_FG, PANEL, maxw=PW)
+                    ev = EVL.taint_at(g, mx, my)
+                    if ev:
+                        cv.text(x, y + 3, f"{ev.d['taint_name'].capitalize()} of {ev.short}", ev.fg, PANEL, maxw=PW)
                 return
             if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
                 o = m.mon_at(mx, my)
@@ -726,6 +794,8 @@ class GameScreen(Screen):
             self.act(lambda: g.use_skill(int(tok) - 1))
         elif tok == 'f':
             self.act(g.fire)
+        elif tok == 'a':
+            self.act(g.fish)
         elif tok == 'z':
             app.push(SkillsScreen(app))
         elif tok == 'q':
@@ -936,6 +1006,11 @@ class InventoryScreen(Modal):
         if it.k == 'tome':
             g.read_tome(it)
             return
+        if it.k == 'fish':
+            app.pop()
+            if g.eat(it):
+                g.end_turn(1)
+            return
         if it.k not in ('potion', 'scroll'):
             return
         app.pop()
@@ -994,11 +1069,12 @@ class CharacterScreen(Modal):
         g = self.game
         p, s = g.player, g.stats()
         x, y = self.box(cv, 96, 30, f"{p.name} · level {p.lvl}")
-        cv.text(x + 2, y + 1, f'{p.stat_pts} attribute points to spend · {p.deaths} deaths · {"hardcore" if p.hardcore else "softcore"}',
+        from . import races as RC
+        who = f"{RC.RACES[p.race]['name']}{'' if p.gender == 'other' else ' ' + RC.GENDER_NAME[p.gender].lower()}"
+        cv.text(x + 2, y + 1, f'{who} · {p.stat_pts} attribute points to spend · {p.deaths} deaths · {"hardcore" if p.hardcore else "softcore"}',
                 GOLD if p.stat_pts else DIM, PANEL)
         cv.text(x + 2, y + 3, 'ATTRIBUTES', DIM, PANEL)
-        helps = {'str': '+1% melee damage (swords, axes)', 'dex': 'accuracy, defense, +1% dagger and bow damage',
-                 'vit': '+2 life', 'ene': '+2 mana, +1 spell damage per 5'}
+        helps = {'str': '+1% melee damage', 'dex': 'aim, defense, bows', 'vit': '+2 life', 'ene': '+2 mana, spells'}
         for i, (st, nm) in enumerate((('str', 'Strength'), ('dex', 'Dexterity'), ('vit', 'Vitality'), ('ene', 'Energy'))):
             yy = y + 4 + i
             cv.text(x + 2, yy, f'{i + 1}', GOLD if p.stat_pts else DIM, PANEL)
@@ -1011,26 +1087,39 @@ class CharacterScreen(Modal):
                 ('Life leech', f"{s['leech']}%"), ('Experience', f'{p.xp}/{E.xp_for(p.lvl)}')]
         for i, (a, b) in enumerate(tots):
             cv.text(x + 2, y + 10 + i, a, DIM, PANEL)
-            cv.text_right(x + 30, y + 10 + i, b, FG, PANEL)
+            cv.text_right(x + 42, y + 10 + i, b, FG, PANEL)
+        from . import lifeskills as LS
+        cv.text(x + 2, y + 20, 'LIFE SKILLS', DIM, PANEL)
+        for i, key in enumerate(LS.LIFE_ORDER):
+            yy = y + 21 + i * 2
+            r, prog = p.life_sk.get(key, [0, 0])
+            cv.text(x + 2, yy, LS.LIFE[key]['name'], FG if r else DIM, PANEL)
+            cv.text_right(x + 20, yy, str(r), GOLD if r else DIM, PANEL)
+            bw = 20
+            fill = int(bw * prog / LS.need_for(r))
+            for j in range(bw):
+                cv.put(x + 22 + j, yy, '█' if j < fill else '░', GOOD if j < fill else LINE, PANEL)
+            nxt = min((k for k in LS.LIFE[key]['perks'] if k > r), default=None)
+            cv.text(x + 2, yy + 1, f"next at {nxt}: {LS.LIFE[key]['perks'][nxt]}" if nxt else 'mastered', scale(DIM, .85), PANEL, maxw=41)
         for yy in range(y + 3, y + 28):
-            cv.put(x + 33, yy, '│', LINE, PANEL)
-        cv.text(x + 35, y + 3, 'DISCIPLINES', DIM, PANEL)
-        cv.text(x + 62, y + 3, 'grow by use', scale(DIM, .8), PANEL)
+            cv.put(x + 45, yy, '│', LINE, PANEL)
+        cv.text(x + 47, y + 3, 'DISCIPLINES', DIM, PANEL)
+        cv.text_right(x + 93, y + 3, 'grow by use', scale(DIM, .8), PANEL)
         for i, line in enumerate(SK.DISC_ORDER):
             yy = y + 4 + i * 2
             r, prog = p.disc[line]
             d = SK.DISCIPLINES[line]
-            cv.text(x + 35, yy, d['name'], FG if r else DIM, PANEL)
-            cv.text_right(x + 59, yy, str(r), GOLD if r else DIM, PANEL)
+            cv.text(x + 47, yy, d['name'], FG if r else DIM, PANEL)
+            cv.text_right(x + 72, yy, str(r), GOLD if r else DIM, PANEL)
             need = SK.need_for(r)
-            bw = 16
+            bw = 19
             fill = int(bw * prog / need)
             for j in range(bw):
-                cv.put(x + 61 + j, yy, '█' if j < fill else '░', INFO if j < fill else LINE, PANEL)
+                cv.put(x + 74 + j, yy, '█' if j < fill else '░', INFO if j < fill else LINE, PANEL)
             nxt = next((k for k in SK.by_line(line) if k.unlock > r), None)
             known = sum(1 for k in SK.by_line(line) if k.id in p.known)
-            cv.text(x + 35, yy + 1, f'{known}/5 skills' + (f' · next: {nxt.name} at {nxt.unlock}' if nxt else ' · mastered'),
-                    scale(DIM, .85), PANEL, maxw=58)
+            cv.text(x + 47, yy + 1, f'{known}/5 skills known' + (f' · next tier at {nxt.unlock}' if nxt else ' · all tiers open'),
+                    scale(DIM, .85), PANEL, maxw=46)
         cv.text_center(W // 2, y + 29, ' 1-4: add an attribute point · Z: skills · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -1130,7 +1219,7 @@ class SkillsScreen(Modal):
 
 class ShopScreen(Modal):
     title = 'Outfitter'
-    SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp')]
+    SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod')]
 
     def __init__(self, app, key=None):
         super().__init__(app)
@@ -1185,10 +1274,10 @@ class ShopScreen(Modal):
         g.log_mark = len(g.log)
         i = self.sel[self.pane]
         if self.pane == 0:
-            if i < 3:
+            if i < len(self.SUPPLIES):
                 g.buy_supply(i)
             else:
-                g.buy_gear(i - 3, self.key)
+                g.buy_gear(i - len(self.SUPPLIES), self.key)
         else:
             rows = self.sell_rows()
             if i < len(rows):
@@ -1311,6 +1400,7 @@ class HelpScreen(Modal):
             ('Shift + direction  HJKL..', 'Run until something interesting happens'),
             ('1 2 3 4 5 6', 'Use the skill in that slot (aims at the nearest enemy)'),
             ('F', 'Shoot the nearest enemy (needs a bow)'),
+            ('A', 'Fish, standing next to water (needs a fishing pole from an outfitter)'),
             ('Z', 'Skills: choose your six (only in a town or stronghold)'),
             ('Q   W', 'Drink a health or mana potion'),
             ('P', 'Read a Town Portal scroll. Step into the blue 0 to go back.'),
@@ -1321,7 +1411,7 @@ class HelpScreen(Modal):
             ('R   S   5   .', 'Rest until healed · wait one turn'),
             ('I   D   C', 'Inventory · drop items · character sheet and attributes'),
             ('E  Tab', 'Journal: jobs, cargo, factions and news'),
-            ('M', 'Map of the realm (F on the map shows faction lands)'),
+            ('M', 'Map of the realm: arrows scroll, Z whole realm, F faction lands'),
             ('V  F2', 'Bestiary: the creatures you have met'),
             ('?  F1', 'This help'),
             ('F11  Alt+Enter', 'Toggle fullscreen'),
@@ -1331,25 +1421,35 @@ class HelpScreen(Modal):
         ('The world', [
             ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
             ('Danger', 'Hover over the land to see its danger. Night brings the dead and bigger packs.'),
-            ('Π ruin', 'An old ruin with a way down. Smaller than a dungeon, but loot is loot.'),
+            ('Knowledge', 'You only know the land around Thornfield. Read the signpost (┬) in each town to'),
+            ('', 'learn where its roads lead; townsfolk and travellers tell you of other places.'),
+            ('Π ruin', 'An old ruin with a way down. Small, with a skill tome at the bottom.'),
             ('† shrine', 'Pray for a blessing. An offering makes it last longer.'),
             ('∆ camp', 'A bandit camp. Kill them all and the strongbox is yours.'),
             ('Ψ stones', 'Standing stones. Touch them to learn from old memories.'),
             ('¤ wagon', 'An abandoned wagon. Loot, or a trap.'),
             ('Events', 'On the road things happen: wounded travellers, peddlers, tolls, storms...'),
-            ('@ travellers', 'Walk into a traveller to talk. Some have a job for you, and wait for'),
-            ('', 'you afterwards at the inn of the town they were going to (see the journal).'),
-            ('Towns', 'Trader: goods · innkeeper: jobs · outfitter: gear · temple: healing'),
+            ('@ travellers', 'Walk into a traveller to talk. Some have a job for you and wait for you afterwards'),
+            ('', 'at the inn of the town they were going to (see the journal).'),
+            ('Towns', 'Trader: goods · innkeeper: jobs · outfitter: gear, identify · temple: heal, curses'),
             ('', 'stablemaster: mules and carts · castellan (in strongholds): war jobs'),
-            ('Factions', 'Work for a faction to gain its favour; hurt them and their gates close.'),
-            ('Bestiary', 'Every kill teaches you. Higher knowledge: more damage against that kind,'),
-            ('', 'and they hit you less often.'),
-            ('Skills', 'You start with none. Learn them from tomes (≡) found on monsters, in ruins,'),
-            ('', 'at standing stones, from peddlers and city outfitters. Disciplines grow by use.'),
+            ('Factions', 'Different every world. Work for one to win favour; hurt it and its gates close.'),
+            ('Peoples', 'Humans, elves, dwarves, halflings and half-orcs each like and distrust each other.'),
+            ('', 'How a town sees your people changes its prices and how its faction greets you.'),
+            ('Great evils', 'Each world has one to three: a lich, a dragon, a spider queen, a warlord, a drowned'),
+            ('', 'god. They grow as you do, mark the land around their lairs (blight, ash, webs, war,'),
+            ('', 'mire), raid villages and in time hunt you. Destroy them all to save the vale.'),
+        ]),
+        ('Your hero', [
+            ('Skills', 'You start with none. Learn them from tomes (≡) found on monsters, in ruins, at'),
+            ('', 'standing stones, from peddlers and city outfitters. Disciplines grow by use and'),
+            ('', 'decide which tomes you can understand. Carry six skills; change them in a town (Z).'),
+            ('Life skills', 'Fishing grows by fishing (A next to water, with a pole from an outfitter). New fish'),
+            ('', 'bite as you improve. Eat them to heal, or sell them. More life skills will follow.'),
             ('Magic items', 'Rare, and unidentified when found. Outfitters and priests identify them.'),
             ('', 'Some are cursed: once worn they stay on until a priest lifts the curse.'),
-            ('Morvenna', 'She grows stronger as you do. Her blight spreads from the crypt (purple land:'),
-            ('', 'more danger, the dead walk by day). In time she sends hunters after you.'),
+            ('Bestiary', 'Every kill teaches you. Higher knowledge: more damage against that kind,'),
+            ('', 'and they hit you less often (V).'),
             ('Death', 'Hardcore: final. Softcore: you wake in a temple; your pack stays with your body.'),
             ('Rarity', 'normal · magic (blue) · rare (yellow) · unique (gold)'),
             ('X  T', 'Auto-explore and travel play out step by step; press any key to stop.'),
@@ -1363,9 +1463,10 @@ class HelpScreen(Modal):
     def render(self, cv):
         name, rows = self.PAGES[self.page]
         x, y = self.box(cv, 104, 28, f'Help: {name} ({self.page + 1}/{len(self.PAGES)})')
+        kw = 28 if self.page == 0 else 14
         for i, (k, d) in enumerate(rows):
-            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL, maxw=27)
-            cv.text(x + 31, y + 2 + i, d, FG, PANEL, maxw=71)
+            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL, maxw=kw)
+            cv.text(x + 4 + kw, y + 2 + i, d, FG, PANEL, maxw=98 - kw)
         cv.text_center(W // 2, y + 27, ' Left/Right or Space: next page · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -1516,28 +1617,36 @@ class BestiaryScreen(Modal):
 
 
 class IntroScreen(Modal):
-    """A short opening for a new game."""
-    PAGES = [
-        ('The Cursed Vale',
-         'For three winters the vale has known no peace. The dead do not stay in their graves, wolves come down from '
-         'the hills in packs no hunter has ever seen, and the old roads are the only places left where honest folk '
-         'still dare to walk.\n\n'
-         'The cause has a name: Morvenna the Undying, a sorceress who would not die, sleeping and scheming in a crypt '
-         'somewhere in the wilds. Her curse seeps into the land a little further every year.'),
-        ('A land at war with itself',
-         'As if that were not enough, the lords of the vale fight each other. The Crown holds the heartland, the '
-         'Merchant League buys what it cannot conquer, the Circle guards its old groves, and the Black Hand takes '
-         'whatever is left on the roads. Castles and forts change hands. Patrols keep the roads, but beyond them '
-         'the land grows wilder and more dangerous with every step.\n\n'
-         'Ruins, shrines and hidden camps wait out there for those brave enough to leave the road.'),
-        ('{name}',
-         'You arrive in Thornfield, a small village at the heart of the vale, with a sword, a padded coat and a few '
-         'coins. You are nobody yet. What you become is up to you: warrior, archer, mage, merchant, sellsword, '
-         'or all of these at once.\n\n'
-         'Speak with Elder Berend, find work on the inn board, trade goods between towns, talk to the travellers you '
-         'meet, and grow strong enough to face what waits in the crypt.\n\n'
-         'Press ? at any time for help.'),
-    ]
+    """A short opening for a new game, written for this world."""
+
+    @property
+    def PAGES(self):
+        g = self.game
+        if not g:
+            return [('', '')] * 3
+        from . import races as RC
+        evs = g.world.evils
+        dark = ' '.join(f'{e.name}, {e.d["lore"]}' for e in evs)
+        fs = [D.FACTIONS[f] for f in D.FACTION_ORDER if f != 'cult']
+        lords = ', '.join(f['name'] for f in fs[:-1]) + f' and {fs[-1]["name"]}'
+        p = g.player
+        r = RC.RACES[p.race]
+        return [
+            ('The Cursed Vale',
+             'For three winters the vale has known no peace. Wolves come down from the hills in packs no hunter has '
+             'ever seen, and the old roads are the only places left where honest folk still dare to walk.\n\n'
+             f'{"A great evil has" if len(evs) == 1 else "Great evils have"} woken in the wilds. {dark}'),
+            ('A land at war with itself',
+             f'As if that were not enough, the powers of the vale fight each other: {lords}. Castles and forts change '
+             'hands. Patrols keep the roads, but beyond them the land grows wilder with every step.\n\n'
+             'You know little of this land yet. Talk to people, read the signposts in the towns, and the map will fill in.'),
+            ('{name}',
+             f'You arrive in Thornfield, a small village at the heart of the vale: a {r["name"].lower()} with a sword, '
+             'a bow, a padded coat and a few coins. You are nobody yet. What you become is up to you.\n\n'
+             'Speak with Elder Berend, find work on the inn board, trade goods between towns, talk to the travellers you '
+             'meet. Whether you face the darkness is your choice, but it will not wait for you.\n\n'
+             'Press ? at any time for help.'),
+        ]
 
     def __init__(self, app):
         super().__init__(app)
@@ -1590,13 +1699,14 @@ class DeathScreen(Modal):
 
 
 class WinScreen(Modal):
-    title = 'The curse is broken'
+    title = 'The vale is saved'
 
     def render(self, cv):
         g = self.game
         p = g.player
         x, y = self.box(cv, 64, 15)
-        cv.wrap(x + 3, y + 2, 58, f"{p.name} has destroyed Morvenna the Undying. Thornfield will sing of this for generations.", FG, PANEL)
+        names = ', '.join(e.name for e in g.world.evils)
+        cv.wrap(x + 3, y + 2, 58, f"{p.name} has destroyed {names}. The vale is free, and Thornfield will sing of this for generations.", FG, PANEL, 3)
         rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Gold', p.gold)]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
@@ -1823,9 +1933,14 @@ class JournalScreen(Modal):
             cv.text(x + 52, yy, f'{regs} regions, {holds} strongholds', DIM, PANEL)
             yy += 1
         yy += 1
-        cv.text(x + 2, yy, 'MORVENNA', DIM, PANEL)
-        cv.text(x + 14, yy, f'{CU.stage(g)}: {CU.describe(g)}', CU.HUNT_FG, PANEL, maxw=84)
-        yy += 2
+        cv.text(x + 2, yy, 'DARK POWERS', DIM, PANEL)
+        yy += 1
+        for ev in g.world.evils:
+            nm = ev.name if ev.known else 'Something unknown'
+            cv.text(x + 4, yy, nm, ev.fg if not ev.defeated else DIM, PANEL, maxw=28)
+            cv.text(x + 32, yy, f'{EVL.stage(ev)}: {EVL.describe(g, ev)}', FG if not ev.defeated else DIM, PANEL, maxw=64)
+            yy += 1
+        yy += 1
         cv.text(x + 2, yy, 'NEWS', DIM, PANEL)
         yy += 1
         evs = [st for st in g.world.settlements if st.event]
@@ -1847,14 +1962,80 @@ class WorldMapScreen(Modal):
     """The whole overworld, each character covering 2x4 cells."""
     show_factions = False
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
+    zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
+
+    def __init__(self, app):
+        super().__init__(app)
+        g = self.game
+        p = g.player
+        here = g.here
+        self.cx, self.cy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
 
     def render(self, cv):
+        if self.zoom:
+            self.render_detail(cv)
+        else:
+            self.render_overview(cv)
+
+    def render_detail(self, cv):
+        g = self.game
+        om = g.maps['over']
+        w = g.world
+        x, y = self.box(cv, 84, 28, 'Map of the realm (close-up)')
+        vw, vh = 80, 24
+        self.cx = max(vw // 2, min(om.w - vw // 2, self.cx))
+        self.cy = max(vh // 2, min(om.h - vh // 2, self.cy))
+        ox, oy = self.cx - vw // 2, self.cy - vh // 2
+        bx, by = x + 2, y + 1
+        taint = getattr(w, 'taint', None)
+        for vy in range(vh):
+            for vx in range(vw):
+                mx, my = ox + vx, oy + vy
+                if not om.inb(mx, my):
+                    continue
+                i = my * om.w + mx
+                if not om.seen[i]:
+                    continue
+                ch, fg, bg = LOOK.get(om, i)
+                if taint and taint[i]:
+                    ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[taint[i] - 1].d['taint'], i)
+                if WorldMapScreen.show_factions:
+                    bg = mix(bg, D.FACTIONS[w.region_at(mx, my).faction]['fg'], .25)
+                cv.put(bx + vx, by + vy, ch, fg, bg)
+
+        def inview(px, py):
+            return ox <= px < ox + vw and oy <= py < oy + vh
+        for poi in w.pois:
+            if poi.found and inview(poi.x, poi.y):
+                cv.put(bx + poi.x - ox, by + poi.y - oy, poi.glyph[0], poi.glyph[1], (34, 28, 22))
+        for hd in w.holds:
+            if om.seen[hd.y * om.w + hd.x] and inview(hd.x, hd.y):
+                cv.put(bx + hd.x - ox, by + hd.y - oy, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], (40, 30, 20))
+        for mi in MS.active(g):
+            (tx, ty), _ = MS.target_pos(g, mi)
+            if inview(tx, ty):
+                cv.put_bg(bx + tx - ox, by + ty - oy, (110, 80, 16))
+        p = g.player
+        here = g.here
+        px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
+        if inview(px, py):
+            cv.put(bx + px - ox, by + py - oy, '@', (255, 246, 220), (150, 40, 28))
+        for st in w.settlements:
+            if g.known_settlement(st) and inview(st.x, st.y):
+                lx = bx + st.x - ox - len(st.name) // 2
+                ly = by + st.y - oy - 1
+                if by <= ly < by + vh:
+                    lx = max(bx, min(bx + vw - len(st.name) - 2, lx))
+                    cv.text(lx, ly, f' {st.name} ', (255, 226, 140) if st.is_city else (236, 210, 150), (30, 22, 14))
+        cv.text_center(W // 2, y + 27, ' arrows/hjkl: scroll (Shift: faster) · Z: whole realm · F: factions · Esc: close ', DIM, PANEL)
+
+    def render_overview(self, cv):
         g = self.game
         om = g.maps['over']
         w = g.world
         x, y = self.box(cv, 84, 28, 'Map of the realm')
         bx, by = x + 2, y + 2
-        blight = getattr(w, 'blight', None)
+        taint = getattr(w, 'taint', None)
         p = g.player
         here = g.here
         px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
@@ -1866,8 +2047,8 @@ class WorldMapScreen(Modal):
                         i = yy * om.w + xx
                         if not om.seen[i]:
                             continue
-                        if blight and blight[i]:
-                            nbl += 1
+                        if taint and taint[i]:
+                            nbl = taint[i]
                         t = om.t[i]
                         pr = self.PRIORITY.get(t, 0)
                         if pr > best:
@@ -1877,8 +2058,8 @@ class WorldMapScreen(Modal):
                 ch, fg, bg = LOOK.get(om, bi)
                 if bg == LOOK.BG:
                     bg = PANEL
-                if nbl >= 3:
-                    ch, fg, bg = LOOK.blighted((ch, fg, bg), .4)
+                if nbl:
+                    ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[nbl - 1].d['taint'], bi)
                 if WorldMapScreen.show_factions:
                     rf = w.regions[w.region_of[min(om.h - 1, cy * 4 + 1) * om.w + cx * 2]].faction
                     bg = mix(PANEL, D.FACTIONS[rf]['fg'], .28)
@@ -1916,13 +2097,27 @@ class WorldMapScreen(Modal):
                 lx += len(D.FACTIONS[f]['short']) + 4
         else:
             cv.text(x + 2, y + 26, '⌂ village ■ city Ω castle ╬ fort > dungeon Π ruin † shrine ∆ camp Ψ stones ¤ wagon', DIM, PANEL)
-        cv.text_center(W // 2, y + 27, ' F: show or hide factions · any other key: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + 27, ' Z or arrows: close-up · F: factions · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
-        if tok == 'f':
+        if tok in ('f', 'F'):
             WorldMapScreen.show_factions = not WorldMapScreen.show_factions
             return
-        self.app.pop()
+        if tok in ('z', 'Z', 'tab', '+', '-'):
+            WorldMapScreen.zoom = 1 - self.zoom
+            return
+        d = DIRS.get(tok)
+        if not d and tok in RUN_LETTERS:
+            d, shift = DIRS[RUN_LETTERS[tok]], True
+        if d:
+            if not self.zoom:
+                WorldMapScreen.zoom = 1
+            step = 16 if shift else 5
+            self.cx += d[0] * step
+            self.cy += d[1] * step
+            return
+        if tok in ('esc', 'm', 'enter', 'space', 'q'):
+            self.app.pop()
 
 
 class TempleScreen(Modal):

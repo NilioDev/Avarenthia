@@ -66,10 +66,10 @@ def refresh_hostility(game):
 def can_enter(game, s):
     f = s.faction
     if f == 'cult':
-        return False, f'{s.name} is held by the Cult of the Undying. The dead guard its gates.'
+        return False, f"{s.name} is held by {D.FACTIONS['cult']['name']}. Its gates are shut to the living."
     rep = game.player.rep.get(f, 0)
     if f == 'blackhand' and rep < -60:
-        return False, f'The Black Hand holds {s.name}, and they know your face. The gates stay shut.'
+        return False, f"{D.FACTIONS['blackhand']['name']} hold {s.name}, and they know your face. The gates stay shut."
     if f != 'blackhand' and rep <= HOSTILE_AT:
         return False, f"The guards of {s.name} ({D.FACTIONS[f]['short']}) turn you away."
     return True, ''
@@ -98,7 +98,7 @@ def launch(game, f):
     src.garrison -= strength // 2
     wd = Wanderer(game.new_id(), 'warband', src.x, src.y)
     wd.faction = f
-    wd.ch, wd.fg = WARBAND_GLYPH[f], D.FACTIONS[f]['fg']
+    wd.ch, wd.fg = D.FACTIONS[f].get('glyph', WARBAND_GLYPH.get(f, 'W')), D.FACTIONS[f]['fg']
     wd.name = f"A {D.FACTIONS[f]['short']} warband"
     wd.strength = strength
     wd.target_hold = tgt.id

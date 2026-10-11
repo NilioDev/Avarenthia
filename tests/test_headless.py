@@ -16,7 +16,7 @@ E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'cursed_vale_test.dat'
 
 TOKENS = ['up', 'down', 'left', 'right', 'y', 'u', 'b', 'n', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
-          's', 'S', 'B', 'A', '5', '6', 'f', 'z', 'v', 'f2', 'a', 'c']
+          's', 'S', 'B', 'A', '5', '6', 'f', 'z', 'v', 'f2', 'a', 'c', 'tab', 'L']
 
 
 def new_app(mode='soft', seed=None):
@@ -33,7 +33,7 @@ def new_app(mode='soft', seed=None):
             app.key(ch)
     app.key('enter')
     assert isinstance(app.top, ui.IntroScreen), app.top
-    for _ in range(len(ui.IntroScreen.PAGES)):
+    for _ in range(3):
         app.render()
         app.key('enter')
     assert isinstance(app.top, ui.GameScreen), app.top
@@ -381,7 +381,7 @@ def wilds():
         g.compute_fov()
         g.kill(o)
     assert g.lore('rat') == 2, g.bestiary
-    for page in range(2):
+    for page in range(3):
         app.screens = [ui.GameScreen(app), ui.HelpScreen(app)]
         app.top.page = page
         app.render()
@@ -394,7 +394,7 @@ def wilds():
 
 def items_skills_curse():
     from cursed_vale.entities import make_tome, random_gear, make_gear, add_curse
-    from cursed_vale import skills as SK, curse as CU
+    from cursed_vale import skills as SK, evils as EVL
     random.seed(8)
     app = new_app('soft', 555)
     g = app.game
@@ -438,15 +438,16 @@ def items_skills_curse():
     g.unequip('ring')
     assert not g.is_equipped(ring)
     # Morvenna grows with you
-    print('curse at start:', CU.stage(g), 'blighted cells', sum(g.world.blight))
-    p.lvl = 14
-    CU.update(g)
+    tainted = lambda: sum(1 for v in g.world.taint if v)
+    print('evils:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted())
+    p.lvl = 20
+    EVL.update(g)
     to_over(g, 0)
-    for _ in range(30):
-        CU.daily(g)
+    for _ in range(40):
+        EVL.daily(g)
     hunts = [w for w in g.world.wanderers if w.kind == 'hunt']
-    print('curse at level 14:', CU.stage(g), 'blighted cells', sum(g.world.blight), 'hunters', len(hunts))
-    assert hunts and sum(g.world.blight) > 300
+    print('at level 20:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted(), 'hunters', len(hunts))
+    assert hunts and tainted() > 300
     h = hunts[0]
     d0 = cheb(h.x, h.y, p.x, p.y)
     for _ in range(30):
@@ -477,8 +478,94 @@ def items_skills_curse():
     print('auto-explore ok, turn', g.turn)
 
 
+def world_and_people():
+    from cursed_vale import races as RC, evils as EVL, lifeskills as LS
+    random.seed(3)
+    # character creation: people, gender, a random name
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.key('n')
+    app.key('down')
+    app.key('right')          # elf
+    app.key('right')          # dwarf
+    app.key('down')
+    app.key('left')           # female
+    app.key('tab')
+    app.render()
+    app.key('enter')
+    app.key('enter')
+    for _ in range(3):
+        app.render()
+        app.key('enter')
+    g = app.game
+    p = g.player
+    assert p.race == 'dwarf' and p.gender == 'female' and p.name, (p.race, p.gender, p.name)
+    print('created', p.name, p.race, p.gender, 'rep', p.rep)
+    print('factions:', [(k, f['name'], f['race']) for k, f in D.FACTIONS.items()])
+    print('evils:', [(e.name, e.did) for e in g.world.evils])
+    # only the land around home is known at first
+    known = [s.name for s in g.world.settlements if g.known_settlement(s)]
+    assert len(known) < 4, known
+    g.enter_town(0)
+    sp = g.map.signpost
+    p.x, p.y = sp[0] - 1, sp[1]
+    g.try_move(1, 0)
+    app.after_action()
+    app.render()
+    known2 = [s.name for s in g.world.settlements if g.known_settlement(s)]
+    assert len(known2) > len(known), (known, known2)
+    print('after reading the signpost:', known2)
+    # the world map scrolls
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    for k in ('right', 'L', 'down', 'z', 'z', 'f', 'up'):
+        app.key(k)
+        app.render()
+    # each evil can be destroyed
+    for e in g.world.evils:
+        boss = E.make_monster(g, e.d['boss'], 1, 1, 10)
+        g.enter_dungeon(e.did, g.world.dungeons[e.did].depth, 'up')
+        g.map.mons.append(boss)
+        g.kill(boss)
+        assert e.defeated
+    assert g.request == ('win',) or g.flags.get('saved')
+    # fishing by a river
+    g2 = E.Game('Fisher', False, 99, 'halfling', 'male')
+    om = g2.maps['over']
+    riv = [i for i, t in enumerate(om.t) if t == D.RIVER]
+    i = riv[len(riv) // 2]
+    g2.cur = 'over'
+    g2.player.x, g2.player.y = i % om.w + 1, i // om.w
+    if not D.TILES[om.tile(g2.player.x, g2.player.y)].walk:
+        g2.player.x -= 1
+    g2.compute_fov()
+    assert LS.fish(g2) == 0, 'no pole yet'
+    g2.add_to_inv(E.Item(g2.new_id(), 'tool', 'rod'))
+    caught = 0
+    for _ in range(200):
+        g2.map.mons = []
+        if g2.cur != 'over':
+            g2.maps.pop('wild', None)
+            g2.cur = 'over'
+        g2.player.x, g2.player.y = i % om.w, i // om.w
+        LS.fish(g2)
+        caught = sum(it.n for it in g2.player.inv if it.k == 'fish')
+    print('fishing rank', LS.rank(g2, 'fishing'), 'fish in the bag', caught,
+          sorted({it.t for it in g2.player.inv if it.k == 'fish'}))
+    assert caught > 10 and LS.rank(g2, 'fishing') >= 2
+    fishy = next(it for it in g2.player.inv if it.k == 'fish')
+    g2.eat(fishy)
+    # dungeons are dressed and lit
+    g2.enter_dungeon('mine', 1, 'up')
+    assert g2.map.deco and g2.map.lights
+    app.game = g2
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    world_and_people()
     items_skills_curse()
     smoke()
     trade_and_jobs()

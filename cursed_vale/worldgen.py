@@ -233,13 +233,17 @@ def gen_dungeon(game, did, depth):
         centers = gen_rooms(m)
         up, far = centers[0], centers[-1]
     m.set(up[0], up[1], UP)
+    if not last:
+        m.set(far[0], far[1], DOWN)
+    from .dress import dress
+    dress(game, m, d)
+    if m.tile(*far) not in (D.FLOOR, DOWN):
+        m.set(far[0], far[1], D.FLOOR if last else DOWN)
     if last:
         if d.boss:
             m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
-    else:
-        m.set(far[0], far[1], DOWN)
     npacks = 4 + depth + random.randint(0, 1)
     elites = 0
     for i in range(npacks):

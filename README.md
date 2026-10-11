@@ -5,6 +5,22 @@ Een ADOM-achtige wereld met Diablo-gevechten en Privateer-achtige handel: klasse
 loot in vier zeldzaamheden, zo'n 27 dorpen en steden met een levende economie, kastelen en forten van vijf facties, banen op de prikborden van de herbergen,
 en karavanen, patrouilles en bandieten die zichtbaar over de kaart trekken.
 
+## Je held
+
+Bij een nieuw spel kies je je volk (mens, elf, dwerg, halfling of half-ork), je geslacht (man, vrouw of ongedefinieerd)
+en je naam; met Tab krijg je een willekeurige naam die bij je volk past. Elk volk heeft eigen attributen, voordelen en
+nadelen, en andere volkeren en facties reageren anders op je: andere prijzen en een andere beginreputatie.
+
+De facties zijn in elke wereld anders: een rijk, kooplieden, woudvolk, vogelvrijen en een sekte, vaak aangevuld met
+dwergenclans en orkenstammen, elk met een eigen volk, naam, kleur en vijanden.
+
+Je kent aan het begin alleen de omgeving van Thornfield. Lees de **wegwijzer** (`┬`) in elk dorp om te weten waar de wegen
+heen gaan, en praat met mensen: zij vertellen over andere plaatsen. De wereldkaart (`M`) kun je met de pijltjes scrollen;
+`Z` wisselt tussen close-up en het hele rijk.
+
+**Life skills** groeien door ze te doen, zoals in Project Gorgon. De eerste is **vissen**: koop een hengel bij een outfitter
+en druk `A` naast water (rivier, meer, zee of een poel in een grot). Hoe beter je wordt, hoe meer soorten vis toehappen.
+
 ## Geen klassen
 
 Je kiest geen klasse. Je wordt wat je doet: tien disciplines (zwaard, bijl en knots, dolk, boog, vuur, ijs, storm,
@@ -16,9 +32,10 @@ en wisselt ze alleen in een stad of burcht (`Z`). Wapenskills werken alleen met 
 Magische items zijn zeldzaam en **ongeïdentificeerd** als je ze vindt; hun krachten werken pas na identificatie bij een
 outfitter of priester. Sommige zijn **vervloekt**: eenmaal aangetrokken krijg je ze niet meer af tot een priester de vloek opheft.
 
-**Morvenna** groeit mee met jou. Haar vervloeking (paars land op de kaart) breidt zich uit vanaf haar crypte: daar is het
-gevaarlijker en lopen de doden ook overdag. Ze fluistert 's nachts, laat de doden opstaan bij dorpen in haar schaduw
-en stuurt uiteindelijk jagers op je af. In het paneel zie je hoe sterk ze is.
+**Grote kwaden.** Elke wereld heeft er één tot drie, willekeurig gekozen: een lich (Morvenna of een ander), een draak,
+een spinnenkoningin, een krijgsheer van de orks of een verdronken god. Ze worden sterker naarmate jij sterker wordt en de
+tijd verstrijkt, laten hun sporen na op het land rond hun hol (verdorring, as, webben, oorlogspaden, moeras), plunderen
+dorpen in hun schaduw en sturen uiteindelijk jagers op je af. Wat je ermee doet is aan jou; versla ze allemaal en de vallei is gered.
 
 Bij een nieuw spel kies je **hardcore** (dood is definitief) of **softcore**: je ontwaakt in de dichtstbijzijnde tempel,
 maar je rugzak, vracht en goud liggen bij je lijk, dat je terug moet halen. Je kunt ook een **seed** invoeren om
@@ -112,12 +129,13 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | Shift + richting | rennen |
 | `1` - `6` | skills, richten automatisch op de dichtstbijzijnde vijand |
 | `F` | schieten met een boog |
+| `A` | vissen (naast water, met een hengel) |
 | `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
 | `P` | Town Portal |
 | `X` | automatisch verkennen (stap voor stap te zien, elke toets stopt) |
 | `T` | reizen naar een bekende plaats of kerker |
-| `M` | kaart van het rijk |
+| `M` | kaart van het rijk (pijltjes scrollen, `Z` heel rijk, `F` facties) |
 | `E` of Tab | dagboek: banen, vracht en nieuws |
 | `>` `<` of Enter | trap nemen, dorp of kerker in |
 | `G` | oppakken |
@@ -138,6 +156,12 @@ cursed_vale/data.py      tegels, klassen, skills, items, affixen, monsters, kerk
 cursed_vale/entities.py  Item, Monster, Player, GameMap en het maken van loot en monsters
 cursed_vale/worldgen.py  vallei, dorp, kerkers (kamers en grotten), wildernis, winkel
 cursed_vale/events.py    ruïnes en andere plekken, gebeurtenissen onderweg, reizigers
+cursed_vale/evils.py     de grote kwaden: holen, bazen, sporen op het land, jagers
+cursed_vale/factions.py  facties, per wereld opnieuw gemaakt
+cursed_vale/races.py     volkeren, hun verhoudingen en namen
+cursed_vale/lifeskills.py life skills (vissen)
+cursed_vale/look.py      hoe het land eruitziet (hoogte, vocht, klimaat)
+cursed_vale/dress.py     aankleding en licht in kerkers
 cursed_vale/engine.py    spelregels: beweging, gevechten, monster-AI, skills, verkennen, opslaan
 cursed_vale/fov.py       zichtveld via libtcod (symmetric shadowcasting)
 cursed_vale/ui.py        alle schermen en het tekenen, los van tcod
