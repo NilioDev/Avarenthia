@@ -650,6 +650,42 @@ EXTRA_PASSES = {'drystorm': drystorm_pass, 'meteors': meteors_pass, 'whirlwind':
 
 
 # ------------------------------------------------------------------ the painter
+PASSES = {'fireflies': fireflies, **EXTRA_PASSES}
+NEEDS_CANVAS = {'heat'}                      # heat shimmer borrows the glyph of the cell next door
+
+
+def cell(kind, ch, fg, bg, lx, ly, t, dist, lightning=0.0, w=80, h=50, neighbour=None):
+    """Weather over one cell: (ch, fg, bg)."""
+    fam = KINDS[kind][1]
+    if fam == 'rain':
+        return rain_cell(kind, ch, fg, bg, lx, ly, t, lightning)
+    if fam == 'snow':
+        return snow_cell(kind, ch, fg, bg, lx, ly, t, dist)
+    if kind == 'hail':
+        return hail_cell(ch, fg, bg, lx, ly, t)
+    if fam in ('fog', 'miasma'):
+        return fog_cell(kind, ch, fg, bg, lx, ly, t, dist)
+    if kind == 'clouds':
+        return cloud_cell(ch, fg, bg, lx, ly, t)
+    if kind == 'wind':
+        return wind_cell(ch, fg, bg, lx, ly, t)
+    if fam == 'heat':
+        return heat_cell(kind, ch, fg, bg, lx, ly, t, w, h, neighbour)
+    if fam == 'sand':
+        return sand_cell(kind, ch, fg, bg, lx, ly, t, dist)
+    if kind in EXTRA_CELLS:
+        return EXTRA_CELLS[kind](ch, fg, bg, lx, ly, t, dist)
+    if kind == 'ash':
+        return ash_cell(ch, fg, bg, lx, ly, t)
+    if kind == 'aurora':
+        return aurora_cell(ch, fg, bg, lx, ly, t)
+    return ch, fg, bg
+
+
+def sheltered_flash(fg, bg, lightning):
+    return _mix(fg, (240, 244, 255), lightning * .3), _mix(bg, (150, 160, 200), lightning * .25)
+
+
 def apply(cv, x0, y0, w, h, kind, t, centre=None, sheltered=None):
     """Paint weather over the rectangle (x0, y0, w, h) of a canvas. centre: the player's cell, for fog and snow.
     sheltered: cells (canvas x, y) under a roof, where no weather falls (only a lightning flash shows through)."""
@@ -657,43 +693,270 @@ def apply(cv, x0, y0, w, h, kind, t, centre=None, sheltered=None):
         return
     cx, cy = centre or (x0 + w // 2, y0 + h // 2)
     lightning = flash(t) if kind == 'storm' else 0.0
-    fam = KINDS[kind][1]
     for y in range(y0, y0 + h):
         for x in range(x0, x0 + w):
             ch, fg, bg = cv.get(x, y)
-            lx, ly = x - x0, y - y0
-            dist = math.hypot(x - cx, y - cy)
             if sheltered and (x, y) in sheltered:
                 if lightning:
-                    cv.put(x, y, ch, _mix(fg, (240, 244, 255), lightning * .3), _mix(bg, (150, 160, 200), lightning * .25))
+                    fg, bg = sheltered_flash(fg, bg, lightning)
+                    cv.put(x, y, ch, fg, bg)
                 continue
-            if fam == 'rain':
-                ch, fg, bg = rain_cell(kind, ch, fg, bg, lx, ly, t, lightning)
-            elif fam == 'snow':
-                ch, fg, bg = snow_cell(kind, ch, fg, bg, lx, ly, t, dist)
-            elif kind == 'hail':
-                ch, fg, bg = hail_cell(ch, fg, bg, lx, ly, t)
-            elif fam in ('fog', 'miasma'):
-                ch, fg, bg = fog_cell(kind, ch, fg, bg, lx, ly, t, dist)
-            elif kind == 'clouds':
-                ch, fg, bg = cloud_cell(ch, fg, bg, lx, ly, t)
-            elif kind == 'wind':
-                ch, fg, bg = wind_cell(ch, fg, bg, lx, ly, t)
-            elif fam == 'heat':
-                nb = cv.get(x + 1, y) if lx + 1 < w else None
-                ch, fg, bg = heat_cell(kind, ch, fg, bg, lx, ly, t, w, h, nb)
-            elif fam == 'sand':
-                ch, fg, bg = sand_cell(kind, ch, fg, bg, lx, ly, t, dist)
-            elif kind in EXTRA_CELLS:
-                ch, fg, bg = EXTRA_CELLS[kind](ch, fg, bg, lx, ly, t, dist)
-            elif kind == 'ash':
-                ch, fg, bg = ash_cell(ch, fg, bg, lx, ly, t)
-            elif kind == 'aurora':
-                ch, fg, bg = aurora_cell(ch, fg, bg, lx, ly, t)
-            else:
-                continue
+            nb = cv.get(x + 1, y) if kind in NEEDS_CANVAS and x + 1 < x0 + w else None
+            ch, fg, bg = cell(kind, ch, fg, bg, x - x0, y - y0, t, math.hypot(x - cx, y - cy), lightning, w, h, nb)
             cv.put(x, y, ch, fg, bg)
-    if kind == 'fireflies':
-        fireflies(cv, x0, y0, w, h, t)
-    if kind in EXTRA_PASSES:
-        EXTRA_PASSES[kind](cv, x0, y0, w, h, t)
+    passes(cv, x0, y0, w, h, kind, t)
+
+
+def passes(cv, x0, y0, w, h, kind, t):
+    """The parts drawn on top of everything: fireflies, lightning bolts, shooting stars, a dust devil, smoke."""
+    if kind in PASSES:
+        PASSES[kind](cv, x0, y0, w, h, t)
+
+
+# ================================================================== the weather in the world
+# Each region of the world has its own weather, which changes every few hours. What comes next depends on
+# the region's climate (the cold north and the mountains, the hot dry south, the marshes, or the temperate
+# middle) and on the season, and it changes by steps: drizzle grows into rain before it pours, a blizzard
+# dies down to snow before the sky clears.
+
+import random as _random
+
+CLIMATE_WEIGHTS = {
+    'temperate': {
+        'spring': {'clear': 3, 'clouds': 3, 'drizzle': 2, 'rain': 2, 'downpour': .5, 'storm': .4, 'blossom': 1.5, 'warm': .5},
+        'summer': {'clear': 4, 'warm': 3, 'heat': .8, 'clouds': 2, 'rain': 1, 'storm': 1, 'drystorm': .5, 'downpour': .4},
+        'autumn': {'clear': 2, 'clouds': 3, 'wind': 2, 'leaves': 2, 'drizzle': 2, 'rain': 2, 'downpour': 1, 'fog': 1.5, 'storm': .5},
+        'winter': {'clear': 2, 'clouds': 3, 'snow_light': 2, 'snow': 1.5, 'blizzard': .3, 'fog': 1, 'freezing': .7,
+                   'sleet': 1, 'hail': .3},
+    },
+    'cold': {
+        'spring': {'clear': 2, 'clouds': 3, 'snow_light': 2, 'sleet': 1.5, 'drizzle': 1, 'freezing': 1, 'fog': 1},
+        'summer': {'clear': 3, 'clouds': 3, 'drizzle': 2, 'rain': 1.5, 'fog': 1, 'wind': 1},
+        'autumn': {'clouds': 3, 'wind': 2, 'sleet': 2, 'snow_light': 2, 'fog': 1.5, 'rain': 1, 'clear': 1},
+        'winter': {'snow_light': 2, 'snow': 3, 'blizzard': 1.5, 'clear': 1.5, 'clouds': 1, 'freezing': .8},
+    },
+    'arid': {
+        'spring': {'clear': 4, 'warm': 3, 'dust': 2, 'sandstorm': .6, 'clouds': 1},
+        'summer': {'clear': 3, 'heat': 4, 'warm': 1, 'dust': 2, 'sandstorm': 1, 'haboob': .4, 'drystorm': .8},
+        'autumn': {'clear': 3, 'warm': 3, 'dust': 2, 'sandstorm': 1, 'haboob': .3, 'clouds': 1, 'drystorm': .4},
+        'winter': {'clear': 4, 'warm': 2, 'clouds': 2, 'dust': 1, 'drizzle': .5},
+    },
+    'marsh': {
+        'spring': {'mist': 2, 'fog': 2, 'drizzle': 3, 'rain': 2, 'clouds': 2, 'clear': 1},
+        'summer': {'mist': 2, 'clear': 2, 'warm': 2, 'clouds': 2, 'rain': 2, 'storm': 1, 'fog': 1},
+        'autumn': {'fog': 3, 'fog_thick': 1.5, 'mist': 2, 'drizzle': 2, 'rain': 2, 'clouds': 2},
+        'winter': {'fog': 3, 'fog_thick': 1.5, 'freezing': 1, 'sleet': 1.5, 'clouds': 2, 'snow_light': 1},
+    },
+}
+FAMILY_LADDER = {'rain': ['drizzle', 'rain', 'downpour', 'storm'], 'snow': ['snow_light', 'snow', 'blizzard'],
+                 'fog': ['mist', 'fog', 'fog_thick'], 'sand': ['dust', 'sandstorm', 'haboob'], 'heat': ['warm', 'heat']}
+MESSAGES = {
+    'clear': 'The sky clears.', 'clouds': 'Clouds come in, and their shadows sail over the land.',
+    'drizzle': 'A fine drizzle starts to fall.', 'rain': 'It is raining.', 'downpour': 'The rain comes down in sheets.',
+    'storm': 'Thunder rolls overhead. A storm!', 'snow_light': 'A few snowflakes drift down.', 'snow': 'It is snowing.',
+    'blizzard': 'A blizzard! The wind drives the snow sideways.', 'hail': 'Hail rattles down.',
+    'mist': 'Mist rises from the ground.', 'fog': 'Fog closes in.', 'fog_thick': 'The fog is so thick you can barely see.',
+    'wind': 'A strong wind picks up.', 'leaves': 'Leaves come down in the wind.', 'blossom': 'Blossom drifts on the breeze.',
+    'warm': 'It is a warm day.', 'heat': 'The heat is scorching.', 'dust': 'The wind lifts the dust.',
+    'sandstorm': 'A sandstorm!', 'haboob': 'A wall of sand swallows the sun!', 'freezing': 'Freezing rain glazes the ground.',
+    'sleet': 'Sleet comes down, half rain, half snow.', 'drystorm': 'A dry storm: lightning, and not a drop of rain.',
+    'ash': 'Ash is falling from the sky.', 'miasma': 'A sickly mist hangs over the land.', 'blood': 'The rain is red as blood.',
+    'smoke': 'Smoke drifts over the land.',
+}
+# how the weather changes things: sight (cells less, or a cap), travel cost factor, ambush factor, food factor
+EFFECTS = {
+    'drizzle': (0, 1.0, 1.0, 1.0), 'rain': (-1, 1.1, 1.0, 1.0), 'downpour': (-2, 1.25, 1.2, 1.0), 'storm': (-3, 1.3, 1.2, 1.0),
+    'snow_light': (-1, 1.1, 1.0, 1.15), 'snow': (-2, 1.35, 1.0, 1.3), 'blizzard': (('cap', 3), 2.0, 1.4, 1.6),
+    'hail': (-1, 1.2, 1.0, 1.1), 'mist': (-1, 1.0, 1.2, 1.0), 'fog': (('cap', 5), 1.1, 1.6, 1.0),
+    'fog_thick': (('cap', 3), 1.2, 2.0, 1.0), 'miasma': (('cap', 4), 1.2, 1.8, 1.0), 'heat': (0, 1.15, 1.0, 1.2),
+    'dust': (-1, 1.05, 1.0, 1.0), 'sandstorm': (('cap', 4), 1.5, 1.5, 1.1), 'haboob': (('cap', 2), 2.0, 1.8, 1.2),
+    'freezing': (-1, 1.3, 1.0, 1.3), 'sleet': (-1, 1.25, 1.0, 1.25), 'ash': (-1, 1.1, 1.2, 1.0), 'smoke': (-2, 1.0, 1.2, 1.0),
+    'blood': (-1, 1.1, 1.3, 1.0), 'wind': (0, 1.05, 1.0, 1.0),
+}
+NIGHT_ONLY = {'fireflies', 'aurora', 'meteors'}
+PANEL_ICON = {'clear': '☼', 'clouds': '≈', 'drizzle': '·', 'rain': '|', 'downpour': '|', 'storm': '!', 'snow_light': '*',
+              'snow': '*', 'blizzard': '*', 'hail': 'o', 'mist': '░', 'fog': '░', 'fog_thick': '▒', 'wind': '~',
+              'leaves': ',', 'blossom': '∙', 'warm': '☼', 'heat': '☼', 'dust': '~', 'sandstorm': '▒', 'haboob': '▓',
+              'freezing': '|', 'sleet': '|', 'drystorm': '!', 'ash': '∙', 'miasma': '░', 'blood': '|', 'smoke': '░',
+              'dew': '·', 'fireflies': '∙', 'aurora': '≈', 'meteors': '*'}
+
+
+def climate(world, rid):
+    """The climate of a region: cold, arid, marsh or temperate."""
+    cache = getattr(world, 'climates', None)
+    if cache is None:
+        cache = world.climates = {}
+    if rid in cache:
+        return cache[rid]
+    from .world import WORLD_H
+    r = world.regions[rid]
+    lat = r.cy / WORLD_H                          # the north is cold, the far south hot and dry
+    biome = getattr(r, 'biome', 'grass')
+    if lat < .26 or (biome == 'hills' and lat < .45):
+        c = 'cold'
+    elif biome == 'swamp':
+        c = 'marsh'
+    elif lat > .74:
+        c = 'arid'
+    else:
+        c = 'temperate'
+    cache[rid] = c
+    return c
+
+
+def _family(kind):
+    for fam, ladder in FAMILY_LADDER.items():
+        if kind in ladder:
+            return fam
+    return None
+
+
+def _step(cur, target):
+    """One step from the weather now towards the weather to come: grades change one at a time."""
+    fc, ft = _family(cur), _family(target)
+    if fc and fc == ft:
+        lad = FAMILY_LADDER[fc]
+        i, j = lad.index(cur), lad.index(target)
+        return lad[i + (1 if j > i else -1 if j < i else 0)]
+    if fc and lad_index(cur) > 0:
+        lad = FAMILY_LADDER[fc]
+        return lad[lad_index(cur) - 1]                  # die down before changing to something else
+    if ft and lad_index(target) > 0:
+        return FAMILY_LADDER[ft][0]                     # and start small
+    return target
+
+
+def lad_index(kind):
+    fam = _family(kind)
+    return FAMILY_LADDER[fam].index(kind) if fam else 0
+
+
+def region_weather(game, rid):
+    """The weather in a region now, moving it on if its time is up."""
+    from . import calendar as CAL
+    world = game.world
+    ws = getattr(world, 'weather', None)
+    if ws is None:
+        ws = world.weather = {}
+    st = ws.get(rid)
+    turn = game.turn
+    if st is None or turn - st[1] > 3000:
+        st = ws[rid] = ['clear', turn, 'clear']
+    steps = 0
+    while st[1] <= turn and steps < 40:
+        steps += 1
+        day = 1 + st[1] // 300
+        weights = CLIMATE_WEIGHTS[climate(world, rid)][CAL.season(day)]
+        if st[0] == st[2]:                               # reached the goal: pick a new one
+            kinds = list(weights)
+            st[2] = _random.choices(kinds, [weights[k] for k in kinds])[0]
+        st[0] = _step(st[0], st[2])
+        st[1] += _random.randint(25, 70) if st[0] != st[2] else _random.randint(50, 150)
+    return st[0]
+
+
+def where(game):
+    """(region id, overworld x, y) of the place you are in, or None underground."""
+    m = game.map
+    if m.kind == 'dungeon' or getattr(m, 'underground', False):
+        return None
+    if m.kind == 'over':
+        x, y = game.player.x, game.player.y
+    else:
+        x, y = game.over_pos
+    w = game.world
+    om = game.maps['over']
+    return w.region_of[y * om.w + x], x, y
+
+
+def current(game):
+    """The weather where you are (its base kind), 'clear' underground."""
+    loc = where(game)
+    if not loc:
+        return 'clear'
+    return region_weather(game, loc[0])
+
+
+def shown(game):
+    """What to draw: the weather, an omen of a great evil nearby, or the quiet things of night and morning."""
+    from . import towns as TW, calendar as CAL
+    from . import evils as EVL
+    loc = where(game)
+    if not loc:
+        return 'clear'
+    rid, x, y = loc
+    ev = EVL.taint_at(game, x, y)
+    if ev:
+        omen = {'scorch': 'ash', 'mire': 'miasma', 'blight': 'miasma', 'warpath': 'smoke'}.get(ev.d['taint'])
+        if omen:
+            return omen
+    kind = region_weather(game, rid)
+    if kind != 'clear':
+        return kind
+    h = TW.hour(game)
+    season = CAL.season(game.day)
+    cl = climate(game.world, rid)
+    if TW.is_night(game):
+        if cl == 'cold' and season in ('winter', 'autumn'):
+            return 'aurora'
+        if season == 'summer' and cl in ('temperate', 'marsh'):
+            return 'fireflies'
+        if (game.day * 7 + rid) % 5 == 0:
+            return 'meteors'
+        return 'clear'
+    if 5 <= h < 8 and season in ('spring', 'summer') and cl != 'arid':
+        return 'dew'
+    return 'clear'
+
+
+def sight(game, r):
+    """Your sight in this weather."""
+    eff = EFFECTS.get(shown(game))
+    if not eff:
+        return r
+    s = eff[0]
+    if isinstance(s, tuple):
+        return min(r, s[1])
+    return max(2, r + s)
+
+
+def travel_factor(game):
+    eff = EFFECTS.get(current(game))
+    return eff[1] if eff else 1.0
+
+
+def ambush_factor(game):
+    eff = EFFECTS.get(shown(game))
+    return eff[2] if eff else 1.0
+
+
+def food_factor(game):
+    eff = EFFECTS.get(current(game))
+    return eff[3] if eff else 1.0
+
+
+def notice(game):
+    """Tell the player when the weather around them changes."""
+    kind = shown(game)
+    last = getattr(game, '_wx_seen', None)
+    game._wx_seen = kind
+    if last is None or kind == last or kind in NIGHT_ONLY or kind == 'dew' or last in NIGHT_ONLY and kind == 'clear':
+        return
+    if game.map.kind == 'dungeon' or kind == 'clear' and last == 'dew':
+        return
+    game.msg(MESSAGES.get(kind, ''), 'info') if MESSAGES.get(kind) else None
+
+
+def strike(game):
+    """In a thunderstorm, standing out in the open is a risk."""
+    if current(game) != 'storm' or game.map.kind != 'over':
+        return
+    from . import data as D
+    p = game.player
+    if game.map.tile(p.x, p.y) in (D.GRASS, D.HILLS, D.SAND) and _random.random() < .006:
+        dmg = 6 + p.lvl * 2
+        p.life -= dmg
+        game.msg(f'Lightning strikes the ground beside you! ({dmg} damage) Get off the open land.', 'bad')
+        game.shake()
+        if p.life <= 0:
+            game.die('a bolt of lightning')

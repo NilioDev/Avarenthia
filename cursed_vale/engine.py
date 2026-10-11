@@ -19,6 +19,8 @@ from . import calendar as CAL
 from . import crime as CR
 from . import hunger as HU
 from . import gods as GD
+from . import ai as AI
+from . import weather as WX
 from . import dress as DR
 from . import sites as ST
 from .money import fmt, purse
@@ -28,7 +30,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 12
+SAVE_VERSION = 13
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -327,7 +329,7 @@ class Game:
                 s['dr'] = max(s['dr'], v)
             elif k == 'dmg':
                 buff_dmg += v
-        if getattr(p, 'food', 500) < 120:
+        if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
         GD.apply(self, s)
         s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
@@ -360,9 +362,15 @@ class Game:
             r = 5 if m.kind == 'over' else 9
             if self.player.race in ('elf', 'goblin'):
                 r += 2
+        if m.kind in ('town', 'wild', 'siege') and not getattr(m, 'underground', False):
+            r = WX.sight(self, r)
         if m.kind == 'dungeon' and p.race == 'goblin':
             r += 2
         if m.kind == 'over':
+            last = getattr(self, '_over_last', None)
+            if last and last != (p.x, p.y):
+                self.came_from = last                # which way you walked into a town
+            self._over_last = (p.x, p.y)
             self.vis = fov.compute(m, p.x, p.y, self.over_sight(), dense={D.FOREST})
         elif m.kind == 'town' and getattr(m, 'lights', None) and TW.town_ambient(self, m) > .3:
             # at night you see as far as the lamps light the streets
@@ -375,7 +383,7 @@ class Game:
             self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
-                if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y):
+                if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y) and not getattr(o, 'lurk', False):
                     self.bestiary[o.k] = [self.day, 0]
                     self.msg(f"New bestiary entry: {D.MONSTERS[o.k]['name']}. (V)", 'info')
 
@@ -390,7 +398,7 @@ class Game:
             r += 2
         if p.race == 'elf' and t == D.FOREST:
             r += 2
-        return r
+        return WX.sight(self, r)
 
     def say(self, npc, line):
         self.msg(f'{npc.name}: "{line}"', 'talk')
@@ -408,7 +416,7 @@ class Game:
         return m.inb(x, y) and self.vis[y * m.w + x]
 
     def visible_hostiles(self):
-        return [o for o in self.map.mons if not o.is_npc and self.visible(o.x, o.y)]
+        return [o for o in self.map.mons if not o.is_npc and self.visible(o.x, o.y) and not getattr(o, 'lurk', False)]
 
     def hostile_visible(self):
         return bool(self.visible_hostiles())
@@ -550,7 +558,19 @@ class Game:
         if from_portal:
             p.x, p.y = m.portal_pos[0], m.portal_pos[1] + 1
         else:
-            p.x, p.y = m.entry[0] + (1 if m.entry[0] == 0 else 0), m.entry[1]
+            ex, ey = m.entry
+            exits = getattr(m, 'exits', None)
+            came = getattr(self, 'came_from', None)
+            if exits and came:                       # come in by the road you were walking on
+                dx, dy = came[0] - s.x, came[1] - s.y
+                cx, cy = getattr(m, 'centre', (m.w // 2, m.h // 2))
+                ex, ey = max(exits, key=lambda e: (e[0] - cx) * dx + (e[1] - cy) * dy)[:2]
+            p.x, p.y = ex, ey
+            for nx, ny in ((ex + 1, ey), (ex - 1, ey), (ex, ey + 1), (ex, ey - 1)):
+                if m.inb(nx, ny) and D.TILES[m.tile(nx, ny)].walk and not (0 < ex < m.w - 1 and 0 < ey < m.h - 1):
+                    if min(nx, ny, m.w - 1 - nx, m.h - 1 - ny) > min(ex, ey, m.w - 1 - ex, m.h - 1 - ey):
+                        p.x, p.y = nx, ny            # one step in from the edge
+                        break
         if 'shop' in s.services:
             self.shops[sid] = W.gen_shop(self, s.is_city)
         MS.refresh_board(self, s)
@@ -747,7 +767,10 @@ class Game:
             EV.reveal(self, poi)
             EV.on_poi(self, poi)
             return D.TILES[t].cost
-        cost = D.TILES[t].cost
+        cost = round(D.TILES[t].cost * WX.travel_factor(self))
+        WX.strike(self)
+        if self.dead:
+            return cost
         w = self.world
         reg = w.region_at(p.x, p.y)
         off = w.off_road(p.x, p.y)
@@ -760,6 +783,7 @@ class Game:
             chance = min(.11, .012 + off * .004) * cost / 10 * (1.6 if night else 1)
         if p.race in ('halfling', 'goblin'):
             chance *= .75
+        chance *= WX.ambush_factor(self)                # fog and storms hide what waits by the road
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
         if random.random() < chance:
@@ -1500,6 +1524,8 @@ class Game:
             self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=mon.name), 'bad')
             self.hurt(random.randint(*mon.dmg) * .8, mon.name)
             return
+        if AI.turn(self, mon, df):
+            return
         if d['leap'] and seen and 2 <= dist <= 5 and random.random() < .3:
             sp = W.free_around(self, m, p.x, p.y, 1)
             if sp:
@@ -1543,6 +1569,8 @@ class Game:
         if dist <= 1:
             self.mon_attack(mon, df)
             return
+        if AI.approach(self, mon):
+            return
         self.step_toward(mon)
 
     def monsters_act(self):
@@ -1584,11 +1612,16 @@ class Game:
                     mon.frozen = False
                 continue
             if not mon.awake:
-                if self.visible(mon.x, mon.y) and random.random() < .65:
-                    mon.awake = True
-                    self.wake_pack(mon)
-                else:
+                still = AI.asleep(self, mon)
+                if still:
                     continue
+                if still is None:
+                    if self.visible(mon.x, mon.y) and random.random() < .65:
+                        mon.awake = True
+                        self.wake_pack(mon)
+                        AI.on_wake(self, mon)
+                    else:
+                        continue
             if d['slow'] and self.turn % 2 == 0:
                 continue
             acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Fast' in mon.mods else 0)
@@ -1613,10 +1646,10 @@ class Game:
                 for b in ended:
                     self.msg(f'{b[3]} wears off.')
             s = self.stats()
-            HU.tick(self, 1)
+            HU.tick(self, WX.food_factor(self))
             if self.dead:
                 return
-            if self.turn % 4 == 0 and p.life < s['max_life'] and p.food >= 120:
+            if self.turn % 4 == 0 and p.life < s['max_life'] and p.food >= HU.WEAK:
                 p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60)
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
@@ -1644,6 +1677,7 @@ class Game:
                 CR.daily(self)
             self.last_day = self.day
         EVL.whisper(self)
+        WX.notice(self)
         self.compute_fov()
         if self.map.kind == 'town':
             TW.live(self, self.map)
@@ -2142,8 +2176,37 @@ class Game:
         if role == 'fisher':
             self.fisher_talk(npc)
             return
+        if role == 'farmer':
+            self.farmer_talk(npc)
+            return
+        if role == 'roadinn':
+            EV.ask(self, 'roadinn', npc.name, f'"Come in, come in, out of the {self.weather_word()}! Food? A bed? '
+                   f'The road is long and the night is longer."',
+                   [(f'A bowl of stew ({fmt(self.STEW)})', 'stew'), (f'A hot meal and a bed for the night ({fmt(self.MEAL)})', 'meal'),
+                    ('Any news from the road?', 'news'), ('Just passing through', 'leave')], npc=npc.id)
+            return
         line = random.choice(TW.BARKS.get(getattr(npc, 'job', 'any'), TW.BARKS['any'])) if random.random() < .3 else self.rumor()
         self.say(npc, line)
+
+    def weather_word(self):
+        from . import weather as WX
+        return WX.NAMES.get(WX.current(self), 'cold').lower() if WX.current(self) != 'clear' else 'cold'
+
+    def farmer_talk(self, npc):
+        """Farm folk are generous: once a day they share their table with a traveller."""
+        p = self.player
+        last = getattr(npc, 'fed_day', -1)
+        if last != self.day and p.food < HU.MAX - 150:
+            npc.fed_day = self.day
+            p.food = min(HU.MAX, p.food + 300)
+            self.request = ('dialog', npc.name, random.choice([
+                '"You look half starved. Sit, sit. There is always enough stew for one more."',
+                '"Travelling far? Have some bread and cheese, and tell us what they say in the towns."',
+                '"Eat, eat. The harvest was kind to us this year. The gods know it is not every year."']) +
+                '\n\n(You share a meal with the family.)')
+            return
+        self.say(npc, random.choice(['The crows are worse than the wolves this year.', 'Mind the gate, the goats get out.',
+                                     'Rain tomorrow, my knee says.', self.rumor()]))
 
     def fisher_talk(self, npc):
         """The old fisherman by the pond in Thornfield: your first fishing pole, and your first catch."""

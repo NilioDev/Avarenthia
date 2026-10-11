@@ -813,8 +813,24 @@ def thornfield_and_faith():
     g.enter_town(0)
     g.request = None
     m = g.map
-    ex, ey = m.entry
-    assert sum(1 for yy in range(ey - 2, ey + 3) if m.tile(3, yy) == D.PATH) >= 3, 'the high street is three wide'
+    # the roads in town go where the roads on the world map go, and none of them stops in the woods
+    from collections import deque
+    cx, cy = m.centre
+    seen = {(cx, cy)}
+    q = deque([(cx, cy)])
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
+            nx, ny = x + dx, y + dy
+            if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in (D.PATH, D.GRASS, D.SIGNPOST, D.WELL):
+                seen.add((nx, ny))
+                q.append((nx, ny))
+    from cursed_vale import towns as TWN
+    s0 = g.world.settlements[0]
+    assert len({e[2] for e in m.exits}) == len(TWN.road_dirs(g, s0)), (m.exits, TWN.road_dirs(g, s0))
+    for ex, ey, _o in m.exits:
+        assert ex in (0, m.w - 1) or ey in (0, m.h - 1), 'exits are on the edge of the map'
+        assert (ex, ey) in seen, 'every road out leads to the middle of town'
     assert m.w >= ui.MAP_W and m.h >= ui.MAP_H, 'villages fill the screen'
     # street lamps and the lamplighter who lights them at dusk
     from cursed_vale import towns as TW, dress as DR
@@ -834,12 +850,17 @@ def thornfield_and_faith():
     assert app.frame_delay() is not None, 'lamps flicker at night'
     # talking across the inn counter
     inn = next(o for o in m.mons if o.role == 'inn')
-    spot = next(((inn.x + dx, inn.y + dy) for dx in (-2, -1, 0, 1, 2) for dy in (2, -2)
-                 if m.inb(inn.x + dx, inn.y + dy) and D.TILES[m.tile(inn.x + dx, inn.y + dy)].walk), None)
-    if spot:
-        p.x, p.y = spot
+    cands = [(inn.x + dx, inn.y + dy) for dx in (-2, -1, 0, 1, 2) for dy in (2, -2)
+             if m.inb(inn.x + dx, inn.y + dy) and D.TILES[m.tile(inn.x + dx, inn.y + dy)].walk
+             and m.tile(inn.x + dx // 2, inn.y + dy // 2) == D.STALL]           # on the other side of the counter
+    if cands:
+        p.x, p.y = cands[0]
         g.compute_fov()
         assert inn in g.nearby_people(), 'you can talk across the counter'
+        p.x, p.y = inn.x, inn.y - 2
+        if m.inb(p.x, p.y) and m.tile(inn.x, inn.y - 1) == D.WALL:
+            g.compute_fov()
+            assert inn not in g.nearby_people(), 'but not through a wall'
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + D.DAY_LEN // 2
     fisher = next(o for o in m.mons if o.role == 'fisher')
     assert any(m.tile(fisher.x + dx, fisher.y + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
@@ -919,8 +940,94 @@ def thornfield_and_faith():
     print('thornfield and faith ok')
 
 
+def world_life():
+    """Settlement sizes, farms and inns along the roads, weather, quest marks, menus and monster habits."""
+    from cursed_vale import weather as WX, ai as AI, missions as MS2
+    from cursed_vale.entities import make_monster
+    app = new_app()
+    g = app.game
+    p = g.player
+    kinds = {s.kind for s in g.world.settlements}
+    assert {'hamlet', 'village', 'town', 'city', 'metropolis'} <= kinds, kinds
+    assert any(st.kind == 'farm' for st in g.world.sites)
+    for s in g.world.settlements:
+        if s.kind in ('hamlet', 'town', 'metropolis'):
+            g.enter_town(s.id)
+            g.request = None
+            assert g.map.w >= ui.MAP_W and g.map.h >= ui.MAP_H
+    farm = next(st for st in g.world.sites if st.kind == 'farm')
+    g.cur = 'over'
+    p.x, p.y = farm.x, farm.y
+    g.enter_site(farm.id)
+    g.request = None
+    farmer = next(o for o in g.map.mons if o.role == 'farmer')
+    p.food = 300
+    g.talk(farmer)
+    assert p.food > 300, 'farm folk share a meal'
+    g.request = None
+    # weather: every region changes by steps, never from drizzle straight to a storm
+    rid = 3
+    last = WX.region_weather(g, rid)
+    for k in range(400):
+        g.turn += 20
+        now = WX.region_weather(g, rid)
+        if now != last:
+            fa, fb = WX._family(last), WX._family(now)
+            if fa and fa == fb:
+                assert abs(WX.lad_index(now) - WX.lad_index(last)) == 1, (last, now)
+            elif fb and fa != fb:
+                assert WX.lad_index(now) == 0 and WX.lad_index(last) == 0, (last, now)
+            last = now
+    # every kind draws, in town and in the wilds
+    g.enter_town(0)
+    g.request = None
+    app.screens = [ui.GameScreen(app)]
+    rid = WX.where(g)[0]
+    for kind in WX.KINDS:
+        g.world.weather[rid] = [kind, g.turn + 10 ** 6, kind]
+        app.render()
+    g.world.weather[rid] = ['fog_thick', g.turn + 10 ** 6, 'fog_thick']
+    assert WX.sight(g, 9) <= 3
+    g.world.weather[rid] = ['clear', g.turn + 10 ** 6, 'clear']
+    # quest marks: the fisherman has work for you
+    fisher = next(o for o in g.map.mons if o.role == 'fisher')
+    assert MS2.quest_mark(g, fisher) == '!'
+    # monsters: a hurt coward runs, a hurt orc rages
+    g.enter_dungeon('den', 1, 'up')
+    g.request = None
+    m = g.map
+    m.mons = []
+    spots = [(p.x + dx, p.y + dy) for dx in range(-3, 4) for dy in range(-3, 4)
+             if (dx or dy) and m.inb(p.x + dx, p.y + dy) and D.TILES[m.tile(p.x + dx, p.y + dy)].walk]
+    k = make_monster(g, 'kobold', *min(spots, key=lambda c: cheb(c[0], c[1], p.x, p.y)), 1)
+    k.awake, k.hp = True, 1
+    m.mons.append(k)
+    d0 = cheb(k.x, k.y, p.x, p.y)
+    g.mon_turn(k, 0)
+    assert getattr(k, 'fleeing', False) and cheb(k.x, k.y, p.x, p.y) >= d0
+    o = make_monster(g, 'orc', *max(spots, key=lambda c: cheb(c[0], c[1], p.x, p.y)), 2)
+    o.awake, o.hp = True, max(1, o.maxhp // 4)
+    m.mons.append(o)
+    dmg0 = o.dmg
+    g.mon_turn(o, 0)
+    assert getattr(o, 'enraged', False) and o.dmg[1] > dmg0[1]
+    # menus: the character sheet has pages, the Tab menu has groups
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
+    for _ in range(3):
+        app.render()
+        app.key('tab')
+    app.screens = [ui.GameScreen(app), ui.MenuScreen(app)]
+    for _ in range(4):
+        app.render()
+        app.key('right')
+    app.key('C')
+    assert isinstance(app.top, ui.CharacterScreen) and app.top.page == 2
+    print('world life ok:', sorted(kinds))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    world_life()
     thornfield_and_faith()
     countryside()
     start_and_survival()

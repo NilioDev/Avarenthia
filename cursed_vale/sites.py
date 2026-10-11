@@ -1,4 +1,5 @@
-"""Places in the countryside that are not towns: temples, monasteries and watchtowers.
+"""Places in the countryside that are not towns: temples, monasteries, watchtowers, farmsteads along the roads
+and the odd roadside inn.
 (Their ruined cousins are hidden places with a way down; see events.py.)"""
 import random
 
@@ -7,7 +8,11 @@ from .data import GRASS, FLOOR, WALL, DOOR, PATH, TREE, ALTAR, BED, TABLE, FIELD
 from .entities import GameMap, make_npc
 from .worldgen import cheb
 
-SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210))}
+SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210)),
+             'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84))}
+ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
+                 'The Green Man', 'The Hanged Fiddler', 'The Three Crowns']
+FARM_NAMES = ['Farm', 'Homestead', 'Steading', 'Croft', 'Farmstead']
 TEMPLE_NAMES = ['Temple of the Dawn', 'Temple of Saint Aldra', 'Temple of the Quiet Flame', 'Temple of the Seven Stars',
                 'Temple of Mercy', 'Temple of the Lantern']
 MONASTERY_NAMES = ['Monastery of the Grey Brothers', 'Abbey of Saint Wendel', 'Cloister of the Silent Bell',
@@ -85,6 +90,33 @@ def gen_sites(game, m, world):
                 name = next((o for o in opts if o not in used), opts[0] + f' {len(world.sites)}')
             s = Site(len(world.sites), kind, x, y, name)
             s.faction = world.region_at(x, y).faction
+            world.sites.append(s)
+            taken.append((x, y))
+            made += 1
+    # farmsteads along the roads near the villages, and a few inns where the roads run long and empty
+    from .towns import town_names
+    inames = ROADINN_NAMES[:]
+    random.shuffle(inames)
+    for kind, n, road, near, far in (('roadinn', 4, (1, 1), (11, 99), 8), ('farm', 14, (1, 1), (4, 22), 5)):
+        made = 0
+        for x, y in cells:
+            if made >= n:
+                break
+            if not ok(x, y, road, far) or m.tile(x, y) not in (D.GRASS, D.HILLS, D.SAND):
+                continue
+            d = min(cheb(x, y, st.x, st.y) for st in world.settlements)
+            if not (near[0] <= d <= near[1]):
+                continue
+            if kind == 'roadinn' and any(q.kind == 'roadinn' and cheb(x, y, q.x, q.y) < 26 for q in world.sites):
+                continue
+            region = world.region_at(x, y)
+            if kind == 'farm':
+                fam = town_names('human')[0].split()[-1]
+                name = f'{fam} {random.choice(FARM_NAMES)}'
+            else:
+                name = inames.pop() if inames else 'The Roadside Inn'
+            s = Site(len(world.sites), kind, x, y, name)
+            s.faction = region.faction
             world.sites.append(s)
             taken.append((x, y))
             made += 1
@@ -190,6 +222,10 @@ def _site_map(game, site):
         for j in range(4):
             townsfolk(game, m, [(24 + j * 2, 17)], (random.randint(24, 34), random.randint(5, 9)), names, 'monk', '#b0a080')
         return m
+    if site.kind == 'farm':
+        return _farm_map(game, site, names)
+    if site.kind == 'roadinn':
+        return _roadinn_map(game, site, names)
     # watchtower
     m, sy = _base(site, 44, 19)
     cx, cy = 28, sy
@@ -219,3 +255,84 @@ def climb_tower(game):
                 n += 1
     game.msg('You climb to the top of the tower. The land lies spread out below you, and you mark what you see on your map.'
              if n else 'You climb to the top of the tower. Nothing you have not seen before.', 'info')
+
+
+# ------------------------------------------------------------------ farmsteads and roadside inns
+def _farm_map(game, site, names):
+    """A farmstead: the farmhouse, a barn with animals, fields and a pasture, and the family who works it."""
+    from .towns import (townsfolk, Plot, house_plot, build_house, place_door, furnish, hearths, farmland, LIVESTOCK)
+    from .data import PLANK, BARREL
+    m, sy = _base(site, 70, 36)
+    house = house_plot('home', 26, sy - 9)
+    house.annex = (house.x + house.w - 1, house.y + 2, 5, 5)
+    build_house(m, house)
+    place_door(m, house, house.x + house.w // 2, sy)
+    furnish(m, house)
+    barn = Plot(42, sy - 10, 14, 9, 'stables')
+    from .towns import build
+    build(m, barn)
+    for c in barn.inside:
+        m.set(c[0], c[1], PLANK)
+    m.set(barn.x + barn.w // 2, barn.y + barn.h - 1, DOOR)
+    for c in ((barn.x + 1, barn.y + 1), (barn.x + 2, barn.y + 1), (barn.x + barn.w - 2, barn.y + 1)):
+        m.set(c[0], c[1], BARREL)
+    name, ch, fg = random.choice(LIVESTOCK)
+    for c in random.sample([c for c in barn.inside if m.tile(*c) == PLANK], 3):
+        m.mons.append(make_npc(game, name, 'livestock', fg, c[0], c[1], False, ch=ch))
+    for x in range(26, 56):                       # the yard between house and barn
+        if m.tile(x, sy - 1) == GRASS:
+            m.set(x, sy - 1, PATH)
+    m.set(38, sy - 3, WELL)
+    plots = [Plot(house.x - 1, house.y - 1, house.w + 7, house.h + 2, 'h'), Plot(barn.x - 1, barn.y - 1, barn.w + 2, barn.h + 2, 'b'),
+             Plot(0, sy - 1, 26, 3, 'road'), Plot(36, sy - 4, 4, 3, 'well')]
+    fields, pastures = farmland(game, m, plots, -999, names, want=[('field', 4), ('pasture', 1), ('orchard', 1)])
+    family = names.pop()
+    beds = [c for c in house.inside if m.tile(*c) in (FLOOR, PLANK)]
+    work = random.choice(random.choice(fields)) if fields else (30, sy)
+    farmer = townsfolk(game, m, beds, work, [f'Farmer {family}'], 'farmer', fg='#c8b890')
+    farmer.name = f'Farmer {family}'
+    farmer.role = 'farmer'
+    farmer.stay = False
+    for job in ('farmer', 'child'):
+        townsfolk(game, m, beds, random.choice(random.choice(fields)) if fields and job == 'farmer' else (34, sy - 2),
+                  names, job, fg='#c8b8a0' if job == 'child' else '#b8b0a0')
+    m.mons.append(make_npc(game, 'A farm dog', 'dog', '#b89060', 32, sy - 2, False, ch='d'))
+    hearths(m, [house])
+    m.glows = [(house.x + 2, house.y + 2, (255, 150, 70), 5)]
+    m.lights = list(m.glows)
+    return m
+
+
+def _roadinn_map(game, site, names):
+    """A lonely inn by the road: a taproom, rooms upstairs (well, at the back), a stable and a few travellers."""
+    from .towns import townsfolk, Plot, build, place_door, hearths, furnish
+    from .data import PLANK, BARREL, STALL
+    m, sy = _base(site, 64, 30)
+    inn = Plot(24, sy - 9, 16, 10, 'inn')
+    build(m, inn)
+    place_door(m, inn, inn.x + inn.w // 2, sy)
+    furnish(m, inn)
+    rooms = Plot(39, sy - 9, 9, 10, 'home')
+    build(m, rooms)
+    for c in rooms.inside:
+        m.set(c[0], c[1], PLANK)
+    for y in range(rooms.y + 1, rooms.y + rooms.h - 1, 2):
+        m.set(rooms.x + rooms.w - 2, y, BED)
+    m.set(rooms.x, rooms.y + 3, D.ODOOR)            # through from the taproom
+    stable = Plot(26, sy + 2, 12, 6, 'stables')
+    build(m, stable)
+    for c in stable.inside:
+        m.set(c[0], c[1], PLANK)
+    m.set(stable.x + stable.w // 2, stable.y, DOOR)
+    m.mons.append(make_npc(game, 'A tired mule', 'livestock', '#a08060', stable.x + 3, stable.y + 3, False, ch='m'))
+    for x in range(0, 64):
+        if m.tile(x, sy) == GRASS:
+            m.set(x, sy, PATH)
+    spots = [c for c in inn.inside if m.tile(*c) in (FLOOR, PLANK)]
+    keeper = make_npc(game, f'{names.pop()} the Innkeeper', 'roadinn', '#e0a060', spots[0][0], inn.y + 1, True)
+    m.mons.append(keeper)
+    for _ in range(random.randint(2, 4)):
+        townsfolk(game, m, [random.choice(spots)], random.choice(spots), names, random.choice(['drinker', 'drinker', 'carter']))
+    m.signs.append((inn.x + 3, inn.y - 1, site.name.upper()[:18]))
+    hearths(m, [inn])
+    return m

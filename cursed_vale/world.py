@@ -10,7 +10,8 @@ from .entities import GameMap, make_npc
 from .worldgen import D8, cheb, bfs, noise_grid, rand_free
 
 WORLD_W, WORLD_H = 200, 110
-N_CITIES, N_VILLAGES = 6, 20
+N_CITIES, N_VILLAGES = 6, 24
+TIERS = ['hamlet', 'village', 'town', 'city', 'metropolis']   # small to large
 NPC_NAMES = ['Dorien', 'Ilse', 'Berend', 'Maud', 'Aldric', 'Petra', 'Hob', 'Wenna', 'Garrick', 'Tamsin', 'Osric', 'Lyra',
              'Bram', 'Edda', 'Corwin', 'Nell', 'Fenwick', 'Rowan', 'Sabine', 'Tobin', 'Agnes', 'Merrit', 'Jory', 'Hilde']
 
@@ -45,11 +46,17 @@ class Settlement:
 
     @property
     def is_city(self):
-        return self.kind == 'city'
+        """Walled cities: a city or a metropolis."""
+        return self.kind in ('city', 'metropolis')
 
     @property
     def kind_name(self):
-        return {'city': 'city', 'deephold': 'dwarven hold'}.get(self.kind, 'village')
+        return {'deephold': 'dwarven hold'}.get(self.kind, self.kind)
+
+    @property
+    def size(self):
+        """0 hamlet .. 4 metropolis (a deephold counts as a city)."""
+        return TIERS.index(self.kind) if self.kind in TIERS else 3
 
 
 class Dungeon:
@@ -413,6 +420,12 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         sett.append(Settlement(len(sett), nm, 'village', x, y))
     if len(sett) < 1 + len(cities) + N_VILLAGES - 4:
         return False
+    # sizes: the first coastal city is the great metropolis; the rest of the small places are towns,
+    # villages and hamlets
+    sett[1].kind = 'metropolis'
+    for s in sett[1 + len(cities):]:
+        r = random.random()
+        s.kind = 'town' if r < .25 else 'village' if r < .65 else 'hamlet'
     # dwarven deepholds, cut into the roots of the mountains
     from .deephold import DEEP_NAMES
     dnames = random.sample(DEEP_NAMES, 2)
@@ -518,6 +531,14 @@ def settlement_services(s):
     sv = {'inn', 'market'}
     if s.is_city:
         sv |= {'shop', 'temple', 'stables'}
+    elif s.kind == 'hamlet':
+        sv = {'market'}                          # a farmer who sells what the hamlet makes, from his own house
+        if random.random() < .3:
+            sv.add('inn')
+    elif s.kind == 'town':
+        sv |= {'shop', 'stables'}
+        if random.random() < .8:
+            sv.add('temple')
     else:
         if random.random() < .7:
             sv.add('shop')

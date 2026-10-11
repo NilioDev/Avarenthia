@@ -607,3 +607,52 @@ def client_talk(game, npc):
     from .money import fmt
     game.request = ('dialog', npc.name, f'"You did it! I knew I could trust you. Here, {fmt(m.reward)}, as promised." '
                     f'{first} shakes your hand warmly.')
+
+
+def quest_mark(game, npc):
+    """'!' over someone with work for you, '?' over someone you can hand a job in to, or None."""
+    f, p = game.flags, game.player
+    role = getattr(npc, 'role', None)
+    if role == 'client':
+        m = find(game, getattr(npc, 'mission', None))
+        if not m or m.state not in ('active', 'turnin'):
+            return None
+        if m.state == 'turnin':
+            return '?'
+        d = m.data
+        if d.get('sub') == 'gather' and p.cargo.get(d['good'], 0) >= d['qty']:
+            return '?'
+        return None
+    if role == 'healer':
+        m = game.map
+        if getattr(m, 'site', None) is not None and m.site == getattr(game.world, 'start_temple', None) \
+                and not f.get('met_priest'):
+            return '!'
+        return None
+    if role == 'elder':
+        if (f.get('ratking') and not f.get('reward_rat')) or (f.get('grolm') and not f.get('reward_grolm')):
+            return '?'
+        return '!' if not f.get('met_elder') else None
+    if role == 'fisher':
+        if not f.get('quest_fish'):
+            return '!'
+        if not f.get('fish_done') and any(i.k == 'fish' for i in p.inv):
+            return '?'
+        return None
+    if role == 'herbalist':
+        return '!' if not p.recipes else None
+    if role == 'inn':
+        sid = getattr(game.map, 'sid', None)
+        if sid is None:
+            return None
+        s = game.world.settlements[sid]
+        refresh_board(game, s)
+        return '!' if s.board else None
+    if role == 'castellan':
+        hid = getattr(game.map, 'hid', None)
+        if hid is None:
+            return None
+        h = game.world.holds[hid]
+        refresh_hold_board(game, h)
+        return '!' if h.board else None
+    return None

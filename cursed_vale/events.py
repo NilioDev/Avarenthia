@@ -623,7 +623,21 @@ def r_gate(game, choice, ctx):
     rg(game, choice, ctx)
 
 
-RESOLVERS = {'caravan': r_caravan, 'gate': r_gate,
+def r_roadinn(game, choice, ctx):
+    if choice == 'stew':
+        game.inn_stew()
+    elif choice == 'meal':
+        game.inn_meal()
+    elif choice == 'news':
+        npc = next((o for o in game.map.mons if o.id == ctx.get('npc')), None)
+        line = game.rumor()
+        if npc:
+            game.say(npc, line)
+        else:
+            game.msg(line, 'talk')
+
+
+RESOLVERS = {'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,
              'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
              'peddler': r_peddler, 'pilgrims': r_pilgrims, 'tracks': r_tracks, 'lights': r_lights, 'storm': r_storm,
              'cart': r_cart, 'toll': r_toll, 'traveller': r_traveller, 'traveller_job': r_traveller_job}

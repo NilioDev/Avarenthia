@@ -66,13 +66,16 @@ ROLE_DESC = {
     'tower': 'The captain of the watchtower.',
     'livestock': 'Farm animals, grazing.',
     'escort': 'The caravan you are guarding.',
+    'farmer': 'A farmer, hands like old leather. Farm folk share their table with travellers.',
+    'roadinn': 'The keeper of a lonely roadside inn. Stew, a bed, and news from the road.',
     'fisher': 'An old fisherman, patient as a heron. Knows every fish in the pond by name.',
 }
 
 
 JOB_WORD = {'inn': 'innkeeper', 'market': 'trader', 'shop': 'outfitter', 'healer': 'priest', 'stables': 'stablemaster',
             'elder': 'village elder', 'castellan': 'castellan', 'guard': 'guard', 'thane': 'thane', 'herbalist': 'herbalist',
-            'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client'}
+            'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client', 'farmer': 'farmer',
+            'roadinn': 'innkeeper'}
 NOUN = {'male': 'man', 'female': 'woman'}
 
 
@@ -181,7 +184,9 @@ def over(game, x, y):
     if site and m.seen[y * m.w + x]:
         return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
-                                           'watchtower': 'A watchtower. From the top you can see far over the land.'}[site.kind]]
+                                           'watchtower': 'A watchtower. From the top you can see far over the land.',
+                                           'farm': 'A farmstead by the road. Farm folk often share a meal with travellers.',
+                                           'roadinn': 'A roadside inn: stew, a bed and news from the road.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]
@@ -223,7 +228,7 @@ def at(game, x, y):
         return over(game, x, y)
     if game.visible(x, y):
         mon = m.mon_at(x, y)
-        if mon:
+        if mon and not getattr(mon, 'lurk', False):
             return monster(game, mon)
         its = [it for it in m.items if it.x == x and it.y == y]
         if its:

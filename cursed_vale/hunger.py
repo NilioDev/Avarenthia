@@ -1,7 +1,11 @@
-"""Hunger. You burn food every turn; eat bread, rations, fish or meat, or pay for a hot meal at an inn."""
+"""Hunger. You burn food slowly; eat bread, rations, fish or meat, or pay for a hot meal at an inn.
+
+A full belly lasts about a week: after a day or two you are hungry, after four or so weak (you heal no more
+and hit softer), then you faint, and only after six or seven days without a bite do you start to starve."""
 import random
 
 MAX = 1000
+RATE = .5            # food burned per turn: 150 a day
 # key: name, food value, price in copper, glyph colour
 FOODS = {
     'bread': ('Loaf of Bread', 300, 80, (220, 180, 110)),
@@ -20,14 +24,17 @@ DRINKS = {'ale', 'wine', 'mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}
 
 
+HUNGRY, WEAK, FAINT = 650, 300, 100
+
+
 def state(food):
     if food > 850:
         return 'Satiated'
-    if food >= 300:
+    if food >= HUNGRY:
         return ''
-    if food >= 120:
+    if food >= WEAK:
         return 'Hungry'
-    if food >= 40:
+    if food >= FAINT:
         return 'Weak'
     return 'Fainting' if food > 0 else 'Starving'
 
@@ -35,7 +42,10 @@ def state(food):
 def tick(game, turns=1):
     p = game.player
     before = state(p.food)
-    p.food = max(0, p.food - turns)
+    p.food_acc = getattr(p, 'food_acc', 0.0) + RATE * turns
+    burn = int(p.food_acc)
+    p.food_acc -= burn
+    p.food = max(0, p.food - burn)
     after = state(p.food)
     if after != before and after:
         msgs = {'Hungry': ('You are getting hungry.', 'info'), 'Weak': ('You are weak with hunger. Eat something!', 'bad'),
@@ -49,7 +59,7 @@ def tick(game, turns=1):
 
 
 def weak(game):
-    return game.player.food < 120
+    return game.player.food < WEAK
 
 
 def food_value(it):

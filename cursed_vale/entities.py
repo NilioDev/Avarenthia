@@ -305,7 +305,7 @@ class Player:
         self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
         self.deaths = 0
         self.life_sk = {'fishing': [0, 0]}     # life skills: rank, progress
-        self.food = 450                        # hunger: 0 starving .. 1000 full
+        self.food = 800                        # hunger: 0 starving .. 1000 full (lasts about a week)
         self.known_plants = set()              # plants you can recognise
         self.recipes = set()                   # alchemy recipes you know
         self.god, self.favor = None, 0         # the god you serve, and how fond of you they are

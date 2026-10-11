@@ -284,7 +284,17 @@ def use(game, slot):
 
 
 def _spell_dmg(game, sk, r):
-    return random.randint(round(sk.lo + r * sk.r), round(sk.hi + r * sk.r)) + game.stats()['ene'] // 5
+    dmg = random.randint(round(sk.lo + r * sk.r), round(sk.hi + r * sk.r)) + game.stats()['ene'] // 5
+    if sk.line in ('fire', 'storm'):
+        from . import weather as WX
+        wx = WX.current(game)
+        if sk.line == 'fire' and wx in ('rain', 'downpour', 'storm', 'snow', 'blizzard', 'sleet', 'freezing'):
+            dmg = round(dmg * .75)                      # fire sputters in the wet
+        elif sk.line == 'fire' and wx in ('heat', 'drystorm'):
+            dmg = round(dmg * 1.15)
+        elif sk.line == 'storm' and wx in ('storm', 'drystorm'):
+            dmg = round(dmg * 1.25)                     # the sky lends its lightning
+    return dmg
 
 
 def _hit(game, mon, sk, r, ranged=False):

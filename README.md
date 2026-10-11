@@ -102,6 +102,25 @@ In een tempel kun je je aan de god van die tempel wijden. Bidden, offers en dade
 daarmee zegeningen. Maar facties die een rivaliserende god aanbidden vertrouwen je minder, en de priesters van een
 vijandige god helpen je niet.
 
+**Bewoning in vijf maten**: gehucht, dorp, stad, grote stad en metropool. Een gehucht is een paar huizen langs de weg,
+de boer verkoopt vanuit zijn keuken; een dorp heeft een brink, een stad een geplaveid marktplein met fontein; steden en de
+metropool zijn ommuurd. De wegen in een dorp lopen precies zoals op de wereldkaart: ligt een dorp aan het eind van een
+weg, dan houdt de weg daar ook op; je komt binnen via de weg waarover je aankwam. Langs de wegen liggen boerderijen
+(waar je vaak mee mag eten) en hier en daar een eenzame herberg.
+
+**Weer.** Elke streek heeft haar eigen weer, dat verandert met de seizoenen en per stap (motregen wordt regen wordt een
+stortbui). Het noorden en de bergen zijn koud, het zuiden heet en droog, moerassen nevelig. Regen, sneeuw, mist en stof
+beperken je zicht; sneeuw en storm vertragen je; kou en hitte maken hongerig; vuur sputtert in de regen; bij onweer slaat
+de bliksem in op open land. Asregen, miasma en rook verraden een groot kwaad in de buurt. Onder een dak blijf je droog.
+
+**Vijanden** hebben elk hun gewoontes: lafaards slaan op de vlucht als ze gewond zijn, roedels omsingelen je, boogschutters
+houden afstand, spinnen liggen onzichtbaar op de loer, wolven huilen de roedel wakker, orks raken razend, cultisten
+genezen hun maten, ogers en trollen stormen op je af (na een waarschuwing), en de doden dwalen rond.
+
+**Opdrachten**: een knipperend gele `!` boven iemand betekent werk, een `?` dat je iets kunt inleveren.
+
+**Honger** gaat langzamer: met een volle maag kom je ongeveer een week toe; na een dag of twee krijg je honger.
+
 **Licht en donker.** Fakkels, kampvuren, kristallen en lichtgevende zwammen flikkeren of pulseren vanzelf. In dorpen en
 steden staan straatlantaarns: bij de schemering loopt de lantaarnopsteker zijn ronde en steekt ze een voor een aan,
 en bij het ochtendgloren dooft hij ze weer. 's Nachts zie je de verlichte straten van ver; de rest is donker.
@@ -201,7 +220,8 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `I` / `D` / `C` | tas, iets laten vallen, karakterscherm |
 | `R`, `5`, `.` | rusten, een beurt wachten |
 | `V` of F2 | bestiarium |
-| `?` of F1 | hulp (toetsen, de wereld, je held, de goden) |
+| `Shift+C` | levensvaardigheden |
+| `?` of F1 | hulp (toetsen, de wereld, je held, het weer, de goden) |
 | Esc | opslaan en afsluiten |
 
 `>` en `<` gaan uit van een Amerikaanse toetsenbordindeling (Shift + punt/komma). Enter werkt altijd.
