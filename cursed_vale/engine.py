@@ -15,13 +15,15 @@ from . import events as EV
 from . import evils as EVL
 from . import factions as FA
 from . import races as RC
+from . import crime as CR
+from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 8
+SAVE_VERSION = 9
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -88,6 +90,9 @@ def lore_rank(kills):
     return r
 
 
+COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
+
+
 class Game:
     def __init__(self, name, hardcore=True, seed=None, race='human', gender='other'):
         self.version = SAVE_VERSION
@@ -138,9 +143,9 @@ class Game:
         gear('shortsword')
         gear('quilted')
         gear('shortbow', False)
-        self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 3))
-        self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 3))
-        self.add_to_inv(Item(self.new_id(), 'scroll', 'tp', 2))
+        self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 2))
+        self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 1))
+        self.add_to_inv(Item(self.new_id(), 'scroll', 'tp', 1))
         s = self.stats()
         p.life, p.mana = s['max_life'], s['max_mana']
 
@@ -168,13 +173,20 @@ class Game:
         self.cur = home.map_key
         self.maps[self.cur] = TW.gen_settlement_map(self, home)
         m = self.maps[self.cur]
+        # you wake on the floor of the temple, with no memory of how you got here
         p.x, p.y = m.entry[0] + 2, m.entry[1]
+        priest = next((o for o in m.mons if o.role == 'healer'), None)
+        if priest:
+            spot = W.free_around(self, m, priest.x, priest.y, 1)
+            if spot:
+                p.x, p.y = spot[0]
+        p.life = max(1, p.life * 2 // 3)
         self.shops = {0: W.gen_shop(self)}
         WA.populate(self)
         MS.refresh_board(self, home)
-        self.msg(f'Welcome to Thornfield, {p.name}. A curse lies over the vale.', 'gold')
-        self.msg('Talk to Elder Berend (the purple @) for your quest, or find work on the board at the inn.', 'info')
-        self.msg('Press ? or F1 for controls.')
+        self.msg('You wake on a cold stone floor. Candles. Incense. A temple.', 'gold')
+        self.msg(f'You remember your name, {p.name}, and nothing else.', 'gold')
+        self.msg('Talk to the priestess beside you. Press ? or F1 for help.', 'info')
         self.compute_fov()
 
     # ------------------------------------------------------------ basics
@@ -329,8 +341,10 @@ class Game:
         r = m.radius
         if m.kind in ('over', 'town') and TW.is_night(self):
             r = 5 if m.kind == 'over' else 9
-            if self.player.race == 'elf':
+            if self.player.race in ('elf', 'goblin'):
                 r += 2
+        if m.kind == 'dungeon' and p.race == 'goblin':
+            r += 2
         self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
@@ -341,6 +355,9 @@ class Game:
     def say(self, npc, line):
         self.msg(f'{npc.name}: "{line}"', 'talk')
         self.events.append(('speech', npc.x, npc.y, line))
+
+    def crime(self, severity, what, witnessed=1.0):
+        return CR.commit(self, severity, what, witnessed)
 
     def say_text(self, name, line):
         self.msg(f'{name}: "{line}"', 'talk')
@@ -414,10 +431,13 @@ class Game:
         if first:
             self.max_depth[did] = depth
         self.msg(f"{dg.name}, level {depth}.", 'info')
+        lair = next((e for e in self.world.evils if e.did == did and not e.known), None)
         if first and depth == dg.depth:
             self.msg('An evil presence fills the air. This is the deepest level.', 'bad')
         self.compute_fov()
         self.request = ('save',)
+        if lair:
+            EVL.learn(self, lair)
 
     def leave_to_over(self):
         p = self.player
@@ -462,6 +482,10 @@ class Game:
         alive = [o for o in m.mons if not o.is_npc] if m else []
         if not alive:
             self.world.wanderers.remove(wd)
+            if getattr(wd, 'robbed', False):
+                CR.caravan_plundered(self, wd)
+            if wd.kind == 'lawmen':
+                CR.commit(self, 6, 'killing the law', 1.0)
             if wd.kind == 'hunt':
                 self.msg(f"{self.world.evils[wd.evil].name}'s hunters fall. Somewhere far away, something howls in rage.", 'unique')
             else:
@@ -497,6 +521,7 @@ class Game:
         MS.place_clients(self, sid, m)
         self.compute_fov()
         self.request = ('save',)
+        CR.at_gate(self, s)
 
     def enter_hold(self, hid):
         p = self.player
@@ -584,6 +609,9 @@ class Game:
                 if wd.kind == 'traveler':
                     EV.talk_traveller(self, wd)
                     return 0
+                if wd.kind == 'caravan':
+                    EV.talk_caravan(self, wd)
+                    return 0
                 self.msg(wd.describe(self), 'info')
                 return 0
         mon = m.mon_at(nx, ny)
@@ -609,6 +637,11 @@ class Game:
                 self.msg('An old well. The water is cool and clear.')
             elif t == D.SIGNPOST:
                 self.read_signpost()
+            elif t == D.CHEST:
+                W.open_chest(self, nx, ny)
+                return 1
+            elif t == D.CHEST_OPEN:
+                self.msg('The chest is empty.')
             return 0
         ox, oy = p.x, p.y
         p.x, p.y = nx, ny
@@ -662,7 +695,7 @@ class Game:
             chance = .003 * (2 if night else 1)
         else:
             chance = min(.11, .012 + off * .004) * cost / 10 * (1.6 if night else 1)
-        if p.race == 'halfling':
+        if p.race in ('halfling', 'goblin'):
             chance *= .75
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
@@ -686,8 +719,8 @@ class Game:
         for it in [i for i in m.items if i.x == p.x and i.y == p.y]:
             if it.k == 'gold':
                 p.gold += it.n
-                self.num(p.x, p.y, f'+{it.n}g', C_GOLD)
-                self.msg(f'You pick up {it.n} gold.', 'gold')
+                self.num(p.x, p.y, '+' + fmt(it.n, True), C_GOLD)
+                self.msg(f'You pick up {fmt(it.n)}.', 'gold')
             elif it.k == 'corpse':
                 pl = it.payload
                 left = []
@@ -700,7 +733,7 @@ class Game:
                     p.cost_basis.setdefault(g, c)
                 p.gold += pl['gold']
                 self.corpses = [c for c in self.corpses if c[1] != it.id]
-                self.msg(f"You recover your belongings and {pl['gold']} gold from your body.", 'good')
+                self.msg(f"You recover your belongings and {fmt(pl['gold'])} from your body.", 'good')
                 if left:
                     pl['items'], pl['cargo'], pl['gold'] = left, {}, 0
                     self.msg('Your bag is full; some items stay with your body.', 'bad')
@@ -912,7 +945,7 @@ class Game:
             self.msg('You have nothing that needs identifying.')
             return
         if self.player.gold < cost:
-            self.msg(f'Identifying everything costs {cost} gold. You cannot afford it.', 'bad')
+            self.msg(f'Identifying everything costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
         for it in its:
@@ -933,7 +966,7 @@ class Game:
             self.msg('You carry nothing known to be cursed.')
             return
         if self.player.gold < cost:
-            self.msg(f'Lifting the curses costs {cost} gold. You cannot afford it.', 'bad')
+            self.msg(f'Lifting the curses costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
         for it in its:
@@ -1024,7 +1057,7 @@ class Game:
         name = it.display_name() if it.n == 1 else (D.POTIONS[it.t]['name'] if it.k == 'potion' else 'Scroll of Town Portal')
         self.remove_one(it)
         self.player.gold += v
-        self.msg(f'You sell {name} for {v} gold.', 'gold')
+        self.msg(f'You sell {name} for {fmt(v)}.', 'gold')
 
     # ------------------------------------------------------------ combat
     def wake_pack(self, mon):
@@ -1178,8 +1211,13 @@ class Game:
             self.spill(m, mon.x, mon.y, t)
             self.msg('A skill tome drops!', 'gold')
         special = mon.elite or boss
-        if random.random() < (1 if boss else .9 if mon.elite else .4):
-            self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', round(random.randint(lvl * 2, lvl * 6 + 5) * boost)))
+        # beasts carry no coin; people and the clever monsters do, and not much
+        d = mon.tpl
+        carrier = d['ch'] in '@hK' or 'faction' in d['tags'] or mon.k in COIN_CARRIERS
+        if mon.k == 'merchant':
+            self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', purse(lvl, 18)))
+        elif carrier and random.random() < (1 if boss else .7 if mon.elite else .25):
+            self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', purse(lvl, 8 if boss else 2.5 if mon.elite else 1)))
         if special or random.random() < .16:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
         if random.random() < (.6 if special else .1):
@@ -1440,6 +1478,7 @@ class Game:
                 WAR.daily(self)
                 MS.daily(self)
                 EVL.daily(self)
+                CR.daily(self)
             self.last_day = self.day
         EVL.whisper(self)
         self.compute_fov()
@@ -1784,61 +1823,80 @@ class Game:
         if role == 'guard':
             h = self.world.holds[hid] if hid is not None else None
             f = h.faction if h else (here.faction if here else 'crown')
+            if here is not None and here.rep < 0:
+                self.say(npc, random.choice(['I have my eye on you.', 'One wrong move, stranger.',
+                                             f'They say you are trouble. Not in {here.name}, you are not.']))
+                return
+            wanted = CR.wanted_in(self)
+            if wanted and random.random() < .4:
+                st = random.choice(wanted)
+                self.say(npc, f'Heard there is a price on someone\'s head over in {st.name}. Looked a bit like you, they say.')
+                return
             self.say(npc, random.choice([f"Long live the {D.FACTIONS[f]['short']}.", 'Keep your weapons sheathed.',
                                          f"You are {WAR.standing(self.player.rep.get(f, 0)).lower()} among us.", self.rumor()]))
             return
         if role == 'healer':
+            if here is not None and here.id == 0 and not f.get('met_priest'):
+                f['met_priest'] = True
+                s = self.stats()
+                p.life = s['max_life']
+                p.gold += 520
+                self.request = ('dialog', npc.name,
+                                f'"Easy now, easy. You are safe. You are in the temple of Thornfield.\n\n'
+                                f'A farmer found you three days ago, lying in the ditch by the north road. No horse, no purse, '
+                                f'no one with you. Just your weapons, and a name you kept repeating: {p.name}.\n\n'
+                                f'You do not remember? No... I thought not. It may come back in time. It may not.\n\n'
+                                f'Here, a few coppers from the poor box. Elder Berend asked to see you when you woke; '
+                                f'his house is on the green. And {RC.address(self)}... whoever you were before, '
+                                f'you can be someone new now."')
+                return
             self.request = ('temple', npc.name)
             return
         if role == 'elder':
             if not f.get('met_elder'):
                 f['met_elder'] = True
-                evs = self.world.evils
-                dark = ' '.join(f'{e.name}, {e.d["lore"]} Its lair lies far to the {self.dir_to(e.did)}.' for e in evs)
-                text = (f'"Welcome, {RC.address(self)}. Thornfield lives in fear.\n\n'
+                text = (f'"So you are the stranger Sister Ilse found by the road. No memory, she says. Well, {RC.address(self)}, '
+                        f'Thornfield could use a pair of hands, whoever you were.\n\n'
                         f'To the {self.dir_to("rat")} lie the Rat Warrens, where a monstrous Rat King sends his brood to plunder our stores. '
                         f'To the {self.dir_to("mine")}, at the foot of the mountains, the exiled dwarf Grolm the Digger has seized the old mine.\n\n'
-                        f'But worse things stir in this land. {dark} '
-                        f'{"It grows" if len(evs) == 1 else "They grow"} stronger every season. Someone must stop '
-                        f'{"it" if len(evs) == 1 else "them"}, or the vale is lost.\n\n'
-                        f'Start with the rats, grow stronger. And if you need coin, the board at the inn always has work, '
-                        f'and the traders pay well for goods hauled between towns."')
+                        f'Deal with either and you will have friends here. If it is coin you need, the board at the inn always has work, '
+                        f'and the traders pay for goods hauled between towns. The signpost by the road tells you where the roads go."')
                 om = self.maps['over']
-                for k in ['rat', 'mine'] + [e.did for e in evs]:
+                for k in ('rat', 'mine'):
                     d = self.world.dungeons[k]
                     om.seen[d.y * om.w + d.x] = 1
-                for e in evs:
-                    e.known = True
             elif f.get('ratking') and not f.get('reward_rat'):
                 f['reward_rat'] = True
-                p.gold += 100
+                p.gold += 4000
                 it = make_gear(self, random.choice([k for k, b in D.BASES.items() if b['lvl'] <= p.lvl + 1]), 'rare', p.lvl + 1)
                 self.add_to_inv(it)
                 from .entities import make_tome
                 tome = make_tome(self, 6)
                 self.add_to_inv(tome)
-                text = ('"The Rat King is dead? Then we eat this winter! Take this: a hundred gold, something from my old '
+                text = ('"The Rat King is dead? Then we eat this winter! Take this: forty silver, something from my old '
                         'adventuring days, and a book I never could make sense of. Perhaps you can."')
-                self.msg(f'You receive 100 gold, {it.name} and the {tome.display_name()}.', 'rare')
+                self.msg(f'You receive 40 silver, {it.display_name()} and the {tome.display_name()}.', 'rare')
             elif f.get('grolm') and not f.get('reward_grolm'):
                 f['reward_grolm'] = True
-                p.gold += 250
+                p.gold += 10000
                 it = make_gear(self, random.choice([k for k, b in D.BASES.items() if b['lvl'] <= p.lvl + 1]), 'rare', p.lvl + 2)
                 self.add_to_inv(it)
-                text = '"Grolm defeated! The mine is ours again. Here, 250 gold and a treasure worthy of you. Now the true darkness remains."'
-                self.msg(f'You receive 250 gold and {it.name}.', 'rare')
+                text = '"Grolm defeated! The mine is ours again. Here: a gold coin, the first you have held, I wager. And a treasure worthy of you."'
+                self.msg(f'You receive 1 gold and {it.display_name()}.', 'rare')
             elif not f.get('ratking'):
                 text = f'"The Rat Warrens lie to the {self.dir_to("rat")}. They are marked on your map (M)."'
             elif not f.get('grolm'):
                 text = f'"The Lost Mine lies to the {self.dir_to("mine")}. Grolm leaps at his enemies. Wear good armor."'
             else:
-                act = EVL.active(self)
-                if act:
-                    e = EVL.strongest(self)
-                    text = (f'"{e.name} grows bolder every day. Its lair lies to the {self.dir_to(e.did)}. '
-                            f'Prepare well; there is no shame in growing stronger first."')
+                known = [e for e in EVL.active(self) if e.known]
+                if known:
+                    e = max(known, key=lambda q: q.lvl)
+                    text = (f'"{e.name} grows bolder every season. Its lair lies to the {self.dir_to(e.did)}. '
+                            f'Nobody would blame you for staying away. Nobody would forget you if you did not."')
+                elif any(e.defeated for e in self.world.evils):
+                    text = '"You have done this land a great service. Thornfield will remember."'
                 else:
-                    text = '"The darkness is gone from the vale, thanks to you. Thornfield will sing of you for generations."'
+                    text = f'"You have done well, {RC.address(self)}. The vale is wide; go and see it. And listen to what people say on the road."'
             self.request = ('dialog', 'Elder Berend', text)
             return
         if role == 'client':

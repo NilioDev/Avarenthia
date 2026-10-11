@@ -10,7 +10,7 @@ def hexrgb(h):
 
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
- CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE) = range(37)
+ CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN) = range(39)
 
 
 class Tile:
@@ -60,6 +60,8 @@ TILES = [
     Tile('┬', '#d0a060', False, False, 'signpost'),
     Tile('~', '#8cc0f0', True, False, 'shallow water', cost=14, bg='#173252'),
     Tile('ß', '#cfcac0', False, False, 'statue'),
+    Tile('■', '#d8a040', False, False, 'treasure chest', bg='#2a1c0c'),
+    Tile('□', '#8a7050', False, False, 'open chest'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -172,9 +174,9 @@ CURSETXT = {'dmg_flat': '-{} damage', 'ed': '-{}% damage', 'edef': '-{}% defense
             'mana': '-{} to mana', 'life': '-{} to life', 'str': '-{} to Strength', 'dex': '-{} to Dexterity',
             'vit': '-{} to Vitality', 'ene': '-{} to Energy', 'crit': '-{}% critical strike chance', 'regen': '-{} life regeneration'}
 POTIONS = {
-    'hp': dict(name='Health Potion', col=hexrgb('#e04a3c'), val=25),
-    'mp': dict(name='Mana Potion', col=hexrgb('#4f78ff'), val=25),
-    'rejuv': dict(name='Rejuvenation Potion', col=hexrgb('#b45ae0'), val=80),
+    'hp': dict(name='Health Potion', col=hexrgb('#e04a3c'), val=18),
+    'mp': dict(name='Mana Potion', col=hexrgb('#4f78ff'), val=18),
+    'rejuv': dict(name='Rejuvenation Potion', col=hexrgb('#b45ae0'), val=60),
 }
 
 # ---------------------------------------------------------------- monsters
@@ -223,6 +225,7 @@ MONSTERS = {
     'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.5, xp=15, caster=True,
                          nova=True, summon='drowned', tags='', summon_msg='Something wet crawls out of the dark water. A drowned one!',
                          nova_msg='{name} calls a wave of black water!', bolt='lance of brine', nova_col=(90, 200, 200)),
+    'merchant': dict(ch='@', fg='#f0d080', name='Merchant', tags='', min_l=1, hp=.8, dmg=.6, df=.8, xp=.5),
     'drake': dict(ch='d', fg='#f08040', name='Fire Drake', tags='lair_dragon', min_l=6, hp=1.3, dmg=1.3, df=1.3, xp=1.8, fast=True),
     'drowned': dict(ch='z', fg='#70b0a0', name='Drowned One', tags='lair_drowned', min_l=4, hp=1.6, dmg=1.2, df=.8, xp=1.3, slow=True),
     'clansman': dict(ch='h', fg='#d8a070', name='Dwarf Clansman', tags='faction', min_l=3, hp=1.4, dmg=1.15, df=1.5, xp=1.4),
@@ -334,8 +337,8 @@ EVENTS = {
 }
 
 MOUNTS = {
-    'mule': dict(name='Pack Mule', price=150, cap=60, desc='Carries 60 more units of cargo.'),
-    'cart': dict(name='Mule Cart', price=500, cap=160, desc='Carries 160 more units. Needs a pack mule.'),
+    'mule': dict(name='Pack Mule', price=15000, cap=60, desc='Carries 60 more units of cargo.'),
+    'cart': dict(name='Mule Cart', price=50000, cap=160, desc='Carries 160 more units. Needs a pack mule.'),
 }
 BASE_CARGO = 30
 DAY_LEN = 300

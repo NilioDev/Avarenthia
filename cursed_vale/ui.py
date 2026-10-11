@@ -8,6 +8,7 @@ from . import economy as ECO
 from . import engine as E
 from . import events as EV
 from . import look as LOOK
+from .money import fmt
 from . import dress as DR
 from . import evils as EVL
 from . import missions as MS
@@ -233,7 +234,7 @@ class MainMenu(Screen):
     def render(self, cv):
         for i, ln in enumerate(TITLE):
             cv.text_center(W // 2, 7 + i, ln, BLOOD)
-        cv.text_center(W // 2, 11, 'an ASCII action roguelike', DIM)
+        cv.text_center(W // 2, 11, 'a tale of a nobody', DIM)
         y = 15
         if self.saved:
             p = self.saved.player
@@ -241,8 +242,7 @@ class MainMenu(Screen):
             y += 2
         cv.text_center(W // 2, y, '[N] New game', FG)
         cv.text_center(W // 2, y + 2, '[Esc] Quit', DIM)
-        cv.wrap(25, 24, 50, 'Explore an ADOM-style vale, clear monster-packed dungeons, hunt magic, rare and unique loot, '
-                            'and face the great evils that stir in the wilds. Hardcore: death is permanent.', DIM)
+        cv.wrap(28, 24, 54, 'You wake in a temple with no memory. Who you become is up to you.', DIM)
 
     def on_key(self, tok, shift):
         if tok == 'c' and self.saved:
@@ -277,7 +277,7 @@ class NameScreen(Screen):
         RC = self.RC
         cv.text_center(W // 2, 3, 'Who are you, wanderer?', GOLD)
         x0, y0 = 14, 7
-        vals = [(self.name + ('_' if self.sel == 0 else '')).ljust(22),
+        vals = [(self.name + ('_' if self.sel == 0 else '')).ljust(28),
                 f"◄ {RC.RACES[self.race_key]['name']} ►", f"◄ {RC.GENDER_NAME[RC.GENDERS[self.gender]]} ►"]
         for i, (lab, v) in enumerate(zip(self.ROWS, vals)):
             y = y0 + i * 3
@@ -302,7 +302,7 @@ class NameScreen(Screen):
             v = RC.relation([k for k in RC.RACES if RC.RACES[k]['plural'] == nm][0], self.race_key)
             cv.text(rx, yy, f"{nm} {'like' if v > 0 else 'distrust' if v > -15 else 'despise'} you", GOOD if v > 0 else BAD)
             yy += 1
-        cv.text_center(W // 2, 24, 'Up/Down: choose a line · Left/Right: change · type your name · Enter: continue · Esc: back', DIM)
+        cv.text_center(W // 2, 28, 'Up/Down: choose a line · Left/Right: change · type your name · Enter: continue · Esc: back', DIM)
 
     def on_key(self, tok, shift):
         RC = self.RC
@@ -322,12 +322,12 @@ class NameScreen(Screen):
             else:
                 self.gender = (self.gender + d) % 3
         elif tok == 'tab':
-            self.name = RC.random_name(self.race_key, RC.GENDERS[self.gender])[:18]
+            self.name = RC.random_name(self.race_key, RC.GENDERS[self.gender])[:26]
         elif tok == 'backspace':
             self.name = self.name[:-1]
-        elif tok == 'space' and len(self.name) < 18:
+        elif tok == 'space' and len(self.name) < 26:
             self.name += ' '
-        elif len(tok) == 1 and (tok.isalnum() or tok in "-'") and len(self.name) < 18:
+        elif len(tok) == 1 and (tok.isalnum() or tok in "-'") and len(self.name) < 26:
             self.name += tok
 
 
@@ -346,7 +346,7 @@ class OptionsScreen(Screen):
                           'cast fire and the flames answer you. Skills are learned from tomes you find, and you carry '
                           'six of them at a time.', DIM)
         rows = [('Mode', ('HARDCORE: death is permanent.' if self.hardcore else
-                          'SOFTCORE: you wake in a temple, but your backpack, cargo and gold stay with your body.')),
+                          'SOFTCORE: you wake in a temple, but your backpack, cargo and coins stay with your body.')),
                 ('World seed', (self.seed or 'random') + (' _' if self.sel == 1 else ''))]
         for i, (a, b) in enumerate(rows):
             y = 12 + i * 3
@@ -639,17 +639,17 @@ class GameScreen(Screen):
         cv.text(x + 2, 18, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
         cv.text_right(x + PW - 1, 18, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
-        ev = EVL.strongest(g)
-        if ev:
-            cl = ev.lvl
-            cv.text(x, 19, ev.short if ev.known else 'Darkness', scale(ev.fg, .8), PANEL, maxw=PW - 11)
-            cv.text_right(x + PW - 1, 19, EVL.stage(ev), ev.fg if cl >= 4 else scale(ev.fg, .55 + cl * .1), PANEL)
+        from . import crime as CR
+        wanted = CR.wanted_in(g)
+        if wanted:
+            cv.text(x, 19, 'WANTED', BAD, PANEL)
+            cv.text_right(x + PW - 1, 19, (wanted[0].name if len(wanted) == 1 else f'in {len(wanted)} towns')[:PW - 8], BAD, PANEL)
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
                 ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
-                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Gold', str(p.gold))]
+                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Money', fmt(p.gold, True))]
         for i, (a, b) in enumerate(rows):
             cv.text(x, 20 + i, a, DIM, PANEL)
-            cv.text_right(x + PW - 1, 20 + i, b, GOLD if a == 'Gold' else FG, PANEL)
+            cv.text_right(x + PW - 1, 20 + i, b, GOLD if a == 'Money' else FG, PANEL)
         if p.stat_pts:
             cv.text(x, 25, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
         elif p.buffs:
@@ -728,7 +728,7 @@ class GameScreen(Screen):
                             GOOD if dz <= 2 else FG if dz <= 5 else BAD, PANEL, maxw=PW)
                     ev = EVL.taint_at(g, mx, my)
                     if ev:
-                        cv.text(x, y + 3, f"{ev.d['taint_name'].capitalize()} of {ev.short}", ev.fg, PANEL, maxw=PW)
+                        cv.text(x, y + 3, ev.d['taint_name'].capitalize() + (f' of {ev.short}' if ev.known else ''), ev.fg, PANEL, maxw=PW)
                 return
             if hv[0] < MAP_W and hv[1] < MAP_H and m.inb(mx, my) and g.visible(mx, my):
                 o = m.mon_at(mx, my)
@@ -891,7 +891,7 @@ def item_detail(cv, g, it, x, y, w, max_h=14):
     if it.k == 'gear' and it.req > 1:
         cv.text(x, yy, f'Requires level {it.req}', BAD if it.req > g.player.lvl else DIM, PANEL)
         yy += 1
-    cv.text(x, yy, f'Value {it.value()} gold', DIM, PANEL)
+    cv.text(x, yy, f'Value {fmt(it.value())}', DIM, PANEL)
     yy += 1
     if it.k == 'gear' and not g.is_equipped(it):
         cur = g.eq_item(it.slot)
@@ -946,7 +946,7 @@ class InventoryScreen(Modal):
         rows = self.rows()
         self.sel = max(0, min(self.sel, len(rows) - 1))
         x, y = self.box(cv, self.BOX_W, self.BOX_H, 'Drop which item?' if self.drop_mode else 'Inventory')
-        cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {g.player.gold} gold', DIM, PANEL)
+        cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {fmt(g.player.gold)}', DIM, PANEL)
         cv.text(x + 2, y + 3, 'EQUIPPED', DIM, PANEL)
         cv.text(x + 2, y + 10, 'BACKPACK', DIM, PANEL)
         sc = self.bag_scroll()
@@ -1240,8 +1240,7 @@ class ShopScreen(Modal):
         g = self.game
         x, y = self.box(cv, 104, 30)
         cv.text(x + 2, y + 1, '"Fresh stock every time you come back to town."', DIM, PANEL)
-        cv.text(x + 82, y + 1, 'Your gold:', DIM, PANEL)
-        cv.text(x + 93, y + 1, str(g.player.gold), GOLD, PANEL)
+        cv.text_right(x + 101, y + 1, 'Your purse: ' + fmt(g.player.gold), GOLD, PANEL)
         lists = [self.buy_rows(), self.sell_rows()]
         for pane, (title, lx) in enumerate((('BUY', x + 2), ('SELL', x + 34))):
             active = pane == self.pane
@@ -1256,7 +1255,7 @@ class ShopScreen(Modal):
                 cv.text(lx, yy, LETTERS[i] if active else ' ', GOLD, bg)
                 price = it.value() if pane == 0 else max(1, it.value() // 4)
                 cv.text(lx + 2, yy, it.display_name(), it.color(), bg, maxw=22)
-                cv.text_right(lx + 29, yy, str(price), GOLD if (pane == 1 or g.player.gold >= price) else BAD, bg)
+                cv.text_right(lx + 29, yy, fmt(price, True), GOLD if (pane == 1 or g.player.gold >= price) else BAD, bg)
             if not rows:
                 cv.text(lx, y + 4, 'Nothing to sell.' if pane else 'Sold out.', DIM, PANEL)
         for yy in range(y + 1, y + 29):
@@ -1436,9 +1435,7 @@ class HelpScreen(Modal):
             ('Factions', 'Different every world. Work for one to win favour; hurt it and its gates close.'),
             ('Peoples', 'Humans, elves, dwarves, halflings and half-orcs each like and distrust each other.'),
             ('', 'How a town sees your people changes its prices and how its faction greets you.'),
-            ('Great evils', 'Each world has one to three: a lich, a dragon, a spider queen, a warlord, a drowned'),
-            ('', 'god. They grow as you do, mark the land around their lairs (blight, ash, webs, war,'),
-            ('', 'mire), raid villages and in time hunt you. Destroy them all to save the vale.'),
+            ('News', 'Listen to the news and to rumours. The world changes while you are busy.'),
         ]),
         ('Your hero', [
             ('Skills', 'You start with none. Learn them from tomes (≡) found on monsters, in ruins, at'),
@@ -1625,26 +1622,21 @@ class IntroScreen(Modal):
         if not g:
             return [('', '')] * 3
         from . import races as RC
-        evs = g.world.evils
-        dark = ' '.join(f'{e.name}, {e.d["lore"]}' for e in evs)
-        fs = [D.FACTIONS[f] for f in D.FACTION_ORDER if f != 'cult']
-        lords = ', '.join(f['name'] for f in fs[:-1]) + f' and {fs[-1]["name"]}'
         p = g.player
         r = RC.RACES[p.race]
         return [
-            ('The Cursed Vale',
-             'For three winters the vale has known no peace. Wolves come down from the hills in packs no hunter has '
-             'ever seen, and the old roads are the only places left where honest folk still dare to walk.\n\n'
-             f'{"A great evil has" if len(evs) == 1 else "Great evils have"} woken in the wilds. {dark}'),
-            ('A land at war with itself',
-             f'As if that were not enough, the powers of the vale fight each other: {lords}. Castles and forts change '
-             'hands. Patrols keep the roads, but beyond them the land grows wilder with every step.\n\n'
-             'You know little of this land yet. Talk to people, read the signposts in the towns, and the map will fill in.'),
+            ('...',
+             'Darkness. Then voices, far away. Then the smell of candle smoke.\n\n'
+             'You open your eyes on a stone ceiling. Your head aches, your mouth is dry, and when you try to remember '
+             'how you got here, there is nothing. No road, no home, no faces. Nothing at all.'),
+            ('A name',
+             f'Only one thing is left: your name. {p.name}. You hold on to it like a rope in deep water.\n\n'
+             f'Your hands are the hands of a {r["name"].lower()}. A sword and a bow lie beside your cot, and a padded '
+             'coat that might be yours. Whatever you were before, nobody here knows it. Neither do you.'),
             ('{name}',
-             f'You arrive in Thornfield, a small village at the heart of the vale: a {r["name"].lower()} with a sword, '
-             'a bow, a padded coat and a few coins. You are nobody yet. What you become is up to you.\n\n'
-             'Speak with Elder Berend, find work on the inn board, trade goods between towns, talk to the travellers you '
-             'meet. Whether you face the darkness is your choice, but it will not wait for you.\n\n'
+             'You are nobody, in a land you do not know. What you become now is up to you: a sellsword, a trader, '
+             'a scholar of forgotten magic, a thief on the roads, or something else entirely.\n\n'
+             'Talk to people. Read the signposts. Listen to what travellers say. The world is wide, and it does not wait.\n\n'
              'Press ? at any time for help.'),
         ]
 
@@ -1684,7 +1676,7 @@ class DeathScreen(Modal):
         p = g.player
         x, y = self.box(cv, 60, 15)
         cv.wrap(x + 3, y + 2, 54, f"{p.name} was slain by {g.cause or 'fate'} in {g.loc_name()}. In hardcore, death is final.", FG, PANEL)
-        rows = [('Level', p.lvl), ('Experience', p.xp), ('Turns', g.turn), ('Kills', g.kills), ('Gold', p.gold)]
+        rows = [('Level', p.lvl), ('Experience', p.xp), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 5 + i, a, DIM, PANEL)
             cv.text(x + 18, y + 5 + i, str(b), FG, PANEL)
@@ -1707,7 +1699,7 @@ class WinScreen(Modal):
         x, y = self.box(cv, 64, 15)
         names = ', '.join(e.name for e in g.world.evils)
         cv.wrap(x + 3, y + 2, 58, f"{p.name} has destroyed {names}. The vale is free, and Thornfield will sing of this for generations.", FG, PANEL, 3)
-        rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Gold', p.gold)]
+        rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
             cv.text(x + 18, y + 6 + i, str(b), FG, PANEL)
@@ -1747,7 +1739,7 @@ class MarketScreen(Modal):
         p = g.player
         x, y = self.box(cv, self.BOX_W, self.BOX_H, f'{s.name} market')
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
-        cv.text(x + 2, y + 1, f'Gold {p.gold}', GOLD, PANEL)
+        cv.text(x + 2, y + 1, f'Purse {fmt(p.gold)}', GOLD, PANEL)
         cv.text(x + 16, y + 1, f'Cargo {used}/{cap}', BAD if used >= cap else FG, PANEL)
         cv.text(x + 32, y + 1, f'Reputation here {s.rep}', DIM, PANEL)
         if s.event:
@@ -1764,20 +1756,20 @@ class MarketScreen(Modal):
             mark = '+' if gk in s.produce else '!' if gk in s.demand else ' '
             cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark == '!' else DIM, bg)
             cv.text(x + 4, yy, D.GOODS[gk]['name'], FG, bg)
-            cv.text(x + 22, yy, str(ECO.buy_price(s, gk)), FG, bg)
-            cv.text(x + 29, yy, str(ECO.sell_price(s, gk)), FG, bg)
+            cv.text(x + 22, yy, fmt(ECO.buy_price(s, gk), True), FG, bg)
+            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk), True), FG, bg)
             sw = _stock_word(s, gk)
             cv.text(x + 36, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
             have = p.cargo.get(gk, 0)
             cv.text(x + 45, yy, str(have) if have else '-', GOLD if have else DIM, bg)
             if have and gk in p.cost_basis:
-                cv.text(x + 53, yy, f'{p.cost_basis[gk]:.0f}', DIM, bg)
+                cv.text(x + 53, yy, fmt(p.cost_basis[gk], True), DIM, bg)
             best = ECO.best_known_sale(g, gk, s.id)
             if best:
                 v, bsid, day = best
                 age = g.day - day
                 col = GOOD if v > ECO.buy_price(s, gk) else DIM
-                cv.text(x + 60, yy, f"{v} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
+                cv.text(x + 60, yy, f"{fmt(v, True)} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
         cv.text(x + 2, y + self.BOX_H - 3, '+ made here (cheap)   ! wanted here (sells high)   weight: ' +
                 f"{D.GOODS[D.GOOD_ORDER[self.sel]]['name']} {D.GOODS[D.GOOD_ORDER[self.sel]]['w']} per unit", DIM, PANEL)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' ↑↓ select · b/s buy or sell 1 · B/S buy or sell 10 · A sell all · Esc leave ', DIM, PANEL)
@@ -1844,7 +1836,7 @@ class BoardScreen(Modal):
             cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
             cv.text(x + 2, yy, LETTERS[i], GOLD, bg)
             cv.text(x + 4, yy, mi.title, FG, bg, maxw=42)
-            cv.text_right(x + 55, yy, f'{mi.reward}g', GOLD, bg)
+            cv.text_right(x + 55, yy, fmt(mi.reward, True), GOLD, bg)
         for yy in range(y + 1, y + self.BOX_H - 1):
             cv.put(x + 58, yy, '│', LINE, PANEL)
         if offers:
@@ -1852,15 +1844,23 @@ class BoardScreen(Modal):
             cv.text(x + 60, y + 3, mi.title, GOLD, PANEL, maxw=38)
             n = cv.wrap(x + 60, y + 5, 38, mi.desc, FG, PANEL, 10)
             yy = y + 6 + n
-            cv.text(x + 60, yy, f'Reward: {mi.reward} gold', GOLD, PANEL)
+            cv.text(x + 60, yy, f'Reward: {fmt(mi.reward)}', GOLD, PANEL)
             local_rep = src.rep if not self.hold else max(0, frep)
             if local_rep > 0:
-                cv.text(x + 60, yy + 1, f'+{round(mi.reward * min(local_rep, 100) / 200)} reputation bonus', GOOD, PANEL)
+                cv.text(x + 60, yy + 1, f'+{fmt(round(mi.reward * min(local_rep, 100) / 200))} reputation bonus', GOOD, PANEL)
             if mi.deadline:
                 cv.text(x + 60, yy + 2, f'Deadline: day {mi.deadline} (today is {g.day})', DIM, PANEL)
             cv.text(x + 60, yy + 3, self.KINDS[mi.kind], INFO, PANEL)
             if mi.faction:
                 cv.text(x + 60, yy + 4, f"Reputation with the {D.FACTIONS[mi.faction]['short']}: +{mi.rep if self.hold else 2}", GOOD, PANEL)
+        from . import crime as CR
+        notices = [st for st in CR.wanted_in(g) if self.hold or st.id != src.id]
+        if notices:
+            st = notices[0]
+            what = (getattr(st, 'crimes', None) or ['crimes'])[-1]
+            cv.text(x + 2, y + self.BOX_H - 4, 'Nailed to the board:', DIM, PANEL)
+            cv.text(x + 2, y + self.BOX_H - 3, f'WANTED: {g.player.name}, for {what} near {st.name}. Reward {fmt(CR.bounty(st))}.',
+                    BAD, PANEL, maxw=56)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' letter or ↑↓ select · Enter accept · Esc leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -1903,7 +1903,7 @@ class JournalScreen(Modal):
             cv.text(x + 2, yy, '•', GOLD, PANEL)
             cv.text(x + 4, yy, mi.title, FG, PANEL, maxw=44)
             cv.text(x + 50, yy, f'{where}: {d} {E.dir_name(tx - ox, ty - oy) if d else "here"}', INFO, PANEL, maxw=30)
-            cv.text_right(x + 97, yy, f'{mi.reward}g', GOLD, PANEL)
+            cv.text_right(x + 97, yy, fmt(mi.reward, True), GOLD, PANEL)
             extra = status
             if mi.deadline and mi.state == 'active':
                 left = mi.deadline - g.day
@@ -1933,14 +1933,23 @@ class JournalScreen(Modal):
             cv.text(x + 52, yy, f'{regs} regions, {holds} strongholds', DIM, PANEL)
             yy += 1
         yy += 1
-        cv.text(x + 2, yy, 'DARK POWERS', DIM, PANEL)
-        yy += 1
-        for ev in g.world.evils:
-            nm = ev.name if ev.known else 'Something unknown'
-            cv.text(x + 4, yy, nm, ev.fg if not ev.defeated else DIM, PANEL, maxw=28)
-            cv.text(x + 32, yy, f'{EVL.stage(ev)}: {EVL.describe(g, ev)}', FG if not ev.defeated else DIM, PANEL, maxw=64)
+        from . import crime as CR
+        marked = [st for st in g.world.settlements if st.rep and g.known_settlement(st)]
+        if marked:
+            cv.text(x + 2, yy, 'STANDING IN TOWNS', DIM, PANEL)
             yy += 1
-        yy += 1
+            line = '   '.join(f'{st.name}: {CR.standing_word(st.rep)} ({st.rep})' for st in sorted(marked, key=lambda q: q.rep)[:5])
+            cv.text(x + 4, yy, line, BAD if any(st.rep <= CR.WANTED_AT for st in marked) else FG, PANEL, maxw=92)
+            yy += 2
+        known = [ev for ev in g.world.evils if ev.known]
+        if known:
+            cv.text(x + 2, yy, 'DARK POWERS', DIM, PANEL)
+            yy += 1
+            for ev in known:
+                cv.text(x + 4, yy, ev.name, ev.fg if not ev.defeated else DIM, PANEL, maxw=28)
+                cv.text(x + 32, yy, f'lair to the {g.dir_to(ev.did)}' if not ev.defeated else 'destroyed', FG if not ev.defeated else DIM, PANEL, maxw=64)
+                yy += 1
+            yy += 1
         cv.text(x + 2, yy, 'NEWS', DIM, PANEL)
         yy += 1
         evs = [st for st in g.world.settlements if st.event]
@@ -2138,14 +2147,14 @@ class TempleScreen(Modal):
         ni, ci = g.identify_all(dry=True)
         nc, cc = g.uncurse_all(dry=True)
         rows = [('a', 'Heal my wounds', 'free' if hurt else 'you are well', hurt),
-                ('b', f'Identify my unknown items ({ni})', f'{ci} gold' if ni else 'nothing to identify', ni > 0),
-                ('c', f'Lift the curses I carry ({nc})', f'{cc} gold' if nc else 'no known curses', nc > 0)]
+                ('b', f'Identify my unknown items ({ni})', fmt(ci) if ni else 'nothing to identify', ni > 0),
+                ('c', f'Lift the curses I carry ({nc})', fmt(cc) if nc else 'no known curses', nc > 0)]
         for i, (k, a, b, ok) in enumerate(rows):
             yy = y + 5 + i * 2
             cv.text(x + 3, yy, k, GOLD, PANEL)
             cv.text(x + 5, yy, a, FG if ok else DIM, PANEL)
             cv.text_right(x + 66, yy, b, GOLD if ok else DIM, PANEL)
-        cv.text(x + 3, y + 11, f'Your gold: {p.gold}', DIM, PANEL)
+        cv.text(x + 3, y + 11, f'Your purse: {fmt(p.gold)}', DIM, PANEL)
         cv.text_center(W // 2, y + 13, ' a/b/c: choose · Esc: leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -2179,14 +2188,14 @@ class StablesScreen(Modal):
         g = self.game
         p = g.player
         x, y = self.box(cv, 64, 12, 'Stables')
-        cv.text(x + 2, y + 1, f'"Need something to carry your goods?"   Gold {p.gold}', DIM, PANEL)
+        cv.text(x + 2, y + 1, f'"Need something to carry your goods?"   Purse {fmt(p.gold)}', DIM, PANEL)
         for i, k in enumerate(('mule', 'cart')):
             mt = D.MOUNTS[k]
             yy = y + 3 + i * 3
             owned = k in p.mounts
             cv.text(x + 2, yy, LETTERS[i], GOLD, PANEL)
             cv.text(x + 4, yy, mt['name'], FG if not owned else DIM, PANEL)
-            cv.text_right(x + 60, yy, 'owned' if owned else f"{mt['price']} gold", DIM if owned else GOLD, PANEL)
+            cv.text_right(x + 60, yy, 'owned' if owned else fmt(mt['price']), DIM if owned else GOLD, PANEL)
             cv.text(x + 4, yy + 1, mt['desc'], DIM, PANEL)
         cv.text(x + 2, y + 9, f'Your cargo space: {ECO.cargo_capacity(p)}', FG, PANEL)
         cv.text_center(W // 2, y + 11, ' a/b: buy · Esc: leave ', DIM, PANEL)

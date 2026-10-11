@@ -261,12 +261,16 @@ def gen_dungeon(game, did, depth):
             it = random_gear(game, lvl)
             it.x, it.y = c
             m.items.append(it)
-    for _ in range(2 + random.randint(0, 2)):
+    # coins are rare: now and then a few on the floor, sometimes a treasure chest
+    if random.random() < .25:
         c = rand_free(game, m, lambda t: t == FLOOR)
         if c:
-            it = Item(game.new_id(), 'gold', 'gold', random.randint(lvl * 3, lvl * 9 + 10))
+            from .money import purse
+            it = Item(game.new_id(), 'gold', 'gold', purse(lvl, .5))
             it.x, it.y = c
             m.items.append(it)
+    if last or random.random() < .4:
+        place_chest(m)
     for _ in range(random.randint(1, 2)):
         c = rand_free(game, m, lambda t: t == FLOOR)
         if c:
@@ -274,6 +278,34 @@ def gen_dungeon(game, did, depth):
             it.x, it.y = c
             m.items.append(it)
     return m
+
+
+def place_chest(m):
+    """A treasure chest against a wall."""
+    cands = [i for i, t in enumerate(m.t) if t == FLOOR and 0 < i % m.w < m.w - 1 and sum(
+        1 for o in (1, -1, m.w, -m.w) if 0 <= i + o < len(m.t) and m.t[i + o] in (WALL, ROCK)) == 1]
+    if not cands:
+        return None
+    i = random.choice(cands)
+    m.set(i % m.w, i // m.w, D.CHEST)
+    return i
+
+
+def open_chest(game, x, y):
+    """Open a chest: coins, gear and sometimes a tome or a potion spill out."""
+    from .money import purse
+    from .entities import make_tome
+    m = game.map
+    m.set(x, y, D.CHEST_OPEN)
+    lvl = getattr(m, 'level', 1)
+    game.spill(m, x, y, Item(game.new_id(), 'gold', 'gold', purse(lvl, 6)))
+    for _ in range(random.randint(1, 2)):
+        game.spill(m, x, y, random_gear(game, lvl + 1, 2.5))
+    if random.random() < .2:
+        game.spill(m, x, y, make_tome(game, lvl))
+    if random.random() < .5:
+        game.spill(m, x, y, Item(game.new_id(), 'potion', random.choice(['hp', 'hp', 'mp', 'rejuv'])))
+    game.msg('You open the chest. Treasure!', 'gold')
 
 
 def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
@@ -319,12 +351,6 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
             mon.pack, mon.awake = pid, True
             mon.faction = faction
             m.mons.append(mon)
-    if random.random() < .4:
-        c2 = rand_free(game, m, lambda t: D.TILES[t].walk)
-        if c2:
-            it = Item(game.new_id(), 'gold', 'gold', random.randint(lvl * 4, lvl * 10 + 10))
-            it.x, it.y = c2
-            m.items.append(it)
     m.entry = (cx, cy)
     return m
 

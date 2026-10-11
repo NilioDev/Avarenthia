@@ -16,7 +16,7 @@ NAMES = ['Dorien', 'Ilse', 'Berend', 'Maud', 'Aldric', 'Petra', 'Hob', 'Wenna', 
 
 def town_names(race):
     from .races import names_for
-    names = names_for(race, 40) + NAMES[:4]
+    names = names_for(race, 40)
     random.shuffle(names)
     return names
 
@@ -163,7 +163,7 @@ ROLE_OF = {'inn': 'inn', 'market': 'market', 'shop': 'shop', 'temple': 'healer',
 SIGN = {'inn': 'INN', 'shop': 'OUTFITTER', 'temple': 'TEMPLE', 'stables': 'STABLES', 'elder': 'ELDER', 'keep': 'KEEP',
         'barracks': 'BARRACKS'}
 TITLE = {'inn': ('Innkeeper {n}', '#e0a060'), 'market': ('{n} the Trader', '#f2c44a'), 'shop': ('{n} the Outfitter', '#d8d0b0'),
-         'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend', '#c08cf0')}
+         'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend Ashford', '#c08cf0')}
 
 
 def add_sign(m, pl, text):
@@ -184,9 +184,9 @@ def staff(game, m, pl, role_key, names, s):
     nm, col = TITLE[role_key]
     label = nm.format(n=names.pop())
     if s is not None and s.id == 0 and role_key == 'shop':
-        label = 'Dorien the Merchant'
+        label = 'Dorien Hale the Merchant'
     if s is not None and s.id == 0 and role_key == 'temple':
-        label = 'Sister Ilse'
+        label = 'Sister Ilse Marsh'
     spots = free_inside(m, pl)
     if role_key in ('inn', 'shop'):
         spots = [c for c in spots if c[1] == pl.y + 1] or spots

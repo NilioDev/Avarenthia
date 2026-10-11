@@ -1,14 +1,16 @@
 # Cursed Vale
 
 Een ASCII open-world RPG in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
-Een ADOM-achtige wereld met Diablo-gevechten en Privateer-achtige handel: klassen met skills, elite monsters,
-loot in vier zeldzaamheden, zo'n 27 dorpen en steden met een levende economie, kastelen en forten van vijf facties, banen op de prikborden van de herbergen,
-en karavanen, patrouilles en bandieten die zichtbaar over de kaart trekken.
+Je wordt wakker zonder geheugen en bent niemand. Een willekeurige open wereld met snelle gevechten, handel tussen
+dorpen en steden, facties in oorlog, banen op de prikborden, karavanen, patrouilles, bandieten en reizigers die
+zichtbaar over de kaart trekken, en een wereld die op de achtergrond verandert.
 
 ## Je held
 
-Bij een nieuw spel kies je je volk (mens, elf, dwerg, halfling of half-ork), je geslacht (man, vrouw of ongedefinieerd)
-en je naam; met Tab krijg je een willekeurige naam die bij je volk past. Elk volk heeft eigen attributen, voordelen en
+Je wordt wakker in de tempel van Thornfield, zonder geheugen. Je bent niemand; wat je wordt, bepaal je zelf.
+
+Bij een nieuw spel kies je je volk (mens, elf, dwerg, halfling, gnoom, half-ork of goblin), je geslacht (man, vrouw of
+ongedefinieerd) en je voor- en achternaam; met Tab krijg je een willekeurige naam die bij je volk past. Elk volk heeft eigen attributen, voordelen en
 nadelen, en andere volkeren en facties reageren anders op je: andere prijzen en een andere beginreputatie.
 
 De facties zijn in elke wereld anders: een rijk, kooplieden, woudvolk, vogelvrijen en een sekte, vaak aangevuld met
@@ -17,6 +19,14 @@ dwergenclans en orkenstammen, elk met een eigen volk, naam, kleur en vijanden.
 Je kent aan het begin alleen de omgeving van Thornfield. Lees de **wegwijzer** (`┬`) in elk dorp om te weten waar de wegen
 heen gaan, en praat met mensen: zij vertellen over andere plaatsen. De wereldkaart (`M`) kun je met de pijltjes scrollen;
 `Z` wisselt tussen close-up en het hele rijk.
+
+**Geld** is schaars: 100 koper is 1 zilver, 100 zilver is 1 goud. Beesten dragen geen geld, mensen een beetje,
+handelaren veel. Munten vind je vooral in schatkisten (`■`) in kerkers en ruïnes.
+
+**Misdaad.** Je kunt reizigers en karavanen beroven (loop ertegenaan). Elk dorp onthoudt wat er in de buurt gebeurt:
+zakt je aanzien daar te ver, dan ben je er gezocht. Dan hangen er opsporingsberichten aan de prikborden, stuurt de
+plaatselijke heer premiejagers op je af en houden de wachters je aan bij de poort: boete betalen, drie dagen in de
+schandpaal, of vluchten. Mensen vergeten langzaam.
 
 **Life skills** groeien door ze te doen, zoals in Project Gorgon. De eerste is **vissen**: koop een hengel bij een outfitter
 en druk `A` naast water (rivier, meer, zee of een poel in een grot). Hoe beter je wordt, hoe meer soorten vis toehappen.
@@ -32,10 +42,9 @@ en wisselt ze alleen in een stad of burcht (`Z`). Wapenskills werken alleen met 
 Magische items zijn zeldzaam en **ongeïdentificeerd** als je ze vindt; hun krachten werken pas na identificatie bij een
 outfitter of priester. Sommige zijn **vervloekt**: eenmaal aangetrokken krijg je ze niet meer af tot een priester de vloek opheft.
 
-**Grote kwaden.** Elke wereld heeft er één tot drie, willekeurig gekozen: een lich (Morvenna of een ander), een draak,
-een spinnenkoningin, een krijgsheer van de orks of een verdronken god. Ze worden sterker naarmate jij sterker wordt en de
-tijd verstrijkt, laten hun sporen na op het land rond hun hol (verdorring, as, webben, oorlogspaden, moeras), plunderen
-dorpen in hun schaduw en sturen uiteindelijk jagers op je af. Wat je ermee doet is aan jou; versla ze allemaal en de vallei is gered.
+**Op de achtergrond** gebeurt meer dan je denkt. De wereld verandert langzaam, ook als jij ergens anders mee bezig
+bent. Let op het nieuws en op wat mensen vertellen; pas na lang spelen wordt duidelijk wat er speelt, en wat je
+ermee doet (of niet) is aan jou.
 
 Bij een nieuw spel kies je **hardcore** (dood is definitief) of **softcore**: je ontwaakt in de dichtstbijzijnde tempel,
 maar je rugzak, vracht en goud liggen bij je lijk, dat je terug moet halen. Je kunt ook een **seed** invoeren om
@@ -156,7 +165,9 @@ cursed_vale/data.py      tegels, klassen, skills, items, affixen, monsters, kerk
 cursed_vale/entities.py  Item, Monster, Player, GameMap en het maken van loot en monsters
 cursed_vale/worldgen.py  vallei, dorp, kerkers (kamers en grotten), wildernis, winkel
 cursed_vale/events.py    ruïnes en andere plekken, gebeurtenissen onderweg, reizigers
-cursed_vale/evils.py     de grote kwaden: holen, bazen, sporen op het land, jagers
+cursed_vale/evils.py     wat er op de achtergrond gebeurt (spoilers!)
+cursed_vale/crime.py     misdaad, aanzien per dorp, premiejagers
+cursed_vale/money.py     koper, zilver en goud
 cursed_vale/factions.py  facties, per wereld opnieuw gemaakt
 cursed_vale/races.py     volkeren, hun verhoudingen en namen
 cursed_vale/lifeskills.py life skills (vissen)

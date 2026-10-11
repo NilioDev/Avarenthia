@@ -4,6 +4,7 @@ the player move goods around, and events shift what a town needs for a while."""
 import random
 
 from . import data as D
+from .money import fmt
 
 REF = 40.0
 faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
@@ -39,7 +40,7 @@ def init_markets(world):
 def price(s, g):
     stock = max(1.0, s.market[g][0])
     f = (REF / stock) ** 0.55
-    return D.GOODS[g]['base'] * max(.35, min(3.2, f))
+    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * 100     # copper
 
 
 def buy_price(s, g):
@@ -79,7 +80,7 @@ def buy(game, s, g, n=1):
         have = p.cargo[g]
         old = p.cost_basis.get(g, 0) * (have - done)
         p.cost_basis[g] = (old + spent) / have
-        game.msg(f"You buy {done} {D.GOODS[g]['name']} for {spent} gold.", 'gold')
+        game.msg(f"You buy {done} {D.GOODS[g]['name']} for {fmt(spent)}.", 'gold')
     elif s.market[g][0] < 1:
         game.msg(f"{s.name} has no {D.GOODS[g]['name']} left to sell.", 'bad')
     elif free_cargo(p) < D.GOODS[g]['w']:
@@ -108,10 +109,10 @@ def sell(game, s, g, n=1):
         note = ''
         if cost:
             profit = got - round(cost * done)
-            note = f" ({'+' if profit >= 0 else ''}{profit} profit)"
+            note = f" ({'+' if profit >= 0 else '-'}{fmt(abs(profit))} profit)"
             if g not in p.cargo:
                 p.cost_basis.pop(g, None)
-        game.msg(f"You sell {done} {D.GOODS[g]['name']} for {got} gold{note}.", 'gold')
+        game.msg(f"You sell {done} {D.GOODS[g]['name']} for {fmt(got)}{note}.", 'gold')
     return done
 
 

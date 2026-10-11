@@ -136,6 +136,7 @@ def make_offer(game, s):
         m.desc = f'{relic[0].upper() + relic[1:]} lies at the bottom of {d.name}, to the {_dir(s, (d.x, d.y))}. A guardian watches over it. Bring it back to {s.name}.'
     m.rep = random.randint(5, 10)
     m.faction = s.faction
+    m.reward *= 100                # silver -> copper
     return m
 
 
@@ -188,6 +189,7 @@ def make_hold_offer(game, h):
         m.title = f"Hunt {leader} of the {D.FACTIONS[foe]['short']}"
         m.desc = f"{leader} leads a {D.FACTIONS[foe]['short']} warband in {w.region_at(*spot).name}, to the {_dir(h, spot)}. End them."
     m.rep = random.randint(8, 14)
+    m.reward *= 100
     return m
 
 
@@ -321,8 +323,9 @@ def complete(game, m, sids):
     p.parcels = [pc for pc in p.parcels if pc['mid'] != m.id]
     w.wanderers = [x for x in w.wanderers if x.mission != m.id]
     p.inv = [it for it in p.inv if getattr(it, 'mission', None) != m.id]
-    game.msg(f"Job done: {m.title}. You receive {m.reward + bonus} gold{f' (+{bonus} reputation bonus)' if bonus else ''}.", 'gold')
-    game.num(p.x, p.y, f'+{m.reward + bonus}g', (242, 196, 67), True)
+    from .money import fmt
+    game.msg(f"Job done: {m.title}. You receive {fmt(m.reward + bonus)}{f' ({fmt(bonus)} reputation bonus)' if bonus else ''}.", 'gold')
+    game.num(p.x, p.y, '+' + fmt(m.reward + bonus, True), (242, 196, 67), True)
 
 
 def fail(game, m, why):
@@ -600,5 +603,6 @@ def client_talk(game, npc):
         return
     complete(game, m, [d['wait']])
     npc.mission = None
-    game.request = ('dialog', npc.name, f'"You did it! I knew I could trust you. Here, {m.reward} gold, as promised." '
+    from .money import fmt
+    game.request = ('dialog', npc.name, f'"You did it! I knew I could trust you. Here, {fmt(m.reward)}, as promised." '
                     f'{first} shakes your hand warmly.')

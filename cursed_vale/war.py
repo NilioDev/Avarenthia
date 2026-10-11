@@ -64,6 +64,9 @@ def refresh_hostility(game):
 
 
 def can_enter(game, s):
+    from .crime import BANNED_AT
+    if s.rep <= BANNED_AT:
+        return False, f'{s.name} has outlawed you. Archers on the walls make sure you keep your distance.'
     f = s.faction
     if f == 'cult':
         return False, f"{s.name} is held by {D.FACTIONS['cult']['name']}. Its gates are shut to the living."

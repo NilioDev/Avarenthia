@@ -85,6 +85,24 @@ EVILS = {
         defeat='{name} sinks back into the black water, never to rise again. The floods recede.'),
 }
 EVIL_KEYS = list(EVILS)
+# what people notice before anyone knows what is behind it
+SIGNS = {
+    'blight': ['The birds have gone quiet in the far woods, and grey patches spread where nothing grows.',
+               'A shepherd swears he saw his dead father walking the hills at night.',
+               'The crops wither near the old graveyards. Nobody knows why.'],
+    'scorch': ['Smoke on the far horizon again. Travellers speak of burned farms.',
+               'Cattle go missing in the hills, whole herds at a time.',
+               'A merchant swears the night sky glowed red over the mountains.'],
+    'web': ['Woodcutters say the deep forest has gone quiet, and grey with silk.',
+            'Hunters stopped going into the old woods. Some never came out.',
+            'A child in the market found a spider the size of a dog. Dead, thank the gods.'],
+    'warpath': ['Refugees on the road speak of raiders, more of them every season.',
+                'The goblin tribes are quiet. Too quiet, the old soldiers say.',
+                'Someone burned a farmstead in the hills and left a skull on a pike.'],
+    'mire': ['The marshes are rising. Fields that were dry last year are under water.',
+             'Fishermen pull strange things from the water lately, and will not say what.',
+             'Bells ring under the marsh at night, they say. There is no church there.'],
+}
 STAGES = ['Dreaming', 'Stirring', 'Restless', 'Watching', 'Searching', 'Hunting', 'Hunting', 'Wrathful', 'Wrathful',
           'Ascendant', 'Ascendant']
 DIVE_COST = {'web': 6, 'mire': 6}
@@ -116,7 +134,7 @@ def choose(n=None):
     out = []
     for i, k in enumerate(keys):
         e = Evil(k, random.choice(EVILS[k]['names']))
-        e.pace = i * 2 + random.randint(0, 1)        # the first one wakes first
+        e.pace = 1 + i * 3 + random.randint(0, 2)     # they wake slowly, one after another
         out.append(e)
     return out
 
@@ -138,7 +156,7 @@ def strength(game, e):
     if e.defeated:
         return 0
     p = game.player
-    return min(10, max(0, (p.lvl - 1) // 2 + (game.day - 1) // 20 - e.pace))
+    return min(10, max(0, (p.lvl - 1) // 3 + (game.day - 1) // 30 - e.pace))
 
 
 def active(game):
@@ -202,12 +220,30 @@ def update(game, announce=True):
         e.lvl = strength(game, e)
         if e.lvl != old:
             changed = True
-        if announce and e.lvl > old:
-            game.msg(e.d['omen'].format(name=e.name, short=e.short), 'unique')
-            if e.lvl == 4:
-                game.msg(f'{e.name} has sent servants to hunt you down. Watch the horizon.', 'bad')
+        if announce and e.lvl > old and e.lvl >= 2:
+            if e.known:
+                game.msg(e.d['omen'].format(name=e.name, short=e.short), 'unique')
+            else:
+                game.msg('News: ' + random.choice(SIGNS[e.d['taint']]), 'info')
+        if e.lvl >= 4 and not e.known and not e.defeated:
+            learn(game, e)
     if changed:
         compute_taint(game)
+
+
+def learn(game, e):
+    """The rumours finally get a name."""
+    e.known = True
+    om = game.maps['over']
+    om.seen[e.y * om.w + e.x] = 1
+    game.msg(f'The rumours have a name now: {e.name}, {e.d["lore"]} Its lair lies far to the {game.dir_to(e.did)}.', 'unique')
+    if not game.flags.get('evil_dialog'):
+        game.flags['evil_dialog'] = True
+        game.request = ('dialog', 'A darkness with a name',
+                        f'For a long time there were only rumours. Burned farms, empty villages, things seen at night. '
+                        f'Now everyone speaks the same name: {e.name}.\n\n{e.name}, {e.d["lore"]}\n\n'
+                        f'It grows stronger every season. Someone could try to stop it. Or not. The world will go on either way, '
+                        f'for a while.')
 
 
 def defeat(game, e):
@@ -240,7 +276,7 @@ def whisper(game):
     if not (is_night(game) or here):
         return
     lvl = max(e.lvl for e in act)
-    if random.random() < lvl * .0012 + (.004 if here else 0):
+    if lvl >= 3 and random.random() < lvl * .0008 + (.003 if here else 0):
         e = here if here else random.choices(act, [x.lvl for x in act])[0]
         game.msg(random.choice(e.d['whispers']), 'unique')
 
@@ -252,7 +288,7 @@ def daily(game):
         if e.defeated or not e.lvl:
             continue
         for s in w.settlements:
-            if s.event is None and taint_at(game, s.x, s.y) is e and random.random() < .06 + e.lvl * .02:
+            if e.lvl >= 2 and s.event is None and taint_at(game, s.x, s.y) is e and random.random() < .04 + e.lvl * .015:
                 key = e.d['event']
                 ev = D.EVENTS[key]
                 s.event = (key, random.randint(4, 7))
@@ -260,9 +296,10 @@ def daily(game):
                     if g:
                         s.market[g][1] = ev['target']
                         s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
-                game.msg(f'News: {e.name} strikes at {s.name}! ' + ev['text'].format(town=s.name), 'bad')
+                who = e.name if e.known else 'Something'
+                game.msg(f'News: {who} strikes at {s.name}! ' + ev['text'].format(town=s.name), 'bad')
         hunts = [x for x in w.wanderers if x.kind == 'hunt' and getattr(x, 'evil', None) == idx]
-        if e.lvl >= 4 and len(hunts) < 1 + (e.lvl - 4) // 2 and random.random() < .15 + e.lvl * .03:
+        if e.known and e.lvl >= 5 and len(hunts) < 1 + (e.lvl - 4) // 2 and random.random() < .15 + e.lvl * .03:
             spawn_hunt(game, idx)
 
 
@@ -319,10 +356,12 @@ def wild_keys(game, x, y, lvl):
 
 
 def rumor(game):
-    act = [e for e in active(game) if e.lvl >= 1]
+    act = [e for e in active(game) if e.lvl >= 2]
     if not act:
         return None
     e = random.choice(act)
+    if not e.known:
+        return random.choice(SIGNS[e.d['taint']])
     return random.choice(e.d['rumors']).format(short=e.short, name=e.name)
 
 

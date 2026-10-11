@@ -259,8 +259,9 @@ def use(game, slot):
     if m.kind in ('over', 'town') and sk.mode != 'self':
         game.msg('There is nothing to fight here.')
         return 0
-    if p.mana < sk.cost:
-        game.msg(f'Not enough mana for {sk.name} ({sk.cost} needed).', 'bad')
+    cost = max(1, round(sk.cost * (.85 if getattr(p, 'race', '') == 'gnome' else 1)))
+    if p.mana < cost:
+        game.msg(f'Not enough mana for {sk.name} ({cost} needed).', 'bad')
         return 0
     d = DISCIPLINES[sk.line]
     if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
@@ -269,7 +270,7 @@ def use(game, slot):
     r = rank(game, sk.line)
     if not EXEC[sk.mode](game, sk, r):
         return 0
-    p.mana -= sk.cost
+    p.mana -= cost
     p.cooldowns[sid] = sk.cd
     gain(game, sk.line, 3)
     return 1

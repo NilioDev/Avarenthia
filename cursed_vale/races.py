@@ -31,16 +31,30 @@ RACES = {
                                                              'Many towns charge you more'],
                 desc='Born between two peoples and trusted by neither. Brutally strong, but most townsfolk '
                      'eye you warily, and elves despise you.'),
+    'gnome': dict(name='Gnome', plural='Gnomes', adj='gnomish', fg=(200, 170, 230),
+                  stats=dict(str=-3, dex=1, vit=-1, ene=4), xp=1.0,
+                  learn={'storm': 1.3, 'shadow': 1.25, 'frost': 1.2}, perks=['Spells cost 15% less mana',
+                                                                           'Storm, shadow and frost magic grow faster'],
+                  desc='Small, clever tinkerers and illusionists from the hill burrows. Curious about everything, '
+                       'feeble in a brawl. Most folk find them odd but harmless.'),
+    'goblin': dict(name='Goblin', plural='Goblins', adj='goblin', fg=(140, 200, 90),
+                   stats=dict(str=-1, dex=4, vit=-1, ene=-1), xp=1.05,
+                   learn={'daggers': 1.3, 'archery': 1.2}, perks=['Sees further in the dark', 'Fewer ambushes in the wild',
+                                                                   'Daggers and archery grow faster', 'Many towns charge you more'],
+                   desc='Wiry, sharp-eyed and quick, with sharper teeth. Goblins live at the edges of every land; '
+                        'nobody quite trusts them, and dwarves hate them outright.'),
 }
-RACE_ORDER = ['human', 'elf', 'dwarf', 'halfling', 'orc']
+RACE_ORDER = ['human', 'elf', 'dwarf', 'halfling', 'gnome', 'orc', 'goblin']
 
 # how the people of one race regard a player of another (added to starting reputation)
 RELATIONS = {
-    'human': {'human': 5, 'elf': 0, 'dwarf': 0, 'halfling': 5, 'orc': -15},
-    'elf': {'human': 0, 'elf': 15, 'dwarf': -10, 'halfling': 5, 'orc': -25},
-    'dwarf': {'human': 0, 'elf': -10, 'dwarf': 15, 'halfling': 5, 'orc': -20},
-    'halfling': {'human': 5, 'elf': 5, 'dwarf': 5, 'halfling': 15, 'orc': -15},
-    'orc': {'human': -10, 'elf': -20, 'dwarf': -15, 'halfling': -10, 'orc': 20},
+    'human': {'human': 5, 'elf': 0, 'dwarf': 0, 'halfling': 5, 'gnome': 0, 'orc': -15, 'goblin': -15},
+    'elf': {'human': 0, 'elf': 15, 'dwarf': -10, 'halfling': 5, 'gnome': 5, 'orc': -25, 'goblin': -20},
+    'dwarf': {'human': 0, 'elf': -10, 'dwarf': 15, 'halfling': 5, 'gnome': 10, 'orc': -20, 'goblin': -25},
+    'halfling': {'human': 5, 'elf': 5, 'dwarf': 5, 'halfling': 15, 'gnome': 5, 'orc': -15, 'goblin': -15},
+    'gnome': {'human': 0, 'elf': 5, 'dwarf': 10, 'halfling': 5, 'gnome': 15, 'orc': -10, 'goblin': -15},
+    'orc': {'human': -10, 'elf': -20, 'dwarf': -15, 'halfling': -10, 'gnome': -5, 'orc': 20, 'goblin': 10},
+    'goblin': {'human': -10, 'elf': -15, 'dwarf': -20, 'halfling': -5, 'gnome': -10, 'orc': 10, 'goblin': 20},
 }
 GENDERS = ['male', 'female', 'other']
 GENDER_NAME = {'male': 'Man', 'female': 'Woman', 'other': 'Undefined'}
@@ -96,6 +110,18 @@ _SYL = {
         female=(['Sha', 'Ur', 'Gra', 'Mog', 'Zul', 'Ag', 'Bash', 'Kra', 'Yaz', 'Ogh'],
                 ['ra', 'za', 'gha', 'nash', 'bra', 'eth', 'ka', 'ura', 'ma']),
         family=['Skullsplitter', 'Bonegnawer', 'Ironjaw', 'Bloodtusk', 'Ashborn', 'Halfblood', 'Stonefist', 'Grimscar']),
+    'gnome': dict(
+        male=(['Fizz', 'Bim', 'Nim', 'Wren', 'Orryn', 'Tink', 'Zook', 'Gim', 'Bod', 'Fen', 'Pell', 'Quill'],
+              ['wick', 'ble', 'bo', 'nock', 'dle', 'kin', 'pip', 'zel', 'stan', 'ger']),
+        female=(['Bree', 'Lini', 'Nissa', 'Tana', 'Ella', 'Zan', 'Roy', 'Mina', 'Orla', 'Pip'],
+                ['wyn', 'bell', 'ra', 'tink', 'ella', 'zie', 'pa', 'na', 'li', 'ette']),
+        family=['Cogwhistle', 'Sprocketeer', 'Fizzlebang', 'Tinkerton', 'Gearloose', 'Brassbottom', 'Copperpot', 'Sparkspindle']),
+    'goblin': dict(
+        male=(['Snik', 'Grib', 'Nog', 'Skab', 'Rikk', 'Zit', 'Gob', 'Krag', 'Wort', 'Mug', 'Skrit', 'Nub'],
+              ['nik', 'bit', 'gle', 'snot', 'tooth', 'rat', 'gak', 'iz', 'ub', 'ik']),
+        female=(['Ziz', 'Grit', 'Neek', 'Skag', 'Wiz', 'Rat', 'Mog', 'Snee', 'Tik', 'Yag'],
+                ['zy', 'ka', 'ra', 'git', 'na', 'ix', 'sha', 'ib', 'la']),
+        family=['Rustknife', 'Ratbiter', 'Muckfoot', 'Snaggletooth', 'Mudlark', 'Grubfinder', 'Knucklebones', 'Sootear']),
 }
 
 
@@ -105,18 +131,18 @@ def random_name(race='human', gender='other', family=True):
     a, b = t[g]
     first = random.choice(a) + random.choice(b)
     first = first[0].upper() + first[1:].lower()
-    if family and random.random() < .7:
+    if family:
         return f'{first} {random.choice(t["family"])}'
     return first
 
 
 def names_for(race, n):
-    """n distinct first names for townsfolk of a race (mixed genders)."""
+    """n distinct full names for townsfolk of a race (mixed genders)."""
     out = set()
     for _ in range(n * 6):
         if len(out) >= n:
             break
-        out.add(random_name(race, random.choice(['male', 'female']), family=False))
+        out.add(random_name(race, random.choice(['male', 'female'])))
     return list(out)
 
 

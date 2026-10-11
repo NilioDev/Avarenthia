@@ -570,15 +570,15 @@ def gen_settlement_map(game, s):
         return gen_settlement_map(game, s)
     titles = {
         'inn': ('Innkeeper {n}', '#e0a060'), 'market': ('{n} the Trader', '#f2c44a'), 'shop': ('{n} the Outfitter', '#d8d0b0'),
-        'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend', '#c08cf0'),
+        'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend Ashford', '#c08cf0'),
     }
     for role, (cx, cy) in labels.items():
         nm, col = titles[role]
         n = names.pop()
         if s.id == 0 and role == 'shop':
-            label = 'Dorien the Merchant'
+            label = 'Dorien Hale the Merchant'
         elif s.id == 0 and role == 'temple':
-            label = 'Sister Ilse'
+            label = 'Sister Ilse Marsh'
         else:
             label = nm.format(n=n)
         m.mons.append(make_npc(game, label, 'healer' if role == 'temple' else role, col, cx, cy, True))

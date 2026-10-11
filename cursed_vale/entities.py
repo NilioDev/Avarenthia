@@ -39,7 +39,8 @@ class Item:
     # ---------------------------------------------------------- presentation
     def display_name(self):
         if self.k == 'gold':
-            return f'{self.n} gold'
+            from .money import fmt
+            return fmt(self.n) + ' in coins'
         if self.k == 'potion':
             return (f'{self.n}x ' if self.n > 1 else '') + D.POTIONS[self.t]['name']
         if self.k == 'scroll':
@@ -154,18 +155,22 @@ class Item:
         return out
 
     def value(self):
+        """Price in copper."""
+        return round(self._value_silver() * 100)
+
+    def _value_silver(self):
         if self.k == 'potion':
             return D.POTIONS[self.t]['val']
         if self.k == 'scroll':
-            return 30
+            return 20
         if self.k == 'tome':
             from .skills import SKILLS, UNLOCKS
             return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
         if self.k == 'tool':
-            return 20
+            return 8
         if self.k == 'fish':
             from .lifeskills import FISH
-            return FISH[self.t][4] * 4
+            return FISH[self.t][4] * .5
         if self.k != 'gear':
             return 0
         v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
@@ -176,10 +181,10 @@ class Item:
         return v
 
     def id_cost(self):
-        return round((12 + self.ilvl * 3) * {'magic': 1, 'rare': 2, 'unique': 3}.get(self.rar, 1))
+        return round((8 + self.ilvl * 2) * {'magic': 1, 'rare': 2, 'unique': 3}.get(self.rar, 1)) * 100
 
     def uncurse_cost(self):
-        return 40 + self.ilvl * 6
+        return (30 + self.ilvl * 5) * 100
 
     @property
     def stackable(self):
@@ -250,7 +255,7 @@ class Player:
         self.buffs = []          # [key, value, turns, source]
         self.inv = []
         self.eq = {}
-        self.gold = 50
+        self.gold = 120            # money, in copper (see money.py)
         self.poison = None      # [turns, damage]
         self.burn = None
         self.cargo = {}         # trade good -> quantity

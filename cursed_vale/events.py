@@ -5,6 +5,7 @@ import random
 from . import data as D
 from .data import ROAD, TOWN, CITY, ENTR, WATER, MOUNTAIN
 from .worldgen import cheb
+from .money import fmt, purse
 
 POI_LOOK = {
     'ruin': ('Π', (176, 166, 150)),
@@ -143,8 +144,8 @@ def on_poi(game, poi):
                   'wagon': 'An empty, looted wagon.'}[poi.kind])
         return
     if poi.kind == 'shrine':
-        opts = [('Pray and leave an offering of 25 gold', 'offer'), ('Pray without an offering', 'pray'), ('Walk on', 'leave')]
-        if game.player.gold < 25:
+        opts = [('Pray and leave an offering of 10 silver', 'offer'), ('Pray without an offering', 'pray'), ('Walk on', 'leave')]
+        if game.player.gold < 1000:
             opts = opts[1:]
         ask(game, 'shrine', poi.name, 'An old shrine, its stone worn smooth by the hands of pilgrims. Candles still burn here.', opts, poi=poi.id)
     elif poi.kind == 'camp':
@@ -168,7 +169,7 @@ def r_shrine(game, choice, ctx):
     if choice == 'leave':
         return
     if choice == 'offer':
-        p.gold -= 25
+        p.gold -= 1000
     poi.ready_day = game.day + 5
     if choice == 'pray' and random.random() < .2:
         p.buffs = [b for b in p.buffs if b[0] != 'dmg'] + [['dmg', -15, 300, 'Curse of Frailty']]
@@ -202,7 +203,7 @@ def chest(game, lvl, n):
     from .entities import Item, random_gear
     m = game.map
     cx, cy = m.entry
-    it = Item(game.new_id(), 'gold', 'gold', random.randint(lvl * 12, lvl * 30))
+    it = Item(game.new_id(), 'gold', 'gold', purse(lvl, 6))
     game.spill(m, cx, cy - 2, it)
     for _ in range(n):
         g = random_gear(game, lvl, 2)
@@ -240,9 +241,9 @@ def loot_or_ambush(game, x, y):
     lvl = w.danger_at(x, y)
     p = game.player
     if random.random() < .6:
-        gold = random.randint(6, 18) * lvl
+        gold = purse(lvl, 1.5)
         p.gold += gold
-        found = [f'{gold} gold']
+        found = [fmt(gold)]
         if random.random() < .5:
             game.add_to_inv(Item(game.new_id(), 'potion', random.choice(['hp', 'hp', 'mp'])))
             found.append('a potion')
@@ -288,9 +289,9 @@ def r_hurt(game, choice, ctx):
         game.remove_one(it)
         change_rep(game, f, 3)
         if random.random() < .5:
-            g = random.randint(20, 70)
+            g = purse(3, 2)
             p.gold += g
-            game.msg(f'"Bless you." He presses {g} gold into your hand.', 'good')
+            game.msg(f'"Bless you." He presses {fmt(g)} into your hand.', 'good')
         else:
             hidden = [poi for poi in game.world.pois if not poi.found and poi.kind == 'ruin']
             if hidden:
@@ -301,10 +302,11 @@ def r_hurt(game, choice, ctx):
                 game.msg('"Bless you, stranger." He limps off toward the road.', 'good')
         game.gain_xp(15)
     elif choice == 'rob':
-        g = random.randint(10, 40)
+        g = purse(3, 1.5)
         p.gold += g
         change_rep(game, f, -6)
-        game.msg(f'You take {g} gold from the dying man. Word of this will spread.', 'bad')
+        game.msg(f'You take {fmt(g)} from the dying man. Word of this will spread.', 'bad')
+        game.crime(12, 'robbing a wounded traveller', witnessed=.5)
 
 
 def e_peddler(game):
@@ -324,7 +326,7 @@ def e_peddler(game):
         price = round(it.value() * 1.2)
         what = it.name
         lines = ' · '.join(it.lines()[:3])
-    opts = [(f'Buy it for {price} gold', 'buy')] if game.player.gold >= price else []
+    opts = [(f'Buy it for {fmt(price)}', 'buy')] if game.player.gold >= price else []
     opts.append(('No thanks', 'leave'))
     ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "Something special for you, '
         f'friend: {what}." ({lines})', opts, item=it, price=price)
@@ -418,11 +420,11 @@ def r_cart(game, choice, ctx):
 
 def e_toll(game):
     p = game.player
-    fee = 15 * game.world.danger_at(p.x, p.y)
-    opts = [(f'Pay {fee} gold', 'pay')] if p.gold >= fee else []
+    fee = 300 * game.world.danger_at(p.x, p.y)
+    opts = [(f'Pay {fmt(fee)}', 'pay')] if p.gold >= fee else []
     opts += [('Draw your weapon', 'fight'), ('Try to run', 'run')]
     bh = D.FACTIONS['blackhand']['name']
-    ask(game, 'toll', 'A toll on the road', f'Armed men step onto the road. "Toll for {bh}. {fee} gold, or blood."', opts, fee=fee)
+    ask(game, 'toll', 'A toll on the road', f'Armed men step onto the road. "Toll for {bh}. {fmt(fee)}, or blood."', opts, fee=fee)
 
 
 def r_toll(game, choice, ctx):
@@ -457,7 +459,9 @@ def spawn_traveller(game):
     if not path or len(path) < 15:
         return
     kind, fg = random.choice(TRAVELLER_KINDS)
-    name = random.choice(CLIENT_NAMES)
+    from .races import random_name, RACE_ORDER
+    race = a.race if random.random() < .6 else random.choice(RACE_ORDER)
+    name = random_name(race, random.choice(['male', 'female']))
     i = random.randint(0, len(path) // 2)
     x, y = path[i]
     from .wanderers import wanderer_at
@@ -466,6 +470,7 @@ def spawn_traveller(game):
     wd = Wanderer(game.new_id(), 'traveler', x, y)
     wd.ch, wd.fg = '@', fg
     wd.name = f'{name} the {kind}'
+    wd.race = race
     wd.origin, wd.dest = a.id, b.id
     wd.path = list(path)
     wd.path_i = i + 1 if i else 0
@@ -483,14 +488,17 @@ def make_personal_offer(game, wd):
         others = [s for s in w.settlements if s.id not in (wd.dest, wd.origin)]
         rs = random.choice(others)
         who = random.choice(RECIPIENTS)
-        data.update(recipient=f"{random.choice(CLIENT_NAMES)}, {wd.name.split()[0]}'s {who}", rtown=rs.id,
-                    reward=random.randint(40, 90))
+        from .races import random_name
+        fam = wd.name.split(' the ')[0].split()[-1]
+        rel = random_name(getattr(wd, 'race', 'human'), 'other').split()[0]
+        data.update(recipient=f"{rel} {fam}, {wd.name.split()[0]}'s {who}", rtown=rs.id,
+                    reward=random.randint(40, 90) * 100)
     elif sub == 'gather':
         g = random.choice(['herbs', 'furs', 'salt', 'cloth', 'fish', 'ale', 'medicine'])
         q = max(3, min(10, round(random.uniform(60, 140) / D.GOODS[g]['base'])))
-        data.update(good=g, qty=q, reward=round(D.GOODS[g]['base'] * q * 1.8 + 30))
+        data.update(good=g, qty=q, reward=round(D.GOODS[g]['base'] * q * 1.8 + 30) * 100)
     elif sub == 'hunt':
-        data.update(reward=random.randint(90, 160))
+        data.update(reward=random.randint(90, 160) * 100)
     else:
         ruins = [p for p in w.pois if p.kind == 'ruin' and w.dungeons[p.did].relic is None]
         if not ruins:
@@ -498,7 +506,7 @@ def make_personal_offer(game, wd):
         poi = min(ruins, key=lambda q: cheb(q.x, q.y, wd.x, wd.y))
         data.update(ruin=poi.id, dungeon=poi.did, relic=random.choice(['a silver locket', 'my father\'s sword',
                                                                        'a family bible', 'a carved wooden horse']),
-                    reward=random.randint(120, 220))
+                    reward=random.randint(120, 220) * 100)
     return data
 
 
@@ -506,6 +514,7 @@ def talk_traveller(game, wd):
     opts = [('Ask for news', 'news')]
     if getattr(wd, 'offer', None):
         opts.append(('Ask if they need help', 'help'))
+    opts.append(('Rob them', 'rob'))
     opts.append(('Farewell', 'leave'))
     wd.wait = 4
     dest = game.world.settlements[wd.dest].name
@@ -521,7 +530,10 @@ def r_traveller(game, choice, ctx):
     wd = _wd(game, ctx)
     if not wd:
         return
-    if choice == 'news':
+    if choice == 'rob':
+        from .crime import rob_traveller
+        rob_traveller(game, wd)
+    elif choice == 'news':
         game.say_text(wd.name, game.rumor())
     elif choice == 'help' and wd.offer:
         o = wd.offer
@@ -530,17 +542,17 @@ def r_traveller(game, choice, ctx):
         if o['sub'] == 'letter':
             rt = game.world.settlements[o['rtown']].name
             text = (f'"Would you carry a letter for me? It must reach {o["recipient"]} at the inn in {rt}. '
-                    f'They will pay you {o["reward"]} gold when it arrives."')
+                    f'They will pay you {fmt(o["reward"])} when it arrives."')
         elif o['sub'] == 'gather':
             text = (f'"I need {o["qty"]} {D.GOODS[o["good"]]["name"].lower()} and I am short on time. Bring them to me at the inn '
-                    f'in {town} and I will pay {o["reward"]} gold."')
+                    f'in {town} and I will pay {fmt(o["reward"])}."')
         elif o['sub'] == 'hunt':
             text = (f'"A beast has been stalking me since the hills, a big one. Kill it and find me at the inn in {town}. '
-                    f'{o["reward"]} gold is yours."')
+                    f'{fmt(o["reward"])} is yours."')
         else:
             poi = game.world.pois[o['ruin']]
             text = (f'"Robbers took {o["relic"]} and fled into {poi.name}. Bring it back to me at the inn in {town}, '
-                    f'and {o["reward"]} gold is yours."')
+                    f'and {fmt(o["reward"])} is yours."')
         ask(game, 'traveller_job', wd.name, text + f' ({first} will wait at the inn in {town}.)',
             [('Agree to help', 'accept'), ('Not now', 'leave')], wd=wd.id)
 
@@ -554,6 +566,31 @@ def r_traveller_job(game, choice, ctx):
         wd.offer = None
 
 
-RESOLVERS = {'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
+def talk_caravan(game, wd):
+    g, q = wd.goods
+    dest = game.world.settlements[wd.dest].name
+    ask(game, 'caravan', 'A merchant caravan', f'A string of mules and wagons with {q} {D.GOODS[g]["name"].lower()}, bound for {dest}. '
+        f'A merchant rides up front; hired swords walk beside the wagons and watch you closely.',
+        [('Ask the merchant for news', 'news'), ('Rob the caravan', 'rob'), ('Let them pass', 'leave')], wd=wd.id)
+
+
+def r_caravan(game, choice, ctx):
+    wd = _wd(game, ctx)
+    if not wd:
+        return
+    if choice == 'news':
+        game.say_text('The merchant', game.rumor())
+    elif choice == 'rob':
+        from .crime import rob_caravan
+        rob_caravan(game, wd)
+
+
+def r_gate(game, choice, ctx):
+    from .crime import r_gate as rg
+    rg(game, choice, ctx)
+
+
+RESOLVERS = {'caravan': r_caravan, 'gate': r_gate,
+             'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
              'peddler': r_peddler, 'pilgrims': r_pilgrims, 'tracks': r_tracks, 'lights': r_lights, 'storm': r_storm,
              'cart': r_cart, 'toll': r_toll, 'traveller': r_traveller, 'traveller_job': r_traveller_job}

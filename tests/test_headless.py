@@ -54,7 +54,7 @@ def smoke(games=9, steps=1200):
         g = app.game
         g.player.vit = 400
         g.player.lvl = 8
-        g.player.gold = 5000
+        g.player.gold = 500000
         from cursed_vale import skills as SK
         g.player.known = [k.id for k in SK.SKILL_LIST]
         g.player.bar = random.sample(g.player.known, 6)
@@ -118,7 +118,7 @@ def trade_and_jobs():
     g = E.Game('Trader', False, 4242)
     g.player.vit = 300
     s0 = g.world.settlements[0]
-    g.player.gold = 400
+    g.player.gold = 40000
     # buy cheap grain at home, haul it to the town that wants it most
     ECO.buy(g, s0, 'grain', 25)
     paid = g.player.cost_basis['grain']
@@ -173,7 +173,7 @@ def trade_and_jobs():
                 g.enter_town(mi.giver)
             assert mi.state == 'done', (mi.kind, mi.state)
             kinds_done.add(mi.kind)
-            print(f'  job ok: {mi.kind:8} {mi.title} ({mi.reward}g)')
+            print(f'  job ok: {mi.kind:8} {mi.title} ({mi.reward}c)')
     # let the world run for a month
     to_over(g, 0)
     for _ in range(30):
@@ -270,7 +270,7 @@ def wilds():
     p = g.player
     p.vit, p.str, p.lvl = 300, 90, 10
     p.life = g.stats()['max_life']
-    p.gold = 2000
+    p.gold = 200000
     w = g.world
     print('places:', dict(Counter(q.kind for q in w.pois)))
     assert all(q.kind != 'ruin' or q.did in w.dungeons for q in w.pois)
@@ -369,7 +369,7 @@ def wilds():
             app.render()
         assert mi.state == 'done', (sub, mi.state)
         done.add(sub)
-        print(f'  traveller job ok: {sub:6} {mi.title} ({mi.reward}g)')
+        print(f'  traveller job ok: {sub:6} {mi.title} ({mi.reward}c)')
     assert len(done) == 4, done
     # bestiary knowledge
     app.screens = [ui.GameScreen(app)]
@@ -424,9 +424,13 @@ def items_skills_curse():
     assert ring.curse_known and g.stats()['max_life'] <= life0
     g.unequip('ring')
     assert g.is_equipped(ring), 'cursed items stay on'
-    p.gold = 5000
+    p.gold = 500000
     g.enter_town(0)
     temple = next((o for o in g.map.mons if o.role == 'healer'), None)
+    g.talk(temple)
+    app.after_action()
+    assert isinstance(app.top, ui.DialogScreen), 'the priestess first tells you how you got here'
+    app.key('esc')
     g.talk(temple)
     app.after_action()
     assert isinstance(app.top, ui.TempleScreen), app.top
@@ -440,14 +444,16 @@ def items_skills_curse():
     # Morvenna grows with you
     tainted = lambda: sum(1 for v in g.world.taint if v)
     print('evils:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted())
-    p.lvl = 20
+    p.lvl = 30
+    g.request = None
     EVL.update(g)
     to_over(g, 0)
     for _ in range(40):
         EVL.daily(g)
     hunts = [w for w in g.world.wanderers if w.kind == 'hunt']
     print('at level 20:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted(), 'hunters', len(hunts))
-    assert hunts and tainted() > 300
+    assert tainted() > 300 and any(e.known for e in g.world.evils)
+    assert hunts, 'strong, known evils send hunters'
     h = hunts[0]
     d0 = cheb(h.x, h.y, p.x, p.y)
     for _ in range(30):
@@ -563,8 +569,76 @@ def world_and_people():
     app.render()
 
 
+def crime_and_coin():
+    from cursed_vale import crime as CR, events as EV
+    from cursed_vale.money import fmt
+    random.seed(17)
+    assert fmt(0) == '0c' and fmt(12345) == '1g 23s 45c' and fmt(205) == '2s 5c', fmt(12345)
+    app = new_app('soft', 2024)
+    g = app.game
+    p = g.player
+    p.vit, p.str, p.lvl = 300, 90, 10
+    p.life = g.stats()['max_life']
+    # coins are rare: kill a pack of wolves, no coins; bandits sometimes
+    g.enter_dungeon('rat', 1, 'up')
+    from cursed_vale.entities import make_monster
+    g.map.items = []
+    for k in ['wolf'] * 30:
+        o = make_monster(g, k, p.x, p.y, 3)
+        g.map.mons.append(o)
+        g.kill(o)
+    assert not any(i.k == 'gold' for i in g.map.items), 'beasts carry no coin'
+    # rob a caravan near home
+    to_over(g, 0)
+    WA.spawn_caravan(g, g.world.settlements[0])
+    car = next((w for w in g.world.wanderers if w.kind == 'caravan' and w.origin == 0), None)
+    if car is None:
+        s0 = g.world.settlements[0]
+        car = WA.Wanderer(g.new_id(), 'caravan', s0.x + 1, s0.y)
+        car.origin, car.dest, car.goods, car.path = 0, 1, ('grain', 20), []
+        g.world.wanderers.append(car)
+    p.x, p.y = car.x + 1, car.y
+    app.screens = [ui.GameScreen(app)]
+    g.try_move(-1, 0)
+    choose(app, 'rob')
+    assert g.cur == 'wild'
+    gold0 = p.gold
+    for o in [o for o in g.map.mons if not o.is_npc]:
+        g.kill(o)
+    for it in list(g.map.items):
+        p.x, p.y = it.x, it.y
+        g.auto_pickup()
+    g.leave_to_over()
+    print(f'robbed a caravan: {fmt(p.gold - gold0)} and cargo {p.cargo}')
+    assert p.gold > gold0
+    s0 = g.world.settlements[0]
+    print('standing in', s0.name, s0.rep, CR.standing_word(s0.rep))
+    # rob more until wanted
+    while s0.rep > CR.WANTED_AT:
+        CR.commit(g, 15, 'robbery on the road', 1.0, (s0.x, s0.y))
+    assert s0 in CR.wanted_in(g)
+    for _ in range(20):
+        CR.daily(g)
+    assert any(w.kind == 'lawmen' for w in g.world.wanderers)
+    # the guards stop you at the gate
+    p.gold = 10 ** 6
+    app.screens = [ui.GameScreen(app)]
+    g.enter_town(0)
+    choose(app, 'pay')
+    assert s0.rep > CR.WANTED_AT
+    for S in (ui.JournalScreen,):
+        app.screens = [ui.GameScreen(app), S(app)]
+        app.render()
+    g.enter_town(1)
+    board = ui.BoardScreen(app, 1)
+    app.screens = [ui.GameScreen(app), board]
+    app.render()
+    print('crime ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    crime_and_coin()
     world_and_people()
     items_skills_curse()
     smoke()
