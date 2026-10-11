@@ -14,9 +14,10 @@ except Exception:  # pragma: no cover - depends on the environment
     HAVE_TCOD = False
 
 
-def compute(m, px, py, radius):
-    """Return a bytearray (index y*w+x) of visible cells and mark them as seen."""
-    out = cells(m, px, py, radius)
+def compute(m, px, py, radius, dense=None, near=2):
+    """Return a bytearray (index y*w+x) of visible cells and mark them as seen.
+    dense: tiles you can see into but not through (more than `near` cells away), like a forest."""
+    out = cells(m, px, py, radius, dense, near)
     seen = m.seen
     for i, v in enumerate(out):
         if v:
@@ -24,30 +25,38 @@ def compute(m, px, py, radius):
     return out
 
 
-def cells(m, px, py, radius):
+def cells(m, px, py, radius, dense=None, near=2):
     """Visible cells from a point, without marking anything as seen (used for lights)."""
     if HAVE_TCOD:
         tiles = np.asarray(m.t, dtype=np.int16).reshape(m.h, m.w)
         transparency = ~_OPAQUE[tiles]
+        if dense:
+            yy, xx = np.ogrid[:m.h, :m.w]
+            far = np.maximum(abs(yy - py), abs(xx - px)) > near
+            transparency &= ~(np.isin(tiles, list(dense)) & far)
         vis = tcod.map.compute_fov(transparency, (py, px), radius=radius, light_walls=True, algorithm=_ALGO)
         flat = vis.ravel()
         out = bytearray(flat.astype(np.uint8).tobytes())
     else:
-        out = _shadowcast(m, px, py, radius)
+        out = _shadowcast(m, px, py, radius, dense, near)
     return out
 
 
 _MULT = [[1, 0, 0, -1, -1, 0, 0, 1], [0, 1, -1, 0, 0, -1, 1, 0], [0, 1, 1, 0, 0, -1, -1, 0], [1, 0, 0, 1, -1, 0, 0, -1]]
 
 
-def _shadowcast(m, px, py, r):
+def _shadowcast(m, px, py, r, dense=None, near=2):
     w, h = m.w, m.h
     vis = bytearray(w * h)
     tiles = m.t
     opq = [t.opaque for t in D.TILES]
+    dense = dense or ()
 
     def opaque(x, y):
-        return not (0 <= x < w and 0 <= y < h) or opq[tiles[y * w + x]]
+        if not (0 <= x < w and 0 <= y < h):
+            return True
+        t = tiles[y * w + x]
+        return opq[t] or (t in dense and max(abs(x - px), abs(y - py)) > near)
 
     def light(x, y):
         if 0 <= x < w and 0 <= y < h:

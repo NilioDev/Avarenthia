@@ -112,6 +112,8 @@ begint op Stonesday, de 3e van Seedwake, 1172 AR.
 - Verborgen plekken om te ontdekken: ruïnes (`Π`, kleine kerkers), heiligdommen (`†`, zegeningen), bandietenkampen (`∆`),
   staande stenen (`Ψ`) en verlaten wagens (`¤`).
 - Onderweg gebeurt van alles: gewonde reizigers, marskramers, tolwegen van de Zwarte Hand, stormen, dwaallichtjes.
+- Mist van oorlog: in het open land zie je zo'n 8 vakjes ver, vanaf heuvels verder, in bossen en moerassen veel minder,
+  en 's nachts de helft. Bossen ontnemen je het zicht. Land dat je eerder zag, zie je grijs en in de mist: wat daar nu gebeurt zie je niet.
 - Wegwijzers en praatjes vertellen je wáár een plaats ligt; de weg en het land ernaartoe ontdek je pas door er langs te komen.
 - Reizigers (`☺` op de weg) kun je aanspreken door ertegenaan te lopen. Sommigen hebben een klus voor je
   (brief bezorgen, goederen halen, een beest doden, iets terughalen uit een ruïne). Daarna wachten ze op je in de herberg

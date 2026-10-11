@@ -252,100 +252,6 @@ def _hash(x, y, s=0):
     return LOOK._h(x, y, s)
 
 
-def _ridge(x, base, amp, f1, f2, ph):
-    import math
-    return base - amp * (.6 * math.sin(x * f1 + ph) + .4 * math.sin(x * f2 + ph * 2.3)) - abs(math.sin(x * f1 * .37 + ph)) * amp * .6
-
-
-def night_scene(w, h):
-    """A moonlit valley: stars, a moon, two mountain ranges, a castle on a crag, mist and a dark forest.
-    Returns a list of (ch, fg, bg) per cell."""
-    import math
-    cells = []
-    sky_top, sky_low = (4, 4, 12), (40, 30, 52)
-    k2 = h / 30                            # rows per old 8x16 row: the scene was laid out for 30 rows
-    hz = round(h - 9 * k2)
-    far = [_ridge(x, hz - 3 * k2, 5.5 * k2, .07, .19, 1.3) for x in range(w)]
-    near = [_ridge(x, hz + 3 * k2, 2.2 * k2, .05, .13, 4.1) for x in range(w)]
-    cx0 = 12                               # the crag the castle sits on
-    for x in range(w):
-        d = abs(x - (cx0 + 8))
-        if d < 18:
-            near[x] = min(near[x], hz - k2 + (d / 18) ** 2 * 5 * k2)
-    forest = [round(h - 4 * k2 - (k2 if _hash(x, 0, 5) % 3 == 0 else 0) - (k2 if _hash(x // 2, 1, 5) % 4 == 0 else 0))
-              for x in range(w)]
-    mx, my, mr = w - 20, round(5 * k2), 2.4 * k2
-    top = round(min(near[cx0:cx0 + 17]))
-    castle = set()
-    merlons = set()
-    for rx, ht in [(0, 7), (1, 7), (2, 7), (3, 4), (4, 4), (5, 4), (6, 4), (7, 9), (8, 10), (9, 10), (10, 9), (11, 4),
-                   (12, 4), (13, 4), (14, 6), (15, 6), (16, 6)]:
-        ht = round(ht * k2)
-        for k in range(ht):
-            castle.add((cx0 + rx, top - k))
-        if rx in (0, 2, 3, 5, 7, 10, 11, 13, 14, 16):
-            merlons.add((cx0 + rx, top - ht))
-    windows = {(cx0 + 8, top - round(7 * k2)), (cx0 + 9, top - round(5 * k2)), (cx0 + 1, top - round(4 * k2)),
-               (cx0 + 15, top - round(3 * k2)), (cx0 + 5, top - round(2 * k2))}
-    flag = (cx0 + 8, top - round(10 * k2) - 1)
-    stone = (14, 14, 20)
-    for y in range(h):
-        t = min(1, y / hz)
-        sky = LOOK._mix(sky_top, sky_low, t ** 1.6)
-        for x in range(w):
-            r = _hash(x, y, 9)
-            dx, dy = (x - mx) / (2 / k2), y - my
-            dist = math.hypot(dx, dy)
-            bg = LOOK._mix(sky, (90, 90, 120), max(0, 1 - dist / (9 * k2)) ** 2 * .45)     # moon glow
-            ch, fg = ' ', bg
-            if y < hz - 1 and r % 19 == 0 and dist > mr + 3 * k2:
-                b = 70 + r % 170
-                ch = '·' if r % 5 else '.' if r % 3 else '*' if r % 7 == 0 else '+'
-                fg = (b, b, min(255, b + 30))
-            if dist < mr:
-                shade = .78 + .22 * (1 - (dx + 1) / (2 * mr))
-                bg = LOOK._mix((150, 148, 130), (236, 232, 206), max(0, min(1, shade)))
-                if _hash(x, y, 3) % 3 == 0:
-                    bg = LOOK.scale(bg, .88)
-            if y >= far[x]:                     # far mountains
-                d = y - far[x]
-                ch, fg, bg = ' ', bg, LOOK._mix((58, 54, 88), (30, 28, 48), min(1, d / (7 * k2)))
-                if d < 1:
-                    ch, fg = '▄', (58, 54, 88)
-                    bg = sky
-                    if far[x] < hz - 6 * k2:
-                        ch, fg, bg = '▄', (150, 152, 182), sky       # snow
-                elif d < 1 + k2 and far[x] < hz - 6 * k2:
-                    bg = (110, 110, 140)
-            if abs(y - hz) <= 2 * k2:          # mist in the valley
-                k = (1 - abs(y - hz) / (3 * k2)) * (.35 + (_hash(x // 3, y, 13) % 100) / 400)
-                bg = LOOK._mix(bg, (100, 100, 122), k)
-                if ch not in ' ▄':
-                    ch = ' '
-                fg = LOOK._mix(fg, (100, 100, 122), k)
-            if y >= near[x]:                    # near hills and the crag
-                d = y - near[x]
-                if d < 1:
-                    ch, fg = '▄', (18, 20, 24)
-                else:
-                    ch, fg, bg = ' ', bg, (18, 20, 24)
-            if (x, y) in castle:
-                ch, fg, bg = ' ', stone, stone
-            if (x, y) in merlons:
-                ch, fg = '▄', stone
-            if (x, y) == flag:
-                ch, fg = '¡', (170, 40, 40)
-            if (x, y) in windows:
-                ch, fg, bg = '■', (250, 186, 80), stone
-            if y >= forest[x]:                  # the forest
-                d = y - forest[x]
-                ch = '♠' if _hash(x, y, 21) % 3 else '♣'
-                fg = LOOK._mix((30, 70, 40), (12, 30, 18), min(1, d / 3))
-                bg = (6, 10, 8)
-            cells.append((ch, fg, bg))
-    return cells
-
-
 class MainMenu(Screen):
     def __init__(self, app):
         super().__init__(app)
@@ -354,7 +260,8 @@ class MainMenu(Screen):
 
     def render(self, cv):
         if self._bg is None or len(self._bg) != cv.w * cv.h:
-            self._bg = night_scene(cv.w, cv.h)
+            from .titleart import paint
+            self._bg = paint(cv.w, cv.h)
         t = time.monotonic()
         for i, (ch, fg, bg) in enumerate(self._bg):
             x, y = i % cv.w, i // cv.w
@@ -363,7 +270,7 @@ class MainMenu(Screen):
             cv.put(x, y, ch, fg, bg)
         rows = title_rows()
         x0 = (cv.w - len(rows[0])) // 2
-        y0 = 7
+        y0 = 4
         tops = [mix((255, 214, 120), (140, 36, 34), i / max(1, len(rows) - 1)) for i in range(len(rows))]
         for k, ln in enumerate(rows):
             for j, c in enumerate(ln):
@@ -382,15 +289,15 @@ class MainMenu(Screen):
             p = self.saved.player
             opts.append(('C', f"Continue as {p.name}, level {p.lvl}", GOLD))
         opts += [('N', 'New game', FG), ('Esc', 'Quit', DIM)]
-        bw = max(len(o[1]) + len(o[0]) + 6 for o in opts) + 4
-        bx, by = (cv.w - bw) // 2, y0 + len(rows) + 6
-        bh = len(opts) * 2 + 1
-        for yy in range(by, by + bh):
+        # the menu sits on the dark rock of the cliff, bottom left
+        bw = max(len(o[1]) + len(o[0]) + 3 for o in opts) + 6
+        bx, by = 4, cv.h - len(opts) * 2 - 5
+        for yy in range(by, by + len(opts) * 2 + 1):
             for xx in range(bx, bx + bw):
-                cv.put_bg(xx, yy, (10, 8, 14))
+                cv.put(xx, yy, ' ', None, (14, 12, 18))
         for k, (key, lab, col) in enumerate(opts):
-            s = f'[{key}] {lab}'
-            cv.text((cv.w - len(s)) // 2, by + 1 + k * 2, s, col)
+            cv.text(bx + 3, by + 1 + k * 2, f'[{key}]', GOLD, (14, 12, 18))
+            cv.text(bx + 3 + len(key) + 3, by + 1 + k * 2, lab, col if key != 'C' else FG, (14, 12, 18))
 
     def on_key(self, tok, shift):
         if tok == 'c' and self.saved:
@@ -567,6 +474,7 @@ class GameScreen(Screen):
         night = TW.is_night(g)
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
+        sight = g.over_sight() if m.kind == 'over' else 0
         taint = getattr(g.world, 'taint', None) if m.kind == 'over' else None
         for vy in range(MAP_H):
             my = vy + oy - sy
@@ -617,8 +525,21 @@ class GameScreen(Screen):
                                 fg, bg = (255, 255, 255), (120, 30, 20)
                     if mx == p.x and my == p.y:
                         ch, fg = '@', ((184, 240, 138) if p.poison else (255, 246, 220))
+                    if m.kind == 'over':     # the edge of sight fades out softly
+                        d = max(abs(mx - p.x), abs(my - p.y))
+                        k = 1 - .45 * max(0.0, min(1.0, (d - (sight - 2)) / 2))
+                        if k < 1:
+                            fg, bg = scale(fg, k), scale(bg, .55 + .45 * k)
+                elif not lighting and m.kind == 'over':
+                    # fog of war: land you remember, but cannot see now; grey and veiled
+                    gr = (fg[0] + fg[1] + fg[2]) // 3
+                    fg = mix(scale(mix(fg, (gr, gr, gr), .6), .42), (52, 58, 74), .3)
+                    gb = (bg[0] + bg[1] + bg[2]) // 3
+                    bg = mix(scale(mix(bg, (gb, gb, gb), .6), .45), (10, 12, 18), .5)
+                    if LOOK._h(mx, my, 31) % 9 == 0:
+                        bg = mix(bg, (26, 28, 36), .5)       # wisps of mist
                 elif not lighting:
-                    fg = scale(fg, .5 if m.kind == 'over' else .3)
+                    fg = scale(fg, .3)
                     bg = scale(bg, .55)
                 if night and m.kind in ('over', 'town') and not lighting:
                     fg = mix(fg, (40, 50, 110), .35)

@@ -361,12 +361,28 @@ class Game:
                 r += 2
         if m.kind == 'dungeon' and p.race == 'goblin':
             r += 2
-        self.vis = fov.compute(m, p.x, p.y, r)
+        if m.kind == 'over':
+            self.vis = fov.compute(m, p.x, p.y, self.over_sight(), dense={D.FOREST})
+        else:
+            self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
                 if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y):
                     self.bestiary[o.k] = [self.day, 0]
                     self.msg(f"New bestiary entry: {D.MONSTERS[o.k]['name']}. (V)", 'info')
+
+    def over_sight(self):
+        """How far you see in the open land: far from the hills, little in the woods or the marsh, less at night."""
+        p, m = self.player, self.map
+        t = m.tile(p.x, p.y)
+        r = {D.HILLS: 11, D.FOREST: 4, D.SWAMP: 5}.get(t, 8)
+        if TW.is_night(self):
+            r = max(2, r // 2)
+        if p.race in ('elf', 'goblin') and TW.is_night(self):
+            r += 2
+        if p.race == 'elf' and t == D.FOREST:
+            r += 2
+        return r
 
     def say(self, npc, line):
         self.msg(f'{npc.name}: "{line}"', 'talk')
