@@ -400,7 +400,7 @@ def items_skills_curse():
     g = app.game
     p = g.player
     assert p.known == [] and not any(p.bar), (p.known, p.bar)
-    assert sorted(i.base for i in p.inv if i.k == 'gear') == ['quilted', 'shortbow', 'shortsword']
+    assert sorted(i.base for i in p.inv if i.k == 'gear') == ['quilted']
     # tomes
     t0 = make_tome(g, 0)
     g.add_to_inv(t0)
@@ -636,8 +636,96 @@ def crime_and_coin():
     print('crime ok')
 
 
+def start_and_survival():
+    from cursed_vale import hunger as HU, crime as CR
+    random.seed(29)
+    app = new_app('soft', 4711)
+    g = app.game
+    p = g.player
+    assert g.eq_item('weapon') is None, 'you start with nothing in your hands'
+    priest = next(o for o in g.map.mons if o.role == 'healer')
+    g.talk(priest)
+    app.after_action()
+    app.key('esc')
+    assert g.flags.get('quest_den') and g.story()
+    # fight the den with bare fists
+    p.vit, p.lvl = 200, 6
+    p.life = g.stats()['max_life']
+    d = g.world.dungeons['den']
+    g.enter_dungeon('den', d.depth, 'up')
+    boss = next(o for o in g.map.mons if o.k == 'snagtooth')
+    for _ in range(400):
+        if boss not in g.map.mons:
+            break
+        p.x, p.y = boss.x - 1 if g.map.tile(boss.x - 1, boss.y) else boss.x + 1, boss.y
+        p.life = g.stats()['max_life']
+        g.melee(boss)
+    assert g.flags.get('den'), 'Snagtooth should fall'
+    print('unarmed rank', p.disc['unarmed'][0])
+    for it in [i for i in g.map.items if i.name.startswith('Your') or i.k == 'tome']:
+        p.x, p.y = it.x, it.y
+        g.auto_pickup()
+    sword = next(i for i in p.inv if i.name == 'Your Short Sword')
+    shield = next(i for i in p.inv if i.slot == 'shield')
+    g.equip(sword)
+    g.equip(shield)
+    assert g.eq_item('shield') is shield
+    tome = next(i for i in p.inv if i.k == 'tome')
+    assert g.read_tome(tome) == 1
+    # hunger
+    p.food = 130
+    g.end_turn(20, True)
+    assert HU.state(p.food) == 'Weak'
+    assert g.eat_best() == 1 and p.food > 300
+    # a dwarven hold, its thane and the deep roads below
+    holds = [s for s in g.world.settlements if s.kind == 'deephold']
+    assert holds
+    h = holds[0]
+    to_over(g, h.id)
+    g.enter_town(h.id)
+    assert g.map.underground
+    thane = next(o for o in g.map.mons if o.role == 'thane')
+    g.talk(thane)
+    app.after_action()
+    app.render()
+    app.key('esc')
+    i = g.map.t.index(D.DOWN)
+    p.x, p.y = i % g.map.w, i // g.map.w
+    g.use_stairs('down')
+    assert g.map.kind == 'dungeon'
+    j = g.map.t.index(D.UP)
+    p.x, p.y = j % g.map.w, j // g.map.w
+    g.use_stairs('up')
+    assert g.here is h, 'back up into the hold'
+    # look around
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    app.key('o')
+    for k in ('right', 'tab', 'down', 'L', 'tab'):
+        app.key(k)
+        app.render()
+    app.key('esc')
+    to_over(g, 0)
+    app.render()
+    app.key(';')
+    for k in ('up', 'left', 'tab'):
+        app.key(k)
+        app.render()
+    app.key('esc')
+    # the law, ever harder
+    s0 = g.world.settlements[1]
+    seen = []
+    for rep in (-25, -40, -55, -70, -90):
+        s0.rep = rep
+        wd = CR.spawn_lawmen(g, s0)
+        seen.append((CR.heat(s0), wd.name if wd else None))
+    print('the law:', seen)
+    app.render()
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    start_and_survival()
     crime_and_coin()
     world_and_people()
     items_skills_curse()

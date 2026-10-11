@@ -8,6 +8,7 @@ BAR_SIZE = 6
 UNLOCKS = (0, 8, 20, 35, 55)
 
 DISCIPLINES = {
+    'unarmed': dict(name='Unarmed', kind='weapon', weapon='empty hands'),
     'swords': dict(name='Swordsmanship', kind='weapon', weapon='a sword'),
     'axes': dict(name='Axes and Maces', kind='weapon', weapon='an axe, mace, club or staff'),
     'daggers': dict(name='Daggers', kind='weapon', weapon='a dagger'),
@@ -19,7 +20,7 @@ DISCIPLINES = {
     'shadow': dict(name='Shadow Magic', kind='magic'),
     'warcraft': dict(name='Warcraft', kind='magic'),
 }
-DISC_COLOR = {'swords': (220, 220, 230), 'axes': (210, 170, 120), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
+DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (210, 170, 120), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
               'fire': (255, 122, 44), 'frost': (159, 216, 255), 'storm': (242, 240, 122), 'restoration': (150, 255, 170),
               'shadow': (176, 110, 255), 'warcraft': (242, 196, 67)}
 DISC_ORDER = list(DISCIPLINES)
@@ -56,6 +57,12 @@ class Skill:
 S = Skill
 FIRE, ICE, STORM, HOLY, DARK, STEEL, ARROW, WAR = (255, 122, 44), (159, 216, 255), (242, 240, 122), (150, 255, 170), (176, 110, 255), (255, 106, 74), (216, 208, 176), (242, 196, 67)
 SKILL_LIST = [
+    # unarmed
+    S('haymaker', 'Haymaker', 'unarmed', 0, 3, 4, 'melee', pct=170, pct_r=3, fx={'stun': 1}),
+    S('flurry', 'Flurry of Blows', 'unarmed', 1, 4, 5, 'melee', pct=55, pct_r=1.5, hits=3),
+    S('throat_punch', 'Throat Punch', 'unarmed', 2, 5, 8, 'melee', pct=120, fx={'stun': 3}),
+    S('iron_fist', 'Iron Fist', 'unarmed', 3, 7, 10, 'melee', pct=260, pct_r=3, crit=True),
+    S('whirlwind_kick', 'Whirlwind Kick', 'unarmed', 4, 9, 9, 'adjacent', pct=180, pct_r=2.5, fx={'stun': 1}),
     # swords
     S('power_strike', 'Power Strike', 'swords', 0, 3, 4, 'melee', pct=150, pct_r=2),
     S('sever', 'Sever Artery', 'swords', 1, 4, 6, 'melee', pct=100, fx={'bleed': (3, .2, 6)}),
@@ -127,7 +134,7 @@ def by_line(line):
 
 def weapon_line(game):
     w = game.eq_item('weapon')
-    return WEAPON_LINE.get(w.base) if w else None
+    return WEAPON_LINE.get(w.base) if w else 'unarmed'
 
 
 def rank(game, line):

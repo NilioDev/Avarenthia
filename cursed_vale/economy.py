@@ -18,7 +18,9 @@ def _discount(s):
 def init_markets(world):
     for s in world.settlements:
         prod, dem = D.CITY_TRADE if s.is_city else D.BIOME_TRADE[s.biome]
-        n = 3 if s.is_city else 2
+        if s.kind == 'deephold':
+            prod, dem = ['ore', 'arms', 'tools', 'gems'], ['grain', 'ale', 'timber', 'cloth', 'furs']
+        n = 3 if s.is_city or s.kind == 'deephold' else 2
         s.produce = random.sample(prod, min(len(prod), n))
         if s.id == 0:
             s.produce = ['grain', 'ale']

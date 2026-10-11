@@ -123,20 +123,24 @@ BASES = {
     'shortbow': dict(name='Short Bow', slot='weapon', dmg=(2, 6), lvl=1, val=25, ranged=True),
     'longbow': dict(name='Long Bow', slot='weapon', dmg=(4, 11), lvl=5, val=80, ranged=True),
     'warbow': dict(name='War Bow', slot='weapon', dmg=(7, 17), lvl=10, val=170, ranged=True),
+    'buckler': dict(name='Buckler', slot='shield', arm=(3, 5), lvl=1, val=12),
+    'roundshield': dict(name='Round Shield', slot='shield', arm=(6, 9), lvl=4, val=40),
+    'kiteshield': dict(name='Kite Shield', slot='shield', arm=(10, 15), lvl=8, val=90),
+    'towershield': dict(name='Tower Shield', slot='shield', arm=(16, 22), lvl=12, val=170),
     'ring': dict(name='Ring', slot='ring', lvl=1, val=40, magic_only=True),
     'amulet': dict(name='Amulet', slot='amulet', lvl=3, val=60, magic_only=True),
 }
-SLOTS = ['weapon', 'helm', 'armor', 'ring', 'amulet']
-SLOTNAME = {'weapon': 'Weapon', 'helm': 'Helm', 'armor': 'Armor', 'ring': 'Ring', 'amulet': 'Amulet'}
-SLOTGLYPH = {'weapon': ')', 'armor': '[', 'helm': ']', 'ring': '=', 'amulet': '"'}
+SLOTS = ['weapon', 'shield', 'helm', 'armor', 'ring', 'amulet']
+SLOTNAME = {'weapon': 'Weapon', 'shield': 'Shield', 'helm': 'Helm', 'armor': 'Armor', 'ring': 'Ring', 'amulet': 'Amulet'}
+SLOTGLYPH = {'weapon': ')', 'shield': '(', 'armor': '[', 'helm': ']', 'ring': '=', 'amulet': '"'}
 
 AFFIXES = [
     dict(stat='dmg_flat', pre=True, slots=['weapon'], tiers=[(1, 'Jagged', 1, 3), (5, 'Deadly', 3, 6), (10, 'Vicious', 6, 10)]),
     dict(stat='ed', pre=True, slots=['weapon'], tiers=[(1, 'Sharp', 15, 30), (5, 'Cruel', 30, 60), (10, 'Savage', 60, 100)]),
-    dict(stat='edef', pre=True, slots=['armor', 'helm'], tiers=[(1, 'Sturdy', 15, 30), (5, 'Strong', 30, 60), (10, 'Glorious', 60, 100)]),
+    dict(stat='edef', pre=True, slots=['armor', 'helm', 'shield'], tiers=[(1, 'Sturdy', 15, 30), (5, 'Strong', 30, 60), (10, 'Glorious', 60, 100)]),
     dict(stat='hit', pre=True, slots=['weapon', 'ring', 'amulet', 'helm'], tiers=[(1, 'Bronze', 8, 15), (5, 'Iron', 15, 30), (10, 'Steel', 30, 50)]),
     dict(stat='mana', pre=True, slots=['helm', 'ring', 'amulet', 'weapon'], tiers=[(1, 'Lapis', 8, 15), (5, 'Cobalt', 15, 25), (10, 'Sapphire', 25, 40)]),
-    dict(stat='life', pre=False, slots=['armor', 'helm', 'ring', 'amulet'], tiers=[(1, 'of the Jackal', 5, 10), (5, 'of the Fox', 10, 20), (10, 'of the Bear', 20, 35)]),
+    dict(stat='life', pre=False, slots=['armor', 'helm', 'shield', 'ring', 'amulet'], tiers=[(1, 'of the Jackal', 5, 10), (5, 'of the Fox', 10, 20), (10, 'of the Bear', 20, 35)]),
     dict(stat='str', pre=False, slots=SLOTS, tiers=[(1, 'of Strength', 2, 4), (6, 'of Might', 4, 8), (12, 'of the Titan', 8, 12)]),
     dict(stat='dex', pre=False, slots=SLOTS, tiers=[(1, 'of Dexterity', 2, 4), (6, 'of Skill', 4, 8), (12, 'of Precision', 8, 12)]),
     dict(stat='vit', pre=False, slots=SLOTS, tiers=[(1, 'of Vitality', 2, 4), (6, 'of Vigor', 4, 8), (12, 'of Life', 8, 12)]),
@@ -208,6 +212,8 @@ MONSTERS = {
     'warden': dict(ch='@', fg='#58a050', name='Warden', tags='faction', min_l=3, hp=1, dmg=1, df=1.2, xp=1.3, ranged=True),
     'raider': dict(ch='@', fg='#c84040', name='Black Hand Raider', tags='faction', min_l=3, hp=1.1, dmg=1.2, df=1, xp=1.3),
     'robber_knight': dict(ch='K', fg='#a02828', name='Robber Knight', tags='faction', min_l=6, hp=2, dmg=1.5, df=1.6, xp=2.2),
+    'snagtooth': dict(ch='g', fg='#f0b040', name='Snagtooth the Goblin Chief', boss=True, lvl_fix=2, hp=3.2, dmg=.8, df=1, xp=6,
+                      tags='', summon='rat', summon_msg='{name} shrieks, and a rat scurries out of the dark!'),
     'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
     'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
     'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags='',
@@ -225,13 +231,19 @@ MONSTERS = {
     'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.5, xp=15, caster=True,
                          nova=True, summon='drowned', tags='', summon_msg='Something wet crawls out of the dark water. A drowned one!',
                          nova_msg='{name} calls a wave of black water!', bolt='lance of brine', nova_col=(90, 200, 200)),
+    'watchman': dict(ch='@', fg='#b8a888', name='Village Watchman', tags='', min_l=1, hp=.9, dmg=.8, df=.9, xp=.8),
+    'huntsman': dict(ch='@', fg='#a0b070', name='Huntsman', tags='', min_l=1, hp=.8, dmg=.8, df=.9, xp=.9, ranged=True),
+    'deputy': dict(ch='@', fg='#c8b070', name='Deputy', tags='', min_l=2, hp=1.1, dmg=1, df=1.1, xp=1.1),
+    'sheriff': dict(ch='@', fg='#f0d060', name='Sheriff', tags='', min_l=3, hp=1.5, dmg=1.2, df=1.3, xp=1.6),
     'merchant': dict(ch='@', fg='#f0d080', name='Merchant', tags='', min_l=1, hp=.8, dmg=.6, df=.8, xp=.5),
     'drake': dict(ch='d', fg='#f08040', name='Fire Drake', tags='lair_dragon', min_l=6, hp=1.3, dmg=1.3, df=1.3, xp=1.8, fast=True),
     'drowned': dict(ch='z', fg='#70b0a0', name='Drowned One', tags='lair_drowned', min_l=4, hp=1.6, dmg=1.2, df=.8, xp=1.3, slow=True),
     'clansman': dict(ch='h', fg='#d8a070', name='Dwarf Clansman', tags='faction', min_l=3, hp=1.4, dmg=1.15, df=1.5, xp=1.4),
     'thunderer': dict(ch='h', fg='#b0b8c8', name='Dwarf Thunderer', tags='faction', min_l=4, hp=1.1, dmg=1.2, df=1.3, xp=1.5, ranged=True),
 }
-for _k, _extra in (('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
+for _k, _extra in (('rat', 'den'), ('jackal', 'den'), ('kobold', 'den'), ('bat', 'den'),
+                   ('goblin', 'deep'), ('gobarcher', 'deep'), ('orc', 'deep'), ('troll', 'deep'), ('ogre', 'deep'),
+                   ('spider', 'deep'), ('kobold', 'deep'), ('bat', 'deep'), ('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
                    ('goblin', 'lair_orc'), ('gobarcher', 'lair_orc'), ('ogre', 'lair_orc'), ('zombie', 'lair_drowned'),
                    ('ghost', 'lair_drowned')):
     MONSTERS[_k]['tags'] += ' ' + _extra
@@ -243,6 +255,7 @@ for _m in MONSTERS.values():
     _m.setdefault('min_l', 1)
 
 DUNGEONS = {
+    'den': dict(name='The Hollow Den', depth=2, base=0, style='cave', tag='den', boss='snagtooth', wall=None),
     'rat': dict(name='The Rat Warrens', depth=3, base=0, style='cave', tag='cave', boss='ratking', wall=None),
     'mine': dict(name='The Lost Mine', depth=4, base=3, style='rooms', tag='dungeon', boss='grolm', wall=hexrgb('#a0835e')),
     'crypt': dict(name='Crypt of Morvenna', depth=5, base=7, style='rooms', tag='crypt', boss='lich', wall=hexrgb('#7e869c')),

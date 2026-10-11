@@ -123,7 +123,7 @@ def step(game, wd):
         return
     if wd.kind == 'lawmen':
         home = game.world.settlements[wd.origin]
-        if on_over and wd.cooldown == 0 and cheb(p.x, p.y, home.x, home.y) <= 45 and random.random() < .75:
+        if on_over and wd.cooldown == 0 and cheb(p.x, p.y, home.x, home.y) <= getattr(wd, 'range', 45) and random.random() < .75:
             greedy_step(game, wd, p.x, p.y)
         elif cheb(wd.x, wd.y, home.x, home.y) > 6:
             greedy_step(game, wd, home.x, home.y)

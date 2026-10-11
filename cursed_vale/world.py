@@ -47,6 +47,10 @@ class Settlement:
     def is_city(self):
         return self.kind == 'city'
 
+    @property
+    def kind_name(self):
+        return {'city': 'city', 'deephold': 'dwarven hold'}.get(self.kind, 'village')
+
 
 class Dungeon:
     def __init__(self, did, name, depth, base, style, tag, boss, wall, x, y, main):
@@ -115,7 +119,7 @@ class World:
 
     def dungeon_at(self, x, y):
         for d in self.dungeons.values():
-            if d.x == x and d.y == y:
+            if d.x == x and d.y == y and getattr(d, 'town', None) is None:
                 return d
         return None
 
@@ -290,6 +294,15 @@ def gen_world(game):
             continue
         _build_roads(m, world)
         _place_dungeons(m, world, reach, dist, start)
+        for s in world.settlements:
+            if s.kind == 'deephold':
+                did = f'deep{s.id}'
+                danger = world.region_at(s.x, s.y).danger
+                dg = Dungeon(did, f'Deep Roads of {s.name}', 4, danger + 2, random.choice(['rooms', 'cave']), 'deep', None,
+                             D.hexrgb('#8a7a6a'), s.x, s.y, True)
+                dg.town = s.id
+                world.dungeons[did] = dg
+                s.deep_did = did
         _assign_factions(m, world, start)
         _place_strongholds(m, world, reach)
         for h in world.holds:
@@ -298,7 +311,8 @@ def gen_world(game):
         for s in world.settlements:
             m.set(s.x, s.y, CITY if s.is_city else TOWN)
         for d in world.dungeons.values():
-            m.set(d.x, d.y, ENTR)
+            if getattr(d, 'town', None) is None:
+                m.set(d.x, d.y, ENTR)
         from .events import gen_pois
         gen_pois(game, m, world)
         return m, world
@@ -395,6 +409,19 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         sett.append(Settlement(len(sett), nm, 'village', x, y))
     if len(sett) < 1 + len(cities) + N_VILLAGES - 4:
         return False
+    # dwarven deepholds, cut into the roots of the mountains
+    from .deephold import DEEP_NAMES
+    dnames = random.sample(DEEP_NAMES, 2)
+    for i in cells:
+        if sum(1 for s in sett if s.kind == 'deephold') >= 2:
+            break
+        x, y = i % w, i // w
+        if m.t[i] != HILLS or dist[i] < 15 or not far_enough(x, y, 14):
+            continue
+        if not any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == MOUNTAIN for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+            continue
+        taken.append((x, y))
+        sett.append(Settlement(len(sett), dnames.pop(), 'deephold', x, y))
     for s in sett:
         s.region = world.region_of[s.y * w + s.x]
         s.biome = _settlement_biome(m, world, s.x, s.y)
@@ -443,7 +470,8 @@ def _place_dungeons(m, world, reach, dist, start):
     near_mount = lambda i: any(m.inb(i % w + dx, i // w + dy) and m.tile(i % w + dx, i // w + dy) in (MOUNTAIN, HILLS) for dx, dy in D8)
     rat = choose([i for i in reach if 7 <= dist[i] <= 14], reach[len(reach) // 10])
     mine = choose([i for i in reach if 16 <= dist[i] <= 32 and near_mount(i)] or [i for i in reach if 16 <= dist[i] <= 32], reach[len(reach) // 4])
-    for did, (x, y) in (('rat', rat), ('mine', mine)):
+    den = choose([i for i in reach if 4 <= dist[i] <= 8], reach[len(reach) // 20])
+    for did, (x, y) in (('den', den), ('rat', rat), ('mine', mine)):
         t = D.DUNGEONS[did]
         world.dungeons[did] = Dungeon(did, t['name'], t['depth'], t['base'], t['style'], t['tag'], t['boss'], t['wall'], x, y, True)
     # the lairs of the great evils, far from home and in the land that suits them
@@ -479,6 +507,8 @@ def _place_dungeons(m, world, reach, dist, start):
 
 # ------------------------------------------------------------------ settlement maps
 def settlement_services(s):
+    if s.kind == 'deephold':
+        return {'inn', 'market', 'shop', 'temple'}
     if s.id == 0:
         return {'inn', 'market', 'shop', 'temple', 'stables'}
     sv = {'inn', 'market'}
@@ -665,7 +695,11 @@ def _assign_factions(m, world, start):
     world.settlements[0].faction = 'crown'
     for st in world.settlements:
         st.race = D.FACTIONS[st.faction].get('race', 'human') if random.random() < .8 or st.id == 0 else \
-            random.choice(['human', 'human', 'halfling', 'dwarf', 'elf'])
+            random.choice(['human', 'human', 'halfling', 'dwarf', 'elf', 'gnome'])
+        if st.kind == 'deephold':
+            st.race = 'dwarf'
+            if 'clan' in D.FACTIONS:
+                st.faction = 'clan'
 
 
 HOLD_PLAN = {'crown': (2, 2), 'league': (1, 1), 'circle': (1, 1), 'clan': (1, 1), 'horde': (1, 2), 'blackhand': (1, 2), 'cult': (1, 1)}

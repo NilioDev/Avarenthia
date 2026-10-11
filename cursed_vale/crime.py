@@ -8,7 +8,27 @@ from .money import fmt, purse
 from .worldgen import cheb
 
 WANTED_AT = -20      # standing at or below which a town wants you
-BANNED_AT = -60      # standing at or below which the gates are shut
+BANNED_AT = -50      # standing at or below which the gates are shut
+# how hard the law comes after you, by wanted level (1-5)
+TIERS = {
+    1: dict(name='The village watch of {town}', keys=['watchman', 'watchman', 'huntsman'], range=20, elite=0),
+    2: dict(name='Sheriff {who} of {town} and deputies', keys=['sheriff', 'deputy', 'deputy', 'huntsman'], range=32, elite=0),
+    3: dict(name="{lord}'s men-at-arms", keys=['soldier', 'soldier', 'crossbow', 'soldier', 'deputy'], range=50, elite=0),
+    4: dict(name='Knights of {lord}', keys=['knight', 'knight', 'crossbow', 'crossbow', 'soldier'], range=80, elite=1),
+    5: dict(name='An army of {lord}', keys=['knight', 'knight', 'soldier', 'soldier', 'soldier', 'crossbow', 'crossbow'],
+            range=999, elite=1),
+}
+
+
+def heat(s):
+    """Wanted level 0-5 in a town."""
+    if s.rep > WANTED_AT:
+        return 0
+    return min(5, 1 + (WANTED_AT - s.rep) // 15)
+
+
+def max_heat(game):
+    return max((heat(s) for s in game.world.settlements), default=0)
 
 
 def standing_word(rep):
@@ -75,8 +95,10 @@ def daily(game):
     for s in w.settlements:
         if s.rep < 0 and game.day % 2 == 0:
             s.rep += 1                     # people forget, slowly
-        if s.rep <= WANTED_AT and random.random() < .12 + (-s.rep - 20) / 200:
-            if not any(x.kind == 'lawmen' and x.origin == s.id for x in w.wanderers):
+        h = heat(s)
+        if h and random.random() < .15 + h * .1:
+            groups = sum(1 for x in w.wanderers if x.kind == 'lawmen' and x.origin == s.id)
+            if groups < (1 if h <= 3 else 2):
                 spawn_lawmen(game, s)
 
 
@@ -91,18 +113,29 @@ def spawn_lawmen(game, s):
             break
     else:
         return None
-    troops = D.FACTIONS[s.faction]['troops'] if s.faction != 'cult' else ['mercenary']
-    keys = ['mercenary'] + [random.choice(troops) for _ in range(random.randint(2, 3))]
-    lvl = max(3, p.lvl + 1)
-    wd = make_group(game, 'bandits', x, y, lvl, keys, 1, None)
+    h = max(1, heat(s))
+    t = TIERS[h]
+    from .races import random_name
+    lord = D.FACTIONS[s.faction]['name'] if s.faction != 'cult' else s.name
+    keys = list(t['keys'])
+    lvl = max(2, p.lvl - 2 + h)
+    wd = make_group(game, 'bandits', x, y, lvl, keys, t['elite'], None)
     wd.kind = 'lawmen'
-    wd.ch, wd.fg = '@', (120, 170, 255)
-    wd.name = f'Bounty hunters from {s.name}'
+    wd.ch, wd.fg = ('@', (150, 180, 255)) if h < 4 else ('K', (190, 210, 255))
+    wd.name = t['name'].format(town=s.name, who=random_name(s.race, 'other'), lord=lord)
     wd.origin = s.id
-    wd.speed = 11
+    wd.heat = h
+    wd.range = t['range']
+    wd.speed = 11 if h < 5 else 9
+    if h >= 2:
+        game.msg(f'News: {wd.name} {"ride" if h >= 4 else "set out"} to bring you in.', 'bad')
     wd.group['faction'] = None
     w.wanderers.append(wd)
     return wd
+
+
+def stars(game):
+    return max_heat(game)
 
 
 def at_gate(game, s):

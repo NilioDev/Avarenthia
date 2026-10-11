@@ -427,6 +427,9 @@ def gen_city(game, s):
 
 
 def gen_settlement_map(game, s):
+    if s.kind == 'deephold':
+        from .deephold import gen_deephold
+        return gen_deephold(game, s)
     m = gen_city(game, s) if s.is_city else gen_village(game, s)
     place_signpost(m)
     return m

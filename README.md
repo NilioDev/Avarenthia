@@ -7,7 +7,18 @@ zichtbaar over de kaart trekken, en een wereld die op de achtergrond verandert.
 
 ## Je held
 
-Je wordt wakker in de tempel van Thornfield, zonder geheugen. Je bent niemand; wat je wordt, bepaal je zelf.
+Je wordt wakker in de tempel van Thornfield, zonder geheugen en zonder wapens: goblins hebben je zwaard en schild
+meegenomen naar de Hollow Den. Tot je die terughaalt vecht je met je vuisten (de discipline Unarmed groeit daarmee),
+en bij hun aanvoerder Snagtooth ligt ook je eerste spreukenboek. Je bent niemand; wat je wordt, bepaal je zelf.
+
+**Honger.** Je verbruikt voedsel; eet brood, rantsoenen, vis of vlees (`Shift+E`, of vanuit je tas) of neem een warme
+maaltijd en een bed in een herberg (`M` bij de herbergier). Met honger word je zwakker en uiteindelijk verhonger je.
+
+**Dwergenrijken.** In de bergen liggen ondergrondse dwergensteden (`▼` op de kaart) met hallen, smidsen, een troonzaal
+en een trap naar de Deep Roads, de oude dwergentunnels die nu vol goblins en erger zitten.
+
+**Inspecteren.** Met `O` of `;` beweeg je een cursor over de kaart en lees je wat er is: monsters, mensen, voorwerpen,
+terrein en plaatsen. Tab springt naar het volgende.
 
 Bij een nieuw spel kies je je volk (mens, elf, dwerg, halfling, gnoom, half-ork of goblin), je geslacht (man, vrouw of
 ongedefinieerd) en je voor- en achternaam; met Tab krijg je een willekeurige naam die bij je volk past. Elk volk heeft eigen attributen, voordelen en
@@ -24,8 +35,9 @@ heen gaan, en praat met mensen: zij vertellen over andere plaatsen. De wereldkaa
 handelaren veel. Munten vind je vooral in schatkisten (`■`) in kerkers en ruïnes.
 
 **Misdaad.** Je kunt reizigers en karavanen beroven (loop ertegenaan). Elk dorp onthoudt wat er in de buurt gebeurt:
-zakt je aanzien daar te ver, dan ben je er gezocht. Dan hangen er opsporingsberichten aan de prikborden, stuurt de
-plaatselijke heer premiejagers op je af en houden de wachters je aan bij de poort: boete betalen, drie dagen in de
+zakt je aanzien daar te ver, dan ben je er gezocht, in vijf niveaus (`*` in het paneel): eerst de dorpswacht, dan
+de sheriff met zijn hulpsheriffs, dan de soldaten van de heer, dan ridders en ten slotte een heel leger. Er hangen
+opsporingsberichten aan de prikborden en houden de wachters je aan bij de poort: boete betalen, drie dagen in de
 schandpaal, of vluchten. Mensen vergeten langzaam.
 
 **Life skills** groeien door ze te doen, zoals in Project Gorgon. De eerste is **vissen**: koop een hengel bij een outfitter
@@ -139,6 +151,8 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `1` - `6` | skills, richten automatisch op de dichtstbijzijnde vijand |
 | `F` | schieten met een boog |
 | `A` | vissen (naast water, met een hengel) |
+| `Shift+E` | eten |
+| `O` of `;` | inspecteren |
 | `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
 | `P` | Town Portal |

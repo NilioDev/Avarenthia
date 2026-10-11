@@ -190,7 +190,7 @@ class App:
             if not s.overlay:
                 start = i
         for i, s in enumerate(self.screens[start:]):
-            if s.overlay:
+            if s.overlay and getattr(s, 'dim', True):
                 cv.dim(.35)
             s.render(cv)
         t = time.monotonic()
@@ -411,7 +411,7 @@ class GameScreen(Screen):
         for it in m.items:
             items[(it.x, it.y)] = it
         torch = m.kind == 'siege'
-        lighting = m.kind == 'dungeon'
+        lighting = m.kind == 'dungeon' or getattr(m, 'underground', False)
         lmap = DR.light_map(m) if lighting else None
         deco = getattr(m, 'deco', None)
         night = TW.is_night(g)
@@ -470,7 +470,7 @@ class GameScreen(Screen):
                 elif not lighting:
                     fg = scale(fg, .5 if m.kind == 'over' else .3)
                     bg = scale(bg, .55)
-                if night and m.kind in ('over', 'town'):
+                if night and m.kind in ('over', 'town') and not lighting:
                     fg = mix(fg, (40, 50, 110), .35)
                     bg = scale(bg, .7)
                 cv.put(vx, vy, ch, fg, bg)
@@ -527,6 +527,12 @@ class GameScreen(Screen):
                 for j, ch in enumerate(' ' + label + ' '):
                     if 0 <= lx + j - 1 < MAP_W:
                         cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
+        # dwarven holds: a gate in the mountainside
+        for s in w.settlements:
+            if s.kind == 'deephold' and g.known_settlement(s):
+                vx, vy = s.x - ox, s.y - oy
+                if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (s.x, s.y) != (p.x, p.y):
+                    cv.put(vx, vy, '▼', (255, 200, 90), (60, 40, 20))
         # strongholds in their faction colour
         for h in w.holds:
             om = g.map
@@ -616,7 +622,12 @@ class GameScreen(Screen):
         for i in range(bw):
             cv.put(x + 3 + i, 8, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
         cv.text(x, 9, 'SKILLS', DIM, PANEL)
-        cv.text_right(x + PW - 1, 9, 'Z: change', scale(DIM, .8), PANEL)
+        from . import hunger as HU
+        hs = HU.state(getattr(p, 'food', 500))
+        if hs:
+            cv.text_right(x + PW - 1, 9, hs, GOOD if hs == 'Satiated' else GOLD if hs == 'Hungry' else BAD, PANEL)
+        else:
+            cv.text_right(x + PW - 1, 9, 'Z: change', scale(DIM, .8), PANEL)
         for i, sid in enumerate(p.bar):
             y = 10 + i
             cv.text(x, y, str(i + 1), GOLD, PANEL)
@@ -642,8 +653,10 @@ class GameScreen(Screen):
         from . import crime as CR
         wanted = CR.wanted_in(g)
         if wanted:
+            st = CR.max_heat(g)
             cv.text(x, 19, 'WANTED', BAD, PANEL)
-            cv.text_right(x + PW - 1, 19, (wanted[0].name if len(wanted) == 1 else f'in {len(wanted)} towns')[:PW - 8], BAD, PANEL)
+            cv.text(x + 7, 19, '*' * st, GOLD, PANEL)
+            cv.text_right(x + PW - 1, 19, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
         rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
                 ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
                 ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Money', fmt(p.gold, True))]
@@ -699,7 +712,7 @@ class GameScreen(Screen):
                     cv.text(x, y + 1, f"{f['short']} · garrison {h.garrison}", DIM, PANEL, maxw=PW)
                     cv.text(x, y + 2, 'Hostile to you' if WAR.is_hostile(g, h.faction) else 'Open to you', BAD if WAR.is_hostile(g, h.faction) else GOOD, PANEL)
                 elif st:
-                    cv.text(x, y, f"{st.name} ({'city' if st.is_city else 'village'})", D.FACTIONS[st.faction]['fg'], PANEL, maxw=PW)
+                    cv.text(x, y, f"{st.name} ({st.kind_name})", D.FACTIONS[st.faction]['fg'], PANEL, maxw=PW)
                     cv.text(x, y + 1, 'Makes: ' + ', '.join(D.GOODS[k]['name'] for k in st.produce), DIM, PANEL, maxw=PW)
                     cv.text(x, y + 2, 'Wants: ' + ', '.join(D.GOODS[k]['name'] for k in st.demand), DIM, PANEL, maxw=PW)
                 elif EV.poi_at(g, mx, my) and EV.poi_at(g, mx, my).found:
@@ -796,6 +809,8 @@ class GameScreen(Screen):
             self.act(g.fire)
         elif tok == 'a':
             self.act(g.fish)
+        elif tok == 'E':
+            self.act(g.eat_best)
         elif tok == 'z':
             app.push(SkillsScreen(app))
         elif tok == 'q':
@@ -838,6 +853,8 @@ class GameScreen(Screen):
             app.push(HelpScreen(app))
         elif tok in ('v', 'f2'):
             app.push(BestiaryScreen(app))
+        elif tok in ('o', ';'):
+            app.push(LookScreen(app))
         elif tok == 'esc':
             app.push(QuitScreen(app))
 
@@ -927,10 +944,11 @@ class InventoryScreen(Modal):
         return out
 
     BOX_W, BOX_H = 104, 30
-    BAG_Y, BAG_ROWS = 11, 17
+    BAG_Y, BAG_ROWS = 12, 16
+    NE = len(D.SLOTS)
 
     def bag_scroll(self):
-        i = self.sel - 5
+        i = self.sel - self.NE
         if i < 0:
             return getattr(self, 'scroll', 0)
         sc = getattr(self, 'scroll', 0)
@@ -948,11 +966,11 @@ class InventoryScreen(Modal):
         x, y = self.box(cv, self.BOX_W, self.BOX_H, 'Drop which item?' if self.drop_mode else 'Inventory')
         cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {fmt(g.player.gold)}', DIM, PANEL)
         cv.text(x + 2, y + 3, 'EQUIPPED', DIM, PANEL)
-        cv.text(x + 2, y + 10, 'BACKPACK', DIM, PANEL)
+        cv.text(x + 2, y + 11, 'BACKPACK', DIM, PANEL)
         sc = self.bag_scroll()
         nbag = len(g.backpack())
         if sc > 0:
-            cv.text(x + 50, y + 10, '▲', GOLD, PANEL)
+            cv.text(x + 50, y + 11, '▲', GOLD, PANEL)
         if sc + self.BAG_ROWS < nbag:
             cv.text(x + 50, y + self.BAG_Y + self.BAG_ROWS, '▼', GOLD, PANEL)
         for idx, (kind, key, it) in enumerate(rows):
@@ -1006,7 +1024,7 @@ class InventoryScreen(Modal):
         if it.k == 'tome':
             g.read_tome(it)
             return
-        if it.k == 'fish':
+        if it.k in ('fish', 'food'):
             app.pop()
             if g.eat(it):
                 g.end_turn(1)
@@ -1046,8 +1064,8 @@ class InventoryScreen(Modal):
         elif len(tok) == 1 and tok in LETTERS:
             i = LETTERS.index(tok)
             if i < len(self.game.backpack()):
-                already = self.sel == 5 + i
-                self.sel = 5 + i
+                already = self.sel == self.NE + i
+                self.sel = self.NE + i
                 if self.drop_mode or already:
                     self.use()
 
@@ -1055,10 +1073,10 @@ class InventoryScreen(Modal):
         bx, by = (W - self.BOX_W) // 2, (H - self.BOX_H) // 2
         sc = getattr(self, 'scroll', 0)
         if bx + 2 <= x < bx + 56:
-            if by + 4 <= y < by + 9:
+            if by + 4 <= y < by + 4 + self.NE:
                 self.sel = y - by - 4
             elif by + self.BAG_Y <= y < by + self.BAG_Y + self.BAG_ROWS and y - by - self.BAG_Y + sc < len(self.game.backpack()):
-                new = 5 + y - by - self.BAG_Y + sc
+                new = self.NE + y - by - self.BAG_Y + sc
                 if new == self.sel:
                     self.use()
                 self.sel = new
@@ -1219,7 +1237,7 @@ class SkillsScreen(Modal):
 
 class ShopScreen(Modal):
     title = 'Outfitter'
-    SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod')]
+    SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration')]
 
     def __init__(self, app, key=None):
         super().__init__(app)
@@ -1316,9 +1334,9 @@ class TravelScreen(Modal):
         out = []
         for st in g.world.settlements:
             if g.known_settlement(st) and not (here and here.id == st.id):
-                out.append(('s', st.id, st.name, 'city' if st.is_city else 'village', st.x, st.y))
+                out.append(('s', st.id, st.name, st.kind_name, st.x, st.y))
         for d in g.world.dungeons.values():
-            if g.known_dungeon(d):
+            if g.known_dungeon(d) and getattr(d, 'town', None) is None:
                 out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
         out.sort(key=lambda r: cheb(r[4], r[5], ox, oy))
         self.origin = (ox, oy)
@@ -1402,6 +1420,7 @@ class HelpScreen(Modal):
             ('A', 'Fish, standing next to water (needs a fishing pole from an outfitter)'),
             ('Z', 'Skills: choose your six (only in a town or stronghold)'),
             ('Q   W', 'Drink a health or mana potion'),
+            ('Shift+E', 'Eat something (bread, rations, fish, meat). Hunger shows by the skill bar.'),
             ('P', 'Read a Town Portal scroll. Step into the blue 0 to go back.'),
             ('G  ,', 'Pick up items. Gold, orbs and magic items are picked up for you.'),
             ('>  <  Enter', 'Enter a town, dungeon, ruin or stronghold · use stairs'),
@@ -1412,6 +1431,7 @@ class HelpScreen(Modal):
             ('E  Tab', 'Journal: jobs, cargo, factions and news'),
             ('M', 'Map of the realm: arrows scroll, Z whole realm, F faction lands'),
             ('V  F2', 'Bestiary: the creatures you have met'),
+            ('O  ;', 'Inspect: look at anything on the map (Tab jumps between things)'),
             ('?  F1', 'This help'),
             ('F11  Alt+Enter', 'Toggle fullscreen'),
             ('mouse', 'Hover to inspect, click to step toward a spot'),
@@ -1472,6 +1492,68 @@ class HelpScreen(Modal):
         elif tok in ('left', 'np4', 'h', 'pageup'):
             self.page = (self.page - 1) % len(self.PAGES)
         else:
+            self.app.pop()
+
+
+class LookScreen(Modal):
+    """Inspect: move a cursor over the map and read what is there."""
+    dim = False
+
+    def __init__(self, app):
+        super().__init__(app)
+        g = self.game
+        p = g.player
+        self.x, self.y = p.x, p.y
+        self.targets = self.find_targets()
+        if self.targets:
+            self.x, self.y = self.targets[0]
+        self.ti = 0
+
+    def find_targets(self):
+        g = self.game
+        p = g.player
+        m = g.map
+        pts = []
+        if m.kind == 'over':
+            pts += [(wd.x, wd.y) for wd in g.world.wanderers if g.visible(wd.x, wd.y)]
+        else:
+            pts += [(o.x, o.y) for o in m.mons if g.visible(o.x, o.y)]
+            pts += [(it.x, it.y) for it in m.items if g.visible(it.x, it.y)]
+        pts = sorted(set(pts), key=lambda c: cheb(c[0], c[1], p.x, p.y))
+        return pts
+
+    def render(self, cv):
+        from . import describe as DS
+        g = self.game
+        gs = self.app.screens[0]
+        ox, oy = getattr(gs, 'origin', (0, 0))
+        vx, vy = self.x - ox, self.y - oy
+        if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
+            cv.put_bg(vx, vy, (150, 120, 30))
+        title, col, lines = DS.at(g, self.x, self.y)
+        cv.fill(0, LOG_Y, MAP_W, H - LOG_Y, ' ', FG, (24, 20, 16))
+        cv.text(1, LOG_Y, title, col, (24, 20, 16), maxw=MAP_W - 2)
+        yy = LOG_Y + 1
+        for ln in lines:
+            for part in wrap_text(ln, MAP_W - 4):
+                if yy < H - 1:
+                    cv.text(2, yy, part, FG, (24, 20, 16))
+                    yy += 1
+        cv.text(1, H - 1, 'move: look around · Tab: next thing · Esc: done', DIM, (24, 20, 16))
+
+    def on_key(self, tok, shift):
+        d = DIRS.get(tok)
+        if not d and tok in RUN_LETTERS:
+            d, shift = DIRS[RUN_LETTERS[tok]], True
+        if d:
+            step = 5 if shift else 1
+            m = self.game.map
+            self.x = max(0, min(m.w - 1, self.x + d[0] * step))
+            self.y = max(0, min(m.h - 1, self.y + d[1] * step))
+        elif tok == 'tab' and self.targets:
+            self.ti = (self.ti + 1) % len(self.targets)
+            self.x, self.y = self.targets[self.ti]
+        elif tok in ('esc', 'enter', 'o', ';', 'space'):
             self.app.pop()
 
 
@@ -1861,6 +1943,8 @@ class BoardScreen(Modal):
             cv.text(x + 2, y + self.BOX_H - 4, 'Nailed to the board:', DIM, PANEL)
             cv.text(x + 2, y + self.BOX_H - 3, f'WANTED: {g.player.name}, for {what} near {st.name}. Reward {fmt(CR.bounty(st))}.',
                     BAD, PANEL, maxw=56)
+        if not self.hold:
+            cv.text(x + 60, y + self.BOX_H - 3, f'M: a hot meal and a bed ({fmt(g.MEAL)})', GOLD, PANEL)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' letter or ↑↓ select · Enter accept · Esc leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
@@ -1868,6 +1952,9 @@ class BoardScreen(Modal):
         s = self.source
         if tok == 'esc':
             self.app.pop()
+        elif tok == 'M' and not self.hold:
+            g.log_mark = len(g.log)
+            g.inn_meal()
         elif tok in ('up', 'np8'):
             self.sel = max(0, self.sel - 1)
         elif tok in ('down', 'np2'):
@@ -1890,9 +1977,19 @@ class JournalScreen(Modal):
         x, y = self.box(cv, 100, 28, 'Journal')
         here = g.here
         ox, oy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
-        cv.text(x + 2, y + 1, 'ACTIVE JOBS', DIM, PANEL)
+        yy = y + 1
+        story = g.story()
+        if story:
+            cv.text(x + 2, yy, 'STORY', DIM, PANEL)
+            yy += 1
+            for title, text in story:
+                cv.text(x + 2, yy, '♦', GOLD, PANEL)
+                cv.text(x + 4, yy, title, GOLD, PANEL, maxw=24)
+                yy += cv.wrap(x + 30, yy, 67, text, FG, PANEL, 2)
+            yy += 1
+        cv.text(x + 2, yy, 'ACTIVE JOBS', DIM, PANEL)
         jobs = MS.active(g)
-        yy = y + 2
+        yy += 1
         if not jobs:
             cv.text(x + 4, yy, 'None. Visit the inn of any town to find work.', DIM, PANEL)
             yy += 1

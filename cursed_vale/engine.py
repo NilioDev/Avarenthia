@@ -16,6 +16,7 @@ from . import evils as EVL
 from . import factions as FA
 from . import races as RC
 from . import crime as CR
+from . import hunger as HU
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -23,7 +24,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 9
+SAVE_VERSION = 10
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -140,12 +141,10 @@ class Game:
             if equip:
                 p.eq[it.slot] = it.id
 
-        gear('shortsword')
+        # you wake with nothing: whoever left you in the ditch took your sword and shield
         gear('quilted')
-        gear('shortbow', False)
         self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 2))
-        self.add_to_inv(Item(self.new_id(), 'potion', 'mp', 1))
-        self.add_to_inv(Item(self.new_id(), 'scroll', 'tp', 1))
+        self.add_to_inv(HU.make_food(self, 'bread', 2))
         s = self.stats()
         p.life, p.mana = s['max_life'], s['max_mana']
 
@@ -313,12 +312,14 @@ class Game:
                 s['dr'] = max(s['dr'], v)
             elif k == 'dmg':
                 buff_dmg += v
+        if getattr(p, 'food', 500) < 120:
+            buff_dmg -= 15
         s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
         s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
         w = self.eq_item('weapon')
-        bd = w.dmg if w else (1, 3)
-        line = SK.WEAPON_LINE.get(w.base) if w else None
-        wr = p.disc[line][0] if line else 0
+        line = SK.WEAPON_LINE.get(w.base) if w else 'unarmed'
+        wr = p.disc[line][0] if line in p.disc else 0
+        bd = w.dmg if w else (1 + wr // 6, 3 + wr // 3)      # fists harden with practice
         dexy = line in ('daggers', 'archery')
         mul = 1 + (s['dex'] if dexy else s['str']) / 100 + s['ed'] / 100 + wr * .015 + buff_dmg / 100
         if getattr(p, 'race', '') == 'orc' and not (w and D.BASES[w.base].get('ranged')):
@@ -339,7 +340,7 @@ class Game:
     def compute_fov(self):
         m, p = self.map, self.player
         r = m.radius
-        if m.kind in ('over', 'town') and TW.is_night(self):
+        if m.kind in ('over', 'town') and TW.is_night(self) and not getattr(m, 'underground', False):
             r = 5 if m.kind == 'over' else 9
             if self.player.race in ('elf', 'goblin'):
                 r += 2
@@ -485,7 +486,7 @@ class Game:
             if getattr(wd, 'robbed', False):
                 CR.caravan_plundered(self, wd)
             if wd.kind == 'lawmen':
-                CR.commit(self, 6, 'killing the law', 1.0)
+                CR.commit(self, 10, 'killing the law', 1.0)
             if wd.kind == 'hunt':
                 self.msg(f"{self.world.evils[wd.evil].name}'s hunters fall. Somewhere far away, something howls in rage.", 'unique')
             else:
@@ -664,7 +665,7 @@ class Game:
             self.auto_pickup()
         s = self.world.settlement_at(p.x, p.y)
         if s:
-            kind = 'city' if s.is_city else 'village'
+            kind = s.kind_name
             self.msg(f'You stand at the gates of {s.name} ({kind}). Press > or Enter to go in.', 'info')
             return 10
         if t == ENTR:
@@ -745,7 +746,7 @@ class Game:
                 p.mana = min(s['max_mana'], p.mana + round(s['max_mana'] * .1))
                 self.num(p.x, p.y, f'+{h}', C_HEAL)
                 self.msg('The health orb restores you.', 'good')
-            elif it.dropped or (it.k == 'gear' and it.rar == 'normal'):
+            elif it.dropped or (it.k == 'gear' and it.rar == 'normal' and not it.name.startswith('Your')):
                 continue
             else:
                 if not self.add_to_inv(it):
@@ -819,6 +820,18 @@ class Game:
             self.enter_dungeon(m.did, m.depth + 1, 'up')
             return 1
         if t == UP and d != 'down':
+            dg = self.world.dungeons.get(m.did)
+            if m.depth == 1 and getattr(dg, 'town', None) is not None:
+                self.enter_town(dg.town)
+                tm = self.map
+                if DOWN in tm.t:
+                    i = tm.t.index(DOWN)
+                    spots = W.free_around(self, tm, i % tm.w, i // tm.w, 1)
+                    if spots:
+                        p.x, p.y = spots[0]
+                self.msg('You climb back up into the halls of the hold.')
+                self.compute_fov()
+                return 1
             if m.depth == 1:
                 self.cur = 'over'
                 p.x, p.y = self.over_pos
@@ -906,6 +919,15 @@ class Game:
             return False
         if self.stuck(it.slot):
             return False
+        cur_w = self.eq_item('weapon')
+        if it.slot == 'shield' and cur_w and D.BASES[cur_w.base].get('ranged'):
+            self.msg('You need both hands for your bow. Put it away first.', 'bad')
+            return False
+        if it.slot == 'weapon' and D.BASES[it.base].get('ranged') and self.eq_item('shield'):
+            if self.stuck('shield'):
+                return False
+            p.eq.pop('shield', None)
+            self.msg('You sling your shield on your back; a bow needs both hands.')
         p.eq[it.slot] = it.id
         self.clamp_vitals()
         self.msg(f'You equip {it.display_name()}.', it.rar)
@@ -926,9 +948,25 @@ class Game:
         from . import lifeskills as LS
         return LS.fish(self)
 
+    MEAL = 300
+
     def eat(self, it):
-        from . import lifeskills as LS
-        return LS.eat(self, it)
+        return HU.eat(self, it)
+
+    def inn_meal(self):
+        p = self.player
+        if p.gold < self.MEAL:
+            self.msg('You cannot afford a meal.', 'bad')
+            return
+        p.gold -= self.MEAL
+        p.food = HU.MAX
+        s = self.stats()
+        p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
+        self.end_turn(D.DAY_LEN // 3, True)
+        self.msg('A bowl of stew, a mug of ale, a straw bed. You wake rested and full.', 'good')
+
+    def eat_best(self):
+        return HU.eat_best(self)
 
     def read_tome(self, it):
         if SK.learn(self, it.t):
@@ -1006,7 +1044,7 @@ class Game:
         pass
 
     def buy_supply(self, i):
-        k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod')][i]
+        k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration')][i]
         if k == 'tool' and any(x.k == 'tool' for x in self.player.inv):
             self.msg('You already have a fishing pole.')
             return
@@ -1157,6 +1195,22 @@ class Game:
             WAR.on_kill(self, mon)
         if getattr(mon, 'commander', False) and getattr(m, 'hid', None) is not None:
             self.capture_hold(m.hid)
+        if mon.k == 'snagtooth':
+            self.flags['den'] = True
+            sword = make_gear(self, 'shortsword', 'normal', 1)
+            sword.name = 'Your Short Sword'
+            shield = make_gear(self, 'buckler', 'normal', 1)
+            shield.name = 'Your Buckler'
+            self.spill(m, mon.x, mon.y, sword)
+            self.spill(m, mon.x, mon.y, shield)
+            from .entities import make_tome
+            spell = random.choice(['firebolt', 'frost_shard', 'spark', 'mend', 'drain'])
+            tome = Item(self.new_id(), 'tome', spell)
+            tome.name = 'tome'
+            self.spill(m, mon.x, mon.y, tome)
+            for it in (sword, shield, tome):
+                it.dropped = False
+            self.msg('Among the chief\'s filthy hoard: your sword and shield! And a small book, its pages full of strange signs.', 'gold')
         if mon.k == 'ratking':
             self.flags['ratking'] = True
             self.msg('The rats scatter in every direction. Elder Berend will want to hear of this.', 'gold')
@@ -1220,6 +1274,8 @@ class Game:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', purse(lvl, 8 if boss else 2.5 if mon.elite else 1)))
         if special or random.random() < .16:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
+        if mon.k in HU.BEASTS and random.random() < .35:
+            self.spill(m, mon.x, mon.y, HU.make_food(self, 'meat'))
         if random.random() < (.6 if special else .1):
             t = 'rejuv' if random.random() < .12 else 'hp' if random.random() < .6 else 'mp'
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'potion', t))
@@ -1453,7 +1509,10 @@ class Game:
                 for b in ended:
                     self.msg(f'{b[3]} wears off.')
             s = self.stats()
-            if self.turn % 4 == 0 and p.life < s['max_life']:
+            HU.tick(self, 1)
+            if self.dead:
+                return
+            if self.turn % 4 == 0 and p.life < s['max_life'] and p.food >= 120:
                 p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60)
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
@@ -1754,6 +1813,34 @@ class Game:
         if self.cur == 'over' and (p.x, p.y) == tgt:
             self.over_step()
 
+    def deephold_name(self):
+        holds = [s for s in self.world.settlements if s.kind == 'deephold']
+        if not holds:
+            return 'the dwarf halls under the mountains'
+        h = min(holds, key=lambda q: cheb(q.x, q.y, *self._home_xy()))
+        return f'{h.name}, the dwarf hold under the mountains to the {dir_name(h.x - self._home_xy()[0], h.y - self._home_xy()[1])}'
+
+    def story(self):
+        """The open story tasks, for the journal: (title, text)."""
+        f = self.flags
+        out = []
+        if f.get('quest_den') and not f.get('den'):
+            out.append(('Your sword and shield', f'Goblins took your things to the Hollow Den, to the {self.dir_to("den")}. '
+                        'Their chief, Snagtooth, has them. Get them back.'))
+        elif f.get('den') and not f.get('met_elder'):
+            out.append(('Elder Berend', 'Sister Ilse said the elder of Thornfield wanted to meet you. His house is on the green.'))
+        if f.get('met_elder'):
+            if not f.get('ratking'):
+                out.append(('The Rat King', f'A monstrous Rat King plunders Thornfield\'s stores from the Rat Warrens, to the {self.dir_to("rat")}.'))
+            elif not f.get('reward_rat'):
+                out.append(('The Rat King is dead', 'Return to Elder Berend in Thornfield.'))
+            if not f.get('grolm'):
+                out.append(('Grolm the Digger', f'A mad dwarf exiled from {self.deephold_name().split(",")[0]} holds the Lost Mine, '
+                            f'to the {self.dir_to("mine")}. Thornfield needs its iron back.'))
+            elif not f.get('reward_grolm'):
+                out.append(('Grolm is dead', 'Return to Elder Berend in Thornfield.'))
+        return out
+
     def reveal_route(self, a, b):
         """Mark the road from settlement a to settlement b, and b itself, on the map."""
         om = self.maps['over']
@@ -1843,12 +1930,18 @@ class Game:
                 p.gold += 520
                 self.request = ('dialog', npc.name,
                                 f'"Easy now, easy. You are safe. You are in the temple of Thornfield.\n\n'
-                                f'A farmer found you three days ago, lying in the ditch by the north road. No horse, no purse, '
-                                f'no one with you. Just your weapons, and a name you kept repeating: {p.name}.\n\n'
+                                f'A farmer found you three days ago, lying in the ditch by the road. No horse, no purse, '
+                                f'nothing but the clothes on your back, and a name you kept repeating: {p.name}.\n\n'
                                 f'You do not remember? No... I thought not. It may come back in time. It may not.\n\n'
-                                f'Here, a few coppers from the poor box. Elder Berend asked to see you when you woke; '
-                                f'his house is on the green. And {RC.address(self)}... whoever you were before, '
-                                f'you can be someone new now."')
+                                f'The farmer saw goblins running from that ditch, with a sword and a shield. Yours, I would wager. '
+                                f'They nest in the Hollow Den, to the {self.dir_to("den")}; old Snagtooth leads them. '
+                                f'Without a blade you will have to use your fists. Be careful.\n\n'
+                                f'Here, a few coppers from the poor box. Elder Berend will want to meet you too; his house is on the green. '
+                                f'And {RC.address(self)}... whoever you were before, you can be someone new now."')
+                f['quest_den'] = True
+                om = self.maps['over']
+                dd = self.world.dungeons['den']
+                self.reveal_place(dd.x, dd.y, 1)
                 return
             self.request = ('temple', npc.name)
             return
@@ -1858,7 +1951,9 @@ class Game:
                 text = (f'"So you are the stranger Sister Ilse found by the road. No memory, she says. Well, {RC.address(self)}, '
                         f'Thornfield could use a pair of hands, whoever you were.\n\n'
                         f'To the {self.dir_to("rat")} lie the Rat Warrens, where a monstrous Rat King sends his brood to plunder our stores. '
-                        f'To the {self.dir_to("mine")}, at the foot of the mountains, the exiled dwarf Grolm the Digger has seized the old mine.\n\n'
+                        f'And to the {self.dir_to("mine")}, at the foot of the mountains, lies our old iron mine. Grolm the Digger holds it now: '
+                        f'a dwarf, cast out of {self.deephold_name()} for digging where his people had forbidden it. Something he found '
+                        f'down there broke his mind. He and his gang of cutthroats keep the mine, and Thornfield has no iron.\n\n'
                         f'Deal with either and you will have friends here. If it is coin you need, the board at the inn always has work, '
                         f'and the traders pay for goods hauled between towns. The signpost by the road tells you where the roads go."')
                 om = self.maps['over']
@@ -1899,6 +1994,10 @@ class Game:
                     text = f'"You have done well, {RC.address(self)}. The vale is wide; go and see it. And listen to what people say on the road."'
             self.request = ('dialog', 'Elder Berend', text)
             return
+        if role == 'thane':
+            from .deephold import thane_talk
+            thane_talk(self, npc)
+            return
         if role == 'client':
             MS.client_talk(self, npc)
             return
@@ -1918,7 +2017,7 @@ class Game:
         if unknown and r < .35:
             s = min(unknown, key=lambda q: cheb(q.x, q.y, ox, oy) + random.randint(0, 15))
             self.reveal_place(s.x, s.y, 2)
-            kind = 'city' if s.is_city else 'village'
+            kind = s.kind_name
             f = D.FACTIONS[s.faction]['short']
             return (f"There is a {kind} called {s.name} to the {dir_name(s.x - ox, s.y - oy)}, "
                     f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land. I marked it on your map.")

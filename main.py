@@ -64,6 +64,8 @@ def key_token(ev):
         return ('<' if shift else ','), False
     if sym == 47:
         return ('?' if shift else '/'), False
+    if sym == 59:
+        return (':' if shift else ';'), False
     if sym == 13:
         return 'enter', shift
     if sym == 27:
