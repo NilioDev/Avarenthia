@@ -46,7 +46,8 @@ TILE_DESC = {
 DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.', 3: 'Glowing fungus casts an eerie light.',
              4: 'Old bones lie scattered about.', 5: 'Rubble and broken stone.', 6: 'Blood. Fresh, or nearly.',
              7: 'Thick cobwebs.', 8: 'A faded carpet.', 9: 'A torch burns in a bracket on the wall.',
-             10: 'Crystals glitter in the rock.', 11: 'Ash and cinders.', 12: 'Green slime, faintly glowing.'}
+             10: 'Crystals glitter in the rock.', 11: 'Ash and cinders.', 12: 'Green slime, faintly glowing.',
+             13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.'}
 ROLE_DESC = {
     'inn': 'The innkeeper. Jobs on the board, hot meals and a bed.',
     'market': 'A trader. Buys and sells goods by the cartload.',
@@ -64,7 +65,54 @@ ROLE_DESC = {
     'tower': 'The captain of the watchtower.',
     'livestock': 'Farm animals, grazing.',
     'escort': 'The caravan you are guarding.',
+    'fisher': 'An old fisherman, patient as a heron. Knows every fish in the pond by name.',
 }
+
+
+JOB_WORD = {'inn': 'innkeeper', 'market': 'trader', 'shop': 'outfitter', 'healer': 'priest', 'stables': 'stablemaster',
+            'elder': 'village elder', 'castellan': 'castellan', 'guard': 'guard', 'thane': 'thane', 'herbalist': 'herbalist',
+            'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client'}
+NOUN = {'male': 'man', 'female': 'woman'}
+
+
+def person(game, mon):
+    """What you can tell about someone by looking at them: people, gender, trade and mood."""
+    from .races import RACES, relation
+    lines = []
+    if mon.role in ('livestock', 'dog', 'escort') or mon.ch not in ('☺', '@', 'h'):
+        return [ROLE_DESC.get(mon.role, 'An animal.')]
+    race = getattr(mon, 'race', None)
+    if not race:
+        sid = getattr(game.map, 'sid', None)
+        race = getattr(game.world.settlements[sid], 'race', 'human') if sid is not None else 'human'
+    gender = getattr(mon, 'gender', None)
+    rc = RACES.get(race, RACES['human'])
+    child = getattr(mon, 'job', '') == 'child'
+    noun = 'child' if child else NOUN.get(gender, 'person')
+    if race == 'human' or child:
+        who = f"{rc['adj'].capitalize()} {noun}"
+    else:
+        who = f"{rc['name']}" + (f", {'male' if gender == 'male' else 'female'}" if gender in NOUN else '')
+    job = ('fisherwoman' if mon.role == 'fisher' and gender == 'female' else None) or JOB_WORD.get(mon.role) or (getattr(mon, 'job', '') if getattr(mon, 'job', 'any') not in ('any', 'child') else '')
+    lines.append(f'People: {who}' + (f' · {job}' if job else '') + '.')
+    lines.append(ROLE_DESC.get(mon.role, 'Someone from around here.'))
+    god = getattr(mon, 'god', None)
+    if not god and mon.role in ('healer', 'herbalist'):
+        from .gods import temple_god
+        god = temple_god(game)
+    if god:
+        from .gods import GODS
+        lines.append(f"Wears the sign of {GODS[god]['name']}, {GODS[god]['title']}.")
+    rel = relation(race, game.player.race)
+    p = game.player
+    if rel <= -15:
+        lines.append(f"Eyes you coldly. Not many {rc['plural'].lower()} like {RACES[p.race]['plural'].lower()}.")
+    elif rel >= 15:
+        lines.append('Gives you a warm nod: one of their own.')
+    elif rel >= 5:
+        lines.append('Seems friendly enough.')
+    lines.append('Walk into them to talk.')
+    return lines
 
 
 def health_word(mon):
@@ -75,7 +123,7 @@ def health_word(mon):
 def monster(game, mon):
     """(title, colour, lines)"""
     if mon.is_npc:
-        return mon.name, mon.fg, [ROLE_DESC.get(mon.role, 'Someone from around here.'), 'Walk into them to talk.']
+        return mon.name, mon.fg, person(game, mon)
     d = D.MONSTERS[mon.k]
     lines = []
     lore = D.LORE.get(mon.k)

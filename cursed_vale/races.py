@@ -125,14 +125,41 @@ _SYL = {
 }
 
 
+NAME_INFO = {}       # generated first name -> (gender, race), so people know who they are
+NAME_FULL = {}       # generated full name -> (gender, race)
+TITLE_GENDER = {'Sister': 'female', 'Brother': 'male', 'Abbot': 'male', 'Abbess': 'female', 'Mother': 'female',
+                'Father': 'male', 'Lady': 'female', 'Lord': 'male', 'Berend': 'male', 'Ilse': 'female', 'Dorien': 'male'}
+
+
+def who(name):
+    """(gender, race) guessed from a person's name; either may be None."""
+    g = r = None
+    words = name.replace(',', ' ').split()
+    for i in range(len(words) - 1):
+        hit = NAME_FULL.get(f'{words[i]} {words[i + 1]}')
+        if hit:
+            g, r = hit
+            break
+    for wd in words:
+        if wd in TITLE_GENDER and not g:
+            g = TITLE_GENDER[wd]
+        if wd in NAME_INFO:
+            g2, r2 = NAME_INFO[wd]
+            g, r = g or g2, r or r2
+    return g, r
+
+
 def random_name(race='human', gender='other', family=True):
     t = _SYL.get(race, _SYL['human'])
     g = gender if gender in ('male', 'female') else random.choice(['male', 'female'])
     a, b = t[g]
     first = random.choice(a) + random.choice(b)
     first = first[0].upper() + first[1:].lower()
+    NAME_INFO.setdefault(first, (g, race))
     if family:
-        return f'{first} {random.choice(t["family"])}'
+        full = f'{first} {random.choice(t["family"])}'
+        NAME_FULL[full] = (g, race)
+        return full
     return first
 
 

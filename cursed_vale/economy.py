@@ -107,6 +107,8 @@ def sell(game, s, g, n=1):
             del p.cargo[g]
         done += 1
     if done:
+        from .gods import on_craft
+        on_craft(game, 'trade')
         cost = p.cost_basis.get(g)
         note = ''
         if cost:

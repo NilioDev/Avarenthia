@@ -3,6 +3,7 @@ import math
 import random
 
 from . import data as D
+from . import calendar as CAL
 from .data import ROAD, TOWN, CITY, ENTR, FLOOR, UP
 from .entities import Item
 from .wanderers import Wanderer, make_group, road_path, ESCORT_FG
@@ -60,7 +61,7 @@ def make_offer(game, s):
         m.deadline = game.day + travel_days(plen) + 2
         m.data = dict(parcel=parcel)
         m.title = f'Courier to {o.name}'
-        m.desc = f'Deliver {parcel} to {o.name} ({plen} leagues by road) before day {m.deadline}.'
+        m.desc = f'Deliver {parcel} to {o.name} ({plen} leagues by road) before {CAL.short(m.deadline)}.'
     elif kind == 'freight':
         goods = [g for g in s.produce if s.market[g][0] > 20]
         if not goods:
@@ -78,7 +79,7 @@ def make_offer(game, s):
         m.data = dict(good=g, qty=q, w=q * D.GOODS[g]['w'])
         m.title = f"Haul {D.GOODS[g]['name']} to {o.name}"
         m.desc = (f"Carry {q} {D.GOODS[g]['name']} ({q * D.GOODS[g]['w']} cargo) to {o.name} ({plen} leagues) "
-                  f'before day {m.deadline}. The goods are provided.')
+                  f'before {CAL.short(m.deadline)}. The goods are provided.')
     elif kind == 'bounty':
         reg_d = w.region_at(s.x, s.y).danger
         spot = None
@@ -124,7 +125,7 @@ def make_offer(game, s):
         m.deadline = game.day + travel_days(plen) + 3
         m.data = dict(hp=50 + 10 * danger, danger=danger)
         m.title = f'Escort a caravan to {o.name}'
-        m.desc = (f'Guard a merchant caravan on the road to {o.name} ({plen} leagues) and arrive before day {m.deadline}. '
+        m.desc = (f'Guard a merchant caravan on the road to {o.name} ({plen} leagues) and arrive before {CAL.short(m.deadline)}. '
                   f'It follows you; keep it alive when bandits strike.')
     else:
         ds = [d for d in w.dungeons.values() if d.relic is None and not d.main]
@@ -158,7 +159,7 @@ def make_hold_offer(game, h):
         m.deadline = game.day + 8
         m.title = f"Supply {q} {D.GOODS[g]['name']} to {h.name}"
         m.desc = (f"The garrison of {h.title} needs {q} {D.GOODS[g]['name']}. Buy them wherever you can and bring them "
-                  f'here before day {m.deadline}. Pays well above market price.')
+                  f'here before {CAL.short(m.deadline)}. Pays well above market price.')
     elif kind == 'assault':
         targets = [o for o in w.holds if o.faction in enemies and o.faction != f and cheb(o.x, o.y, h.x, h.y) <= 80]
         if not targets:
@@ -497,12 +498,12 @@ def accept_personal(game, wd, o):
     if sub == 'letter':
         rt = w.settlements[o['rtown']].name
         m.title = f"{first}'s letter to {rt}"
-        m.desc = f"Carry {first}'s letter to {o['recipient']} at the inn in {rt} before day {m.deadline}. Paid on delivery."
+        m.desc = f"Carry {first}'s letter to {o['recipient']} at the inn in {rt} before {CAL.short(m.deadline)}. Paid on delivery."
         p.parcels.append(dict(mid=m.id, name=f"{first}'s letter", w=1))
     elif sub == 'gather':
         g = D.GOODS[o['good']]['name']
         m.title = f"{o['qty']} {g} for {first}"
-        m.desc = f"Bring {o['qty']} {g} to {first} at the inn in {town} before day {m.deadline}."
+        m.desc = f"Bring {o['qty']} {g} to {first} at the inn in {town} before {CAL.short(m.deadline)}."
     elif sub == 'hunt':
         over = game.maps['over']
         spot = None
@@ -532,7 +533,7 @@ def accept_personal(game, wd, o):
         over.seen[spot[1] * over.w + spot[0]] = 1
         m.title = f'Slay {leader}'
         m.desc = (f"Kill {leader}, a monstrous {D.MONSTERS[k]['name'].lower()} stalking {reg.name}, then find {first} "
-                  f"at the inn in {town} before day {m.deadline}.")
+                  f"at the inn in {town} before {CAL.short(m.deadline)}.")
     else:
         d = w.dungeons[o['dungeon']]
         if d.relic is not None:
@@ -547,7 +548,7 @@ def accept_personal(game, wd, o):
             place_relic(game, game.maps[key], m)
         m.title = f"Recover {o['relic']} for {first}"
         m.desc = (f"Fetch {o['relic']} from the bottom of {d.name} and bring it to {first} at the inn in {town} "
-                  f"before day {m.deadline}.")
+                  f"before {CAL.short(m.deadline)}.")
     m.state = 'active'
     game.missions.append(m)
     for sid in (o['wait'], o.get('rtown')):

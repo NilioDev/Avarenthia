@@ -66,6 +66,13 @@ RIVER_GLYPH = {  # (up, down, left, right) -> glyph
 }
 
 
+FENCE_GLYPH = {  # (up, down, left, right) -> glyph
+    (1, 1, 0, 0): '│', (0, 0, 1, 1): '─', (1, 0, 0, 0): '│', (0, 1, 0, 0): '│', (0, 0, 1, 0): '─', (0, 0, 0, 1): '─',
+    (0, 1, 0, 1): '┌', (0, 1, 1, 0): '┐', (1, 0, 0, 1): '└', (1, 0, 1, 0): '┘',
+    (1, 1, 0, 1): '├', (1, 1, 1, 0): '┤', (0, 1, 1, 1): '┬', (1, 0, 1, 1): '┴', (1, 1, 1, 1): '┼', (0, 0, 0, 0): '┼',
+}
+
+
 def _wet(m, x, y):
     if not m.inb(x, y):
         return 0
@@ -149,8 +156,12 @@ def cell(m, i, depth=None):
         if y % 2:
             return _pick(r, [(70, 'ⁿ'), (30, '"')]), _jit((200, 180, 70), r2, .12), (30, 24, 12)
         return '.', _jit((120, 90, 50), r2, .1), (36, 26, 14)
-    if t == D.FENCE:
-        return '═' if r % 7 else '╬', _jit((150, 110, 66), r2, .08), BG
+    if t == D.FENCE:        # rails that join up with their neighbours
+        key = tuple(1 if m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] == D.FENCE else 0
+                    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
+        return FENCE_GLYPH.get(key, '─'), _jit((168, 124, 74), r2, .06), (24, 22, 12)
+    if t == PATH and not over:      # village lanes: packed earth with ruts and stones
+        return _pick(r, [(50, '.'), (25, ','), (15, '·'), (10, ' ')]), _jit((150, 118, 76), r2, .1), _jit((40, 31, 20), r, .06)
     if t in (FLOOR, PATH, PLANK):
         return td.ch, _jit(td.fg, r2, .08), td.bg or BG
     if t in (WALL, ROCK):

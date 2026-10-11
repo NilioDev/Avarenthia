@@ -112,7 +112,7 @@ class Item:
         if self.k == 'tool':
             return '/'
         if self.k == 'food':
-            return '%'
+            return '¡' if self.t in ('ale', 'wine', 'mead') else '%'
         if self.k == 'plant':
             return '"'
         if self.k == 'fish':
@@ -143,12 +143,17 @@ class Item:
                                 'sleep': 'Puts you to sleep.', 'heal': 'A healing herb.', 'heal2': 'A strong healing herb.',
                                 'mana': 'Restores a little mana.', 'cure': 'Settles the stomach and cures poison.'}.get(eff, 'Edible.'))
                     if grp == 'herb':
-                        out.append('Used in herbalism (P to brew).')
+                        out.append('Used in alchemy (P to brew potions).')
+                    if self.t == 'blackberry':
+                        out.append('Brewers make berry wine from these.')
                 else:
                     out.append('You do not know what this is. Eat it to find out, or show it to a herbalist.')
             elif self.k == 'food':
                 from .hunger import FOODS
-                out.append(f'Food. Eat it to still your hunger (+{FOODS[self.t][1]}).')
+                out.append(f'Food. Eat it to still your hunger (+{FOODS[self.t][1]}).' if self.t not in ('ale', 'wine', 'mead')
+                           else 'A drink. Cheers you up and heals a little; sells well.')
+                if self.t in ('barley', 'honey'):
+                    out.append('Brewers use it (P, at an inn or a monastery cellar).')
             elif self.k == 'tool':
                 out.append('Stand next to water and press A to fish. Fishing grows the more you do it.')
             elif self.k == 'fish':
@@ -302,7 +307,8 @@ class Player:
         self.life_sk = {'fishing': [0, 0]}     # life skills: rank, progress
         self.food = 450                        # hunger: 0 starving .. 1000 full
         self.known_plants = set()              # plants you can recognise
-        self.recipes = set()                   # herbalism recipes you know
+        self.recipes = set()                   # alchemy recipes you know
+        self.god, self.favor = None, 0         # the god you serve, and how fond of you they are
         self.race, self.gender = 'human', 'other'
         self.life = 1
         self.mana = 1
@@ -494,7 +500,13 @@ def make_monster(game, k, x, y, lvl, elite=0):
     return m
 
 
-def make_npc(game, name, role, fg, x, y, stay, ch='@'):
+def make_npc(game, name, role, fg, x, y, stay, ch='☺', race=None, gender=None):
+    from .races import who
     m = Monster(game.new_id(), 'npc', x, y)
+    if ch in ('@', 'h'):
+        ch = '☺'           # everyone who is not out to kill you is a smiley
     m.name, m.role, m.fg, m.stay, m.ch = name, role, D.hexrgb(fg), stay, ch
+    g, r = who(name)
+    m.gender = gender or g
+    m.race = race or r
     return m

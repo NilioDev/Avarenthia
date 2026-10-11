@@ -15,8 +15,10 @@ from . import events as EV
 from . import evils as EVL
 from . import factions as FA
 from . import races as RC
+from . import calendar as CAL
 from . import crime as CR
 from . import hunger as HU
+from . import gods as GD
 from . import sites as ST
 from .money import fmt, purse
 from . import world as WO
@@ -25,7 +27,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 11
+SAVE_VERSION = 12
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -92,6 +94,8 @@ def lore_rank(kills):
     return r
 
 
+SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration'),
+            ('food', 'barley'), ('food', 'honey')]
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
 
@@ -324,6 +328,7 @@ class Game:
                 buff_dmg += v
         if getattr(p, 'food', 500) < 120:
             buff_dmg -= 15
+        GD.apply(self, s)
         s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
         s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
         w = self.eq_item('weapon')
@@ -1106,7 +1111,7 @@ class Game:
         pass
 
     def buy_supply(self, i):
-        k, t = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration')][i]
+        k, t = SUPPLIES[i]
         if k == 'tool' and any(x.k == 'tool' for x in self.player.inv):
             self.msg('You already have a fishing pole.')
             return
@@ -1235,6 +1240,7 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        GD.on_kill(self, mon)
         if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher'):
             from .dress import add_blood
             add_blood(m, mon.x, mon.y, 2 if (mon.elite or mon.is_boss) else random.randint(0, 1))
@@ -1656,7 +1662,7 @@ class Game:
         corpse = None
         if key:
             corpse = Item(self.new_id(), 'corpse', 'corpse')
-            corpse.name = f'your body (day {self.day})'
+            corpse.name = f'your body ({CAL.short(self.day)})'
             corpse.payload = dict(items=[it for it in p.inv if not self.is_equipped(it) and it.k != 'quest'],
                                   cargo=dict(p.cargo), cost=dict(p.cost_basis), gold=p.gold)
             corpse.x, corpse.y = cx, cy
@@ -1915,7 +1921,7 @@ class Game:
         f = self.flags
         out = []
         if f.get('quest_den') and not f.get('den'):
-            out.append(('Your sword and shield', f'Goblins took your things to the Hollow Den, to the {self.dir_to("den")}. '
+            out.append(('Your sword and shield', f'Kobolds took your things to the Hollow Den, to the {self.dir_to("den")}. '
                         'Their chief, Snagtooth, has them. Get them back.'))
         elif f.get('den') and not f.get('met_elder'):
             out.append(('Elder Berend', 'Sister Ilse said the elder of Thornfield wanted to meet you. His house is on the green.'))
@@ -1929,27 +1935,25 @@ class Game:
                             f'to the {self.dir_to("mine")}. Thornfield needs its iron back.'))
             elif not f.get('reward_grolm'):
                 out.append(('Grolm is dead', 'Return to Elder Berend in Thornfield.'))
+        if f.get('quest_fish') and not f.get('fish_done'):
+            out.append(('A first catch', 'The old fisherman by the pond in Thornfield wants to see your first fish. '
+                        'Stand by water and press A to cast.'))
         return out
 
     def reveal_route(self, a, b):
-        """Mark the road from settlement a to settlement b, and b itself, on the map."""
+        """Hear where settlement b lies from a: only the place itself goes on the map, not the road or the land
+        around it. You discover those by walking there. Returns the length of the road."""
         om = self.maps['over']
         path = WA.road_path(self, a, b) or []
-        for x, y in path:
-            for dy in (-1, 0, 1):
-                for dx in (-1, 0, 1):
-                    if om.inb(x + dx, y + dy):
-                        om.seen[(y + dy) * om.w + x + dx] = 1
         s = self.world.settlements[b]
         om.seen[s.y * om.w + s.x] = 1
         return len(path)
 
-    def reveal_place(self, x, y, r=3):
+    def reveal_place(self, x, y, r=0):
+        """Mark a place you have heard of on the map: just the spot, not the land around it."""
         om = self.maps['over']
-        for yy in range(y - r, y + r + 1):
-            for xx in range(x - r, x + r + 1):
-                if om.inb(xx, yy):
-                    om.seen[yy * om.w + xx] = 1
+        if om.inb(x, y):
+            om.seen[y * om.w + x] = 1
 
     def read_signpost(self):
         here = self.here
@@ -1969,9 +1973,10 @@ class Game:
             n = self.reveal_route(here.id, b)
             lines.append(f'{dir_name(s.x - here.x, s.y - here.y).capitalize():10} {s.name} ({n} leagues)')
         self.request = ('dialog', f'Signpost of {here.name}', 'The arms of the signpost point down the roads:\n\n' + '\n'.join(lines) +
-                        ('\n\nYou mark the roads on your map.' if new else ''))
+                        ('\n\nYou mark roughly where they lie on your map. The roads and the land between you will '
+                         'only come to know by walking them.' if new else ''))
         if new:
-            self.msg(f'You learn of {new} new place{"s" if new > 1 else ""} and the roads to them.', 'info')
+            self.msg(f'You hear of {new} new place{"s" if new > 1 else ""}.', 'info')
 
     def known_settlement(self, s):
         om = self.maps['over']
@@ -2025,7 +2030,7 @@ class Game:
                                 f'A farmer found you three days ago, lying in the ditch by the road. No horse, no purse, '
                                 f'nothing but the clothes on your back, and a name you kept repeating: {p.name}.\n\n'
                                 f'You do not remember? No... I thought not. It may come back in time. It may not.\n\n'
-                                f'The farmer saw goblins running from that ditch, with a sword and a shield. Yours, I would wager. '
+                                f'The farmer saw kobolds running from that ditch, with a sword and a shield. Yours, I would wager. '
                                 f'They nest in the Hollow Den, to the {self.dir_to("den")}; old Snagtooth leads them. '
                                 f'Without a blade you will have to use your fists. Be careful.\n\n'
                                 f'Here, a few coppers from the poor box. Elder Berend will want to meet you too; his house is on the green. '
@@ -2108,8 +2113,49 @@ class Game:
             from . import foraging as FG
             FG.herbalist_talk(self, npc)
             return
+        if role == 'fisher':
+            self.fisher_talk(npc)
+            return
         line = random.choice(TW.BARKS.get(getattr(npc, 'job', 'any'), TW.BARKS['any'])) if random.random() < .3 else self.rumor()
         self.say(npc, line)
+
+    def fisher_talk(self, npc):
+        """The old fisherman by the pond in Thornfield: your first fishing pole, and your first catch."""
+        from . import lifeskills as LS
+        f, p = self.flags, self.player
+        if not f.get('quest_fish'):
+            f['quest_fish'] = True
+            if not LS.has_pole(self):
+                self.add_to_inv(Item(self.new_id(), 'tool', 'rod'))
+            self.request = ('dialog', npc.name,
+                            f'"Hm? Oh, you are the one they pulled out of the ditch. Nothing to do with yourself yet, eh?\n\n'
+                            f'Here, take this old pole. I have three more. Stand by the water, press A to cast, and be patient. '
+                            f'The perch in this pond are small, but they bite.\n\n'
+                            f'Bring me your first fish and I will show you what an old man knows about the trade."\n\n'
+                            f'(You receive a fishing pole.)')
+            return
+        if not f.get('fish_done'):
+            fish = next((i for i in p.inv if i.k == 'fish'), None)
+            if not fish:
+                self.say(npc, random.choice(['Patience. The fish do not care how hungry you are.',
+                                             'Stand close to the water and press A. Then wait.',
+                                             'Nothing yet? Try again. And again. That is fishing.']))
+                return
+            f['fish_done'] = True
+            name = fish.display_name().split('x ', 1)[-1]
+            self.remove_one(fish)
+            p.gold += 150
+            self.add_to_inv(HU.make_food(self, 'bread'))
+            LS.gain(self, 'fishing', 6)
+            self.request = ('dialog', npc.name,
+                            f'"A {name.lower()}! Ha, look at that. Not bad for a first catch.\n\n'
+                            f'Now listen: rivers have trout, lakes have carp, and the sea has things you would not believe. '
+                            f'The better you get, the bigger the fish that bite. And a fish on a fire beats any inn stew.\n\n'
+                            f'Here, a loaf of bread, and a few coppers for the fish. I will have it for supper."\n\n'
+                            f'(You receive 1 silver 50 copper and a loaf of bread. Your fishing improves.)')
+            return
+        self.say(npc, random.choice(['Caught anything big yet?', 'They say a golden carp lives in the deep rivers. I never saw it.',
+                                     'The pike in the lakes will take your finger off. Mind it.', self.rumor()]))
 
     def rumor(self):
         w = self.world
@@ -2124,7 +2170,7 @@ class Game:
             kind = s.kind_name
             f = D.FACTIONS[s.faction]['short']
             return (f"There is a {kind} called {s.name} to the {dir_name(s.x - ox, s.y - oy)}, "
-                    f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land. I marked it on your map.")
+                    f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land.")
         r = random.random()
         if r < .45:
             s = random.choice(w.settlements)
@@ -2150,7 +2196,7 @@ class Game:
                 if poi.did == d.id:
                     EV.reveal(self, poi)
             here = self.here or w.settlements[0]
-            return f'There is an old place called {d.name} to the {dir_name(d.x - here.x, d.y - here.y)}. I marked it on your map.'
+            return f'There is an old place called {d.name} to the {dir_name(d.x - here.x, d.y - here.y)}. Never been there myself.'
         return random.choice(D.RUMORS)
 
 

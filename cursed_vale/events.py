@@ -84,10 +84,17 @@ def gen_pois(game, m, world):
                 pool = [n for n in RUIN_STYLE[kind][2] if n not in {q.name for q in world.pois}]
                 name = random.choice(pool) if pool else RUIN_STYLE[kind][2][0]
             elif kind == 'shrine':
-                name = shrines.pop() if shrines else 'Wayside Shrine'
+                from .gods import GODS
+                god = random.choice(['solmara', 'solmara', 'valdric', 'thessa', 'thessa', 'durnak', 'skell', 'skell'])
+                gname = GODS[god]['name']
+                pool = [f'Shrine of {gname}', f"{gname}'s Wayside Shrine", f'Mossy Shrine of {gname}',
+                        f'Old Shrine of {gname}', f"{gname}'s Stone"]
+                name = next((n for n in random.sample(pool, len(pool)) if n not in {q.name for q in world.pois}), pool[0])
             else:
                 name = {'camp': 'Bandit Camp', 'stones': 'Standing Stones', 'wagon': 'Abandoned Wagon'}[kind]
             poi = POI(len(world.pois), kind, x, y, name)
+            if kind == 'shrine':
+                poi.god = god
             if kind in RUIN_KINDS:
                 danger = world.danger_at(x, y)
                 if kind in RUIN_STYLE:
@@ -162,7 +169,10 @@ def on_poi(game, poi):
         opts = [('Pray and leave an offering of 10 silver', 'offer'), ('Pray without an offering', 'pray'), ('Walk on', 'leave')]
         if game.player.gold < 1000:
             opts = opts[1:]
-        ask(game, 'shrine', poi.name, 'An old shrine, its stone worn smooth by the hands of pilgrims. Candles still burn here.', opts, poi=poi.id)
+        from .gods import GODS
+        gd = GODS[getattr(poi, 'god', 'solmara')]
+        ask(game, 'shrine', poi.name, f"An old shrine to {gd['name']}, {gd['title']}, its stone worn smooth by the hands of "
+            'pilgrims. Candles still burn here.', opts, poi=poi.id)
     elif poi.kind == 'camp':
         ask(game, 'camp', 'Bandit Camp', 'Smoke rises from a ring of tents. You count at least five outlaws around the fire, '
             'and a strongbox under a tarp.', [('Attack the camp', 'attack'), ('Sneak away', 'leave')], poi=poi.id)
@@ -179,14 +189,22 @@ def _poi(game, ctx):
 
 
 def r_shrine(game, choice, ctx):
+    from . import gods as GD
     poi = _poi(game, ctx)
     p = game.player
     if choice == 'leave':
         return
+    god = getattr(poi, 'god', 'solmara')
+    mine = getattr(p, 'god', None)
+    if GD.opposed(mine, god):
+        game.msg(f"This is a shrine of {GD.GODS[god]['name']}. You cannot bring yourself to pray here.", 'bad')
+        return
     if choice == 'offer':
         p.gold -= 1000
     poi.ready_day = game.day + 5
-    if choice == 'pray' and random.random() < .2:
+    if mine == god:
+        GD.gain(game, 4 if choice == 'offer' else 2)
+    if choice == 'pray' and mine != god and random.random() < .2:
         p.buffs = [b for b in p.buffs if b[0] != 'dmg'] + [['dmg', -15, 300, 'Curse of Frailty']]
         game.msg('A cold wind snuffs the candles. You feel weaker. (Curse of Frailty: -15% damage)', 'bad')
         return
@@ -483,7 +501,7 @@ def spawn_traveller(game):
     if (game.cur == 'over' and (x, y) == (game.player.x, game.player.y)) or wanderer_at(game, x, y):
         return
     wd = Wanderer(game.new_id(), 'traveler', x, y)
-    wd.ch, wd.fg = '@', fg
+    wd.ch, wd.fg = '☺', fg
     wd.name = f'{name} the {kind}'
     wd.race = race
     wd.origin, wd.dest = a.id, b.id

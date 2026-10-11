@@ -1,4 +1,4 @@
-"""Cursed Vale - an ASCII action roguelike built on python-tcod.
+"""Umbrathyn - an ASCII action roguelike built on python-tcod.
 
 Run:  python main.py
 """
@@ -132,7 +132,7 @@ def main():
     k = window_scale()
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
     with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
-                          tileset=tileset, title='Cursed Vale', vsync=True, sdl_window_flags=flags) as ctx:
+                          tileset=tileset, title='Umbrathyn', vsync=True, sdl_window_flags=flags) as ctx:
         last_tick = 0.0
         while app.running:
             app.render()

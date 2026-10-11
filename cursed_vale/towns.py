@@ -5,7 +5,7 @@ from collections import deque
 
 from . import data as D
 from .data import (WALL, FLOOR, DOOR, ODOOR, GRASS, TREE, PATH, WELL, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN,
-                   ANVIL, ALTAR, BARREL, PLANK, ROCK)
+                   ANVIL, ALTAR, BARREL, PLANK, ROCK, WATER, SHALLOW)
 from .entities import GameMap, make_npc, make_monster
 from .worldgen import cheb, rand_free
 
@@ -203,7 +203,7 @@ def staff(game, m, pl, role_key, names, s):
     return npc
 
 
-def townsfolk(game, m, home, work, names, job=None, fg='#a8aab4', ch='@', role='villager'):
+def townsfolk(game, m, home, work, names, job=None, fg='#a8aab4', ch='☺', role='villager'):
     c = random.choice(home) if home else work
     n = make_npc(game, f'{names.pop() if names else "A local"}' + (f' the {job}' if job and job not in ('child',) else ''),
                  role, fg, c[0], c[1], False, ch=ch)
@@ -235,7 +235,7 @@ def farmland(game, m, plots, sy, names, avoid=None):
             fw, fh = (random.randint(9, 16), random.randint(4, 7)) if kind == 'field' else (random.randint(8, 13), random.randint(5, 7))
             fx, fy = random.randint(1, w - fw - 2), random.randint(1, h - fh - 2)
             fp = Plot(fx, fy, fw, fh, kind)
-            if any(fp.overlaps(o, 1) for o in plots) or fy <= sy <= fy + fh or abs(fy + fh // 2 - sy) < 3:
+            if any(fp.overlaps(o, 1) for o in plots) or (fy <= sy + 2 and fy + fh >= sy - 2):
                 continue
             if avoid and avoid(fx, fy, fw, fh):
                 continue
@@ -246,7 +246,7 @@ def farmland(game, m, plots, sy, names, avoid=None):
                 for xx in range(fx, fx + fw):
                     edge = yy in (fy, fy + fh - 1) or xx in (fx, fx + fw - 1)
                     if kind == 'field':
-                        m.set(xx, yy, FENCE if edge and random.random() < .5 else FIELD)
+                        m.set(xx, yy, FENCE if edge else FIELD)
                     elif kind == 'pasture':
                         m.set(xx, yy, FENCE if edge else GRASS)
                     else:
@@ -267,6 +267,45 @@ def farmland(game, m, plots, sy, names, avoid=None):
     return fields, pastures
 
 
+def fishing_pond(game, m, plots, sy, names):
+    """A reedy pond by the village, with an old fisherman who will teach you to fish."""
+    for _ in range(300):
+        pw, ph = random.randint(11, 15), random.randint(6, 7)
+        px = random.randint(4, m.w - pw - 4)
+        py = random.choice([random.randint(2, sy - ph - 3), random.randint(sy + 4, m.h - ph - 2)])
+        pl = Plot(px - 1, py - 1, pw + 2, ph + 2, 'pond')
+        if any(pl.overlaps(o, 1) for o in plots):
+            continue
+        plots.append(pl)
+        cx, cy = px + pw / 2 - .5, py + ph / 2 - .5
+        for yy in range(py, py + ph):
+            for xx in range(px, px + pw):
+                d = ((xx - cx) / (pw / 2)) ** 2 + ((yy - cy) / (ph / 2)) ** 2
+                if d < .55:
+                    m.set(xx, yy, WATER)
+                elif d < 1:
+                    m.set(xx, yy, SHALLOW if random.random() < .7 else GRASS)
+                elif m.tile(xx, yy) == TREE:
+                    m.set(xx, yy, GRASS)
+        # a little jetty of planks, the fisherman at its end
+        jx = px + pw // 2
+        top = py < sy
+        step = -1 if top else 1
+        shore = py + ph - 1 if top else py
+        for k in range(3):
+            m.set(jx, shore + k * step, PLANK)
+        fy = shore + 2 * step
+        carve_path(m, (jx, shore - step), (jx, sy))
+        full = names.pop()
+        from .races import who
+        gender, race = who(full)
+        fisher = make_npc(game, f"Old {full.split()[0]} the {'Fisherwoman' if gender == 'female' else 'Fisherman'}", 'fisher', '#9cc8e0', jx, fy, True,
+                          race=race, gender=gender)
+        m.mons.append(fisher)
+        return pl
+    return None
+
+
 def gen_village(game, s):
     w, h = 104, 38
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
@@ -275,13 +314,14 @@ def gen_village(game, s):
         if random.random() < .04:
             m.t[i] = TREE
     sy = h // 2
-    for x in range(w):
-        m.set(x, sy, PATH)
+    for x in range(w):                  # the high street: three wide
+        for yy in (sy - 1, sy, sy + 1):
+            m.set(x, yy, PATH)
     cx = w // 2
     # the green with a well and market stalls
     for yy in range(sy - 2, sy + 3):
         for xx in range(cx - 5, cx + 6):
-            m.set(xx, yy, PATH if yy == sy else GRASS)
+            m.set(xx, yy, PATH if abs(yy - sy) <= 1 else GRASS)
     m.set(cx, sy - 2, WELL)
     stalls = [(cx - 4, sy + 2), (cx - 3, sy + 2), (cx + 3, sy + 2), (cx + 4, sy + 2)]
     for c in stalls:
@@ -296,7 +336,7 @@ def gen_village(game, s):
         for _ in range(300):
             pw, ph = (random.randint(11, 14), random.randint(6, 8)) if k in ('inn', 'temple') else (random.randint(7, 10), random.randint(5, 6))
             px = random.randint(max(2, cx - 36), min(w - pw - 2, cx + 36 - pw))
-            py = random.choice([random.randint(1, sy - ph - 1), random.randint(sy + 2, h - ph - 1)])
+            py = random.choice([random.randint(1, sy - ph - 2), random.randint(sy + 3, h - ph - 1)])
             pl = Plot(px, py, pw, ph, k)
             if py < 1 or py + ph > h - 1 or any(pl.overlaps(o) for o in plots):
                 continue
@@ -310,6 +350,8 @@ def gen_village(game, s):
         furnish(m, pl)
         if pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
+    if s.id == 0:
+        fishing_pond(game, m, plots, sy, names)
     # farmland all around: fields, pastures with livestock, orchards
     fields, pastures = farmland(game, m, plots, sy, names)
     fields = fields + pastures
@@ -338,7 +380,7 @@ def gen_village(game, s):
                 job = random.choice(JOBS)
             if not m.inb(*work) or not D.TILES[m.tile(*work)].walk:
                 work = (cx, sy)
-            townsfolk(game, m, beds, work, names, job, ch='☺' if job == 'child' else '@',
+            townsfolk(game, m, beds, work, names, job, ch='☺',
                       fg='#c8b8a0' if job == 'child' else '#a8aab4')
     c = rand_free(game, m, lambda t: t == GRASS)
     if c:
@@ -371,6 +413,12 @@ def gen_city(game, s):
     for x in streets_x:
         for y in range(1, h - 1):
             m.set(x, y, PATH)
+    for x in range(1, w - 1):           # the high street and the market way are three wide
+        for d in (-1, 1):
+            m.set(x, streets_y[1] + d, PATH)
+    for y in range(1, h - 1):
+        for d in (-1, 1):
+            m.set(streets_x[2] + d, y, PATH)
     gy = streets_y[0]
     m.set(0, gy, PATH)
     m.set(w - 1, streets_y[1], PATH)
@@ -445,7 +493,7 @@ def gen_city(game, s):
                 work, job = (random.choice(streets_x), random.randint(2, h - 3)), 'any'
             if not D.TILES[m.tile(*work)].walk:
                 work = (px, py + 1)
-            townsfolk(game, m, beds, work, names, job, ch='☺' if job == 'child' else '@',
+            townsfolk(game, m, beds, work, names, job, ch='☺',
                       fg='#c8b8a0' if job == 'child' else '#a8aab4')
     barracks = next((p for p in buildings if p.kind == 'barracks'), None)
     gfg = D.FACTIONS[s.faction]['fg']

@@ -795,8 +795,96 @@ def countryside():
     print('countryside ok')
 
 
+def thornfield_and_faith():
+    """The calendar, the fisherman's first catch, the kobold den, people you can inspect, the gods,
+    brewing, signposts that only point the way, and the Tab menu."""
+    from cursed_vale import calendar as CAL, gods as GD, brewing as BR, hunger as HU, lifeskills as LS
+    from cursed_vale import describe as DS, worldgen as WG
+    assert CAL.short(1) == '3 Seedwake', CAL.short(1)
+    assert 'Seedwake' in CAL.long(1)
+    app = new_app()
+    g = app.game
+    p = g.player
+    # title screen draws
+    t = ui.App(FakeCanvas(ui.W, ui.H))
+    t.render()
+    assert 'Umbrathyn'.upper()[0] and any(ch != ' ' for ch in t.cv.ch)
+    # Thornfield: three-wide high street, a pond with a fisherman
+    g.enter_town(0)
+    g.request = None
+    m = g.map
+    sy = m.h // 2
+    assert all(m.tile(5, yy) == D.PATH for yy in (sy - 1, sy, sy + 1))
+    fisher = next(o for o in m.mons if o.role == 'fisher')
+    assert any(m.tile(fisher.x + dx, fisher.y + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+    p.inv = [i for i in p.inv if not (i.k == 'tool')]
+    g.talk(fisher)
+    assert LS.has_pole(g) and g.flags.get('quest_fish')
+    assert any(t == 'A first catch' for t, _x in g.story())
+    p.inv.append(LS.make_fish(g, 'perch'))
+    gold = p.gold
+    g.talk(fisher)
+    assert g.flags.get('fish_done') and p.gold > gold
+    # everyone friendly is a smiley, and has a people and a gender
+    folk = [o for o in m.mons if o.is_npc and o.role not in ('livestock', 'dog')]
+    assert folk and all(o.ch == '☺' for o in folk), {o.ch for o in folk}
+    title, _c, lines = DS.monster(g, folk[0])
+    assert lines[0].startswith('People:'), lines
+    print('inspect:', title, '|', lines[0])
+    # brewing at the inn
+    p.inv.append(HU.make_food(g, 'barley', 2))
+    random.seed(5)
+    BR.brew(g, 'ale')
+    # the den: kobolds only, in ones and twos
+    dm = WG.gen_dungeon(g, 'den', 1)
+    keys = {o.k for o in dm.mons}
+    assert keys <= {'kobold', 'snagtooth'}, keys
+    packs = {}
+    for o in dm.mons:
+        packs[o.pack] = packs.get(o.pack, 0) + 1
+    assert max(packs.values()) <= 2, packs
+    assert sum(1 for o in dm.mons if o.k == 'kobold') <= 8
+    # a god
+    app.screens = [ui.GameScreen(app), ui.TempleScreen(app, 'Sister Test')]
+    app.render()
+    life0 = g.stats()['max_life']
+    GD.devote(g, 'solmara')
+    assert p.god == 'solmara' and p.rep['cult'] < 0
+    GD.gain(g, 10)
+    assert g.stats()['max_life'] > life0
+    assert GD.opposed('solmara', 'morrak') and not GD.opposed('solmara', 'valdric')
+    app.render()
+    # signposts point the way but do not map the road
+    to_over(g)
+    om = g.maps['over']
+    seen0 = sum(om.seen)
+    g.cur = 'over'
+    g.read_signpost() if g.here else None
+    g.request = None
+    assert sum(om.seen) - seen0 <= 6
+    # the Tab menu opens other screens by their hotkey
+    app.screens = [ui.GameScreen(app)]
+    app.key('tab')
+    assert isinstance(app.top, ui.MenuScreen)
+    app.render()
+    app.key('i')
+    assert isinstance(app.top, ui.InventoryScreen), app.top
+    app.key('esc')
+    app.key('tab')
+    app.key('P')
+    assert isinstance(app.top, ui.BrewScreen)
+    app.render()
+    app.key('esc')
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app), ui.JournalScreen(app)]
+    app.render()
+    print('thornfield and faith ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
+    thornfield_and_faith()
     countryside()
     start_and_survival()
     crime_and_coin()

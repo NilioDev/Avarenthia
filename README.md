@@ -1,4 +1,4 @@
-# Cursed Vale
+# Umbrathyn
 
 Een ASCII open-world RPG in Python met [python-tcod](https://python-tcod.readthedocs.io/) (libtcod).
 Je wordt wakker zonder geheugen en bent niemand. Een willekeurige open wereld met snelle gevechten, handel tussen
@@ -7,7 +7,7 @@ zichtbaar over de kaart trekken, en een wereld die op de achtergrond verandert.
 
 ## Je held
 
-Je wordt wakker in een tempel even buiten Thornfield, zonder geheugen en zonder wapens: goblins hebben je zwaard en schild
+Je wordt wakker in een tempel even buiten Thornfield, zonder geheugen en zonder wapens: kobolds hebben je zwaard en schild
 meegenomen naar de Hollow Den. Tot je die terughaalt vecht je met je vuisten (de discipline Unarmed groeit daarmee),
 en bij hun aanvoerder Snagtooth ligt ook je eerste spreukenboek. Je bent niemand; wat je wordt, bepaal je zelf.
 
@@ -90,6 +90,21 @@ Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanval
   Reputatie in een plaats geeft een bonus op beloningen en betere prijzen.
 - Bandieten overvallen karavanen; patrouilles uit de steden jagen bandieten weg.
 
+**Thornfield** heeft een vijver met een oude visser. Praat met hem voor je eerste hengel en je eerste opdracht: vang een vis.
+De Hollow Den is een smerige kobold-grot met kampvuurtjes, botten en vuil; de kobolds komen alleen of met z'n tweeën.
+
+**Vaardigheden van het leven** groeien door ze te doen: vissen, foerageren, kruidenkunde (kruiden plukken en herkennen),
+alchemie (drankjes uit kruiden, `Shift+P`) en brouwen (bier, bessenwijn en mede, bij een herberg of in een kloosterkelder).
+
+**Goden.** Een klein pantheon: Solmara (licht en genade), Valdric (wet, beschermer van de kroon), Thessa (de wilde natuur),
+Durnak (smidse en steen, de god van de dwergen), Skell (geluk, wegen, handel en dieven) en Morrak (dood en honger).
+In een tempel kun je je aan de god van die tempel wijden. Bidden, offers en daden die je god bevalt geven gunst, en
+daarmee zegeningen. Maar facties die een rivaliserende god aanbidden vertrouwen je minder, en de priesters van een
+vijandige god helpen je niet.
+
+**De kalender.** Twaalf maanden van dertig dagen (van Deepfrost tot Longnight) en een week van zeven dagen; het verhaal
+begint op Stonesday, de 3e van Seedwake, 1172 AR.
+
 ## De wildernis
 
 - Op de wegen ben je redelijk veilig. Hoe verder je van de weg afdwaalt, hoe gevaarlijker het wordt: grotere roedels,
@@ -97,7 +112,8 @@ Je reputatie per factie bepaalt prijzen, welke poorten opengaan en wie je aanval
 - Verborgen plekken om te ontdekken: ruïnes (`Π`, kleine kerkers), heiligdommen (`†`, zegeningen), bandietenkampen (`∆`),
   staande stenen (`Ψ`) en verlaten wagens (`¤`).
 - Onderweg gebeurt van alles: gewonde reizigers, marskramers, tolwegen van de Zwarte Hand, stormen, dwaallichtjes.
-- Reizigers (`@` op de weg) kun je aanspreken door ertegenaan te lopen. Sommigen hebben een klus voor je
+- Wegwijzers en praatjes vertellen je wáár een plaats ligt; de weg en het land ernaartoe ontdek je pas door er langs te komen.
+- Reizigers (`☺` op de weg) kun je aanspreken door ertegenaan te lopen. Sommigen hebben een klus voor je
   (brief bezorgen, goederen halen, een beest doden, iets terughalen uit een ruïne). Daarna wachten ze op je in de herberg
   van de plaats waar ze heen liepen; dat staat in je dagboek en op de kaart.
 - Het bestiarium (`V`) houdt bij welke monsters je hebt gezien. Elke kill leert je meer: hogere kennis geeft meer schade
@@ -140,10 +156,10 @@ py -m venv .venv
 
 Een uitvoerbaar bestand moet je bouwen op het besturingssysteem waarop het moet draaien.
 
-**Windows:** dubbelklik op `build_windows.bat`. Na een paar minuten staat `dist\CursedVale.exe` klaar.
+**Windows:** dubbelklik op `build_windows.bat`. Na een paar minuten staat `dist\Umbrathyn.exe` klaar.
 Dat bestand kun je overal neerzetten en starten. Je savegame komt ernaast te staan.
 
-**macOS / Linux:** `bash build.sh`, daarna staat `dist/CursedVale` klaar.
+**macOS / Linux:** `bash build.sh`, daarna staat `dist/Umbrathyn` klaar.
 
 **Via GitHub, zonder zelf iets te installeren:** zet deze map in een GitHub-repository.
 De workflow in `.github/workflows/build.yml` bouwt bij elke push automatisch een versie voor
@@ -163,7 +179,7 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `A` | vissen (naast water, met een hengel) |
 | `Shift+E` | eten |
 | `Shift+F` | foerageren |
-| `Shift+P` | drankjes brouwen |
+| `Shift+P` | alchemie en brouwen |
 | `O` of `;` | inspecteren |
 | `Z` | skills kiezen (in een stad of burcht) |
 | `Q` / `W` | health- of manadrankje |
@@ -171,13 +187,14 @@ Kies dan *Meer info* en *Toch uitvoeren*.
 | `X` | automatisch verkennen (stap voor stap te zien, elke toets stopt) |
 | `T` | reizen naar een bekende plaats of kerker |
 | `M` | kaart van het rijk (pijltjes scrollen, `Z` heel rijk, `F` facties) |
-| `E` of Tab | dagboek: banen, vracht en nieuws |
+| `E` | dagboek: verhaal, banen, vracht, facties en geloof |
+| Tab | menu met alle schermen en hun sneltoetsen |
 | `>` `<` of Enter | trap nemen, dorp of kerker in |
 | `G` | oppakken |
 | `I` / `D` / `C` | tas, iets laten vallen, karakterscherm |
 | `R`, `5`, `.` | rusten, een beurt wachten |
 | `V` of F2 | bestiarium |
-| `?` of F1 | hulp (twee pagina's: toetsen en de wereld) |
+| `?` of F1 | hulp (toetsen, de wereld, je held, de goden) |
 | Esc | opslaan en afsluiten |
 
 `>` en `<` gaan uit van een Amerikaanse toetsenbordindeling (Shift + punt/komma). Enter werkt altijd.

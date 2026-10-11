@@ -99,13 +99,13 @@ def gen_deephold(game, s):
         if role == 'shop' and 'shop' not in s.services:
             continue
         cx, cy, x0, y0, x1, y1 = centers[k]
-        m.mons.append(make_npc(game, title.format(n=names.pop()), role, col, cx, y0 + (2 if k != 'temple' else 1), True, ch='h'))
-    m.mons.append(make_npc(game, f'{names.pop()} the Trader', 'market', '#f2c44a', 36, 14, True, ch='h'))
+        m.mons.append(make_npc(game, title.format(n=names.pop()), role, col, cx, y0 + (2 if k != 'temple' else 1), True))
+    m.mons.append(make_npc(game, f'{names.pop()} the Trader', 'market', '#f2c44a', 36, 14, True))
     cx, cy, x0, y0, x1, y1 = centers['throne']
-    thane = make_npc(game, f'Thane {names.pop()}', 'thane', '#ffd860', cx, y0 + 1, True, ch='h')
+    thane = make_npc(game, f'Thane {names.pop()}', 'thane', '#ffd860', cx, y0 + 1, True)
     m.mons.append(thane)
     for gx, gy in ((9, 11), (9, 14), (cx - 2, y1), (cx + 2, y1)):
-        townsfolk(game, m, [(gx, gy)], (gx, gy), names, 'guard', '#b0b8c8', ch='h', role='guard')
+        townsfolk(game, m, [(gx, gy)], (gx, gy), names, 'guard', '#b0b8c8', role='guard')
     jobs = ['miner', 'miner', 'smith', 'smith', 'brewer', 'mason', 'miner', 'stonecutter']
     hx = centers['homes']
     for j in jobs:
@@ -114,7 +114,7 @@ def gen_deephold(game, s):
         work = (random.randint(work_room[2], work_room[4]), work_room[3] + 2) if work_room else (random.randint(14, 58), random.choice((11, 12, 13, 14)))
         if m.tile(*work) != FLOOR and m.tile(*work) != PLANK:
             work = (random.randint(14, 58), 12)
-        townsfolk(game, m, [home], work, names, j, '#c8a070', ch='h')
+        townsfolk(game, m, [home], work, names, j, '#c8a070')
     m.set(9, 9, D.SIGNPOST)
     m.signpost = (9, 9)
     return m

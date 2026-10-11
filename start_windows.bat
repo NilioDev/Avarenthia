@@ -1,5 +1,5 @@
 @echo off
-rem Starts Cursed Vale with Python. The first run installs what the game needs (about a minute).
+rem Starts Umbrathyn with Python. The first run installs what the game needs (about a minute).
 cd /d "%~dp0"
 where py >nul 2>nul && (set PY=py -3) || (set PY=python)
 if not exist ".venv\Scripts\pythonw.exe" (

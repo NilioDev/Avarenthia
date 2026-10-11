@@ -6,7 +6,7 @@ from . import data as D
 from .data import FLOOR, WALL, ROCK, WATER, SHALLOW, STATUE, DOOR, ODOOR, UP, DOWN
 
 # decoration codes (m.deco); they only change how a floor (or wall) looks, never what it does
-MOSS, GRASS, FUNGUS, BONES, RUBBLE, BLOOD, WEB, CARPET, TORCH, CRYSTAL, ASH, SLIME = range(1, 13)
+MOSS, GRASS, FUNGUS, BONES, RUBBLE, BLOOD, WEB, CARPET, TORCH, CRYSTAL, ASH, SLIME, FILTH, MUD, FIRE = range(1, 16)
 
 DECO_LOOK = {
     MOSS: ([(55, ','), (30, '.'), (15, '"')], (70, 128, 70), None),
@@ -20,9 +20,12 @@ DECO_LOOK = {
     CRYSTAL: ([(100, '*')], (170, 140, 255), (30, 20, 60)),
     ASH: ([(60, '.'), (40, ',')], (110, 100, 96), (24, 20, 20)),
     SLIME: ([(70, '~'), (30, ',')], (120, 200, 80), (16, 34, 10)),
+    FILTH: ([(40, '%'), (35, ','), (25, '~')], (140, 112, 60), (30, 22, 10)),
+    MUD: ([(50, '.'), (30, ','), (20, '~')], (110, 84, 52), (28, 20, 12)),
+    FIRE: ([(100, '☼')], (255, 150, 60), (70, 26, 8)),
 }
 # (colour, radius) of things that glow
-GLOW = {FUNGUS: ((60, 200, 170), 3), TORCH: ((255, 160, 70), 6), CRYSTAL: ((150, 110, 255), 4)}
+GLOW = {FUNGUS: ((60, 200, 170), 3), TORCH: ((255, 160, 70), 6), CRYSTAL: ((150, 110, 255), 4), FIRE: ((255, 130, 50), 6)}
 AMBIENT = {'cave': .30, 'dungeon': .26, 'crypt': .22}
 
 
@@ -87,7 +90,20 @@ def dress(game, m, d):
             for i in _blob(m, c % m.w, c // m.w, size, lambda i: m.t[i] == FLOOR and not m.deco[i]):
                 m.deco[i] = code
 
-    if style == 'cave':
+    if tag == 'den':                    # a kobold warren: filth, gnawed bones, mud and smoky cookfires
+        patch(MUD, random.randint(5, 8), 30)
+        patch(FILTH, random.randint(6, 10), 7)
+        patch(BONES, random.randint(6, 10), 4)
+        patch(RUBBLE, random.randint(3, 5), 6)
+        patch(SLIME, random.randint(1, 3), 5)
+        patch(MOSS, random.randint(1, 3), 12)
+        for _ in range(random.randint(2, 3)):
+            c = random.choice(floors)
+            m.deco[c] = FIRE
+            for o in (1, -1, m.w, -m.w):
+                if 0 <= c + o < len(m.t) and m.t[c + o] == FLOOR and random.random() < .5:
+                    m.deco[c + o] = BONES
+    elif style == 'cave':
         patch(MOSS, random.randint(3, 6), 30)
         patch(GRASS, random.randint(1, 3), 20)
         patch(FUNGUS, random.randint(2, 5), random.randint(6, 14))
@@ -162,6 +178,8 @@ def deco_look(m, i, look):
     ch, fg, bg = look
     if v == TORCH:
         return '#', (255, 176, 90), (90, 40, 10)
+    if v == FIRE and m.t[i] == FLOOR:
+        return '☼', (255, 150, 60), (70, 26, 8)
     spec = DECO_LOOK.get(v)
     if not spec or m.t[i] not in (FLOOR, SHALLOW, D.GRASS, D.PATH, D.SAND):
         return look

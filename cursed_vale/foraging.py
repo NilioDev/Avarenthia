@@ -5,8 +5,9 @@ the red berries that fed you last time might be nightshade in the next world. Un
 you see only what it looks like; eat it to find out. Most are harmless, some feed you, a few will kill
 you. The more you forage, the more often you recognise what you pick.
 
-Herbalism is knowing what herbs do and brewing them into potions (P), in the spirit of World of Warcraft.
-The herbalist monks in the monasteries teach the basics."""
+Herbalism is gathering herbs and knowing them. Alchemy is brewing them into potions (P), in the spirit of
+World of Warcraft; the herbalist monks in the monasteries teach the basics. Brewing (ale, mead, wine) is a
+craft of its own, done at the kettles of an inn or a monastery cellar."""
 import random
 
 from . import data as D
@@ -45,7 +46,7 @@ WHERE = {
     D.TREE: {'berry': 5, 'nut': 3, 'mushroom': 6, 'herb': 3},
     D.FLOOR: {'mushroom': 1},
 }
-# herbalism recipes: key -> (name, rank needed, ingredients, result potion)
+# alchemy recipes: key -> (name, rank needed, ingredients, result potion)
 RECIPES = {
     'healing': ('Healing Draught', 0, {'yarrow': 2}, 'hp'),
     'mana': ('Mana Tonic', 0, {'moonpetal': 2}, 'mp'),
@@ -120,17 +121,28 @@ def forage(game):
         return round(turns)
     grp = random.choices(list(where), list(where.values()))[0]
     cands = [k for k, v in PLANTS.items() if v[1] == grp]
-    key = random.choices(cands, [PLANTS[k][4] for k in cands])[0]
+    rare = 3 if LS.rank(game, 'herbalism') >= 8 else 1
+    key = random.choices(cands, [PLANTS[k][4] * (rare if PLANTS[k][4] <= 2 else 1) for k in cands])[0]
     n = random.randint(1, 2 + r // 6)
     it = make_plant(game, key, n)
     if not game.add_to_inv(it):
         game.msg('Your pack is full.', 'bad')
         return round(turns)
     LS.gain(game, 'foraging', 1)
+    from .gods import on_craft
+    on_craft(game, 'forage')
+    hr = LS.rank(game, 'herbalism')
     if PLANTS[key][1] == 'herb':
-        LS.gain(game, 'herbalism', .5)
-    if not known(game, key) and random.random() < r * .05:
+        LS.gain(game, 'herbalism', 1.5)
+        if hr >= 5:
+            extra = random.randint(0, 1 + hr // 6)
+            if extra:
+                it.n += extra
+                n += extra
+    if not known(game, key) and (random.random() < r * .05 or (PLANTS[key][1] == 'herb' and random.random() < hr * .07)):
         learn(game, key, 'you recognise it from experience')
+        if PLANTS[key][1] == 'herb':
+            LS.gain(game, 'herbalism', 3)
     game.msg(f'You find {n} {plant_name(game, key)}.' if known(game, key) else f'You find {plant_name(game, key)} ({n}).', 'good')
     if not known(game, key) and PLANTS[key][3] in ('deadly', 'poison') and random.random() < r * .06:
         game.msg('Something about it makes you uneasy.', 'info')
@@ -178,14 +190,16 @@ def eat_plant(game, it):
         game.msg(f'You eat the {plant_name(game, key)}. Good, honest food.', 'good')
     if not was_known:
         LS.gain(game, 'foraging', 3)
+        if grp == 'herb':
+            LS.gain(game, 'herbalism', 2)
         learn(game, key, 'the hard way' if effect in ('deadly', 'poison', 'sick', 'sleep') else 'by tasting it')
     return 1
 
 
-# ------------------------------------------------------------------ herbalism
+# ------------------------------------------------------------------ alchemy
 def recipes(game):
     from . import lifeskills as LS
-    r = LS.rank(game, 'herbalism')
+    r = LS.rank(game, 'alchemy')
     taught = game.player.recipes
     return [(k, v) for k, v in RECIPES.items() if k in taught or (k not in ('healing', 'mana') and r >= v[1] and taught)]
 
@@ -212,14 +226,14 @@ def brew(game, key):
         for _ in range(n):
             it = next(i for i in p.inv if i.k == 'plant' and i.t == k)
             game.remove_one(it)
-    r = LS.rank(game, 'herbalism')
+    r = LS.rank(game, 'alchemy')
     if random.random() < max(.05, .3 - r * .03):
         game.msg(f'The brew curdles and turns black. Your {name} is ruined.', 'bad')
-        LS.gain(game, 'herbalism', 1)
+        LS.gain(game, 'alchemy', 1)
         return 10
     game.add_to_inv(Item(game.new_id(), 'potion', res))
     game.msg(f'You brew a {name}.', 'good')
-    LS.gain(game, 'herbalism', 2 + rank // 2)
+    LS.gain(game, 'alchemy', 2 + rank // 2)
     return 10
 
 
@@ -234,9 +248,10 @@ def herbalist_talk(game, npc):
                         f'is yarrow: two of them steeped make a healing draught. And {game.world.plant_look["moonpetal"]}, '
                         'moonpetal, clears the mind; two make a mana tonic.\\n\\n'
                         'Never eat a mushroom you do not know. Never. Bring me what you find and I will tell you what it is."\\n\\n'
-                        '(You learn two recipes. Press P to brew.)')
+                        '(You learn two alchemy recipes. Press P to brew.)')
         from . import lifeskills as LS
-        LS.gain(game, 'herbalism', 3)
+        LS.gain(game, 'alchemy', 3)
+        LS.gain(game, 'herbalism', 2)
         return
     unknown = sorted({i.t for i in p.inv if i.k == 'plant' and not known(game, i.t)})
     if unknown:
@@ -245,6 +260,8 @@ def herbalist_talk(game, npc):
             lines.append(f'{game.world.plant_look[k]}: {PLANTS[k][0]}' + {'deadly': ' (deadly! throw it away)', 'poison': ' (poisonous)',
                                                                           'sick': ' (makes you sick)', 'sleep': ' (puts you to sleep)'}.get(PLANTS[k][3], ''))
             p.known_plants.add(k)
+        from . import lifeskills as LS
+        LS.gain(game, 'herbalism', len(unknown))
         game.request = ('dialog', npc.name, '"Let me see what you have there... "\\n\\n' + '\\n'.join(lines))
         return
     game.say(npc, random.choice(['Yarrow for wounds, moonpetal for the mind, feverfew for the belly.',

@@ -1,13 +1,13 @@
 @echo off
-rem Builds dist\CursedVale.exe - a single file you can run without Python.
+rem Builds dist\Umbrathyn.exe - a single file you can run without Python.
 cd /d "%~dp0"
 python -m venv .build-venv || goto :error
 call .build-venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 pip install -r requirements.txt pyinstaller || goto :error
-pyinstaller --noconfirm --clean --onefile --windowed --name CursedVale --add-data "assets;assets" main.py || goto :error
+pyinstaller --noconfirm --clean --onefile --windowed --name Umbrathyn --add-data "assets;assets" main.py || goto :error
 echo.
-echo Klaar: dist\CursedVale.exe
+echo Klaar: dist\Umbrathyn.exe
 pause
 exit /b 0
 :error

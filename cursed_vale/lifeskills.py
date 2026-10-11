@@ -12,10 +12,15 @@ LIFE = {
     'foraging': dict(name='Foraging', desc='Search the wild for food (Shift+F). Unknown plants must be tasted... carefully.',
                      perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once', 8: 'Poisonous plants make you uneasy',
                             10: 'Searching takes less time', 15: 'You rarely come back empty-handed'}),
-    'herbalism': dict(name='Herbalism', desc='Brew potions from herbs (P). The monastery herbalists teach the basics.',
-                      perks={3: 'Recipe: Antidote', 5: 'Fewer ruined brews', 8: 'Recipe: Kingsfoil Elixir', 10: 'Brews rarely fail'}),
+    'herbalism': dict(name='Herbalism', desc='Gathering herbs and knowing them: grows when you pick and learn herbs.',
+                      perks={3: 'You often recognise the herbs you pick', 5: 'You gather more herbs at once',
+                             8: 'Kingsfoil and other rare herbs turn up more often', 12: 'You can tell a herb at a glance'}),
+    'alchemy': dict(name='Alchemy', desc='Brewing potions from herbs (P). The monastery herbalists teach the basics.',
+                    perks={3: 'Recipe: Antidote', 5: 'Fewer ruined potions', 8: 'Recipe: Kingsfoil Elixir', 10: 'Potions rarely fail'}),
+    'brewing': dict(name='Brewing', desc='Ale, mead and wine (P), at the kettles of an inn or a monastery cellar.',
+                    perks={3: 'Recipe: Berry Wine', 5: 'Fewer spoiled batches', 6: 'Recipe: Mead', 10: 'You brew an extra mug now and then'}),
 }
-LIFE_ORDER = ['fishing', 'foraging', 'herbalism']
+LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing']
 
 # key: name, minimum rank, waters, weight, value, healing
 FISH = {
@@ -161,6 +166,8 @@ def fish(game):
     else:
         game.msg(f'You catch a {f[0]}, but your pack is full. You let it go.')
     gain(game, 'fishing', 1 + f[1] // 6)
+    from .gods import on_craft
+    on_craft(game, 'fish')
     if k == 'golden':
         game.msg('A golden carp! Fishermen will talk about this for years.', 'unique')
     return round(turns)

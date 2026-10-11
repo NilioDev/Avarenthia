@@ -199,6 +199,8 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
         r = random.random()
         elite = 2 if r < .07 else 1 if r < .19 else 0
     size = random.randint(2, 4) if elite == 1 else random.randint(1, 2) if big else random.randint(2, 5)
+    if tag == 'den':                    # the first dungeon: lone kobolds and pairs, never a mob
+        elite, size = 0, random.choices([1, 2], [3, 2])[0]
 
     def add(mon):
         mon.pack, mon.awake = pid, awake
@@ -246,7 +248,7 @@ def gen_dungeon(game, did, depth):
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
     npacks = 4 + depth + random.randint(0, 1)
     if d.tag == 'den':
-        npacks = 3                      # the first fight should teach, not punish
+        npacks = 4                      # the first fight should teach, not punish (packs of one or two)
     elites = 0
     for i in range(npacks):
         c = rand_free(game, m, lambda t: t == FLOOR, (up[0], up[1], 9))

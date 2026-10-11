@@ -10,7 +10,13 @@ FOODS = {
     'apple': ('Apple', 110, 25, (220, 70, 60)),
     'meat': ('Raw Meat', 180, 60, (200, 90, 90)),
     'jerky': ('Dried Meat', 350, 180, (170, 100, 70)),
+    'barley': ('Sack of Barley', 40, 30, (214, 190, 120)),
+    'honey': ('Pot of Honey', 160, 90, (240, 190, 60)),
+    'ale': ('Mug of Ale', 90, 70, (210, 150, 60)),
+    'wine': ('Bottle of Berry Wine', 80, 260, (170, 50, 90)),
+    'mead': ('Bottle of Mead', 120, 300, (240, 200, 90)),
 }
+DRINKS = {'ale', 'wine', 'mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}
 
 
@@ -75,6 +81,11 @@ def eat(game, it):
     if it.k == 'fish':
         from .lifeskills import FISH
         game.heal(FISH[it.t][5], True)
+    if it.k == 'food' and it.t in DRINKS:
+        game.heal(6 if it.t == 'ale' else 12, True)
+        game.msg({'ale': 'You down the ale. Warm, bitter and good.', 'wine': 'Sweet, dark berry wine. Your cheeks glow.',
+                  'mead': 'Golden mead, thick with honey. You feel like singing.'}[it.t], 'good')
+        return 1
     if it.k == 'food' and it.t == 'meat' and random.random() < .15:
         p.poison = [4, 1]
         game.msg('You eat the raw meat. Your stomach does not like it.', 'bad')
