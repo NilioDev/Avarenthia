@@ -381,20 +381,39 @@ def aurora_cell(ch, fg, bg, lx, ly, t):
 
 # ------------------------------------------------------------------ more kinds
 def freezing_cell(ch, fg, bg, lx, ly, t, dist):
-    """Freezing rain: a fine cold rain, and the ground glazed with ice that catches the light."""
-    fg = _mix(_mix(fg, _grey(fg), .35), (150, 180, 210), .2)
+    """Freezing rain: a fine, cold rain that turns to ice where it lands. The ground lies glazed in
+    patches that glint here and there; trees and grass take on a silver rime."""
+    fg = _mix(_mix(fg, _grey(fg), .35), (150, 180, 210), .18)
     bg = _mix(bg, (16, 22, 32), .35)
     ground = ch in GROUND
-    if ground or ch in '♣♠↑"':
-        sheen = math.sin(lx * .35 + ly * .2 - t * 1.2) * .5 + .5          # light sliding over the ice
-        bg = _mix(bg, (90, 120, 150), .25 + sheen ** 4 * .35)
-        if ground and _h(lx, ly, int(t * 3)) % 41 == 0:
-            ch, fg = '·', (230, 244, 255)                                 # a glint
-    a = _streak(lx, ly, t, ((.8, 24, 2, 17, .28),), .12)
+    if ch in '♣♠↑"n∩':                         # rime on trees and tall grass
+        fg = _mix(fg, (200, 220, 236), .35)
+    ice = _noise2(lx * .22, ly * .3, 125) * .7 + _noise2(lx * .6, ly * .7, 126) * .3
+    if ground and ice > .5:
+        glass = min(1.0, (ice - .5) * 4)
+        bg = _mix(bg, _mix((44, 60, 78), (70, 92, 116), (_h(lx, ly, 127) % 100) / 100), glass * .8)
+        if ice > .58 and ch in '.,\'`"':
+            ch = ' '                           # the glaze hides the ground beneath it
+        # a glint: one cell catches the light for a moment, then another
+        phase = t * .9 + (_h(lx, ly, 128) % 1000) / 1000 * 9
+        if _h(lx, ly, 129 + int(phase)) % 23 == 0:
+            k = math.sin((phase % 1) * math.pi)
+            ch = '+' if k > .85 else '·'
+            fg = _mix(bg, (235, 248, 255), .4 + .6 * k)
+    # the rain itself: fine and sparse; where a drop lands it flashes and freezes into a crystal
+    a = _streak(lx, ly, t, ((.7, 22, 2, 19, .22),), .1)
     if a > 0:
-        bg = _mix(bg, (190, 215, 240), a * .2)
-        if ground and a > .6:
-            ch, fg = '|', _mix(bg, (210, 230, 250), .6)
+        bg = _mix(bg, (180, 205, 232), a * .12)
+        if ground and a > .65:
+            ch, fg = '|', _mix(bg, (200, 222, 244), .55)
+        else:
+            fg = _mix(fg, (200, 222, 244), a * .25)
+    elif ground:
+        phase = t * 2.4 + (_h(lx, ly, 130) % 100) / 100 * 5
+        if _h(lx, ly, 131 + int(phase)) % 61 == 0:
+            age = phase % 1
+            ch = '*' if age < .25 else '∙' if age < .6 else '·'
+            fg = _mix((255, 255, 255), (150, 180, 210), age)
     return ch, fg, bg
 
 
@@ -631,8 +650,9 @@ EXTRA_PASSES = {'drystorm': drystorm_pass, 'meteors': meteors_pass, 'whirlwind':
 
 
 # ------------------------------------------------------------------ the painter
-def apply(cv, x0, y0, w, h, kind, t, centre=None):
-    """Paint weather over the rectangle (x0, y0, w, h) of a canvas. centre: the player's cell, for fog and snow."""
+def apply(cv, x0, y0, w, h, kind, t, centre=None, sheltered=None):
+    """Paint weather over the rectangle (x0, y0, w, h) of a canvas. centre: the player's cell, for fog and snow.
+    sheltered: cells (canvas x, y) under a roof, where no weather falls (only a lightning flash shows through)."""
     if kind == 'clear':
         return
     cx, cy = centre or (x0 + w // 2, y0 + h // 2)
@@ -643,6 +663,10 @@ def apply(cv, x0, y0, w, h, kind, t, centre=None):
             ch, fg, bg = cv.get(x, y)
             lx, ly = x - x0, y - y0
             dist = math.hypot(x - cx, y - cy)
+            if sheltered and (x, y) in sheltered:
+                if lightning:
+                    cv.put(x, y, ch, _mix(fg, (240, 244, 255), lightning * .3), _mix(bg, (150, 160, 200), lightning * .25))
+                continue
             if fam == 'rain':
                 ch, fg, bg = rain_cell(kind, ch, fg, bg, lx, ly, t, lightning)
             elif fam == 'snow':

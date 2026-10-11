@@ -62,10 +62,18 @@ def scene(where):
     app.screens = [ui.GameScreen(app)]
     app.render()
     ox, oy = app.top.origin
-    return app.cv, (g.player.x - ox, g.player.y - oy)
+    from cursed_vale import data as D
+    roofed = {D.FLOOR, D.PLANK, D.BED, D.TABLE, D.BARREL, D.ALTAR, D.ANVIL}
+    shelter = set()
+    if m.kind == 'town':
+        for vy in range(ui.MAP_H):
+            for vx in range(ui.MAP_W):
+                if m.inb(vx + ox, vy + oy) and m.tile(vx + ox, vy + oy) in roofed:
+                    shelter.add((vx, vy))
+    return app.cv, (g.player.x - ox, g.player.y - oy), shelter
 
 
-def cut(base, px, py, w, h):
+def cut(base, px, py, shelter, w, h):
     """A w x h piece of a canvas around (px, py), as a canvas of its own."""
     x0 = max(0, min(ui.MAP_W - w, px - w // 2))
     y0 = max(0, min(ui.MAP_H - h, py - h // 2))
@@ -74,14 +82,14 @@ def cut(base, px, py, w, h):
         for x in range(w):
             ch, fg, bg = base.get(x0 + x, y0 + y)
             cv.put(x, y, ch, fg, bg)
-    return cv, (px - x0, py - y0)
+    return cv, (px - x0, py - y0), {(x - x0, y - y0) for x, y in shelter}
 
 
 def frame(piece, kind, t):
-    cv0, centre = piece
+    cv0, centre, shelter = piece
     cv = FakeCanvas(cv0.w, cv0.h)
     cv.ch, cv.fg, cv.bg = list(cv0.ch), list(cv0.fg), list(cv0.bg)
-    WX.apply(cv, 0, 0, cv.w, cv.h, kind, t, centre=centre)
+    WX.apply(cv, 0, 0, cv.w, cv.h, kind, t, centre=centre, sheltered=shelter)
     tmp = os.path.join(OUT, '_p.png')
     save(cv, tmp)
     return Image.open(tmp).convert('RGB')
@@ -89,7 +97,7 @@ def frame(piece, kind, t):
 
 def catalog(scenes, frames=30, dt=.12, pw=34, ph=22, cols=4, items=None, name='weather_catalog'):
     items = items or CATALOG
-    pieces = {k: cut(scenes[s][0], *scenes[s][1], pw, ph) for k, s in items}
+    pieces = {k: cut(scenes[s][0], *scenes[s][1], scenes[s][2], pw, ph) for k, s in items}
     rows = (len(items) + cols - 1) // cols
     cw, chh = pw * TILE_W, ph * TILE_H
     gap, label = 6, 14
@@ -110,7 +118,7 @@ def catalog(scenes, frames=30, dt=.12, pw=34, ph=22, cols=4, items=None, name='w
 
 
 def single(scenes, kind, where, frames=36, dt=.1):
-    piece = cut(scenes[where][0], *scenes[where][1], 64, 40)
+    piece = cut(scenes[where][0], *scenes[where][1], scenes[where][2], 64, 40)
     imgs = []
     for f in range(frames):
         im = frame(piece, kind, 50 + f * dt)
