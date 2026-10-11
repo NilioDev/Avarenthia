@@ -880,7 +880,7 @@ def thornfield_and_faith():
     for o in dm.mons:
         packs[o.pack] = packs.get(o.pack, 0) + 1
     assert max(packs.values()) <= 2, packs
-    assert sum(1 for o in dm.mons if o.k == 'kobold') <= 8
+    assert sum(1 for o in dm.mons if o.k == "kobold") <= 10
     # a god
     app.screens = [ui.GameScreen(app), ui.TempleScreen(app, 'Sister Test')]
     app.render()

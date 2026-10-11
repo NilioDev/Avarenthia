@@ -233,7 +233,7 @@ def gen_dungeon(game, did, depth):
     d = game.world.dungeons[did]
     lvl = d.base + depth
     last = depth == d.depth
-    dw, dh = (60, 36) if d.tag == 'den' else (84, 50)       # square cells: maps as tall as they are wide
+    dw, dh = (80, 50) if d.tag == 'den' else (84, 50)       # square cells: maps as tall as they are wide
     m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if d.style == 'cave' else WALL)
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
     if d.style == 'cave':
@@ -261,7 +261,7 @@ def gen_dungeon(game, did, depth):
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
     npacks = round((4 + depth + random.randint(0, 1)) * 1.5)
     if d.tag == 'den':
-        npacks = 4                      # the first fight should teach, not punish (packs of one or two)
+        npacks = 5                      # the first fight should teach, not punish (packs of one or two)
     elites = 0
     for i in range(npacks):
         c = rand_free(game, m, lambda t: t == FLOOR, (up[0], up[1], 9))
