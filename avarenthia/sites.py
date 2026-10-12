@@ -49,6 +49,8 @@ def gen_sites(game, m, world):
         t = m.tile(x, y)
         if not D.TILES[t].walk or t in (D.ROAD, D.TOWN, D.CITY, D.ENTR, D.RIVER, D.CASTLE, D.FORT):
             return False
+        if y * m.w + x in getattr(world, 'wonder_cells', ()):
+            return False
         if any(cheb(x, y, a, b) < far for a, b in taken):
             return False
         if near_road is not None:

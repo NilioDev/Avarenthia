@@ -104,6 +104,10 @@ def eat(game, it):
     return 1
 
 
+def has_food(game):
+    return any(food_value(i) for i in game.player.inv)
+
+
 def eat_best(game):
     """Eat the food that best fits your hunger."""
     p = game.player

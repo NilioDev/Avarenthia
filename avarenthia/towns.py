@@ -1,6 +1,7 @@
 """Villages, cities and strongholds that feel lived in: furnished buildings, fields and market
 stalls, and townsfolk who go to work by day and home at night."""
 import random
+import heapq
 from collections import deque
 
 from . import data as D
@@ -1096,29 +1097,43 @@ def target_for(game, npc):
     return npc.work_pos if DAY_START <= h < DAY_END else npc.home_pos
 
 
+_PASS = None
+
+
 def path_between(m, a, b):
-    w = m.w
+    """A short walking route for townsfolk (A* with a straight-line guess; the first 60 steps)."""
+    global _PASS
+    if _PASS is None:
+        _PASS = [t.walk or t.door for t in D.TILES]
+    w, h = m.w, m.h
     start, goal = a[1] * w + a[0], b[1] * w + b[0]
+    gx, gy = b
     prev = {start: None}
-    q = deque([start])
-    while q:
-        c = q.popleft()
+    cost = {start: 0}
+    pq = [(max(abs(a[0] - gx), abs(a[1] - gy)), 0, start)]
+    t = m.t
+    found = False
+    while pq:
+        _f, d, c = heapq.heappop(pq)
         if c == goal:
+            found = True
             break
+        if d > cost[c]:
+            continue
         x, y = c % w, c // w
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
             nx, ny = x + dx, y + dy
-            if not (0 <= nx < w and 0 <= ny < m.h):
+            if not (0 <= nx < w and 0 <= ny < h):
                 continue
             ni = ny * w + nx
-            if ni in prev:
+            if not _PASS[t[ni]]:
                 continue
-            t = D.TILES[m.t[ni]]
-            if not (t.walk or t.door):
-                continue
-            prev[ni] = c
-            q.append(ni)
-    if goal not in prev:
+            nd = d + 1
+            if nd < cost.get(ni, 1 << 30):
+                cost[ni] = nd
+                prev[ni] = c
+                heapq.heappush(pq, (nd + max(abs(nx - gx), abs(ny - gy)), nd, ni))
+    if not found:
         return []
     out, c = [], goal
     while c != start:

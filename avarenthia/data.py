@@ -335,7 +335,9 @@ TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gat
 CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm', 'Saltreach', 'Aldmark', 'Kingsbridge', 'Marrowgate', 'Vellhaven']
 SIDE_DUNGEONS = [('Howling Cave', 'cave', 'cave'), ('Sunken Chapel', 'rooms', 'crypt'), ('Old Barrow', 'rooms', 'crypt'),
                  ('Gloomhollow', 'cave', 'cave'), ('Drowned Halls', 'rooms', 'dungeon'), ('Wyrm Den', 'cave', 'cave'),
-                 ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon')]
+                 ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon'),
+                 ('Frostmaw Grotto', 'cave', 'cave'), ('Saltworn Vaults', 'rooms', 'dungeon'), ('Ashen Crypt', 'rooms', 'crypt'),
+                 ('Weeping Mine', 'cave', 'cave')]
 RELICS = ["Saint Edda's Reliquary", 'the Silver Chalice', 'the Moonstone Idol', 'the Lost Charter', 'the Gilded Censer',
           "the Old King's Signet", 'the Starmetal Ingot', 'the Book of Hours']
 BANDIT_LEADERS = ['Black Hal', 'Red Maeve', 'One-Eyed Joss', 'Grisel the Knife', 'Old Corbin', 'Mad Ulric', 'Sable Tom']

@@ -53,12 +53,44 @@ class Wanderer:
         return self.name + '.'
 
 
+def _along_roads(m, a, b):
+    """The shortest way from a to b keeping to the roads (fast: only road cells are searched), or None."""
+    from collections import deque
+    w = m.w
+    ok = (ROAD, TOWN, CITY, D.CASTLE, D.FORT)
+    s, goal = a[1] * w + a[0], b[1] * w + b[0]
+    prev = {s: -1}
+    q = deque([s])
+    t = m.t
+    while q:
+        c = q.popleft()
+        if c == goal:
+            break
+        x, y = c % w, c // w
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+            nx, ny = x + dx, y + dy
+            ni = ny * w + nx
+            if 0 <= nx < w and 0 <= ny < m.h and ni not in prev and (t[ni] in ok or ni == goal):
+                prev[ni] = c
+                q.append(ni)
+    if goal not in prev:
+        return None
+    out = []
+    c = goal
+    while c != s:
+        out.append((c % w, c // w))
+        c = prev[c]
+    out.reverse()
+    return out
+
+
 def road_path(game, a, b):
     w = game.world
     key = (a, b)
     if key not in w.paths:
         sa, sb = w.settlements[a], w.settlements[b]
-        p = dijkstra_path(game.maps['over'], (sa.x, sa.y), (sb.x, sb.y))
+        p = _along_roads(game.maps['over'], (sa.x, sa.y), (sb.x, sb.y)) or \
+            dijkstra_path(game.maps['over'], (sa.x, sa.y), (sb.x, sb.y))
         w.paths[key] = p or []
         w.paths[(b, a)] = list(reversed(p[:-1])) + [(sa.x, sa.y)] if p else []
     return w.paths[key]

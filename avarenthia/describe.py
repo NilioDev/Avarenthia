@@ -152,6 +152,25 @@ def monster(game, mon):
     return mon.name, mon.fg, lines
 
 
+BIOME_DESC = {
+    'ocean': ('Open sea', 'Deep water, as far as the eye can see.'), 'sea': ('Sea', 'Grey-blue water, choppy and cold.'),
+    'shallows': ('Shallows', 'Shallow water over sand and weed.'), 'lake': ('Lake', 'A lake, still and clear.'),
+    'river': ('River', 'A river, running to the sea.'), 'beach': ('Shore', 'Sand and shingle along the water.'),
+    'meadow': ('Grassland', 'Open grassland, good for grazing.'), 'steppe': ('Steppe', 'Dry grass to the horizon.'),
+    'shrubland': ('Scrubland', 'Thorny bushes and hard ground.'), 'shrubland_cold': ('Moorland', 'Heather and cold wind.'),
+    'forest': ('Forest', 'Oak and beech, deep shade.'), 'deep_forest': ('Old forest', 'Ancient trees, thick with moss.'),
+    'conifer': ('Pinewood', 'Pine and fir, needles underfoot.'), 'taiga': ('Taiga', 'Dark spruce forest in the cold.'),
+    'dry_forest': ('Dry woods', 'Sparse trees with hard leaves.'), 'jungle': ('Jungle', 'Hot, wet and green, alive with noise.'),
+    'savanna': ('Savanna', 'Tall yellow grass and lonely trees.'), 'desert': ('Desert', 'Sand and heat. Little water.'),
+    'badlands': ('Badlands', 'Red rock cut by dry gullies.'), 'tundra': ('Tundra', 'Frozen ground and lichen.'),
+    'tundra_hills': ('Frozen hills', 'Bare hills under snow.'), 'glacier': ('Glacier', 'A river of ice.'),
+    'hills': ('Hills', 'Rolling hills.'), 'mountain': ('Mountains', 'Steep rock; there is no way over.'),
+    'peak': ('Peaks', 'Snow and ice; nothing lives up there.'), 'swamp': ('Swamp', 'Black water between the trees.'),
+    'marsh': ('Marsh', 'Wet meadow, reeds and pools.'), 'pack_ice': ('Pack ice', 'Floes of ice grinding on the sea.'),
+    'ice_shelf': ('Ice shelf', 'The ice of the far north, white without end.'),
+}
+
+
 def tile(game, m, x, y):
     i = y * m.w + x
     t = D.TILES[m.t[i]]
@@ -203,6 +222,15 @@ def over(game, x, y):
     if dg:
         return dg.name, (232, 96, 62), ['A way down into the dark.', f'{dg.depth} levels deep.']
     title, col, lines = tile(game, m, x, y)
+    bio = getattr(m, 'biome', None)
+    if bio is not None and m.t[y * m.w + x] != D.ROAD:
+        b = m.biome_names[bio[y * m.w + x]]
+        if b in BIOME_DESC:
+            title, text = BIOME_DESC[b]
+            lines = [text]
+        if y * m.w + x in getattr(w, 'wonder_cells', ()) and getattr(w, 'wonders', None):
+            name = min(w.wonders, key=lambda q: abs(q[1] - x) + abs(q[2] - y))[0]
+            lines.insert(0, f'Part of {name}.')
     lines.append(f'{w.region_at(x, y).name}, danger {w.danger_at(x, y)}.')
     ev = EVL.taint_at(game, x, y)
     if ev:

@@ -790,6 +790,9 @@ def climate(world, rid):
         return cache[rid]
     from .world import WORLD_H
     r = world.regions[rid]
+    if getattr(r, 'climate', None):
+        cache[rid] = r.climate
+        return r.climate
     lat = r.cy / WORLD_H                          # the north is cold, the far south hot and dry
     biome = getattr(r, 'biome', 'grass')
     if lat < .26 or (biome == 'hills' and lat < .45):

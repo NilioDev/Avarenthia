@@ -15,6 +15,21 @@ growing quietly in the background while you are busy elsewhere.
 and what is left are broken roads, old ruins and young kingdoms quarrelling over the pieces. The history, the gods and
 the peoples are told by the people you meet, a little at a time, and in the help pages.
 
+**One continent, a frozen north, islands out at sea.** Every world is made the way Dwarf Fortress makes its
+worlds: mountains rise in long chains, wet winds blow in from the western sea and drop their rain where the land
+climbs, so the land behind a range lies dry; the climate runs from the polar ice and pack ice of the north through
+tundra, taiga and the temperate woods and grasslands to savanna, desert and jungle in the far south. Rain gathers
+into real river systems with tributaries and lakes. The overworld is drawn in the calm style of the DF world map:
+black ground and one clear glyph per biome (`♣` broadleaf, `♠` pine, `↑` taiga, `"` grass, `n` hills, `▲`
+mountains, `~` desert, `·` tundra, `═║` rivers).
+
+**Wonders.** Each world has its rare sights, one of each at most and always where they belong: Starfall Crater, the
+Elder Tree, the Sundering, the White Waste, the Sea of Sand, the Steaming Fields, the Glass Hills, the Stone Wood, the
+Black Mire, the Glimmering, the Fjords, the Ashen Scar, the Burning Isle, the Wyrm's Bones in the desert, and far out
+at sea the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a maelstrom, ringed by
+drowned towers and by a coral atoll that the currents have torn open on one side. People talk about them; the first
+time you see one, you will know.
+
 **You learn the world by travelling.** At the start you only know the country around Thornfield. Signposts (`┬`)
 tell you where the roads go, and rumours tell you where a place lies, but the road and the land in between only appear
 on your map once you have walked them.
@@ -148,8 +163,10 @@ controller or a phone.
 | `?` | help |
 | Esc | save and quit |
 
-Every menu item shows its own shortcut on the right (`T` talk, `E` eat, `F` forage, `C` life skills, `X` explore,
-and so on). You never need them, but once you know them they are faster.
+Every menu item shows its own shortcut on the right (`T` talk, `E` eat, `F` forage, `C` life skills, `x` explore,
+and so on). The foot of the side panel shows what you can do where you stand, with its key (`Enter go in`,
+`T talk`, `a fish`, `E eat`, `F forage`, `R rest`), so you learn the shortcuts the moment they are useful. A capital
+letter means: with Shift.
 
 ## Install and run
 
@@ -201,12 +218,13 @@ Windows SmartScreen may warn because the file is not signed; choose *More info* 
 main.py                    window, tileset, keyboard (everything tcod-specific)
 avarenthia/ui.py           all screens and drawing, independent of tcod
 avarenthia/canvas.py       thin layer over the tcod console
-avarenthia/titleart.py     the animated title screen
+avarenthia/logo.py         the title emblem, baked from assets/logo.png by tools/make_logo.py
 avarenthia/engine.py       game rules: movement, combat, skills, exploring, saving
 avarenthia/data.py         tiles, skills, items, affixes, monsters, dungeons
 avarenthia/entities.py     Item, Monster, Player, GameMap; loot and monsters
 avarenthia/ai.py           monster habits and traits
 avarenthia/world.py        the realm: regions, roads, settlement sizes and services
+avarenthia/terrain.py      the shape of the world: continent, islands, climate, biomes, rivers, wonders
 avarenthia/worldgen.py     wilderness, dungeons (rooms and caves), shops
 avarenthia/towns.py        hamlets, villages, towns, cities and the metropolis
 avarenthia/sites.py        farms, roadside inns, temples, monasteries, watchtowers
@@ -233,7 +251,7 @@ avarenthia/dress.py        dungeon dressing and light
 avarenthia/fov.py          field of view through libtcod (symmetric shadowcasting)
 assets/glyphs.png          tileset made from the IBM CGA 8×8 font (Px437, every glyph)
 assets/fonts/              the font and its licence
-tools/                     tileset maker, screenshots, weather demo
+tools/                     tileset and logo makers, screenshots, weather demo
 tests/                     headless test and a bot that plays the game
 ```
 
@@ -241,6 +259,7 @@ tests/                     headless test and a bot that plays the game
 
 ```bash
 python tests/test_headless.py   # plays with random keys and draws every screen
+TEST_ONLY=wonders,wilds python tests/test_headless.py   # only some parts of it
 python tests/bot.py 4           # a bot plays through the dungeons
 ```
 

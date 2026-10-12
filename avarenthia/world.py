@@ -9,8 +9,27 @@ from .data import (WALL, FLOOR, DOOR, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOW
 from .entities import GameMap, make_npc
 from .worldgen import D8, cheb, bfs, noise_grid, rand_free
 
-WORLD_W, WORLD_H = 200, 110
-N_CITIES, N_VILLAGES = 6, 24
+WORLD_W, WORLD_H = 320, 180
+N_CITIES, N_VILLAGES = 8, 38
+# what each biome of the terrain is underfoot: the tile decides walking, roads and placement
+BIOME_TILE = {}
+for _t, _bs in ((WATER, 'ocean sea shallows icy_water pack_ice ice_shelf berg lake lagoon lagoon_deep reef_flat surf reef '
+                         'whirl_a whirl_b whirl_eye fjord crater_lake hotpool brine'),
+                (RIVER, 'river'),
+                (SAND, 'beach desert dune dune_crest cay salt salt_edge bone_sand'),
+                (GRASS, 'meadow steppe shrubland shrubland_cold savanna tundra ashland scorched sinter crystal_ground '
+                        'stone_ground tar_edge crater_isle'),
+                (FOREST, 'forest deep_forest conifer taiga dry_forest jungle petrified dead_trees shroom elder_tree atoll_palm'),
+                (HILLS, 'hills tundra_hills badlands crater_rim chasm_edge crystal geyser cliff'),
+                (MOUNTAIN, 'mountain peak volcano glacier chasm lava scar_core'),
+                (SWAMP, 'swamp marsh tar')):
+    for _b in _bs.split():
+        BIOME_TILE[_b] = _t
+WONDER_BIOMES = set('crater_rim crater_lake crater_isle chasm chasm_edge salt salt_edge brine dune dune_crest geyser hotpool '
+                    'sinter elder_tree crystal crystal_ground whirl_a whirl_b whirl_eye reef_flat surf lagoon lagoon_deep cay '
+                    'atoll_palm petrified stone_ground tar tar_edge shroom fjord cliff scorched dead_trees scar_core bone_sand '
+                    'lava volcano ashland'.split())
+
 TIERS = ['hamlet', 'village', 'town', 'city', 'metropolis']   # small to large
 NPC_NAMES = ['Dorien', 'Ilse', 'Berend', 'Maud', 'Aldric', 'Petra', 'Hob', 'Wenna', 'Garrick', 'Tamsin', 'Osric', 'Lyra',
              'Bram', 'Edda', 'Corwin', 'Nell', 'Fenwick', 'Rowan', 'Sabine', 'Tobin', 'Agnes', 'Merrit', 'Jory', 'Hilde']
@@ -193,35 +212,39 @@ def _road_cost(t):
 
 
 def dijkstra_path(m, a, b, cost_fn=_road_cost):
-    """Cheapest 8-way path from a to b on the overworld, as a list of cells after a."""
-    w = m.w
+    """Cheapest 8-way path from a to b on the overworld, as a list of cells after a (A* search)."""
+    w, h = m.w, m.h
+    costs = [cost_fn(k) for k in range(len(D.TILES))]
+    floor = min((c for c in costs if c is not None), default=1)
     INF = 1 << 30
-    dist = [INF] * (m.w * m.h)
-    prev = [-1] * (m.w * m.h)
+    dist = {}
+    prev = {}
     s, goal = a[1] * w + a[0], b[1] * w + b[0]
+    gx, gy = b
     dist[s] = 0
-    pq = [(0, s)]
+    pq = [(0, 0, s)]
     t = m.t
     while pq:
-        d, c = heapq.heappop(pq)
+        _f, d, c = heapq.heappop(pq)
         if c == goal:
             break
-        if d > dist[c]:
+        if d > dist.get(c, INF):
             continue
         x, y = c % w, c // w
         for dx, dy in D8:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < w and 0 <= ny < m.h:
+            if 0 <= nx < w and 0 <= ny < h:
                 ni = ny * w + nx
-                cc = cost_fn(t[ni])
+                cc = costs[t[ni]]
                 if cc is None:
                     continue
                 nd = d + cc + (1 if dx and dy else 0)
-                if nd < dist[ni]:
+                if nd < dist.get(ni, INF):
                     dist[ni] = nd
                     prev[ni] = c
-                    heapq.heappush(pq, (nd, ni))
-    if dist[goal] >= INF:
+                    ddx, ddy = abs(nx - gx), abs(ny - gy)
+                    heapq.heappush(pq, (nd + floor * max(ddx, ddy), nd, ni))
+    if goal not in dist:
         return None
     out = []
     c = goal
@@ -241,60 +264,49 @@ def gen_world(game):
     for _attempt in range(40):
         m = GameMap('over', 'over', 'The Wilds', w, h, GRASS)
         m.radius = 10
-        n1, n2, n3 = noise_grid(w, h, 16), noise_grid(w, h, 7), noise_grid(w, h, 3)
-        m1, m2 = noise_grid(w, h, 14), noise_grid(w, h, 6)
-        H, Mo = [], []
-        for y in range(h):
-            for x in range(w):
-                e = max(abs(x / (w - 1) - .5), abs(y / (h - 1) - .5)) * 2
-                H.append(.55 * n1(x, y) + .3 * n2(x, y) + .15 * n3(x, y) - e ** 3 * .45)
-                Mo.append(.65 * m1(x, y) + .35 * m2(x, y))
-        sH, sM = sorted(H), sorted(Mo)
-        qh = lambda p: sH[int(p * (len(sH) - 1))]
-        qm = lambda p: sM[int(p * (len(sM) - 1))]
-        water, low, hills, mount = qh(.17), qh(.27), qh(.84), qh(.92)
-        forest, wet = qm(.6), qm(.55)
+        from . import terrain as TR
+        gen = TR.generate(random.getrandbits(32), w, h)
+        B = gen['B']
+        names = sorted(set(B.ravel().tolist()))
+        m.biome_names = names
+        idx = {n: k for k, n in enumerate(names)}
+        flat = B.ravel().tolist()
+        m.biome = bytearray(idx[b] for b in flat)
+        m.t = bytearray(BIOME_TILE.get(b, GRASS) for b in flat) if isinstance(m.t, bytearray) else [BIOME_TILE.get(b, GRASS) for b in flat]
         for i in range(w * h):
-            x, y, hv, mo = i % w, i // w, H[i], Mo[i]
-            if x in (0, w - 1) or y in (0, h - 1) or hv < water:
-                t = WATER
-            elif hv > mount:
-                t = MOUNTAIN
-            elif hv > hills:
-                t = HILLS
-            elif hv < low and mo > wet:
-                t = SWAMP
-            elif mo > forest:
-                t = FOREST
-            else:
-                t = GRASS
-            m.t[i] = t
-        # beaches
-        for i in range(w * h):
-            if m.t[i] in (GRASS, FOREST):
-                x, y = i % w, i // w
-                if any(m.inb(x + dx, y + dy) and m.t[(y + dy) * w + x + dx] == WATER for dx, dy in D8) and random.random() < .7:
-                    m.t[i] = SAND
-        # elevation and moisture, kept for drawing the land
-        import bisect
-        n_all = len(sH)
-        m.elev = bytearray(min(255, bisect.bisect_left(sH, H[i]) * 256 // n_all) for i in range(w * h))
-        m.moist = bytearray(min(255, bisect.bisect_left(sM, Mo[i]) * 256 // n_all) for i in range(w * h))
-        _carve_rivers(m, H)
-        # start: walkable grass near the middle with a large reachable area
-        cands = sorted((i for i in range(w * h) if m.t[i] == GRASS), key=lambda i: math.hypot(i % w - w / 2, i // w - h / 2))
+            x, y = i % w, i // w
+            if x in (0, w - 1) or y in (0, h - 1):
+                m.t[i] = WATER
+        el, rn = gen['elev'].ravel(), gen['rain'].ravel()
+        m.elev = bytearray(int(max(0, min(255, v * 255))) for v in el)
+        m.moist = bytearray(int(max(0, min(255, v * 255))) for v in rn)
+        m.river = bytearray(1 if (v and m.t[i] == RIVER) else 0 for i, v in enumerate(gen['river'].ravel()))
+        m.over = {y * w + x: v for (x, y), v in gen['over'].items() if 0 <= x < w and 0 <= y < h}
+        m.shadow = {y * w + x for (x, y) in gen['shadow'] if 0 <= x < w and 0 <= y < h}
+        wonder_cells = {i for i, b in enumerate(flat) if b in WONDER_BIOMES} | set(m.over)
+        # start: temperate open land near the heart of the continent, from which most of it can be walked
+        temp = gen['temp'].ravel()
+        cont = gen['continent'].ravel()
+        n_cont = int(cont.sum())
+        cx_ = sum(i % w for i in range(w * h) if cont[i]) / max(1, n_cont)
+        cy_ = sum(i // w for i in range(w * h) if cont[i]) / max(1, n_cont)
+        cands = sorted((i for i in range(w * h) if m.t[i] == GRASS and cont[i] and .38 < temp[i] < .62
+                        and flat[i] in ('meadow', 'steppe', 'shrubland') and i not in wonder_cells),
+                       key=lambda i: math.hypot(i % w - cx_, i // w - cy_))
         start = None
-        for i in cands[:400:20]:
+        for i in cands[:600:30]:
             dist = bfs(m, i % w, i // w, lambda t: D.TILES[t].walk)
-            if sum(1 for d in dist if d > 0) > w * h * .45:
+            if sum(1 for d in dist if d > 0) > n_cont * .7:
                 start = (i % w, i // w)
                 break
         if not start:
             continue
         world = World()
+        world.wonders = list(gen['wonders'])
+        world.wonder_cells = wonder_cells
         world.evils = evils
         world.factions = factions
-        reach = [i for i in range(w * h) if dist[i] > 0]
+        reach = [i for i in range(w * h) if dist[i] > 0 and i not in wonder_cells]
         reach_set = set(reach)
         _make_regions(m, world, reach, start)
         if not _place_settlements(game, m, world, reach_set, dist, start):
@@ -336,23 +348,43 @@ def _make_regions(m, world, reach, start):
     pool = reach[:]
     random.shuffle(pool)
     for i in pool:
-        if len(centers) >= 17:
+        if len(centers) >= 26:
             break
         x, y = i % w, i // w
         if all(math.hypot(x - cx, y - cy) > 24 for cx, cy in centers):
             centers.append((x, y))
     world.regions = [Region(i, cx, cy) for i, (cx, cy) in enumerate(centers)]
-    rof = bytearray(m.w * m.h)
+    import numpy as np
+    gy, gx = np.mgrid[0:m.h, 0:m.w]
+    cxs = np.array([c[0] for c in centers])[:, None, None]
+    cys = np.array([c[1] for c in centers])[:, None, None]
+    nearest = ((gx[None] - cxs) ** 2 + (gy[None] - cys) ** 2).argmin(axis=0).ravel().tolist()
+    rof = bytearray(nearest)
     counts = [dict() for _ in centers]
     for i in range(m.w * m.h):
-        x, y = i % w, i // w
-        best = min(range(len(centers)), key=lambda r: (x - centers[r][0]) ** 2 + (y - centers[r][1]) ** 2)
-        rof[i] = best
+        best = nearest[i]
         t = m.t[i]
         b = {GRASS: 'grass', FOREST: 'forest', SWAMP: 'swamp', HILLS: 'hills', MOUNTAIN: 'hills', SAND: 'coast'}.get(t)
         if b:
             counts[best][b] = counts[best].get(b, 0) + (3 if b == 'coast' else 1)
     world.region_of = rof
+    # each region's climate, from the biomes it is made of (the weather follows it)
+    bnames = getattr(m, 'biome_names', None)
+    if bnames:
+        cold = {'tundra', 'taiga', 'glacier', 'tundra_hills', 'shrubland_cold', 'conifer'}
+        arid = {'desert', 'dune', 'dune_crest', 'savanna', 'badlands', 'salt', 'dry_forest'}
+        wet = {'swamp', 'marsh'}
+        tally = [dict(cold=0, arid=0, marsh=0, temperate=0) for _ in centers]
+        for i in range(m.w * m.h):
+            if m.t[i] in (WATER, MOUNTAIN):
+                continue
+            b = bnames[m.biome[i]]
+            k = 'cold' if b in cold else 'arid' if b in arid else 'marsh' if b in wet else 'temperate'
+            tally[rof[i]][k] += 1
+        for r in world.regions:
+            tl = tally[r.id]
+            tl['marsh'] *= 3                     # a little marsh already makes a marshy region
+            r.climate = max(tl, key=tl.get)
     used = set()
     for r in world.regions:
         c = counts[r.id]
@@ -360,7 +392,7 @@ def _make_regions(m, world, reach, start):
         names = [n for n in D.BIOME_NAMES[r.biome] if n not in used] or D.BIOME_NAMES[r.biome]
         r.name = random.choice(names)
         used.add(r.name)
-        r.danger = 1 if r.id == 0 else max(1, min(10, 1 + round(math.hypot(r.cx - start[0], r.cy - start[1]) / 11)))
+        r.danger = 1 if r.id == 0 else max(1, min(10, 1 + round(math.hypot(r.cx - start[0], r.cy - start[1]) / 17)))
     world.regions[0].name = 'The Vale of Thorns'
     world.regions[0].biome = 'grass'
 
@@ -508,7 +540,7 @@ def _place_dungeons(m, world, reach, dist, start):
     random.shuffle(pool)
     k = 0
     for i in pool:
-        if k >= 6:
+        if k >= 9:
             break
         if not ok(i) or dist[i] < 12:
             continue

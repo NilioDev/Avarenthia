@@ -32,7 +32,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 13
+SAVE_VERSION = 14
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -357,6 +357,18 @@ class Game:
         p.mana = min(p.mana, s['max_mana'])
 
     # ------------------------------------------------------------ vision
+    def _see_wonders(self):
+        """The first time one of the world's great sights comes into view, say so."""
+        seen = self.__dict__.setdefault('wonders_seen', set())
+        m = self.map
+        for name, x, y in getattr(self.world, 'wonders', ()):
+            if name in seen:
+                continue
+            if any(m.inb(x + dx, y + dy) and self.vis[(y + dy) * m.w + x + dx] for dx in (-3, 0, 3) for dy in (-3, 0, 3)):
+                seen.add(name)
+                text = LORE.WONDERS.get(name, ('You see ' + name + '.',))[0]
+                self.msg(f'{name}. {text}', 'info')
+
     def compute_fov(self):
         m, p = self.map, self.player
         r = m.radius
@@ -374,6 +386,7 @@ class Game:
                 self.came_from = last                # which way you walked into a town
             self._over_last = (p.x, p.y)
             self.vis = fov.compute(m, p.x, p.y, self.over_sight(), dense={D.FOREST})
+            self._see_wonders()
         elif m.kind == 'town' and getattr(m, 'lights', None) and TW.town_ambient(self, m) > .3:
             # at night you see as far as the lamps light the streets
             near = fov.compute(m, p.x, p.y, r)
@@ -434,7 +447,7 @@ class Game:
     def compute_dist(self):
         m = self.map
         p = self.player
-        self.dist = W.bfs(m, p.x, p.y, lambda t: D.TILES[t].walk or D.TILES[t].door)
+        self.dist = W.bfs(m, p.x, p.y, lambda t: D.TILES[t].walk or D.TILES[t].door, maxd=45)
 
     def loc_name(self):
         m = self.map
@@ -2274,6 +2287,38 @@ class Game:
             return self.fish()
         self.msg('Nothing to do here. Tab opens the menu, with everything else.')
         return 0
+
+    def context_hints(self):
+        """What you could do right here, as (key, words): shown at the foot of the panel, so the shortcuts
+        are learnt the moment they are useful."""
+        m, p = self.map, self.player
+        out = []
+        foe = self.hostile_visible()
+        if self.usable_here():
+            out.append(('Enter', 'go in' if m.kind == 'over' else 'stairs'))
+        elif any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb') for i in m.items):
+            out.append(('Enter', 'pick up'))
+        elif self.nearby_people():
+            out.append(('T', 'talk'))
+        else:
+            for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0), (1, -1), (1, 1), (-1, 1), (-1, -1)):
+                if m.inb(p.x + dx, p.y + dy) and m.tile(p.x + dx, p.y + dy) in (D.SIGNPOST, D.CHEST):
+                    out.append(('Enter', 'read' if m.tile(p.x + dx, p.y + dy) == D.SIGNPOST else 'open'))
+                    break
+        if foe:
+            if self.stats()['ranged']:
+                out.append(('f', 'shoot'))
+            return out[:3]
+        if LS.has_pole(self) and LS.water_here(self):
+            out.append(('a', 'fish'))
+        if HU.state(getattr(p, 'food', 500)) in ('Hungry', 'Weak', 'Fainting', 'Starving') and HU.has_food(self):
+            out.append(('E', 'eat'))
+        if m.kind in ('over', 'wild') and m.tile(p.x, p.y) in (D.GRASS, D.FOREST, D.SWAMP, D.HILLS):
+            out.append(('F', 'forage'))
+        s = self.stats()
+        if p.life < s['max_life'] * .7 or p.mana < s['max_mana'] * .5:
+            out.append(('R', 'rest'))
+        return out[:3]
 
     def nearby_people(self):
         """Who you could talk to from where you stand: people within two steps (across a counter or a table)."""

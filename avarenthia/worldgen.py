@@ -14,22 +14,27 @@ def cheb(ax, ay, bx, by):
     return max(abs(ax - bx), abs(ay - by))
 
 
-def bfs(m, sx, sy, passable):
-    """Breadth-first distances (8-way) from (sx, sy). passable(tile_id) -> bool."""
+def bfs(m, sx, sy, passable, maxd=None):
+    """Breadth-first distances (8-way) from (sx, sy). passable(tile_id) -> bool. With maxd, cells further
+    than that stay at -1 (much faster on the big maps)."""
+    ok = [bool(passable(k)) for k in range(len(D.TILES))]
     dist = [-1] * (m.w * m.h)
     s = sy * m.w + sx
     dist[s] = 0
     q = deque([s])
-    w, t = m.w, m.t
+    w, h, t = m.w, m.h, m.t
+    lim = maxd if maxd is not None else 1 << 30
     while q:
         c = q.popleft()
-        x, y = c % w, c // w
         dc = dist[c] + 1
+        if dc > lim:
+            continue
+        x, y = c % w, c // w
         for dx, dy in D8:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < w and 0 <= ny < m.h:
+            if 0 <= nx < w and 0 <= ny < h:
                 ni = ny * w + nx
-                if dist[ni] == -1 and passable(t[ni]):
+                if dist[ni] == -1 and ok[t[ni]]:
                     dist[ni] = dc
                     q.append(ni)
     return dist

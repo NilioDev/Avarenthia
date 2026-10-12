@@ -243,40 +243,9 @@ class Screen:
 
 
 # ====================================================================== main menu
-FONT = {
-    'U': ["█   █", "█   █", "█   █", "█   █", "▀███▀"],
-    'M': ["█▄ ▄█", "█▀█▀█", "█   █", "█   █", "█   █"],
-    'B': ["████▄", "█   █", "████▀", "█   █", "████▀"],
-    'R': ["████▄", "█   █", "████▀", "█  ▀▄", "█   █"],
-    'A': ["▄███▄", "█   █", "█████", "█   █", "█   █"],
-    'T': ["█████", "  █  ", "  █  ", "  █  ", "  █  "],
-    'H': ["█   █", "█   █", "█████", "█   █", "█   █"],
-    'Y': ["█   █", "▀▄ ▄▀", "  █  ", "  █  ", "  █  "],
-    'N': ["█▄  █", "██▄ █", "█ ▀▄█", "█  ▀█", "█   █"],
-    'V': ["█   █", "█   █", "█   █", "▀▄ ▄▀", " ▀█▀ "],
-    'E': ["█████", "█    ", "████ ", "█    ", "█████"],
-    'I': ["█████", "  █  ", "  █  ", "  █  ", "█████"],
-}
 GAME_TITLE = 'AVARENTHIA'
 SUBTITLE = 'Tales of Fortune, Fame and Folly'
 AUTHOR = 'Nilio'
-
-
-def title_rows(word=GAME_TITLE, tall=2):
-    """The title in block letters. With square cells every row is drawn twice as tall: half blocks become
-    a full cell in the top or bottom row."""
-    rows = [' '.join(FONT[c][r] for c in word) for r in range(5)]
-    if tall == 1:
-        return rows
-    out = []
-    for ln in rows:
-        out.append(''.join('█' if c in '█▀' else ' ' for c in ln))
-        out.append(''.join('█' if c in '█▄' else ' ' for c in ln))
-    return out
-
-
-def _hash(x, y, s=0):
-    return LOOK._h(x, y, s)
 
 
 class MainMenu(Screen):
@@ -287,52 +256,51 @@ class MainMenu(Screen):
         self._bg = None
 
     def render(self, cv):
-        if self._bg is None or len(self._bg) != cv.w * cv.h:
-            from .titleart import paint
-            self._bg = paint(cv.w, cv.h)
+        """The emblem of Avarenthia on a night sky full of slowly twinkling stars."""
+        import math
+        from . import logo as LG
         t = time.monotonic()
-        for i, (ch, fg, bg) in enumerate(self._bg):
-            cv.put(i % cv.w, i // cv.w, ch, fg, bg)
-        from .titleart import animate
-        animate(cv, self._bg, t)
-        rows = title_rows()
-        x0 = (cv.w - len(rows[0])) // 2
-        y0 = 4
-        tops = [mix((255, 214, 120), (140, 36, 34), i / max(1, len(rows) - 1)) for i in range(len(rows))]
-        for k, ln in enumerate(rows):
-            for j, c in enumerate(ln):
-                if c == '█':
-                    cv.put(x0 + j + 1, y0 + k + 1, ' ', None, (6, 4, 8))      # shadow
-                elif c != ' ':
-                    cv.put(x0 + j + 1, y0 + k + 1, c, (6, 4, 8))
-        for k, ln in enumerate(rows):
-            for j, c in enumerate(ln):
-                if c == '█':
-                    cv.put(x0 + j, y0 + k, ' ', None, tops[k])
-                elif c != ' ':
-                    cv.put(x0 + j, y0 + k, c, tops[k])
-        # the subtitle, on a dark band so it reads over the sky
-        sub = f'─────  {SUBTITLE}  ─────'
-        sx, sy = (cv.w - len(sub)) // 2, y0 + len(rows) + 2
+        night = (8, 6, 6)
+        cv.fill(0, 0, cv.w, cv.h, ' ', None, night)
+        if self._bg is None:
+            rnd = random.Random(7)
+            self._bg = [(rnd.randrange(cv.w), rnd.randrange(cv.h), rnd.random()) for _ in range(260)]
+        for sx, sy, k in self._bg:
+            tw = .5 + .5 * math.sin(t * (1.1 + k * 2.6) + k * 50)
+            ch = '+' if k > .94 and tw > .75 else '·' if k > .5 else '∙'
+            col = mix((40, 36, 50), (255, 248, 225) if k < .85 else (200, 220, 255), (.25 + .75 * tw) * (.4 + .6 * k))
+            cv.put(sx, sy, ch, col, night)
+        x0, y0 = (cv.w - LG.W) // 2, 2
+        for x, y, ch, col, shine, edge in LG.CELLS:
+            bg = (2, 1, 1) if edge else night
+            if ch == ' ':
+                cv.put(x0 + x, y0 + y, ' ', None, bg)
+                continue
+            k = .5 + .5 * math.sin(x * .12 - t * 2.0)                     # a slow shimmer across the gold
+            cv.put(x0 + x, y0 + y, ch, mix(col, (255, 250, 225), .22 * k * shine / 100), bg)
+        sub = f'·  {SUBTITLE}  ·'
+        sx, sy = (cv.w - len(sub)) // 2, y0 + LG.SUBTITLE_ROW
         for j, c in enumerate(sub):
-            _c, _f, bg = cv.get(sx + j, sy)
-            cv.put(sx + j, sy, c, (236, 206, 150) if c != '─' else (170, 120, 80), mix(bg, (10, 8, 14), .55))
-        # the menu sits on the dark rock of the cliff, bottom left
+            if c == ' ' and cv.get(sx + j, sy)[0] not in (' ', '·', '∙', '+'):
+                continue                                   # the blade passes behind the words
+            cv.put(sx + j, sy, c, (236, 206, 150), night)
+        # the menu, centred under the emblem
         opts = self.options()
         self.sel = min(getattr(self, 'sel', 0), len(opts) - 1)
         bw = max(len(o[1]) for o in opts) + 10
-        bx, by = 4, cv.h - len(opts) * 2 - 5
-        for yy in range(by, by + len(opts) * 2 + 1):
-            for xx in range(bx, bx + bw):
-                cv.put(xx, yy, ' ', None, (14, 12, 18))
+        bx, by = (cv.w - bw) // 2, min(cv.h - len(opts) * 2 - 3, y0 + LG.H + 1)
         for k, (key, lab, col) in enumerate(opts):
-            on = k == self.sel
-            bg = (52, 40, 28) if on else (14, 12, 18)
-            cv.fill(bx + 1, by + 1 + k * 2, bw - 2, 1, ' ', None, bg)
-            cv.text(bx + 3, by + 1 + k * 2, '►' if on else ' ', GOLD, bg)
-            cv.text(bx + 5, by + 1 + k * 2, lab, GOLD if on else col, bg)
+            yy = by + k * 2
+            if k == self.sel:
+                cv.fill(bx, yy, bw, 1, ' ', None, (52, 40, 28))
+                cv.text(bx + 2, yy, '►', GOLD, (52, 40, 28))
+                cv.text(bx + (bw - len(lab)) // 2, yy, lab, GOLD, (52, 40, 28))
+                cv.text(bx + bw - 3, yy, '◄', GOLD, (52, 40, 28))
+            else:
+                cv.fill(bx, yy, bw, 1, ' ', None, night)
+                cv.text(bx + (bw - len(lab)) // 2, yy, lab, col, night)
         credit = f'a game by {AUTHOR}'
-        cv.text(cv.w - len(credit) - 2, cv.h - 2, credit, (150, 136, 120))
+        cv.text(cv.w - len(credit) - 2, cv.h - 2, credit, (150, 136, 120), night)
 
     def options(self):
         opts = []
@@ -856,6 +824,17 @@ class GameScreen(Screen):
         elif p.buffs:
             cv.text(x, 49, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
         self.draw_target(cv, x, 51)
+        # what you can do right here, then the keys that always work
+        hints = g.context_hints()
+        if hints:
+            cx = x
+            for key, words in hints:
+                piece = f'{key} {words}'
+                if cx + len(piece) > x + PW:
+                    break
+                cv.text(cx, H - 3, key, GOLD, PANEL)
+                cv.text(cx + len(key) + 1, H - 3, words, FG, PANEL)
+                cx += len(piece) + 2
         cv.text(x, H - 1, 'Enter act  Tab menu  ? help', scale(DIM, .8), PANEL, maxw=PW)
 
     def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
@@ -1696,18 +1675,22 @@ class HelpScreen(Modal):
             ('Enter  or  Space', 'Do the obvious thing here: go in, take the stairs, pick up,'),
             ('', 'talk to whoever is near, read a signpost, open a chest, fish.'),
             ('1  2  3  4  5  6', 'Use a skill from your bar (it aims at the nearest enemy)'),
-            ('Q   W', 'Drink a health or a mana potion'),
-            ('I', 'Your bag: what you carry and wear'),
-            ('M', 'The map of the realm'),
+            ('q   w', 'Drink a health or a mana potion'),
+            ('i', 'Your bag: what you carry and wear'),
+            ('m', 'The map of the realm'),
             ('Tab', 'The menu: everything else you can do or look at'),
             ('Esc', 'Back, close a window; on the map: save and quit'),
             ('?', 'This help'),
             ('.  or  5', 'Wait a turn'),
             ('', ''),
+            ('Panel, bottom', 'What you can do where you stand, with its key: Enter go in,'),
+            ('', 'T talk, a fish, E eat, F forage, R rest... Learn them as you go.'),
+            ('', ''),
             ('That is all you need.', 'Everything else is in the menu (Tab). Each item there shows'),
             ('', 'a shortcut of its own, for when you know your way around:'),
-            ('', 'C character, Shift+C life skills, Z skills, E journal,'),
-            ('', 'T talk, O look, X explore, Shift+F forage, A fish, F shoot...'),
+            ('', 'c character, C life skills, z skills, v bestiary, e journal,'),
+            ('', 't travel, x explore, o look, g pick up, P brewing...'),
+            ('', 'A capital letter means: with Shift.'),
             ('', ''),
             ('F11  Alt+Enter', 'Fullscreen'),
         ]),
@@ -2465,6 +2448,12 @@ class WorldMapScreen(Modal):
                 if by <= ly < by + vh:
                     lx = max(bx, min(bx + vw - len(st.name) - 2, lx))
                     cv.text(lx, ly, f' {st.name} ', (255, 226, 140) if st.is_city else (236, 210, 150), (30, 22, 14))
+        for name, wx, wy in getattr(w, 'wonders', ()):
+            if inview(wx, wy) and om.seen[wy * om.w + wx]:
+                lx = max(bx, min(bx + vw - len(name) - 2, bx + wx - ox - len(name) // 2))
+                ly = by + wy - oy - 2
+                if by <= ly < by + vh:
+                    cv.text(lx, ly, f' {name} ', (220, 196, 246), (34, 20, 44))
         cv.text_center(W // 2, y + 57, ' arrows/hjkl: scroll (Shift: faster) · Z: whole realm · F: factions · Esc: close ', DIM, PANEL)
 
     def render_overview(self, cv):
@@ -2477,11 +2466,13 @@ class WorldMapScreen(Modal):
         p = g.player
         here = g.here
         px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
-        for cy in range(om.h // 2):
-            for cx in range(om.w // 2):
+        f = max(om.w / 100, om.h / 56)            # world cells per map character
+        S = lambda v: int(v / f)
+        for cy in range(int(om.h / f)):
+            for cx in range(int(om.w / f)):
                 best, bt, bi, nbl = 0, None, 0, 0
-                for yy in range(cy * 2, min(om.h, cy * 2 + 2)):
-                    for xx in range(cx * 2, cx * 2 + 2):
+                for yy in range(int(cy * f), min(om.h, int((cy + 1) * f))):
+                    for xx in range(int(cx * f), min(om.w, int((cx + 1) * f))):
                         i = yy * om.w + xx
                         if not om.seen[i]:
                             continue
@@ -2499,35 +2490,42 @@ class WorldMapScreen(Modal):
                 if nbl:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[nbl - 1].d['taint'], bi)
                 if WorldMapScreen.show_factions:
-                    rf = w.regions[w.region_of[min(om.h - 1, cy * 2 + 1) * om.w + cx * 2]].faction
+                    rf = w.regions[w.region_of[min(om.h - 1, int(cy * f)) * om.w + int(cx * f)]].faction
                     bg = mix(PANEL, D.FACTIONS[rf]['fg'], .28)
                 cv.put(bx + cx, by + cy, ch, fg, bg)
         taken = set()
         for st in w.settlements:
-            taken.add((bx + st.x // 2, by + st.y // 2))
+            taken.add((bx + S(st.x), by + S(st.y)))
         for st in sorted(w.settlements, key=lambda q: not q.is_city):
             if not g.known_settlement(st):
                 continue
-            lx, ly = bx + st.x // 2 + 1, by + st.y // 2
+            lx, ly = bx + S(st.x) + 1, by + S(st.y)
             name = st.name
             if lx + len(name) > x + 103:
-                lx = bx + st.x // 2 - len(name)
+                lx = bx + S(st.x) - len(name)
             cells = {(lx + j, ly) for j in range(len(name) + 1)}
             if lx < x + 1 or cells & taken:
                 continue
             taken |= cells
             cv.text(lx, ly, name, (230, 196, 120) if st.is_city else (176, 146, 80), PANEL)
+        for name, wx, wy in getattr(w, 'wonders', ()):
+            if om.inb(wx, wy) and om.seen[wy * om.w + wx]:
+                lx, ly = bx + S(wx) - len(name) // 2, by + S(wy) - 1
+                cells = {(lx + j, ly) for j in range(len(name))}
+                if not cells & taken and lx > x:
+                    taken |= cells
+                    cv.text(lx, ly, name, (200, 170, 230), PANEL)
         for mi in MS.active(g):
             (tx, ty), _ = MS.target_pos(g, mi)
-            cv.put_bg(bx + tx // 2, by + ty // 2, (110, 80, 16))
-        cv.put(bx + px // 2, by + py // 2, '@', (255, 246, 220), (150, 40, 28))
+            cv.put_bg(bx + S(tx), by + S(ty), (110, 80, 16))
+        cv.put(bx + S(px), by + S(py), '@', (255, 246, 220), (150, 40, 28))
         for poi in w.pois:
             if poi.found:
                 ch, col = poi.glyph
-                cv.put(bx + poi.x // 2, by + poi.y // 2, ch, col if poi.ready_day < 10 ** 9 else scale(col, .5), PANEL)
+                cv.put(bx + S(poi.x), by + S(poi.y), ch, col if poi.ready_day < 10 ** 9 else scale(col, .5), PANEL)
         for hd in w.holds:
             if om.seen[hd.y * om.w + hd.x]:
-                cv.put(bx + hd.x // 2, by + hd.y // 2, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
+                cv.put(bx + S(hd.x), by + S(hd.y), 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
         if WorldMapScreen.show_factions:
             lx = x + 2
             for f in D.FACTION_ORDER:

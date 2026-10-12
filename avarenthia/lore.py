@@ -227,7 +227,64 @@ def hint_lore(game, npc=None):
     return random.choice(HISTORY)
 
 
-HINTS = [(hint_place, 4), (hint_dungeon, 2), (hint_plant, 2), (hint_evil, 3), (hint_war, 1.5), (hint_trade, 2),
+# the wonders of the world: what you see when you first come upon one, and how people speak of it
+WONDERS = {
+    'The Sky-Seat': ('Far out over the sea a broken city hangs in the empty air, and beneath it the water turns '
+                     'and turns. The Sky-Seat. It did not all fall.',
+                     ['Sailors will not go near the place where the sea turns. They say a city hangs over it, and it '
+                      'is lit at night.', 'Blue glass washes up on the beaches. My grandfather said it comes from the '
+                      'Sky-Seat, and that it never fell, not all of it.', 'A fisherman swore he heard bells under the '
+                      'water, far out. The bells of the old capital, he said.']),
+    'The Burning Isle': ('An island smoulders out at sea, its mountain leaking fire into the waves.',
+                         ['On clear nights you can see the Burning Isle glow, out on the water.']),
+    'Starfall Crater': ('A ring of broken hills around a still, round lake: the scar of a star that fell.',
+                        ['A star fell, long before the Ruin. The lake it made is perfectly round.']),
+    'The Elder Tree': ('One tree stands above all the forest, old beyond counting, its leaves touched with gold.',
+                       ['The priests of Thessa walk a long way to see the Elder Tree. They come back quiet.']),
+    'The Sundering': ('The ground simply ends. A canyon cuts across the land, so deep you cannot see the bottom.',
+                      ['There is a crack in the earth in the dry country. They call it the Sundering. Drop a stone '
+                       'and you never hear it land.']),
+    'The White Waste': ('A plain of salt, flat and white and dead, shimmers in the heat.',
+                        ['Far to the south there is a plain as white as bone. Nothing grows there. The salt traders '
+                         'go anyway.']),
+    'The Sea of Sand': ('The dunes roll away like a frozen sea.', ['Past the last wells the sand goes on in waves, '
+                                                                    'for days. The Sea of Sand, they call it.']),
+    'The Steaming Fields': ('Steam rises from pools in the snow, and now and then the ground spits boiling water.',
+                            ['Up north the earth breathes steam. Hunters winter there, by the hot pools.']),
+    'The Glass Hills': ('Crystals as tall as a man break out of the hillside, purple and blue.',
+                        ['There are hills where the stone grows into glass. Dwarves would kill for it, they say.']),
+    'The Stone Wood': ('A forest turned to stone: every trunk and branch grey and cold.',
+                       ['There is a wood where the trees are stone. Do not sleep there.']),
+    'The Black Mire': ('Black pools bubble in the grass, and the bones of beasts lie in them.',
+                       ['The black mire takes a cow a year. Sometimes a herdsman.']),
+    'The Glimmering': ('Mushrooms taller than you glow blue-green in the gloom.',
+                       ['In the deep wet woods the mushrooms shine at night. The Glimmering. Pretty. Do not eat them.']),
+    'The Fjords': ('The sea runs far inland between walls of rock, still and dark.',
+                   ['In the cold north the sea cuts into the land like knife cuts. Good harbours, if you can bear the cold.']),
+    'The Ashen Scar': ('The land is burnt black for miles, and at its heart the ground still glows.',
+                       ['There is a burnt place where nothing grows back. Some say that is where it all began.']),
+    "The Wyrm's Bones": ('In the sand lie the bones of something enormous: a spine, a cage of ribs, a skull with horns.',
+                         ['Out in the desert lie the bones of a wyrm. Bigger than a ship, they say.']),
+}
+
+
+def hint_wonder(game):
+    """Talk of one of the great sights of the world that you have not seen yet."""
+    from .engine import dir_name
+    ox, oy = _origin(game)
+    om = game.maps['over']
+    cands = [(n, x, y) for n, x, y in getattr(game.world, 'wonders', ()) if n in WONDERS
+             and not (om.inb(x, y) and om.seen[y * om.w + x])]
+    if not cands:
+        return None
+    n, x, y = random.choice(cands)
+    line = random.choice(WONDERS[n][1])
+    if random.random() < .5:
+        line += f' It lies {dist_word(cheb(x, y, ox, oy))} to the {dir_name(x - ox, y - oy)}.'
+    return line
+
+
+HINTS = [(hint_wonder, 1.5), (hint_place, 4), (hint_dungeon, 2), (hint_plant, 2), (hint_evil, 3), (hint_war, 1.5), (hint_trade, 2),
          (hint_news, 1.5), (hint_lore, 2.5)]
 
 

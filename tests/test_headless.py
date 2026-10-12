@@ -288,7 +288,7 @@ def wilds():
     print('places:', dict(Counter(q.kind for q in w.pois)))
     assert all(q.kind != 'ruin' or q.did in w.dungeons for q in w.pois)
     # danger rises away from the roads
-    road = [w.danger_at(x, y) for (x, y) in random.sample([(i % 200, i // 200) for i in range(len(g.maps['over'].t))
+    road = [w.danger_at(x, y) for (x, y) in random.sample([(i % g.maps['over'].w, i // g.maps['over'].w) for i in range(len(g.maps['over'].t))
                                                           if g.maps['over'].t[i] == D.ROAD], 50)]
     far = [w.danger_at(q.x, q.y) for q in w.pois]
     print(f'danger on roads avg {sum(road) / len(road):.1f}, at hidden places avg {sum(far) / len(far):.1f}')
@@ -1037,19 +1037,43 @@ def world_life():
     print('world life ok:', sorted(kinds))
 
 
+def wonders():
+    """The new world: one continent, a frozen north, rivers, and its wonders where they belong."""
+    g = E.Game('Test', False, seed=11, race='human', gender='male')
+    om, w = g.maps['over'], g.world
+    names = [n for n, _x, _y in w.wonders]
+    print('wonders:', names)
+    assert 'The Sky-Seat' in names, names
+    sx, sy = next((x, y) for n, x, y in w.wonders if n == 'The Sky-Seat')
+    assert om.tile(sx, sy + 10) == D.WATER                     # the maelstrom is out at sea
+    bones = [(x, y) for n, x, y in w.wonders if n == "The Wyrm's Bones"]
+    for x, y in bones:
+        b = om.biome_names[om.biome[y * om.w + x]]
+        assert b in ('desert', 'dune', 'dune_crest', 'bone_sand', 'salt'), b
+    top = [om.biome_names[om.biome[2 * om.w + x]] for x in range(om.w)]
+    assert top.count('ice_shelf') > om.w * .8                   # the polar ice in the north
+    assert sum(om.river) > 200
+    # the realm map draws at its new size without trouble, and the look of every cell is in range
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    g.request = None
+    for i in range(len(om.seen)):
+        om.seen[i] = 1
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    for z in (0, 1):
+        ui.WorldMapScreen.zoom = z
+        app.render()
+    print('wonders ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
-    world_life()
-    thornfield_and_faith()
-    countryside()
-    start_and_survival()
-    crime_and_coin()
-    world_and_people()
-    items_skills_curse()
-    smoke()
-    trade_and_jobs()
-    factions_and_death()
-    wilds()
+    parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
+             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds]
+    only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
+    for f in parts:
+        if not only or f.__name__ in only.split(','):
+            f()
 
 
 if __name__ == '__main__':

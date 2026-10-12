@@ -185,8 +185,12 @@ class FakeCanvas(Canvas):
         self.bg = [bg] * n
 
     def dim(self, f):
-        self.fg = [scale(c, f) for c in self.fg]
-        self.bg = [scale(c, f) for c in self.bg]
+        if f <= 1:
+            self.fg = [(int(r * f), int(g * f), int(b * f)) for r, g, b in self.fg]
+            self.bg = [(int(r * f), int(g * f), int(b * f)) for r, g, b in self.bg]
+        else:
+            self.fg = [scale(c, f) for c in self.fg]
+            self.bg = [scale(c, f) for c in self.bg]
 
     def get(self, x, y):
         i = y * self.w + x

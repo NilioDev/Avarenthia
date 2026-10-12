@@ -16,8 +16,8 @@ POI_LOOK = {
 }
 POI_LOOK.update({'ruined_temple': ('π', (130, 124, 116)), 'ruined_monastery': ('Θ', (130, 116, 100)),
                  'ruined_tower': ('¡', (130, 130, 136))})
-POI_PLAN = {'ruin': 8, 'ruined_temple': 3, 'ruined_monastery': 2, 'ruined_tower': 4, 'shrine': 7, 'camp': 9, 'stones': 6,
-            'wagon': 12}
+POI_PLAN = {'ruin': 13, 'ruined_temple': 5, 'ruined_monastery': 3, 'ruined_tower': 6, 'shrine': 11, 'camp': 14, 'stones': 10,
+            'wagon': 19}
 RUIN_KINDS = ('ruin', 'ruined_temple', 'ruined_monastery', 'ruined_tower')
 RUIN_STYLE = {'ruined_temple': ('rooms', 'crypt', ['Fallen Temple of the Dawn', 'Desecrated Temple', 'Roofless Temple',
                                                    'Temple of the Drowned Saint']),
@@ -62,12 +62,14 @@ def gen_pois(game, m, world):
     n_ruin = 0
     for kind, count in POI_PLAN.items():
         placed = 0
-        for _ in range(6000):
+        for _ in range(12000):
             if placed >= count:
                 break
             x, y = random.randint(3, m.w - 4), random.randint(3, m.h - 4)
             t = m.tile(x, y)
             if not D.TILES[t].walk or t in (ROAD, TOWN, CITY, ENTR, D.CASTLE, D.FORT, D.RIVER):
+                continue
+            if y * w + x in getattr(world, 'wonder_cells', ()):
                 continue
             if world.road_dist[y * w + x] > 60:
                 continue
