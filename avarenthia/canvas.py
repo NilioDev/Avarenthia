@@ -3,12 +3,21 @@
 BLACK = (0, 0, 0)
 
 
+def _clamp(v):
+    return 0 if v < 0 else 255 if v > 255 else int(v)
+
+
 def scale(c, f):
-    return (int(c[0] * f), int(c[1] * f), int(c[2] * f))
+    """A colour made brighter or darker, always kept within 0..255 (the console takes nothing else)."""
+    if f <= 1:
+        return (int(c[0] * f), int(c[1] * f), int(c[2] * f))
+    return (_clamp(c[0] * f), _clamp(c[1] * f), _clamp(c[2] * f))
 
 
 def mix(a, b, f):
-    return (int(a[0] + (b[0] - a[0]) * f), int(a[1] + (b[1] - a[1]) * f), int(a[2] + (b[2] - a[2]) * f))
+    if 0 <= f <= 1:
+        return (int(a[0] + (b[0] - a[0]) * f), int(a[1] + (b[1] - a[1]) * f), int(a[2] + (b[2] - a[2]) * f))
+    return (_clamp(a[0] + (b[0] - a[0]) * f), _clamp(a[1] + (b[1] - a[1]) * f), _clamp(a[2] + (b[2] - a[2]) * f))
 
 
 class Canvas:

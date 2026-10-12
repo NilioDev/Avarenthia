@@ -37,7 +37,19 @@ def new_app(mode='soft', seed=None):
         app.render()
         app.key('enter')
     assert isinstance(app.top, ui.GameScreen), app.top
+    check_colours(app)
     return app
+
+
+def check_colours(app):
+    """The real console only takes colours of 0..255; a brighter shade past that crashes the game."""
+    p = app.top.game.player
+    for poison in (0, 5):
+        p.poison = poison
+        app.render()
+        for col in app.cv.fg + app.cv.bg:
+            assert all(0 <= v <= 255 and v == int(v) for v in col), col
+    p.poison = 0
 
 
 def to_over(g, sid=0):
