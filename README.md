@@ -21,18 +21,36 @@ climbs, so the land behind a range lies dry; the climate runs from the polar ice
 tundra, taiga and the temperate woods and grasslands to savanna, desert and jungle in the far south. Rain gathers
 into real river systems with tributaries and lakes. The overworld is drawn in the calm style of the DF world map:
 black ground and one clear glyph per biome (`♣` broadleaf, `♠` pine, `↑` taiga, `"` grass, `n` hills, `▲`
-mountains, `~` desert, `·` tundra, `═║` rivers).
+mountains, `~` desert, `·` tundra, `═║` rivers). Roads are joined ochre lines: the great roads between the cities
+double (`═║╔`), the others single (`─│┌`), with bridges (`╪`) where they cross a river.
 
 **Wonders.** Each world has its rare sights, one of each at most and always where they belong: Starfall Crater, the
 Elder Tree, the Sundering, the White Waste, the Sea of Sand, the Steaming Fields, the Glass Hills, the Stone Wood, the
 Black Mire, the Glimmering, the Fjords, the Ashen Scar, the Burning Isle, the Wyrm's Bones in the desert, and far out
-at sea the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a maelstrom, ringed by
-drowned towers and by a coral atoll that the currents have torn open on one side. People talk about them; the first
+in the warm southern sea the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a
+maelstrom, ringed by drowned towers and by a coral atoll that the currents have torn open on one side. It lies so far
+out that nobody on land can see it, not even from a watchtower; the sailors in the harbours talk about it. People talk about them; the first
 time you see one, you will know.
 
-**You learn the world by travelling.** At the start you only know the country around Thornfield. Signposts (`┬`)
-tell you where the roads go, and rumours tell you where a place lies, but the road and the land in between only appear
-on your map once you have walked them.
+**You learn the world by travelling.** At the start you know nothing but where Thornfield lies; you see only what is
+around you. In the open you see about four tiles, further from hills, little in forest and marsh, and half as far at
+night. Signposts (`┬`) tell you where the roads go, and rumours tell you where a place lies, but the road and the land
+in between only appear on your map once you have walked them. From the top of a watchtower you see about ten tiles
+around, but not past mountains.
+
+**Travel.** Once you have been somewhere you can travel there again (`t`): you walk to the nearest road, follow the
+roads and cross the last stretch over open land, step by step, while time, hunger and the weather go on. An enemy in
+sight, a traveller on the road, an event, hunger or wounds stop you, and so does any key.
+
+**The old ways.** Under the moss lie the paths of the Varnish Empire, hidden until you find them: by walking on one,
+from rumours, from old maps found in ruins, from the Cartographers' Society or from the top of a watchtower. They show
+as a faint, broken grey-green line. They are faster than open land and slower than a road, and nobody patrols them.
+Some are shortcuts (passes over the mountains, causeways through the marsh); some lead to hidden things (Varnish
+waystations where you can rest safely, forgotten graveyards, a smugglers' den, lost ruins, and sealed vaults that open
+only to the old word); and some lead over a pass into a hidden valley, where a forgotten hamlet lives as it did when
+the Empire fell: a handful of huts on old terraces, goats, no inn and no market, people who speak the old way and
+trade but do not sell, and an elder who knows more than the books. Milestones along the ways point to the other
+secrets: the paths are what is left of one network.
 
 **Listen to people.** Everyone has something to say, and an attentive player picks up hints: an overgrown shrine past
 the old mill, a ruin two days east, herbs that grow by the lake, a war going badly in the north, prices rising in the
@@ -45,6 +63,8 @@ market square with a fountain; cities and the metropolis are walled with gates. 
 exactly as on the world map: if a village sits at the end of a road, the road ends there too, and you enter by the road
 you came on. Along the roads lie farms (where you are often welcome at the table) and the odd lonely roadside inn.
 Outside the villages stand temples, monasteries and watchtowers, and the ruins of them, with a way down.
+Settlements on the coast have a **harbour**: a stone quay, piers with boats tied up (there is no sailing yet), a fish
+market, the Brotherhood of the Net and a sailors' tavern full of tales.
 
 **Dwarven holds.** In the mountains lie underground dwarven cities (`▼`) with halls, forges, a throne room and stairs
 down to the Deep Roads, old dwarven tunnels now full of goblins and worse.
@@ -82,8 +102,39 @@ unarmed) grow by use. Skills (fifty of them) are learnt from **books** (`≡`): 
 stones, from pedlars and sometimes at a city outfitter. Harder books ask for a higher discipline. You carry six skills
 at a time and swap them in a town or castle. Weapon skills only work with the matching weapon in hand.
 
+### Gear, in the manner of Diablo II
+
+Ten slots: helm, amulet, armour, weapon, off-hand (a shield, or a grimoire for those who fight with magic), gloves,
+belt, boots and two rings. Two-handed weapons (great swords and axes, mauls, staves and bows) leave the off-hand empty.
+Every base item comes in three grades, **normal**, **exceptional** and **elite**, and asks for Strength or Dexterity.
+The level of the place where it drops sets the item level, and with it the grade and the strength of its powers: a
+wide pool of prefixes and suffixes in tiers with ranges, from enhanced damage and life to fire, cold, lightning and
+poison resistance, added elemental damage, `+` to a discipline, light radius, damage against the undead, thorns,
+life and mana after each kill and magic find. **Uniques** roll their powers within a range (the range is shown; a
+perfect one has them all at the top) and come only from those who would carry them. Small **sets** of two to four
+pieces, bound to a people or a place (the grave goods of a Varnish general, the harness of the Crown's border wardens),
+give a bonus for two pieces and another for the whole set. How many things drop has not changed: beasts carry no
+swords. No sockets, gems or runewords, and no weapon swap.
+
+**Resistances.** Fire, cold, lightning and poison, at most 75%. Salamanders in the deserts, ice witches in the frozen
+north, storm spirits on the hills and coasts and bog lurkers in the marshes attack with their element, and every kind
+of monster resists some elements and fears others: you learn which by fighting them.
+
 Magic items are rare and **unidentified** when found; their powers only work after an outfitter or priest identifies
 them. Some are **cursed**: once worn, they will not come off until a priest lifts the curse.
+
+### Guilds
+
+Fight for at most **two** combat guilds; rivals will not have you both. The Circle of Magi, the Iron Company, the
+Order of Dawn and the Wardens of the Wild keep halls in the cities and lodges in the woods. Two are secret: the
+Thieves' Guild is found through rumours and chalk marks, or it finds you after a crime or two, and the Hollow Coven,
+who serve Morrak and take a price in life, is found only through those who already know. The guilds of the crafts
+(Alembic and Barrel, the Cartographers' Society, the Brotherhood of the Net) take anyone, and speed up the crafts they
+keep. Each guild has five ranks, earned with its own jobs; only a guild master teaches the advanced techniques, to
+those of high enough rank and discipline, and those who serve two guilds can learn a technique of both. The work of
+the secret guilds has a dark side, and the world notices. Your standing fades slowly if you do nothing for a guild,
+but never below your rank; the secret guilds let you fall. Leaving costs you your rank, and a secret guild sends
+someone after you.
 
 ### Life skills
 
@@ -137,10 +188,12 @@ People forget, slowly.
 - **Enemies have habits**: cowards flee when hurt, packs surround you, archers keep their distance, spiders lie in wait
   unseen, wolves howl the pack awake, orcs fly into a rage, cultists heal their friends, ogres and trolls charge you
   (after a warning).
-- Hidden places: ruins (`Π`), shrines (`†`), bandit camps (`∆`), standing stones (`Ψ`) and abandoned wagons (`¤`).
+- Hidden places: ruins (`Π`), shrines (`†`), bandit camps (`∆`), standing stones (`Ψ`) and abandoned wagons (`¤`);
+  along the old ways Varnish waystations (`Σ`), milestones (`╥`), sealed vaults (`Φ`), graveyards (`┼`) and a
+  smugglers' den (`δ`), which you only find by walking right up to them or by following their path.
 - On the road anything can happen: wounded travellers, pedlars, Black Hand toll roads, storms, will-o'-wisps.
   Travellers (`☺`) sometimes have a job for you and wait for you afterwards at an inn.
-- **Fog of war**: in the open you see about 8 tiles, further from hills, much less in forest and marsh, and half as far
+- **Fog of war**: in the open you see about 4 tiles, further from hills, much less in forest and marsh, and half as far
   at night. Land you saw earlier is shown grey: what happens there now, you do not see.
 - The bestiary remembers the monsters you have met. Every kill teaches you more: more damage against that kind, and
   they hit you less often.
@@ -155,13 +208,14 @@ controller or a phone.
 | arrows, numpad, `hjklyubn` | walk; walking into a monster attacks it |
 | Shift + direction | run |
 | **Enter** (or Space) | **do the obvious thing here**: take the stairs, enter a place, pick up, talk to someone nearby, read a signpost, open a chest, fish |
-| **Tab** | **the menu**: everything else, grouped as Hero, World, Actions and Game |
-| `1` - `6` | your six skills, aimed at the nearest enemy |
+| **Tab** / Shift+Tab | **pick a target**, as in WoW: the next or previous enemy in sight, nearest first; it is marked on the map and shown in the panel |
+| `1` - `6` | your six skills, at your target (or the nearest enemy) |
+| `f` | shoot your bow at your target |
 | `Q` / `W` | health or mana potion |
 | `I` | inventory |
 | `M` | world map |
 | `?` | help |
-| Esc | save and quit |
+| **Esc** | let go of your target; otherwise **the menu**: everything else, grouped as Hero, World, Actions and Game (save and quit is under Game) |
 
 Every menu item shows its own shortcut on the right (`T` talk, `E` eat, `F` forage, `C` life skills, `x` explore,
 and so on). The foot of the side panel shows what you can do where you stand, with its key (`Enter go in`,
@@ -238,6 +292,10 @@ avarenthia/war.py          armies and sieges
 avarenthia/factions.py     factions, made anew for every world
 avarenthia/races.py        peoples, their relations and names
 avarenthia/crime.py        crime, standing per settlement, bounty hunters
+avarenthia/itemdata.py     slots, base items in three grades, affixes, uniques, sets and loot tables
+avarenthia/guilds.py       the guilds: ranks, jobs, techniques, the secret ones
+avarenthia/hidden.py       the old Varnish ways, the places they lead to and the hidden valleys
+avarenthia/harbour.py      harbours in the coastal settlements
 avarenthia/economy.py      goods and prices
 avarenthia/money.py        copper, silver and gold
 avarenthia/missions.py     jobs and quest marks

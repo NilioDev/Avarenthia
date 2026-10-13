@@ -18,7 +18,7 @@ POI_LOOK.update({'ruined_temple': ('π', (130, 124, 116)), 'ruined_monastery': (
                  'ruined_tower': ('¡', (130, 130, 136))})
 POI_PLAN = {'ruin': 13, 'ruined_temple': 5, 'ruined_monastery': 3, 'ruined_tower': 6, 'shrine': 11, 'camp': 14, 'stones': 10,
             'wagon': 19}
-RUIN_KINDS = ('ruin', 'ruined_temple', 'ruined_monastery', 'ruined_tower')
+RUIN_KINDS = ('ruin', 'ruined_temple', 'ruined_monastery', 'ruined_tower', 'vault', 'graveyard', 'smugglers', 'lostruin')
 RUIN_STYLE = {'ruined_temple': ('rooms', 'crypt', ['Fallen Temple of the Dawn', 'Desecrated Temple', 'Roofless Temple',
                                                    'Temple of the Drowned Saint']),
               'ruined_monastery': ('rooms', 'crypt', ['Burned Abbey', 'Ruined Priory', 'Abandoned Monastery']),
@@ -124,9 +124,13 @@ def poi_at(game, x, y):
 
 
 def discover(game):
-    """Mark places you can see for the first time, with a little experience for the find."""
+    """Mark places you can see for the first time, with a little experience for the find.
+    The secret places of the old ways you only find by walking right up to them, or along their path."""
     w = game.world
+    p = game.player
     for poi in w.pois:
+        if getattr(poi, 'secret', False) and cheb(poi.x, poi.y, p.x, p.y) > 2:
+            continue
         if not poi.found and game.visible(poi.x, poi.y):
             poi.found = True
             xp = 3 + w.danger_at(poi.x, poi.y) * 2
@@ -158,6 +162,9 @@ def resolve(game, choice):
 
 
 def on_poi(game, poi):
+    from .hidden import on_poi as old_ways
+    if old_ways(game, poi):
+        return
     if poi.kind in RUIN_KINDS:
         game.msg(f'{poi.name}. A way down leads into the dark. Press > to enter.', 'info')
         return
@@ -328,7 +335,7 @@ def r_hurt(game, choice, ctx):
             p.gold += g
             game.msg(f'"Bless you." He presses {fmt(g)} into your hand.', 'good')
         else:
-            hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS]
+            hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS and not getattr(poi, 'secret', False)]
             if hidden:
                 poi = min(hidden, key=lambda q: cheb(q.x, q.y, p.x, p.y))
                 reveal(game, poi)
@@ -407,7 +414,8 @@ def r_tracks(game, choice, ctx):
     p = game.player
     w = game.world
     lvl = w.danger_at(p.x, p.y) + 1
-    keys = wild_pack(w.region_at(p.x, p.y).biome, lvl)
+    reg = w.region_at(p.x, p.y)
+    keys = wild_pack(reg.biome, lvl, climate=getattr(reg, 'climate', None))
     game.start_encounter(None, game.maps['over'].tile(p.x, p.y), lvl, keys, 2)
     chest(game, lvl, 1)
 
@@ -421,7 +429,7 @@ def r_lights(game, choice, ctx):
     if choice != 'follow':
         return
     p = game.player
-    hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS]
+    hidden = [poi for poi in game.world.pois if not poi.found and poi.kind in RUIN_KINDS and not getattr(poi, 'secret', False)]
     if hidden and random.random() < .55:
         poi = min(hidden, key=lambda q: cheb(q.x, q.y, p.x, p.y))
         reveal(game, poi)
@@ -643,3 +651,7 @@ RESOLVERS = {'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,
              'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
              'peddler': r_peddler, 'pilgrims': r_pilgrims, 'tracks': r_tracks, 'lights': r_lights, 'storm': r_storm,
              'cart': r_cart, 'toll': r_toll, 'traveller': r_traveller, 'traveller_job': r_traveller_job}
+
+
+from . import hidden as _HP  # noqa: E402  (the old ways register their own choices)
+POI_LOOK.update(_HP.POI_LOOK)

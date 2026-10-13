@@ -55,6 +55,8 @@ def where(game):
 def commit(game, severity, what, witnessed=1.0, near=None):
     """Record a crime. The nearest towns hear of it if anyone saw."""
     from .war import change_rep
+    from . import guilds as GU
+    GU.on_crime(game)
     w = game.world
     x, y = near or where(game)
     if random.random() > witnessed:

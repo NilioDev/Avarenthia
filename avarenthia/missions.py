@@ -44,11 +44,14 @@ def _other_settlement(game, s, lo, hi):
     return random.choice(cands) if cands else (None, 0)
 
 
-def make_offer(game, s):
+def make_offer(game, s, kinds=None):
     w = game.world
+    want = kinds
     kinds = ['courier'] * 3 + ['freight'] * 3 + ['bounty'] * 2 + ['escort'] * 2
     if any(d.relic is None and not d.main for d in w.dungeons.values()):
         kinds += ['fetch'] * 2
+    if want:
+        kinds = [k for k in kinds if k in want] or ['courier']
     kind = random.choice(kinds)
     m = Mission(game.new_id(), kind, s.id)
     if kind == 'courier':
@@ -314,6 +317,8 @@ def complete(game, m, sids):
     p = game.player
     w = game.world
     m.state = 'done'
+    from . import guilds as GU
+    GU.job_done(game, m)
     local = w.settlements[m.giver].rep if m.giver is not None else max(0, p.rep.get(m.faction, 0))
     bonus = round(m.reward * min(local, 100) / 200)
     p.gold += m.reward + bonus
@@ -333,6 +338,8 @@ def fail(game, m, why):
     p = game.player
     w = game.world
     m.state = 'failed'
+    from . import guilds as GU
+    GU.job_failed(game, m)
     if m.giver is not None:
         w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
     elif m.faction:

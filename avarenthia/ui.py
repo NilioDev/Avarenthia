@@ -503,8 +503,12 @@ class GameScreen(Screen):
         inline = wk != 'clear' and wk not in WX.NEEDS_CANVAS
         lightning = WX.flash(t) if wk == 'storm' else 0.0
         pvx, pvy = p.x - ox, p.y - oy
+        tgt_id = getattr(p, 'target', None)
         sight = g.over_sight() if m.kind == 'over' else 0
         taint = getattr(g.world, 'taint', None) if m.kind == 'over' else None
+        ways = getattr(m, 'oldway', None) if m.kind == 'over' else None
+        way_of = getattr(g.world, 'way_of', {})
+        ways_known = g.__dict__.get('ways_known', set())
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -518,6 +522,8 @@ class GameScreen(Screen):
                 if not v and not m.seen[i]:
                     continue
                 ch, fg, bg = LOOK.get(m, i)
+                if ways and i in ways and way_of[i] in ways_known:
+                    ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), g.world.evils[taint[i] - 1].d['taint'], i)
                 if deco and deco[i]:
@@ -561,6 +567,8 @@ class GameScreen(Screen):
                                 bg = mix(bg, o.fg, .25)
                             if o.hold > 0:
                                 fg = (159, 216, 255)
+                            if o.id == tgt_id:
+                                bg = (150, 44, 30)          # your target
                             if t - app.hit_times.get(o.id, -9) < .13:
                                 fg, bg = (255, 255, 255), (120, 30, 20)
                     if mx == p.x and my == p.y:
@@ -835,7 +843,11 @@ class GameScreen(Screen):
                 cv.text(cx, H - 3, key, GOLD, PANEL)
                 cv.text(cx + len(key) + 1, H - 3, words, FG, PANEL)
                 cx += len(piece) + 2
-        cv.text(x, H - 1, 'Enter act  Tab menu  ? help', scale(DIM, .8), PANEL, maxw=PW)
+        cx = x
+        for key, word in (('Enter', 'act'), ('Tab', 'aim'), ('Esc', 'menu')):
+            cv.text(cx, H - 1, key, scale(GOLD, .7), PANEL)
+            cv.text(cx + len(key) + 1, H - 1, word, scale(DIM, .8), PANEL)
+            cx += len(key) + len(word) + 2
 
     def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
         """A glass globe of life or mana, drawn with half blocks at twice the height: shaded liquid with a
@@ -951,6 +963,10 @@ class GameScreen(Screen):
                         return
                     cv.text(x, y, D.TILES[m.tile(mx, my)].name.capitalize(), DIM, PANEL, maxw=PW)
                     return
+        picked = g.target()
+        if not tgt and picked:
+            tgt = picked
+            cv.text(x, y - 1, 'Target', GOLD, PANEL)
         if not tgt:
             vis = g.visible_hostiles()
             last = [o for o in vis if o.id == p.last_target]
@@ -970,6 +986,12 @@ class GameScreen(Screen):
         if tgt.mods:
             extra += ' · ' + ', '.join(tgt.mods)
         cv.text(x, y + 2, extra, DIM, PANEL, maxw=PW)
+        res = tgt.tpl.get('res', {})
+        if res and g.lore(tgt.k) >= 1:            # you learn what it fears by fighting its kind
+            strong = [k for k, v in res.items() if v > 0]
+            weak = [k for k, v in res.items() if v < 0]
+            words = (['resists ' + ', '.join(strong)] if strong else []) + (['weak to ' + ', '.join(weak)] if weak else [])
+            cv.text(x, y + 3, '; '.join(words), scale(DIM, .9), PANEL, maxw=PW)
 
     # ---------------------------------------------------------- input
     def act(self, fn):
@@ -1039,7 +1061,10 @@ class GameScreen(Screen):
         elif tok == 'e':
             app.push(JournalScreen(app))
         elif tok == 'tab':
-            app.push(MenuScreen(app))
+            g.log_mark = len(g.log)
+            g.cycle_target(-1 if shift else 1)
+        elif tok == 'quit':
+            app.push(QuitScreen(app))
         elif tok == 'T':
             g.log_mark = len(g.log)
             g.talk_nearby()
@@ -1061,7 +1086,9 @@ class GameScreen(Screen):
         elif tok in ('o', ';'):
             app.push(LookScreen(app))
         elif tok == 'esc':
-            app.push(QuitScreen(app))
+            g.log_mark = len(g.log)
+            if not g.clear_target():           # Esc first lets go of your target, then opens the menu
+                app.push(MenuScreen(app))
 
     def on_click(self, tx, ty, button):
         g = self.game
@@ -1111,13 +1138,33 @@ def item_detail(cv, g, it, x, y, w, max_h=14):
         if yy >= y + max_h:
             break
         yy += cv.wrap(x, yy, w, ln, FG, PANEL, 2)
-    if it.k == 'gear' and it.req > 1:
-        cv.text(x, yy, f'Requires level {it.req}', BAD if it.req > g.player.lvl else DIM, PANEL)
-        yy += 1
+    if it.k == 'gear':
+        st = g.stats()
+        need = []
+        if it.req > 1:
+            need.append((f'level {it.req}', it.req > g.player.lvl))
+        if getattr(it, 'rstr', 0):
+            need.append((f'{it.rstr} Strength', it.rstr > st['str']))
+        if getattr(it, 'rdex', 0):
+            need.append((f'{it.rdex} Dexterity', it.rdex > st['dex']))
+        if need:
+            cx = x
+            cv.text(cx, yy, 'Requires', DIM, PANEL)
+            cx += 9
+            for i, (txt, bad) in enumerate(need):
+                piece = txt + (',' if i < len(need) - 1 else '')
+                cv.text(cx, yy, piece, BAD if bad else DIM, PANEL)
+                cx += len(piece) + 1
+            yy += 1
+        sk = getattr(it, 'set_key', None)
+        if sk:
+            have = st.get('sets', {}).get(sk, 0)
+            cv.text(x, yy, f"Set pieces worn: {have}/{len(D.SETS[sk]['pieces'])}", D.SET_COLOR, PANEL)
+            yy += 1
     cv.text(x, yy, f'Value {fmt(it.value())}', DIM, PANEL)
     yy += 1
     if it.k == 'gear' and not g.is_equipped(it):
-        cur = g.eq_item(it.slot)
+        cur = g.eq_item(g.slot_for(it))
         yy += 1
         if cur:
             cv.text(x, yy, 'Equipped now:', DIM, PANEL)
@@ -1150,7 +1197,7 @@ class InventoryScreen(Modal):
         return out
 
     BOX_W, BOX_H = 104, 30
-    BAG_Y, BAG_ROWS = 12, 16
+    BAG_Y, BAG_ROWS = 16, 12
     NE = len(D.SLOTS)
 
     def bag_scroll(self):
@@ -1170,13 +1217,13 @@ class InventoryScreen(Modal):
         rows = self.rows()
         self.sel = max(0, min(self.sel, len(rows) - 1))
         x, y = self.box(cv, self.BOX_W, self.BOX_H, 'Drop which item?' if self.drop_mode else 'Inventory')
-        cv.text(x + 2, y + 1, f'{len(g.player.inv)}/24 slots · {fmt(g.player.gold)}', DIM, PANEL)
+        cv.text(x + 2, y + 1, f'{len(g.player.inv)}/{E.INV_MAX} slots · {fmt(g.player.gold)}', DIM, PANEL)
         cv.text(x + 2, y + 3, 'EQUIPPED', DIM, PANEL)
-        cv.text(x + 2, y + 11, 'BACKPACK', DIM, PANEL)
+        cv.text(x + 2, y + self.BAG_Y - 1, 'BACKPACK', DIM, PANEL)
         sc = self.bag_scroll()
         nbag = len(g.backpack())
         if sc > 0:
-            cv.text(x + 50, y + 11, '▲', GOLD, PANEL)
+            cv.text(x + 50, y + self.BAG_Y - 1, '▲', GOLD, PANEL)
         if sc + self.BAG_ROWS < nbag:
             cv.text(x + 50, y + self.BAG_Y + self.BAG_ROWS, '▼', GOLD, PANEL)
         for idx, (kind, key, it) in enumerate(rows):
@@ -1185,11 +1232,13 @@ class InventoryScreen(Modal):
             if kind == 'eq':
                 yy = y + 4 + idx
                 cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
-                cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<7}', DIM, bg)
+                cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<8}', DIM, bg)
                 if it:
-                    cv.text(x + 12, yy, it.display_name(), it.color(), bg, maxw=42)
+                    cv.text(x + 13, yy, it.display_name(), it.color(), bg, maxw=41)
+                elif key == 'shield' and g.two_handed(g.eq_item('weapon')):
+                    cv.text(x + 13, yy, '(both hands on your weapon)', DIM, bg)
                 else:
-                    cv.text(x + 12, yy, '-', DIM, bg)
+                    cv.text(x + 13, yy, '-', DIM, bg)
             else:
                 if not sc <= key < sc + self.BAG_ROWS:
                     continue
@@ -1197,7 +1246,7 @@ class InventoryScreen(Modal):
                 cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
                 cv.text(x + 2, yy, LETTERS[key], GOLD, bg)
                 cv.text(x + 4, yy, it.display_name(), it.color(), bg, maxw=48)
-                if it.k == 'gear' and it.req > g.player.lvl:
+                if it.k == 'gear' and g.meets(it):
                     cv.text(x + 54, yy, '!', BAD, bg)
         if nbag == 0:
             cv.text(x + 4, y + self.BAG_Y, 'Your backpack is empty.', DIM, PANEL)
@@ -1229,6 +1278,11 @@ class InventoryScreen(Modal):
             return
         if it.k == 'tome':
             g.read_tome(it)
+            return
+        if it.k == 'oldmap':
+            from . import hidden as HP
+            app.pop()
+            HP.read_map(g, it)
             return
         if it.k in ('fish', 'food'):
             app.pop()
@@ -1296,7 +1350,7 @@ class InventoryScreen(Modal):
 
 class CharacterScreen(Modal):
     """Your hero, in three pages: who you are, your fighting disciplines and your life skills."""
-    PAGES = ['Character', 'Disciplines', 'Life skills']
+    PAGES = ['Character', 'Disciplines', 'Life skills', 'Guilds']
 
     def __init__(self, app, page=0):
         super().__init__(app)
@@ -1315,7 +1369,7 @@ class CharacterScreen(Modal):
         p = g.player
         x, y = self.box(cv, 72, 26, f"{p.name} · level {p.lvl}")
         self.tabs(cv, x, y + 1)
-        [self.page_main, self.page_disc, self.page_life][self.page](cv, x, y + 3)
+        [self.page_main, self.page_disc, self.page_life, self.page_guilds][self.page](cv, x, y + 3)
         hint = ' ←→ or Tab: page · 1-4: add an attribute point · Esc: close ' if self.page == 0 else ' ←→ or Tab: page · Esc: close '
         cv.text_center(W // 2, y + 25, hint, DIM, PANEL)
 
@@ -1351,12 +1405,23 @@ class CharacterScreen(Modal):
             cv.text(cx_, y + 10 + i // 2, a, DIM, PANEL)
             cv.text_right(cx_ + 30, y + 10 + i // 2, b, FG, PANEL)
         from . import hunger as HU
-        cv.text(x + 3, y + 15, 'CONDITION', DIM, PANEL)
-        cv.text(x + 3, y + 16, 'Hunger', DIM, PANEL)
-        self.bar(cv, x + 14, y + 16, 20, p.food / HU.MAX, GOOD if p.food >= HU.HUNGRY else GOLD if p.food >= HU.WEAK else BAD)
-        cv.text(x + 36, y + 16, HU.state(p.food) or 'Fed', FG, PANEL)
+        cv.text(x + 3, y + 15, 'RESISTANCES', DIM, PANEL)
+        cv.text_right(x + 68, y + 15, f'at most {D.RES_CAP}%', scale(DIM, .8), PANEL)
+        for i, (key, nm, col) in enumerate(D.RESISTS):
+            cx_ = x + 3 + i * 17
+            cv.text(cx_, y + 16, nm, col, PANEL)
+            cv.text_right(cx_ + 14, y + 16, f'{s[key]}%', FG if s[key] else DIM, PANEL)
+        extra = [(f"+{s['mf']}% magic find") if s['mf'] else '', (f"damage taken -{s['dr']}%") if s['dr'] else '',
+                 (f"thorns {s['thorns']}") if s['thorns'] else '', (f"+{s['sight']} light radius") if s['sight'] else '']
+        extra = [e for e in extra if e]
+        if extra:
+            cv.text(x + 3, y + 17, ' · '.join(extra), DIM, PANEL, maxw=66)
+        cv.text(x + 3, y + 18, 'CONDITION', DIM, PANEL)
+        cv.text(x + 3, y + 19, 'Hunger', DIM, PANEL)
+        self.bar(cv, x + 14, y + 19, 20, p.food / HU.MAX, GOOD if p.food >= HU.HUNGRY else GOLD if p.food >= HU.WEAK else BAD)
+        cv.text(x + 36, y + 19, HU.state(p.food) or 'Fed', FG, PANEL)
         if p.buffs:
-            cv.wrap(x + 3, y + 18, 66, 'Effects: ' + ', '.join(f'{b[3]} ({b[2]})' for b in p.buffs), GOOD, PANEL, 2)
+            cv.wrap(x + 3, y + 20, 66, 'Effects: ' + ', '.join(f'{b[3]} ({b[2]})' for b in p.buffs), GOOD, PANEL, 2)
 
     def page_disc(self, cv, x, y):
         p = self.game.player
@@ -1373,6 +1438,32 @@ class CharacterScreen(Modal):
             known = sum(1 for k in SK.by_line(line) if k.id in p.known)
             cv.text(x + 49, yy, f'{known}/5 skills', DIM, PANEL)
             cv.text(x + 5, yy + 1, f'next tier at {nxt.unlock}' if nxt else 'all tiers open', scale(DIM, .8), PANEL)
+
+    def page_guilds(self, cv, x, y):
+        from . import guilds as GU
+        g = self.game
+        st = GU.state(g)
+        cv.text(x + 3, y, 'Two combat guilds at most; the crafts take anyone. Standing fades.',
+                DIM, PANEL, maxw=66)
+        rows = [k for k in GU.ORDER if st[k]['found']]
+        for i, k in enumerate(rows):
+            gd, s = GU.GUILDS[k], st[k]
+            yy = y + 2 + i * 2
+            col = D.hexrgb(gd['fg'])
+            cv.text(x + 3, yy, gd['name'], col if s['joined'] else scale(col, .55), PANEL, maxw=34)
+            if s['joined']:
+                r = GU.rank(g, k)
+                cv.text(x + 38, yy, gd['ranks'][r], GOLD, PANEL, maxw=18)
+                lo = GU.RANK_REP[r]
+                hi = GU.RANK_REP[r + 1] if r < 4 else lo + 1
+                self.bar(cv, x + 3, yy + 1, 30, (s['rep'] - lo) / max(1, hi - lo), col)
+                idle = g.day - s['last']
+                cv.text(x + 36, yy + 1, f"{s['rep']} standing" + (' · fading' if idle > GU.DECAY_AFTER else ''),
+                        BAD if idle > GU.DECAY_AFTER else DIM, PANEL)
+            else:
+                cv.text(x + 38, yy, 'left' if s['left'] else ('combat' if gd['kind'] == 'combat' else 'craft'), DIM, PANEL)
+        if len(rows) < len(GU.ORDER):
+            cv.text(x + 3, y + 3 + len(rows) * 2, 'Some say there are guilds that do not hang out a sign.', scale(DIM, .8), PANEL)
 
     def page_life(self, cv, x, y):
         from . import lifeskills as LS
@@ -1586,14 +1677,13 @@ class TravelScreen(Modal):
         ox, oy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
         out = []
         for st in g.world.settlements:
-            if g.known_settlement(st) and not (here and here.id == st.id):
+            if g.has_visited('s', st.id) and not (here and here.id == st.id):
                 out.append(('s', st.id, st.name, st.kind_name, st.x, st.y))
-        om = g.maps['over']
         for st in getattr(g.world, 'sites', ()):
-            if om.seen[st.y * om.w + st.x]:
+            if g.has_visited('site', st.id):
                 out.append(('site', st.id, st.name, st.kind, st.x, st.y))
         for d in g.world.dungeons.values():
-            if g.known_dungeon(d) and getattr(d, 'town', None) is None:
+            if g.has_visited('d', d.id) and getattr(d, 'town', None) is None:
                 out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
         out.sort(key=lambda r: cheb(r[4], r[5], ox, oy))
         self.origin = (ox, oy)
@@ -1603,7 +1693,9 @@ class TravelScreen(Modal):
         g = self.game
         pl = self.places()
         x, y = self.box(cv, 76, min(30, len(pl) + 6))
-        cv.text(x + 2, y + 1, 'Walk to a known place, along roads where possible. Danger nearby stops you.', DIM, PANEL)
+        cv.text(x + 2, y + 1, 'Walk to a place you have been, along the roads. Danger, travellers or hunger stop you.', DIM, PANEL, maxw=72)
+        if not pl:
+            cv.text(x + 2, y + 3, 'You have not been anywhere yet that you could find again.', DIM, PANEL)
         targets = {}
         for mi in MS.active(g):
             pos, _ = MS.target_pos(g, mi)
@@ -1674,19 +1766,20 @@ class HelpScreen(Modal):
             ('Shift + direction', 'Run, until something interesting happens'),
             ('Enter  or  Space', 'Do the obvious thing here: go in, take the stairs, pick up,'),
             ('', 'talk to whoever is near, read a signpost, open a chest, fish.'),
-            ('1  2  3  4  5  6', 'Use a skill from your bar (it aims at the nearest enemy)'),
+            ('1  2  3  4  5  6', 'Use a skill from your bar (at your target, or the nearest enemy)'),
+            ('Tab  Shift+Tab', 'Pick a target: the next or the previous enemy in sight'),
             ('q   w', 'Drink a health or a mana potion'),
             ('i', 'Your bag: what you carry and wear'),
             ('m', 'The map of the realm'),
-            ('Tab', 'The menu: everything else you can do or look at'),
-            ('Esc', 'Back, close a window; on the map: save and quit'),
+            ('Esc', 'Let go of your target; else the menu: everything else you can do'),
+            ('', 'In a window, Esc goes back. Save and quit is in the menu, under Game.'),
             ('?', 'This help'),
             ('.  or  5', 'Wait a turn'),
             ('', ''),
             ('Panel, bottom', 'What you can do where you stand, with its key: Enter go in,'),
             ('', 'T talk, a fish, E eat, F forage, R rest... Learn them as you go.'),
             ('', ''),
-            ('That is all you need.', 'Everything else is in the menu (Tab). Each item there shows'),
+            ('That is all you need.', 'Everything else is in the menu (Esc). Each item there shows'),
             ('', 'a shortcut of its own, for when you know your way around:'),
             ('', 'c character, C life skills, z skills, v bestiary, e journal,'),
             ('', 't travel, x explore, o look, g pick up, P brewing...'),
@@ -1697,8 +1790,8 @@ class HelpScreen(Modal):
         ('The world', [
             ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
             ('Danger', 'Inspect the land (O) to see its danger. Night brings the dead and bigger packs.'),
-            ('Knowledge', 'You only know the land around Thornfield. Signposts (┬), townsfolk and travellers'),
-            ('', 'tell you where places lie, but the land and roads you only learn by walking them.'),
+            ('Knowledge', 'At first you only know where Thornfield lies. Signposts (┬), townsfolk and'),
+            ('', 'travellers tell you where places lie, but the land you only learn by walking it.'),
             ('Π ruin', 'An old ruin with a way down. Small, with a skill tome at the bottom.'),
             ('† shrine', 'Pray for a blessing. An offering makes it last longer. Every shrine has its god.'),
             ('∆ camp', 'A bandit camp. Kill them all and the strongbox is yours.'),
@@ -1714,6 +1807,24 @@ class HelpScreen(Modal):
             ('', 'How a town sees your people changes its prices and how its faction greets you.'),
             ('News', 'Listen to the news and to rumours. The world changes while you are busy.'),
             ('Calendar', 'Twelve months of thirty days, from Deepfrost to Longnight; seven days in a week.'),
+        ]),
+        ('Ways and guilds', [
+            ('Travel (t)', 'Walk to a place you have been: to the road, along the roads, the last bit across'),
+            ('', 'country. Enemies, travellers, events, hunger, wounds or any key stop you.'),
+            ('Old ways', 'Hidden Varnish paths, a faint broken grey-green line once found: walk on one, hear'),
+            ('', 'a rumour, read an old map, buy a chart or look out from a watchtower. Faster than'),
+            ('', 'open land, slower than a road, never patrolled. They lead over passes, to waystations'),
+            ('', '(Σ, a safe rest), milestones (╥), vaults (Φ) that open to the old word, graveyards,'),
+            ('', "a smugglers' den, lost ruins, and over a pass into a hidden valley (•)."),
+            ('Gear', 'Ten slots. Normal, exceptional and elite grades; Strength and Dexterity needs.'),
+            ('', 'Uniques roll within a range; sets of 2-4 pieces give bonuses. Two-handers take the'),
+            ('', 'off-hand. Resist fire, cold, lightning and poison, up to 75%.'),
+            ('Elements', 'Monsters resist some elements and fear others. Fight a kind to learn which.'),
+            ('Guilds', 'At most two combat guilds, and rivals will not share you; the crafts take anyone.'),
+            ('', 'Five ranks, earned with guild jobs. Masters teach techniques to those who earn them.'),
+            ('', 'Standing fades if you do nothing for a guild, but not below your rank.'),
+            ('Secrets', 'Some guilds hang out no sign. Listen for rumours, and watch the chalk marks.'),
+            ('Harbours', 'Coastal towns have a quay, boats, a fish market and sailors full of tales.'),
         ]),
         ('Weather', [
             ('Seasons', 'Each region has its own weather: the cold north and mountains, the hot dry south,'),
@@ -2011,7 +2122,7 @@ class IntroScreen(Modal):
              'You are nobody here. What you become now is up to you: a sellsword, a trader, a scholar of forgotten '
              'magic, a thief on the roads, or something else entirely. Fortune, fame or folly.\n\n'
              'Talk to people, and listen: they know more than they think. The world is wide, and it does not wait.\n\n'
-             'Enter does the obvious thing, Tab opens the menu, ? is help.'),
+             'Enter does the obvious thing, Tab picks a target, Esc opens the menu, ? is help.'),
         ]
 
     def __init__(self, app):
@@ -2406,6 +2517,8 @@ class WorldMapScreen(Modal):
         ox, oy = self.cx - vw // 2, self.cy - vh // 2
         bx, by = x + 2, y + 1
         taint = getattr(w, 'taint', None)
+        ways = getattr(om, 'oldway', {})
+        ways_known = g.__dict__.get('ways_known', set())
         for vy in range(vh):
             for vx in range(vw):
                 mx, my = ox + vx, oy + vy
@@ -2415,6 +2528,8 @@ class WorldMapScreen(Modal):
                 if not om.seen[i]:
                     continue
                 ch, fg, bg = LOOK.get(om, i)
+                if i in ways and w.way_of.get(i) in ways_known:
+                    ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[taint[i] - 1].d['taint'], i)
                 if WorldMapScreen.show_factions:
@@ -2676,7 +2791,7 @@ class MenuScreen(Modal):
                      ('a', 'Fish', 'by water, with a fishing pole'), ('f', 'Shoot', 'at the nearest enemy, with a bow'),
                      ('P', 'Alchemy & brewing', 'potions, ale, wine and mead'), ('p', 'Town portal', 'read a scroll of town portal'),
                      ('R', 'Rest', 'until you are healed')]),
-        ('Game', [('?', 'Help', 'keys and how things work'), ('esc', 'Save and quit', 'your hero waits for you')]),
+        ('Game', [('?', 'Help', 'keys and how things work'), ('quit', 'Save and quit', 'your hero waits for you')]),
     ]
 
     def __init__(self, app):
@@ -2701,15 +2816,15 @@ class MenuScreen(Modal):
             if on:
                 cv.fill(x + 17, yy, 46, 1, ' ', None, bg)
             cv.text(x + 19, yy, name, FG if on else scale(FG, .85), bg)
-            cv.text_right(x + 61, yy, 'Esc' if k == 'esc' else k, scale(GOLD, .8), bg)
+            cv.text_right(x + 61, yy, '' if k == 'quit' else k, scale(GOLD, .8), bg)
         k, name, desc = items[self.sel]
         cv.text(x + 3, y + n + 3, desc, DIM, PANEL, maxw=58)
-        cv.text_center(W // 2, y + n + 5, ' ←→ group · ↑↓ item · Enter: do it · Tab: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + n + 5, ' ←→ group · ↑↓ item · Enter: do it · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         items = self.GROUPS[self.group][1]
         keys = [k for _g, its in self.GROUPS for k, _n, _d in its]
-        if tok in ('tab', 'esc'):
+        if tok == 'esc':
             self.app.pop()
         elif tok in ('left', 'np4'):
             self.group, self.sel = (self.group - 1) % len(self.GROUPS), 0
@@ -2721,7 +2836,7 @@ class MenuScreen(Modal):
             self.sel = (self.sel + 1) % len(items)
         elif tok in ('enter', 'np_enter', 'space'):
             self.pick(items[self.sel][0])
-        elif tok in keys and tok != 'esc':
+        elif tok in keys and tok != 'quit':
             self.pick(tok)
 
     def pick(self, k):

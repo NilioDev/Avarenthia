@@ -338,6 +338,10 @@ def gen_world(game):
         gen_sites(game, m, world)
         from .events import gen_pois
         gen_pois(game, m, world)
+        from .hidden import generate as old_ways
+        old_ways(game, m, world)
+        from .harbour import mark_coast
+        mark_coast(m, world)
         return m, world
     raise RuntimeError('World generation failed')
 
@@ -490,14 +494,52 @@ def _build_roads(m, world):
     extra = sorted(((a, b) for a in range(n) for b in range(a + 1, n) if (a, b) not in edges and (b, a) not in edges), key=lambda e: d(*e))
     edges += extra[:4]
     world.road_edges = []
+    m.main_road = set()
+    # the great roads between the cities first, so the lesser roads join onto them
+    cities = [k for k in range(n) if ss[k].is_city]
+    great = []
+    if cities:
+        tree = {cities[0]}
+        while len(tree) < len(cities):
+            a, b = min(((a, b) for a in tree for b in cities if b not in tree), key=lambda e: d(*e))
+            great.append((a, b))
+            tree.add(b)
+    for a, b in great:
+        p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y))
+        if p:
+            lay_road(m, [(ss[a].x, ss[a].y)] + p, True)
     for a, b in edges:
         p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y))
         if not p:
             continue
         world.road_edges.append((a, b))
-        for x, y in p:
-            if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP, RIVER):
-                m.set(x, y, ROAD)        # over a river this is a bridge (m.river stays marked)
+        lay_road(m, [(ss[a].x, ss[a].y)] + p, ss[a].is_city and ss[b].is_city)
+
+
+ROAD_GROUND = (GRASS, SAND, FOREST, HILLS, SWAMP, RIVER)
+
+
+def orthogonal(m, p, ok=None):
+    """A path with every diagonal step turned into two straight ones, so it can be drawn as a joined line."""
+    ok = ok or (lambda x, y: m.tile(x, y) in ROAD_GROUND or m.tile(x, y) == ROAD)
+    out = p[:1]
+    for (x0, y0), (x1, y1) in zip(p, p[1:]):
+        if x0 != x1 and y0 != y1:
+            a, b = (x1, y0), (x0, y1)
+            pick = [c for c in (a, b) if m.tile(*c) == ROAD] or [c for c in (a, b) if ok(*c)]
+            if pick:
+                pick.sort(key=lambda c: m.tile(*c) in (RIVER, SWAMP))
+                out.append(pick[0])
+        out.append((x1, y1))
+    return out
+
+
+def lay_road(m, p, main=False):
+    for x, y in orthogonal(m, p):
+        if m.tile(x, y) in ROAD_GROUND:
+            m.set(x, y, ROAD)        # over a river this is a bridge (m.river stays marked)
+        if main and m.tile(x, y) == ROAD:
+            m.main_road.add(y * m.w + x)
 
 
 def _place_dungeons(m, world, reach, dist, start):
@@ -792,9 +834,8 @@ def _place_strongholds(m, world, reach):
         if h.faction in ('crown', 'league', 'circle', 'clan'):
             near = min(world.settlements, key=lambda s: cheb(s.x, s.y, h.x, h.y))
             p = dijkstra_path(m, (h.x, h.y), (near.x, near.y))
-            for x, y in (p or []):
-                if m.tile(x, y) in (GRASS, SAND, FOREST, HILLS, SWAMP):
-                    m.set(x, y, ROAD)
+            if p:
+                lay_road(m, [(h.x, h.y)] + p)
 
 
 def flip_region(game, rid, faction):

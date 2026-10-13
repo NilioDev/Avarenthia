@@ -48,9 +48,9 @@ def manage(g):
             continue
         if it.slot == 'weapon' and SK.WEAPON_LINE.get(it.base) != 'swords':
             continue
-        cur = g.eq_item(it.slot)
+        cur = g.eq_item(g.slot_for(it))
         if not cur or score(it) > score(cur):
-            p.eq[it.slot] = it.id
+            p.eq[g.slot_for(it)] = it.id
     if len(p.inv) > 20:
         for x in [i for i in p.inv if i.k == 'gear' and not g.is_equipped(i)][:5]:
             p.inv.remove(x)

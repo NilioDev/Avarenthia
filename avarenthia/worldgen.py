@@ -325,6 +325,10 @@ def open_chest(game, x, y):
         game.spill(m, x, y, random_gear(game, lvl + 1, 2.5))
     if random.random() < .2:
         game.spill(m, x, y, make_tome(game, lvl))
+    dg = game.world.dungeons.get(getattr(m, 'did', None))
+    if getattr(dg, 'poi', False) and random.random() < .2:       # ruins keep old maps
+        from .hidden import make_map_item
+        game.spill(m, x, y, make_map_item(game))
     if random.random() < .5:
         game.spill(m, x, y, Item(game.new_id(), 'potion', random.choice(['hp', 'hp', 'mp', 'rejuv'])))
     game.msg('You open the chest. Treasure!', 'gold')

@@ -26,7 +26,12 @@ DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (21
 DISC_ORDER = list(DISCIPLINES)
 WEAPON_LINE = {'dagger': 'daggers', 'shortsword': 'swords', 'longsword': 'swords', 'bastard': 'swords', 'runeblade': 'swords',
                'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'axes', 'warstaff': 'axes',
-               'shortbow': 'archery', 'longbow': 'archery', 'warbow': 'archery'}
+               'shortbow': 'archery', 'longbow': 'archery', 'warbow': 'archery',
+               'greatsword': 'swords', 'greataxe': 'axes', 'maul': 'axes'}
+from . import data as _D  # noqa: E402
+for _k, _b in _D.BASES.items():          # exceptional and elite grades fight like their family
+    if _b.get('family') in WEAPON_LINE:
+        WEAPON_LINE[_k] = WEAPON_LINE[_b['family']]
 
 
 class Skill:
@@ -52,6 +57,8 @@ class Skill:
         self.color = kw.get('color', (255, 106, 74))
         self.glyph = kw.get('glyph', '*')
         self.flavor = kw.get('flavor', '')
+        self.undead = kw.get('undead', 1)
+        self.guild = False
 
 
 S = Skill
@@ -124,7 +131,53 @@ SKILL_LIST = [
     S('iron_skin', 'Iron Skin', 'warcraft', 3, 8, 30, 'self', buff=('dr', 25, .3, 10), color=WAR, glyph='#'),
     S('charge', 'Charge', 'warcraft', 4, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
 ]
-SKILLS = {s.id: s for s in SKILL_LIST}
+# techniques taught only by guild masters (see guilds.py); they never turn up in tomes
+TECHNIQUES = [
+    S('mage_armor', 'Mage Armor', 'frost', 1, 8, 30, 'self', buff=('dr', 15, .25, 20), color=ICE, flavor='Circle of Magi'),
+    S('arcane_barrage', 'Arcane Barrage', 'storm', 2, 12, 6, 'chain', lo=9, hi=17, r=.6, jumps=4, color=STORM, glyph='~',
+      flavor='Circle of Magi'),
+    S('inferno', 'Inferno', 'fire', 4, 18, 14, 'around', lo=16, hi=26, r=.8, radius=3, fx={'burn': (5, .4, 6)}, color=FIRE,
+      flavor='Circle of Magi'),
+    S('shield_wall', 'Shield Wall', 'warcraft', 1, 6, 25, 'self', buff=('def', 40, 1.5, 15), color=WAR, glyph='#',
+      flavor='Iron Company'),
+    S('battle_drill', 'Battle Drill', 'warcraft', 2, 8, 22, 'self', buff=('dmg', 30, .6, 14), color=WAR, glyph='!', flavor='Iron Company'),
+    S('last_stand', 'Last Stand', 'warcraft', 4, 12, 40, 'self', heal=(40, 2), buff=('dr', 35, .3, 8), cure=True, color=WAR, glyph='+',
+      flavor='Iron Company'),
+    S('smite', 'Smite', 'restoration', 1, 6, 3, 'bolt', lo=8, hi=14, r=.5, undead=2, color=HOLY, glyph='+', flavor='Order of Dawn'),
+    S('holy_shield', 'Holy Shield', 'restoration', 2, 10, 30, 'self', buff=('dr', 30, .3, 12), color=HOLY, glyph='+',
+      flavor='Order of Dawn'),
+    S('dawnbreak', 'Dawnbreak', 'restoration', 4, 16, 16, 'around', lo=14, hi=24, r=.7, radius=3, undead=2.5, color=HOLY, glyph='*',
+      flavor='Order of Dawn'),
+    S('hunters_mark', "Hunter's Mark", 'archery', 1, 4, 6, 'shot', pct=160, pct_r=2, fx={'vuln': 8}, color=ARROW, glyph='-',
+      flavor='Wardens of the Wild'),
+    S('rain_of_arrows', 'Rain of Arrows', 'archery', 2, 10, 10, 'volley', pct=110, pct_r=1.5, radius=8, color=ARROW, glyph='-',
+      flavor='Wardens of the Wild'),
+    S('thornbind', 'Thornbind', 'archery', 4, 9, 12, 'shot', pct=200, pct_r=2.5, fx={'stun': 4, 'bleed': (4, .3, 6)}, color=(112, 200, 90),
+      glyph='-', flavor='Wardens of the Wild'),
+    S('garrote', 'Garrote', 'daggers', 1, 5, 7, 'melee', pct=150, crit=True, fx={'bleed': (4, .3, 6), 'stun': 1},
+      flavor="Thieves' Guild"),
+    S('smoke_bomb', 'Smoke Bomb', 'daggers', 2, 6, 14, 'around', dtype='none', radius=2, fx={'stun': 3}, color=(150, 150, 150), glyph='░',
+      flavor="Thieves' Guild"),
+    S('deaths_kiss', "Death's Kiss", 'daggers', 4, 10, 16, 'melee', pct=380, pct_r=3, crit=True, execute=2.5, flavor="Thieves' Guild"),
+    S('hellfire', 'Hellfire', 'shadow', 1, 7, 3, 'bolt', lo=10, hi=18, r=.6, drain=.25, splash=1, color=(220, 60, 120),
+      flavor='Hollow Coven'),
+    S('pact_of_blood', 'Pact of Blood', 'shadow', 2, 4, 30, 'self', buff=('dmg', 40, .6, 15), color=(200, 40, 60), glyph='!',
+      flavor='Hollow Coven'),
+    S('morraks_hand', "Morrak's Hand", 'shadow', 4, 18, 16, 'around', lo=18, hi=30, r=.9, radius=3, drain=.5, color=DARK,
+      flavor='Hollow Coven'),
+    # for those who serve two guilds
+    S('spellblade', 'Spellblade', 'warcraft', 2, 8, 6, 'melee', dtype='weapon', pct=210, pct_r=2, fx={'burn': (4, .3, 5)}, color=FIRE,
+      flavor='Iron Company and Circle of Magi'),
+    S('soul_knife', 'Soul Knife', 'shadow', 2, 8, 4, 'bolt', lo=12, hi=22, r=.7, drain=.4, range=3, color=DARK,
+      flavor="Thieves' Guild and Hollow Coven"),
+    S('thornstorm', 'Thornstorm', 'storm', 2, 12, 10, 'around', lo=10, hi=18, r=.6, radius=3, fx={'bleed': (3, .25, 5), 'stun': 1},
+      color=(160, 220, 110), glyph='~', flavor='Wardens and Circle of Magi'),
+    S('crusade', 'Crusade', 'warcraft', 2, 10, 30, 'self', buff=('dmg', 45, .6, 15), color=(255, 232, 160), glyph='!',
+      flavor='Order of Dawn and Iron Company'),
+]
+for _t in TECHNIQUES:
+    _t.guild = True
+SKILLS = {s.id: s for s in SKILL_LIST + TECHNIQUES}
 STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None]
 
 
@@ -137,8 +190,13 @@ def weapon_line(game):
     return WEAPON_LINE.get(w.base) if w else 'unarmed'
 
 
+LINE_ELEM = {'fire': 'fire', 'frost': 'cold', 'storm': 'lightning'}
+GEAR_RANKS = 3        # each '+1 to a discipline' on your gear makes its skills strike as if three ranks higher
+
+
 def rank(game, line):
-    return game.player.disc[line][0]
+    """The rank your skills of this discipline work at: what you have learned, plus your gear."""
+    return game.player.disc[line][0] + game.stats().get('skill_' + line, 0) * GEAR_RANKS
 
 
 def need_for(r):
@@ -311,8 +369,10 @@ def _hit(game, mon, sk, r, ranged=False):
         dmg = _spell_dmg(game, sk, r)
         if sk.bonus_frozen > 1 and mon.hold > 0:
             dmg *= sk.bonus_frozen
+        if sk.undead > 1 and not mon.is_npc and mon.k in _D.UNDEAD:
+            dmg *= sk.undead
         before = mon.hp
-        dead = game.damage_mon(mon, dmg, col=sk.color)
+        dead = game.damage_mon(mon, dmg, col=sk.color, elem=LINE_ELEM.get(sk.line))
         dealt = before - max(0, mon.hp)
         if sk.drain:
             game.heal(round(dealt * sk.drain))
@@ -347,6 +407,9 @@ def apply_fx(game, mon, sk, r):
 def _melee_target(game):
     p = game.player
     adj = [o for o in game.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= 1]
+    t = game.target()
+    if t and t in adj:
+        return t
     if not adj:
         return None
     for o in adj:
@@ -398,7 +461,7 @@ def x_around(game, sk, r):
 def _projectile_target(game, sk):
     t = game.nearest_target(sk.range, True)
     if not t:
-        game.msg('No target in sight.')
+        game.miss_target('No target in sight.')
     return t
 
 
@@ -493,7 +556,7 @@ def x_storm(game, sk, r):
 def x_target_area(game, sk, r):
     t = game.nearest_target(sk.range, False)
     if not t:
-        game.msg('No target in sight.')
+        game.miss_target('No target in sight.')
         return False
     tx, ty = t.x, t.y
     cells = [(tx, ty)]
@@ -508,7 +571,7 @@ def x_target_area(game, sk, r):
 def x_curse(game, sk, r):
     t = game.nearest_target(sk.range, False)
     if not t:
-        game.msg('No target in sight.')
+        game.miss_target('No target in sight.')
         return False
     game.flash([(t.x, t.y)], sk.color, '*', .22)
     apply_fx(game, t, sk, r)
@@ -521,7 +584,7 @@ def x_leap(game, sk, r):
     p, m = game.player, game.map
     t = game.nearest_target(sk.range, False)
     if not t:
-        game.msg('No enemy within reach.')
+        game.miss_target('No enemy within reach.')
         return False
     if cheb(t.x, t.y, p.x, p.y) > 1:
         spots = [c for c in free_around(game, m, t.x, t.y, 1) if game.visible(*c)]

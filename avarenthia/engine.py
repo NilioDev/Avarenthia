@@ -25,6 +25,7 @@ from . import ai as AI
 from . import weather as WX
 from . import dress as DR
 from . import sites as ST
+from . import guilds as GU
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -32,7 +33,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 14
+SAVE_VERSION = 15
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -101,6 +102,7 @@ def lore_rank(kills):
 
 SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration'),
             ('food', 'barley'), ('food', 'honey')]
+INV_MAX = 32
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
 
@@ -163,16 +165,12 @@ class Game:
         self.world = world
         for st in world.settlements:
             st.services = WO.settlement_services(st)
+        GU.setup(world)
         ECO.init_markets(world)
         home = world.settlements[0]
         self.over_pos = (home.x, home.y)
-        # you only know the land around Thornfield; the rest you learn from people and signposts
-        for y in range(home.y - 7, home.y + 8):
-            for x in range(home.x - 11, home.x + 12):
-                if over.inb(x, y):
-                    over.seen[y * over.w + x] = 1
-        rat = world.dungeons['rat']
-        over.seen[rat.y * over.w + rat.x] = 1
+        # you know nothing of the land: only where Thornfield lies, a short walk from the temple
+        over.seen[home.y * over.w + home.x] = 1
         self.home = 0
         EVL.setup_monsters(world)
         EVL.update(self, announce=False)
@@ -186,6 +184,7 @@ class Game:
             self.cur = ts.map_key
             self.maps[self.cur] = ST.gen_site_map(self, ts)
             over.seen[ts.y * over.w + ts.x] = 1
+            self.mark_visit('site', ts.id)
         else:
             self.cur = home.map_key
             self.maps[self.cur] = TW.gen_settlement_map(self, home)
@@ -271,7 +270,7 @@ class Game:
                 if o.k == it.k and o.t == it.t:
                     o.n += it.n
                     return True
-        if len(inv) >= 24:
+        if len(inv) >= INV_MAX:
             return False
         inv.append(it)
         return True
@@ -305,14 +304,21 @@ class Game:
     def stats(self):
         p = self.player
         s = dict(str=p.str, dex=p.dex, vit=p.vit, ene=p.ene, life=0, mana=0, dmg_flat=0, ed=0, hit=0,
-                 leech=0, crit=5, regen=0, armor=0, dr=0)
+                 leech=0, crit=5, regen=0, armor=0, dr=0, res_fire=0, res_cold=0, res_light=0, res_poison=0, res_all=0,
+                 fire_dmg=0, cold_dmg=0, light_dmg=0, sight=0, undead=0, thorns=0, lpk=0, mpk=0, mf=0)
+        sets = {}
+        gear_dr = 0
         for slot in D.SLOTS:
             it = self.eq_item(slot)
             if not it:
                 continue
+            if getattr(it, 'set_key', None) and it.identified:
+                sets[it.set_key] = sets.get(it.set_key, 0) + 1
             if it.identified:
                 for st, v in it.aff:
-                    if st != 'edef':
+                    if st == 'dr':
+                        gear_dr += v
+                    elif st != 'edef':
                         s[st] = s.get(st, 0) + v
             for st, v in getattr(it, 'curse', ()):
                 if st != 'edef':
@@ -321,6 +327,15 @@ class Game:
             s['mana'] += b.get('mana', 0)
             s['hit'] += b.get('hit', 0)
             s['armor'] += it.armor_value()
+        for k, n in sets.items():          # set bonuses: two pieces, and the whole set
+            st = D.SETS[k]
+            for bonus in ([st['partial']] if n >= 2 else []) + ([st['full']] if n >= len(st['pieces']) else []):
+                for st_, v in bonus.items():
+                    if st_ == 'dr':
+                        gear_dr += v
+                    else:
+                        s[st_] = s.get(st_, 0) + v
+        s['sets'] = sets
         buff_dmg = 0
         for k, v, _t, _src in p.buffs:
             if k == 'def':
@@ -334,11 +349,18 @@ class Game:
         if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
         GD.apply(self, s)
+        s['dr'] = min(60, s['dr'] + gear_dr)
+        if getattr(p, 'race', '') == 'dwarf':
+            s['res_poison'] += 20                    # dwarves shrug off venom
+        for r in ('res_fire', 'res_cold', 'res_light', 'res_poison'):
+            s[r] = min(D.RES_CAP, s[r] + s['res_all'])
         s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
+        if getattr(p, 'toll', 0):                    # what Morrak has taken
+            s['max_life'] = max(10, round(s['max_life'] * (1 - p.toll / 100)))
         s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
         w = self.eq_item('weapon')
         line = SK.WEAPON_LINE.get(w.base) if w else 'unarmed'
-        wr = p.disc[line][0] if line in p.disc else 0
+        wr = (p.disc[line][0] + s.get('skill_' + line, 0)) if line in p.disc else 0
         bd = w.dmg if w else (1 + wr // 6, 3 + wr // 3)      # fists harden with practice
         dexy = line in ('daggers', 'archery')
         mul = 1 + (s['dex'] if dexy else s['str']) / 100 + s['ed'] / 100 + wr * .015 + buff_dmg / 100
@@ -380,6 +402,8 @@ class Game:
             r = WX.sight(self, r)
         if m.kind == 'dungeon' and p.race == 'goblin':
             r += 2
+        if m.kind != 'over':
+            r += self.stats().get('sight', 0)
         if m.kind == 'over':
             last = getattr(self, '_over_last', None)
             if last and last != (p.x, p.y):
@@ -406,9 +430,9 @@ class Game:
         """How far you see in the open land: far from the hills, little in the woods or the marsh, less at night."""
         p, m = self.player, self.map
         t = m.tile(p.x, p.y)
-        r = {D.HILLS: 11, D.FOREST: 4, D.SWAMP: 5}.get(t, 8)
+        r = {D.HILLS: 6, D.FOREST: 2, D.SWAMP: 3}.get(t, 4)
         if TW.is_night(self):
-            r = max(2, r // 2)
+            r = max(1, r // 2)
         if p.race in ('elf', 'goblin') and TW.is_night(self):
             r += 2
         if p.race == 'elf' and t == D.FOREST:
@@ -465,6 +489,7 @@ class Game:
 
     # ------------------------------------------------------------ map changes
     def enter_dungeon(self, did, depth, arrive):
+        self.mark_visit('d', did)
         key = f'{did}:{depth}'
         p = self.player
         dg = self.world.dungeons[did]
@@ -481,6 +506,9 @@ class Game:
                     tm = make_tome(self, dg.base + depth + 2)
                     tm.x, tm.y = c
                     self.maps[key].items.append(tm)
+            if getattr(dg, 'varnish', False):
+                from .hidden import vault_loot
+                vault_loot(self, self.maps[key], dg)
             if depth == dg.depth and dg.relic is not None:
                 mi = MS.find(self, dg.relic)
                 if mi and mi.state == 'active':
@@ -561,6 +589,7 @@ class Game:
             wd.cooldown = 4
 
     def enter_town(self, sid, from_portal=False):
+        self.mark_visit('s', sid)
         p = self.player
         s = self.world.settlements[sid]
         if self.cur == 'over':
@@ -597,12 +626,18 @@ class Game:
             self.msg('News: ' + D.EVENTS[s.event[0]]['text'].format(town=s.name), 'info')
         MS.on_enter(self, sid)
         MS.place_clients(self, sid, m)
+        GU.reveal_master(self, m)
+        halls = [GU.GUILDS[k]['name'] for k in GU.halls_in(self, sid) if not GU.GUILDS[k]['secret']]
+        if halls and not getattr(m, 'halls_told', False):
+            m.halls_told = True
+            self.msg(f"Guild halls here: {', '.join(halls)}.", 'info')
         TW.sync_lamps(self, m)
         self.compute_fov()
         self.request = ('save',)
         CR.at_gate(self, s)
 
     def enter_site(self, sid):
+        self.mark_visit('site', sid)
         p = self.player
         site = self.world.sites[sid]
         if self.cur == 'over':
@@ -758,15 +793,18 @@ class Game:
             self.auto_pickup()
         s = self.world.settlement_at(p.x, p.y)
         if s:
+            self.mark_visit('s', s.id)
             kind = s.kind_name
             self.msg(f'You stand at the gates of {s.name} ({kind}). Press > or Enter to go in.', 'info')
             return 10
         if t == ENTR:
             d = self.world.dungeon_at(p.x, p.y)
+            self.mark_visit('d', d.id)
             self.msg(f"You stand at the entrance of {d.name}. Press > or Enter to descend.", 'info')
             return 10
         site = ST.site_at(self.world, p.x, p.y)
         if site:
+            self.mark_visit('site', site.id)
             self.msg(f'{site.name}. Press > or Enter to go in.', 'info')
             return 10
         h = self.world.hold_at(p.x, p.y)
@@ -782,7 +820,10 @@ class Game:
             EV.reveal(self, poi)
             EV.on_poi(self, poi)
             return D.TILES[t].cost
-        cost = round(D.TILES[t].cost * WX.travel_factor(self))
+        from . import hidden as HP
+        HP.on_step(self)
+        old_way = HP.on_way(self, p.x, p.y)
+        cost = round((min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost) * WX.travel_factor(self))
         WX.strike(self)
         if self.dead:
             return cost
@@ -798,12 +839,14 @@ class Game:
             chance = min(.11, .012 + off * .004) * cost / 10 * (1.6 if night else 1)
         if p.race in ('halfling', 'goblin'):
             chance *= .75
+        if old_way:
+            chance *= 1.3                           # nobody patrols the old ways
         chance *= WX.ambush_factor(self)                # fog and storms hide what waits by the road
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
         if random.random() < chance:
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
-            keys = EVL.wild_keys(self, p.x, p.y, lvl) or WA.wild_pack(reg.biome, lvl, night)
+            keys = EVL.wild_keys(self, p.x, p.y, lvl) or WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
             r = random.random()
             elite = 1 if r < .08 + off * .004 else 0
             self.start_encounter(None, t, lvl, keys, elite)
@@ -916,6 +959,9 @@ class Game:
                 return 1
             poi = EV.poi_at(self, p.x, p.y)
             if poi and poi.kind in EV.RUIN_KINDS:
+                from . import hidden as HP
+                if not HP.vault_open(self, poi):
+                    return 0
                 self.enter_dungeon(poi.did, 1, 'up')
                 return 1
             if poi:
@@ -1026,23 +1072,49 @@ class Game:
             return True
         return False
 
+    def slot_for(self, it):
+        """Where an item goes on your body: rings on the first free hand."""
+        if it.slot == 'ring':
+            eq = self.player.eq
+            for k in ('ring1', 'ring2'):
+                if k not in eq or eq[k] == it.id:
+                    return k
+            return 'ring1'
+        return it.slot
+
+    def two_handed(self, it):
+        return bool(it and D.BASES[it.base].get('two'))
+
+    def meets(self, it):
+        """What keeps you from using it: level, Strength or Dexterity. None if nothing does."""
+        p, s = self.player, self.stats()
+        if it.req > p.lvl:
+            return f'You need to be level {it.req} to use that.'
+        if getattr(it, 'rstr', 0) > s['str']:
+            return f'You need {it.rstr} Strength to use that.'
+        if getattr(it, 'rdex', 0) > s['dex']:
+            return f'You need {it.rdex} Dexterity to use that.'
+        return None
+
     def equip(self, it):
         p = self.player
-        if it.req > p.lvl:
-            self.msg(f'You need to be level {it.req} to use that.', 'bad')
+        why = self.meets(it)
+        if why:
+            self.msg(why, 'bad')
             return False
-        if self.stuck(it.slot):
+        slot = self.slot_for(it)
+        if self.stuck(slot):
             return False
         cur_w = self.eq_item('weapon')
-        if it.slot == 'shield' and cur_w and D.BASES[cur_w.base].get('ranged'):
-            self.msg('You need both hands for your bow. Put it away first.', 'bad')
+        if it.slot == 'shield' and self.two_handed(cur_w):
+            self.msg(f'You need both hands for your {D.BASES[cur_w.base]["name"].lower()}. Put it away first.', 'bad')
             return False
-        if it.slot == 'weapon' and D.BASES[it.base].get('ranged') and self.eq_item('shield'):
+        if it.slot == 'weapon' and self.two_handed(it) and self.eq_item('shield'):
             if self.stuck('shield'):
                 return False
             p.eq.pop('shield', None)
-            self.msg('You sling your shield on your back; a bow needs both hands.')
-        p.eq[it.slot] = it.id
+            self.msg('You put away what you held in your other hand; this needs both.')
+        p.eq[slot] = it.id
         self.clamp_vitals()
         self.msg(f'You equip {it.display_name()}.', it.rar)
         if it.cursed:
@@ -1148,7 +1220,7 @@ class Game:
     def drop(self, it):
         p = self.player
         if self.is_equipped(it) and it.cursed:
-            self.stuck(it.slot)
+            self.stuck(next(k for k, v in p.eq.items() if v == it.id))
             return 0
         for k, v in list(p.eq.items()):
             if v == it.id:
@@ -1237,8 +1309,32 @@ class Game:
             if o.pack == mon.pack:
                 o.awake = True
 
-    def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False):
+    def mon_res(self, mon, elem):
+        """A monster's resistance to an element, in percent (negative: it is weak to it)."""
+        if mon.is_npc or not elem:
+            return 0
+        r = mon.tpl['res'].get(elem, 0)
+        if 'Fire Enchanted' in mon.mods and elem == 'fire':
+            r = max(r, 50)
+        return r
+
+    def weapon_extra(self, mon, s):
+        """What your weapon adds on a hit: fire, cold and lightning after the monster's resistance, and holy bane."""
+        extra = 0
+        for st, el in (('fire_dmg', 'fire'), ('cold_dmg', 'cold'), ('light_dmg', 'lightning')):
+            v = s.get(st, 0)
+            if v:
+                extra += random.randint(max(1, v // 2), v) * (1 - self.mon_res(mon, el) / 100)
+        return extra
+
+    def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False, elem=None):
         p = self.player
+        if elem:
+            dmg *= 1 - self.mon_res(mon, elem) / 100
+        if weapon and not mon.is_npc and mon.k in D.UNDEAD:
+            und = self.stats().get('undead', 0)
+            if und:
+                dmg *= 1 + und / 100
         if 'vuln' in mon.effects:
             dmg *= 1.25
         dmg *= 1 + .03 * self.lore(mon.k)
@@ -1273,17 +1369,19 @@ class Game:
         crit = random.random() < s['crit'] / 100
         if s['line'] and not s['ranged']:
             SK.gain(self, s['line'], 1)
-        if not self.damage_mon(mon, random.randint(*s['dmg']), crit, weapon=True):
+        if not self.damage_mon(mon, random.randint(*s['dmg']) + self.weapon_extra(mon, s), crit, weapon=True):
             self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
 
     def weapon_strike(self, mon, pct, force_crit=False, ranged=False):
         s = self.stats()
         crit = force_crit or random.random() < s['crit'] / 100
-        return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100, crit, weapon=True)
+        return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True)
 
-    def hurt(self, dmg, src):
+    def hurt(self, dmg, src, elem=None):
         p = self.player
         s = self.stats()
+        if elem in D.ELEMENT_RES:
+            dmg *= 1 - s[D.ELEMENT_RES[elem]] / 100
         dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
         p.life -= dmg
         big = dmg >= s['max_life'] * .2
@@ -1318,11 +1416,17 @@ class Game:
         special = mon.elite or mon.is_boss
         self.msg(f"{mon.the()[0].upper() + mon.the()[1:]} {'is slain!' if mon.is_boss or mon.elite == 2 else 'dies.'}", 'gold' if special else '')
         self.gain_xp(max(1, round(mon.xp * clamp(1 - (p.lvl - mon.lvl - 1) * .15, .05, 1))))
+        if not mon.is_npc:
+            s = self.stats()
+            if s['lpk']:
+                p.life = min(s['max_life'], p.life + s['lpk'])
+            if s['mpk']:
+                p.mana = min(s['max_mana'], p.mana + s['mpk'])
         if 'Fire Enchanted' in mon.mods:
             self.flash(ring(mon.x, mon.y, 1), (255, 122, 44), '*', .26)
             self.msg(f'{mon.name} explodes in flames!', 'bad')
             if cheb(mon.x, mon.y, p.x, p.y) <= 1:
-                self.hurt(mon.dmg[1] * .8, mon.name)
+                self.hurt(mon.dmg[1] * .8, mon.name, 'fire')
         self.drop_loot(mon)
         if mon.faction:
             WAR.on_kill(self, mon)
@@ -1396,7 +1500,7 @@ class Game:
                 self.spill(m, mon.x, mon.y, it)
                 self.announce(it)
         for _ in range(n):
-            it = random_gear(self, lvl, boost, uses)
+            it = random_gear(self, lvl, boost, uses, mon.k)
             if boost > 3 and it.rar == 'normal':
                 up = make_gear(self, it.base, 'magic', lvl)
                 it.rar, it.aff, it.name, it.ided = up.rar, up.aff, up.name, False
@@ -1460,11 +1564,23 @@ class Game:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 2))
             if mon.tpl['leech']:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 3))
-            self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} hits you.', 'bad')
+            elem = 'fire' if 'Fire Enchanted' in mon.mods else mon.tpl['elem']
+            word = {'fire': ' with fire', 'cold': ' with frost', 'lightning': ' with lightning'}.get(elem, '')
+            self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} hits you{word}.', 'bad')
             if mon.tpl['poison'] and random.random() < .4:
-                p.poison = [3 if getattr(p, 'race', '') == 'dwarf' else 6, max(1, round(mon.lvl / 2))]
-                self.msg('Venom burns in your veins!', 'bad')
-            self.hurt(dmg, mon.the())
+                rp = self.stats()['res_poison']
+                if random.random() * 100 >= rp:
+                    turns = max(1, round((3 if getattr(p, 'race', '') == 'dwarf' else 6) * (1 - rp / 100)))
+                    p.poison = [max(1, turns), max(1, round(mon.lvl / 2))]
+                    self.msg('Venom burns in your veins!', 'bad')
+            th = self.stats()['thorns']
+            self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
+            if th and not self.dead and mon in self.map.mons:
+                self.num(mon.x, mon.y, str(th), (200, 170, 120))
+                if mon.hp - th <= 0:
+                    self.damage_mon(mon, th)
+                else:
+                    mon.hp -= th
         else:
             self.num(p.x, p.y, 'miss', C_MISS)
 
@@ -1477,7 +1593,7 @@ class Game:
         name = mon.the()[0].upper() + mon.the()[1:]
         if spell or random.random() < self.mon_hit_chance(mon, df):
             self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else 'arrow'} hits you.", 'bad')
-            self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8), mon.the())
+            self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8), mon.the(), (mon.tpl['elem'] or 'fire') if spell else None)
         else:
             self.num(p.x, p.y, 'miss', C_MISS)
         return True
@@ -1537,7 +1653,7 @@ class Game:
         if d['nova'] and dist <= 2 and random.random() < .22:
             self.flash(ring(mon.x, mon.y, 2), d.get('nova_col', (159, 216, 255)), '*', .26)
             self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=mon.name), 'bad')
-            self.hurt(random.randint(*mon.dmg) * .8, mon.name)
+            self.hurt(random.randint(*mon.dmg) * .8, mon.name, d['elem'] or 'cold')
             return
         if AI.turn(self, mon, df):
             return
@@ -1688,6 +1804,7 @@ class Game:
                 WA.daily(self)
                 WAR.daily(self)
                 MS.daily(self)
+                GU.daily(self)
                 EVL.daily(self)
                 CR.daily(self)
             self.last_day = self.day
@@ -1780,8 +1897,54 @@ class Game:
             self.msg(f'Your backpack, cargo and gold lie with your body {where}. Go and get them back.', 'bad')
         self.request = ('save',)
 
+    # ------------------------------------------------------------ targeting (Tab, as in WoW)
+    def target(self):
+        """The enemy you have picked with Tab, while you can still see it."""
+        p = self.player
+        tid = getattr(p, 'target', None)
+        if tid is None:
+            return None
+        for o in self.visible_hostiles():
+            if o.id == tid:
+                return o
+        p.target = None
+        return None
+
+    def cycle_target(self, step=1):
+        """Tab: the next enemy in sight, nearest first; Shift+Tab goes back."""
+        p = self.player
+        lst = sorted(self.visible_hostiles(), key=lambda o: (cheb(o.x, o.y, p.x, p.y), o.id))
+        if not lst:
+            p.target = None
+            self.msg('No enemy in sight.')
+            return
+        ids = [o.id for o in lst]
+        cur = getattr(p, 'target', None)
+        k = (ids.index(cur) + step) % len(ids) if cur in ids else (0 if step > 0 else len(ids) - 1)
+        p.target = p.last_target = ids[k]
+        o = lst[k]
+        self.msg(f'Target: {o.name}, level {o.lvl}, {cheb(o.x, o.y, p.x, p.y)} away.', 'info')
+
+    def clear_target(self):
+        p = self.player
+        if getattr(p, 'target', None) is None:
+            return False
+        p.target = None
+        self.msg('Target cleared.')
+        return True
+
+    def miss_target(self, default):
+        self.msg(default if not getattr(self, '_out_of_range', False) else 'Your target is out of range.')
+
     def nearest_target(self, max_d, need_line):
         p = self.player
+        self._out_of_range = False
+        t = self.target()
+        if t:      # a picked target: that one or nothing, as in WoW
+            if cheb(t.x, t.y, p.x, p.y) <= max_d and (not need_line or self.line_clear(p.x, p.y, t.x, t.y)):
+                return t
+            self._out_of_range = True
+            return None
         lst = [o for o in self.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= max_d]
         if need_line:
             lst = [o for o in lst if self.line_clear(p.x, p.y, o.x, o.y)]
@@ -1806,7 +1969,7 @@ class Game:
             return 0
         t = self.nearest_target(8, True)
         if not t:
-            self.msg('No target in sight.')
+            self.miss_target('No target in sight.')
             return 0
         p = self.player
         p.last_target = t.id
@@ -1817,7 +1980,7 @@ class Game:
             self.wake_pack(t)
             return 1
         crit = random.random() < s['crit'] / 100
-        self.damage_mon(t, random.randint(*s['dmg']), crit, weapon=True)
+        self.damage_mon(t, random.randint(*s['dmg']) + self.weapon_extra(t, s), crit, weapon=True)
         SK.gain(self, 'archery', 1)
         return 1
 
@@ -1949,8 +2112,31 @@ class Game:
         for _ in self.travel_iter(kind, ref):
             pass
 
+    def mark_visit(self, kind, ref):
+        """Places you have stood at yourself: only these can you travel to without thinking."""
+        self.__dict__.setdefault('visited', set()).add((kind, ref))
+
+    def has_visited(self, kind, ref):
+        return (kind, ref) in self.__dict__.get('visited', ())
+
+    def travel_route(self, tgt):
+        """The way to go: to the nearest road, along the roads, and the last stretch over open land."""
+        p = self.player
+
+        def cost(t):
+            td = D.TILES[t]
+            if not td.walk:
+                return None
+            if t == ROAD:
+                return 2
+            if t in (TOWN, CITY):
+                return 3
+            return td.cost * 3
+        return WO.dijkstra_path(self.map, (p.x, p.y), tgt, cost)
+
     def travel_iter(self, kind, ref):
-        """Walk to a settlement ('s', id) or dungeon ('d', id), preferring roads. One step per yield."""
+        """Walk to a place you have been ('s' settlement, 'site', 'd' dungeon), along the roads. One step per yield;
+        time, hunger and weather pass as you walk, and anything worth your attention stops you."""
         if self.map.kind == 'town':
             self.leave_to_over()
         if self.cur != 'over':
@@ -1958,20 +2144,46 @@ class Game:
             return
         w = self.world
         obj = w.settlements[ref] if kind == 's' else w.sites[ref] if kind == 'site' else w.dungeons[ref]
+        if not self.has_visited(kind, ref):
+            self.msg(f'You have never been to {obj.name}; you would have to find the way yourself.')
+            return
         tgt = (obj.x, obj.y)
         p = self.player
-        path = WO.dijkstra_path(self.map, (p.x, p.y), tgt, lambda t: D.TILES[t].cost if D.TILES[t].walk else None)
+        path = self.travel_route(tgt)
         if not path:
             self.msg('You cannot find a way there.')
             return
         self.msg(f'You set out for {obj.name}.')
+        seen_folk = {wd.id for wd in w.wanderers if self.visible(wd.x, wd.y)}
+        food0 = getattr(p, 'food', 500)
         for x, y in path:
             if self.dead or self.cur != 'over':
                 break
-            near = [wd for wd in w.wanderers if wd.hostile and wd.cooldown == 0 and self.visible(wd.x, wd.y)
-                    and cheb(wd.x, wd.y, p.x, p.y) <= 7]
+            near = [wd for wd in w.wanderers if wd.hostile and wd.cooldown == 0 and self.visible(wd.x, wd.y)]
             if near:
-                self.msg(f'You spot {near[0].name[0].lower() + near[0].name[1:]} nearby and stop.', 'bad')
+                self.msg(f'You spot {near[0].name[0].lower() + near[0].name[1:]} and stop.', 'bad')
+                break
+            folk = [wd for wd in w.wanderers if not wd.hostile and wd.id not in seen_folk and self.visible(wd.x, wd.y)
+                    and cheb(wd.x, wd.y, p.x, p.y) <= 4]
+            if folk:
+                self.msg(f'{folk[0].name} comes along the road. You stop.', 'info')
+                break
+            seen_folk |= {wd.id for wd in w.wanderers if self.visible(wd.x, wd.y)}
+            food = getattr(p, 'food', 500)
+            if food < HU.HUNGRY <= food0 or food < HU.WEAK <= food0:
+                self.msg('Your stomach growls. You stop to think about food.', 'bad')
+                break
+            s = self.stats()
+            if p.life < s['max_life'] * .4:
+                self.msg('You are too badly hurt to walk on without care.', 'bad')
+                break
+            from .wanderers import wanderer_at
+            for _wait in range(4):                   # someone on the road ahead: let them pass
+                if not wanderer_at(self, x, y):
+                    break
+                self.end_turn(5, True)
+            if wanderer_at(self, x, y):
+                self.msg('The road ahead is blocked.', 'info')
                 break
             used = self.try_move(x - p.x, y - p.y)
             if not used:
@@ -1979,7 +2191,9 @@ class Game:
             self.end_turn(used, True)
             if self.request and self.request[0] not in ('save',):
                 break
-            if self.cur == 'over' and (p.x, p.y) != tgt:
+            if self.pending or self.cur != 'over':
+                break
+            if (p.x, p.y) != tgt:
                 yield 1
         if self.cur == 'over' and (p.x, p.y) == tgt:
             self.over_step()
@@ -2165,6 +2379,14 @@ class Game:
                 else:
                     text = f'"You have done well, {RC.address(self)}. The vale is wide; go and see it. And listen to what people say on the road."'
             self.request = ('dialog', 'Elder Berend', text)
+            return
+        if role == 'guild':
+            from . import guilds as GU
+            GU.talk(self, npc)
+            return
+        if role in ('valley', 'valley_elder'):
+            from . import hidden as HP
+            HP.valley_talk(self, npc)
             return
         if role == 'thane':
             from .deephold import thane_talk

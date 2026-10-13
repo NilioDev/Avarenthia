@@ -620,6 +620,9 @@ def gen_village(game, s):
         trader_spot = None
     for c in stalls:
         m.set(c[0], c[1], STALL)
+    from . import harbour as HB
+    if getattr(s, 'harbour', False):
+        plots.append(HB.carve(m, s))
     if s.id == 0 or (tier != 'hamlet' and random.random() < .3):
         pond = fishing_pond(game, m, plots, cy, names, fisher=s.id == 0)
         if pond:
@@ -629,12 +632,17 @@ def gen_village(game, s):
     kinds = [k for k in ('inn', 'shop', 'temple', 'stables') if k in s.services]
     if s.id == 0:
         kinds.append('elder')
+    from . import guilds as GU
+    lodges = [k for k in GU.halls_in(game, s.id) if not GU.GUILDS[k]['secret'] and k != 'anglers']
+    kinds += ['lodge:' + k for k in lodges]
     kinds += ['home'] * random.randint(hmin, hmax)
     buildings = []
     for k in kinds:
         for _ in range(500):
             rx, ry = random.choice(near_road)
-            pl = house_plot(k, rx + random.randint(-15, 5), ry + random.randint(-12, 5))
+            pl = house_plot('shop' if k.startswith('lodge:') else k, rx + random.randint(-15, 5), ry + random.randint(-12, 5))
+            if k.startswith('lodge:'):
+                pl.kind, pl.guild = 'keep', k[6:]
             bx = plot_box(pl)
             if bx.x < 3 or bx.y < 3 or bx.x + bx.w > w - 3 or bx.y + bx.h > h - 3:
                 continue
@@ -654,7 +662,9 @@ def gen_village(game, s):
         out = place_door(m, pl, tgt[0], tgt[1])
         carve_path(m, out, tgt)
         furnish(m, pl)
-        if pl.kind in SIGN:
+        if getattr(pl, 'guild', None):
+            add_sign(m, pl, GU.GUILDS[pl.guild]['sign'] or '')
+        elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
         if pl.kind == 'home' and random.random() < .55:
             gd = garden(m, pl, -1 if tgt[1] > pl.y + pl.h // 2 else 1, plots)
@@ -679,8 +689,12 @@ def gen_village(game, s):
     hearths(m, buildings)
     # the people who run things
     for pl in buildings:
-        if pl.kind in ROLE_OF:
+        if getattr(pl, 'guild', None):
+            GU.place_master(game, m, pl, pl.guild, names)
+        elif pl.kind in ROLE_OF:
             staff(game, m, pl, pl.kind, names, s)
+    if getattr(s, 'harbour', False):
+        HB.furnish(game, m, s, names)
     homes = [p for p in buildings if p.kind == 'home']
     nm, col = TITLE['market']
     if trader_spot:
@@ -779,18 +793,29 @@ def gen_city(game, s):
     m.set(px, py, FOUNTAIN)
     names = town_names(getattr(s, 'race', 'human'))
     plots = [Plot(px - 9, py - 4, 19, 9, 'plaza')]
+    from . import harbour as HB
+    if getattr(s, 'harbour', False):
+        plots.append(HB.carve(m, s))
     stall_spots = [(px - 6, py - 2), (px - 6, py + 2), (px + 6, py - 2), (px + 6, py + 2), (px - 3, py - 3), (px + 3, py + 3)]
     for c in stall_spots:
         m.set(c[0], c[1], STALL)
     kinds = ['inn', 'inn', 'inn', 'shop', 'shop', 'temple', 'stables', 'barracks', 'barracks'] + ['home'] * 58
     if big:
         kinds = ['inn'] * 5 + ['shop'] * 3 + ['temple', 'temple', 'stables', 'barracks', 'barracks', 'barracks'] + ['home'] * 110
+    from . import guilds as GU
+    kinds = ['guild:' + k for k in GU.halls_in(game, s.id) if k != 'anglers'] + kinds
     buildings = []
     for k in kinds:
         for _ in range(300):
             x0, y0 = random.randint(2, w - 16), random.randint(2, h - 12)
-            pl = house_plot('inn' if k == 'barracks' else k, x0, y0)
-            pl.kind = k
+            gk = k[6:] if k.startswith('guild:') else None
+            if gk:            # a guild hall looks like a keep; a secret den like any other house
+                secret = GU.GUILDS[gk]['secret']
+                pl = house_plot('home' if secret else 'inn', x0, y0)
+                pl.kind, pl.guild = ('home' if secret else 'keep'), gk
+            else:
+                pl = house_plot('inn' if k == 'barracks' else k, x0, y0)
+                pl.kind = k
             bx = plot_box(pl)
             cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
             if bx.x < 2 or bx.x + bx.w > w - 2 or bx.y + bx.h > h - 2:
@@ -811,7 +836,11 @@ def gen_city(game, s):
             out = place_door(m, pl, tx, pl.y + pl.h // 2)
             carve_path(m, out, (tx, out[1]))
         furnish(m, pl)
-        if pl.kind in SIGN:
+        if getattr(pl, 'guild', None):
+            sign = GU.GUILDS[pl.guild]['sign']
+            if sign:
+                add_sign(m, pl, sign)
+        elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
     for i in range(len(m.t)):
         if m.t[i] == GRASS and random.random() < .03:
@@ -825,6 +854,12 @@ def gen_city(game, s):
     hearths(m, buildings)
     first = {}
     for pl in buildings:
+        if getattr(pl, 'guild', None):
+            GU.place_master(game, m, pl, pl.guild, names)
+    GU.reveal_master(game, m)
+    for pl in buildings:
+        if getattr(pl, 'guild', None) and pl.kind == 'keep':
+            continue
         if pl.kind in ROLE_OF and pl.kind not in first:
             first[pl.kind] = staff(game, m, pl, pl.kind, names, s)
         elif pl.kind == 'inn':
@@ -870,6 +905,8 @@ def gen_city(game, s):
         g = townsfolk(game, m, home, post, [f"A {D.FACTIONS[s.faction]['short']} guard"], 'guard', fg=gfg, role='guard')
         g.name = f"A {D.FACTIONS[s.faction]['short']} guard"
         g.night_watch = i < 2
+    if getattr(s, 'harbour', False):
+        HB.furnish(game, m, s, names)
     m.portal_pos = (px + 2, py + 1)
     ex, ey = m.exits[0][:2]
     m.entry = (ex, ey)

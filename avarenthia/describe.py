@@ -205,7 +205,8 @@ def over(game, x, y):
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
                                            'watchtower': 'A watchtower. From the top you can see far over the land.',
                                            'farm': 'A farmstead by the road. Farm folk often share a meal with travellers.',
-                                           'roadinn': 'A roadside inn: stew, a bed and news from the road.'}[site.kind]]
+                                           'roadinn': 'A roadside inn: stew, a bed and news from the road.',
+                                           'valley': 'A hamlet hidden in a valley among the mountains. Nobody on the roads knows it.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]
@@ -217,7 +218,8 @@ def over(game, x, y):
                                           'shrine': 'A wayside shrine. You could pray here.',
                                           'camp': 'A camp of outlaws, and their loot.',
                                           'stones': 'A ring of standing stones, humming with old power.',
-                                          'wagon': 'An abandoned wagon.'}.get(poi.kind, '')]
+                                          'wagon': 'An abandoned wagon.', 'waystation': 'A Varnish waystation: shelter, and old words.',
+                                          'milestone': 'A Varnish milestone, carved with leagues and names.'}.get(poi.kind, '')]
     dg = w.dungeon_at(x, y)
     if dg:
         return dg.name, (232, 96, 62), ['A way down into the dark.', f'{dg.depth} levels deep.']

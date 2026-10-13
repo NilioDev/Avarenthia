@@ -9,7 +9,7 @@ from .entities import GameMap, make_npc
 from .worldgen import cheb
 
 SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210)),
-             'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84))}
+             'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84)), 'valley': ('•', (226, 196, 130))}
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns']
 FARM_NAMES = ['Farm', 'Homestead', 'Steading', 'Croft', 'Farmstead']
@@ -156,6 +156,9 @@ def _base(site, w, h):
 def gen_site_map(game, site):
     """A temple, monastery or watchtower in its own stretch of countryside, with lamps by the door."""
     from .towns import embed, place_lamps
+    if site.kind == 'valley':
+        from .hidden import valley_map
+        return valley_map(game, site)
     m = _site_map(game, site)
     ex, ey = m.entry
     lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS
@@ -248,13 +251,16 @@ def climb_tower(game):
     m = game.map
     site = game.world.sites[m.site]
     om = game.maps['over']
-    r = 16
+    # a circle around the tower; mountains and high hills block the view, the treetops do not
+    from . import fov
+    vis = fov.cells(om, site.x, site.y, 10)
     n = 0
-    for y in range(site.y - r, site.y + r + 1):
-        for x in range(site.x - r * 2, site.x + r * 2 + 1):
-            if om.inb(x, y) and ((x - site.x) / 2) ** 2 + (y - site.y) ** 2 <= r * r and not om.seen[y * om.w + x]:
-                om.seen[y * om.w + x] = 1
-                n += 1
+    for i, v in enumerate(vis):
+        if v and not om.seen[i]:
+            om.seen[i] = 1
+            n += 1
+    from .hidden import from_tower
+    from_tower(game, vis)
     game.msg('You climb to the top of the tower. The land lies spread out below you, and you mark what you see on your map.'
              if n else 'You climb to the top of the tower. Nothing you have not seen before.', 'info')
 

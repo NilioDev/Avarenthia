@@ -160,8 +160,8 @@ def step(game, wd):
         elif cheb(wd.x, wd.y, home.x, home.y) > 6:
             greedy_step(game, wd, home.x, home.y)
         return
-    if wd.kind == 'hunt':
-        # Morvenna's hunters always know where you are
+    if wd.kind in ('hunt', 'avenger'):
+        # Morvenna's hunters, and those a secret guild sends after you, always know where you are
         if on_over and wd.cooldown == 0 and random.random() < .8:
             greedy_step(game, wd, p.x, p.y)
         elif not on_over:
@@ -309,9 +309,10 @@ def spawn_bandits(game):
     w.wanderers.append(make_group(game, 'bandits', c[0], c[1], lvl, keys, elite, leader))
 
 
-def wild_pack(biome, lvl, night=False):
-    """Monster keys for a wilderness pack: tougher kinds and bigger packs the more dangerous the spot."""
-    pool = [k for k in D.BIOME_MONSTERS[biome] if D.MONSTERS[k]['min_l'] <= lvl + 1]
+def wild_pack(biome, lvl, night=False, climate=None):
+    """Monster keys for a wilderness pack: tougher kinds and bigger packs the more dangerous the spot.
+    The climate brings its own: salamanders in the dry south, ice witches in the cold north, bog lurkers in the marsh."""
+    pool = [k for k in D.BIOME_MONSTERS[biome] + D.CLIMATE_MONSTERS.get(climate, []) if D.MONSTERS[k]['min_l'] <= lvl + 1]
     if night:
         pool += [k for k in D.NIGHT_MONSTERS if D.MONSTERS[k]['min_l'] <= lvl + 1]
     pool = pool or D.BIOME_MONSTERS[biome][:1]
@@ -336,7 +337,7 @@ def spawn_monsters(game):
         return
     reg = w.region_at(*c)
     lvl = w.danger_at(*c) + random.randint(0, 1)
-    keys = wild_pack(reg.biome, lvl)
+    keys = wild_pack(reg.biome, lvl, climate=getattr(reg, 'climate', None))
     r = random.random()
     elite = 2 if r < .04 + lvl * .01 else 1 if r < .15 + lvl * .015 else 0
     wd = make_group(game, 'monsters', c[0], c[1], lvl, keys, elite)

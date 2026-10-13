@@ -527,9 +527,34 @@ def generate(SEED, W=320, H=180):
     # the Sky-Seat: a shard of the fallen Varnish capital still hangs in the air far out at sea. Beneath it the
     # sea turns in a maelstrom where the rest of the city went down, ringed by drowned towers and by a coral
     # atoll that the currents have torn open on one side: a crescent of reef and islets, and a wreck on it.
+    # It lies in the warm southern sea, so far out that no one on land, not even on a watchtower, can see it.
+    def sky_spot(margin, south, sink=False):
+        ax, ay = 26 + margin, 17 + margin                 # the atoll's reach, plus open water around it
+        yy, xx = np.ogrid[-ay:ay + 1, -ax:ax + 1]
+        kern = (xx / ax) ** 2 + (yy / ay) ** 2 <= 1
+        pad = np.zeros((H + 2 * ay, W + 2 * ax), dtype=bool)
+        pad[ay:ay + H, ax:ax + W] = continent if sink else is_land
+        cand = np.argwhere(np.isin(B, ['ocean', 'sea']))
+        cand = cand[(cand[:, 0] >= max(H * south, 16)) & (cand[:, 0] < H - 19) & (cand[:, 1] >= 32) & (cand[:, 1] < W - 32)]
+        rng.shuffle(cand)
+        for y, x in cand[:6000]:
+            if any(math.hypot(x - a, y - b) < ax + 12 for _n, a, b in WONDERS):
+                continue
+            if not (pad[y:y + 2 * ay + 1, x:x + 2 * ax + 1] & kern).any():
+                if sink:
+                    # small islands too near it sank with the city: the sea there is open and empty
+                    for j in range(-ay, ay + 1):
+                        for i in range(-ax, ax + 1):
+                            X, Y = x + i, y + j
+                            if kern[j + ay, i + ax] and 0 <= X < W and 0 <= Y < H and is_land[Y, X]:
+                                is_land[Y, X] = river[Y, X] = lake[Y, X] = False
+                                B[Y, X] = 'ocean'
+                return int(x), int(y)
+        return None
+
     c = None
-    for r_, far_ in ((17, 40), (14, 30), (11, 20), (9, 10)):    # there is always a Sky-Seat
-        c = spot({'ocean', 'sea'}, r_, sea=True, far=far_)
+    for margin_, south_, sink_ in ((16, .62, 0), (13, .58, 0), (14, .6, 1), (10, .55, 1), (6, .5, 1), (2, .4, 1), (0, .2, 1)):
+        c = sky_spot(margin_, south_, sink_)                # there is always a Sky-Seat
         if c:
             break
     if c:

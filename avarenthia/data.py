@@ -11,6 +11,7 @@ def hexrgb(h):
 # ---------------------------------------------------------------- tiles
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
  CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE, LAMP) = range(41)
+BOAT = 41
 
 
 class Tile:
@@ -64,6 +65,7 @@ TILES = [
     Tile('□', '#8a7050', False, False, 'open chest'),
     Tile('┼', '#9a9aa0', False, False, 'gravestone'),
     Tile('Γ', '#8a7a60', False, False, 'lamp post'),
+    Tile('◘', '#b08050', False, False, 'boat', bg='#173252'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -102,77 +104,13 @@ SKILLS = {
 }
 
 # ---------------------------------------------------------------- items
-BASES = {
-    'dagger': dict(name='Dagger', slot='weapon', dmg=(1, 5), lvl=1, val=12, hit=10),
-    'shortsword': dict(name='Short Sword', slot='weapon', dmg=(2, 6), lvl=1, val=20),
-    'club': dict(name='Club', slot='weapon', dmg=(1, 8), lvl=1, val=15),
-    'staff': dict(name='Gnarled Staff', slot='weapon', dmg=(2, 5), lvl=1, val=15, mana=10),
-    'longsword': dict(name='Long Sword', slot='weapon', dmg=(3, 10), lvl=4, val=60),
-    'mace': dict(name='Flanged Mace', slot='weapon', dmg=(4, 9), lvl=5, val=70),
-    'warstaff': dict(name='War Staff', slot='weapon', dmg=(4, 11), lvl=7, val=120, mana=25),
-    'waraxe': dict(name='War Axe', slot='weapon', dmg=(5, 14), lvl=7, val=110),
-    'bastard': dict(name='Bastard Sword', slot='weapon', dmg=(7, 17), lvl=10, val=170),
-    'runeblade': dict(name='Rune Blade', slot='weapon', dmg=(9, 22), lvl=13, val=250, hit=15),
-    'cap': dict(name='Cap', slot='helm', arm=(2, 4), lvl=1, val=10),
-    'skullcap': dict(name='Skull Cap', slot='helm', arm=(5, 8), lvl=4, val=35),
-    'fullhelm': dict(name='Full Helm', slot='helm', arm=(9, 13), lvl=8, val=80),
-    'greathelm': dict(name='Great Helm', slot='helm', arm=(14, 20), lvl=12, val=150),
-    'quilted': dict(name='Quilted Armor', slot='armor', arm=(4, 7), lvl=1, val=15),
-    'leather': dict(name='Leather Armor', slot='armor', arm=(8, 12), lvl=3, val=35),
-    'ringmail': dict(name='Ring Mail', slot='armor', arm=(13, 19), lvl=5, val=70),
-    'chainmail': dict(name='Chain Mail', slot='armor', arm=(19, 27), lvl=8, val=120),
-    'platemail': dict(name='Plate Mail', slot='armor', arm=(29, 41), lvl=12, val=220),
-    'shortbow': dict(name='Short Bow', slot='weapon', dmg=(2, 6), lvl=1, val=25, ranged=True),
-    'longbow': dict(name='Long Bow', slot='weapon', dmg=(4, 11), lvl=5, val=80, ranged=True),
-    'warbow': dict(name='War Bow', slot='weapon', dmg=(7, 17), lvl=10, val=170, ranged=True),
-    'buckler': dict(name='Buckler', slot='shield', arm=(3, 5), lvl=1, val=12),
-    'roundshield': dict(name='Round Shield', slot='shield', arm=(6, 9), lvl=4, val=40),
-    'kiteshield': dict(name='Kite Shield', slot='shield', arm=(10, 15), lvl=8, val=90),
-    'towershield': dict(name='Tower Shield', slot='shield', arm=(16, 22), lvl=12, val=170),
-    'ring': dict(name='Ring', slot='ring', lvl=1, val=40, magic_only=True),
-    'amulet': dict(name='Amulet', slot='amulet', lvl=3, val=60, magic_only=True),
-}
-SLOTS = ['weapon', 'shield', 'helm', 'armor', 'ring', 'amulet']
-SLOTNAME = {'weapon': 'Weapon', 'shield': 'Shield', 'helm': 'Helm', 'armor': 'Armor', 'ring': 'Ring', 'amulet': 'Amulet'}
-SLOTGLYPH = {'weapon': ')', 'shield': '(', 'armor': '[', 'helm': ']', 'ring': '=', 'amulet': '"'}
-
-AFFIXES = [
-    dict(stat='dmg_flat', pre=True, slots=['weapon'], tiers=[(1, 'Jagged', 1, 3), (5, 'Deadly', 3, 6), (10, 'Vicious', 6, 10)]),
-    dict(stat='ed', pre=True, slots=['weapon'], tiers=[(1, 'Sharp', 15, 30), (5, 'Cruel', 30, 60), (10, 'Savage', 60, 100)]),
-    dict(stat='edef', pre=True, slots=['armor', 'helm', 'shield'], tiers=[(1, 'Sturdy', 15, 30), (5, 'Strong', 30, 60), (10, 'Glorious', 60, 100)]),
-    dict(stat='hit', pre=True, slots=['weapon', 'ring', 'amulet', 'helm'], tiers=[(1, 'Bronze', 8, 15), (5, 'Iron', 15, 30), (10, 'Steel', 30, 50)]),
-    dict(stat='mana', pre=True, slots=['helm', 'ring', 'amulet', 'weapon'], tiers=[(1, 'Lapis', 8, 15), (5, 'Cobalt', 15, 25), (10, 'Sapphire', 25, 40)]),
-    dict(stat='life', pre=False, slots=['armor', 'helm', 'shield', 'ring', 'amulet'], tiers=[(1, 'of the Jackal', 5, 10), (5, 'of the Fox', 10, 20), (10, 'of the Bear', 20, 35)]),
-    dict(stat='str', pre=False, slots=SLOTS, tiers=[(1, 'of Strength', 2, 4), (6, 'of Might', 4, 8), (12, 'of the Titan', 8, 12)]),
-    dict(stat='dex', pre=False, slots=SLOTS, tiers=[(1, 'of Dexterity', 2, 4), (6, 'of Skill', 4, 8), (12, 'of Precision', 8, 12)]),
-    dict(stat='vit', pre=False, slots=SLOTS, tiers=[(1, 'of Vitality', 2, 4), (6, 'of Vigor', 4, 8), (12, 'of Life', 8, 12)]),
-    dict(stat='ene', pre=False, slots=SLOTS, tiers=[(1, 'of Energy', 2, 4), (6, 'of the Mind', 4, 8), (12, 'of Wizardry', 8, 12)]),
-    dict(stat='leech', pre=False, slots=['weapon', 'ring', 'amulet'], tiers=[(2, 'of the Leech', 2, 4), (8, 'of the Bat', 4, 7)]),
-    dict(stat='crit', pre=False, slots=['weapon', 'ring', 'amulet', 'helm'], tiers=[(1, 'of Piercing', 2, 4), (7, 'of Slaying', 4, 8)]),
-    dict(stat='regen', pre=False, slots=['armor', 'ring', 'amulet'], tiers=[(1, 'of Regeneration', 1, 1), (8, 'of Renewal', 2, 3)]),
-]
-AFFTXT = {
-    'dmg_flat': '+{} damage', 'ed': '+{}% enhanced damage', 'edef': '+{}% enhanced defense',
-    'hit': '+{} to accuracy', 'mana': '+{} to mana', 'life': '+{} to life', 'str': '+{} to Strength',
-    'dex': '+{} to Dexterity', 'vit': '+{} to Vitality', 'ene': '+{} to Energy',
-    'leech': '{}% of damage stolen as life', 'crit': '+{}% critical strike chance', 'regen': '+{} life regeneration',
-}
-UNIQUES = [
-    dict(name='Gutripper', base='dagger', lvl=2, aff={'ed': 70, 'leech': 6, 'dex': 3}),
-    dict(name='Ratcatcher', base='shortsword', lvl=3, aff={'ed': 60, 'dmg_flat': 3, 'hit': 25}, boss='ratking'),
-    dict(name='Thornfield Aegis', base='quilted', lvl=2, aff={'edef': 100, 'life': 15, 'vit': 3}),
-    dict(name='Crown of Ash', base='cap', lvl=4, aff={'life': 20, 'mana': 15, 'crit': 4}),
-    dict(name='Hearthstone Loop', base='ring', lvl=5, aff={'life': 15, 'regen': 2, 'str': 4}),
-    dict(name='Pale Moon Band', base='ring', lvl=7, aff={'mana': 30, 'ene': 8, 'crit': 5}),
-    dict(name="Grolm's Splitter", base='waraxe', lvl=8, aff={'ed': 120, 'str': 8, 'crit': 8}, boss='grolm'),
-    dict(name='Bonecaller', base='amulet', lvl=9, aff={'life': 30, 'leech': 5, 'vit': 6}),
-    dict(name='Veil of the Undying', base='chainmail', lvl=11, aff={'edef': 150, 'life': 40, 'regen': 3}),
-    dict(name='Stormherald', base='warstaff', lvl=10, aff={'ed': 80, 'mana': 40, 'ene': 10}),
-]
+from .itemdata import (BASES, SLOTS, SLOTNAME, SLOTGLYPH, AFFIXES, AFFTXT, UNIQUES, SETS, GEAR_USERS, FAMILY_OF,  # noqa: E402,F401
+                       UNDEAD, RES_CAP, RESISTS, ELEMENT_RES, SKILL_PREFIX, grades, SET_COLOR)
 RARE_A = ['Doom', 'Grim', 'Blood', 'Storm', 'Bone', 'Dread', 'Shadow', 'Rune', 'Ghoul', 'Wraith', 'Plague', 'Ash', 'Iron', 'Gale']
 RARE_B = ['Bite', 'Song', 'Shell', 'Visage', 'Loop', 'Mark', 'Edge', 'Ward', 'Brand', 'Coil', 'Fang', 'Call', 'Hide', 'Eye']
-RARITY_COLOR = {'normal': hexrgb('#e6dfcf'), 'magic': hexrgb('#7f9bff'), 'rare': hexrgb('#efe065'), 'unique': hexrgb('#d9a547')}
-RARITY_MULT = {'normal': 1, 'magic': 2.5, 'rare': 5, 'unique': 8}
+RARITY_COLOR = {'normal': hexrgb('#e6dfcf'), 'magic': hexrgb('#7f9bff'), 'rare': hexrgb('#efe065'), 'unique': hexrgb('#d9a547'),
+                'set': hexrgb('#5fd27a')}
+RARITY_MULT = {'normal': 1, 'magic': 2.5, 'rare': 5, 'unique': 8, 'set': 7}
 # curses hidden on some magic and rare items: (stat, low, high), always negative
 CURSES = [('life', 6, 18), ('str', 3, 8), ('dex', 3, 8), ('vit', 3, 7), ('ene', 3, 8), ('hit', 10, 30), ('ed', 10, 30),
           ('edef', 15, 40), ('crit', 2, 4), ('mana', 6, 15)]
@@ -243,7 +181,33 @@ MONSTERS = {
     'drowned': dict(ch='z', fg='#70b0a0', name='Drowned One', tags='lair_drowned', min_l=4, hp=1.6, dmg=1.2, df=.8, xp=1.3, slow=True),
     'clansman': dict(ch='h', fg='#d8a070', name='Dwarf Clansman', tags='faction', min_l=3, hp=1.4, dmg=1.15, df=1.5, xp=1.4),
     'thunderer': dict(ch='h', fg='#b0b8c8', name='Dwarf Thunderer', tags='faction', min_l=4, hp=1.1, dmg=1.2, df=1.3, xp=1.5, ranged=True),
+    # creatures of the elements, each at home in its own corner of the realm
+    'salamander': dict(ch='S', fg='#ff7a2c', name='Salamander', tags='wild', min_l=4, hp=1.1, dmg=1.1, df=1.1, xp=1.4, elem='fire',
+                       caster=True, bolt='spit of fire'),
+    'ice_witch': dict(ch='@', fg='#a8e0ff', name='Ice Witch', tags='wild', min_l=5, hp=.9, dmg=1.15, df=1, xp=1.6, elem='cold',
+                      caster=True, bolt='shard of ice', nova=True, nova_msg='{name} breathes out a blast of frost!',
+                      nova_col=(159, 216, 255)),
+    'storm_spirit': dict(ch='&', fg='#f2f07a', name='Storm Spirit', tags='wild', min_l=6, hp=1, dmg=1.2, df=1.5, xp=1.7, elem='lightning',
+                         caster=True, fast=True, erratic=True, bolt='bolt of lightning'),
+    'bog_lurker': dict(ch='B', fg='#7aa860', name='Bog Lurker', tags='wild', min_l=4, hp=1.6, dmg=1.1, df=.9, xp=1.4, elem='poison',
+                       poison=True, slow=True),
 }
+# what the elements do to each kind: resistances in percent (negative: a weakness), and the element of its attacks
+for _k, _res in (('skeleton', dict(cold=25, poison=100, fire=-25)), ('skarcher', dict(cold=25, poison=100, fire=-25)),
+                 ('zombie', dict(poison=100, fire=-25)), ('ghost', dict(cold=75, poison=100, lightning=25)),
+                 ('wraith', dict(cold=50, poison=100, fire=-25)), ('lich', dict(cold=75, poison=100)),
+                 ('drowned', dict(cold=50, lightning=-50, poison=50)), ('drowned_king', dict(cold=60, lightning=-50, poison=75)),
+                 ('troll', dict(fire=-50, poison=50)), ('spider', dict(poison=100)), ('broodmother', dict(poison=100, fire=-25)),
+                 ('drake', dict(fire=75, cold=-25)), ('dragon', dict(fire=75, cold=-25)), ('salamander', dict(fire=90, cold=-50)),
+                 ('ice_witch', dict(cold=75, fire=-50)), ('storm_spirit', dict(lightning=90, poison=100)),
+                 ('bog_lurker', dict(poison=75, fire=-25)), ('ogre', dict(cold=20)), ('bat', dict(lightning=-25)),
+                 ('cultist', dict(fire=20)), ('druid', dict(fire=25, poison=25)), ('clansman', dict(fire=20)), ('thunderer', dict(fire=20))):
+    MONSTERS[_k]['res'] = _res
+for _k, _el in (('drake', 'fire'), ('dragon', 'fire'), ('cultist', 'fire'), ('druid', 'fire'), ('lich', 'cold'),
+                ('drowned_king', 'cold'), ('ghost', 'cold'), ('wraith', 'cold'), ('spider', 'poison'), ('broodmother', 'poison')):
+    MONSTERS[_k]['elem'] = _el
+CLIMATE_MONSTERS = {'cold': ['ice_witch'], 'arid': ['salamander'], 'marsh': ['bog_lurker'], 'temperate': []}
+ELEMENT_WORD = {'fire': 'fire', 'cold': 'cold', 'lightning': 'lightning', 'poison': 'poison'}
 for _k, _extra in (('kobold', 'den'),
                    ('goblin', 'deep'), ('gobarcher', 'deep'), ('orc', 'deep'), ('troll', 'deep'), ('ogre', 'deep'),
                    ('spider', 'deep'), ('kobold', 'deep'), ('bat', 'deep'), ('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
@@ -254,6 +218,8 @@ for _m in MONSTERS.values():
     _m['fg'] = hexrgb(_m['fg'])
     for _k in ('boss', 'erratic', 'fast', 'ranged', 'poison', 'slow', 'caster', 'regen', 'leech', 'leap', 'nova'):
         _m.setdefault(_k, False)
+    _m.setdefault('res', {})
+    _m.setdefault('elem', None)
     _m.setdefault('summon', None)
     _m.setdefault('min_l', 1)
 
@@ -325,8 +291,8 @@ BIOME_MONSTERS = {
     'grass': ['jackal', 'wolf', 'bandit', 'goblin', 'ogre'],
     'forest': ['wolf', 'goblin', 'spider', 'ogre', 'troll'],
     'swamp': ['spider', 'zombie', 'goblin', 'ghost', 'wraith'],
-    'hills': ['goblin', 'orc', 'ogre', 'wolf', 'troll'],
-    'coast': ['jackal', 'bandit', 'goblin', 'orc'],
+    'hills': ['goblin', 'orc', 'ogre', 'wolf', 'troll', 'storm_spirit'],
+    'coast': ['jackal', 'bandit', 'goblin', 'orc', 'storm_spirit'],
 }
 NIGHT_MONSTERS = ['zombie', 'ghost', 'wraith', 'skeleton', 'wolf']
 TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
@@ -386,29 +352,6 @@ for _f in FACTIONS.values():
 STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgard', 'Dunmere', 'Blackmoor', 'Wolfcrag',
                     'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil', 'Harrowgate', 'Emberfall',
                     'Coldwater', 'Ravenhold', 'Bleakstone', 'Hawksreach', 'Duskwall', 'Grimhold', 'Stonecairn', 'Mirewatch']
-# what each monster carries and could drop: only things it could actually use
-GEAR_USERS = {
-    'kobold': ['dagger', 'club', 'cap'], 'goblin': ['dagger', 'club', 'shortsword', 'cap', 'buckler', 'quilted'],
-    'gobarcher': ['shortbow', 'dagger', 'cap', 'leather'],
-    'bandit': ['dagger', 'shortsword', 'club', 'quilted', 'leather', 'cap', 'buckler'],
-    'brigand': ['shortbow', 'longbow', 'dagger', 'leather', 'cap'],
-    'orc': ['waraxe', 'mace', 'club', 'leather', 'ringmail', 'skullcap', 'roundshield'], 'ogre': ['club', 'mace'],
-    'skeleton': ['shortsword', 'longsword', 'buckler', 'roundshield', 'ringmail', 'skullcap'], 'skarcher': ['shortbow', 'longbow'],
-    'cultist': ['staff', 'warstaff', 'dagger', 'ring', 'amulet'], 'zombie': ['quilted'],
-    'soldier': ['longsword', 'shortsword', 'roundshield', 'chainmail', 'ringmail', 'skullcap', 'fullhelm'],
-    'crossbow': ['longbow', 'shortbow', 'leather', 'cap'],
-    'knight': ['bastard', 'longsword', 'kiteshield', 'platemail', 'chainmail', 'fullhelm', 'greathelm'],
-    'mercenary': ['longsword', 'mace', 'waraxe', 'ringmail', 'roundshield', 'skullcap'],
-    'druid': ['staff', 'warstaff', 'amulet', 'ring'], 'warden': ['longbow', 'shortbow', 'leather', 'cap'],
-    'raider': ['waraxe', 'mace', 'shortsword', 'leather', 'ringmail', 'buckler'],
-    'robber_knight': ['bastard', 'longsword', 'chainmail', 'kiteshield', 'fullhelm'],
-    'clansman': ['waraxe', 'mace', 'roundshield', 'ringmail', 'chainmail', 'fullhelm'], 'thunderer': ['longbow', 'chainmail', 'skullcap'],
-    'watchman': ['club', 'shortsword', 'quilted', 'cap'], 'huntsman': ['shortbow', 'longbow', 'leather'],
-    'deputy': ['shortsword', 'longsword', 'buckler', 'leather'], 'sheriff': ['longsword', 'roundshield', 'chainmail', 'skullcap'],
-    'merchant': ['dagger', 'ring', 'amulet'],
-    'grolm': ['waraxe', 'mace', 'fullhelm'], 'lich': ['warstaff', 'amulet', 'ring'], 'dragon': ['ring', 'amulet', 'greathelm', 'platemail'],
-    'warlord': ['waraxe', 'mace', 'platemail', 'greathelm'], 'drowned_king': ['amulet', 'ring', 'warstaff'],
-}
 START_STATS = dict(str=15, dex=15, vit=15, ene=15)
 LEVEL_STAT_POINTS = 3
 
@@ -471,4 +414,12 @@ LORE = {
               'He leaps across the room at you. Keep your guard up.'),
     'lich': ('Morvenna the Undying, author of the curse.', 'The bottom of her crypt.',
              'Her bolts and frost waves strike from anywhere. Close in and do not stop.'),
+    'salamander': ('A lizard as long as a man, its belly glowing like a forge.', 'Deserts, ash lands and the burning isles.',
+                   'It spits fire and fears nothing hot. Frost and fire resistance win this fight.'),
+    'ice_witch': ('A hag of the frozen north who breathes winter.', 'Tundra, taiga and the cold hills.',
+                  'Her frost bites deep. Fire is her bane; cold barely touches her.'),
+    'storm_spirit': ('A crackling shape of cloud and light that will not keep still.', 'High hills, cliffs and wild coasts.',
+                     'Lightning is its blood. Steel and fire hurt it; storm magic does not.'),
+    'bog_lurker': ('A heap of rot and reeds that rises out of the mire.', 'Swamps and marshes.',
+                   'Its touch poisons. Burn it, and keep antidotes at hand.'),
 }

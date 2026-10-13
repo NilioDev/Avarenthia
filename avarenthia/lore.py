@@ -58,6 +58,7 @@ RACE_LORE = {
 }
 
 # ------------------------------------------------------------------ everyday lines, by trade
+from .harbour import SAILOR_BARKS  # noqa: E402
 BARKS = {
     'any': ['Lovely day, isn\'t it?', 'Prices keep going up, I swear.', 'Mind how you go.', 'The temple bell woke me again.',
             'My neighbour\'s goat ate my washing. Again.', 'You\'re not from round here, are you?',
@@ -94,6 +95,7 @@ BARKS = {
     'lamplighter': ['One lamp at a time, and the night is kept at bay.', 'Oil is dear this year. Light is dearer.'],
     'farmhand': ['Up at dawn, bed at dusk, and still the work is never done.'],
 }
+BARKS['sailor'] = SAILOR_BARKS
 
 # ------------------------------------------------------------------ hints: where things are, how the world goes
 DIST = [(6, 'a short walk'), (14, 'a few hours\' walk'), (28, 'about a day\'s walk'), (999, 'a long way')]
@@ -314,6 +316,15 @@ def remember(game, line):
 def chatter(game, npc):
     """What someone says when you talk to them, or as you pass: their trade, the old days, or a hint."""
     job = getattr(npc, 'job', 'any')
+    from .guilds import rumor
+    secret = rumor(game) if random.random() < .15 else None
+    if secret:
+        return secret
+    if random.random() < .04:
+        from .hidden import rumor as old_way
+        said = old_way(game)
+        if said:
+            return said
     r = random.random()
     if r < .4:
         pool = BARKS.get(job, []) + BARKS['any']

@@ -27,6 +27,9 @@ class Item:
         self.ided = True         # unidentified magic items hide their properties
         self.curse = []          # hidden negative properties: list of [stat, value]
         self.curse_known = False
+        self.rstr = self.rdex = 0    # Strength and Dexterity needed
+        self.set_key = None
+        self.perfect = False
 
     @property
     def cursed(self):
@@ -61,10 +64,14 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
+        if self.k in ('oldmap', 'vkey'):
+            return self.name
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
         if self.k == 'gear' and self.cursed and self.curse_known:
             return self.name + ' (cursed)'
+        if self.k == 'gear' and getattr(self, 'perfect', False):
+            return self.name + ' (perfect)'
         return self.name
 
     def color(self):
@@ -92,6 +99,8 @@ class Item:
             return (140, 200, 110)
         if self.k == 'fish':
             return (255, 214, 92) if self.t == 'golden' else (150, 200, 220)
+        if self.k in ('oldmap', 'vkey'):
+            return (200, 210, 170)
         return (238, 228, 194)
 
     def glyph(self):
@@ -117,6 +126,10 @@ class Item:
             return '"'
         if self.k == 'fish':
             return '~'
+        if self.k == 'oldmap':
+            return '?'
+        if self.k == 'vkey':
+            return '-'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -135,6 +148,10 @@ class Item:
                 out.append('Opens a portal to the last town you visited, and back.')
             elif self.k == 'quest':
                 out.append('A relic someone is waiting for. Bring it back to claim your reward.')
+            elif self.k == 'oldmap':
+                out.append('A map of the Varnish Empire, the ink nearly gone. Read it to find one of the old ways.')
+            elif self.k == 'vkey':
+                out.append('A key of black Varnish iron. It opens a sealed vault.')
             elif self.k == 'plant':
                 from . import foraging as FG
                 if FG.known(FG.GAME, self.t):
@@ -168,8 +185,10 @@ class Item:
                 out.append('Read it from your inventory to learn the skill.')
             return out
         b = D.BASES[self.base]
+        if b.get('grade', 'normal') != 'normal':
+            out.append(f"{b['grade'].capitalize()} {b['name'].lower()}")
         if self.dmg:
-            out.append(f'Damage {self.dmg[0]}-{self.dmg[1]}')
+            out.append(f'Damage {self.dmg[0]}-{self.dmg[1]}' + (' · two hands' if b.get('two') else ''))
         if self.arm:
             out.append(f'Armor {self.armor_value()}')
         if b.get('hit'):
@@ -181,8 +200,21 @@ class Item:
             if self.cursed and self.curse_known:
                 out.append('It is cursed!')
             return out
+        u = unique_named(self.name) if self.rar == 'unique' else None
         for s, v in self.aff:
-            out.append(D.AFFTXT[s].format(v))
+            line = D.AFFTXT[s].format(v)
+            rng = u and u['aff'].get(s)
+            if isinstance(rng, tuple) and rng[0] != rng[1]:
+                line += f' [{rng[0]}-{rng[1]}]'
+            out.append(line)
+        if getattr(self, 'perfect', False):
+            out.append('A perfect one: every power at the top of its range.')
+        sk = getattr(self, 'set_key', None)
+        if sk:
+            st = D.SETS[sk]
+            out.append(f"Part of {st['name']} ({len(st['pieces'])} pieces). {st['lore']}")
+            out.append('2 pieces: ' + ', '.join(D.AFFTXT[k].format(v) for k, v in st['partial'].items()))
+            out.append('Full set: ' + ', '.join(D.AFFTXT[k].format(v) for k, v in st['full'].items()))
         if self.cursed:
             out.append('CURSED: ' + ', '.join(D.CURSETXT[s].format(v) for s, v in self.curse) +
                        '. Once worn it cannot be removed until a priest lifts the curse.')
@@ -211,6 +243,8 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return FISH[self.t][4] * .5
+        if self.k == 'oldmap':
+            return 15
         if self.k != 'gear':
             return 0
         v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
@@ -313,6 +347,7 @@ class Player:
         self.life = 1
         self.mana = 1
         self.last_target = None
+        self.target = None          # the enemy picked with Tab
 
 
 class GameMap:
@@ -356,28 +391,66 @@ class GameMap:
 
 
 # ------------------------------------------------------------------ item creation
+def _skill_line(it):
+    """Which discipline a '+ to skill' affix raises on this item."""
+    from .skills import WEAPON_LINE
+    if it.slot == 'weapon':
+        if D.BASES[it.base].get('mana'):          # staves raise magic
+            return random.choice(['fire', 'frost', 'storm', 'shadow', 'restoration'])
+        return WEAPON_LINE.get(D.FAMILY_OF.get(it.base, it.base)) or 'warcraft'
+    if it.slot == 'shield' and not it.arm:
+        return random.choice(['fire', 'frost', 'storm', 'shadow', 'restoration'])
+    if it.slot == 'gloves':
+        return random.choice(['swords', 'axes', 'daggers', 'archery', 'unarmed'])
+    return random.choice(list(D.SKILL_PREFIX))
+
+
 def roll_affix(it, pre, exclude):
-    c = [a for a in D.AFFIXES if a['pre'] == pre and it.slot in a['slots'] and a['stat'] not in exclude and a['tiers'][0][0] <= it.ilvl]
+    def fits(a):
+        return it.slot in a['slots'] and a['stat'] not in exclude and a['tiers'][0][0] <= it.ilvl
+    c = [a for a in D.AFFIXES if a['pre'] == pre and fits(a)]
     if not c:
-        c = [a for a in D.AFFIXES if it.slot in a['slots'] and a['stat'] not in exclude and a['tiers'][0][0] <= it.ilvl]
+        c = [a for a in D.AFFIXES if fits(a)]
     if not c:
         return None
     a = random.choice(c)
     ts = [t for t in a['tiers'] if t[0] <= it.ilvl]
-    t = ts[max(0, len(ts) - 1 - (1 if random.random() < .35 else 0))]
-    return [a['stat'], random.randint(t[2], t[3])], t[1], a['pre']
+    # the best tier the item level allows, now and then one lower
+    t = ts[max(0, len(ts) - 1 - (1 if random.random() < .35 else 0) - (1 if random.random() < .12 else 0))]
+    stat, name = a['stat'], t[1]
+    if stat == 'skill':
+        line = _skill_line(it)
+        stat, name = 'skill_' + line, D.SKILL_PREFIX[line]
+    return [stat, random.randint(t[2], t[3])], name, a['pre']
 
 
-def make_gear(game, bk, rar, ilvl):
+def base_for(family, ilvl, top=True):
+    """The grade of a family that fits this item level: the best one it reaches, sometimes one lower."""
+    ks = [k for k in D.grades(family) if D.BASES[k]['lvl'] <= ilvl + 1] or D.grades(family)[:1]
+    if not top and len(ks) > 1 and random.random() < .4:
+        return ks[-2]
+    return ks[-1]
+
+
+def _fill_base(it, bk):
     b = D.BASES[bk]
-    if b.get('magic_only') and rar == 'normal':
-        rar = 'magic'
-    it = Item(game.new_id(), 'gear', bk)
-    it.base, it.slot, it.rar, it.ilvl, it.req = bk, b['slot'], rar, ilvl, b['lvl']
+    it.base, it.slot, it.req = bk, b['slot'], b['lvl']
+    it.rstr, it.rdex = b.get('rstr', 0), b.get('rdex', 0)
     if 'dmg' in b:
         it.dmg = tuple(b['dmg'])
     if 'arm' in b:
         it.arm = random.randint(*b['arm'])
+
+
+def make_gear(game, bk, rar, ilvl):
+    if bk not in D.BASES:
+        bk = base_for(bk, ilvl)
+    b = D.BASES[bk]
+    if b.get('magic_only') and rar == 'normal':
+        rar = 'magic'
+    it = Item(game.new_id(), 'gear', bk)
+    it.rar, it.ilvl = rar, ilvl
+    _fill_base(it, bk)
     if rar == 'magic':
         pn = sn = ''
         want_pre = random.random() < .65
@@ -400,7 +473,8 @@ def make_gear(game, bk, rar, ilvl):
                     sn = ' ' + r[1]
         it.name = pn + b['name'] + sn
     elif rar == 'rare':
-        for _ in range(random.randint(3, 5)):
+        n = random.randint(3, 4 if ilvl < 10 else 5 if ilvl < 20 else 6)
+        for _ in range(n):
             r = roll_affix(it, random.random() < .5, [a[0] for a in it.aff])
             if r:
                 it.aff.append(r[0])
@@ -412,11 +486,35 @@ def make_gear(game, bk, rar, ilvl):
 
 
 def make_unique(game, u):
+    """A unique: its powers roll within their ranges. All of them at the top makes a perfect one."""
     it = make_gear(game, u['base'], 'normal', u['lvl'])
     it.rar = 'unique'
     it.name = u['name']
-    it.aff = [[s, v] for s, v in u['aff'].items()]
-    it.req = u['lvl']
+    it.aff = []
+    top = True
+    for s, v in u['aff'].items():
+        lo, hi = v if isinstance(v, tuple) else (v, v)
+        val = random.randint(lo, hi)
+        top = top and val == hi
+        it.aff.append([s, val])
+    it.perfect = top and any(isinstance(v, tuple) and v[0] != v[1] for v in u['aff'].values())
+    it.req = max(u['lvl'], D.BASES[it.base]['lvl'])
+    return it
+
+
+def unique_named(name):
+    return next((u for u in D.UNIQUES if u['name'] == name), None)
+
+
+def make_set_item(game, set_key, piece):
+    st = D.SETS[set_key]
+    name, family, aff = st['pieces'][piece]
+    lvl = max(D.BASES[family]['lvl'], 6)
+    it = make_gear(game, family, 'normal', lvl)
+    it.rar, it.name = 'set', name
+    it.aff = [[k, v] for k, v in aff.items()]
+    it.set_key = set_key
+    it.req = max(lvl, D.BASES[it.base]['lvl'])
     return it
 
 
@@ -425,24 +523,42 @@ def add_curse(it):
         it.curse.append([st, random.randint(lo, hi) + it.ilvl // 3])
 
 
-def random_gear(game, ilvl, boost=1, bases=None):
+def _mf(game):
+    try:
+        mf = game.stats().get('mf', 0)
+    except Exception:
+        return 1
+    return 1 + (mf * 250 / (mf + 250)) / 100          # diminishing returns, as in the old game
+
+
+def random_gear(game, ilvl, boost=1, bases=None, src=None):
     """Loot. Magic items are rare, arrive unidentified, and now and then carry a hidden curse.
-    bases: the kinds of items this source could have (what a monster actually uses)."""
+    bases: the families of items this source could have (what a monster actually uses); src: who drops it
+    ('chest' for a chest or a hoard). Uniques and set pieces only come from those who would have them."""
+    src = src or ('chest' if bases is None else None)
+    boost *= _mf(game)
     r = random.random()
     it = None
-    if r < .004 * boost and bases is None:
-        us = [u for u in D.UNIQUES if not u.get('boss') and u['lvl'] <= ilvl + 2]
+    fam_ok = (lambda k: bases is None or D.FAMILY_OF.get(k, k) in bases)
+    if r < .004 * boost:
+        us = [u for u in D.UNIQUES if not u.get('boss') and src in u.get('src', ()) and u['lvl'] <= ilvl + 2 and fam_ok(u['base'])]
         if us:
             it = make_unique(game, random.choice(us))
+    if it is None and random.random() < .005 * boost:
+        opts = [(k, i) for k, st in D.SETS.items() if src in st['src'] for i, pc in enumerate(st['pieces'])
+                if fam_ok(pc[1]) and D.BASES[pc[1]]['lvl'] <= ilvl + 3]
+        if opts:
+            it = make_set_item(game, *random.choice(opts))
     if it is None:
         rar = 'rare' if r < .025 * boost else 'magic' if r < .1 * boost else 'normal'
-        pool = bases or list(D.BASES)
-        ks = [k for k in pool if D.BASES[k]['lvl'] <= ilvl + 1 and not (rar == 'normal' and D.BASES[k].get('magic_only'))]
-        if not ks:
-            ks = sorted(pool, key=lambda k: D.BASES[k]['lvl'])[:1]
-            if rar == 'normal' and D.BASES[ks[0]].get('magic_only'):
+        pool = bases or [f for f in dict.fromkeys(D.FAMILY_OF.values())]
+        fams = [f for f in pool if f in D.FAMILY_OF.values() and D.BASES[D.grades(f)[0]]['lvl'] <= ilvl + 1
+                and not (rar == 'normal' and D.BASES[D.grades(f)[0]].get('magic_only'))]
+        if not fams:
+            fams = sorted((f for f in pool if f in D.FAMILY_OF.values()), key=lambda f: D.BASES[D.grades(f)[0]]['lvl'])[:1] or ['dagger']
+            if rar == 'normal' and D.BASES[D.grades(fams[0])[0]].get('magic_only'):
                 rar = 'magic'
-        it = make_gear(game, random.choice(ks), rar, ilvl)
+        it = make_gear(game, base_for(random.choice(fams), ilvl, top=False), rar, ilvl)
     if it.rar != 'normal':
         it.ided = False
         if it.rar in ('magic', 'rare') and random.random() < (.1 if it.rar == 'magic' else .14):

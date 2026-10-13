@@ -49,7 +49,8 @@ def gain(game, key, amount):
     p = game.player
     sk = p.life_sk.setdefault(key, [0, 0])
     rc = RACES.get(getattr(p, 'race', 'human'), RACES['human'])
-    sk[1] += amount * rc['learn'].get(key, 1.1 if p.race == 'human' else 1)
+    from .guilds import life_bonus
+    sk[1] += amount * rc['learn'].get(key, 1.1 if p.race == 'human' else 1) * life_bonus(game, key)
     while sk[0] < 50 and sk[1] >= need_for(sk[0]):
         sk[1] -= need_for(sk[0])
         sk[0] += 1

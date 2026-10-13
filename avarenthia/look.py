@@ -241,11 +241,10 @@ def cell(m, i, depth=None):
         if dd <= 3:
             return _pick(r, [(50, '≈'), (30, '~'), (20, ' ')]), _jit((66, 116, 196), r2, .08), (11, 28, 60)
         return _pick(r, [(30, '≈'), (20, '~'), (50, ' ')]), _jit((44, 84, 160), r2, .08), (6, 17, 42)
-    if t == RIVER or (t == ROAD and over and getattr(m, 'river', None) and m.river[i]):
+    if t == ROAD and over:
+        return road_look(m, i, x, y)
+    if t == RIVER:
         key = (_wet(m, x, y - 1), _wet(m, x, y + 1), _wet(m, x - 1, y), _wet(m, x + 1, y))
-        if t == ROAD:       # a bridge: drawn across the river
-            vertical = key[0] or key[1]
-            return ('═' if vertical else '║'), (176, 132, 80), (14, 34, 64)
         return _pick(r, [(55, '~'), (45, '≈')]), _jit((92, 162, 238), r2, .08), (16, 40, 76)
     if t == SWAMP:
         ch = _pick(r, [(34, '"'), (18, ','), (16, '~'), (14, '√'), (10, '.'), (8, '♣')])
@@ -280,6 +279,41 @@ def cell(m, i, depth=None):
             return td.ch, _jit(fg, r2, .07), _jit(scale(fg, .32), r, .1)
         return td.ch, _jit(fg, r2, .07), td.bg or BG
     return td.ch, td.fg, td.bg or BG
+
+
+ROAD_JOIN = {D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT}
+ROAD_FG = (196, 150, 74)          # ochre
+MAIN_FG = (226, 178, 92)
+PATH_FG = (138, 160, 116)         # the old ways: faint grey-green
+
+
+def _ground_bg(m, i):
+    bio = getattr(m, 'biome', None)
+    if bio is None:
+        return BG
+    st = BIOME_STYLE.get(m.biome_names[bio[i]])
+    return st[2] if st else BG
+
+
+def road_look(m, i, x, y):
+    """Roads on the world map as joined lines: the great roads between cities doubled, the rest single,
+    and bridges where they cross a river."""
+    w = m.w
+    main = getattr(m, 'main_road', ())
+    riv = getattr(m, 'river', None)
+    if riv and riv[i]:
+        wet = (_wet(m, x, y - 1), _wet(m, x, y + 1), _wet(m, x - 1, y), _wet(m, x + 1, y))
+        # the river runs one way, the bridge the other
+        return ('╫' if (wet[0] or wet[1]) and not (wet[2] or wet[3]) else '╪'), MAIN_FG, (14, 34, 64)
+
+    def j(dx, dy):
+        if not m.inb(x + dx, y + dy):
+            return 0
+        return 1 if m.t[(y + dy) * w + x + dx] in ROAD_JOIN else 0
+    key = (j(0, -1), j(0, 1), j(-1, 0), j(1, 0))
+    if i in main:
+        return WALL_GLYPH.get(key, '═').replace('■', '═'), MAIN_FG, _ground_bg(m, i)
+    return FENCE_GLYPH.get(key, '─'), ROAD_FG, _ground_bg(m, i)
 
 
 def scale(c, k):

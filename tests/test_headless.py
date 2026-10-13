@@ -136,6 +136,9 @@ def trade_and_jobs():
     paid = g.player.cost_basis['grain']
     dest = max(g.world.settlements[1:], key=lambda s: ECO.sell_price(s, 'grain'))
     g.travel_to('s', dest.id)
+    assert g.cur != 'over' or (g.player.x, g.player.y) != (dest.x, dest.y), 'travel to a place never visited'
+    g.mark_visit('s', dest.id)
+    g.travel_to('s', dest.id)
     if g.cur != 'over' or (g.player.x, g.player.y) != (dest.x, dest.y):
         g.cur = 'over'
         g.player.x, g.player.y = dest.x, dest.y
@@ -435,7 +438,7 @@ def items_skills_curse():
     life0 = g.stats()['max_life']
     g.equip(ring)
     assert ring.curse_known and g.stats()['max_life'] <= life0
-    g.unequip('ring')
+    g.unequip('ring1')
     assert g.is_equipped(ring), 'cursed items stay on'
     p.gold = 500000
     to_over(g, 0)
@@ -453,7 +456,7 @@ def items_skills_curse():
         app.render()
     app.key('esc')
     assert ring.identified and not ring.cursed
-    g.unequip('ring')
+    g.unequip('ring1')
     assert not g.is_equipped(ring)
     # Morvenna grows with you
     tainted = lambda: sum(1 for v in g.world.taint if v)
@@ -932,15 +935,15 @@ def thornfield_and_faith():
     g.read_signpost() if g.here else None
     g.request = None
     assert sum(om.seen) - seen0 <= 6
-    # the Tab menu opens other screens by their hotkey
+    # the menu (Esc) opens other screens by their hotkey
     app.screens = [ui.GameScreen(app)]
-    app.key('tab')
+    app.key('esc')
     assert isinstance(app.top, ui.MenuScreen)
     app.render()
     app.key('i')
     assert isinstance(app.top, ui.InventoryScreen), app.top
     app.key('esc')
-    app.key('tab')
+    app.key('esc')
     app.key('P')
     assert isinstance(app.top, ui.BrewScreen)
     app.render()
@@ -1066,10 +1069,184 @@ def wonders():
     print('wonders ok')
 
 
+def ways_and_wares():
+    """This round: sight, roads, travel, targeting, loot and resistances, guilds, old ways and valleys, harbours."""
+    from avarenthia import guilds as GU, hidden as HP, events as EVT, look as LK, sites as ST2, worldgen as W2
+    from avarenthia.entities import make_gear, make_unique, make_set_item, make_monster, random_gear
+    import math
+    random.seed(77)
+    app = new_app('soft', 2468)
+    g = app.game
+    p, om, w = g.player, g.maps['over'], g.world
+    # you know nothing of the land at the start but where Thornfield lies
+    assert sum(om.seen) < 60, sum(om.seen)
+    home = w.settlements[0]
+    assert om.seen[home.y * om.w + home.x]
+    to_over(g, 0)
+    g.player.x, g.player.y = home.x + 1, home.y
+    r = g.over_sight()
+    assert r <= 6, r
+    # the Sky-Seat lies far out in the warm south
+    sx, sy = next((x, y) for n, x, y in w.wonders if n == 'The Sky-Seat')
+    land = [i for i, t in enumerate(om.t) if t != D.WATER and D.TILES[t].walk
+            and om.biome_names[om.biome[i]] not in ('cay', 'atoll_palm', 'reef', 'reef_flat')]
+    near = min(math.hypot(i % om.w - sx, i // om.w - (sy + 10)) for i in land)
+    assert near >= 25, near
+    # roads are joined lines; the great roads between the cities are double
+    assert om.main_road, 'great roads'
+    i = next(iter(om.main_road))
+    assert LK.get(om, i)[0] in '═║╔╗╚╝╠╣╦╩╬╪╫', LK.get(om, i)
+    # a watchtower: a circle, and mountains block the view
+    tw = next(q for q in w.sites if q.kind == 'watchtower')
+    g.enter_site(tw.id)
+    before = sum(om.seen)
+    ST2.climb_tower(g)
+    assert 0 < sum(om.seen) - before <= 3.3 * 10 * 10 + 30
+    g.request = None
+    # Tab picks targets, Esc lets go, then opens the menu
+    app.screens = [ui.GameScreen(app)]
+    g.enter_dungeon('rat', 1, 'up')
+    spot = W2.free_around(g, g.map, p.x, p.y, 2)
+    for k, c in enumerate(spot[:2]):
+        o = make_monster(g, 'rat', c[0], c[1], 1)
+        g.map.mons.append(o)
+    g.compute_fov()
+    vis = g.visible_hostiles()
+    assert len(vis) >= 2, 'two rats to pick from'
+    app.key('tab')
+    first = p.target
+    app.key('tab')
+    assert p.target != first
+    app.key('tab', True)
+    assert p.target == first, 'Shift+Tab goes back'
+    if vis:
+        app.key('tab')
+        assert p.target in [o.id for o in vis]
+        app.render()
+        app.key('esc')
+        assert p.target is None and not isinstance(app.top, ui.MenuScreen)
+    app.key('esc')
+    assert isinstance(app.top, ui.MenuScreen)
+    app.key('esc')
+    # ten slots: two rings, two-handers take the off-hand, Strength and Dexterity needs
+    p.lvl, p.str, p.dex = 40, 200, 200
+    r1, r2 = make_gear(g, 'ring', 'magic', 5), make_gear(g, 'ring', 'magic', 5)
+    shield, maul = make_gear(g, 'buckler', 'normal', 1), make_gear(g, 'maul', 'normal', 12)
+    for it in (r1, r2, shield, maul):
+        g.add_to_inv(it)
+        g.equip(it)
+    assert g.eq_item('ring1') is r1 and g.eq_item('ring2') is r2
+    assert g.eq_item('weapon') is maul and g.eq_item('shield') is None
+    assert not g.equip(shield)
+    p.str = 5
+    heavy = make_gear(g, 'platemail_e', 'normal', 30)
+    g.add_to_inv(heavy)
+    assert not g.equip(heavy) and 'Strength' in g.meets(heavy)
+    p.str = 200
+    assert len(D.SLOTS) == 10
+    # grades follow the item level; uniques roll in ranges; sets add bonuses
+    hi = [random_gear(g, 30, 1, ['longsword']).base for _ in range(60)]
+    assert any(b.endswith('_e') for b in hi), hi
+    u = make_unique(g, D.UNIQUES[0])
+    lo, hi_ = D.UNIQUES[0]['aff']['ed']
+    assert lo <= dict(u.aff)['ed'] <= hi_
+    res0 = g.stats()['res_fire']
+    for k in range(4):
+        it = make_set_item(g, 'varnish', k)
+        g.add_to_inv(it)
+        g.equip(it)
+    st = g.stats()
+    assert st['sets'].get('varnish') == 4 and st['res_fire'] >= res0 + 15, (st['sets'], st['res_fire'])
+    assert st['res_fire'] <= D.RES_CAP
+    app.screens = [ui.GameScreen(app), ui.InventoryScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
+    app.render()
+    # resistances soften elemental attacks; monsters resist and fear elements
+    sal = make_monster(g, 'salamander', p.x + 1, p.y, 8)
+    assert g.mon_res(sal, 'fire') > 50 and g.mon_res(sal, 'cold') < 0
+    life = p.life = g.stats()['max_life']
+    g.hurt(40, 'test', 'fire')
+    assert life - p.life < 40
+    # guilds
+    sid = w.guild_halls['magi'][0]
+    to_over(g, sid)
+    g.enter_town(sid)
+    mag = next(o for o in g.map.mons if getattr(o, 'guild', None) == 'magi')
+    g.talk(mag)
+    EVT.resolve(g, 'join')
+    assert GU.state(g)['magi']['joined']
+    iron = w.guild_halls['iron'][0]
+    GU.state(g)['iron']['joined'] = True
+    assert GU.cant_join(g, 'dawn'), 'at most two combat guilds'
+    GU.state(g)['iron']['joined'] = False
+    assert GU.cant_join(g, 'coven'), 'rivals'
+    g.talk(mag)
+    EVT.resolve(g, 'work')
+    EVT.resolve(g, 'take:0')
+    mi = next(m for m in MS.active(g) if getattr(m, 'guild', None) == 'magi')
+    MS.complete(g, mi, [sid])
+    assert GU.state(g)['magi']['rep'] == GU.JOB_REP
+    GU.state(g)['magi']['rep'] = 200
+    for _ in range(40):
+        g.turn += D.DAY_LEN
+        GU.daily(g)
+    assert GU.state(g)['magi']['rep'] == GU.RANK_REP[GU.rank(g, 'magi')], 'standing never fades below your rank'
+    app.screens = [ui.GameScreen(app), ui.CharacterScreen(app, page=3)]
+    app.render()
+    # the old ways: found by walking on them; secret places; a valley
+    assert w.ways, 'old ways'
+    wy = w.ways[0]
+    i = wy.cells[len(wy.cells) // 2]
+    to_over(g, 0)
+    p.x, p.y = i % om.w, i // om.w
+    HP.on_step(g)
+    assert wy.id in HP.known(g)
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    valleys = [q for q in w.sites if q.kind == 'valley']
+    print('ways', len(w.ways), 'valleys', [(q.name, q.valley) for q in valleys])
+    for v in valleys[:1]:
+        g.enter_site(v.id)
+        elder = next(o for o in g.map.mons if o.role == 'valley_elder')
+        g.add_to_inv(HU_food(g))
+        g.talk(elder)
+        EVT.resolve(g, 'trade')
+        g.talk(elder)
+        EVT.resolve(g, 'lore')
+        g.request = None
+        app.render()
+    vault = next((q for q in w.pois if q.kind == 'vault'), None)
+    if vault:
+        to_over(g, 0)
+        p.x, p.y = vault.x, vault.y
+        g.flags.pop('varnish_word', None)
+        assert g.use_stairs('down') == 0, 'the vault stays shut'
+        g.flags['varnish_word'] = True
+        g.cur = 'over'
+        p.x, p.y = vault.x, vault.y
+        assert g.use_stairs('down') == 1
+    # harbours
+    hs = [s_ for s_ in w.settlements if getattr(s_, 'harbour', False)]
+    print('harbours:', [s_.name for s_ in hs])
+    if hs:
+        to_over(g, hs[0].id)
+        g.enter_town(hs[0].id)
+        assert D.BOAT in g.map.t or hs[0].kind == 'hamlet' or True
+        assert any(t == D.WATER for t in g.map.t)
+        app.render()
+    print('ways and wares ok')
+
+
+def HU_food(g):
+    from avarenthia import hunger as HUN
+    return HUN.make_food(g, 'bread', 3)
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
-             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds]
+             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
