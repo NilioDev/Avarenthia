@@ -38,19 +38,31 @@ night. Signposts (`┬`) tell you where the roads go, and rumours tell you where
 in between only appear on your map once you have walked them. From the top of a watchtower you see about ten tiles
 around, but not past mountains.
 
-**Travel.** Once you have been somewhere you can travel there again (`t`): you walk to the nearest road, follow the
-roads and cross the last stretch over open land, step by step, while time, hunger and the weather go on. An enemy in
-sight, a traveller on the road, an event, hunger or wounds stop you, and so does any key.
+**Travel.** Once you have been somewhere you can travel there again, from the world map: `m`, then Tab (or
+Shift+Tab) picks one of the places you have been, the map shows the way there and how long it takes, and Enter sets
+out. You walk to the nearest road, follow the roads and cross the last stretch over open land, step by step, while
+time, hunger and the weather go on. An enemy in sight, a traveller on the road, an event, hunger or wounds stop you,
+and so does any key. In a town, `m` first shows the plan of the town, with every building lettered and named; Tab
+goes on to the realm.
 
-**The old ways.** Under the moss lie the paths of the Varnish Empire, hidden until you find them: by walking on one,
-from rumours, from old maps found in ruins, from the Cartographers' Society or from the top of a watchtower. They show
-as a faint, broken grey-green line. They are faster than open land and slower than a road, and nobody patrols them.
+**The old ways.** Under the moss lie the paths of the Varnish Empire, hidden until you find them, and even then you
+only know what you have seen. Walk onto one and you see the stretch in sight; the rest you walk. A rumour tells you
+only where one starts; an old map from a ruin or a chart from the Cartographers' Society shows a stretch of it, never
+where it ends; from a watchtower you see as much as you can see; a milestone only points. They show as a faint,
+broken grey-green line. They are faster than open land and slower than a road, and nobody patrols them.
 Some are shortcuts (passes over the mountains, causeways through the marsh); some lead to hidden things (Varnish
 waystations where you can rest safely, forgotten graveyards, a smugglers' den, lost ruins, and sealed vaults that open
 only to the old word); and some lead over a pass into a hidden valley, where a forgotten hamlet lives as it did when
 the Empire fell: a handful of huts on old terraces, goats, no inn and no market, people who speak the old way and
 trade but do not sell, and an elder who knows more than the books. Milestones along the ways point to the other
 secrets: the paths are what is left of one network.
+
+**News travels on foot.** What happens in the world is not shouted at you: it is told in the inns, a few days late,
+by those whose business it is. The innkeeper has the local gossip (and small jobs on the board); the factor of the
+Merchants' Guild has trade work and talk of prices on the roads near here; the captain of the garrison knows where
+the trouble is and pays bounties; a travelling merchant tells you what sold where when he came through; travellers and
+sailors bring word from far away. News moves about twenty-five leagues a day, so what you hear of a far place is old,
+and may no longer be true.
 
 **Listen to people.** Everyone has something to say, and an attentive player picks up hints: an overgrown shrine past
 the old mill, a ruin two days east, herbs that grow by the lake, a war going badly in the north, prices rising in the
@@ -63,18 +75,29 @@ market square with a fountain; cities and the metropolis are walled with gates. 
 exactly as on the world map: if a village sits at the end of a road, the road ends there too, and you enter by the road
 you came on. Along the roads lie farms (where you are often welcome at the table) and the odd lonely roadside inn.
 Outside the villages stand temples, monasteries and watchtowers, and the ruins of them, with a way down.
-Settlements on the coast have a **harbour**: a stone quay, piers with boats tied up (there is no sailing yet), a fish
-market, the Brotherhood of the Net and a sailors' tavern full of tales.
+Every building has a hanging sign by its door (`¡` inn, `¥` outfitter, `†` temple...) and every inn its own name; walk
+close and the name shows outside the building. Settlements on the coast have a **harbour** that fits their size: a
+short jetty and boats drawn up on the beach in a hamlet; two jetties, a boathouse and drying racks in a village; a
+stone quay at the head of a cove with three piers and a warehouse in a town; a straight quay with a deep berth, a big
+ship, a crane, a fish market under awnings, a customs house and a harbour wall with a beacon in a city; two basins, a
+lighthouse, a shipyard and ships everywhere in the metropolis. In a fjord there is no beach: a ledge on the rock, a
+tiny jetty, or nothing. There is no sailing yet.
 
 **Dwarven holds.** In the mountains lie underground dwarven cities (`▼`) with halls, forges, a throne room and stairs
 down to the Deep Roads, old dwarven tunnels now full of goblins and worse.
+
+**Sleeping out.** Rest in the open and you make camp: with a fire the beasts keep off, but robbers see it from
+afar; without one, it is the other way round. A night out can bring wolves, robbers, a thief at your pack or a cold
+wet night without sleep; a tent helps, a hireling keeps watch, and a Varnish waystation is safe. A bed at an inn costs
+coin and leaves you *well rested*.
 
 **Weather.** Every region has its own climate that changes with the seasons and moves in steps: drizzle turns to rain
 turns to a downpour. Over thirty kinds of weather, from mist, fog and snow to blizzards, sandstorms, haboobs, freezing
 rain, hail, falling leaves and blossom. The north and the mountains are cold, the south hot and dry, marshes misty.
 Rain, snow, fog and dust limit your sight; snow and storms slow you down; cold and heat make you hungry; fire sputters
 in the rain, and lightning strikes open ground. Ash rain, miasma and smoke betray a great evil nearby. Under a roof you
-stay dry.
+stay dry. Rain leaves puddles that grow while it pours and dry up after. On a clear night a star falls now and then;
+once a year, on the night of the 12th of Emberwane, the sky rains them: the Starfall.
 
 **Light and dark.** Torches, campfires, crystals and glowing mushrooms flicker and pulse. Towns have street lamps: at
 dusk the lamplighter makes his round and lights them one by one, and at dawn he puts them out again. At night you see
@@ -92,8 +115,9 @@ weaknesses, and other peoples and factions treat you differently: other prices, 
 You start with nothing: kobolds took your sword and shield to the Hollow Den. Until you get them back you fight with
 your fists. Their chief Snagtooth also keeps your first spellbook. You are nobody; what you become is up to you.
 
-Choose **hardcore** (death is final) or **softcore** (you wake in the nearest temple, but your pack, cargo and gold
-lie by your corpse until you fetch them). Enter a **seed** to play the same world again.
+Choose **hardcore** (death is final) or **softcore**: the priests of the nearest temple raise you, for a fee from your
+purse; your pack and cargo lie by your body until you fetch them, and you are weak for a day or two. If your purse
+cannot pay the temple, your tale ends there, and with it your one save. Enter a **seed** to play the same world again.
 
 ### No classes
 
@@ -136,10 +160,35 @@ the secret guilds has a dark side, and the world notices. Your standing fades sl
 but never below your rank; the secret guilds let you fall. Leaving costs you your rank, and a secret guild sends
 someone after you.
 
+Membership costs nothing, and what you learn you keep if you leave. But members buy from the guild's
+**quartermaster** at a discount that grows with their rank, sleep in the hall for little or nothing, have their gear
+mended for less, and the higher their rank, the better paid the guild's work (and now and then there is a piece of
+gear on top).
+
+### Hirelings
+
+In the barracks of the cities the Iron Company lets out sellswords by the day, and now and then one sits in an inn
+between contracts. A **defender** (shield and sword: steps in front of you and takes blows meant for you, bashes with
+his shield), a **warrior** (a two-handed weapon), an **archer** (never shoots through you), a **healer** or a
+**mage**. A hireling costs a fee to sign, a daily wage and his food from your pack; short him either and his mood
+sours, and in the end he walks. He carries four pieces of gear (weapon, armour, helm, shield) that wear like yours
+and that you can swap for better from your pack, and he grows with you. `h` gives orders: follow, defend me, attack my
+target, hold position, or stay out of it. He follows you down stairs and through towns, swaps places with you in a
+corridor, drinks his own potions and never touches a neutral. Badly hurt, he may run, and come back when it is over.
+
+Who the monsters go for is never shown, but it is not random: each remembers who hurt it lately and who healed whom,
+who stands in its way, who looks soft (light armour, low on life), and how clever it is. A beast goes for the nearest
+throat; a clever foe goes for the healer; an archer picks the weakest it can see; and none of them turns lightly on
+whoever is hitting it hardest. In hardcore a fallen hireling is dead, and his gear lies with his body. In softcore a
+temple raises him for a fee; when you fall, he falls with you.
+
 ### Life skills
 
 Like in Project Gorgon, life skills grow by doing them: **fishing**, **foraging**, **herbalism**, **alchemy** and
-**brewing**. Buy a fishing pole and fish by any water; the better you get, the more kinds of fish bite. Forage in the
+**brewing**. Buy a fishing pole and fish by any water (`a`): fishing opens a window of its own, with the water, the
+bank, you, the rod and the float. Wait for the bite (ripples are not bites) and strike in time; then reel in, keeping
+the fish in the green with the arrows while the line holds. The better you get, the more kinds bite, the wider the
+green and the longer the line holds; a master angler can take the quick way. Forage in the
 wild for food and herbs. Plants you do not know look different in every world: taste them at your own risk, some are
 deadly. A herb monk tells you what you found. Brew potions from herbs, and ale, berry wine and mead at an inn or in a
 monastery cellar.
@@ -158,7 +207,10 @@ factions that worship a rival god trust you less, and priests of a hostile god w
 
 ## Coin, trade and jobs
 
-- **Coin is rare.** 100 copper is 1 silver, 100 silver is 1 gold. Beasts carry no money, people a little, traders a lot.
+- **Coin is rare, and it goes.** Jobs pay modestly; trade is where the money is made. Coin goes on beds and meals,
+  on mending your gear (it wears with use and breaks when worn out; outfitters mend it, a repair kit patches it up on
+  the road), on a hireling's wage and on the temple.
+- 100 copper is 1 silver, 100 silver is 1 gold. Beasts carry no money, people a little, traders a lot.
   Most coin is found in chests (`■`) in dungeons and ruins. Drops are realistic: beasts do not carry swords.
 - Every place makes certain goods (`+`, cheap) and wants others (`!`, dear). Buy low and sell elsewhere. Prices react
   to what you and the caravans buy and sell, and recover slowly. News (famine, feast, mine disaster, fire, war,
@@ -205,7 +257,7 @@ controller or a phone.
 
 | Key | Action |
 |---|---|
-| arrows, numpad, `hjklyubn` | walk; walking into a monster attacks it |
+| arrows, numpad | walk; walking into a monster attacks it |
 | Shift + direction | run |
 | **Enter** (or Space) | **do the obvious thing here**: take the stairs, enter a place, pick up, talk to someone nearby, read a signpost, open a chest, fish |
 | **Tab** / Shift+Tab | **pick a target**, as in WoW: the next or previous enemy in sight, nearest first; it is marked on the map and shown in the panel |
@@ -213,13 +265,15 @@ controller or a phone.
 | `f` | shoot your bow at your target |
 | `Q` / `W` | health or mana potion |
 | `I` | inventory |
-| `M` | world map |
+| `m` | world map (in a town: the town plan, Tab for the realm); Tab picks a place to travel to, Enter sets out |
+| `t` | talk to whoever is near |
+| `h` | your hireling: orders and gear |
 | `?` | help |
 | **Esc** | let go of your target; otherwise **the menu**: everything else, grouped as Hero, World, Actions and Game (save and quit is under Game) |
 
-Every menu item shows its own shortcut on the right (`T` talk, `E` eat, `F` forage, `C` life skills, `x` explore,
+Every menu item shows its own shortcut on the right (`t` talk, `E` eat, `F` forage, `C` life skills, `x` explore,
 and so on). The foot of the side panel shows what you can do where you stand, with its key (`Enter go in`,
-`T talk`, `a fish`, `E eat`, `F forage`, `R rest`), so you learn the shortcuts the moment they are useful. A capital
+`t talk`, `a fish`, `E eat`, `F forage`, `R rest`), so you learn the shortcuts the moment they are useful. A capital
 letter means: with Shift.
 
 ## Install and run
@@ -295,7 +349,9 @@ avarenthia/crime.py        crime, standing per settlement, bounty hunters
 avarenthia/itemdata.py     slots, base items in three grades, affixes, uniques, sets and loot tables
 avarenthia/guilds.py       the guilds: ranks, jobs, techniques, the secret ones
 avarenthia/hidden.py       the old Varnish ways, the places they lead to and the hidden valleys
-avarenthia/harbour.py      harbours in the coastal settlements
+avarenthia/harbour.py      harbours in the coastal settlements, by size
+avarenthia/mercs.py        hirelings: hiring, orders, morale, and whom the monsters go for
+avarenthia/news.py         news that travels on foot, and the people who tell it
 avarenthia/economy.py      goods and prices
 avarenthia/money.py        copper, silver and gold
 avarenthia/missions.py     jobs and quest marks

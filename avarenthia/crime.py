@@ -130,7 +130,7 @@ def spawn_lawmen(game, s):
     wd.range = t['range']
     wd.speed = 11 if h < 5 else 9
     if h >= 2:
-        game.msg(f'News: {wd.name} {"ride" if h >= 4 else "set out"} to bring you in.', 'bad')
+        game.msg(f'Word reaches you: {wd.name} {"ride" if h >= 4 else "set out"} to bring you in.', 'bad')
     wd.group['faction'] = None
     w.wanderers.append(wd)
     return wd

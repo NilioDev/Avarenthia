@@ -31,11 +31,12 @@ KINDS = {
     'warm': ('Warm', 'heat', 1), 'heat': ('Scorching heat', 'heat', 3),
     'dust': ('Blowing dust', 'sand', 1), 'sandstorm': ('Sandstorm', 'sand', 2), 'haboob': ('Great sandstorm', 'sand', 3),
     'freezing': ('Freezing rain', 'ice', 2), 'sleet': ('Sleet', 'sleet', 2), 'dew': ('Morning dew', 'dew', 1),
-    'drystorm': ('Dry lightning', 'drystorm', 2), 'meteors': ('Shooting stars', 'night', 1),
+    'drystorm': ('Dry lightning', 'drystorm', 2), 'meteors': ('The Starfall', 'night', 1),
     'whirlwind': ('Whirlwind', 'whirl', 2), 'smoke': ('Smoke of a burning village', 'smoke', 2),
     'leaves': ('Falling leaves', 'leaves', 1), 'blossom': ('Spring blossom', 'leaves', 1),
     'ash': ('Falling ash', 'ash', 2), 'miasma': ('Miasma', 'miasma', 2), 'blood': ('Blood rain', 'rain', 2),
     'fireflies': ('Fireflies', 'night', 1), 'aurora': ('Northern lights', 'night', 2),
+    'night': ('Clear', 'night', 0),
 }
 NAMES = {k: v[0] for k, v in KINDS.items()}
 GROUND = set(' .,\'`"·∙')          # cells with nothing in them but the ground: weather may draw here
@@ -115,20 +116,40 @@ RAIN = {  # grade: darkening, curtains, slant, puddles
 }
 
 
+FRAME = {'ox': 0, 'oy': 0, 'wet': 0.0}      # set by the map drawing each frame: view offset and how wet it is
+_RAIN_CACHE = {}
+
+
+def frame(ox, oy, wet):
+    FRAME['ox'], FRAME['oy'], FRAME['wet'] = ox, oy, wet
+    if len(_RAIN_CACHE) > 30000:
+        _RAIN_CACHE.clear()
+
+
 def rain_cell(kind, ch, fg, bg, lx, ly, t, lightning=0.0):
     dark, curtains, slant, puddles = RAIN[kind]
     blood = kind == 'blood'
-    tone = (110, 40, 40) if blood else (70, 84, 110)
-    fg = _mix(_mix(fg, _grey(fg), dark), tone, dark * .6)
-    bg = _mix(_mix(bg, (24, 8, 8) if blood else (12, 16, 24), dark), _grey(bg), dark * .4)
+    mx, my = lx + FRAME['ox'], ly + FRAME['oy']          # puddles stay where they are on the land
+    wet = FRAME['wet']
+    key = (kind, mx, my, ch, fg, bg, round(wet * 10))
+    pre = _RAIN_CACHE.get(key)
+    if pre is None:                                       # the part that does not move: darker colours, puddles
+        tone = (110, 40, 40) if blood else (70, 84, 110)
+        fg0 = _mix(_mix(fg, _grey(fg), dark), tone, dark * .6)
+        bg0 = _mix(_mix(bg, (24, 8, 8) if blood else (12, 16, 24), dark), _grey(bg), dark * .4)
+        pool = 0.0
+        if ch in GROUND and wet > .2:
+            # small puddles in the hollows, growing the longer it rains and drying up after
+            pool = _noise2(mx * .34, my * .46, 37) - (.9 - .14 * wet)
+            if pool > 0:
+                bg0 = _mix(bg0, (70, 14, 14) if blood else (30, 40, 58), min(1, pool * 12))
+        pre = _RAIN_CACHE[key] = (fg0, bg0, pool > 0)
+    fg, bg, in_pool = pre
     ground = ch in GROUND
-    if puddles and ground:
-        pool = _noise2(lx * .16, ly * .22, 37)
-        if pool > .66:
-            bg = _mix(bg, (70, 14, 14) if blood else (30, 40, 58), min(1, (pool - .66) * 5))
-            ring, life = _ripple(lx, ly, t, 2.6)
-            if ring:
-                ch, fg = ring, _mix(bg, (230, 90, 90) if blood else (170, 190, 225), .3 + .6 * life)
+    if in_pool:
+        ring, life = _ripple(mx, my, t, 2.6)
+        if ring:
+            ch, fg = ring, _mix(bg, (230, 90, 90) if blood else (170, 190, 225), .3 + .6 * life)
     a = _streak(lx, ly, t, curtains, slant)
     if a > 0:
         rc = (220, 70, 70) if blood else (170, 192, 232)
@@ -147,7 +168,7 @@ def rain_cell(kind, ch, fg, bg, lx, ly, t, lightning=0.0):
 # ------------------------------------------------------------------ snow and hail
 def snow_cell(kind, ch, fg, bg, lx, ly, t, dist):
     grade = KINDS[kind][2]
-    drift = _noise2(lx * .18, ly * .25, 18)
+    drift = _noise2((lx + FRAME['ox']) * .18, (ly + FRAME['oy']) * .25, 18)
     ground = ch in GROUND
     lying = drift > (.62, .4, .25)[grade - 1]               # where the snow lies, in drifts
     fg = _mix(fg, (220, 228, 240), .12 + .1 * grade)
@@ -235,13 +256,11 @@ def fog_cell(kind, ch, fg, bg, lx, ly, t, dist):
 
 # ------------------------------------------------------------------ clouds and wind
 def cloud_cell(ch, fg, bg, lx, ly, t):
-    # the shadows of big clouds sail over the land
-    n = _noise2(lx * .05 - t * .35, ly * .08 - t * .1, 71) * .7 + _noise2(lx * .11 - t * .5, ly * .17, 72) * .3
-    k = max(0.0, min(1.0, (n - .42) * 5))
-    fg = _mix(fg, _mix(fg, (30, 40, 60), .7), k)
-    bg = _mix(bg, _mix(bg, (4, 6, 12), .75), k)
-    if k < .05:                                    # and where the sun breaks through, the land glows
-        fg = _mix(fg, (255, 240, 200), .18)
+    # the shadows of big clouds drift slowly over the land
+    n = _noise2(lx * .05 - t * .045, ly * .08 - t * .012, 71) * .7 + _noise2(lx * .11 - t * .06, ly * .17, 72) * .3
+    k = max(0.0, min(1.0, (n - .45) * 3.5))
+    fg = _mix(fg, _mix(fg, (30, 40, 60), .45), k)
+    bg = _mix(bg, _mix(bg, (4, 6, 12), .5), k)
     return ch, fg, bg
 
 
@@ -502,6 +521,29 @@ def drystorm_pass(cv, x0, y0, w, h, t):
         cv.put(x0 + ex, y0 + ey, '☼', (255, 150 + int(80 * k2), 50), (90, 30, 10))
 
 
+def falling_star(cv, x0, y0, w, h, t):
+    """An ordinary clear night: now and then, rarely, a single star falls."""
+    period = 47.0
+    k = int(t / period)
+    if _h(k, 7, 153) % 3:
+        return
+    dt = t - k * period - (_h(k, 8, 154) % 30)
+    if not 0 <= dt <= .7:
+        return
+    sx = _h(k, 9, 155) % max(1, w)
+    sy = _h(k, 10, 155) % max(1, h // 2)
+    head = dt / .7 * 22
+    for j in range(7):
+        p = head - j * 1.2
+        if p < 0:
+            break
+        x, y = int(sx + p), int(sy + p * .5)
+        if 0 <= x < w and 0 <= y < h:
+            ch, fg, bg = cv.get(x0 + x, y0 + y)
+            fade = 1 - j / 7
+            cv.put(x0 + x, y0 + y, '*' if j == 0 else ('─' if j < 3 else '·'), _mix((90, 110, 160), (255, 255, 230), fade), bg)
+
+
 def meteors_pass(cv, x0, y0, w, h, t):
     """Shooting stars: now and then a streak of light crosses the night."""
     for lane in range(3):
@@ -650,7 +692,7 @@ EXTRA_PASSES = {'drystorm': drystorm_pass, 'meteors': meteors_pass, 'whirlwind':
 
 
 # ------------------------------------------------------------------ the painter
-PASSES = {'fireflies': fireflies, **EXTRA_PASSES}
+PASSES = {'fireflies': fireflies, 'night': falling_star, **EXTRA_PASSES}
 NEEDS_CANVAS = {'heat'}                      # heat shimmer borrows the glyph of the cell next door
 
 
@@ -773,7 +815,7 @@ EFFECTS = {
     'freezing': (-1, 1.3, 1.0, 1.3), 'sleet': (-1, 1.25, 1.0, 1.25), 'ash': (-1, 1.1, 1.2, 1.0), 'smoke': (-2, 1.0, 1.2, 1.0),
     'blood': (-1, 1.1, 1.3, 1.0), 'wind': (0, 1.05, 1.0, 1.0),
 }
-NIGHT_ONLY = {'fireflies', 'aurora', 'meteors'}
+NIGHT_ONLY = {'fireflies', 'aurora', 'meteors', 'night'}
 PANEL_ICON = {'clear': '☼', 'clouds': '≈', 'drizzle': '·', 'rain': '|', 'downpour': '|', 'storm': '!', 'snow_light': '*',
               'snow': '*', 'blizzard': '*', 'hail': 'o', 'mist': '░', 'fog': '░', 'fog_thick': '▒', 'wind': '~',
               'leaves': ',', 'blossom': '∙', 'warm': '☼', 'heat': '☼', 'dust': '~', 'sandstorm': '▒', 'haboob': '▓',
@@ -854,8 +896,25 @@ def region_weather(game, rid):
             kinds = list(weights)
             st[2] = _random.choices(kinds, [weights[k] for k in kinds])[0]
         st[0] = _step(st[0], st[2])
+        if len(st) < 4:
+            st.append(0.0)
+        # how wet the ground is: it soaks up the rain, and dries again in fair weather
+        grade = KINDS.get(st[0], ('', '', 0))[2]
+        if _family(st[0]) == 'rain':
+            st[3] = min(1.0, st[3] + .12 * grade)
+        else:
+            st[3] = max(0.0, st[3] - (.1 if _family(st[0]) in ('clear', 'heat', 'wind', 'clouds') else .04))
         st[1] += _random.randint(25, 70) if st[0] != st[2] else _random.randint(50, 150)
     return st[0]
+
+
+def wetness(game):
+    loc = where(game)
+    if not loc:
+        return 0.0
+    region_weather(game, loc[0])
+    st = game.world.weather.get(loc[0])
+    return st[3] if st and len(st) > 3 else 0.0
 
 
 def where(game):
@@ -880,6 +939,17 @@ def current(game):
     return region_weather(game, loc[0])
 
 
+def starfall(day):
+    """The night of the Starfall, once a year: the 12th of Emberwane, when the sky rains stars."""
+    from . import calendar as CAL
+    _y, mo, d, _wd = CAL._split(day)
+    return mo == 6 and d == 12
+
+
+QUIET = {'clouds', 'night', 'dew'}
+STILL = {'dew', 'mist', 'fog', 'fog_thick', 'clouds', 'warm', 'heat', 'aurora', 'fireflies'}   # slow things: 10 frames a second will do      # pretty, but not worth a word in the panel
+
+
 def shown(game):
     """What to draw: the weather, an omen of a great evil nearby, or the quiet things of night and morning."""
     from . import towns as TW, calendar as CAL
@@ -894,6 +964,8 @@ def shown(game):
         if omen:
             return omen
     kind = region_weather(game, rid)
+    if kind == 'clouds' and TW.is_night(game):
+        kind = 'clear'                         # no cloud shadows without the sun
     if kind != 'clear':
         return kind
     h = TW.hour(game)
@@ -904,9 +976,9 @@ def shown(game):
             return 'aurora'
         if season == 'summer' and cl in ('temperate', 'marsh'):
             return 'fireflies'
-        if (game.day * 7 + rid) % 5 == 0:
+        if starfall(game.day):
             return 'meteors'
-        return 'clear'
+        return 'night'
     if 5 <= h < 8 and season in ('spring', 'summer') and cl != 'arid':
         return 'dew'
     return 'clear'

@@ -30,6 +30,7 @@ class Item:
         self.rstr = self.rdex = 0    # Strength and Dexterity needed
         self.set_key = None
         self.perfect = False
+        self.dur = self.mdur = 0     # durability: wears down with use, 0 is broken (jewellery never wears)
 
     @property
     def cursed(self):
@@ -54,7 +55,9 @@ class Item:
             from .skills import SKILLS
             return f'Tome of {SKILLS[self.t].name}'
         if self.k == 'tool':
-            return 'Fishing Pole'
+            if self.t == 'tent':
+                return 'Tent and Bedroll'
+            return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
             return (f'{self.n}x ' if self.n > 1 else '') + FOODS[self.t][0]
@@ -70,6 +73,8 @@ class Item:
             return f"{D.BASES[self.base]['name']} (unidentified)"
         if self.k == 'gear' and self.cursed and self.curse_known:
             return self.name + ' (cursed)'
+        if self.k == 'gear' and getattr(self, 'mdur', 0) and self.dur <= 0:
+            return self.name + ' (broken)'
         if self.k == 'gear' and getattr(self, 'perfect', False):
             return self.name + ' (perfect)'
         return self.name
@@ -171,6 +176,10 @@ class Item:
                            else 'A drink. Cheers you up and heals a little; sells well.')
                 if self.t in ('barley', 'honey'):
                     out.append('Brewers use it (P, at an inn or a monastery cellar).')
+            elif self.k == 'tool' and self.t == 'tent':
+                out.append('Sleep dry in the wild, and a little safer: rest (R) out in the open to make camp.')
+            elif self.k == 'tool' and self.t == 'kit':
+                out.append('Needle, thread, rivets and oil. Use it to mend all your gear a little, anywhere.')
             elif self.k == 'tool':
                 out.append('Stand next to water and press A to fish. Fishing grows the more you do it.')
             elif self.k == 'fish':
@@ -195,6 +204,9 @@ class Item:
             out.append(f"+{b['hit']} to accuracy")
         if b.get('mana'):
             out.append(f"+{b['mana']} to mana")
+        if getattr(self, 'mdur', 0):
+            out.append(f'Durability {self.dur}/{self.mdur}' + (' (broken: it does nothing until repaired)' if self.dur <= 0 else
+                                                                ' (badly worn)' if self.dur < self.mdur // 4 else ''))
         if not self.identified:
             out.append('Unidentified. Its powers are hidden until a sage, outfitter or priest in a town identifies it.')
             if self.cursed and self.curse_known:
@@ -233,7 +245,7 @@ class Item:
             from .skills import SKILLS, UNLOCKS
             return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
         if self.k == 'tool':
-            return 8
+            return 25 if self.t == 'kit' else 60 if self.t == 'tent' else 8
         if self.k == 'food':
             from .hunger import FOODS
             return FOODS[self.t][2] / 100
@@ -262,7 +274,7 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant')
+        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant') or (self.k == 'tool' and self.t == 'kit')
 
 
 class Monster:
@@ -432,9 +444,15 @@ def base_for(family, ilvl, top=True):
     return ks[-1]
 
 
+DURABILITY = {'weapon': 60, 'armor': 70, 'shield': 60, 'helm': 50, 'gloves': 40, 'boots': 45, 'belt': 40}
+
+
 def _fill_base(it, bk):
     b = D.BASES[bk]
     it.base, it.slot, it.req = bk, b['slot'], b['lvl']
+    md = DURABILITY.get(b['slot'], 0)
+    md = round(md * {'normal': 1, 'exceptional': 1.25, 'elite': 1.5}.get(b.get('grade', 'normal'), 1))
+    it.dur = it.mdur = md
     it.rstr, it.rdex = b.get('rstr', 0), b.get('rdex', 0)
     if 'dmg' in b:
         it.dmg = tuple(b['dmg'])

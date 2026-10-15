@@ -26,6 +26,8 @@ from . import weather as WX
 from . import dress as DR
 from . import sites as ST
 from . import guilds as GU
+from . import news as NW
+from . import mercs as MC
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -33,7 +35,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 15
+SAVE_VERSION = 16
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -100,8 +102,8 @@ def lore_rank(kills):
     return r
 
 
-SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('food', 'bread'), ('food', 'ration'),
-            ('food', 'barley'), ('food', 'honey')]
+SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('tool', 'kit'), ('tool', 'tent'), ('food', 'bread'),
+            ('food', 'ration'), ('food', 'barley'), ('food', 'honey')]
 INV_MAX = 32
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
@@ -310,7 +312,7 @@ class Game:
         gear_dr = 0
         for slot in D.SLOTS:
             it = self.eq_item(slot)
-            if not it:
+            if not it or (getattr(it, 'mdur', 0) and it.dur <= 0):      # broken gear does nothing
                 continue
             if getattr(it, 'set_key', None) and it.identified:
                 sets[it.set_key] = sets.get(it.set_key, 0) + 1
@@ -346,6 +348,9 @@ class Game:
                 s['dr'] = max(s['dr'], v)
             elif k == 'dmg':
                 buff_dmg += v
+            elif k == 'frail':                      # back from the dead, and not yet yourself
+                buff_dmg -= v
+                s['frail'] = v
         if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
         GD.apply(self, s)
@@ -355,10 +360,14 @@ class Game:
         for r in ('res_fire', 'res_cold', 'res_light', 'res_poison'):
             s[r] = min(D.RES_CAP, s[r] + s['res_all'])
         s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
+        if s.get('frail'):
+            s['max_life'] = max(5, round(s['max_life'] * (1 - s['frail'] / 100)))
         if getattr(p, 'toll', 0):                    # what Morrak has taken
             s['max_life'] = max(10, round(s['max_life'] * (1 - p.toll / 100)))
         s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
         w = self.eq_item('weapon')
+        if w and getattr(w, 'mdur', 0) and w.dur <= 0:
+            w = None
         line = SK.WEAPON_LINE.get(w.base) if w else 'unarmed'
         wr = (p.disc[line][0] + s.get('skill_' + line, 0)) if line in p.disc else 0
         bd = w.dmg if w else (1 + wr // 6, 3 + wr // 3)      # fists harden with practice
@@ -420,6 +429,7 @@ class Game:
             self.vis = bytearray(1 if (near[i] or (far[i] and lm[i][0] > amb[0] + .18)) else 0 for i in range(len(far)))
         else:
             self.vis = fov.compute(m, p.x, p.y, r)
+        MC.sync(self)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
                 if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y) and not getattr(o, 'lurk', False):
@@ -622,8 +632,7 @@ class Game:
         if esc:
             esc.x, esc.y = s.x, s.y
         self.msg(f'You enter {s.name}.', 'info')
-        if s.event:
-            self.msg('News: ' + D.EVENTS[s.event[0]]['text'].format(town=s.name), 'info')
+        MC.restock(self)
         MS.on_enter(self, sid)
         MS.place_clients(self, sid, m)
         GU.reveal_master(self, m)
@@ -746,7 +755,7 @@ class Game:
         mon = m.mon_at(nx, ny)
         if mon:
             if mon.is_npc:
-                if mon.role == 'escort' or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
+                if mon.role in ('escort', 'merc_ally') or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
                     mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
                     return 1
                 self.talk(mon)
@@ -1153,17 +1162,19 @@ class Game:
         p.food = min(HU.MAX, p.food + 450)
         self.msg('A bowl of hot stew and a heel of bread. That hits the spot.', 'good')
 
-    def inn_meal(self):
+    def inn_meal(self, price=None, line=None):
         p = self.player
-        if p.gold < self.MEAL:
-            self.msg('You cannot afford a meal.', 'bad')
+        price = self.MEAL if price is None else price
+        if p.gold < price:
+            self.msg('You cannot afford a bed.', 'bad')
             return
-        p.gold -= self.MEAL
+        p.gold -= price
         p.food = HU.MAX
         s = self.stats()
         p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
         self.end_turn(D.DAY_LEN // 3, True)
-        self.msg('A bowl of stew, a mug of ale, a straw bed. You wake rested and full.', 'good')
+        p.buffs = [b for b in p.buffs if b[0] != 'regen'] + [['regen', 2, D.DAY_LEN, 'Well rested']]
+        self.msg((line or 'A bowl of stew, a mug of ale, a straw bed. You wake rested and full.') + ' (Well rested)', 'good')
 
     def eat_best(self):
         return HU.eat_best(self)
@@ -1249,7 +1260,7 @@ class Game:
 
     def buy_supply(self, i):
         k, t = SUPPLIES[i]
-        if k == 'tool' and any(x.k == 'tool' for x in self.player.inv):
+        if k == 'tool' and t in ('rod', 'tent') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
             self.msg('You already have a fishing pole.')
             return
         it = Item(self.new_id(), k, t)
@@ -1262,18 +1273,20 @@ class Game:
         p.gold -= it.value()
         self.msg(f"You buy a {it.display_name()}.", 'gold')
 
-    def buy_gear(self, i, key=None):
+    def buy_gear(self, i, key=None, mult=1.0):
         shop = self.shops.get(self.home if key is None else key, [])
         if i >= len(shop):
             return
         it, p = shop[i], self.player
-        if p.gold < it.value():
+        price = max(1, round(it.value() * mult))
+        if p.gold < price:
+            self.msg(f'That costs {fmt(price)}.', 'bad')
             return
         if not self.add_to_inv(it):
             self.msg('Your bag is full.', 'bad')
             return
         shop.pop(i)
-        p.gold -= it.value()
+        p.gold -= price
         self.msg(f'You buy {it.name}.', it.rar)
 
     def buy_mount(self, key):
@@ -1327,10 +1340,71 @@ class Game:
                 extra += random.randint(max(1, v // 2), v) * (1 - self.mon_res(mon, el) / 100)
         return extra
 
+    # ------------------------------------------------------------ wear and repair
+    def wear(self, slot=None, chance=.25):
+        """Use wears gear down: the weapon when you strike, a piece of armour when you are struck."""
+        if random.random() >= chance:
+            return
+        if slot is None:
+            slots = [s_ for s_ in ('armor', 'helm', 'shield', 'gloves', 'boots', 'belt') if self.eq_item(s_)]
+            if not slots:
+                return
+            slot = random.choice(slots)
+        it = self.eq_item(slot)
+        if not it or not getattr(it, 'mdur', 0) or it.dur <= 0:
+            return
+        it.dur -= 1
+        if it.dur == 0:
+            self.msg(f'Your {it.name} breaks! It is no use until it is repaired.', 'bad')
+            self.clamp_vitals()
+        elif it.dur == it.mdur // 4:
+            self.msg(f'Your {it.name} is badly worn. Have it repaired soon.', 'bad')
+
+    def worn_gear(self):
+        """Yours, and your hireling's: the smith mends it all."""
+        return [it for it in self.player.inv if it.k == 'gear' and getattr(it, 'mdur', 0) and it.dur < it.mdur] + MC.worn(self)
+
+    def repair_cost(self, it):
+        miss = (it.mdur - it.dur) / max(1, it.mdur)
+        mult = 1.5 if it.rar in ('unique', 'set') else 1.25 if D.BASES[it.base].get('grade') == 'elite' else 1
+        return max(10, round(it.value() * .3 * miss * mult))
+
+    def repair_all(self, discount=0.0, dry=False):
+        its = self.worn_gear()
+        cost = round(sum(self.repair_cost(it) for it in its) * (1 - discount))
+        if dry:
+            return len(its), cost
+        if not its:
+            self.msg('Your gear is in good order.')
+            return
+        if self.player.gold < cost:
+            self.msg(f'Mending all your gear costs {fmt(cost)}. You cannot afford it.', 'bad')
+            return
+        self.player.gold -= cost
+        for it in its:
+            it.dur = it.mdur
+        self.clamp_vitals()
+        self.msg(f'Your gear is mended for {fmt(cost)}.', 'good')
+
+    def use_kit(self, it):
+        its = self.worn_gear()
+        if not its:
+            self.msg('Your gear is in good order.')
+            return 0
+        for g_ in its:
+            g_.dur = min(g_.mdur, g_.dur + max(1, round(g_.mdur * .35)))
+        self.remove_one(it)
+        self.clamp_vitals()
+        self.msg('You mend what you can with the repair kit. It will do, for now.', 'good')
+        return 10
+
     def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False, elem=None):
         p = self.player
+        if weapon:
+            self.wear('weapon', .2)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
+        MC.add_threat(mon, 'p', dmg)
         if weapon and not mon.is_npc and mon.k in D.UNDEAD:
             und = self.stats().get('undead', 0)
             if und:
@@ -1556,6 +1630,8 @@ class Game:
 
     def mon_attack(self, mon, df):
         p = self.player
+        if MC.intercept(self, mon):
+            return
         if random.random() < self.mon_hit_chance(mon, df):
             dmg = random.randint(*mon.dmg)
             if 'weaken' in mon.effects:
@@ -1574,6 +1650,7 @@ class Game:
                     p.poison = [max(1, turns), max(1, round(mon.lvl / 2))]
                     self.msg('Venom burns in your veins!', 'bad')
             th = self.stats()['thorns']
+            self.wear(None, .3)
             self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
             if th and not self.dead and mon in self.map.mons:
                 self.num(mon.x, mon.y, str(th), (200, 170, 120))
@@ -1655,6 +1732,8 @@ class Game:
             self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=mon.name), 'bad')
             self.hurt(random.randint(*mon.dmg) * .8, mon.name, d['elem'] or 'cold')
             return
+        if MC.mon_turn(self, mon, df):
+            return
         if AI.turn(self, mon, df):
             return
         if d['leap'] and seen and 2 <= dist <= 5 and random.random() < .3:
@@ -1708,6 +1787,7 @@ class Game:
         m, p = self.map, self.player
         key = self.cur
         self.compute_dist()
+        MC.decay(m)
         df = self.stats()['def']
         for mon in m.mons[:]:
             if self.dead or self.cur != key or self.request == ('win',):
@@ -1715,6 +1795,9 @@ class Game:
             if mon not in m.mons:
                 continue
             if mon.is_npc:
+                if getattr(mon, 'ally', False):
+                    MC.act(self, mon)
+                    continue
                 if not mon.stay and not hasattr(mon, 'work_pos') and random.random() < .3:
                     self.random_step(mon)
                 continue
@@ -1807,6 +1890,7 @@ class Game:
                 GU.daily(self)
                 EVL.daily(self)
                 CR.daily(self)
+                MC.daily(self)
             self.last_day = self.day
         EVL.whisper(self)
         WX.notice(self)
@@ -1838,10 +1922,24 @@ class Game:
         self.cause = cause
         self.msg('You have died.', 'bad')
 
+    def raise_fee(self, lvl=None):
+        """What the priests ask to call someone back from the dead."""
+        lvl = lvl or self.player.lvl
+        return 100 + lvl * lvl * 25
+
     def respawn(self, cause):
-        """Softcore death: wake in the nearest temple. Your backpack, cargo and gold stay with your body."""
+        """Softcore death: the priests of the nearest temple call you back, for a fee from your purse. Your backpack
+        and cargo stay with your body. Without the coin for the temple your tale ends here."""
         p = self.player
+        fee = self.raise_fee()
+        if p.gold < fee:
+            self.dead = True
+            p.life = 0
+            self.cause = f'{cause}; there was no coin for the temple'
+            self.msg('You have died, and there is no coin in your purse for the priests. Your tale ends here.', 'bad')
+            return
         p.deaths += 1
+        MC.on_player_death(self)
         m = self.map
         if m.kind == 'wild':
             self.resolve_encounter()
@@ -1856,7 +1954,7 @@ class Game:
             corpse = Item(self.new_id(), 'corpse', 'corpse')
             corpse.name = f'your body ({CAL.short(self.day)})'
             corpse.payload = dict(items=[it for it in p.inv if not self.is_equipped(it) and it.k != 'quest'],
-                                  cargo=dict(p.cargo), cost=dict(p.cost_basis), gold=p.gold)
+                                  cargo=dict(p.cargo), cost=dict(p.cost_basis), gold=0)
             corpse.x, corpse.y = cx, cy
             # whoever is around may help themselves
             dm = self.maps[key]
@@ -1874,7 +1972,7 @@ class Game:
             self.maps[key].items.append(corpse)
             self.corpses.append((key, corpse.id))
             p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
-            p.cargo, p.cost_basis, p.gold = {}, {}, 0
+            p.cargo, p.cost_basis = {}, {}
         here = self.world.settlements[self.home] if self.home is not None else None
         ox, oy = self.over_pos if self.cur != 'over' else (p.x, p.y)
         temples = [st for st in self.world.settlements if 'temple' in st.services] + \
@@ -1883,7 +1981,8 @@ class Game:
         s = self.stats()
         p.life, p.mana = max(1, s['max_life'] // 2), s['max_mana'] // 2
         p.poison = p.burn = None
-        p.buffs = []
+        p.gold -= fee
+        p.buffs = [['frail', 25, D.DAY_LEN * 2, 'Weakened by death']]
         self.cur = 'over'
         p.x, p.y = dest.x, dest.y
         if isinstance(dest, ST.Site):
@@ -1894,7 +1993,8 @@ class Game:
             self.msg(f'You were slain by {cause}... and wake on the cold floor of the temple in {dest.name}.', 'bad')
         if corpse:
             where = 'in the wilds' if key == 'over' else self.maps[key].name
-            self.msg(f'Your backpack, cargo and gold lie with your body {where}. Go and get them back.', 'bad')
+            self.msg(f'Your backpack and cargo lie with your body {where}. Go and get them back.', 'bad')
+        self.msg(f'The priests took {fmt(fee)} for their prayers. You will be weak for a day or two.', 'bad')
         self.request = ('save',)
 
     # ------------------------------------------------------------ targeting (Tab, as in WoW)
@@ -2010,7 +2110,7 @@ class Game:
         for it in m.items:
             if self.visible(it.x, it.y) and (it.k in ('gold', 'orb') or (not it.dropped and (it.k in ('potion', 'scroll', 'tome') or (it.k == 'gear' and it.rar != 'normal')))):
                 want.add(it.y * w + it.x)
-        npc = {(o.x, o.y) for o in m.mons if o.is_npc}
+        npc = {(o.x, o.y) for o in m.mons if o.is_npc and not getattr(o, 'ally', False)}
         par = [-2] * n
         start = p.y * w + p.x
         par[start] = -1
@@ -2092,6 +2192,15 @@ class Game:
                 break
 
     def rest(self):
+        p = self.player
+        if self.map.kind in ('over', 'wild') and not self.hostile_visible():
+            s = self.stats()
+            if p.life < s['max_life'] or p.mana < s['max_mana'] or TW.is_night(self):
+                self.make_camp()
+                return
+        self.rest_here()
+
+    def rest_here(self, quiet=False):
         p, n = self.player, 0
         while n < 300 and not self.dead:
             s = self.stats()
@@ -2100,13 +2209,76 @@ class Game:
                     self.msg('You cannot rest with enemies in sight.', 'bad')
                 break
             if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison:
-                if not n:
+                if not n and not quiet:
                     self.msg('You are already fully rested.')
                 break
             self.end_turn(1, True)
             n += 1
-        if n:
+        if n and not quiet:
             self.msg(f'You rest for {n} turns.')
+        return n
+
+    # ------------------------------------------------------------ sleeping out in the wild
+    def make_camp(self):
+        """Out in the open you can rest for free, but the night is not always kind."""
+        tent = any(it.k == 'tool' and it.t == 'tent' for it in self.player.inv)
+        EV.ask(self, 'camp_night', 'Make camp', 'You find a sheltered spot to rest' + (' and pitch your tent.' if tent else '.') +
+               ' A fire keeps the beasts away, but it can be seen from far off.',
+               [('Light a fire and rest', 'fire'), ('Rest in the dark, without a fire', 'dark'), ('Walk on', 'leave')])
+
+    def camp(self, fire):
+        """A night (or a rest) in the open: wild animals, robbers, a thief, or a bad night's sleep."""
+        p, w = self.player, self.world
+        ox, oy = (p.x, p.y) if self.cur == 'over' else self.over_pos
+        danger = w.danger_at(ox, oy)
+        near_road = w.off_road(ox, oy) <= 2
+        tent = any(it.k == 'tool' and it.t == 'tent' for it in p.inv)
+        night = TW.is_night(self)
+        risk = (.05 + danger * .015) * (1.6 if night else .6) * (.65 if tent else 1)
+        from . import mercs as MC
+        guard = MC.on_watch(self)
+        beasts = risk * (.4 if fire else 1) * (.6 if near_road else 1.2)
+        robbers = risk * (1.7 if fire else .8) * (1.4 if near_road else .7)
+        thief = risk * .5 * (.2 if guard else 1)
+        if self.cur != 'over':
+            beasts = robbers = 0
+        r = random.random()
+        rested = self.rest_here(quiet=True)
+        if night:
+            self.end_turn(max(0, D.DAY_LEN // 3 - rested), True)
+        if self.dead or self.cur not in ('over', 'wild'):
+            return
+        reg = w.region_at(ox, oy)
+        if r < beasts:
+            pack = WA.wild_pack(reg.biome, danger, True, getattr(reg, 'climate', None))
+            pack = [k for k in pack if k in HU.BEASTS] or ['wolf'] * random.randint(2, 3)
+            self.msg('Something circles your camp in the dark. Eyes, teeth. You are up in an instant!' if not guard else
+                     f'{guard.name} shakes you awake: "Beasts! On your feet!"', 'bad')
+            if self.cur == 'over':
+                self.start_encounter(None, self.maps['over'].tile(ox, oy), danger + 1, pack, 0)
+        elif r < beasts + robbers:
+            pack = ['bandit'] + [random.choice(['bandit', 'brigand']) for _ in range(random.randint(1, 2 + danger // 3))]
+            self.msg('Shapes step out of the night around your fire: robbers, blades drawn!' if fire else
+                     'Footsteps on the road, then voices: robbers have stumbled on your camp!', 'bad')
+            if self.cur == 'over':
+                self.start_encounter(None, self.maps['over'].tile(ox, oy), danger + 1, pack, 0)
+        elif r < beasts + robbers + thief:
+            loss = p.gold * random.randint(15, 40) // 100
+            bag = [it for it in self.backpack() if it.k not in ('quest', 'corpse')]
+            if bag and random.random() < .5:
+                it = random.choice(bag)
+                p.inv.remove(it)
+                self.msg(f'You wake to find your pack open. Someone took {it.display_name()} in the night.', 'bad')
+            elif loss:
+                p.gold -= loss
+                self.msg(f'You wake to find your purse lighter: {fmt(loss)} gone. A thief, in the night.', 'bad')
+        else:
+            wet = WX.current(self) in ('rain', 'downpour', 'storm', 'snow', 'blizzard', 'sleet', 'freezing') and not tent
+            if wet:
+                self.msg('Cold and wet, you hardly sleep. A tent would have helped.', 'bad')
+                p.life = max(1, p.life - self.stats()['max_life'] // 5)
+            else:
+                self.msg('You sleep under the open sky, and wake with the birds.' if night else 'You rest a while.', 'good')
 
     def travel_to(self, kind, ref):
         for _ in self.travel_iter(kind, ref):
@@ -2305,6 +2477,21 @@ class Game:
                 return
             self.say(npc, random.choice([f"Long live the {D.FACTIONS[f]['short']}.", 'Keep your weapons sheathed.',
                                          f"You are {WAR.standing(self.player.rep.get(f, 0)).lower()} among us.", self.rumor()]))
+            return
+        if role == 'recruit':
+            MC.talk_recruit(self, npc)
+            return
+        if role == 'merc_ally':
+            MC.menu(self)
+            return
+        if role == 'factor':
+            NW.talk_factor(self, npc)
+            return
+        if role == 'captain':
+            NW.talk_captain(self, npc)
+            return
+        if role == 'sailor':
+            NW.talk_sailor(self, npc)
             return
         if role == 'healer':
             if getattr(m, 'site', None) is not None and m.site == getattr(self.world, 'start_temple', None) \
@@ -2507,7 +2694,7 @@ class Game:
                 return self.try_move(dx, dy)
         if LS.has_pole(self) and LS.water_here(self) and not self.hostile_visible():
             return self.fish()
-        self.msg('Nothing to do here. Tab opens the menu, with everything else.')
+        self.msg('Nothing to do here. Esc opens the menu, with everything else.')
         return 0
 
     def context_hints(self):
@@ -2521,7 +2708,7 @@ class Game:
         elif any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb') for i in m.items):
             out.append(('Enter', 'pick up'))
         elif self.nearby_people():
-            out.append(('T', 'talk'))
+            out.append(('t', 'talk'))
         else:
             for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0), (1, -1), (1, 1), (-1, 1), (-1, -1)):
                 if m.inb(p.x + dx, p.y + dy) and m.tile(p.x + dx, p.y + dy) in (D.SIGNPOST, D.CHEST):

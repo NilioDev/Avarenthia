@@ -10,6 +10,7 @@ from .wanderers import Wanderer, make_group, road_path, ESCORT_FG
 from .worldgen import cheb, free_around, rand_free, spawn_pack
 
 MAX_ACTIVE = 5
+REWARD_SCALE = 20             # a job pays about a fifth of what it used to: honest work, not a fortune
 PARCELS = ['a sealed letter', 'a parcel of deeds', 'a small locked chest', 'a bundle of contracts', "a jeweller's pouch"]
 
 
@@ -140,7 +141,7 @@ def make_offer(game, s, kinds=None):
         m.desc = f'{relic[0].upper() + relic[1:]} lies at the bottom of {d.name}, to the {_dir(s, (d.x, d.y))}. A guardian watches over it. Bring it back to {s.name}.'
     m.rep = random.randint(5, 10)
     m.faction = s.faction
-    m.reward *= 100                # silver -> copper
+    m.reward *= REWARD_SCALE       # silver -> copper, kept modest: trade is how a fortune is made
     return m
 
 
@@ -193,7 +194,8 @@ def make_hold_offer(game, h):
         m.title = f"Hunt {leader} of the {D.FACTIONS[foe]['short']}"
         m.desc = f"{leader} leads a {D.FACTIONS[foe]['short']} warband in {w.region_at(*spot).name}, to the {_dir(h, spot)}. End them."
     m.rep = random.randint(8, 14)
-    m.reward *= 100
+    # a supply run pays for the goods and a margin on top; the fighting pays modestly
+    m.reward *= 100 if kind == 'supply' else REWARD_SCALE * 2
     return m
 
 

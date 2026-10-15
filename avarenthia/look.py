@@ -282,8 +282,10 @@ def cell(m, i, depth=None):
 
 
 ROAD_JOIN = {D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT}
-ROAD_FG = (196, 150, 74)          # ochre
-MAIN_FG = (226, 178, 92)
+ROAD_FG = (214, 164, 88)          # ochre
+MAIN_FG = (250, 200, 110)
+ROAD_BG = (44, 31, 18)            # a strip of trodden earth under the road
+MAIN_BG = (58, 40, 22)
 PATH_FG = (138, 160, 116)         # the old ways: faint grey-green
 
 
@@ -312,8 +314,8 @@ def road_look(m, i, x, y):
         return 1 if m.t[(y + dy) * w + x + dx] in ROAD_JOIN else 0
     key = (j(0, -1), j(0, 1), j(-1, 0), j(1, 0))
     if i in main:
-        return WALL_GLYPH.get(key, '═').replace('■', '═'), MAIN_FG, _ground_bg(m, i)
-    return FENCE_GLYPH.get(key, '─'), ROAD_FG, _ground_bg(m, i)
+        return WALL_GLYPH.get(key, '═').replace('■', '═'), MAIN_FG, MAIN_BG
+    return FENCE_GLYPH.get(key, '─'), ROAD_FG, ROAD_BG
 
 
 def scale(c, k):

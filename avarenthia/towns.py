@@ -254,17 +254,118 @@ TITLE = {'inn': ('Innkeeper {n}', '#e0a060'), 'market': ('{n} the Trader', '#f2c
          'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend Ashford', '#c08cf0')}
 
 
+# what hangs over the door of each kind of building: one glyph, like the painted boards over a medieval street
+SIGN_GLYPH = {'inn': ('¡', (236, 176, 84)), 'shop': ('¥', (206, 206, 216)), 'temple': ('†', (244, 234, 200)),
+              'stables': ('Ω', (206, 160, 110)), 'elder': ('♦', (200, 150, 240)), 'barracks': ('╬', (200, 200, 220)),
+              'keep': ('Ω', (230, 220, 190)), 'guild:magi': ('*', (143, 168, 255)), 'guild:iron': ('Φ', (200, 204, 216)),
+              'guild:dawn': ('☼', (255, 232, 160)), 'guild:wardens': ('♣', (112, 192, 96)), 'guild:alembic': ('!', (224, 160, 224)),
+              'guild:carto': ('≡', (216, 200, 144)), 'guild:anglers': ('≈', (128, 192, 224)),
+              'warehouse': ('■', (170, 126, 80)), 'customs': ('$', (230, 206, 120)), 'harbourmaster': ('⌂', (176, 200, 224)),
+              'boathouse': ('≈', (150, 190, 210))}
+INN_NAMES = ["The Drowsy Mule", "The Crossed Keys", "The Last Lantern", "The Weary Boot", "The Green Man", "The Hanged Fiddler",
+             "The Three Crowns", "The Golden Sheaf", "The Wandering Goose", "The Broken Wheel", "The Red Hart", "The Old Oak",
+             "The Hearth and Hound", "The Laughing Pike", "The Copper Kettle", "The Sleeping Giant", "The Silver Bell",
+             "The Black Ram", "The Merry Miller", "The Lame Horse", "The Stag's Head", "The Rose and Thistle",
+             "The Plough and Star", "The Barley Mow", "The Bishop's Mitre", "The Gilded Cup", "The White Swan"]
+SEA_INN_NAMES = ["The Salty Gull", "The Drowned Sailor", "The Mermaid's Rest", "The Anchor and Rope", "The Lantern Quay",
+                 "The Tarred Hand", "The Ship's Cat"]
+
+
 def add_sign(m, pl, text):
+    """Register a building: its box, its door and its kind. Its name is given once the people are in
+    (see name_buildings); its hanging sign and its label are drawn by the map."""
     if not pl.door:
         return
-    dx, dy = pl.door
-    if dy == pl.y + pl.h - 1:
-        sy = dy + 1
-    elif dy == pl.y:
-        sy = dy - 1
+    bx = plot_box(pl)
+    kind = 'guild:' + pl.guild if getattr(pl, 'guild', None) else pl.kind
+    if not hasattr(m, 'buildings'):
+        m.buildings = []
+    b = dict(kind=kind, name=text.title(), box=(bx.x, bx.y, bx.w, bx.h), door=pl.door, plot=pl)
+    m.buildings.append(b)
+    hang_sign(m, b)
+
+
+def hang_sign(m, b):
+    """The board on the wall beside the door."""
+    g = SIGN_GLYPH.get(b['kind'])
+    if not g:
+        return
+    dx, dy = b['door']
+    for ox, oy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        x, y = dx + ox, dy + oy
+        if m.inb(x, y) and m.tile(x, y) == WALL:
+            if not hasattr(m, 'hang'):
+                m.hang = {}
+            m.hang[(x, y)] = g
+            b['hang'] = (x, y)
+            return
+
+
+def name_buildings(game, m, s=None):
+    """Give every building a proper name: the inns their own, the rest after who runs them."""
+    from . import guilds as GU
+    used = {b['name'] for gm in game.maps.values() for b in getattr(gm, 'buildings', []) if gm is not m}
+    pool = [n for n in INN_NAMES if n not in used] or INN_NAMES[:]
+    random.shuffle(pool)
+    sea = [n for n in SEA_INN_NAMES if n not in used] or SEA_INN_NAMES[:]
+    random.shuffle(sea)
+    for b in getattr(m, 'buildings', []):
+        k = b['kind']
+        x, y, w, h = b['box']
+        owner = next((o for o in m.mons if x <= o.x < x + w and y <= o.y < y + h and o.role in ('shop', 'stables', 'healer', 'inn')), None)
+        sur = owner.name.split(' the ')[0].split()[-1] if owner else random.choice(['Hale', 'Brook', 'Marsh', 'Cooper', 'Wright'])
+        if k == 'inn':
+            near_sea = getattr(m, 'harbour_side', None) and any(m.tile(xx, yy) == WATER for xx in range(max(0, x - 12), min(m.w, x + w + 12))
+                                                                for yy in range(max(0, y - 12), min(m.h, y + h + 12)))
+            b['name'] = (sea.pop() if sea else pool.pop()) if near_sea else (pool.pop() if pool else 'The Inn')
+            b['what'] = 'inn'
+        elif k == 'shop':
+            b['name'], b['what'] = f"{sur}'s Outfitters", 'outfitter'
+        elif k == 'stables':
+            b['name'], b['what'] = f"{sur}'s Stables", 'stables'
+        elif k == 'temple':
+            try:
+                from .gods import temple_god, GODS
+                b['name'] = f"Temple of {GODS[temple_god(game, m)]['name']}"
+            except Exception:
+                b['name'] = 'The Temple'
+            b['what'] = 'temple'
+        elif k == 'elder':
+            b['name'], b['what'] = "The Elder's House", 'elder'
+        elif k == 'barracks':
+            b['name'], b['what'] = 'The Barracks', 'barracks'
+        elif k.startswith('guild:'):
+            b['name'], b['what'] = GU.GUILDS[k[6:]]['name'], 'guild hall'
+        else:
+            b['what'] = k
+
+
+def newsfolk(game, m, s, buildings, names):
+    """The people who bring the news: a factor of the Merchants' Guild in the inn of every town, a captain in the
+    barracks (or a sergeant off duty at the inn), and a sailor or two by the fire in a harbour."""
+    if s is None or s.kind == 'hamlet':
+        return
+    inn = next((p for p in buildings if p.kind == 'inn'), None)
+    barracks = next((p for p in buildings if p.kind == 'barracks'), None)
+
+    def put(pl, name, role, fg, ch='☺'):
+        if not pl:
+            return None
+        spots = [c for c in free_inside(m, pl) if c[1] > pl.y + 1] or free_inside(m, pl)
+        if not spots or not names:
+            return None
+        c = spots[0]
+        npc = make_npc(game, name.format(n=names.pop()), role, fg, c[0], c[1], True, ch=ch)
+        m.mons.append(npc)
+        return npc
+    if s.kind != 'village' or random.random() < .5:
+        put(inn, '{n}, Factor of the Merchants\' Guild', 'factor', '#f0d070')
+    if barracks:
+        put(barracks, 'Captain {n}', 'captain', D.FACTIONS[s.faction]['fg'])
     else:
-        sy = pl.y - 1
-    m.signs.append((max(0, dx - len(text) // 2), sy, text))
+        put(inn, 'Sergeant {n}, off duty', 'captain', D.FACTIONS[s.faction]['fg'])
+    if getattr(s, 'harbour', False):
+        put(inn, '{n} the Sailor', 'sailor', '#80c0e0')
 
 
 def staff(game, m, pl, role_key, names, s):
@@ -399,16 +500,24 @@ def fishing_pond(game, m, plots, sy, names, fisher=True):
     return None
 
 
-def wooded(m, belt=9, inner=.03):
-    """Grass with trees: a forest belt along the edges of the map, copses here and there."""
+def wooded(m, belt=9, inner=.004, game=None, s=None):
+    """The land round a village: woods along the edges only where the world map has woods on that side,
+    open country elsewhere, and hardly a tree in the village itself (a few in gardens and on the green)."""
     w, h = m.w, m.h
-    copses = [(random.randint(0, w), random.randint(0, h), random.randint(2, 5)) for _ in range(w * h // 700)]
+    side = {'n': .15, 's': .15, 'w': .15, 'e': .15}
+    if game is not None and s is not None:
+        om = game.maps['over']
+        for k, (dx, dy) in {'n': (0, -1), 's': (0, 1), 'w': (-1, 0), 'e': (1, 0)}.items():
+            cells = [(s.x + dx * r + ox, s.y + dy * r + oy) for r in range(2, 7) for ox in (-2, 0, 2) for oy in (-1, 0, 1)]
+            cells = [c for c in cells if om.inb(*c)]
+            woods = sum(1 for c in cells if om.tile(*c) == D.FOREST)
+            side[k] = woods / max(1, len(cells))
     for y in range(h):
         for x in range(w):
-            d = min(x, y, w - 1 - x, h - 1 - y)
-            p = inner + max(0.0, (belt - d) / belt) * .55
-            if any((x - cx) ** 2 + (y - cy) ** 2 < r * r for cx, cy, r in copses):
-                p = max(p, .45)
+            p = inner
+            for k, d in (('n', y), ('s', h - 1 - y), ('w', x), ('e', w - 1 - x)):
+                if d < belt:
+                    p = max(p, (belt - d) / belt * (.08 + .62 * side[k]))
             if random.random() < p:
                 m.set(x, y, TREE)
 
@@ -534,20 +643,58 @@ def garden(m, pl, away_y, plots=()):
 
 
 def road_dirs(game, s):
-    """The roads that leave a settlement on the world map: [(dx, dy, neighbour id)], each a direction."""
-    from .wanderers import road_path
+    """The roads that leave a settlement on the world map, as they really lie there: [(dx, dy, neighbour id)].
+    Every road that touches the settlement counts (also the great roads, roads to castles, and roads that only
+    pass through), so a road that runs on past the village on the map runs through it on the village map too."""
+    import math
+    from collections import deque
+    om = game.maps['over']
+    w = game.world
+    road_like = (D.ROAD, D.CASTLE, D.FORT)
     out = []
-    for a, b in getattr(game.world, 'road_edges', []):
-        if s.id not in (a, b):
+    for sx, sy in [(s.x + dx, s.y + dy) for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0), (1, -1), (1, 1), (-1, 1), (-1, -1))]:
+        if not om.inb(sx, sy) or om.tile(sx, sy) != D.ROAD:
             continue
-        other = b if a == s.id else a
-        path = road_path(game, s.id, other) or []
-        if len(path) < 2:
+        # follow this road outwards: where it is after a few steps gives the direction, where it ends the neighbour
+        seen = {(s.x, s.y), (sx, sy)}
+        q = deque([(sx, sy, 1)])
+        far, other = (sx, sy), None
+        while q:
+            x, y, d = q.popleft()
+            if d <= 6 and max(abs(x - s.x), abs(y - s.y)) > max(abs(far[0] - s.x), abs(far[1] - s.y)):
+                far = (x, y)
+            if d > 160:
+                continue
+            for ddx, ddy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+                nx, ny = x + ddx, y + ddy
+                if (nx, ny) in seen or not om.inb(nx, ny):
+                    continue
+                t = om.tile(nx, ny)
+                if t in (D.TOWN, D.CITY):
+                    o = w.settlement_at(nx, ny)
+                    if o and o.id != s.id and other is None:
+                        other = o.id
+                    continue
+                if t in road_like:
+                    seen.add((nx, ny))
+                    q.append((nx, ny, d + 1))
+        dx, dy = far[0] - s.x, far[1] - s.y
+        if not (dx or dy):
             continue
-        px, py = path[min(6, len(path) - 1)]
-        dx, dy = px - s.x, py - s.y
-        if dx or dy:
-            out.append((dx, dy, other))
+        a = math.atan2(dy, dx)
+        if any(abs((a - math.atan2(o[1], o[0]) + math.pi) % (2 * math.pi) - math.pi) < .6 for o in out):
+            continue                                     # two roads leaving the same way share one
+        out.append((dx, dy, other))
+    if not out:                                          # no road at all: the old way, from the list of roads
+        from .wanderers import road_path
+        for a, b in getattr(w, 'road_edges', []):
+            if s.id in (a, b):
+                other = b if a == s.id else a
+                path = road_path(game, s.id, other) or []
+                if len(path) >= 2:
+                    px, py = path[min(6, len(path) - 1)]
+                    if (px - s.x) or (py - s.y):
+                        out.append((px - s.x, py - s.y, other))
     return out
 
 
@@ -576,7 +723,7 @@ def gen_village(game, s):
     (w, h), (hmin, hmax), (nf, npast, norch), square = TIER[tier]
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
-    wooded(m)
+    wooded(m, game=game, s=s)
     cx, cy = w // 2, h // 2
     # the roads out, one for every road on the world map; the two busiest are three wide
     dirs = road_dirs(game, s) or [(-1, 0, None)]
@@ -663,7 +810,7 @@ def gen_village(game, s):
         carve_path(m, out, tgt)
         furnish(m, pl)
         if getattr(pl, 'guild', None):
-            add_sign(m, pl, GU.GUILDS[pl.guild]['sign'] or '')
+            add_sign(m, pl, GU.GUILDS[pl.guild]['name'])
         elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
         if pl.kind == 'home' and random.random() < .55:
@@ -693,6 +840,9 @@ def gen_village(game, s):
             GU.place_master(game, m, pl, pl.guild, names)
         elif pl.kind in ROLE_OF:
             staff(game, m, pl, pl.kind, names, s)
+    newsfolk(game, m, s, buildings, names)
+    from . import mercs as MC
+    MC.place_recruits(game, m, s, buildings, names)
     if getattr(s, 'harbour', False):
         HB.furnish(game, m, s, names)
     homes = [p for p in buildings if p.kind == 'home']
@@ -735,6 +885,7 @@ def gen_village(game, s):
                                    c[0], c[1], False, ch='d' if k == 0 else 'c'))
     pp = next(((cx + dx, cy + dy) for dx, dy in ((2, -3), (-3, 2), (3, 3), (-2, -2), (4, 0))
                if m.inb(cx + dx, cy + dy) and m.tile(cx + dx, cy + dy) in (GRASS, PATH)), (cx, cy))
+    name_buildings(game, m, s)
     m.portal_pos = pp
     m.entry = m.exits[0][:2]
     m.centre = (cx, cy)
@@ -837,13 +988,12 @@ def gen_city(game, s):
             carve_path(m, out, (tx, out[1]))
         furnish(m, pl)
         if getattr(pl, 'guild', None):
-            sign = GU.GUILDS[pl.guild]['sign']
-            if sign:
-                add_sign(m, pl, sign)
+            if GU.GUILDS[pl.guild]['sign']:               # the secret ones hang out no sign
+                add_sign(m, pl, GU.GUILDS[pl.guild]['name'])
         elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
     for i in range(len(m.t)):
-        if m.t[i] == GRASS and random.random() < .03:
+        if m.t[i] == GRASS and random.random() < .008:
             m.t[i] = TREE
     spots = []
     for y in streets_y:
@@ -866,6 +1016,9 @@ def gen_city(game, s):
             spots = free_inside(m, pl)
             if spots:
                 m.mons.append(make_npc(game, f'Innkeeper {names.pop()}', 'inn', '#e0a060', spots[0][0], spots[0][1], True))
+    newsfolk(game, m, s, buildings, names)
+    from . import mercs as MC
+    MC.place_recruits(game, m, s, buildings, names)
     nm, col = TITLE['market']
     for c in stall_spots[:3]:
         spot = (c[0], c[1] + (1 if c[1] > py else -1)) if c[1] != py else (c[0] + 1, c[1])
@@ -907,6 +1060,7 @@ def gen_city(game, s):
         g.night_watch = i < 2
     if getattr(s, 'harbour', False):
         HB.furnish(game, m, s, names)
+    name_buildings(game, m, s)
     m.portal_pos = (px + 2, py + 1)
     ex, ey = m.exits[0][:2]
     m.entry = (ex, ey)
@@ -954,7 +1108,7 @@ def embed(m, W, H, fields=True):
     W, H = max(W, m.w), max(H, m.h)
     ox, oy = (W - m.w) // 2, (H - m.h) // 2
     big = GameMap(m.key, m.kind, m.name, W, H, GRASS)
-    wooded(big, belt=10, inner=.06)
+    wooded(big, belt=10, inner=.012)
     ex, ey = m.entry if m.entry else (0, m.h // 2)
     # the road in, from the edge of the big map to where the old one began
     lay_road(big, meander((0, ey + oy), (ex + ox, ey + oy), 5, 1, True), 1)
@@ -977,6 +1131,18 @@ def embed(m, W, H, fields=True):
         if hasattr(o, 'path'):
             o.path = []
     big.signs = [(x + ox, y + oy, t) for x, y, t in getattr(m, 'signs', [])]
+    if getattr(m, 'hang', None):
+        big.hang = {(x + ox, y + oy): v for (x, y), v in m.hang.items()}
+    if getattr(m, 'buildings', None):
+        big.buildings = []
+        for b in m.buildings:
+            b = dict(b)
+            x, y, w_, h_ = b['box']
+            b['box'] = (x + ox, y + oy, w_, h_)
+            b['door'] = (b['door'][0] + ox, b['door'][1] + oy)
+            if 'hang' in b:
+                b['hang'] = (b['hang'][0] + ox, b['hang'][1] + oy)
+            big.buildings.append(b)
     big.entry = (0, ey + oy)
     if m.portal_pos:
         big.portal_pos = (m.portal_pos[0] + ox, m.portal_pos[1] + oy)

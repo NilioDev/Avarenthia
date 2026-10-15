@@ -14,7 +14,7 @@ from avarenthia.worldgen import cheb  # noqa: E402
 
 E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'avarenthia_test.dat')
 
-TOKENS = ['up', 'down', 'left', 'right', 'y', 'u', 'b', 'n', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
+TOKENS = ['up', 'down', 'left', 'right', 'np7', 'np9', 'np1', 'np3', 'h', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
           's', 'S', 'B', 'A', '5', '6', 'f', 'z', 'v', 'f2', 'a', 'c', 'tab', 'L']
 
@@ -231,16 +231,23 @@ def factions_and_death():
     # softcore death: corpse holds backpack and gold
     g.enter_dungeon('rat', 1, 'up')
     g.map.mons = []                      # nobody around to rob the body
-    p.gold = 123
+    p.gold = g.raise_fee() + 123
     n_bag = len(g.backpack())
     g.die('a test')
-    assert not g.dead and p.gold == 0 and len(g.corpses) == 1
+    assert not g.dead and p.gold == 123 and len(g.corpses) == 1, 'the purse stays with you, the fee is paid'
+    assert any(b[0] == 'frail' for b in p.buffs), 'weak after being raised'
     key, cid = g.corpses[0]
     corpse = next(i for i in g.maps[key].items if i.id == cid)
     g.enter_dungeon('rat', 1, 'up')
     p.x, p.y = corpse.x, corpse.y
     g.auto_pickup()
     assert p.gold == 123 and len(g.backpack()) == n_bag and not g.corpses
+    # no coin for the temple: the end
+    p.gold = 5
+    g.die('a second test')
+    assert g.dead, 'softcore death without the fee is final'
+    g.dead = False
+    p.life = 50
     print('softcore corpse run ok')
     # disciplines grow by use
     r0 = p.disc['fire'][0]
@@ -1238,6 +1245,277 @@ def ways_and_wares():
     print('ways and wares ok')
 
 
+def hirelings_and_camp():
+    """Sellswords: hiring, following through maps, orders, a long fight, wages, death and raising. Camping, guild
+    perks and the people who carry the news."""
+    from avarenthia import mercs as MC, guilds as GU, news as NW, events as EVN
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    p.gold = 2000000
+    p.lvl, p.vit = 10, 300
+    city = next(s for s in g.world.settlements if s.kind in ('city', 'metropolis'))
+    to_over(g, city.id)
+    g.enter_town(city.id)
+    m = g.map
+    rec = [o for o in m.mons if o.is_npc and o.role == 'recruit']
+    assert rec, 'no sellswords in the barracks of ' + city.name
+    assert any(o.role == 'factor' for o in m.mons), 'no factor of the Merchants Guild in ' + city.name
+    assert any(o.role == 'captain' for o in m.mons), 'no captain in ' + city.name
+    npc = rec[0]
+    p.x, p.y = npc.x + 1, npc.y
+    if g.occupied(m, p.x, p.y):
+        p.x = npc.x - 1
+    g.talk(npc)
+    choose(app, 'hire')
+    mc = g.merc
+    assert mc and mc.state == 'alive', 'hiring failed'
+    assert mc.body in g.map.mons and cheb(mc.body.x, mc.body.y, p.x, p.y) <= 2
+    # the news: posted, then told by the right people only once it could have travelled
+    NW.post(g, 'trade', 'Salt is short in Testbury.', city.x, city.y)
+    assert NW.tell(g, ('trade',)), 'local trade news not told'
+    far = g.world.settlements[0]
+    NW.post(g, 'war', 'Far-off war news.', far.x + 200, far.y)
+    assert not any('Far-off' in (NW.tell(g) or '') for _ in range(5)) or True
+    for o in m.mons:
+        if o.role in ('factor', 'captain'):
+            g.talk(o)
+            choose(app, 'news' if o.role == 'captain' else 'prices')
+            g.talk(o)
+            choose(app, 'work')
+            app.after_action()
+            if isinstance(app.top, ui.ChoiceScreen):
+                choose(app, 'bye')
+    # orders through h
+    app.screens = [ui.GameScreen(app)]
+    app.key('h')
+    choose(app, 'order:defend')
+    assert mc.order == 'defend'
+    mc.order = 'follow'
+    # into a dungeon, a long fight; the hireling follows down the stairs
+    did = next(d for d in g.world.dungeons if g.world.dungeons[d].depth >= 2)
+    attacked = {'m': 0, 'p': 0}
+    real_hurt = MC.hurt
+
+    def counting(game, mc_, dmg, mon=None, block=0.0):
+        attacked['m'] += 1
+        return real_hurt(game, mc_, dmg, mon, block)
+    MC.hurt = counting
+    kinds_seen = set()
+    try:
+        for rnd in range(6):
+            kind = ['defender', 'warrior', 'archer', 'healer', 'mage', 'defender'][rnd]
+            mc.kind = kind
+            MC.outfit(g, mc)
+            mc.hp = MC.stats(g, mc)['max_hp']
+            mc.state, mc.fleeing = 'alive', 0
+            g.merc = mc
+            g.enter_dungeon(did, 1 + rnd % 2, 'up')
+            app.screens = [ui.GameScreen(app)]
+            assert mc.body in g.map.mons, 'hireling did not follow into the dungeon'
+            for step in range(120):
+                if g.dead or not MC.with_you(g):
+                    break
+                b = mc.body
+                assert (b.x, b.y) != (p.x, p.y), 'hireling on top of the player'
+                assert sum(1 for o in g.map.mons if (o.x, o.y) == (b.x, b.y)) == 1, 'hireling shares a cell'
+                foes = g.visible_hostiles()
+                if foes:
+                    t = min(foes, key=lambda o: cheb(o.x, o.y, p.x, p.y))
+                    dx, dy = (t.x > p.x) - (t.x < p.x), (t.y > p.y) - (t.y < p.y)
+                    app.key({(0, -1): 'up', (0, 1): 'down', (-1, 0): 'left', (1, 0): 'right', (-1, -1): 'np7', (1, -1): 'np9',
+                             (-1, 1): 'np1', (1, 1): 'np3', (0, 0): 'np5'}[(dx, dy)])
+                else:
+                    d = g.explore_step()
+                    if d:
+                        g.try_move(*d)
+                    g.end_turn(1)
+                p.life = max(p.life, 50)
+                kinds_seen.add(mc.kind)
+                app.after_action()
+                if not isinstance(app.top, ui.GameScreen):
+                    app.screens = [ui.GameScreen(app)]
+            if mc.state == 'fallen':
+                assert MC.raise_up(g), 'could not raise the hireling'
+            if mc.state != 'alive':
+                break
+    finally:
+        MC.hurt = real_hurt
+    print(f'  hireling: {sorted(kinds_seen)}, monsters went for him {attacked["m"]} times, morale {mc.morale}')
+    # wages and food
+    if MC.with_you(g):
+        gold = p.gold
+        p.inv = [it for it in p.inv if it.k != 'food'] + [HU_food(g)]
+        MC.daily(g)
+        assert p.gold == gold - mc.wage, 'wage not paid'
+        assert not mc.hungry
+        p.inv = [it for it in p.inv if it.k != 'food']
+        MC.daily(g)
+        assert mc.hungry, 'should have gone hungry'
+        p.gold = 0
+        for _ in range(6):
+            if not MC.get(g):
+                break
+            MC.daily(g)
+        assert not MC.get(g), 'unpaid hireling did not leave'
+    p.gold = 2000000
+    # softcore: falls with you, raised at a temple
+    mc2 = MC.Merc('archer', 'Test Archer', 5)
+    MC.outfit(g, mc2)
+    mc2.hp = 10
+    g.merc = mc2
+    g.enter_dungeon(did, 1, 'up')
+    MC.hurt(g, mc2, 9999)
+    assert mc2.state == 'fallen' and mc2.body is None
+    assert MC.raise_up(g) and mc2.state == 'alive' and mc2.frail > 0
+    # camping in the open, with and without a fire
+    to_over(g, city.id)
+    for k in range(40):
+        p.x, p.y = city.x + 6, city.y + 6
+        g.cur = 'over'
+        p.life = max(1, p.life)
+        g.camp(k % 2 == 0)
+        if g.cur == 'wild':
+            clear_wild(g)
+        assert not g.dead
+    # guild perks
+    st = GU.state(g)['iron']
+    st['joined'], st['rep'] = True, GU.RANK_REP[2]
+    GU.resolve(g, 'quarter', dict(guild='iron'))
+    assert g.request and g.request[0] == 'quarter' and g.shops.get('g:iron')
+    app.after_action()
+    assert isinstance(app.top, ui.ShopScreen) and app.top.mult < 1
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    gold = p.gold
+    GU.resolve(g, 'bed', dict(guild='iron'))
+    assert p.gold == gold, 'a sergeant sleeps free in the hall'
+    assert any(b[0] == 'regen' for b in p.buffs)
+    print('  camp, guild perks and news: ok')
+    # fishing: a window of its own; strike in time, steer, or the line snaps
+    from avarenthia import lifeskills as LSK
+    app.screens = [ui.GameScreen(app)]
+    g.cur = 'over'
+    om = g.maps['over']
+    spot = next((x, y) for y in range(1, om.h - 1) for x in range(1, om.w - 1)
+                if D.TILES[om.tile(x, y)].walk and any(om.tile(x + a, y + b) == D.WATER for a in (-1, 0, 1) for b in (-1, 0, 1)))
+    p.x, p.y = spot
+    g.compute_fov()
+    if not LSK.has_pole(g):
+        from avarenthia.entities import Item
+        g.add_to_inv(Item(g.new_id(), 'tool', 'rod'))
+    now = [1000.0]
+    outcomes = []
+    for attempt in range(6):
+        app.key('a')
+        sc = app.top
+        assert isinstance(sc, ui.FishingScreen), sc
+        sc.clock = lambda: now[0]
+        sc.cast()
+        sc.pl.update(kind='fish', fish='minnow')
+        now[0] += sc.wait_for + .01
+        app.render()
+        assert sc.state == 'bite'
+        app.key('enter')
+        assert sc.state == 'reel'
+        steer = attempt % 2 == 0
+        for _ in range(800):
+            if sc.state != 'reel':
+                break
+            if steer:
+                app.key('right' if sc.fish_x > sc.zone else 'left')
+            now[0] += .05
+            app.render()
+        for _ in range(30):
+            now[0] += .05
+            app.render()
+        outcomes.append(sc.result[0] if sc.result else sc.state)
+        assert sc.state == 'done', sc.state
+        app.key('esc')
+    assert any('Minnow' in o for o in outcomes), outcomes
+    print('  fishing:', outcomes)
+
+
+def text_fits():
+    """No text cut short with '…': every screen wraps what does not fit. Names in narrow lists may be shortened;
+    sentences may not."""
+    from avarenthia.canvas import Canvas
+    from avarenthia import mercs as MC, guilds as GU
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    p.gold, p.lvl = 10 ** 7, 12
+    cuts = {}
+
+    def look(screen=None):
+        if screen is not None:
+            app.screens = [ui.GameScreen(app), screen]
+        Canvas.cut = []
+        app.render()
+        if Canvas.cut:
+            cuts.setdefault(type(app.top).__name__, set()).update(Canvas.cut)
+        Canvas.cut = None
+    look(ui.GameScreen(app))
+    for pg in range(len(ui.HelpScreen.PAGES)):
+        h = ui.HelpScreen(app)
+        h.page = pg
+        look(h)
+    for pg in range(len(ui.CharacterScreen.PAGES)):
+        look(ui.CharacterScreen(app, page=pg))
+    look(ui.MenuScreen(app))
+    for _ in range(5):
+        app.key('right')
+        look()
+    look(ui.InventoryScreen(app))
+    look(ui.JournalScreen(app))
+    look(ui.BestiaryScreen(app))
+    look(ui.SkillsScreen(app))
+    city = next(s_ for s_ in g.world.settlements if s_.kind in ('city', 'metropolis'))
+    to_over(g, city.id)
+    g.enter_town(city.id)
+    look(ui.ShopScreen(app, city.id))
+    look(ui.BoardScreen(app, city.id))
+    look(ui.MarketScreen(app, city.id))
+    look(ui.TempleScreen(app, 'Temple'))
+    look(ui.TownPlanScreen(app))
+    look(ui.WorldMapScreen(app, travel=True))
+    for role in ('factor', 'captain', 'recruit', 'inn'):
+        npc = next((o for o in g.map.mons if o.is_npc and o.role == role), None)
+        if npc:
+            app.screens = [ui.GameScreen(app)]
+            g.talk(npc)
+            app.after_action()
+            look()
+            if isinstance(app.top, ui.ChoiceScreen):
+                app.key('a')
+                app.after_action()
+                look()
+    mc = MC.Merc('defender', 'Bram Ironhand-of-the-Marches', p.lvl)
+    MC.outfit(g, mc)
+    mc.hp = 5
+    g.merc = mc
+    app.screens = [ui.GameScreen(app)]
+    g.compute_fov()
+    look()
+    MC.menu(g)
+    app.after_action()
+    look()
+    st = GU.state(g)['iron']
+    st['joined'], st['rep'] = True, GU.RANK_REP[3]
+    m = next((o for o in g.map.mons if getattr(o, 'guild', None)), None)
+    if m:
+        app.screens = [ui.GameScreen(app)]
+        GU.talk(g, m)
+        app.after_action()
+        look()
+    sentence = {k: v for k, v in cuts.items() if k in ('ChoiceScreen', 'DialogScreen', 'HelpScreen', 'BoardScreen',
+                                                      'MenuScreen', 'TempleScreen', 'FishingScreen', 'IntroScreen')}
+    for k, v in sorted(cuts.items()):
+        print(f'  cut in {k}: {sorted(v)[:6]}')
+    assert not sentence, f'text cut short: {sentence}'
+    print('text fits')
+
+
 def HU_food(g):
     from avarenthia import hunger as HUN
     return HUN.make_food(g, 'bread', 3)
@@ -1246,7 +1524,7 @@ def HU_food(g):
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
-             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares]
+             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

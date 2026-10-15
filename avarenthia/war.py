@@ -113,8 +113,8 @@ def launch(game, f):
     wd.group = dict(keys=[random.choice(troops) for _ in range(n)], lvl=lvl, elite=1 if strength > 14 else 0, leader=None, faction=f)
     wd.hostile = is_hostile(game, f)
     w.wanderers.append(wd)
-    if game.cur == 'over' and cheb(src.x, src.y, game.player.x, game.player.y) < 25:
-        game.msg(f"News: {D.FACTIONS[f]['short']} troops march out of {src.title}.", 'info')
+    from . import news as NW
+    NW.post(game, 'war', f"{D.FACTIONS[f]['short']} troops marched out of {src.title}.", src.x, src.y)
 
 
 def siege(game, wd):
@@ -132,10 +132,12 @@ def siege(game, wd):
     if atk > h.garrison:
         old_title = h.title
         capture(game, h, wd.faction, wd.strength // 2 + 2)
-        game.msg(f"News: {attacker['name']} has taken {old_title}! It is now {h.title}.", 'info')
+        from . import news as NW
+        NW.post(game, 'war', f"{attacker['name']} has taken {old_title}! It is {h.title} now.", h.x, h.y)
     else:
         h.garrison = max(2, h.garrison - wd.strength // 2)
-        game.msg(f"News: {h.title} held against an attack by {attacker['short']} troops.", 'info')
+        from . import news as NW
+        NW.post(game, 'war', f"{h.title} held against an attack by {attacker['short']} troops.", h.x, h.y)
 
 
 def capture(game, h, faction, garrison):

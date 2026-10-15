@@ -4,6 +4,7 @@ the player move goods around, and events shift what a town needs for a while."""
 import random
 
 from . import data as D
+from . import news as NW
 from .money import fmt
 
 REF = 40.0
@@ -147,7 +148,7 @@ def daily(game):
                     if g:
                         s.market[g][1] = s.market[g][2]
                 s.event = None
-                game.msg(f'News: life returns to normal in {s.name}.', 'info')
+                NW.post(game, 'trade', f'Life is back to normal in {s.name}; the prices too.', s.x, s.y)
             else:
                 s.event = (key, left - 1)
         for g, m in s.market.items():
@@ -167,4 +168,4 @@ def daily(game):
                 for g in (ev['good'], ev.get('also')):
                     if g:
                         s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
-            game.msg('News: ' + ev['text'].format(town=s.name), 'info')
+            NW.post(game, 'trade', ev['text'].format(town=s.name), s.x, s.y)

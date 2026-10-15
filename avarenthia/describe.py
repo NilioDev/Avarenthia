@@ -50,7 +50,11 @@ DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.'
              10: 'Crystals glitter in the rock.', 11: 'Ash and cinders.', 12: 'Green slime, faintly glowing.',
              13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.'}
 ROLE_DESC = {
-    'inn': 'The innkeeper. Jobs on the board, hot meals and a bed.',
+    'inn': 'The innkeeper. Jobs on the board, hot meals, a bed and the local gossip.',
+    'factor': "A factor of the Merchants' Guild. Trade work, and talk of prices on the roads near here.",
+    'captain': 'A soldier of the garrison. Knows where the trouble is, and pays bounties.',
+    'sailor': 'A sailor ashore. Brings news from far away, most of it old.',
+    'merc': 'A sellsword looking for a contract.',
     'market': 'A trader. Buys and sells goods by the cartload.',
     'shop': 'An outfitter. Weapons, armour, potions and supplies; identifies items.',
     'healer': 'A priest of the temple. Heals, identifies and lifts curses.',
@@ -75,7 +79,7 @@ ROLE_DESC = {
 JOB_WORD = {'inn': 'innkeeper', 'market': 'trader', 'shop': 'outfitter', 'healer': 'priest', 'stables': 'stablemaster',
             'elder': 'village elder', 'castellan': 'castellan', 'guard': 'guard', 'thane': 'thane', 'herbalist': 'herbalist',
             'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client', 'farmer': 'farmer',
-            'roadinn': 'innkeeper'}
+            'roadinn': 'innkeeper', 'factor': 'guild factor', 'captain': 'captain', 'sailor': 'sailor', 'merc': 'mercenary'}
 NOUN = {'male': 'man', 'female': 'woman'}
 
 

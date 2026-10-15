@@ -251,6 +251,12 @@ def talk(game, npc):
             from .skills import DISCIPLINES
             opts.append((f'Learn {SKILLS[sid].name} ({fmt(price * 100)}; {g["ranks"][rk]}'
                          + (f', {DISCIPLINES[line]["name"]} {dr}' if line else ', both guilds') + ')', 'learn:' + sid))
+        opts.append((f'Visit the quartermaster ({round((1 - quarter_mult(game, key)) * 100)}% off)', 'quarter'))
+        nr, rc = game.repair_all(mend_discount(game, key), dry=True)
+        if nr:
+            opts.append((f'Have your gear mended ({fmt(rc)})', 'mend'))
+        bed = bed_price(game, key)
+        opts.append((f'Sleep in the guild hall ({fmt(bed) if bed else "free"})', 'bed'))
         if key == 'carto' and r >= 1:
             opts.append((f'Buy an old Varnish chart ({fmt(chart_price(game))})', 'chart'))
         opts.append(('Leave the guild', 'leave'))
@@ -286,6 +292,33 @@ def cant_join(game, key):
     return None
 
 
+def quarter_mult(game, key):
+    """Members buy from the guild's own stores: 10% off, and 5% more for every rank."""
+    return 1 - (.10 + .05 * rank(game, key))
+
+
+def mend_discount(game, key):
+    return .15 + .05 * rank(game, key)
+
+
+def bed_price(game, key):
+    """A cot in the hall: cheap for the low ranks, free from the middle rank up."""
+    return 0 if rank(game, key) >= 2 else 80
+
+
+def quarter_stock(game, key):
+    """Better than the outfitter's: more magic, a little above your level."""
+    from .entities import make_gear
+    r = rank(game, key)
+    lvl = max(1, game.player.lvl) + 1 + r // 2
+    ks = [k for k, b in D.BASES.items() if b['lvl'] <= lvl + 2]
+    out = []
+    for _ in range(6 + r):
+        rar = 'rare' if random.random() < .06 * r else 'magic' if random.random() < .45 + .08 * r else 'normal'
+        out.append(make_gear(game, random.choice(ks), rar, lvl))
+    return out
+
+
 def chart_price(game):
     return 2500 - rank(game, 'carto') * 300
 
@@ -316,6 +349,16 @@ def resolve(game, choice, ctx):
         game.msg(f'You join {g["name"]} as {g["ranks"][0].lower()}.', 'gold')
     elif choice == 'work':
         offer_work(game, key)
+    elif choice == 'quarter':
+        sk = 'g:' + key
+        if game.day - s.get('quarter_day', -99) >= 7 or sk not in game.shops:
+            game.shops[sk] = quarter_stock(game, key)
+            s['quarter_day'] = game.day
+        game.request = ('quarter', key)
+    elif choice == 'mend':
+        game.repair_all(mend_discount(game, key))
+    elif choice == 'bed':
+        game.inn_meal(bed_price(game, key), 'A hard cot in the guild hall, among your own. You sleep well.')
     elif choice.startswith('learn:'):
         sid = choice[6:]
         row = next((t for t in TEACH.get(key, []) + combos_for(game, key) if t[0] == sid), None)
@@ -444,7 +487,7 @@ def flavour(game, key, m):
     """A guild job: the same work as anywhere, with the guild's own colour, and for the secret ones, a price."""
     g = GUILDS[key]
     m.guild = key
-    m.reward = round(m.reward * 1.2)
+    m.reward = round(m.reward * (1.2 + .2 * rank(game, key)))        # the higher your rank, the better the pay
     w = game.world
     if key == 'dawn' and m.kind == 'bounty':
         m.data['keys'] = [random.choice(['zombie', 'skeleton', 'skarcher', 'ghost']) for _ in range(random.randint(3, 5))]
@@ -480,6 +523,11 @@ def job_done(game, m):
     after = rank(game, key)
     if after > before:
         game.msg(f'{GUILDS[key]["name"]} raises you to {GUILDS[key]["ranks"][after]}.', 'unique')
+    if before >= 2 and random.random() < .2 + .1 * (before - 2):
+        from .entities import random_gear
+        it = random_gear(game, game.player.lvl + before, 2)
+        if it and game.add_to_inv(it):
+            game.msg(f'For a job well done, the guild adds {it.display_name()} to your pay.', 'gold')
     if after >= 2 and key in ('thieves', 'magi') and not state(game)['coven']['found']:
         ids = game.world.guild_halls.get('coven', [])
         if ids:

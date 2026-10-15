@@ -5,19 +5,19 @@ import random
 from . import data as D
 
 LIFE = {
-    'fishing': dict(name='Fishing', desc='Cast a line from any shore, river or pool (A, with a fishing pole).',
+    'fishing': dict(name='Fishing', desc='Cast a line by any shore, river or pool (a, with a pole).',
                     perks={3: 'Trout and carp start to bite', 5: 'Casts take less time', 8: 'Pike bite in deep water',
                            12: 'Salmon run in the rivers', 15: 'Casts take much less time',
                            18: 'The legendary golden carp may bite', 25: 'Master angler: almost every cast lands a fish'}),
-    'foraging': dict(name='Foraging', desc='Search the wild for food (Shift+F). Unknown plants must be tasted... carefully.',
+    'foraging': dict(name='Foraging', desc='Search the wild for food (F). Taste strange plants with care.',
                      perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once', 8: 'Poisonous plants make you uneasy',
                             10: 'Searching takes less time', 15: 'You rarely come back empty-handed'}),
-    'herbalism': dict(name='Herbalism', desc='Gathering herbs and knowing them: grows when you pick and learn herbs.',
+    'herbalism': dict(name='Herbalism', desc='Picking herbs and knowing them; grows as you pick and learn.',
                       perks={3: 'You often recognise the herbs you pick', 5: 'You gather more herbs at once',
                              8: 'Kingsfoil and other rare herbs turn up more often', 12: 'You can tell a herb at a glance'}),
-    'alchemy': dict(name='Alchemy', desc='Brewing potions from herbs (P). The monastery herbalists teach the basics.',
+    'alchemy': dict(name='Alchemy', desc='Potions from herbs (P). Monastery herbalists teach the basics.',
                     perks={3: 'Recipe: Antidote', 5: 'Fewer ruined potions', 8: 'Recipe: Kingsfoil Elixir', 10: 'Potions rarely fail'}),
-    'brewing': dict(name='Brewing', desc='Ale, mead and wine (P), at the kettles of an inn or a monastery cellar.',
+    'brewing': dict(name='Brewing', desc='Ale, mead and wine (P), at an inn or in a monastery cellar.',
                     perks={3: 'Recipe: Berry Wine', 5: 'Fewer spoiled batches', 6: 'Recipe: Mead', 10: 'You brew an extra mug now and then'}),
 }
 LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing']
@@ -115,52 +115,79 @@ def make_fish(game, key, n=1):
     return it
 
 
-def fish(game):
-    """One cast. Returns the turns it took (0 if you could not fish here)."""
+def can_fish(game):
+    """The kind of water you would fish in, or None (with the reason told)."""
     if not has_pole(game):
         game.msg('You need a fishing pole. Outfitters sell them for a few coins.')
-        return 0
+        return None
     if game.hostile_visible():
         game.msg('Not with enemies about!', 'bad')
-        return 0
+        return None
     water = water_here(game)
     if not water:
         game.msg('There is no water here to fish in. Stand next to a river, lake, pool or the sea.')
-        return 0
+        return None
+    return water
+
+
+def plan(game, water):
+    """What is down there, decided when you cast: nothing, junk, a bottle, a fish, or something you do not want."""
     r = rank(game, 'fishing')
     over = game.map.kind == 'over'
-    turns = (30 if over else 6) * (.6 if r >= 15 else .8 if r >= 5 else 1)
+    turns = round((30 if over else 6) * (.6 if r >= 15 else .8 if r >= 5 else 1))
     chance = min(.92 if r >= 25 else .82, .35 + r * .025)
-    gain(game, 'fishing', .5)
     p = game.player
+    out = dict(water=water, rank=r, turns=turns, kind='none', fish=None, weight=0)
     from .evils import taint_at
     ev = taint_at(game, p.x, p.y) if over else None
     if over and random.random() < (.06 if ev else .015):
-        game.msg('Something huge takes the bait and pulls. Then it comes out of the water after you!', 'bad')
         lvl = game.world.danger_at(p.x, p.y) + 1
         keys = ['drowned', 'drowned'] if ev and ev.key == 'drowned' else ['zombie'] if game.world.danger_at(p.x, p.y) > 6 else ['jackal', 'jackal']
-        game.start_encounter(None, game.map.tile(p.x, p.y), lvl, keys)
-        return 1
+        out.update(kind='monster', keys=keys, lvl=lvl, weight=9)
+        return out
     if random.random() >= chance:
-        game.msg(random.choice(['Nothing bites.', 'A nibble... and it is gone.', 'The float bobs, then lies still.',
-                                'Something steals your bait.']))
-        return round(turns)
+        return out
     if random.random() < max(.02, .12 - r * .008):
-        if random.random() < .25:
-            hidden = [q for q in game.world.pois if not q.found]
-            if hidden:
-                from .events import reveal
-                q = random.choice(hidden)
-                reveal(game, q)
-                game.msg(f'You fish up a bottle with a map inside! It shows the way to {q.name}.', 'gold')
-                gain(game, 'fishing', 3)
-                return round(turns)
-        game.msg(f'You reel in... {random.choice(JUNK)}. You toss it back.')
-        return round(turns)
+        hidden = [q for q in game.world.pois if not q.found]
+        if random.random() < .25 and hidden:
+            out.update(kind='bottle', poi=random.choice(hidden).id, weight=1)
+        else:
+            out.update(kind='junk', junk=random.choice(JUNK), weight=2)
+        return out
     cands = [(k, f) for k, f in FISH.items() if f[1] <= r and water in f[2].split()]
     if not cands:
         cands = [('minnow', FISH['minnow'])]
     k, f = random.choices(cands, [f[3] * (1 + (f[1] / 10)) for _k, f in cands])[0]
+    out.update(kind='fish', fish=k, weight=1 + f[1] // 3)
+    return out
+
+
+def land(game, pl, ok):
+    """How it ends: ok is whether you struck in time and brought it in. Returns the turns it took."""
+    gain(game, 'fishing', .5)
+    kind = pl['kind']
+    if kind == 'monster':
+        game.msg('Something huge takes the bait and pulls. Then it comes out of the water after you!', 'bad')
+        game.start_encounter(None, game.map.tile(game.player.x, game.player.y), pl['lvl'], pl['keys'])
+        return 1
+    if kind == 'none':
+        game.msg(random.choice(['Nothing bites.', 'A nibble... and it is gone.', 'The float bobs, then lies still.',
+                                'Something steals your bait.']))
+        return pl['turns']
+    if not ok:
+        return pl['turns']
+    if kind == 'bottle':
+        from .events import reveal
+        q = game.world.pois[pl['poi']]
+        reveal(game, q)
+        game.msg(f'You fish up a bottle with a map inside! It shows the way to {q.name}.', 'gold')
+        gain(game, 'fishing', 3)
+        return pl['turns']
+    if kind == 'junk':
+        game.msg(f'You reel in... {pl["junk"]}. You toss it back.')
+        return pl['turns']
+    k = pl['fish']
+    f = FISH[k]
     it = make_fish(game, k)
     if game.add_to_inv(it):
         game.msg(f'You catch a {f[0]}!', 'gold' if f[1] >= 12 else 'good')
@@ -171,7 +198,21 @@ def fish(game):
     on_craft(game, 'fish')
     if k == 'golden':
         game.msg('A golden carp! Fishermen will talk about this for years.', 'unique')
-    return round(turns)
+    return pl['turns']
+
+
+def fish(game):
+    """One quick cast, decided at once (a master angler's way, and the tests'). Returns the turns it took."""
+    water = can_fish(game)
+    if not water:
+        return 0
+    return land(game, plan(game, water), True)
+
+
+def place_name(game):
+    m = game.map
+    here = game.here
+    return f'{m.name}' if m.kind != 'over' else (here.name if here else 'the open country')
 
 
 def eat(game, it):

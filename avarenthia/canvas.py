@@ -28,8 +28,12 @@ class Canvas:
         """Change only the background colour of a cell."""
         raise NotImplementedError
 
+    cut = None            # tests set this to a list to collect every text that had to be cut short
+
     def text(self, x, y, s, fg=None, bg=None, maxw=None):
         if maxw is not None and len(s) > maxw:
+            if Canvas.cut is not None:
+                Canvas.cut.append(s)
             s = s[:max(0, maxw - 1)] + '…' if maxw > 0 else ''
         for i, ch in enumerate(s):
             self.put(x + i, y, ch, fg, bg)
@@ -64,6 +68,8 @@ class Canvas:
 
     def wrap(self, x, y, w, s, fg=None, bg=None, max_lines=99):
         lines = wrap_text(s, w)
+        if len(lines) > max_lines and Canvas.cut is not None:
+            Canvas.cut.append(s)
         for i, ln in enumerate(lines[:max_lines]):
             self.text(x, y + i, ln, fg, bg)
         return min(len(lines), max_lines)

@@ -535,13 +535,13 @@ def make_personal_offer(game, wd):
         fam = wd.name.split(' the ')[0].split()[-1]
         rel = random_name(getattr(wd, 'race', 'human'), 'other').split()[0]
         data.update(recipient=f"{rel} {fam}, {wd.name.split()[0]}'s {who}", rtown=rs.id,
-                    reward=random.randint(40, 90) * 100)
+                    reward=random.randint(40, 90) * 20)
     elif sub == 'gather':
         g = random.choice(['herbs', 'furs', 'salt', 'cloth', 'fish', 'ale', 'medicine'])
         q = max(3, min(10, round(random.uniform(60, 140) / D.GOODS[g]['base'])))
-        data.update(good=g, qty=q, reward=round(D.GOODS[g]['base'] * q * 1.8 + 30) * 100)
+        data.update(good=g, qty=q, reward=round(D.GOODS[g]['base'] * q * 1.35 + 15) * 100)
     elif sub == 'hunt':
-        data.update(reward=random.randint(90, 160) * 100)
+        data.update(reward=random.randint(90, 160) * 20)
     else:
         ruins = [p for p in w.pois if p.kind in RUIN_KINDS and w.dungeons[p.did].relic is None]
         if not ruins:
@@ -549,7 +549,7 @@ def make_personal_offer(game, wd):
         poi = min(ruins, key=lambda q: cheb(q.x, q.y, wd.x, wd.y))
         data.update(ruin=poi.id, dungeon=poi.did, relic=random.choice(['a silver locket', 'my father\'s sword',
                                                                        'a family bible', 'a carved wooden horse']),
-                    reward=random.randint(120, 220) * 100)
+                    reward=random.randint(120, 220) * 20)
     return data
 
 
@@ -577,7 +577,8 @@ def r_traveller(game, choice, ctx):
         from .crime import rob_traveller
         rob_traveller(game, wd)
     elif choice == 'news':
-        game.say_text(wd.name, game.rumor())
+        from . import news as NW
+        game.say_text(wd.name, (random.random() < .6 and NW.far_news(game)) or game.rumor())
     elif choice == 'help' and wd.offer:
         o = wd.offer
         first = wd.name.split()[0]
@@ -622,7 +623,8 @@ def r_caravan(game, choice, ctx):
     if not wd:
         return
     if choice == 'news':
-        game.say_text('The merchant', game.rumor())
+        from . import news as NW
+        game.say_text('The merchant', NW.trade_gossip(game))
     elif choice == 'rob':
         from .crime import rob_caravan
         rob_caravan(game, wd)
@@ -639,15 +641,21 @@ def r_roadinn(game, choice, ctx):
     elif choice == 'meal':
         game.inn_meal()
     elif choice == 'news':
+        from . import news as NW
         npc = next((o for o in game.map.mons if o.id == ctx.get('npc')), None)
-        line = game.rumor()
+        line = NW.gossip(game)
         if npc:
             game.say(npc, line)
         else:
             game.msg(line, 'talk')
 
 
-RESOLVERS = {'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,
+def r_camp_night(game, choice, ctx):
+    if choice in ('fire', 'dark'):
+        game.camp(choice == 'fire')
+
+
+RESOLVERS = {'camp_night': r_camp_night, 'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,
              'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
              'peddler': r_peddler, 'pilgrims': r_pilgrims, 'tracks': r_tracks, 'lights': r_lights, 'storm': r_storm,
              'cart': r_cart, 'toll': r_toll, 'traveller': r_traveller, 'traveller_job': r_traveller_job}

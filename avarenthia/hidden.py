@@ -299,37 +299,57 @@ def _valleys(game, m, world, rnd):
 
 # ------------------------------------------------------------------ discovery
 def known(game):
+    """The old ways you know of at all."""
     return game.__dict__.setdefault('ways_known', set())
 
 
-def discover_way(game, wid, how=None):
-    k = known(game)
-    if wid in k:
-        return False
-    k.add(wid)
-    w = game.world
-    wy = w.ways[wid]
-    om = game.maps['over']
-    for i in wy.cells:
+def seen_cells(game):
+    """The stretches of the old ways you have seen with your own eyes, or on a map: only these are drawn."""
+    return game.__dict__.setdefault('ways_seen', set())
+
+
+def reveal_cells(game, wid, cells):
+    """Put a stretch of an old way on your map, and the milestones that stand on it."""
+    w, om = game.world, game.maps['over']
+    seen = seen_cells(game)
+    new = [i for i in cells if i not in seen]
+    if not new:
+        return 0
+    seen.update(new)
+    for i in new:
         om.seen[i] = 1
-    for poi in w.pois:                               # the milestones along it, and where it leads
-        if getattr(poi, 'way', None) == wid or (wy.target == ('poi', poi.id)):
+    on = set(new)
+    for poi in w.pois:
+        if getattr(poi, 'way', None) == wid and not poi.found and (poi.y * om.w + poi.x) in on:
             poi.found = True
-            om.seen[poi.y * om.w + poi.x] = 1
-    if wy.target and wy.target[0] == 'site':
-        st = w.sites[wy.target[1]]
-        om.seen[st.y * om.w + st.x] = 1
+    return len(new)
+
+
+def discover_way(game, wid, how=None, cells=()):
+    """You learn that a way is there. What you see of it is only what `cells` shows: the rest you walk."""
+    k = known(game)
+    first = wid not in k
+    k.add(wid)
+    reveal_cells(game, wid, cells)
+    if not first:
+        return False
+    wy = game.world.ways[wid]
     game.msg((how + ' ' if how else '') + f'You have found {wy.name}.', 'unique')
-    xp = 10 + len(wy.cells) // 4
-    game.gain_xp(xp)
+    game.gain_xp(10 + len(wy.cells) // 8)
     return True
 
 
+def _visible_cells(game, wy):
+    vis = game.vis
+    return [i for i in wy.cells if i < len(vis) and vis[i]]
+
+
 def on_step(game):
-    """Walking on, or right beside, an old way shows you where it runs."""
+    """Walking on, or right beside, an old way shows you the stretch of it you can see from there. Walking along it
+    shows you the rest, a stretch at a time."""
     w = game.world
     way_of = getattr(w, 'way_of', None)
-    if not way_of:
+    if not way_of or game.cur != 'over':
         return
     p, m = game.player, game.map
     for dy in (-1, 0, 1):
@@ -337,8 +357,21 @@ def on_step(game):
             i = (p.y + dy) * m.w + p.x + dx
             wid = way_of.get(i)
             if wid is not None and wid not in known(game):
-                discover_way(game, wid, 'Under the grass your feet find old paving stones.')
-                return
+                game.compute_fov()
+                discover_way(game, wid, 'Under the grass your feet find old paving stones.',
+                             _visible_cells(game, w.ways[wid]) + [i])
+    vis = game.vis
+    near = set()
+    for dy in range(-8, 9):
+        for dx in range(-8, 9):
+            i = (p.y + dy) * m.w + p.x + dx
+            wid = way_of.get(i)
+            if wid is not None and wid in known(game) and i < len(vis) and vis[i]:
+                near.add(i)
+    if near:
+        seen = seen_cells(game)
+        for i in near - seen:
+            reveal_cells(game, way_of[i], [i])
 
 
 def on_way(game, x, y):
@@ -348,11 +381,12 @@ def on_way(game, x, y):
 
 
 def from_tower(game, vis):
-    """From a watchtower you can make out the line of an old way across the land."""
+    """From a watchtower you can make out the line of an old way across the land: as far as you can see, no further."""
     w = game.world
     for wid, wy in enumerate(getattr(w, 'ways', [])):
-        if wid not in known(game) and sum(1 for i in wy.cells if vis[i]) >= 4:
-            discover_way(game, wid, 'From up here you can see a straight line through the land that no road follows.')
+        cells = [i for i in wy.cells if i < len(vis) and vis[i]]
+        if len(cells) >= 4:
+            discover_way(game, wid, 'From up here you can see a straight line through the land that no road follows.', cells)
 
 
 def random_unknown(game, near=None):
@@ -361,33 +395,53 @@ def random_unknown(game, near=None):
     if not left:
         return None
     if near:
-        left.sort(key=lambda wy: min(cheb(i % game.maps['over'].w, i // game.maps['over'].w, *near) for i in wy.cells[::4]))
+        om = game.maps['over']
+        left.sort(key=lambda wy: min(cheb(i % om.w, i // om.w, *near) for i in wy.cells[::4]))
         return left[0]
     return random.choice(left)
 
 
+def start_of(game, wy):
+    """Where a way leaves the land you know: the end nearest a road."""
+    return wy.cells[0]
+
+
+def stretch(wy, frac_from=0.0, frac_to=.4):
+    """A piece of a way, never its end: a map or a chart shows where it starts and where it heads, not where it goes."""
+    n = len(wy.cells)
+    a, b = int(n * frac_from), max(int(n * frac_from) + 2, int(n * min(frac_to, .7)))
+    return wy.cells[a:b]
+
+
 def rumor(game):
-    """Someone remembers an old path, and tells you where it leaves the road."""
+    """Someone remembers an old path, and tells you where it leaves the road. Only that."""
     p = game.player
     pos = (p.x, p.y) if game.cur == 'over' else game.over_pos
     wy = random_unknown(game, pos)
     if not wy:
         return None
-    discover_way(game, wy.id, '')
-    return random.choice(['My grandfather used to talk about the old Varnish paths. One runs not far from here; the stones are '
-                          'still under the moss, if you know where to look.',
-                          'There is a way the old ones walked. Shepherds use it, when the road is watched. I will mark it for you.',
-                          'They built roads before the kings did, the Varnish. You can still find them, if you leave the road.'])
+    i = start_of(game, wy)
+    discover_way(game, wy.id, '', [i])
+    om = game.maps['over']
+    from .engine import dir_name
+    x, y = i % om.w, i // om.w
+    return random.choice(['My grandfather used to talk about the old Varnish paths. One leaves the land {d} of here; the '
+                          'stones are still under the moss, if you know where to look.',
+                          'There is a way the old ones walked, {d} of here. Shepherds use it, when the road is watched. '
+                          'I will mark where it starts. Where it goes, I could not tell you.',
+                          'They built roads before the kings did, the Varnish. One starts {d} of here. Leave the road there '
+                          'and follow the stones.']).format(d=dir_name(x - pos[0], y - pos[1]))
 
 
 def read_map(game, it):
-    """An old Varnish map, found in a ruin."""
+    """An old Varnish map, found in a ruin: a stretch of a way, drawn by someone long dead."""
     wy = random_unknown(game)
     game.remove_one(it)
     if not wy:
         game.msg('The map shows paths you already know.')
         return 1
-    discover_way(game, wy.id, 'You trace the faded lines on the map and match them to the land.')
+    discover_way(game, wy.id, 'You trace the faded lines on the map and match them to the land. The map is torn where '
+                 'the line runs on.', stretch(wy, 0, random.uniform(.25, .45)))
     return 1
 
 
@@ -397,7 +451,8 @@ def buy_chart(game):
     if not wy:
         game.msg('"You know every way we have charted. I have nothing more to sell you."')
         return False
-    discover_way(game, wy.id, 'The Cartographer unrolls an old chart and copies a line onto your map.')
+    discover_way(game, wy.id, 'The Cartographer copies a line from an old chart onto your map. "Where it ends, nobody '
+                 'has written down."', stretch(wy, 0, random.uniform(.35, .6)))
     return True
 
 
@@ -415,11 +470,19 @@ def on_poi(game, poi):
     if poi.kind == 'milestone':
         wy = w.ways[poi.way] if getattr(poi, 'way', None) is not None else None
         other = random_unknown(game, (poi.x, poi.y))
-        text = ('A worn stone post, taller than a man. Varnish letters run down it: a number of leagues, and a name. '
-                + (f'This way leads to {_target_name(game, wy)}.' if wy and wy.target else ''))
+        text = ('A worn stone post, taller than a man. Varnish letters run down it: a number of leagues, and a name '
+                'worn too far to read.')
+        if wy and wy.target:
+            om = game.maps['over']
+            end = wy.cells[-1]
+            from .engine import dir_name
+            text += f' An arrow points {dir_name(end % om.w - poi.x, end // om.w - poi.y)}.'
         if other:
-            text += ' Below, half under the moss, another line points away from the path.'
-            discover_way(game, other.id, 'You follow the second line with your eyes, and see where it runs.')
+            om = game.maps['over']
+            near = min(other.cells[::3], key=lambda i: cheb(i % om.w, i // om.w, poi.x, poi.y))
+            from .engine import dir_name
+            text += (f' Below, half under the moss, a second line points {dir_name(near % om.w - poi.x, near // om.w - poi.y)}: '
+                     'another way, somewhere out there.')
         game.request = ('dialog', poi.name, text)
         return True
     if poi.kind == 'waystation':

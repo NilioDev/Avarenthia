@@ -7,6 +7,12 @@ import random
 
 from . import data as D
 from .worldgen import cheb
+from . import news as NW
+
+
+def where(game, e):
+    return e.x, e.y
+
 
 EVILS = {
     'lich': dict(
@@ -224,7 +230,7 @@ def update(game, announce=True):
             if e.known:
                 game.msg(e.d['omen'].format(name=e.name, short=e.short), 'unique')
             else:
-                game.msg('News: ' + random.choice(SIGNS[e.d['taint']]), 'info')
+                NW.post(game, 'danger', random.choice(SIGNS[e.d['taint']]), *where(game, e))
         if e.lvl >= 4 and not e.known and not e.defeated:
             learn(game, e)
     if changed:
@@ -297,7 +303,7 @@ def daily(game):
                         s.market[g][1] = ev['target']
                         s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
                 who = e.name if e.known else 'Something'
-                game.msg(f'News: {who} strikes at {s.name}! ' + ev['text'].format(town=s.name), 'bad')
+                NW.post(game, 'danger', f'{who} struck at {s.name}! ' + ev['text'].format(town=s.name), s.x, s.y)
         hunts = [x for x in w.wanderers if x.kind == 'hunt' and getattr(x, 'evil', None) == idx]
         if e.known and e.lvl >= 5 and len(hunts) < 1 + (e.lvl - 4) // 2 and random.random() < .15 + e.lvl * .03:
             spawn_hunt(game, idx)
