@@ -192,6 +192,18 @@ MONSTERS = {
     'bog_lurker': dict(ch='B', fg='#7aa860', name='Bog Lurker', tags='wild', min_l=4, hp=1.6, dmg=1.1, df=.9, xp=1.4, elem='poison',
                        poison=True, slow=True),
 }
+# the families of round one (spiders, insects, goblinoids and the peoples below), from creatures.py
+from . import creatures as _CR
+for _k, _d in _CR.NEW.items():
+    _d = dict(_d)
+    _d['beh'] = frozenset(_d.get('beh', '').split())
+    MONSTERS[_k] = _d
+for _k in ('wolf_spider', 'web_weaver', 'trapdoor', 'spider_swarm', 'brood_spider', 'webkin', 'jumping_spider'):
+    MONSTERS[_k]['tags'] += ' lair_spider'
+for _k in ('kob_slinger', 'kob_trapper', 'kob_sorcerer'):
+    MONSTERS[_k]['tags'] += ' lair_dragon'
+for _k in ('goblin', 'gobarcher', 'kobold'):
+    MONSTERS[_k]['tags'] += ' warren'
 # what the elements do to each kind: resistances in percent (negative: a weakness), and the element of its attacks
 for _k, _res in (('skeleton', dict(cold=25, poison=100, fire=-25)), ('skarcher', dict(cold=25, poison=100, fire=-25)),
                  ('zombie', dict(poison=100, fire=-25)), ('ghost', dict(cold=75, poison=100, lightning=25)),
@@ -222,6 +234,10 @@ for _m in MONSTERS.values():
     _m.setdefault('elem', None)
     _m.setdefault('summon', None)
     _m.setdefault('min_l', 1)
+    _m.setdefault('chief', False)
+    _m.setdefault('beh', frozenset())
+
+CHIEFS = {_k for _k, _m in MONSTERS.items() if _m['chief']}
 
 DUNGEONS = {
     'den': dict(name='The Hollow Den', depth=1, base=0, style='cave', tag='den', boss='snagtooth', wall=None),
@@ -294,7 +310,11 @@ BIOME_MONSTERS = {
     'hills': ['goblin', 'orc', 'ogre', 'wolf', 'troll', 'storm_spirit'],
     'coast': ['jackal', 'bandit', 'goblin', 'orc', 'storm_spirit'],
 }
-NIGHT_MONSTERS = ['zombie', 'ghost', 'wraith', 'skeleton', 'wolf']
+NIGHT_MONSTERS = ['zombie', 'ghost', 'wraith', 'skeleton', 'wolf'] + _CR.NIGHT_ADD
+for _b, _ks in _CR.BIOME_ADD.items():
+    BIOME_MONSTERS[_b] += _ks
+for _c, _ks in _CR.CLIMATE_ADD.items():
+    CLIMATE_MONSTERS[_c] = CLIMATE_MONSTERS.get(_c, []) + _ks
 TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
           'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
 TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
@@ -423,3 +443,12 @@ LORE = {
     'bog_lurker': ('A heap of rot and reeds that rises out of the mire.', 'Swamps and marshes.',
                    'Its touch poisons. Burn it, and keep antidotes at hand.'),
 }
+# the three layers for the new kinds: how one looks, what they do (DOES), and their weakness and home
+DOES = {}
+for _k, _d in _CR.NEW.items():
+    _look = min(_d['looks'], key=lambda t: ('{noun}' in t and bool(_d.get('nouns'))) + ('{sex}' in t))
+    _look = _look.replace(' {noun}' if _d.get('nouns') else '{noun}', '' if _d.get('nouns') else _d.get('noun', ''))
+    _p = ('she', 'her', 'her') if _d.get('gender') == 'f' else ('it', 'its', 'it')
+    _look = _look.replace('{sex} ', '').format(he=_p[0], his=_p[1], him=_p[2])
+    LORE[_k] = (_look, _d.get('home', 'Unknown.'), _d.get('weak', 'No advice yet.'))
+    DOES[_k] = _d.get('does', '')

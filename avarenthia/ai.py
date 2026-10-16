@@ -26,6 +26,16 @@ TRAITS = {
     'wander': {'bat', 'zombie', 'skeleton', 'ghost', 'rat'},
 }
 D8 = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)]
+# the new kinds (creatures.py) bring their habits as behaviours; some of them are the old traits
+_BEH_TRAIT = {'kite': 'kite', 'rage': 'berserk', 'charge': 'charge', 'burrow': 'lurk', 'ambush': 'lurk', 'hunt': 'wander'}
+for _k, _d in D.MONSTERS.items():
+    for _b in _d.get('beh', ()):
+        if _b in _BEH_TRAIT:
+            TRAITS[_BEH_TRAIT[_b]].add(_k)
+TRAITS['coward'] |= {'gob_sneak', 'gob_bomber', 'gob_shaman', 'kob_slinger', 'kob_trapper', 'kob_sorcerer', 'hyena', 'locusts'}
+TRAITS['pack'] |= {'wolf_spider', 'ant_worker', 'ant_soldier', 'hyena', 'gnoll_hunter', 'hob_legionary', 'lizard_warrior',
+                   'viper_warrior', 'orc_berserker', 'deep_orc', 'gob_rider', 'gob_sneak', 'bloodwasp'}
+TRAITS['wander'] |= {'ant_worker', 'locusts', 'moth', 'bloodwasp'}
 
 
 def has(mon, trait):
@@ -77,11 +87,13 @@ def flank_step(game, mon):
 
 def on_wake(game, mon):
     """Called when a monster wakes: a howl, or a spider dropping out of the dark."""
+    from . import behave as BH
     m = game.map
     if getattr(mon, 'lurk', False):
         mon.lurk = False
-        game.msg(f"{mon.the()[0].upper() + mon.the()[1:]} drops out of the dark!", 'bad')
-        game.flash([(mon.x, mon.y)], (230, 230, 240), '!', .25)
+        if not BH.on_wake(game, mon):
+            game.msg(f"{mon.the()[0].upper() + mon.the()[1:]} drops out of the dark!", 'bad')
+            game.flash([(mon.x, mon.y)], (230, 230, 240), '!', .25)
     if has(mon, 'howl') and not getattr(mon, 'howled', False):
         mon.howled = True
         n = 0
@@ -173,7 +185,11 @@ def turn(game, mon, df):
             dy = (p.y > mon.y) - (p.y < mon.y)
             if abs(p.x - mon.x) == abs(p.y - mon.y) or p.x == mon.x or p.y == mon.y:      # a straight line
                 mon.charging = (dx, dy)
-                game.msg(f'{name} lowers its head and paws the ground...', 'bad')
+                from . import behave as BH
+                if mon.k == 'gob_rider':
+                    game.msg(f'{name} levels {BH.his(mon)} spear and spurs {BH.his(mon)} wolf on...', 'bad')
+                else:
+                    game.msg(f'{name} lowers {BH.his(mon)} head and paws the ground...', 'bad')
                 game.flash([(mon.x + dx, mon.y + dy)], (255, 200, 80), '!', .4)
                 return True
     # archers back off to shoot again

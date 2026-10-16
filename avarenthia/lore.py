@@ -106,6 +106,7 @@ POI_HINT = {
     'ruined_tower': ['a broken tower from the days of the empire', 'a half-fallen mage tower with lights in it at night'],
     'shrine': ['a wayside shrine where the candles never go out', 'an old shrine that makes you stronger if you pray there'],
     'camp': ['an outlaw camp with a strongbox they guard day and night', 'a bandit camp, rich on stolen goods'],
+    'orccamp': ['an orc war camp, where they pile what they take from the farms', 'orcs camped under a banner of scalps'],
     'stones': ['a ring of standing stones that hums at night', 'a circle of old grey stones carved with runes'],
     'wagon': ['a wagon in a ditch that nobody has come back for', 'a merchant\'s cart turned over, its cargo still under the tarp'],
 }

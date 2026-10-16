@@ -594,6 +594,22 @@ def _place_dungeons(m, world, reach, dist, start):
         wall = {'crypt': D.hexrgb('#7e869c'), 'dungeon': D.hexrgb('#a0835e')}.get(tag)
         world.dungeons[did] = Dungeon(did, name, random.randint(2, 3), max(0, danger * 2 - 2), style, tag, None, wall, x, y, False)
         k += 1
+    # the nests and warrens: an ant nest, a spider lair, a goblin warren and a snake ruin, each in the land it likes
+    from .creatures import THEMED
+    land = {'grass': (GRASS,), 'forest': (FOREST,), 'swamp': (SWAMP,), 'hills': (HILLS,), 'coast': (SAND,)}
+    for j, (names, style, tag, boss, wall, likes) in enumerate(THEMED):
+        want = {t for b in likes for t in land[b]}
+        cands = [i for i in reach if dist[i] >= 14 and m.t[i] in want and ok(i)] or \
+                [i for i in reach if dist[i] >= 12 and ok(i)]
+        if not cands:
+            continue
+        i = random.choice(cands)
+        x, y = i % w, i // w
+        used.add((x, y))
+        danger = world.region_at(x, y).danger
+        did = f'nest{j}'
+        world.dungeons[did] = Dungeon(did, random.choice(names), 3, max(1, danger * 2 - 1), style, tag, boss, D.hexrgb(wall),
+                                      x, y, False)
 
 
 # ------------------------------------------------------------------ settlement maps

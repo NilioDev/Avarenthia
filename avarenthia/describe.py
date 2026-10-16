@@ -136,7 +136,14 @@ def monster(game, mon):
     lines = []
     lore = D.LORE.get(mon.k)
     known = mon.k in game.bestiary
-    if lore and known:
+    rank = game.lore(mon.k)
+    if getattr(mon, 'look', None):                 # what you see: this one, its sex and its looks
+        lines.append(mon.look)
+        if rank >= 1 and D.DOES.get(mon.k):
+            lines.append(D.DOES[mon.k])
+        if rank >= 2 and lore:
+            lines.append(lore[2])
+    elif lore and known:
         lines.append(lore[0])
     elif d.get('boss'):
         lines.append('A creature of legend. Be very careful.')
@@ -221,6 +228,7 @@ def over(game, x, y):
         return poi.name, poi.glyph[1], [{
                                           'shrine': 'A wayside shrine. You could pray here.',
                                           'camp': 'A camp of outlaws, and their loot.',
+                                          'orccamp': 'A war camp of orcs, with a chief and plunder.',
                                           'stones': 'A ring of standing stones, humming with old power.',
                                           'wagon': 'An abandoned wagon.', 'waystation': 'A Varnish waystation: shelter, and old words.',
                                           'milestone': 'A Varnish milestone, carved with leagues and names.'}.get(poi.kind, '')]

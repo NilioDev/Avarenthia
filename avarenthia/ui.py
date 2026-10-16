@@ -522,6 +522,10 @@ class GameScreen(Screen):
         ways = getattr(m, 'oldway', None) if m.kind == 'over' else None
         way_of = getattr(g.world, 'way_of', {})
         ways_seen = g.__dict__.get('ways_seen', set())
+        traps = getattr(m, 'known_traps', None)
+        # fire beetles and ember spiders light the dark around them
+        glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
+                 and not getattr(o, 'lurk', False)]
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -551,6 +555,11 @@ class GameScreen(Screen):
                     dd = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
                     # you carry a torch underground; in town at night only the lamps and windows give light
                     k = max(0.0, 1 - dd / 7.5) * .95 if torchlit else 0.0
+                    for gx, gy, gc in glows:
+                        gd = max(abs(mx - gx), abs(my - gy))
+                        if gd <= 3:
+                            gk = (1 - gd / 4) * .8
+                            lr, lg, lb = lr + gk * gc[0] / 255, lg + gk * gc[1] / 255, lb + gk * gc[2] / 255
                     ch, fg, bg = DR.lit((ch, fg, bg), (lr + k, lg + k * .82, lb + k * .55))
                 elif lighting:
                     fg = mix(scale(fg, .42), (40, 52, 96), .4)
@@ -565,8 +574,10 @@ class GameScreen(Screen):
                         ch, fg = it.glyph(), it.color()
                         if it.k == 'gear' and it.rar != 'normal':
                             bg = mix(bg, fg, .18)
+                    if traps and (mx, my) in traps:
+                        ch, fg = '^', (220, 190, 110)
                     o = mons.get((mx, my))
-                    if o and getattr(o, 'lurk', False):
+                    if o and (getattr(o, 'lurk', False) or getattr(o, 'invis', 0)):
                         o = None                    # something waits there, unseen
                     if o:
                         ch, fg = o.ch, o.fg
@@ -581,6 +592,8 @@ class GameScreen(Screen):
                                 bg = mix(bg, o.fg, .25)
                             if o.hold > 0:
                                 fg = (159, 216, 255)
+                            if getattr(o, 'faded', False):
+                                fg = scale(fg, .45)
                             if o.id == tgt_id:
                                 bg = (150, 44, 30)          # your target
                             if t - app.hit_times.get(o.id, -9) < .13:
@@ -763,7 +776,15 @@ class GameScreen(Screen):
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (h.x, h.y) != (p.x, p.y):
                 cv.put(vx, vy, 'Ω' if h.kind == 'castle' else '╬', D.FACTIONS[h.faction]['fg'], (40, 30, 20))
         # job markers
+        for ax, ay, r in hunt_areas(g):              # where the hunted is thought to be: hatched, no marker
+            for yy in range(ay - r, ay + r + 1):
+                for xx in range(ax - r, ax + r + 1):
+                    vx, vy = xx - ox, yy - oy
+                    if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (xx - yy) % 4 == 0 and (xx, yy) != (p.x, p.y):
+                        self._tint(cv, vx, vy, (70, 40, 20))
         for mi in MS.active(g):
+            if mi.kind == 'hunt' and mi.state == 'active':
+                continue
             (tx, ty), _ = MS.target_pos(g, mi)
             vx, vy = tx - ox, ty - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
@@ -850,6 +871,13 @@ class GameScreen(Screen):
         cv.text_center(x + PW - 5, 13, f"{max(0, int(p.mana))}/{s['max_mana']}", FG, PANEL)
         for i, ch in enumerate('·♦·'):                  # a small ornament between the globes
             cv.put(x + PW // 2 - 1 + i, 7, ch, scale(GOLD, .6 if ch == '·' else .9), PANEL)
+        from . import behave as BH
+        cx = x
+        for lab, col in BH.shown(g):                   # held, slowed, cursed...
+            if cx + len(lab) > x + PW:
+                break
+            cv.text(cx, 14, lab, col, PANEL)
+            cx += len(lab) + 1
         prev = E.xp_for(p.lvl - 1) if p.lvl > 1 else 0
         frac = (p.xp - prev) / max(1, E.xp_for(p.lvl) - prev)
         cv.text(x, 15, 'XP', DIM, PANEL)
@@ -1026,7 +1054,7 @@ class GameScreen(Screen):
                     elif g.day < poi.ready_day:
                         info = 'Quiet for now.'
                     else:
-                        info = {'shrine': 'A place to pray.', 'camp': 'Outlaws and their loot.',
+                        info = {'shrine': 'A place to pray.', 'camp': 'Outlaws and their loot.', 'orccamp': 'Orcs and their plunder.',
                                 'stones': 'Old power sleeps here.', 'wagon': 'Might hold something.'}[poi.kind]
                     cv.text(x, y + 1, info, DIM, PANEL, maxw=PW)
                     cv.text(x, y + 2, f'Danger {g.world.danger_at(mx, my)}', BAD, PANEL, maxw=PW)
@@ -2510,41 +2538,62 @@ class BestiaryScreen(Modal):
         nxt = E.LORE_RANKS[r + 1][0] if r + 1 < len(E.LORE_RANKS) else None
         cv.text(rx, y + 3, f'First seen on day {seen} · {kills} slain' + (f' · next rank at {nxt}' if nxt else ' · mastered'), DIM, PANEL)
         lore = D.LORE.get(k, ('A creature of the vale.', 'Unknown.', 'No advice yet.'))
+        does = D.DOES.get(k)
+        traits = [t for t, on in (('fast', d['fast']), ('slow', d['slow']), ('ranged', d['ranged']),
+                                  ('spellcaster', d['caster']), ('poisonous', d['poison']), ('regenerates', d['regen']),
+                                  ('drains life', d['leech']), ('erratic', d['erratic']), ('summoner', bool(d['summon'])))
+                  if on]
+
+        def word(v):
+            return 'very low' if v < .7 else 'low' if v < .95 else 'average' if v < 1.25 else 'high' if v < 1.7 else 'very high'
+
+        def section(head, text, col=FG, rows=3):
+            nonlocal yy
+            cv.text(rx, yy, head, DIM, PANEL)
+            yy += 1
+            yy += cv.wrap(rx, yy, w, text, col, PANEL, rows) + 1
+
         yy = y + 5
         yy += cv.wrap(rx, yy, w, lore[0], FG, PANEL, 3) + 1
-        if r >= 1:
-            cv.text(rx, yy, 'HABITAT', DIM, PANEL)
-            yy += 1
-            yy += cv.wrap(rx, yy, w, lore[1], FG, PANEL, 2) + 1
-            traits = [t for t, on in (('fast', d['fast']), ('slow', d['slow']), ('ranged', d['ranged']),
-                                      ('spellcaster', d['caster']), ('poisonous', d['poison']), ('regenerates', d['regen']),
-                                      ('drains life', d['leech']), ('erratic', d['erratic']), ('summoner', bool(d['summon'])))
-                      if on]
-            cv.text(rx, yy, 'TRAITS', DIM, PANEL)
-            yy += cv.wrap(rx + 8, yy, w - 8, ', '.join(traits) or 'none to speak of', FG, PANEL, 3) + 1
+        if does:
+            # the three layers: how they look, what they do (3 slain), their weakness and home (10 slain)
+            if r >= 1:
+                section('WHAT THEY DO', does + (f" ({', '.join(traits)}.)" if traits else ''), FG, 4)
+            else:
+                cv.text(rx, yy, 'Slay 3 to learn what they do.', DIM, PANEL)
+                yy += 2
+            if r >= 2:
+                section('WEAKNESS', lore[2], GOOD, 2)
+                section('HOME', lore[1], FG, 2)
+                yy += cv.wrap(rx, yy, w, f"Health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}"
+                              + (f" · from danger level {d['min_l']}" if d.get('min_l') else ''), DIM, PANEL, 2)
+            elif r == 1:
+                cv.text(rx, yy, 'Slay 10 to learn their weakness and where they live.', DIM, PANEL)
+                yy += 2
         else:
-            cv.text(rx, yy, 'Slay 3 to learn where they live and how they fight.', DIM, PANEL)
-            yy += 2
-        if r >= 2:
-            cv.text(rx, yy, 'STRENGTH', DIM, PANEL)
-
-            def word(v):
-                return 'very low' if v < .7 else 'low' if v < .95 else 'average' if v < 1.25 else 'high' if v < 1.7 else 'very high'
-            yy += cv.wrap(rx + 10, yy, w - 10, f"health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}", FG, PANEL, 3)
-            if d.get('min_l'):
-                cv.text(rx + 10, yy, f"found from danger level {d['min_l']} and up", FG, PANEL, maxw=w - 10)
+            if r >= 1:
+                section('HABITAT', lore[1], FG, 2)
+                cv.text(rx, yy, 'TRAITS', DIM, PANEL)
+                yy += cv.wrap(rx + 8, yy, w - 8, ', '.join(traits) or 'none to speak of', FG, PANEL, 3) + 1
+            else:
+                cv.text(rx, yy, 'Slay 3 to learn where they live and how they fight.', DIM, PANEL)
+                yy += 2
+            if r >= 2:
+                cv.text(rx, yy, 'STRENGTH', DIM, PANEL)
+                yy += cv.wrap(rx + 10, yy, w - 10, f"health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}",
+                              FG, PANEL, 3)
+                if d.get('min_l'):
+                    cv.text(rx + 10, yy, f"found from danger level {d['min_l']} and up", FG, PANEL, maxw=w - 10)
+                    yy += 1
                 yy += 1
-            yy += 1
-        elif r == 1:
-            cv.text(rx, yy, 'Slay 10 to judge their strength.', DIM, PANEL)
-            yy += 2
-        if r >= 3:
-            cv.text(rx, yy, "HUNTER'S TIP", DIM, PANEL)
-            yy += 1
-            yy += cv.wrap(rx, yy, w, lore[2], GOOD, PANEL, 2) + 1
-        elif r == 2:
-            cv.text(rx, yy, "Slay 25 to learn a hunter's secret.", DIM, PANEL)
-            yy += 2
+            elif r == 1:
+                cv.text(rx, yy, 'Slay 10 to judge their strength.', DIM, PANEL)
+                yy += 2
+            if r >= 3:
+                section("HUNTER'S TIP", lore[2], GOOD, 2)
+            elif r == 2:
+                cv.text(rx, yy, "Slay 25 to learn a hunter's secret.", DIM, PANEL)
+                yy += 2
         cv.text(rx, y + 24, 'YOUR KNOWLEDGE', DIM, PANEL)
         cv.text(rx, y + 25, f'+{3 * r}% damage against them · they hit you {2 * r}% less often', GOLD if r else DIM, PANEL)
         cv.text_center(W // 2, y + 27, ' Up/Down: browse · Esc: close ', DIM, PANEL)
@@ -2752,6 +2801,7 @@ class MarketScreen(Modal):
 class BoardScreen(Modal):
     BOX_W, BOX_H = 100, 26
     KINDS = {'courier': 'Courier', 'freight': 'Freight', 'bounty': 'Bounty hunt', 'escort': 'Escort', 'fetch': 'Dungeon delve',
+             'hunt': 'Wanted: a named enemy',
              'war_bounty': 'War: hunt a commander', 'supply': 'War: supply run', 'assault': 'War: storm a stronghold'}
 
     def __init__(self, app, ref, hold=False):
@@ -2851,6 +2901,18 @@ class BoardScreen(Modal):
             self.sel = i
 
 
+def hunt_areas(g):
+    """(x, y, radius) of each named enemy you are hunting out in the land."""
+    from . import named as NM
+    out = []
+    for mi in MS.active(g):
+        if mi.kind == 'hunt' and mi.state == 'active':
+            n = NM.get(g, mi.data.get('nid'))
+            if n and n.alive and not n.did:
+                out.append(NM.area(g, n))
+    return out
+
+
 class JournalScreen(Modal):
     def render(self, cv):
         g = self.game
@@ -2898,6 +2960,10 @@ class JournalScreen(Modal):
                 extra += f' · {left} day{"s" if left != 1 else ""} left' if left >= 0 else ' · overdue'
             if mi.kind == 'escort':
                 extra += f" · caravan health {mi.data['hp']}"
+            if mi.kind == 'hunt':
+                from . import named as NM
+                yy += cv.wrap(x + 4, yy + 1, 93, NM.job_line(g, mi), DIM, PANEL, 2) + 1
+                continue
             cv.text(x + 4, yy + 1, extra, DIM, PANEL)
             yy += 2
         yy += 1
@@ -3076,7 +3142,14 @@ class WorldMapScreen(Modal):
         for hd in w.holds:
             if om.seen[hd.y * om.w + hd.x] and inview(hd.x, hd.y):
                 cv.put(bx + hd.x - ox, by + hd.y - oy, 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], (40, 30, 20))
+        for ax, ay, r in hunt_areas(g):
+            for yy in range(ay - r, ay + r + 1):
+                for xx in range(ax - r, ax + r + 1):
+                    if inview(xx, yy) and (xx - yy) % 3 == 0:
+                        cv.put(bx + xx - ox, by + yy - oy, '/', (230, 170, 80), (70, 40, 20))
         for mi in MS.active(g):
+            if mi.kind == 'hunt' and mi.state == 'active':
+                continue
             (tx, ty), _ = MS.target_pos(g, mi)
             if inview(tx, ty):
                 cv.put_bg(bx + tx - ox, by + ty - oy, (110, 80, 16))
@@ -3175,7 +3248,14 @@ class WorldMapScreen(Modal):
                 if not cells & taken and lx > x:
                     taken |= cells
                     cv.text(lx, ly, name, (200, 170, 230), PANEL)
+        for ax, ay, r in hunt_areas(g):
+            for yy in range(ay - r, ay + r + 1, 2):
+                for xx in range(ax - r, ax + r + 1, 2):
+                    if om.inb(xx, yy) and (xx - yy) % 6 == 0:
+                        cv.put(bx + S(xx), by + S(yy), '/', (230, 170, 80), (70, 40, 20))
         for mi in MS.active(g):
+            if mi.kind == 'hunt' and mi.state == 'active':
+                continue
             (tx, ty), _ = MS.target_pos(g, mi)
             cv.put_bg(bx + S(tx), by + S(ty), (110, 80, 16))
         cv.put(bx + S(px), by + S(py), '@', (255, 246, 220), (150, 40, 28))
@@ -3315,7 +3395,8 @@ class TempleScreen(Modal):
         cv.text(x + 3, y + 3, f"Pleased by {gd['likes']}.", DIM, PANEL, maxw=66)
         cv.wrap(x + 3, y + 5, 66, self.said, FG, PANEL, 2)
         no = self.refused
-        hurt = p.life < s['max_life'] or p.mana < s['max_mana'] or p.poison
+        sick = any(k in ('diseased', 'cursed') for k in getattr(p, 'status', {}))
+        hurt = p.life < s['max_life'] or p.mana < s['max_mana'] or p.poison or sick
         ni, ci = g.identify_all(dry=True)
         nc, cc = g.uncurse_all(dry=True)
         mine = getattr(p, 'god', None)
@@ -3353,10 +3434,13 @@ class TempleScreen(Modal):
             return
         if tok == 'a':
             s = g.stats()
-            if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison:
+            sick = any(k in ('diseased', 'cursed') for k in getattr(p, 'status', {}))
+            if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison and not sick:
                 self.said = '"You look well, child. Come back when the world has had its way with you."'
                 return
             p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
+            from . import behave as BH
+            BH.cure(g)
             g.num(p.x, p.y, 'healed', E.C_HEAL, True)
             self.said = '"Hold still." The priest lays hands on your wounds. You are fully restored.'
         elif tok == 'b':

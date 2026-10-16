@@ -28,6 +28,8 @@ from . import sites as ST
 from . import guilds as GU
 from . import news as NW
 from . import mercs as MC
+from . import behave as BH
+from . import named as NM
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -35,7 +37,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 16
+SAVE_VERSION = 17
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -353,6 +355,7 @@ class Game:
                 s['frail'] = v
         if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
+        buff_dmg -= BH.dmg_malus(self)
         GD.apply(self, s)
         s['dr'] = min(60, s['dr'] + gear_dr)
         if getattr(p, 'race', '') == 'dwarf':
@@ -412,7 +415,7 @@ class Game:
         if m.kind == 'dungeon' and p.race == 'goblin':
             r += 2
         if m.kind != 'over':
-            r += self.stats().get('sight', 0)
+            r = BH.sight(self, r + self.stats().get('sight', 0))
         if m.kind == 'over':
             last = getattr(self, '_over_last', None)
             if last and last != (p.x, p.y):
@@ -432,6 +435,8 @@ class Game:
         MC.sync(self)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
+                if getattr(o, 'named', None) is not None and self.visible(o.x, o.y) and not getattr(o, 'lurk', False):
+                    NM.on_seen(self, o)
                 if not o.is_npc and o.k not in self.bestiary and self.visible(o.x, o.y) and not getattr(o, 'lurk', False):
                     self.bestiary[o.k] = [self.day, 0]
                     self.msg(f"New bestiary entry: {D.MONSTERS[o.k]['name']}. (V)", 'info')
@@ -465,7 +470,8 @@ class Game:
         return m.inb(x, y) and self.vis[y * m.w + x]
 
     def visible_hostiles(self):
-        return [o for o in self.map.mons if not o.is_npc and self.visible(o.x, o.y) and not getattr(o, 'lurk', False)]
+        return [o for o in self.map.mons if not o.is_npc and self.visible(o.x, o.y) and not getattr(o, 'lurk', False)
+                and not getattr(o, 'invis', 0)]
 
     def hostile_visible(self):
         return bool(self.visible_hostiles())
@@ -531,6 +537,7 @@ class Game:
         first = self.max_depth.get(did, 0) < depth
         if first:
             self.max_depth[did] = depth
+        NM.on_enter_level(self, m)
         self.msg(f"{dg.name}, level {depth}.", 'info')
         lair = next((e for e in self.world.evils if e.did == did and not e.known), None)
         if first and depth == dg.depth:
@@ -567,6 +574,7 @@ class Game:
         self.request = ('save',)
 
     def resolve_encounter(self):
+        NM.after_fight(self)
         wd = next((x for x in self.world.wanderers if x.id == self.encounter), None)
         self.encounter = None
         m = self.maps.get('wild')
@@ -634,6 +642,7 @@ class Game:
         self.msg(f'You enter {s.name}.', 'info')
         MC.restock(self)
         MS.on_enter(self, sid)
+        NM.hand_in(self, self.world.settlements[sid])
         MS.place_clients(self, sid, m)
         GU.reveal_master(self, m)
         halls = [GU.GUILDS[k]['name'] for k in GU.halls_in(self, sid) if not GU.GUILDS[k]['secret']]
@@ -683,7 +692,7 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
 
-    def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None, elite=0):
+    def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None, elite=0, intro=None):
         p = self.player
         self.over_pos = (p.x, p.y)
         if terrain is None:
@@ -709,13 +718,16 @@ class Game:
                     c = make_npc(self, 'Your caravan', 'escort', '#6ee2ec', spot[0][0], spot[0][1], True, ch='♦')
                     c.hp = c.maxhp = mi.data['hp']
                     w.mons.append(c)
-        if wd:
+        if intro is not None:
+            pass                                    # the caller tells it
+        elif wd:
             n = len(keys)
             what = wd.name if n == 1 or wd.kind in ('bounty', 'bandits') else f"{n} {plural(D.MONSTERS[keys[0]]['name'])}"
             self.msg(f'{what} attack{"s" if n == 1 or wd.kind in ("bounty", "bandits") else ""}!', 'bad')
         else:
             self.msg('You are ambushed!', 'bad')
-        self.msg('Defeat them, or walk off the edge of the map to escape.')
+        if intro is None:
+            self.msg('Defeat them, or walk off the edge of the map to escape.')
         self.compute_fov()
 
     def dungeon_at(self, x, y):
@@ -725,6 +737,9 @@ class Game:
     # ------------------------------------------------------------ player actions (return turn cost)
     def try_move(self, dx, dy):
         m, p = self.map, self.player
+        dx, dy, spent = BH.before_move(self, dx, dy)
+        if spent is not None:
+            return spent
         nx, ny = p.x + dx, p.y + dy
         if not m.inb(nx, ny):
             if m.kind in ('town', 'wild', 'siege'):
@@ -791,6 +806,11 @@ class Game:
         if m.kind == 'town' and self.portal and self.portal.get('sid') == m.sid and (nx, ny) == m.portal_pos:
             self.use_portal_back()
             return 1
+        if m.kind in ('dungeon', 'wild', 'siege'):
+            BH.stepped(self)
+            if self.dead:
+                return 1
+            BH.spot_traps(self)
         self.auto_pickup()
         self.describe_here()
         return 1
@@ -853,6 +873,8 @@ class Game:
         chance *= WX.ambush_factor(self)                # fog and storms hide what waits by the road
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
+        if NM.step(self):
+            return 1
         if random.random() < chance:
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
             keys = EVL.wild_keys(self, p.x, p.y, lvl) or WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
@@ -1064,6 +1086,7 @@ class Game:
         if it.t == 'cure':
             p.poison = None
             p.life = min(s['max_life'], p.life + 10)
+            BH.cure(self, ('diseased', 'confused', 'slowed', 'paralysed'))
         if it.t in ('mp', 'rejuv'):
             h = round(s['max_mana'] * (.5 if it.t == 'mp' else .4)) + 8
             p.mana = min(s['max_mana'], p.mana + h)
@@ -1326,8 +1349,10 @@ class Game:
         """A monster's resistance to an element, in percent (negative: it is weak to it)."""
         if mon.is_npc or not elem:
             return 0
-        r = mon.tpl['res'].get(elem, 0)
-        if 'Fire Enchanted' in mon.mods and elem == 'fire':
+        r = mon.tpl['res'].get(elem, 0) + getattr(mon, 'weak_res', {}).get(elem, 0)
+        if ('Fire Enchanted' in mon.mods or 'Fire-blooded' in mon.mods) and elem == 'fire':
+            r = max(r, 50)
+        if 'Frost-touched' in mon.mods and elem == 'cold':
             r = max(r, 50)
         return r
 
@@ -1404,6 +1429,12 @@ class Game:
             self.wear('weapon', .2)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
+        dmg = BH.incoming(self, mon, dmg, weapon, elem)
+        if dmg is None:
+            mon.awake = True
+            self.wake_pack(mon)
+            self.num(mon.x, mon.y, '0', C_MISS)
+            return False
         MC.add_threat(mon, 'p', dmg)
         if weapon and not mon.is_npc and mon.k in D.UNDEAD:
             und = self.stats().get('undead', 0)
@@ -1427,6 +1458,7 @@ class Game:
         if mon.hp <= 0:
             self.kill(mon)
             return True
+        BH.struck(self, mon, dmg)
         return False
 
     def melee(self, mon):
@@ -1458,6 +1490,7 @@ class Game:
             dmg *= 1 - s[D.ELEMENT_RES[elem]] / 100
         dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
         p.life -= dmg
+        BH.on_hurt(self)
         big = dmg >= s['max_life'] * .2
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
         if big:
@@ -1487,8 +1520,10 @@ class Game:
             e[1] += 1
             if lore_rank(e[1]) > before:
                 self.msg(f"Your knowledge of the {D.MONSTERS[mon.k]['name'].lower()} grows: {LORE_RANKS[lore_rank(e[1])][1]}. (V)", 'gold')
-        special = mon.elite or mon.is_boss
-        self.msg(f"{mon.the()[0].upper() + mon.the()[1:]} {'is slain!' if mon.is_boss or mon.elite == 2 else 'dies.'}", 'gold' if special else '')
+        special = mon.elite or mon.is_boss or mon.tpl.get('chief')
+        great = mon.is_boss or mon.elite == 2 or mon.tpl.get('chief')
+        end = 'is broken.' if BH.beh(mon, 'still') else 'is slain!' if great else 'dies.'
+        self.msg(f"{mon.the()[0].upper() + mon.the()[1:]} {end}", 'gold' if special else '')
         self.gain_xp(max(1, round(mon.xp * clamp(1 - (p.lvl - mon.lvl - 1) * .15, .05, 1))))
         if not mon.is_npc:
             s = self.stats()
@@ -1501,6 +1536,9 @@ class Game:
             self.msg(f'{mon.name} explodes in flames!', 'bad')
             if cheb(mon.x, mon.y, p.x, p.y) <= 1:
                 self.hurt(mon.dmg[1] * .8, mon.name, 'fire')
+        BH.on_death(self, mon)
+        if getattr(mon, 'named', None) is not None:
+            NM.on_kill(self, mon)
         self.drop_loot(mon)
         if mon.faction:
             WAR.on_kill(self, mon)
@@ -1557,11 +1595,13 @@ class Game:
     def drop_loot(self, mon):
         m, lvl = self.map, mon.lvl
         boss = mon.is_boss
-        boost = 4 if boss else 3 if mon.elite == 2 else 2 if mon.elite == 1 else 1
+        boost = 4 if boss else 3 if mon.elite == 2 or mon.tpl.get('chief') else 2 if mon.elite == 1 else 1
         # only those who use gear drop gear, and what they drop is what they use
         uses = D.GEAR_USERS.get(mon.k)
         if not uses:
             n = 0
+        elif mon.tpl.get('chief') and not mon.elite:
+            n = random.randint(1, 2)
         elif boss:
             n = random.randint(2, 3)
         else:
@@ -1622,7 +1662,7 @@ class Game:
             EVL.update(self)
 
     def mon_hit_chance(self, mon, df):
-        return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6) - .02 * self.lore(mon.k), .12, .9)
+        return clamp(.9 * mon.hit_r / (mon.hit_r + df * .6) - .02 * self.lore(mon.k) + BH.hit_bonus(self, mon), .12, .97)
 
     def lore(self, k):
         e = self.bestiary.get(k)
@@ -1633,14 +1673,15 @@ class Game:
         if MC.intercept(self, mon):
             return
         if random.random() < self.mon_hit_chance(mon, df):
-            dmg = random.randint(*mon.dmg)
+            dmg = round(random.randint(*mon.dmg) * BH.attack_mult(self, mon))
             if 'weaken' in mon.effects:
                 dmg = round(dmg * .7)
             if 'Vampiric' in mon.mods:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 2))
             if mon.tpl['leech']:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 3))
-            elem = 'fire' if 'Fire Enchanted' in mon.mods else mon.tpl['elem']
+            elem = 'fire' if 'Fire Enchanted' in mon.mods or 'Fire-blooded' in mon.mods else \
+                'cold' if 'Frost-touched' in mon.mods else mon.tpl['elem']
             word = {'fire': ' with fire', 'cold': ' with frost', 'lightning': ' with lightning'}.get(elem, '')
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} hits you{word}.', 'bad')
             if mon.tpl['poison'] and random.random() < .4:
@@ -1652,6 +1693,8 @@ class Game:
             th = self.stats()['thorns']
             self.wear(None, .3)
             self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
+            if not self.dead and mon in self.map.mons:
+                BH.on_hit(self, mon, dmg)
             if th and not self.dead and mon in self.map.mons:
                 self.num(mon.x, mon.y, str(th), (200, 170, 120))
                 if mon.hp - th <= 0:
@@ -1669,8 +1712,14 @@ class Game:
         self.flash(path[:-1], (255, 122, 60) if spell else (216, 208, 176), '*' if spell else '-', .2)
         name = mon.the()[0].upper() + mon.the()[1:]
         if spell or random.random() < self.mon_hit_chance(mon, df):
-            self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else 'arrow'} hits you.", 'bad')
-            self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8), mon.the(), (mon.tpl['elem'] or 'fire') if spell else None)
+            self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else mon.tpl.get('shot', 'arrow')} hits you.", 'bad')
+            self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8) * BH.attack_mult(self, mon), mon.the(),
+                      (mon.tpl['elem'] or 'fire') if spell else None)
+            if not self.dead:
+                BH.shoot_extra(self, mon)
+                if 'Multishot' in mon.mods and random.random() < .5:
+                    self.msg('Another shot follows the first.', 'bad')
+                    self.hurt(random.randint(*mon.dmg) * .5, mon.the())
         else:
             self.num(p.x, p.y, 'miss', C_MISS)
         return True
@@ -1716,7 +1765,10 @@ class Game:
         m, p, d = self.map, self.player, mon.tpl
         seen = self.visible(mon.x, mon.y)
         dist = cheb(mon.x, mon.y, p.x, p.y)
-        if d['summon'] and seen and mon.summons < 6 and random.random() < .13:
+        if BH.turn(self, mon, df):
+            return
+        cap = 6 if d['boss'] else 4 if d.get('chief') else 2
+        if d['summon'] and seen and mon.summons < cap and random.random() < .13:
             spots = W.free_around(self, m, mon.x, mon.y, 1)
             if spots:
                 x, y = random.choice(spots)
@@ -1725,11 +1777,11 @@ class Game:
                 m.mons.append(o)
                 mon.summons += 1
                 self.flash([(x, y)], (196, 134, 255), '*', .2)
-                self.msg(d.get('summon_msg', '{name} squeals. A rat scurries out of the dark!').format(name=mon.name), 'bad')
+                self.msg(d.get('summon_msg', '{name} squeals. A rat scurries out of the dark!').format(name=BH.The(mon)), 'bad')
                 return
         if d['nova'] and dist <= 2 and random.random() < .22:
             self.flash(ring(mon.x, mon.y, 2), d.get('nova_col', (159, 216, 255)), '*', .26)
-            self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=mon.name), 'bad')
+            self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=BH.The(mon)), 'bad')
             self.hurt(random.randint(*mon.dmg) * .8, mon.name, d['elem'] or 'cold')
             return
         if MC.mon_turn(self, mon, df):
@@ -1742,7 +1794,7 @@ class Game:
                 x, y = min(sp, key=lambda c: cheb(c[0], c[1], mon.x, mon.y))
                 self.flash(line(mon.x, mon.y, x, y), (232, 128, 60), '*', .2)
                 mon.x, mon.y = x, y
-                self.msg(d.get('leap_msg', '{name} leaps at you with a roar!').format(name=mon.name), 'bad')
+                self.msg(d.get('leap_msg', '{name} leaps at you with a roar!').format(name=BH.The(mon)), 'bad')
                 if random.random() < self.mon_hit_chance(mon, df):
                     self.hurt(random.randint(*mon.dmg) * 1.4, mon.name)
                 return
@@ -1802,7 +1854,7 @@ class Game:
                     self.random_step(mon)
                 continue
             d = mon.tpl
-            if d['regen'] and mon.hp < mon.maxhp:
+            if (d['regen'] or 'Regenerating' in mon.mods) and mon.hp < mon.maxhp:
                 mon.hp = min(mon.maxhp, mon.hp + -(-mon.maxhp // 40))
             if mon.effects:
                 for k in list(mon.effects):
@@ -1839,6 +1891,8 @@ class Game:
             if d['slow'] and self.turn % 2 == 0:
                 continue
             acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Fast' in mon.mods else 0)
+            if BH.has(self, 'slowed') and self.turn % 2 == 0:
+                acts += 1
             while acts > 0 and not self.dead and mon in m.mons and self.cur == key:
                 acts -= 1
                 self.mon_turn(mon, df)
@@ -1859,11 +1913,12 @@ class Game:
                 p.buffs = [b for b in p.buffs if b[2] > 0]
                 for b in ended:
                     self.msg(f'{b[3]} wears off.')
+            BH.tick(self)
             s = self.stats()
             HU.tick(self, WX.food_factor(self))
             if self.dead:
                 return
-            if self.turn % 4 == 0 and p.life < s['max_life'] and p.food >= HU.WEAK:
+            if self.turn % 4 == 0 and p.life < s['max_life'] and p.food >= HU.WEAK and BH.natural_regen(self):
                 p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60)
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
@@ -1891,6 +1946,7 @@ class Game:
                 EVL.daily(self)
                 CR.daily(self)
                 MC.daily(self)
+                NM.daily(self)
             self.last_day = self.day
         EVL.whisper(self)
         WX.notice(self)
@@ -1906,6 +1962,10 @@ class Game:
             if wd:
                 self.start_encounter(wd)
         if self.dead:
+            return
+        if BH.helpless(self) and self.map.kind != 'over' and not quiet:
+            self.msg('You cannot move...', 'bad')
+            self.end_turn(1, quiet)
             return
         if self.turn - self.last_save > 40 and self.request is None:
             self.request = ('save',)
@@ -1940,6 +2000,7 @@ class Game:
             return
         p.deaths += 1
         MC.on_player_death(self)
+        NM.on_player_death(self)
         m = self.map
         if m.kind == 'wild':
             self.resolve_encounter()
@@ -2098,7 +2159,7 @@ class Game:
         p = self.player
         s = self.stats()
         before = p.life
-        p.life = min(s['max_life'], p.life + max(0, n))
+        p.life = min(s['max_life'], p.life + max(0, round(n * BH.heal_mult(self))))
         if show and p.life > before:
             self.num(p.x, p.y, f'+{p.life - before}', C_HEAL, True)
 

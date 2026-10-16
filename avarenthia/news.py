@@ -189,7 +189,7 @@ def r_captain(game, choice, ctx):
         game.say(npc, danger(game) or random.choice(['Quiet, for now. I do not trust quiet.',
                                                      'Nothing worth my breath. Keep your eyes open on the roads.']))
     elif choice == 'work':
-        offer(game, npc, 'captain', ['bounty', 'escort'], 1.1, '"The garrison pays for these:"')
+        offer(game, npc, 'captain', ['hunt', 'hunt', 'bounty', 'escort'], 1.1, '"The garrison pays for these:"')
 
 
 def talk_sailor(game, npc):

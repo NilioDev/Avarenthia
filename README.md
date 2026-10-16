@@ -216,7 +216,8 @@ factions that worship a rival god trust you less, and priests of a hostile god w
   to what you and the caravans buy and sell, and recover slowly. News (famine, feast, mine disaster, fire, war,
   plague) shifts prices for a few days.
 - You carry 30 units of cargo; a mule (+60) and a cart (+160) are sold by the stablemaster.
-- The inn's notice board has courier jobs, freight runs, bounties, escorts and dungeon delves. A blinking yellow `!`
+- The inn's notice board has courier jobs, freight runs, bounties, escorts, dungeon delves and WANTED posters for named
+  enemies (see *Named enemies*). A blinking yellow `!`
   above someone means work; a `?` means you can hand something in.
 - **Thornfield** has a pond with an old fisherman. Talk to him for your first pole and your first job: catch a fish.
 
@@ -240,6 +241,17 @@ People forget, slowly.
 - **Enemies have habits**: cowards flee when hurt, packs surround you, archers keep their distance, spiders lie in wait
   unseen, wolves howl the pack awake, orcs fly into a rage, cultists heal their friends, ogres and trolls charge you
   (after a warning).
+- **Every kind asks something different of you.** Web weavers shoot silk that holds you, trapdoor spiders burst out
+  of the ground and seize you, jumping spiders pounce, phase spiders flicker out of the world, swarms shrug off blades
+  but burn, bombardier beetles spray acid, rust beetles eat your gear, locusts eat your food, needlewings latch on and
+  drink, crawlers paralyse, ticks bring disease. Goblins, kobolds, orcs, hobgoblins, gnolls, lizardfolk, viperkin and the
+  peoples below come in bands with classes: archers, bombers, shamans who plant totems, warlocks who curse, trappers
+  who lay snares, legionaries who fight in line, and a chief whose death may break the band. Dangerous moves are
+  announced a turn ahead (a lifted abdomen, a lit fuse, gathering shadows): step aside.
+- **States**: held, paralysed (never twice in a row), asleep, slowed, confused, afraid, blinded, diseased (no natural
+  healing) and cursed (less damage and healing) show under your globes. Priests, antidotes and Purify lift them.
+- **New places**: an ant nest, a spider lair, a goblin warren and a snake ruin, each with its chief at the bottom, and
+  orc war camps (green `∆`) out in the hills.
 - Hidden places: ruins (`Π`), shrines (`†`), bandit camps (`∆`), standing stones (`Ψ`) and abandoned wagons (`¤`);
   along the old ways Varnish waystations (`Σ`), milestones (`╥`), sealed vaults (`Φ`), graveyards (`┼`) and a
   smugglers' den (`δ`), which you only find by walking right up to them or by following their path.
@@ -248,7 +260,25 @@ People forget, slowly.
 - **Fog of war**: in the open you see about 4 tiles, further from hills, much less in forest and marsh, and half as far
   at night. Land you saw earlier is shown grey: what happens there now, you do not see.
 - The bestiary remembers the monsters you have met. Every kill teaches you more: more damage against that kind, and
-  they hit you less often.
+  they hit you less often. For the new kinds it tells three layers: how they look (each one is its own, female or
+  male), what they do (after 3 kills), and their weakness and home (after 10).
+
+### Named enemies
+
+The wild has its own villains: an orc chief who burned a mill, an old she-wolf who takes the sheep every winter, a
+spider that webbed a whole wood. Each has a name and an epithet, a rank (notable, notorious, or rarely legendary, with a
+lair of its own), traits you learn as you see them (venomous, thorny, blinking, shielded, a war cry...), a following,
+a habit (territorial, roaming, raiding villages, waiting on one road, only out at night), looks, a past, a weakness
+you can hear about, and a trophy.
+
+- **No marker.** A WANTED poster, a captain or a guild gives a hatched search area on the map: where it was last seen,
+  growing as the report ages. Walking inside it you find signs (tracks, a torn deer, a burnt cart, webs) that tell
+  direction and age and shrink the area. Foraging and the Wardens help; rain washes tracks away, snow shows them.
+- **Close enough, you meet**: you catch it unawares, or it catches you. Its name shows once you have seen it.
+- Kill first, find the poster later: the trophy is paid for wherever there is a bounty on it.
+- Left alone they grow: a trait, more followers, a higher bounty. Beaten badly they flee and come back scarred,
+  knowing your name. If one kills you, it keeps a piece of your gear until you take it back.
+- The big ones have lieutenants: kill them, and one of them carries the map to where the boss hides.
 
 ## Controls
 
@@ -331,6 +361,9 @@ avarenthia/engine.py       game rules: movement, combat, skills, exploring, savi
 avarenthia/data.py         tiles, skills, items, affixes, monsters, dungeons
 avarenthia/entities.py     Item, Monster, Player, GameMap; loot and monsters
 avarenthia/ai.py           monster habits and traits
+avarenthia/creatures.py    the families of round one: spiders, insects, goblinoids, the peoples below (pure data)
+avarenthia/behave.py       what those kinds do (web, grab, swarm, totems...), and your states (held, cursed...)
+avarenthia/named.py        named enemies, their fame and grudges, and hunting them
 avarenthia/world.py        the realm: regions, roads, settlement sizes and services
 avarenthia/terrain.py      the shape of the world: continent, islands, climate, biomes, rivers, wonders
 avarenthia/worldgen.py     wilderness, dungeons (rooms and caves), shops

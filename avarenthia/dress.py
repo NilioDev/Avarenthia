@@ -144,6 +144,23 @@ def dress(game, m, d):
         patch(BLOOD, random.randint(3, 6), 4)
     elif tag == 'lair_drowned':
         patch(SLIME, random.randint(4, 8), 14)
+    elif tag == 'antnest':                  # packed earth, egg chambers and the husks of what the ants brought home
+        patch(MUD, random.randint(6, 10), 30)
+        patch(FILTH, random.randint(3, 6), 6)
+        patch(BONES, random.randint(3, 6), 4)
+    elif tag == 'spiderlair':
+        patch(WEB, random.randint(10, 16), 12)
+        patch(BONES, random.randint(3, 5), 3)
+    elif tag == 'warren':                   # a goblin warren: filth, mud, gnawed bones and cookfires
+        patch(MUD, random.randint(4, 7), 25)
+        patch(FILTH, random.randint(5, 9), 7)
+        patch(BONES, random.randint(4, 8), 4)
+        for _ in range(random.randint(2, 4)):
+            c = random.choice(floors)
+            m.deco[c] = FIRE
+    elif tag == 'snakeruin':                # old halls half full of drifted sand
+        patch(RUBBLE, random.randint(5, 9), 10)
+        patch(BONES, random.randint(2, 4), 3)
     # torches on walls next to floors
     n_torch = {'cave': random.randint(0, 3), 'crypt': random.randint(4, 8)}.get(style if style == 'cave' else tag, random.randint(8, 14))
     walls = [i for i, t in enumerate(m.t) if t == WALL and any(

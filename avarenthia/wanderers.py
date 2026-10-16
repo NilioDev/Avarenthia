@@ -319,10 +319,12 @@ def wild_pack(biome, lvl, night=False, climate=None):
     k = random.choices(pool, [1 + D.MONSTERS[x]['min_l'] for x in pool])[0]
     big = D.MONSTERS[k]['hp'] >= 2
     n = random.randint(1, 2 + lvl // 6) if big else random.randint(2, 3 + lvl // 3)
+    from .worldgen import band_keys
+    keys = band_keys(k, n)
     if random.random() < .3 and len(pool) > 1:
-        k2 = random.choice(pool)
-        return [k] * n + [k2] * random.randint(1, 2)
-    return [k] * n
+        k2 = random.choice([x for x in pool if x not in D.CHIEFS] or [k])
+        return keys + [k2] * random.randint(1, 2)
+    return keys
 
 
 def spawn_monsters(game):

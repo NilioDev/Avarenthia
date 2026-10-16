@@ -23,6 +23,8 @@ FOODS = {
 }
 DRINKS = {'ale', 'wine', 'mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}
+from .creatures import BEASTS as _NEW_BEASTS
+BEASTS |= _NEW_BEASTS
 
 
 HUNGRY, WEAK, FAINT = 650, 300, 100

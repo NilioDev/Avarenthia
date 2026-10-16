@@ -45,15 +45,18 @@ def _other_settlement(game, s, lo, hi):
     return random.choice(cands) if cands else (None, 0)
 
 
-def make_offer(game, s, kinds=None):
+def make_offer(game, s, kinds=None, prey=None, max_rank=None):
     w = game.world
     want = kinds
-    kinds = ['courier'] * 3 + ['freight'] * 3 + ['bounty'] * 2 + ['escort'] * 2
+    kinds = ['courier'] * 3 + ['freight'] * 3 + ['bounty'] * 2 + ['escort'] * 2 + ['hunt'] * 2
     if any(d.relic is None and not d.main for d in w.dungeons.values()):
         kinds += ['fetch'] * 2
     if want:
         kinds = [k for k in kinds if k in want] or ['courier']
     kind = random.choice(kinds)
+    if kind == 'hunt':                  # a WANTED poster for a named enemy (named.py)
+        from . import named as NM
+        return NM.offer(game, s, prey, max_rank)
     m = Mission(game.new_id(), kind, s.id)
     if kind == 'courier':
         o, plen = _other_settlement(game, s, 15, 110)
@@ -227,7 +230,8 @@ def refresh_board(game, s):
     while len(s.board) < want and tries < 30:
         tries += 1
         m = make_offer(game, s)
-        if m and not any(o.kind == m.kind and o.target == m.target and o.target is not None for o in s.board):
+        if m and not any(o.kind == m.kind and o.target == m.target and o.target is not None for o in s.board) \
+                and not any(o.kind == m.kind == 'hunt' and o.data.get('nid') == m.data.get('nid') for o in s.board):
             s.board.append(m)
 
 
@@ -261,6 +265,12 @@ def accept(game, s, m):
     elif m.kind == 'fetch':
         d = w.dungeons[m.data['dungeon']]
         game.reveal_place(d.x, d.y, 1)
+    elif m.kind == 'hunt':
+        from . import named as NM
+        n = NM.get(game, m.data['nid'])
+        if n and n.did:
+            d = w.dungeons[n.did]
+            game.reveal_place(d.x, d.y, 1)
     if m.kind == 'courier':
         p.parcels.append(dict(mid=m.id, name=m.data['parcel'], w=1))
     elif m.kind == 'freight':
@@ -463,6 +473,9 @@ def target_pos(game, m):
             return (dg.x, dg.y), dg.name
         s = w.settlements[d['wait']]
         return (s.x, s.y), s.name
+    if m.kind == 'hunt' and m.state == 'turnin':
+        s = w.settlements[m.giver]
+        return (s.x, s.y), s.name
     if m.state == 'turnin' or m.kind == 'supply':
         if m.hold is not None:
             h = w.holds[m.hold]
@@ -479,6 +492,17 @@ def target_pos(game, m):
         return (s.x, s.y), s.name
     if m.kind == 'bounty':
         return tuple(m.data['spot']), m.data['leader']
+    if m.kind == 'hunt':
+        from . import named as NM
+        n = NM.get(game, m.data['nid'])
+        if n and n.did:
+            dg = w.dungeons[n.did]
+            return (dg.x, dg.y), dg.name
+        if n and n.alive:
+            ax, ay, _r = NM.area(game, n)
+            return (ax, ay), 'the search area'
+        s = w.settlements[m.giver]
+        return (s.x, s.y), s.name
     d = w.dungeons[m.data['dungeon']]
     return (d.x, d.y), d.name
 

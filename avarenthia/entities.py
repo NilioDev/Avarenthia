@@ -67,7 +67,7 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
-        if self.k in ('oldmap', 'vkey'):
+        if self.k in ('oldmap', 'vkey', 'trophy'):
             return self.name
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
@@ -106,6 +106,8 @@ class Item:
             return (255, 214, 92) if self.t == 'golden' else (150, 200, 220)
         if self.k in ('oldmap', 'vkey'):
             return (200, 210, 170)
+        if self.k == 'trophy':
+            return (226, 190, 130)
         return (238, 228, 194)
 
     def glyph(self):
@@ -135,6 +137,8 @@ class Item:
             return '?'
         if self.k == 'vkey':
             return '-'
+        if self.k == 'trophy':
+            return '%'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -157,6 +161,9 @@ class Item:
                 out.append('A map of the Varnish Empire, the ink nearly gone. Read it to find one of the old ways.')
             elif self.k == 'vkey':
                 out.append('A key of black Varnish iron. It opens a sealed vault.')
+            elif self.k == 'trophy':
+                out.append('Proof of a kill. Bring it to a town that has a bounty on its owner: wherever the job came from, '
+                           'or anywhere near where it lived.')
             elif self.k == 'plant':
                 from . import foraging as FG
                 if FG.known(FG.GAME, self.t):
@@ -257,6 +264,8 @@ class Item:
             return FISH[self.t][4] * .5
         if self.k == 'oldmap':
             return 15
+        if self.k == 'trophy':
+            return 4
         if self.k != 'gear':
             return 0
         v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)
@@ -603,7 +612,7 @@ def make_tome(game, lvl, line=None):
 def make_monster(game, k, x, y, lvl, elite=0):
     d = D.MONSTERS[k]
     if d['boss']:
-        lvl = d['lvl_fix']
+        lvl = d.get('lvl_fix', lvl)
     hp = round((4 + lvl * 4.5) * d['hp'])
     dmg = [max(1, round((2 + lvl * 1.4) * d['dmg'])), max(2, round((4 + lvl * 2.8) * d['dmg']))]
     df = round((3 + lvl * 3) * d['df'])
@@ -633,6 +642,8 @@ def make_monster(game, k, x, y, lvl, elite=0):
     m.df = df
     m.hit_r = 5 + lvl * 5
     m.xp = xp
+    from .behave import on_spawn
+    on_spawn(game, m)
     return m
 
 

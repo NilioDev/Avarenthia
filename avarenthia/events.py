@@ -11,12 +11,13 @@ POI_LOOK = {
     'ruin': ('Π', (176, 166, 150)),
     'shrine': ('†', (150, 210, 255)),
     'camp': ('∆', (232, 92, 72)),
+    'orccamp': ('∆', (120, 180, 70)),
     'stones': ('Ψ', (196, 126, 255)),
     'wagon': ('¤', (204, 164, 104)),
 }
 POI_LOOK.update({'ruined_temple': ('π', (130, 124, 116)), 'ruined_monastery': ('Θ', (130, 116, 100)),
                  'ruined_tower': ('¡', (130, 130, 136))})
-POI_PLAN = {'ruin': 13, 'ruined_temple': 5, 'ruined_monastery': 3, 'ruined_tower': 6, 'shrine': 11, 'camp': 14, 'stones': 10,
+POI_PLAN = {'ruin': 13, 'ruined_temple': 5, 'ruined_monastery': 3, 'ruined_tower': 6, 'shrine': 11, 'camp': 14, 'orccamp': 6, 'stones': 10,
             'wagon': 19}
 RUIN_KINDS = ('ruin', 'ruined_temple', 'ruined_monastery', 'ruined_tower', 'vault', 'graveyard', 'smugglers', 'lostruin')
 RUIN_STYLE = {'ruined_temple': ('rooms', 'crypt', ['Fallen Temple of the Dawn', 'Desecrated Temple', 'Roofless Temple',
@@ -80,6 +81,9 @@ def gen_pois(game, m, world):
                 continue
             if kind == 'camp' and (world.region_of[y * w + x] == 0 or cheb(x, y, start.x, start.y) < 14):
                 continue
+            if kind == 'orccamp' and (world.danger_at(x, y) < 2 or cheb(x, y, start.x, start.y) < 30
+                                      or t not in (D.HILLS, D.FOREST, D.GRASS)):
+                continue
             if kind == 'ruin':
                 name = ruins.pop() if ruins else f'Old Ruin {n_ruin}'
             elif kind in RUIN_STYLE:
@@ -93,7 +97,7 @@ def gen_pois(game, m, world):
                         f'Old Shrine of {gname}', f"{gname}'s Stone"]
                 name = next((n for n in random.sample(pool, len(pool)) if n not in {q.name for q in world.pois}), pool[0])
             else:
-                name = {'camp': 'Bandit Camp', 'stones': 'Standing Stones', 'wagon': 'Abandoned Wagon'}[kind]
+                name = {'camp': 'Bandit Camp', 'orccamp': 'Orc Camp', 'stones': 'Standing Stones', 'wagon': 'Abandoned Wagon'}[kind]
             poi = POI(len(world.pois), kind, x, y, name)
             if kind == 'shrine':
                 poi.god = god
@@ -171,6 +175,7 @@ def on_poi(game, poi):
     if game.day < poi.ready_day:
         game.msg({'shrine': f'The {poi.name} is quiet. Its blessing will return in time.',
                   'camp': 'The burned-out remains of a bandit camp.',
+                  'orccamp': 'The trampled ashes of an orc camp. Crows pick at what is left.',
                   'stones': 'The standing stones are silent now.',
                   'wagon': 'An empty, looted wagon.'}[poi.kind])
         return
@@ -185,6 +190,11 @@ def on_poi(game, poi):
     elif poi.kind == 'camp':
         ask(game, 'camp', 'Bandit Camp', 'Smoke rises from a ring of tents. You count at least five outlaws around the fire, '
             'and a strongbox under a tarp.', [('Attack the camp', 'attack'), ('Sneak away', 'leave')], poi=poi.id)
+    elif poi.kind == 'orccamp':
+        ask(game, 'orccamp', 'Orc Camp', 'Hide tents around a roaring fire, a totem pole hung with skulls, and a war banner '
+            'in front of the biggest tent. You count six or seven orcs, and a chief who shouts louder than the rest. '
+            'Whatever they have taken from the villages is piled behind the banner.',
+            [('Attack the camp', 'attack'), ('Slip away', 'leave')], poi=poi.id)
     elif poi.kind == 'stones':
         ask(game, 'stones', 'Standing Stones', 'A ring of tall grey stones hums faintly. Old runes crawl across them.',
             [('Lay your hands on the stones', 'touch'), ('Leave them be', 'leave')], poi=poi.id)
@@ -237,6 +247,18 @@ def r_camp(game, choice, ctx):
     keys = ['bandit'] + [random.choice(['bandit', 'brigand', 'raider']) for _ in range(random.randint(3, 5))]
     game.encounter_poi = poi.id
     game.start_encounter(None, game.maps['over'].tile(poi.x, poi.y), lvl, keys, 2 if random.random() < .5 else 1)
+    chest(game, lvl, 2)
+
+
+def r_orccamp(game, choice, ctx):
+    from .worldgen import band_keys
+    poi = _poi(game, ctx)
+    if choice != 'attack':
+        return
+    lvl = game.world.danger_at(poi.x, poi.y) + 2
+    keys = band_keys('orc_chief', random.randint(6, 8))
+    game.encounter_poi = poi.id
+    game.start_encounter(None, game.maps['over'].tile(poi.x, poi.y), lvl, keys, 0)
     chest(game, lvl, 2)
 
 
@@ -656,7 +678,7 @@ def r_camp_night(game, choice, ctx):
 
 
 RESOLVERS = {'camp_night': r_camp_night, 'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,
-             'shrine': r_shrine, 'camp': r_camp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
+             'shrine': r_shrine, 'camp': r_camp, 'orccamp': r_orccamp, 'stones': r_stones, 'wagon': r_wagon, 'hurt': r_hurt,
              'peddler': r_peddler, 'pilgrims': r_pilgrims, 'tracks': r_tracks, 'lights': r_lights, 'storm': r_storm,
              'cart': r_cart, 'toll': r_toll, 'traveller': r_traveller, 'traveller_job': r_traveller_job}
 

@@ -302,3 +302,6 @@ GEAR_USERS = {
     'drowned_king': ['amulet', 'ring', 'warstaff', 'fullhelm'], 'broodmother': ['sash', 'ring', 'amulet'],
 }
 UNDEAD = {'zombie', 'skeleton', 'skarcher', 'ghost', 'wraith', 'lich', 'drowned', 'drowned_king'}
+
+from .creatures import GEAR as _NEW_GEAR
+GEAR_USERS.update(_NEW_GEAR)

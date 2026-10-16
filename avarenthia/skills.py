@@ -367,12 +367,14 @@ def _hit(game, mon, sk, r, ranged=False):
         dealt = 0
     elif sk.dtype == 'spell':
         dmg = _spell_dmg(game, sk, r)
+        game._area = sk.mode in ('around', 'chain', 'storm', 'target_area', 'volley')
         if sk.bonus_frozen > 1 and mon.hold > 0:
             dmg *= sk.bonus_frozen
         if sk.undead > 1 and not mon.is_npc and mon.k in _D.UNDEAD:
             dmg *= sk.undead
         before = mon.hp
         dead = game.damage_mon(mon, dmg, col=sk.color, elem=LINE_ELEM.get(sk.line))
+        game._area = False
         dealt = before - max(0, mon.hp)
         if sk.drain:
             game.heal(round(dealt * sk.drain))
@@ -609,6 +611,8 @@ def x_self(game, sk, r):
     if sk.cure:
         p.poison = None
         p.burn = None
+        from .behave import cure
+        cure(game)
     if sk.buff:
         k, b, br, t = sk.buff
         v = round(b + br * r)

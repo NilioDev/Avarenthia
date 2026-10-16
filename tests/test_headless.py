@@ -152,7 +152,7 @@ def trade_and_jobs():
         s.board_day = -99
         MS.refresh_board(g, s)
         for mi in list(s.board):
-            if mi.kind in kinds_done:
+            if mi.kind in kinds_done or mi.kind == 'hunt':   # hunts: creatures_and_hunts
                 continue
             g.player.mounts = ['mule', 'cart']
             if not MS.accept(g, s, mi):
@@ -849,7 +849,8 @@ def thornfield_and_faith():
                 q.append((nx, ny))
     from avarenthia import towns as TWN
     s0 = g.world.settlements[0]
-    assert len({e[2] for e in m.exits}) == len(TWN.road_dirs(g, s0)), (m.exits, TWN.road_dirs(g, s0))
+    # one exit per road (two roads may lead to the same neighbour)
+    assert len(m.exits) == len(TWN.road_dirs(g, s0)), (m.exits, TWN.road_dirs(g, s0))
     for ex, ey, _o in m.exits:
         assert ex in (0, m.w - 1) or ey in (0, m.h - 1), 'exits are on the edge of the map'
         assert (ex, ey) in seen, 'every road out leads to the middle of town'
@@ -1516,6 +1517,134 @@ def text_fits():
     print('text fits')
 
 
+def creatures_and_hunts():
+    """Round one: every new kind fights, your states come and go, the new dungeons, the orc camp and a whole hunt."""
+    from avarenthia import creatures as CRT, behave as BH, named as NM, describe as DS, events as EV
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    random.seed(7)
+    app = new_app('soft', 4242)
+    g = app.game
+    p = g.player
+    p.lvl, p.vit, p.str = 12, 300, 100
+    p.gold = 500000
+    for k in CRT.NEW:
+        assert D.MONSTERS[k]['ch'] and k in D.LORE and D.DOES[k], k
+    # every new kind, a few turns each, in a dungeon
+    for i, k in enumerate(CRT.NEW):
+        app.screens = [ui.GameScreen(app)]
+        if i % 10 == 0 or g.map.kind != 'dungeon':
+            g.enter_dungeon('mine', 2, 'up')
+        g.map.mons = [o for o in g.map.mons if o.is_npc]
+        p.life = g.stats()['max_life']
+        for x, y in free_around(g, g.map, p.x, p.y, 3)[:2]:
+            o = make_monster(g, k, x, y, 6)
+            o.awake, o.pack = True, 77
+            g.map.mons.append(o)
+            DS.monster(g, o)
+        g.compute_fov()
+        for _t in range(20):
+            foes = [o for o in g.map.mons if not o.is_npc]
+            if not foes or g.dead or g.map.kind != 'dungeon':
+                break
+            f = min(foes, key=lambda o: cheb(o.x, o.y, p.x, p.y))
+            g.try_move((f.x > p.x) - (f.x < p.x), (f.y > p.y) - (f.y < p.y))
+            g.end_turn(1)
+            p.life = max(p.life, 100)
+        app.render()
+    # your states: each one shows, ticks away, and the temple lifts what it can
+    for k in BH.STATUS:
+        BH.status(g).clear()
+        BH.give(g, k, 3)
+        app.render()
+        assert any(lab == BH.STATUS[k][0] for lab, _c in BH.shown(g)), k
+        for _ in range(4):
+            BH.tick(g)
+        assert not BH.has(g, k), k
+    BH.give(g, 'diseased', 50)
+    BH.give(g, 'cursed', 50)
+    assert BH.cure(g) == 2 and not BH.status(g).get('diseased')
+    # the bestiary: three layers for the new kinds
+    g.bestiary['orc_shaman'] = [1, 12]
+    app.screens = [ui.GameScreen(app), ui.BestiaryScreen(app)]
+    app.top.sel = app.top.entries().index('orc_shaman')
+    app.render()
+    assert 'WEAKNESS' in app.cv.dump(), 'bestiary layers'
+    # the nests and warrens, and their chiefs at the bottom
+    nests = [d for d in g.world.dungeons.values() if d.id.startswith('nest')]
+    print('  nests:', [(d.name, d.tag, d.boss) for d in nests])
+    assert len(nests) >= 3, nests
+    for d in nests:
+        app.screens = [ui.GameScreen(app)]
+        g.enter_dungeon(d.id, d.depth, 'up')
+        assert any(o.k == d.boss for o in g.map.mons), d.boss
+        app.render()
+    # the orc camp
+    to_over(g, 0)
+    camp = next((q for q in g.world.pois if q.kind == 'orccamp'), None)
+    if camp:
+        app.screens = [ui.GameScreen(app)]
+        p.x, p.y = camp.x, camp.y
+        g.over_step()
+        choose(app, 'attack')
+        assert g.cur == 'wild' and any(o.k == 'orc_chief' for o in g.map.mons)
+        clear_wild(g)
+        assert camp.ready_day >= 10 ** 9
+    # a whole hunt: the poster, the signs, the fight, the trophy, the reward
+    app.screens = [ui.GameScreen(app)]
+    to_over(g, 0)
+    s = g.world.settlements[0]
+    mi = None
+    for _ in range(20):
+        mi = NM.offer(g, s, 'beast')
+        if mi and not NM.get(g, mi.data['nid']).did:
+            break
+    s.board.append(mi)
+    assert MS.accept(g, s, mi)
+    n = NM.get(g, mi.data['nid'])
+    print(f'  hunting {n.full} ({n.rank} {n.k}, {n.habit}): {mi.desc}')
+    app.screens = [ui.GameScreen(app), ui.JournalScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    ax, ay, r = NM.area(g, n)
+    p.x, p.y = ax, ay
+    for _ in range(80):
+        NM.sign(g, n)
+    assert NM.area(g, n)[2] < r or r <= 3, 'signs shrink the area'
+    p.x, p.y = n.x + 1, n.y
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + (290 if n.habit == 'nocturnal' else 10)
+    assert NM.step(g) and g.cur == 'wild'
+    boss = next(o for o in g.map.mons if getattr(o, 'named', None) == n.id)
+    boss.hp = 1
+    g.kill(boss)
+    assert not n.alive and mi.state == 'turnin'
+    trophy = next(it for it in g.map.items if it.k == 'trophy')
+    p.inv.append(trophy)
+    g.map.items.remove(trophy)
+    clear_wild(g)
+    gold = p.gold
+    g.enter_town(0)
+    assert mi.state == 'done' and p.gold > gold, (mi.state, p.gold, gold)
+    # it kills you (softcore): it takes a piece of your gear
+    to_over(g, 0)
+    n2 = NM.make(g, s.x, s.y, 'warlord', 'notable')
+    p.x, p.y = n2.x + 1, n2.y
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + (290 if n2.habit == 'nocturnal' else 10)
+    NM.meet(g, n2)
+    worn = [it for it in p.inv if g.is_equipped(it)]
+    p.life = 1
+    g.hurt(9999, 'test')
+    assert n2.slayer == p.name and (n2.kept or not worn), 'slayer'
+    print(f'  {n2.full} killed you and kept {n2.kept.name if n2.kept else "nothing"}')
+    for _ in range(12):
+        g.turn += D.DAY_LEN
+        NM.daily(g)
+    print(f'  named enemies in the world: {len(NM.alive(g))}')
+    print('creatures and hunts ok')
+
+
 def HU_food(g):
     from avarenthia import hunger as HUN
     return HUN.make_food(g, 'bread', 3)
@@ -1524,7 +1653,8 @@ def HU_food(g):
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
-             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp, text_fits]
+             items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
+             creatures_and_hunts, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

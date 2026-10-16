@@ -18,27 +18,27 @@ JOB_REP = 40
 GUILDS = {
     'magi': dict(name='The Circle of Magi', short='Magi', kind='combat', secret=0, fg='#8fa8ff', sign='MAGI',
                  master='Archmagus {n}', ranks=['Novice', 'Apprentice', 'Adept', 'Magus', 'Archmagus'], rivals=['coven'],
-                 jobs=['fetch', 'bounty', 'courier'], halls=3,
+                 jobs=['hunt', 'fetch', 'bounty', 'courier'], halls=3,
                  desc='Scholars of fire, frost and storm, who keep the old libraries of the cities.'),
     'iron': dict(name='The Iron Company', short='Iron Company', kind='combat', secret=0, fg='#c8ccd8', sign='IRON COMPANY',
                  master='Marshal {n}', ranks=['Recruit', 'Sellsword', 'Sergeant', 'Captain', 'Marshal'], rivals=[],
-                 jobs=['escort', 'bounty', 'freight'], halls=3,
+                 jobs=['hunt', 'escort', 'bounty', 'freight'], halls=3,
                  desc='Sellswords with a code: paid in advance, loyal to the contract, feared on the roads.'),
     'dawn': dict(name='The Order of Dawn', short='Order of Dawn', kind='combat', secret=0, fg='#ffe8a0', sign='ORDER OF DAWN',
                  master='Lord Commander {n}', ranks=['Postulant', 'Acolyte', 'Templar', 'Knight of Dawn', 'Dawnlord'],
-                 rivals=['coven'], jobs=['bounty', 'fetch', 'courier'], halls=3,
+                 rivals=['coven'], jobs=['hunt', 'bounty', 'fetch', 'courier'], halls=3,
                  desc='Holy knights sworn to burn out the dead and those who raise them.'),
     'wardens': dict(name='The Wardens of the Wild', short='Wardens', kind='combat', secret=0, fg='#70c060', sign='WARDENS',
                     master='Elder Warden {n}', ranks=['Tracker', 'Ranger', 'Pathfinder', 'Warden', 'Elder Warden'], rivals=[],
-                    jobs=['bounty', 'fetch'], halls=0,
+                    jobs=['hunt', 'bounty', 'fetch'], halls=0,
                     desc='Rangers of the deep woods, who keep the wild things out of the farms and the farms out of the wild.'),
     'thieves': dict(name="The Thieves' Guild", short='Thieves', kind='combat', secret=1, fg='#b0a090', sign=None,
                     master='The Fence, {n}', ranks=['Footpad', 'Cutpurse', 'Shadow', 'Nightblade', "Guildmaster's Hand"],
-                    rivals=['dawn'], jobs=['courier', 'fetch', 'bounty'], halls=99, dark=True,
+                    rivals=['dawn'], jobs=['hunt', 'courier', 'fetch', 'bounty'], halls=99, dark=True,
                     desc='Nobody admits it exists. Everybody pays it, one way or another.'),
     'coven': dict(name='The Hollow Coven', short='Coven', kind='combat', secret=2, fg='#b070ff', sign=None,
                   master='{n}, Voice of Morrak', ranks=['Seeker', 'Initiate', 'Witch', 'Warlock', 'Voice of Morrak'],
-                  rivals=['dawn', 'magi'], jobs=['bounty', 'fetch'], halls=1, dark=True,
+                  rivals=['dawn', 'magi'], jobs=['hunt', 'bounty', 'fetch'], halls=1, dark=True,
                   desc='Warlocks who bargain with Morrak, the Hollow One, for power. Morrak always collects.'),
     # the crafts: no limit
     'alembic': dict(name='The Guild of Alembic and Barrel', short='Alembic and Barrel', kind='life', secret=0, fg='#e0a0e0',
@@ -445,7 +445,8 @@ def offer_work(game, key):
     if game.day - s['board_day'] >= 5 or not s['board']:
         s['board'] = []
         for _ in range(12):
-            m = MS.make_offer(game, here, kinds=GUILDS[key]['jobs'])
+            from .named import GUILD_PREY
+            m = MS.make_offer(game, here, kinds=GUILDS[key]['jobs'], prey=GUILD_PREY.get(key), max_rank=rank(game, key) // 2)
             if m:
                 flavour(game, key, m)
                 s['board'].append(m)

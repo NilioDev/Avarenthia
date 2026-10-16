@@ -204,8 +204,20 @@ def choose_monster(lvl, tag):
     c = [k for k, d in D.MONSTERS.items() if not d['boss'] and tag in d['tags'].split() and lvl - 6 <= d['min_l'] <= lvl]
     if not c:
         c = [k for k, d in D.MONSTERS.items() if not d['boss'] and tag in d['tags'].split()]
-    weights = [3 if D.MONSTERS[k]['min_l'] >= lvl - 2 else 1 for k in c]
+    weights = [(3 if D.MONSTERS[k]['min_l'] >= lvl - 2 else 1) * (.25 if D.MONSTERS[k]['chief'] else 1) for k in c]
     return random.choices(c, weights)[0]
+
+
+def band_keys(k, n):
+    """A pack led by a k: the others come from its band (goblins bring archers and a shaman), never a second chief;
+    ants and wasps come in hordes."""
+    from .creatures import BANDS, HORDE
+    if k in HORDE:
+        n = random.randint(*HORDE[k])
+    pool = BANDS.get(k)
+    if not pool:
+        return [k] * (1 if D.MONSTERS[k].get('chief') else n)
+    return [k] + [random.choice(pool) for _ in range(n - 1)]
 
 
 def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
@@ -223,14 +235,16 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
         mon.pack, mon.awake = pid, awake
         m.mons.append(mon)
 
+    keys = band_keys(k, size) if tag != 'den' else [k] * size
     if elite == 2:
         add(make_monster(game, k, center[0], center[1], lvl + 1, 2))
-        size = random.randint(2, 4)
+        keys = band_keys(k, random.randint(3, 5))[1:]
     spots = free_around(game, m, center[0], center[1], 3)
     if elite != 2:
         spots.insert(0, center)
-    for i in range(min(size, len(spots))):
-        add(make_monster(game, k, spots[i][0], spots[i][1], lvl + (1 if random.random() < .3 else 0), 1 if elite == 1 else 0))
+    for i in range(min(len(keys), len(spots))):
+        el = 1 if elite == 1 and not D.MONSTERS[keys[i]].get('chief') else 0
+        add(make_monster(game, keys[i], spots[i][0], spots[i][1], lvl + (1 if random.random() < .3 else 0), el))
     return elite > 0
 
 
