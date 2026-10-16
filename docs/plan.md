@@ -1,6 +1,6 @@
 # The plan: rounds 1 to 3
 
-Agreed with Nilio on 15 October 2026; jobs and the bard parked on 16 October (docs/parked.md).
+Agreed with Nilio on 15 October 2026; the other jobs and the bard parked on 16 October (docs/parked.md).
 Build the rounds in order; after each round: tests (seeds 1-3, smoke),
 push (CI builds), a short Dutch report. Then go on with the next round. He plays afterwards and sends feedback.
 
@@ -69,7 +69,7 @@ Keep one letter per family (`s` spiders...), colour per kind; female/male per in
   description, the names of leaders. Fixed where it adds colour: matriarchs and queens, sea hags, banshees female;
   mammoth herds led by an old cow. Oozes, constructs, swarms, skeletons and true aberrations stay "it".
 
-### Named enemies (the creatures; the bounty jobs for them are parked)
+### Named enemies
 - Built from: name (fits people and gender) and epithet ("the Widow of Blackmere", "Old Snagjaw"); family, class,
   gender; rank: **notable** (one trait), **notorious** (2-3 traits and a following), **legendary** (rare, own lair,
   own loot); traits from a long Diablo-like list (Venomous, Frost-touched, Fire-blooded, Stone Skin, Thorny, Vampiric,
@@ -79,12 +79,30 @@ Keep one letter per family (`s` spiders...), colour per kind; female/male per in
   and moves prices, ambusher on one road, nocturnal); one or two looks (broken tusk, brand scar, bone armour); a past
   ("burned the mill at Ashwick"); a weakness you can hear about ("hates fire"); a trophy (head, ear, fang); loot only
   what it uses, always something special for legendary ones; **fame**: left alone too long it grows (a trait or more
-  followers) and its name spreads.
-- Met at random in the world: roaming, raiding or in their lairs. Their trophy is kept for later (bounties are parked,
-  see docs/parked.md).
+  followers) and its bounty rises.
+- Also met at random in the world, without a job. Kill first, find the poster later: the trophy can be handed in
+  wherever there is a bounty on it.
 - **Fleeing and grudges**: a named enemy losing badly flees to its lair to heal, leaving a fresh blood trail. It comes
   back with a scar and a new epithet ("the Scarred"), knows your name, calls it out, and sometimes comes for you on the
   road. If it kills you (softcore) it grows ("Slayer of ...") and keeps a piece of your gear; kill it to get it back.
+
+### Hunting them (no live marker)
+- The job gives a **search area** on the world map (hatched), not a dot: "last seen near the Blackmere, three days
+  ago". Small for territorial ones, larger for roamers, and it grows as the report ages (news travels slowly). New
+  rumours from captains and travellers shrink it again.
+- Walking inside the area you sometimes find **signs** (tracks, a torn deer, a burnt cart, shed scales, webs in the
+  trees). Each sign shrinks and moves the area and tells direction and freshness ("heading north-east, a day old").
+  Foraging rank (or a Tracking skill) and the Wardens help. Rain washes tracks away, fresh snow shows them; nocturnal
+  ones are found by night.
+- Close enough: an encounter (you surprise it, or an ambusher surprises you). Its name shows in the panel only once
+  you see it. In a dungeon the job names the level; signs on the way (blood trail, fresh webs, gnawed bones); marked
+  only once seen.
+- Journal: name, description, past, last seen, traits you have seen, reward. Rewards stay modest (coin, standing in
+  the town, guild standing, the trophy, sometimes a special piece).
+- Givers: the captain (raiders, orcs, beasts near villages), "WANTED" posters on the boards, and the guilds, each on
+  its own prey; higher guild rank, more dangerous and better paid hunts: Wardens (beasts), Order of Dawn (undead,
+  Morrak's spawn), Iron Company (warlords and gangs), Magi (aberrations and sorcerers), Thieves (rival gang bosses),
+  Coven (paladins). Chains as in an MMO: first his lieutenants, then where the boss hides.
 
 ---
 
