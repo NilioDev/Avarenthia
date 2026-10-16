@@ -61,9 +61,11 @@ def gen_pois(game, m, world):
     random.shuffle(ruins)
     random.shuffle(shrines)
     n_ruin = 0
+    from .world import scaled
     for kind, count in POI_PLAN.items():
+        count = scaled(count)
         placed = 0
-        for _ in range(12000):
+        for _ in range(27000):
             if placed >= count:
                 break
             x, y = random.randint(3, m.w - 4), random.randint(3, m.h - 4)

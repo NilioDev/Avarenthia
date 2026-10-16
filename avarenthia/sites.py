@@ -10,16 +10,18 @@ from .worldgen import cheb
 
 SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210)),
              'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84)), 'valley': ('•', (226, 196, 130)),
-             'glade': ('♠', (170, 236, 150)), 'gnomes': ('♣', (226, 204, 120))}
+             'glade': ('♠', (170, 236, 150)), 'gnomes': ('♣', (226, 204, 120)), 'oasis': ('¥', (130, 214, 96)),
+             'shieling': ('⌂', (214, 200, 170))}
 from .tribes import LOOK as _CAMP_LOOK  # noqa: E402
 SITE_LOOK.update(_CAMP_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
-                 'The Green Man', 'The Hanged Fiddler', 'The Three Crowns']
+                 'The Green Man', 'The Hanged Fiddler', 'The Three Crowns', 'The Broken Wheel', 'The Milestone',
+                 'The Sleeping Dog', 'The Pilgrim\'s Staff', 'The Black Kettle']
 FARM_NAMES = ['Farm', 'Homestead', 'Steading', 'Croft', 'Farmstead']
 TEMPLE_NAMES = ['Temple of the Dawn', 'Temple of Saint Aldra', 'Temple of the Quiet Flame', 'Temple of the Seven Stars',
-                'Temple of Mercy', 'Temple of the Lantern']
+                'Temple of Mercy', 'Temple of the Lantern', 'Temple of the Open Hand', 'Temple of Saint Corwen']
 MONASTERY_NAMES = ['Monastery of the Grey Brothers', 'Abbey of Saint Wendel', 'Cloister of the Silent Bell',
-                   'Monastery of the Green Hand', 'Priory of the Hollow Oak']
+                   'Monastery of the Green Hand', 'Priory of the Hollow Oak', 'Abbey of the White Ford']
 
 
 class Site:
@@ -79,7 +81,8 @@ def gen_sites(game, m, world):
     world.start_temple = t0.id if t0 else None
     cells = [(x, y) for y in range(3, m.h - 3) for x in range(3, m.w - 3)]
     random.shuffle(cells)
-    for kind, n, road in (('temple', 2, (1, 3)), ('monastery', 2, (3, 14)), ('watchtower', 5, (1, 2))):
+    from .world import scaled
+    for kind, n, road in (('temple', scaled(2), (1, 3)), ('monastery', scaled(2), (3, 14)), ('watchtower', scaled(5), (1, 2))):
         made = 0
         for x, y in cells:
             if made >= n:
@@ -87,6 +90,8 @@ def gen_sites(game, m, world):
             if not ok(x, y, road, 8):
                 continue
             if kind == 'monastery' and m.tile(x, y) not in (D.HILLS, D.FOREST, D.GRASS):
+                continue
+            if kind in ('temple', 'monastery') and not (tnames if kind == 'temple' else mnames):
                 continue
             name = tnames.pop() if kind == 'temple' and tnames else mnames.pop() if kind == 'monastery' and mnames else None
             if kind == 'watchtower':
@@ -102,13 +107,16 @@ def gen_sites(game, m, world):
     from .towns import town_names
     inames = ROADINN_NAMES[:]
     random.shuffle(inames)
-    for kind, n, road, near, far in (('roadinn', 4, (1, 1), (11, 99), 8), ('farm', 14, (1, 1), (4, 22), 5)):
+    flood = m.biome_names.index('floodplain') if 'floodplain' in getattr(m, 'biome_names', []) else None
+    for kind, n, road, near, far in (('roadinn', scaled(4), (1, 1), (11, 99), 8), ('farm', scaled(14), (1, 1), (4, 22), 5)):
         made = 0
         for x, y in cells:
             if made >= n:
                 break
             if not ok(x, y, road, far) or m.tile(x, y) not in (D.GRASS, D.HILLS, D.SAND):
                 continue
+            if kind == 'farm' and flood is not None and m.biome[y * m.w + x] != flood and random.random() < .5:
+                continue                              # the farms crowd onto the flood meadows
             d = min(cheb(x, y, st.x, st.y) for st in world.settlements)
             if not (near[0] <= d <= near[1]):
                 continue
@@ -171,6 +179,9 @@ def gen_site_map(game, site):
     from . import tribes as TR
     if TR.is_camp(site):
         return TR.gen_camp(game, site)
+    if site.kind in ('oasis', 'shieling'):
+        from .lands import site_map
+        return site_map(game, site)
     m = _site_map(game, site)
     ex, ey = m.entry
     lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS

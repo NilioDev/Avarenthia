@@ -28,9 +28,28 @@ black ground and one clear glyph per biome (`♣` broadleaf, `♠` pine, `↑` t
 mountains, `~` desert, `·` tundra, `═║` rivers). Roads are joined ochre lines: the great roads between the cities
 double (`═║╔`), the others single (`─│┌`), with bridges (`╪`) where they cross a river.
 
-**Wonders.** Each world has its rare sights, one of each at most and always where they belong: Starfall Crater, the
+**A big world, and a varied one.** The realm is 480 by 270 leagues, with some eighteen walled cities, about ninety
+villages, towns and hamlets, and more of everything between them. Large stretches of one kind of country are broken
+up: clearings and burnt stands in the woods, an old dark heart in the great forests, copses on the open grass, bogs in
+the taiga, rocks in the desert. Every large wood, moor, plain, range of hills or mountains, fen and waste has a name of
+its own (the Ravenweald, the Ashmoors, the Ironspine); you hear it when you walk in, and it shows at the bottom of the
+map. Newer kinds of country each ask something of you:
+- **Moor** (`"` in heather purple): open, you see far; but on early mornings a mist lies on it and wolves hunt in it.
+- **Old forest**: under the oldest trees you see almost nothing, and the rare herbs grow there.
+- **Birch wood** (white `♠`): light and quiet; little lies in wait there.
+- **Mountain meadows** high under the peaks: you see far, mountain herbs grow, and herders keep summer huts (`⌂`) with
+  their goats; they sell goat cheese.
+- **Flood meadows** along the great rivers: the farmsteads crowd onto them, and in spring they lie under water and you
+  wade.
+- **Mangroves** on the warm coasts: slow going, crocodiles, and smugglers in the roots.
+- **Mesa country**: flat-topped towers of red rock (`■`) with dry canyons between them, where robbers wait.
+- **Oases** in the desert: water and date palms, and a caravan camp (`¥`) with a trader who sells goods and dates.
+- **Limestone hills** (karst): their sinkholes drop into caves you can go down into.
+
+**Wonders.** Each world has its rare sights, always where they belong: Starfall Crater, the
 Elder Tree, the Sundering, the White Waste, the Sea of Sand, the Steaming Fields, the Glass Hills, the Stone Wood, the
-Black Mire, the Glimmering, the Fjords, the Ashen Scar, the Burning Isle, the Wyrm's Bones in the desert, and far out
+Black Mire, the Glimmering (the five smaller ones come twice, under other names: the Smoking Vale, the Shardfells, the
+Grey Grove, the Pitch Hollows, the Lantern Wood), the Fjords, the Ashen Scar, the Burning Isle, the Wyrm's Bones in the desert, and far out
 at sea (in the warm south, or in the inner sea) the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a
 maelstrom, ringed by drowned towers and by a coral atoll that the currents have torn open on one side. It lies so far
 out that nobody on land can see it, not even from a watchtower; the sailors in the harbours talk about it. People talk about them; the first

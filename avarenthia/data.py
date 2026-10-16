@@ -361,7 +361,9 @@ for _c, _ks in _CR.CLIMATE_ADD.items():
 TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
           'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
 TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
-CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm', 'Saltreach', 'Aldmark', 'Kingsbridge', 'Marrowgate', 'Vellhaven']
+CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm', 'Saltreach', 'Aldmark', 'Kingsbridge', 'Marrowgate', 'Vellhaven',
+              'Eastwatch', 'Corrinhall', 'Brackenford', 'Dunharrow', 'Silverlea', 'Merrow Bay', 'Stonebridge', 'Hollin', 'Ravensmoor',
+              'Thalmere', 'Wyvernrest', 'Oldcastle']
 SIDE_DUNGEONS = [('Howling Cave', 'cave', 'cave'), ('Sunken Chapel', 'rooms', 'crypt'), ('Old Barrow', 'rooms', 'crypt'),
                  ('Gloomhollow', 'cave', 'cave'), ('Drowned Halls', 'rooms', 'dungeon'), ('Wyrm Den', 'cave', 'cave'),
                  ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon'),
@@ -414,7 +416,9 @@ for _f in FACTIONS.values():
     _f['fg'] = hexrgb(_f['fg'])
 STRONGHOLD_NAMES = ['Greymantle', 'Ravensward', 'Highkeep', 'Stormhold', 'Ashgard', 'Dunmere', 'Blackmoor', 'Wolfcrag',
                     'Ironhall', 'Thornkeep', 'Gallowmere', 'Redcliff', 'Kestrel Rock', 'Old Vigil', 'Harrowgate', 'Emberfall',
-                    'Coldwater', 'Ravenhold', 'Bleakstone', 'Hawksreach', 'Duskwall', 'Grimhold', 'Stonecairn', 'Mirewatch']
+                    'Coldwater', 'Ravenhold', 'Bleakstone', 'Hawksreach', 'Duskwall', 'Grimhold', 'Stonecairn', 'Mirewatch',
+                    'Falconcrest', 'Ironmoor', 'Gravenhold', 'Westerkeep', 'Hollowmere', 'Brightwall', 'Cinderkeep', 'Oakenshield',
+                    'Highgarth', 'Raven Rock', 'Saltkeep', 'Morrow Tower', 'Thornwatch', 'Greyfang', 'Wolfsgate', 'Ember Rock']
 START_STATS = dict(str=15, dex=15, vit=15, ene=15)
 LEVEL_STAT_POINTS = 3
 

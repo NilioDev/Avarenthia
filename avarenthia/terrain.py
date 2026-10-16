@@ -304,7 +304,9 @@ def generate(SEED, W=320, H=180):
 
     # ------------------------------------------------------------------ biomes
     patch = fbm(9, 3)
+    karst_n = fbm(16, 3)                         # where the hills are limestone
     jit_t, jit_r = (fbm(6, 2) - .5) * .06, (fbm(5, 2) - .5) * .12      # fuzzy borders: biomes interleave
+    e_alp = e_hills + (e_mount - e_hills) * .5   # the high hills just under the mountains: alpine meadows
     ocean_depth = ndimage.distance_transform_edt(~is_land)
     volcano_isle = island_cells[0] if island_cells else None
     B = np.empty((H, W), dtype=object)
@@ -330,9 +332,18 @@ def generate(SEED, W=320, H=180):
             elif t < .15:
                 B[y, x] = 'tundra_hills' if e > e_hills else 'tundra'
             elif e > e_hills:
-                B[y, x] = 'hills' if r > .25 else 'badlands' if t > .6 else 'hills'
+                if e > e_alp and t > .22 and r > .25:
+                    B[y, x] = 'alpine'
+                elif .4 < t < .66 and r > .38 and karst_n[y, x] > .57:
+                    B[y, x] = 'karst'
+                else:
+                    B[y, x] = 'hills' if r > .25 else 'badlands' if t > .6 else 'hills'
             elif r > .62 and dr < .38 and t > .25:
                 B[y, x] = 'swamp' if t > .45 else 'marsh'
+            elif .29 < t < .37 and r > .32:                                  # where the taiga gives way to the woods
+                B[y, x] = 'birch'
+            elif .3 < t < .48 and r > .34 and e > e_hills * .8:               # cool wet uplands: heather and mist
+                B[y, x] = 'moor'
             elif t < .33:                                                    # the cold belt
                 B[y, x] = 'taiga' if r > .3 else 'tundra' if r < .15 else 'shrubland_cold'
             elif t < .66:                                                    # the temperate belt
@@ -439,6 +450,81 @@ def generate(SEED, W=320, H=180):
 
     LAND_OK = {'meadow', 'steppe', 'forest', 'savanna', 'hills', 'taiga', 'tundra', 'desert', 'deep_forest', 'jungle',
                'swamp', 'badlands', 'beach'}
+    AREA = W * H / (320 * 180)                   # how much bigger than the old world: more of each small sight
+    N_SMALL = 2 if AREA >= 2 else 1              # the small wonders come twice in a big world
+
+    # ------------------------------------------------------------------ the land in finer grain
+    # flood meadows along the great rivers, flat and fertile; they lie under water in spring
+    big_river = river & (acc > np.quantile(acc[is_land], .986))
+    near_big = ndimage.distance_transform_edt(~big_river) <= 2.6
+    flood_ok = {'meadow', 'steppe', 'shrubland', 'savanna', 'forest', 'birch', 'marsh'}
+    for y, x in np.argwhere(near_big & is_land & (elev < e_hills * .75)):
+        if B[y, x] in flood_ok and h_rand(x, y, 31) < .85:
+            B[y, x] = 'floodplain'
+    # mangroves on the warm wet coasts: trees standing in the tide
+    for y, x in np.argwhere(is_land & (coast <= 1.5) & (temp > .64) & (rain > .5)):
+        if B[y, x] in ('jungle', 'swamp', 'dry_forest', 'savanna', 'beach', 'marsh', 'shrubland') and patch[y, x] > .48:
+            B[y, x] = 'mangrove'
+    # sinkholes in the limestone hills: holes that drop into caves below
+    SINKS = []
+    for y, x in np.argwhere(B == 'karst'):
+        if h_rand(x, y, 32) < .03 and all(math.hypot(x - a, y - b) > 6 for a, b in SINKS):
+            B[y, x] = 'sinkhole'
+            SINKS.append((int(x), int(y)))
+
+    # big plain patches are broken up: clearings and burnt stands in the woods, an old heart in the great forests,
+    # copses on the open grass, bogs in the taiga, rocks in the desert
+    def patches(names, min_size):
+        mask = np.isin(B, list(names)) & is_land
+        lab_, n_ = ndimage.label(mask)
+        if not n_:
+            return []
+        sz = ndimage.sum(mask, lab_, range(1, n_ + 1))
+        return [(lab_ == k + 1, int(s)) for k, s in enumerate(sz) if s >= min_size]
+
+    def sprinkle(cells_mask, size, per, pick, r0, r1):
+        """About one blob per `per` cells of a patch; pick(old biome, strength, x, y) gives the new biome or None."""
+        cells = np.argwhere(cells_mask)
+        for _k in range(max(1, int(size / per))):
+            cy, cx = cells[rng.integers(len(cells))]
+            for (x, y), s in blob((int(cx), int(cy)), rng.uniform(r0, r1), 1.4, .6).items():
+                if cells_mask[y, x]:
+                    nb = pick(B[y, x], s, x, y)
+                    if nb:
+                        B[y, x] = nb
+
+    WOODS = ('forest', 'conifer', 'dry_forest', 'birch', 'taiga', 'jungle', 'deep_forest')
+    wood_depth = ndimage.distance_transform_edt(np.isin(B, list(WOODS)))
+    for pm, size in patches(WOODS, 140):
+        sprinkle(pm, size, 150, lambda b, s, x, y: 'clearing' if b != 'jungle' or s > .5 else None, 1.2, 2.6)
+        if rng.random() < .5:
+            sprinkle(pm, size, 900, lambda b, s, x, y: 'burnt' if b in ('forest', 'conifer', 'dry_forest', 'taiga') and
+                     (s > .25 or chance(x, y, s * 3, 33)) else None, 2, 3.5)
+        if size > 320:                               # the heart of a great forest grows old and dark
+            for y, x in np.argwhere(pm & (wood_depth > 5.5)):
+                if B[y, x] in ('forest', 'conifer', 'birch') and noise_a[y, x] > .42:
+                    B[y, x] = 'deep_forest'
+    for pm, size in patches(('taiga',), 140):
+        sprinkle(pm, size, 260, lambda b, s, x, y: 'marsh' if s > .2 else None, 1.5, 3)
+    for pm, size in patches(('meadow', 'steppe', 'savanna', 'shrubland', 'moor'), 140):
+        sprinkle(pm, size, 70, lambda b, s, x, y: ('dry_forest' if b == 'savanna' else 'birch' if b == 'moor' else 'forest')
+                 if s > .3 else None, .8, 1.8)
+    for pm, size in patches(('mountain', 'peak'), 300):             # high meadows inside the great ranges
+        sprinkle(pm, size, 260, lambda b, s, x, y: 'alpine' if b == 'mountain' and s > .2 else None, 1.5, 3)
+    for pm, size in patches(('desert',), 120):
+        sprinkle(pm, size, 160, lambda b, s, x, y: 'badlands' if s > .35 else None, 1, 2.2)
+
+    # mesa country: flat-topped towers of red rock, and dry canyons winding between them
+    MESAS = []
+    for _k in range(max(1, round(AREA * .8))):
+        c = spot({'desert', 'steppe', 'savanna', 'shrubland', 'badlands'}, 6, far=30, inside=.75)
+        if not c or any(math.hypot(c[0] - a, c[1] - b) < 40 for a, b in MESAS):
+            continue
+        for (x, y), s in blob(c, rng.uniform(8, 11), 1.6, .7).items():
+            if is_land[y, x] and B[y, x] not in ('river', 'oasis', 'palms', 'lake'):
+                tower = noise_b[y, x] * .6 + h_rand(x, y, 34) * .4
+                B[y, x] = 'mesa' if tower > .62 and s > .15 else 'canyon'
+        MESAS.append(c)
 
     # the volcano: lava runs from the crater down to the sea
     if volcano_isle:
@@ -546,27 +632,29 @@ def generate(SEED, W=320, H=180):
         WONDERS.append(('The Sea of Sand', *c))
 
     # a geyser field in the cold north: vents scattered through the taiga, each with a crust of sinter
-    c = spot({'tundra', 'taiga', 'tundra_hills', 'hills'}, 5, north=.45)
-    if c:
-        for k in range(rng.integers(6, 11)):
-            gx = c[0] + int(rng.normal(0, 4.5))
-            gy = c[1] + int(rng.normal(0, 2.5))
-            for (x, y), s in blob((gx, gy), rng.uniform(1, 2.2), 1.4, .5).items():
-                if is_land[y, x] and B[y, x] not in ('river', 'peak', 'mountain'):
-                    B[y, x] = 'sinter' if s < .5 else 'hotpool'
-            setb(gx, gy, 'geyser')
-        WONDERS.append(('The Steaming Fields', *c))
+    for wname in ('The Steaming Fields', 'The Smoking Vale')[:N_SMALL]:
+        c = spot({'tundra', 'taiga', 'tundra_hills', 'hills', 'birch'}, 5, north=.45)
+        if c:
+            for k in range(rng.integers(6, 11)):
+                gx = c[0] + int(rng.normal(0, 4.5))
+                gy = c[1] + int(rng.normal(0, 2.5))
+                for (x, y), s in blob((gx, gy), rng.uniform(1, 2.2), 1.4, .5).items():
+                    if is_land[y, x] and B[y, x] not in ('river', 'peak', 'mountain'):
+                        B[y, x] = 'sinter' if s < .5 else 'hotpool'
+                setb(gx, gy, 'geyser')
+            WONDERS.append((wname, *c))
 
     # crystals breaking out of the hillsides near the mountains, thickest at the heart
-    c = spot({'hills', 'tundra_hills', 'mountain'}, 4, inside=.6)
-    if c:
-        for (x, y), s in blob(c, 7, 1.5, .8).items():
-            if is_land[y, x] and B[y, x] in ('hills', 'tundra_hills', 'mountain', 'meadow', 'steppe', 'taiga', 'forest'):
-                if chance(x, y, s * .9, 11):
-                    B[y, x] = 'crystal'
-                elif chance(x, y, s * 1.2, 12):
-                    B[y, x] = 'crystal_ground'
-        WONDERS.append(('The Glass Hills', *c))
+    for wname in ('The Glass Hills', 'The Shardfells')[:N_SMALL]:
+        c = spot({'hills', 'tundra_hills', 'mountain', 'alpine'}, 4, inside=.6)
+        if c:
+            for (x, y), s in blob(c, 7, 1.5, .8).items():
+                if is_land[y, x] and B[y, x] in ('hills', 'tundra_hills', 'mountain', 'meadow', 'steppe', 'taiga', 'forest'):
+                    if chance(x, y, s * .9, 11):
+                        B[y, x] = 'crystal'
+                    elif chance(x, y, s * 1.2, 12):
+                        B[y, x] = 'crystal_ground'
+            WONDERS.append((wname, *c))
 
     # the Sky-Seat: a shard of the fallen Varnish capital still hangs in the air far out at sea. Beneath it the
     # sea turns in a maelstrom where the rest of the city went down, ringed by drowned towers and by a coral
@@ -703,33 +791,36 @@ def generate(SEED, W=320, H=180):
                 B[y, x] = 'reef'
 
     # a petrified forest: a wood turned to stone at the edge of the dry country, half of it still green
-    c = spot({'steppe', 'badlands', 'savanna', 'meadow', 'forest'}, 5)
-    if c:
-        for (x, y), s in blob(c, 7, 1.5, .8).items():
-            if is_land[y, x] and B[y, x] not in ('river',):
-                if chance(x, y, s * 1.8, 14):
-                    B[y, x] = 'petrified'
-                elif chance(x, y, s, 15):
-                    B[y, x] = 'stone_ground'
-        WONDERS.append(('The Stone Wood', *c))
+    for wname in ('The Stone Wood', 'The Grey Grove')[:N_SMALL]:
+        c = spot({'steppe', 'badlands', 'savanna', 'meadow', 'forest'}, 5)
+        if c:
+            for (x, y), s in blob(c, 7, 1.5, .8).items():
+                if is_land[y, x] and B[y, x] not in ('river',):
+                    if chance(x, y, s * 1.8, 14):
+                        B[y, x] = 'petrified'
+                    elif chance(x, y, s, 15):
+                        B[y, x] = 'stone_ground'
+            WONDERS.append((wname, *c))
 
     # tar pits: black pools scattered through the grass, oozing at the edges
-    c = spot({'savanna', 'steppe', 'swamp', 'meadow'}, 4)
-    if c:
-        for k in range(rng.integers(6, 10)):
-            px, py = c[0] + int(rng.normal(0, 4)), c[1] + int(rng.normal(0, 2.2))
-            for (x, y), s in blob((px, py), rng.uniform(1.6, 3.4), 1.6, .6).items():
-                if is_land[y, x] and B[y, x] != 'river':
-                    B[y, x] = 'tar' if s > .3 else 'tar_edge'
-        WONDERS.append(('The Black Mire', *c))
+    for wname in ('The Black Mire', 'The Pitch Hollows')[:N_SMALL]:
+        c = spot({'savanna', 'steppe', 'swamp', 'meadow'}, 4)
+        if c:
+            for k in range(rng.integers(6, 10)):
+                px, py = c[0] + int(rng.normal(0, 4)), c[1] + int(rng.normal(0, 2.2))
+                for (x, y), s in blob((px, py), rng.uniform(1.6, 3.4), 1.6, .6).items():
+                    if is_land[y, x] and B[y, x] != 'river':
+                        B[y, x] = 'tar' if s > .3 else 'tar_edge'
+            WONDERS.append((wname, *c))
 
     # a grove of glowing mushrooms, spreading from the heart of the marsh or old forest
-    c = spot({'swamp', 'deep_forest', 'forest', 'jungle'}, 4)
-    if c:
-        for (x, y), s in blob(c, 6, 1.4, .9).items():
-            if is_land[y, x] and B[y, x] != 'river' and chance(x, y, s * 1.7, 16):
-                B[y, x] = 'shroom'
-        WONDERS.append(('The Glimmering', *c))
+    for wname in ('The Glimmering', 'The Lantern Wood')[:N_SMALL]:
+        c = spot({'swamp', 'deep_forest', 'forest', 'jungle'}, 4)
+        if c:
+            for (x, y), s in blob(c, 6, 1.4, .9).items():
+                if is_land[y, x] and B[y, x] != 'river' and chance(x, y, s * 1.7, 16):
+                    B[y, x] = 'shroom'
+            WONDERS.append((wname, *c))
 
     # fjords: narrow arms of the sea cut deep into the cold northern coast, between steep walls
     coast_n = [(int(x), int(y)) for y, x in np.argwhere((B == 'shallows')) if y < H * .38]
@@ -842,5 +933,23 @@ def generate(SEED, W=320, H=180):
                 B[y, x] = 'bone_sand'
         WONDERS.append(("The Wyrm's Bones", x0, y0))
 
+    # oases: a spring in the desert, ringed with palms; caravans stop there
+    OASES = []
+    sand_depth = ndimage.distance_transform_edt(np.isin(B, ['desert', 'dune']))
+    for pm, size in patches(('desert', 'dune'), 30):
+        cells = np.argwhere(pm & (sand_depth > 2.5))
+        for _k in range(min(3, 1 + size // 260)):
+            if not len(cells):
+                break
+            cy, cx = (int(v) for v in cells[rng.integers(len(cells))])
+            if any(math.hypot(cx - a, cy - b) < 14 for a, b in OASES) or \
+                    any((cx + dx, cy + dy) in OVER for dx in range(-4, 5) for dy in range(-3, 4)):
+                continue
+            for (x, y), s in blob((cx, cy), rng.uniform(1.6, 2.4), 1.4, .3).items():
+                if is_land[y, x] and B[y, x] in ('desert', 'dune', 'dune_crest', 'badlands'):
+                    B[y, x] = 'oasis' if s > .55 else 'palms'
+            B[cy, cx] = 'oasis'
+            OASES.append((cx, cy))
+
     return dict(B=B, is_land=is_land, continent=continent, river=river, lake=lake, elev=elev, rain=rain,
-                temp=temp, over=OVER, shadow=SHADOW, wonders=WONDERS, shape=shape)
+                temp=temp, over=OVER, shadow=SHADOW, wonders=WONDERS, shape=shape, oases=OASES, sinks=SINKS)

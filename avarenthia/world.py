@@ -8,21 +8,32 @@ from .data import (WALL, FLOOR, DOOR, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOW
                    HILLS, SAND, CITY, CASTLE, FORT, RIVER)
 from .entities import GameMap, make_npc
 from .worldgen import D8, cheb, bfs, noise_grid, rand_free
+from . import lands as LANDS
 
-WORLD_W, WORLD_H = 320, 180
-N_CITIES, N_VILLAGES = 8, 38
+WORLD_W, WORLD_H = 480, 270
+SCALE = WORLD_W * WORLD_H / (320 * 180)        # the world grew from 320 x 180: this many times more of everything
+LINEAR = SCALE ** .5                            # and this many times wider
+
+
+def scaled(n):
+    """A count made for the old 320 x 180 world, for the world as it is now."""
+    return max(1, round(n * SCALE))
+
+
+N_CITIES, N_VILLAGES = scaled(8), scaled(38)
 # what each biome of the terrain is underfoot: the tile decides walking, roads and placement
 BIOME_TILE = {}
 for _t, _bs in ((WATER, 'ocean sea shallows icy_water pack_ice ice_shelf berg lake lagoon lagoon_deep reef_flat surf reef '
-                         'whirl_a whirl_b whirl_eye fjord crater_lake hotpool brine'),
+                         'whirl_a whirl_b whirl_eye fjord crater_lake hotpool brine oasis'),
                 (RIVER, 'river'),
-                (SAND, 'beach desert dune dune_crest cay salt salt_edge bone_sand'),
+                (SAND, 'beach desert dune dune_crest cay salt salt_edge bone_sand canyon'),
                 (GRASS, 'meadow steppe shrubland shrubland_cold savanna tundra ashland scorched sinter crystal_ground '
-                        'stone_ground tar_edge crater_isle'),
-                (FOREST, 'forest deep_forest conifer taiga dry_forest jungle petrified dead_trees shroom elder_tree atoll_palm'),
-                (HILLS, 'hills tundra_hills badlands crater_rim chasm_edge crystal geyser cliff ravine ravine_edge'),
-                (MOUNTAIN, 'mountain peak volcano glacier chasm lava scar_core'),
-                (SWAMP, 'swamp marsh tar')):
+                        'stone_ground tar_edge crater_isle moor alpine floodplain clearing burnt'),
+                (FOREST, 'forest deep_forest conifer taiga dry_forest jungle petrified dead_trees shroom elder_tree atoll_palm '
+                         'birch palms'),
+                (HILLS, 'hills tundra_hills badlands crater_rim chasm_edge crystal geyser cliff ravine ravine_edge karst sinkhole'),
+                (MOUNTAIN, 'mountain peak volcano glacier chasm lava scar_core mesa'),
+                (SWAMP, 'swamp marsh tar mangrove')):
     for _b in _bs.split():
         BIOME_TILE[_b] = _t
 WONDER_BIOMES = set('crater_rim crater_lake crater_isle chasm chasm_edge salt salt_edge brine dune dune_crest geyser hotpool '
@@ -308,7 +319,10 @@ def gen_world(game):
         world.factions = factions
         reach = [i for i in range(w * h) if dist[i] > 0 and i not in wonder_cells]
         reach_set = set(reach)
+        world.sinks = [(x, y) for x, y in gen['sinks'] if flat[y * w + x] == 'sinkhole']
+        world.oases = [(x, y) for x, y in gen['oases'] if flat[y * w + x] == 'oasis']
         _make_regions(m, world, reach, start)
+        LANDS.name_areas(m, world)
         if not _place_settlements(game, m, world, reach_set, dist, start):
             continue
         _build_roads(m, world)
@@ -340,11 +354,12 @@ def gen_world(game):
         setup_world(world)
         from .sites import gen_sites
         gen_sites(game, m, world)
-        place_glades(game, m, world, reach_set)
+        place_glades(game, m, world, reach_set, scaled(4))
         from .folk import place_gnomes
-        place_gnomes(game, m, world, reach_set)
+        place_gnomes(game, m, world, reach_set, scaled(3))
         from .tribes import place_camps
         place_camps(game, m, world, reach_set)
+        LANDS.place_sites(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways
@@ -361,7 +376,7 @@ def _make_regions(m, world, reach, start):
     pool = reach[:]
     random.shuffle(pool)
     for i in pool:
-        if len(centers) >= 26:
+        if len(centers) >= scaled(26):
             break
         x, y = i % w, i // w
         if all(math.hypot(x - cx, y - cy) > 24 for cx, cy in centers):
@@ -402,10 +417,10 @@ def _make_regions(m, world, reach, start):
     for r in world.regions:
         c = counts[r.id]
         r.biome = max(c, key=c.get) if c else 'grass'
-        names = [n for n in D.BIOME_NAMES[r.biome] if n not in used] or D.BIOME_NAMES[r.biome]
-        r.name = random.choice(names)
+        names = [n for n in D.BIOME_NAMES[r.biome] if n not in used]
+        r.name = random.choice(names) if names else LANDS.region_name(r.biome, used)
         used.add(r.name)
-        r.danger = 1 if r.id == 0 else max(1, min(10, 1 + round(math.hypot(r.cx - start[0], r.cy - start[1]) / 17)))
+        r.danger = 1 if r.id == 0 else max(1, min(10, 1 + round(math.hypot(r.cx - start[0], r.cy - start[1]) / (17 * LINEAR))))
     world.regions[0].name = 'The Vale of Thorns'
     world.regions[0].biome = 'grass'
 
@@ -431,7 +446,7 @@ def _place_settlements(game, m, world, reach_set, dist, start):
     sett = [Settlement(0, 'Thornfield', 'village', start[0], start[1])]
     # cities: far from the start and from each other, one of them on the coast if possible
     cities = []
-    for want_coast in (True, True) + (False,) * (N_CITIES - 2):
+    for want_coast in (True, True, True) + (False,) * (N_CITIES - 3):
         for i in cells:
             x, y = i % w, i // w
             if dist[i] < 22 or not far_enough(x, y, 30):
@@ -444,7 +459,8 @@ def _place_settlements(game, m, world, reach_set, dist, start):
             break
     if len(cities) < N_CITIES - 1:
         return False
-    city_names = random.sample(D.CITY_NAMES, len(cities))
+    city_names = random.sample(D.CITY_NAMES, min(len(cities), len(D.CITY_NAMES)))
+    cities = cities[:len(city_names)]
     for (x, y), nm in zip(cities, city_names):
         sett.append(Settlement(len(sett), nm, 'city', x, y))
     # villages: spread over regions
@@ -475,9 +491,9 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         s.kind = 'town' if r < .25 else 'village' if r < .65 else 'hamlet'
     # dwarven deepholds, cut into the roots of the mountains
     from .deephold import DEEP_NAMES
-    dnames = random.sample(DEEP_NAMES, 2)
+    dnames = random.sample(DEEP_NAMES, min(len(DEEP_NAMES), scaled(2)))
     for i in cells:
-        if sum(1 for s in sett if s.kind == 'deephold') >= 2:
+        if not dnames:
             break
         x, y = i % w, i // w
         if m.t[i] != HILLS or dist[i] < 15 or not far_enough(x, y, 14):
@@ -584,9 +600,14 @@ def lay_road(m, p, main=False):
             m.main_road.add(y * m.w + x)
 
 
+SINK_NAMES = ['The Swallowing Hole', 'Dripstone Deep', 'The Echo Pit', 'The Blind Caves', 'Sheepfall Hole',
+              'The Drowned Sink', 'Chalkhollow', 'The Dark Throat']
+
+
 def _place_dungeons(m, world, reach, dist, start):
     w = m.w
     used = set()
+    reach_set = set(reach)
     blocked = {(s.x, s.y) for s in world.settlements}
 
     def ok(i):
@@ -612,7 +633,7 @@ def _place_dungeons(m, world, reach, dist, start):
     for e in world.evils:
         d = e.d
         want = set(t for k in d['terrain'] for t in terr[k])
-        far = [i for i in reach if 30 <= dist[i] <= 60]
+        far = [i for i in reach if 30 * LINEAR <= dist[i] <= 60 * LINEAR]
         x, y = choose([i for i in far if m.t[i] in want] or far, reach[len(reach) // 3])
         did = 'crypt' if e.key == 'lich' else f'lair_{e.key}'
         world.dungeons[did] = Dungeon(did, d['lair'].format(short=e.short), d['depth'], d['base'], d['style'], d['tag'],
@@ -624,7 +645,7 @@ def _place_dungeons(m, world, reach, dist, start):
     random.shuffle(pool)
     k = 0
     for i in pool:
-        if k >= 9:
+        if k >= min(len(sides), scaled(9)):
             break
         if not ok(i) or dist[i] < 12:
             continue
@@ -640,18 +661,33 @@ def _place_dungeons(m, world, reach, dist, start):
     from .creatures import THEMED
     land = {'grass': (GRASS,), 'forest': (FOREST,), 'swamp': (SWAMP,), 'hills': (HILLS,), 'coast': (SAND,)}
     for j, (names, style, tag, boss, wall, likes) in enumerate(THEMED):
-        want = {t for b in likes for t in land[b]}
-        cands = [i for i in reach if dist[i] >= 14 and m.t[i] in want and ok(i)] or \
-                [i for i in reach if dist[i] >= 12 and ok(i)]
-        if not cands:
+        pool_ = random.sample(names, len(names))
+        for copy in range(min(len(pool_), 2 if SCALE >= 2 else 1)):     # a big world has two of each
+            want = {t for b in likes for t in land[b]}
+            cands = [i for i in reach if dist[i] >= 14 and m.t[i] in want and ok(i)] or \
+                    [i for i in reach if dist[i] >= 12 and ok(i)]
+            if not cands:
+                continue
+            i = random.choice(cands)
+            x, y = i % w, i // w
+            used.add((x, y))
+            danger = world.region_at(x, y).danger
+            did = f'nest{j}' if copy == 0 else f'nest{j}_{copy}'
+            world.dungeons[did] = Dungeon(did, pool_[copy], 3, max(1, danger * 2 - 1), style, tag, boss, D.hexrgb(wall),
+                                          x, y, False)
+    # the sinkholes of the limestone hills drop into caves
+    names = SINK_NAMES[:]
+    random.shuffle(names)
+    for k, (x, y) in enumerate(getattr(world, 'sinks', [])):
+        i = y * w + x
+        if not names or i not in reach_set or (x, y) in used or any(cheb(x, y, s.x, s.y) < 4 for s in world.settlements):
             continue
-        i = random.choice(cands)
-        x, y = i % w, i // w
         used.add((x, y))
         danger = world.region_at(x, y).danger
-        did = f'nest{j}'
-        world.dungeons[did] = Dungeon(did, random.choice(names), 3, max(1, danger * 2 - 1), style, tag, boss, D.hexrgb(wall),
-                                      x, y, False)
+        did = f'sink{k}'
+        world.dungeons[did] = Dungeon(did, names.pop(), random.randint(2, 3), max(0, danger * 2 - 2), 'cave', 'cave', None,
+                                      D.hexrgb('#9a948a'), x, y, False)
+        world.dungeons[did].sinkhole = True
 
 
 # ------------------------------------------------------------------ settlement maps
@@ -875,7 +911,7 @@ def _place_strongholds(m, world, reach):
         regs = [r.id for r in world.regions if r.faction == f and r.id != 0]
         if not regs:
             continue
-        for kind in ['castle'] * castles + ['fort'] * forts:
+        for kind in ['castle'] * scaled(castles) + ['fort'] * scaled(forts):
             for i in pool:
                 x, y = i % w, i // w
                 if world.region_of[i] not in regs or m.t[i] in (ROAD, WATER, MOUNTAIN) or not D.TILES[m.t[i]].walk:

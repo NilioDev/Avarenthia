@@ -90,13 +90,14 @@ ROLE_DESC = {
     'farmer': 'A farmer, hands like old leather. Farm folk share their table with travellers.',
     'roadinn': 'The keeper of a lonely roadside inn. Stew, a bed, and news from the road.',
     'fisher': 'An old fisherman, patient as a heron. Knows every fish in the pond by name.',
+    'lands': 'Weathered by sun and wind. Trades in what the land up here or out there gives.',
 }
 
 
 JOB_WORD = {'inn': 'innkeeper', 'market': 'trader', 'shop': 'outfitter', 'healer': 'priest', 'stables': 'stablemaster',
             'elder': 'village elder', 'castellan': 'castellan', 'guard': 'guard', 'thane': 'thane', 'herbalist': 'herbalist',
             'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client', 'farmer': 'farmer',
-            'roadinn': 'innkeeper', 'factor': 'guild factor', 'captain': 'captain', 'sailor': 'sailor', 'merc': 'mercenary'}
+            'roadinn': 'innkeeper', 'lands': 'trader', 'factor': 'guild factor', 'captain': 'captain', 'sailor': 'sailor', 'merc': 'mercenary'}
 NOUN = {'male': 'man', 'female': 'woman'}
 
 
@@ -185,8 +186,8 @@ BIOME_DESC = {
     'shallows': ('Shallows', 'Shallow water over sand and weed.'), 'lake': ('Lake', 'A lake, still and clear.'),
     'river': ('River', 'A river, running to the sea.'), 'beach': ('Shore', 'Sand and shingle along the water.'),
     'meadow': ('Grassland', 'Open grassland, good for grazing.'), 'steppe': ('Steppe', 'Dry grass to the horizon.'),
-    'shrubland': ('Scrubland', 'Thorny bushes and hard ground.'), 'shrubland_cold': ('Moorland', 'Heather and cold wind.'),
-    'forest': ('Forest', 'Oak and beech, deep shade.'), 'deep_forest': ('Old forest', 'Ancient trees, thick with moss.'),
+    'shrubland': ('Scrubland', 'Thorny bushes and hard ground.'), 'shrubland_cold': ('Cold scrub', 'Low thorny bushes in a cold wind.'),
+    'forest': ('Forest', 'Oak and beech, deep shade.'),
     'conifer': ('Pinewood', 'Pine and fir, needles underfoot.'), 'taiga': ('Taiga', 'Dark spruce forest in the cold.'),
     'dry_forest': ('Dry woods', 'Sparse trees with hard leaves.'), 'jungle': ('Jungle', 'Hot, wet and green, alive with noise.'),
     'savanna': ('Savanna', 'Tall yellow grass and lonely trees.'), 'desert': ('Desert', 'Sand and heat. Little water.'),
@@ -198,6 +199,19 @@ BIOME_DESC = {
     'ice_shelf': ('Ice shelf', 'The ice of the far north, white without end.'),
     'ravine': ('Ravine', 'A narrow gully between steep walls of rock. Hard going.'),
     'ravine_edge': ('Ravine edge', 'The lip of a ravine; the ground drops away beside you.'),
+    'moor': ('Moor', 'Heather and bog-cotton under a wide sky. You see far, but on early mornings the mist lies here.'),
+    'deep_forest': ('Old forest', 'Ancient trees, thick with moss. You see almost nothing under them; rare herbs grow here.'),
+    'birch': ('Birch wood', 'White trunks and light shade. A quiet wood; little lies in wait here.'),
+    'alpine': ('Mountain meadow', 'High grass and flowers under the peaks. You see far; herders bring their goats up here.'),
+    'floodplain': ('Flood meadow', 'Flat rich grass along the great river. In spring it lies under water.'),
+    'clearing': ('Clearing', 'An open glade among the trees.'),
+    'burnt': ('Burnt wood', 'Black stumps where a fire went through. Green shoots between them.'),
+    'mangrove': ('Mangroves', 'Trees standing on their roots in the tide. Slow going; crocodiles and smugglers.'),
+    'mesa': ('Mesa', 'A tower of red rock with a flat top, too steep to climb.'),
+    'canyon': ('Canyon', 'A dry canyon between walls of red rock. You see little; robbers like it here.'),
+    'oasis': ('Oasis', 'A spring in the desert.'), 'palms': ('Palms', 'Date palms around the water.'),
+    'karst': ('Limestone hills', 'Pale hills full of hollows. Some of the holes go down a long way.'),
+    'sinkhole': ('Sinkhole', 'The ground falls away into a round black hole.'),
 }
 
 
@@ -241,7 +255,9 @@ def over(game, x, y):
                                            'roadinn': 'A roadside inn: stew, a bed and news from the road.',
                                            'valley': 'A hamlet hidden in a valley among the mountains. Nobody on the roads knows it.',
                                            'glade': 'An elven glade, hidden deep in the wood. Its path shows only to those who have walked it.',
-                                           'gnomes': 'A gnome hamlet under the roots of great trees, far from the roads of the big folk.'}[site.kind]]
+                                           'gnomes': 'A gnome hamlet under the roots of great trees, far from the roads of the big folk.',
+                                           'oasis': 'An oasis: a spring and palms. A caravan camps by the water, with a trader.',
+                                           'shieling': 'A herders\' summer hut on the mountain meadow, and a fold full of goats.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]
@@ -269,7 +285,9 @@ def over(game, x, y):
         if y * m.w + x in getattr(w, 'wonder_cells', ()) and getattr(w, 'wonders', None):
             name = min(w.wonders, key=lambda q: abs(q[1] - x) + abs(q[2] - y))[0]
             lines.insert(0, f'Part of {name}.')
-    lines.append(f'{w.region_at(x, y).name}, danger {w.danger_at(x, y)}.')
+    from .lands import area_at
+    an = area_at(w, x, y)
+    lines.append((f'{an}, in ' if an else '') + f'{w.region_at(x, y).name}, danger {w.danger_at(x, y)}.')
     ev = EVL.taint_at(game, x, y)
     if ev:
         lines.append({'blight': 'The land here is grey and dying.', 'scorch': 'The land here is burned black.',

@@ -34,6 +34,7 @@ from . import folk as FK
 from . import tribes as TR
 from . import deephold as DH
 from . import jobs as JB
+from . import lands as LN
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -41,7 +42,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 21
+SAVE_VERSION = 22
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -450,7 +451,7 @@ class Game:
         """How far you see in the open land: far from the hills, little in the woods or the marsh, less at night."""
         p, m = self.player, self.map
         t = m.tile(p.x, p.y)
-        r = {D.HILLS: 6, D.FOREST: 2, D.SWAMP: 3}.get(t, 4)
+        r = LN.sight(self, {D.HILLS: 6, D.FOREST: 2, D.SWAMP: 3}.get(t, 4))
         if TW.is_night(self):
             r = max(1, r // 2)
         if p.race in ('elf', 'goblin') and TW.is_night(self):
@@ -500,7 +501,9 @@ class Game:
             return f'{m.name} - level {m.depth}'
         if m.kind == 'over':
             p = self.player
-            return self.world.region_at(p.x, p.y).name
+            reg = self.world.region_at(p.x, p.y).name
+            area = LN.area_at(self.world, p.x, p.y)
+            return f'{area} ({reg})' if area else reg
         return m.name
 
     def dir_to(self, k):
@@ -894,8 +897,9 @@ class Game:
         from . import hidden as HP
         HP.on_step(self)
         FK.on_step(self)
+        LN.on_step(self)
         old_way = HP.on_way(self, p.x, p.y)
-        cost = round((min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost) * WX.travel_factor(self))
+        cost = round(LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost) * WX.travel_factor(self))
         WX.strike(self)
         if self.dead:
             return cost
@@ -914,13 +918,15 @@ class Game:
         if old_way:
             chance *= 1.3                           # nobody patrols the old ways
         chance *= WX.ambush_factor(self)                # fog and storms hide what waits by the road
+        chance *= LN.ambush(self)                       # canyons hide robbers, birch woods hide little
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
         if NM.step(self):
             return 1
         if random.random() < chance:
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
-            keys = EVL.wild_keys(self, p.x, p.y, lvl) or WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
+            keys = EVL.wild_keys(self, p.x, p.y, lvl) or LN.pack(self, lvl) or \
+                WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
             r = random.random()
             elite = 1 if r < .08 + off * .004 else 0
             self.start_encounter(None, t, lvl, keys, elite)
@@ -2712,6 +2718,9 @@ class Game:
             return
         if role == 'gnome_elder':
             FK.gnome_talk(self, npc)
+            return
+        if role == 'lands':
+            LN.talk(self, npc)
             return
         if role in ('cartwright', 'dwarf_king', 'foreman'):
             DH.talk(self, npc)

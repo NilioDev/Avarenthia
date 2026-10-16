@@ -21,6 +21,9 @@ The plan for the next rounds of work is in `docs/plan.md`; read it before buildi
   `folk.py` the peoples' own lands (halfling country and hill homes, hidden elven glades, the city under the Elder Tree,
   gnome hamlets); `tribes.py` hostile peoples' camps (warn, then rouse; captives; kobold toll); `deephold.py` dwarf holds,
   villages, mines (`dress_mine`), digging (`mining` life skill) and the cart line.
+  `lands.py` the finer grain of the land: newer biomes and their effects (sight, ambush, cost, packs, foraging),
+  named stretches of country (`world.areas`), oasis camps and herders' huts.
+- World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.
 - Buffs: `p.buffs = [[kind, value, turns, label]]`. Money in copper (100c = 1s, 100s = 1g).

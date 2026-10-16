@@ -398,7 +398,8 @@ def daily(game):
         return
     al = alive(game)
     # new ones appear as the world turns
-    want = 4 + min(4, game.day // 20)
+    from .world import scaled
+    want = scaled(4) + min(scaled(4), game.day // 10)
     if len([n for n in al if n.boss is None]) < want and random.random() < .5:
         make(game)
     for n in al:

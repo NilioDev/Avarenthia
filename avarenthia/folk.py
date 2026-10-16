@@ -171,23 +171,45 @@ def dig_hills(game, m, plots, near_road, tier):
     from .towns import Plot, carve_path, road_cells
     roads = road_cells(m)
     out = []
-    for _ in range({'hamlet': 1, 'village': 2, 'town': 3}.get(tier, 2)):
-        for _try in range(600):
-            rx, ry = random.randint(13, 14), random.randint(6, 7)
-            rc = random.choice(near_road)
-            cx, cy = rc[0] + random.randint(-22, 22), rc[1] + random.randint(-ry - 14, 4)
-            box = Plot(cx - rx - 1, cy - ry - 1, 2 * rx + 3, 2 * ry + 3, 'hill')
-            if box.x < 3 or box.y < 3 or box.x + box.w > m.w - 3 or box.y + box.h > m.h - 3:
-                continue
-            if any(box.overlaps(o, 2) for o in plots):
-                continue
-            if tier == 'town' and not all(in_ring(m, x, y) for x, y in ((box.x, box.y), (box.x + box.w, box.y),
-                                                                         (box.x, box.y + box.h), (box.x + box.w, box.y + box.h))):
-                continue
-            if min(cheb(x, y, cx, cy + ry + 2) for x, y in near_road) > 12:
-                continue                         # the doors look out on a road, not on the woods
-            if any(m.tile(x, y) not in (GRASS, TREE) for y in range(box.y, box.y + box.h) for x in range(box.x, box.x + box.w)):
-                continue
+    n_hills = {'hamlet': 1, 'village': 2, 'town': 3}.get(tier, 2)
+
+    def fits(cx, cy, rx, ry, reach):
+        box = Plot(cx - rx - 1, cy - ry - 1, 2 * rx + 3, 2 * ry + 3, 'hill')
+        if box.x < 3 or box.y < 3 or box.x + box.w > m.w - 3 or box.y + box.h > m.h - 3:
+            return None
+        if any(box.overlaps(o, 2) for o in plots):
+            return None
+        if tier == 'town' and not all(in_ring(m, x, y) for x, y in ((box.x, box.y), (box.x + box.w, box.y),
+                                                                     (box.x, box.y + box.h), (box.x + box.w, box.y + box.h))):
+            return None
+        if min(cheb(x, y, cx, cy + ry + 2) for x, y in near_road) > reach:
+            return None                          # the doors look out on a road, not on the woods
+        if any(m.tile(x, y) not in (GRASS, TREE) for y in range(box.y, box.y + box.h) for x in range(box.x, box.x + box.w)):
+            return None
+        return box
+
+    for k in range(n_hills + 1):
+        found = None
+        if k < n_hills:
+            for _try in range(600):
+                rx, ry = random.randint(13, 14), random.randint(6, 7)
+                rc = random.choice(near_road)
+                cx, cy = rc[0] + random.randint(-22, 22), rc[1] + random.randint(-ry - 14, 4)
+                box = fits(cx, cy, rx, ry, 12)
+                if box:
+                    found = (cx, cy, rx, ry, box)
+                    break
+        elif not out:                            # none would fit by the roads: look everywhere, nearest road first
+            rx, ry = 13, 6
+            spots = [(cx, cy) for cy in range(ry + 5, m.h - ry - 5) for cx in range(rx + 5, m.w - rx - 5)]
+            spots.sort(key=lambda c: min(cheb(x, y, c[0], c[1] + ry + 2) for x, y in near_road[::3]))
+            for cx, cy in spots:
+                box = fits(cx, cy, rx, ry, 40)
+                if box:
+                    found = (cx, cy, rx, ry, box)
+                    break
+        if found:
+            cx, cy, rx, ry, box = found
             cells = oval(cx, cy, rx, ry)
             plots.append(box)
             for x, y in cells:
@@ -201,7 +223,6 @@ def dig_hills(game, m, plots, near_road, tier):
                         m.set(door_x, y, PATH)
                     tgt = min(roads, key=lambda c: cheb(c[0], c[1], door_x, rim + 1))
                     carve_path(m, (door_x, rim + 2), tgt)
-            break
     return out
 
 
@@ -387,7 +408,7 @@ def r_glade(game, choice, ctx):
         game.request = ('dialog', 'The elder', text)
         return
     if choice == 'glades':
-        left = [q for q in game.world.sites if unfound(q)]
+        left = [q for q in game.world.sites if q.kind == 'glade' and unfound(q)]
         if not left:
             game.request = ('dialog', 'The elder', '"You have found every one of us there is. Few can say that."')
             return

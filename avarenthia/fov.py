@@ -19,24 +19,36 @@ def compute(m, px, py, radius, dense=None, near=2):
     dense: tiles you can see into but not through (more than `near` cells away), like a forest."""
     out = cells(m, px, py, radius, dense, near)
     seen = m.seen
-    for i, v in enumerate(out):
-        if v:
-            seen[i] = 1
+    w = m.w
+    x0, x1 = max(0, px - radius - 1), min(w, px + radius + 2)
+    for y in range(max(0, py - radius - 1), min(m.h, py + radius + 2)):   # only the cells in reach can be lit
+        for i in range(y * w + x0, y * w + x1):
+            if out[i]:
+                seen[i] = 1
     return out
 
 
 def cells(m, px, py, radius, dense=None, near=2):
     """Visible cells from a point, without marking anything as seen (used for lights)."""
+    if not (0 <= px < m.w and 0 <= py < m.h):
+        return bytearray(m.w * m.h)            # you are not on this map (between maps): nothing to see
     if HAVE_TCOD:
-        tiles = np.asarray(m.t, dtype=np.int16).reshape(m.h, m.w)
+        # only the window the radius can reach: the overworld is large
+        x0, x1 = max(0, px - radius - 1), min(m.w, px + radius + 2)
+        y0, y1 = max(0, py - radius - 1), min(m.h, py + radius + 2)
+        t = m.t
+        tiles = np.array([t[y * m.w + x0:y * m.w + x1] for y in range(y0, y1)], dtype=np.int16)
         transparency = ~_OPAQUE[tiles]
         if dense:
-            yy, xx = np.ogrid[:m.h, :m.w]
+            yy, xx = np.ogrid[y0:y1, x0:x1]
             far = np.maximum(abs(yy - py), abs(xx - px)) > near
             transparency &= ~(np.isin(tiles, list(dense)) & far)
-        vis = tcod.map.compute_fov(transparency, (py, px), radius=radius, light_walls=True, algorithm=_ALGO)
-        flat = vis.ravel()
-        out = bytearray(flat.astype(np.uint8).tobytes())
+        vis = tcod.map.compute_fov(transparency, (py - y0, px - x0), radius=radius, light_walls=True, algorithm=_ALGO)
+        out = bytearray(m.w * m.h)
+        rows = vis.astype(np.uint8)
+        for j in range(y1 - y0):
+            k = (y0 + j) * m.w + x0
+            out[k:k + x1 - x0] = rows[j].tobytes()
     else:
         out = _shadowcast(m, px, py, radius, dense, near)
     return out

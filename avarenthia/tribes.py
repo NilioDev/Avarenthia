@@ -88,7 +88,8 @@ def place_camps(game, m, world, reach_set):
         return False
     cells = [i for i in reach_set if 3 <= i % w < w - 3 and 3 <= i // w < m.h - 3 and i not in world.wonder_cells]
     random.shuffle(cells)
-    for kind, n in (('warcamp', 2), ('ravine', 2), ('kobolds', 2), ('gnolls', 2), ('stilts', 2)):
+    from .world import scaled
+    for kind, n in (('warcamp', scaled(2)), ('ravine', scaled(2)), ('kobolds', scaled(2)), ('gnolls', scaled(2)), ('stilts', scaled(2))):
         names = NAMES[kind][:]
         random.shuffle(names)
         made = 0

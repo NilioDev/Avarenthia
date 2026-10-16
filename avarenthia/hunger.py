@@ -20,6 +20,8 @@ FOODS = {
     'wine': ('Bottle of Berry Wine', 80, 260, (170, 50, 90)),
     'mead': ('Bottle of Mead', 120, 300, (240, 200, 90)),
     'valley_cheese': ('Valley Goat Cheese', 600, 400, (250, 236, 180)),
+    'goat_cheese': ('Goat Cheese', 350, 60, (246, 232, 190)),
+    'dates': ('Dried Dates', 200, 15, (170, 100, 50)),
 }
 DRINKS = {'ale', 'wine', 'mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}

@@ -5,7 +5,7 @@ import random
 
 from . import data as D
 from .data import TOWN, CITY, ROAD
-from .world import dijkstra_path
+from .world import dijkstra_path, scaled
 from .worldgen import D8, cheb
 
 CARAVAN_FG = (222, 182, 98)
@@ -221,10 +221,17 @@ def arrive(game, wd):
     s.market[g][0] += q
 
 
+FAR = 60          # beasts this far from you only roam round their lair anyway: they rest until you come nearer
+
+
 def tick(game, turns):
     w = game.world
+    p = game.player
+    px, py = (p.x, p.y) if game.cur == 'over' else game.over_pos
     for wd in w.wanderers[:]:
         if wd.kind == 'escort':
+            continue
+        if wd.kind == 'monsters' and cheb(wd.x, wd.y, px, py) > FAR:
             continue
         wd.acc += turns
         while wd.acc >= wd.speed and wd in w.wanderers:
@@ -399,13 +406,13 @@ def daily(game):
         if s.is_city and s.faction in ('crown', 'league') and not any(x.kind == 'patrol' and x.origin == s.id for x in w.wanderers):
             spawn_patrol(game, s)
     from .events import spawn_traveller
-    for _ in range(4):
-        if sum(1 for x in w.wanderers if x.kind == 'traveler') >= 10:
+    for _ in range(scaled(4)):
+        if sum(1 for x in w.wanderers if x.kind == 'traveler') >= scaled(10):
             break
         spawn_traveller(game)
-    if sum(1 for x in w.wanderers if x.kind == 'bandits') < 7:
+    if sum(1 for x in w.wanderers if x.kind == 'bandits') < scaled(7):
         spawn_bandits(game)
-    while sum(1 for x in w.wanderers if x.kind == 'monsters') < 34:
+    while sum(1 for x in w.wanderers if x.kind == 'monsters') < scaled(34):
         before = len(w.wanderers)
         spawn_monsters(game)
         if len(w.wanderers) == before:
@@ -413,7 +420,7 @@ def daily(game):
 
 
 def populate(game):
-    for _ in range(5):
+    for _ in range(scaled(5)):
         spawn_bandits(game)
     daily(game)
     for s in game.world.settlements:

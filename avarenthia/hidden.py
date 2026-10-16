@@ -14,6 +14,7 @@ import random
 from . import data as D
 from .data import GRASS, FOREST, HILLS, SWAMP, SAND, MOUNTAIN, RIVER, ROAD, TOWN, CITY, WATER
 from .worldgen import cheb
+from .world import scaled
 
 WAY_FG = (112, 132, 100)
 WAY_COST = 8                      # road 6, grass 10, forest 14
@@ -111,7 +112,7 @@ def generate(game, m, world):
     road_cost = lambda t: 1 if t in (ROAD, TOWN, CITY) else None
     made = 0
     for a, b in pairs[:70]:
-        if made >= 4:
+        if made >= scaled(4):
             break
         if any(cheb(a.x, a.y, wy.cells[0] % w, wy.cells[0] // w) < 12 for wy in world.ways if wy.kind == 'shortcut'):
             continue
@@ -246,7 +247,7 @@ def _valleys(game, m, world, rnd):
     rnd.shuffle(names)
     kinds = list(VALLEY_KINDS)
     rnd.shuffle(kinds)
-    want = rnd.randint(1, 3)
+    want = rnd.randint(1, 3) + (1 if scaled(1) > 1 else 0)
     mts = [i for i, t in enumerate(m.t) if t == MOUNTAIN]
     rnd.shuffle(mts)
     taken = [(s.x, s.y) for s in world.settlements] + [(q.x, q.y) for q in getattr(world, 'sites', [])

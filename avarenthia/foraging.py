@@ -112,6 +112,10 @@ def forage(game):
     if not where:
         game.msg('Nothing edible grows here.')
         return 0
+    boost = 1
+    if m.kind == 'over':
+        from .lands import forage as land_forage
+        where, boost = land_forage(game, where)      # the old forest and the mountain meadows: rare herbs
     r = LS.rank(game, 'foraging')
     turns = (25 if m.kind == 'over' else 6) * (.7 if r >= 10 else 1)
     LS.gain(game, 'foraging', .6)
@@ -121,7 +125,7 @@ def forage(game):
         return round(turns)
     grp = random.choices(list(where), list(where.values()))[0]
     cands = [k for k, v in PLANTS.items() if v[1] == grp]
-    rare = 3 if LS.rank(game, 'herbalism') >= 8 else 1
+    rare = (3 if LS.rank(game, 'herbalism') >= 8 else 1) * boost
     key = random.choices(cands, [PLANTS[k][4] * (rare if PLANTS[k][4] <= 2 else 1) for k in cands])[0]
     n = random.randint(1, 2 + r // 6)
     it = make_plant(game, key, n)

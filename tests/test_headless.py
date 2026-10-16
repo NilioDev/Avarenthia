@@ -2440,9 +2440,121 @@ def camps_and_holds():
     print('dwarves ok:', s.name, '->', there.name, '| mine levels', dg.depth)
 
 
+def lands():
+    """The bigger world and its finer grain: new kinds of country with their own effects, named stretches of land,
+    sinkhole caves, oases with a caravan trader and herders' huts on the mountain meadows."""
+    from avarenthia import lands as LN, world as WO, calendar as CAL, foraging as FG, look as LOOK, events as EV
+    from collections import Counter
+    g = E.Game('Test', False, seed=7, race='human', gender='male')
+    om, w = g.maps['over'], g.world
+    assert (om.w, om.h) == (480, 270) and (WO.WORLD_W, WO.WORLD_H) == (480, 270)
+    cnt = Counter(om.biome_names[b] for b in om.biome)
+    new = ['moor', 'birch', 'alpine', 'floodplain', 'mangrove', 'canyon', 'mesa', 'karst', 'clearing']
+    print('  new country:', {b: cnt[b] for b in new + ['oasis', 'sinkhole', 'deep_forest']})
+    assert sum(1 for b in new if cnt[b]) >= 7, cnt
+    for b in cnt:
+        assert b in LOOK.BIOME_STYLE or b in ('river',), b
+        assert b in WO.BIOME_TILE, b
+    # more of everything in a bigger world
+    kinds = Counter(s.kind for s in w.settlements)
+    print('  settlements:', dict(kinds), 'regions', len(w.regions), 'named lands', len(w.areas) - 1)
+    assert kinds['city'] + kinds['metropolis'] >= 14 and len(w.settlements) >= 80 and len(w.regions) >= 40
+    assert len({r.name for r in w.regions}) == len(w.regions)
+    names = [a['name'] for a in w.areas[1:]]
+    assert len(names) >= 20 and len(set(names)) == len(names), names
+    assert not set(names) & {n for n, _x, _y in w.wonders}
+    # walking into a named stretch of land says so, and the bottom line shows it
+    a = max(w.areas[1:], key=lambda q: q['size'] if q['family'] == 'wood' else 0)
+    i = next(i for i in range(len(w.area_of)) if w.area_of[i] == w.areas.index(a))
+    to_over(g)
+    g.player.x, g.player.y = i % om.w, i // om.w
+    g.area_said_turn = -999
+    LN.on_step(g)
+    assert a['name'] in g.loc_name(), g.loc_name()
+    print('  ', g.loc_name())
+    # effects: the old forest blinds, the canyon hides robbers, the flood meadows slow you in spring
+    def stand(b):
+        k = om.biome_names.index(b) if b in om.biome_names else None
+        cell = next((j for j in range(len(om.biome)) if om.biome[j] == k), None) if k is not None else None
+        if cell is None:
+            return False
+        g.player.x, g.player.y = cell % om.w, cell // om.w
+        return True
+    g.turn = (g.turn // E.D.DAY_LEN) * E.D.DAY_LEN + E.D.DAY_LEN // 2          # noon
+    if stand('deep_forest'):
+        assert g.over_sight() <= 2 and LN.sight(g, 2) == 1
+    if stand('alpine'):
+        assert g.over_sight() >= 7
+    if stand('canyon'):
+        assert LN.ambush(g) == 2.0
+    if stand('birch'):
+        assert LN.ambush(g) < 1
+    if stand('floodplain'):
+        while CAL.season(g.day) != 'spring':
+            g.day += 30
+        assert LN.cost(g, 10) == 20
+    if stand('mangrove'):
+        packs = [LN.pack(g, 6) for _ in range(40)]
+        assert any(packs)
+    if stand('alpine'):
+        where, boost = LN.forage(g, FG.WHERE[E.D.GRASS])
+        assert boost > 1 and where['herb'] > FG.WHERE[E.D.GRASS]['herb']
+    # sinkholes drop into caves
+    sinks = [d for d in w.dungeons.values() if getattr(d, 'sinkhole', False)]
+    print('  sinkholes:', [d.name for d in sinks], 'oases:', [q.name for q in w.sites if q.kind == 'oasis'],
+          'huts:', [q.name for q in w.sites if q.kind == 'shieling'])
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    g.request = None
+    for d in sinks[:1]:
+        app.screens = [ui.GameScreen(app)]
+        g.enter_dungeon(d.id, 1, 'up')
+        app.render()
+    # an oasis and a herders' hut: a trader each (a world without a desert has no oasis: borrow a spot for the test)
+    if not any(q.kind == 'oasis' for q in w.sites):
+        from avarenthia.sites import Site
+        s0 = w.settlements[0]
+        w.sites.append(Site(len(w.sites), 'oasis', s0.x + 1, s0.y + 1, 'Test Well'))
+    for kind, food in (('oasis', 'dates'), ('shieling', 'cheese')):
+        st = next((q for q in w.sites if q.kind == kind), None)
+        if not st:
+            continue
+        to_over(g)
+        g.player.x, g.player.y = st.x, st.y
+        app.screens = [ui.GameScreen(app)]
+        g.enter_site(st.id)
+        app.render()
+        npc = next(o for o in g.map.mons if o.role == 'lands')
+        g.player.gold = 1000
+        g.talk(npc)
+        assert g.pending and g.pending['key'] == 'lands'
+        EV.resolve(g, food)
+        assert any(it.k == 'food' and it.t in ('dates', 'goat_cheese') for it in g.player.inv)
+        if kind == 'oasis':
+            g.talk(npc)
+            EV.resolve(g, 'shop')
+            assert g.request[0] == 'shop'
+            g.request = None
+    # the whole realm on the map, and every new tile drawn in range
+    for j in range(len(om.seen)):
+        om.seen[j] = 1
+    to_over(g)
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    for z in (0, 1):
+        ui.WorldMapScreen.zoom = z
+        app.render()
+    for b in new:
+        if stand(b):
+            ch, fg, bg = LOOK.cell(om, g.player.y * om.w + g.player.x)
+            assert all(0 <= v <= 255 for v in fg + bg)
+            title, col, lines = __import__('avarenthia.describe', fromlist=['at']).at(g, g.player.x, g.player.y)
+            assert title and lines
+    print('lands ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
-    parts = [peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
+    parts = [lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
              creatures_and_hunts, new_guilds, more_jobs, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
