@@ -26,7 +26,7 @@ DECO_LOOK = {
 }
 # (colour, radius) of things that glow
 GLOW = {FUNGUS: ((60, 200, 170), 3), TORCH: ((255, 160, 70), 6), CRYSTAL: ((150, 110, 255), 4), FIRE: ((255, 130, 50), 6)}
-AMBIENT = {'cave': .30, 'dungeon': .26, 'crypt': .22}
+AMBIENT = {'cave': .30, 'dungeon': .26, 'crypt': .22, 'barrow': .2, 'gloam': .18}
 
 
 def _blob(m, cx, cy, size, ok):
@@ -158,6 +158,17 @@ def dress(game, m, d):
         for _ in range(random.randint(2, 4)):
             c = random.choice(floors)
             m.deco[c] = FIRE
+    elif tag == 'barrow':                   # earth-walled burial halls: bones, grave dirt, a few old offerings
+        patch(BONES, random.randint(5, 9), 5)
+        patch(RUBBLE, random.randint(3, 6), 8)
+        patch(MUD, random.randint(2, 4), 12)
+    elif tag == 'gloam':                    # the deep that watches: glowing fungus, slime, crystal
+        patch(FUNGUS, random.randint(5, 9), 10)
+        patch(SLIME, random.randint(3, 6), 10)
+        patch(CRYSTAL, random.randint(1, 3), 3)
+    elif tag == 'grotto':                   # a sea cave: weed, slime and the bones of drowned sailors
+        patch(SLIME, random.randint(6, 10), 14)
+        patch(BONES, random.randint(2, 4), 3)
     elif tag == 'snakeruin':                # old halls half full of drifted sand
         patch(RUBBLE, random.randint(5, 9), 10)
         patch(BONES, random.randint(2, 4), 3)

@@ -1408,6 +1408,12 @@ def hirelings_and_camp():
     now = [1000.0]
     outcomes = []
     for attempt in range(6):
+        if g.cur != 'over':                 # a pack came over the hill while you fished: see it off, back to the water
+            g.map.mons = [o for o in g.map.mons if o.is_npc]
+            g.leave_to_over()
+            app.screens = [ui.GameScreen(app)]
+            p.x, p.y = spot
+            g.compute_fov()
         app.key('a')
         sc = app.top
         assert isinstance(sc, ui.FishingScreen), sc
@@ -1552,6 +1558,23 @@ def creatures_and_hunts():
             g.end_turn(1)
             p.life = max(p.life, 100)
         app.render()
+    # round two: a mimic is a chest until you are close, and a shrieker wakes the level
+    g.enter_dungeon('mine', 2, 'up')
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    x, y = free_around(g, g.map, p.x, p.y, 3)[-1]
+    mi = make_monster(g, 'mimic', x, y, 6)
+    g.map.mons.append(mi)
+    assert mi.lurk and BH.beh(mi, 'disguise')
+    g.compute_fov()
+    app.render()
+    sh = make_monster(g, 'shrieker', x, y, 3)
+    sleeper = make_monster(g, 'goblin', 1, 1, 3)
+    sleeper.awake = False
+    g.map.mons += [sleeper]
+    BH.turn(g, sh, g.stats()['armor'])
+    assert sleeper.awake and sh.shrieked
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    BH.status(g).clear()
     # your states: each one shows, ticks away, and the temple lifts what it can
     for k in BH.STATUS:
         BH.status(g).clear()

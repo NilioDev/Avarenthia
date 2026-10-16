@@ -289,7 +289,8 @@ def gen_dungeon(game, did, depth):
         el = None
         if i == npacks - 1 and depth >= 2 and not elites:
             el = 2 if random.random() < .5 else 1
-        if spawn_pack(game, m, lvl, d.tag, c, el, False):
+        tag = 'vault' if getattr(d, 'varnish', False) and random.random() < .4 else d.tag     # what the Varnish left on guard
+        if spawn_pack(game, m, lvl, tag, c, el, False):
             elites += 1
     for _ in range(1 + random.randint(0, 2)):
         c = rand_free(game, m, lambda t: t == FLOOR)

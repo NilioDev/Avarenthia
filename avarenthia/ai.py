@@ -27,7 +27,8 @@ TRAITS = {
 }
 D8 = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 # the new kinds (creatures.py) bring their habits as behaviours; some of them are the old traits
-_BEH_TRAIT = {'kite': 'kite', 'rage': 'berserk', 'charge': 'charge', 'burrow': 'lurk', 'ambush': 'lurk', 'hunt': 'wander'}
+_BEH_TRAIT = {'kite': 'kite', 'rage': 'berserk', 'charge': 'charge', 'burrow': 'lurk', 'ambush': 'lurk', 'hunt': 'wander',
+              'disguise': 'lurk', 'pack': 'pack'}
 for _k, _d in D.MONSTERS.items():
     for _b in _d.get('beh', ()):
         if _b in _BEH_TRAIT:
@@ -110,7 +111,7 @@ def asleep(game, mon):
         mon.lurk = True
     p = game.player
     if getattr(mon, 'lurk', False):
-        if cheb(mon.x, mon.y, p.x, p.y) <= 2 and game.visible(mon.x, mon.y):
+        if cheb(mon.x, mon.y, p.x, p.y) <= (1 if 'disguise' in mon.tpl.get('beh', ()) else 2) and game.visible(mon.x, mon.y):
             mon.awake = True
             on_wake(game, mon)
             return False

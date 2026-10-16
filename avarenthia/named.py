@@ -31,11 +31,12 @@ TRAIT_TEXT = {'Venomous': 'its blows poison', 'Frost-touched': 'its touch is col
 # sorcerers for the Magi, gang bosses for the Thieves, the knights who hunt the Coven
 PREY = {
     'beast': ['wolf', 'wolf_spider', 'troll', 'ogre', 'crocodile', 'giant_scorpion', 'mantis', 'hyena', 'web_weaver',
-              'brood_spider', 'horn_beetle', 'drake', 'frost_spider'],
+              'brood_spider', 'horn_beetle', 'drake', 'frost_spider', 'brown_bear', 'cave_bear', 'worg', 'winter_wolf',
+              'sabretooth', 'panther', 'manticore', 'wyvern', 'clawbeak', 'boar', 'mammoth', 'basilisk'],
     'warlord': ['orc_chief', 'gob_boss', 'hob_captain', 'gnoll_packlord', 'orc_berserker', 'kob_chief', 'lizard_warrior'],
     'sorcerer': ['orc_warlock', 'orc_shaman', 'gob_shaman', 'kob_sorcerer', 'lizard_shaman', 'gnoll_caller', 'ice_witch',
                  'cultist'],
-    'undead': ['wraith', 'skeleton', 'zombie', 'ghost'],
+    'undead': ['wraith', 'skeleton', 'zombie', 'ghost', 'ghast', 'wight', 'draugr', 'vampire_spawn', 'banshee', 'mummy'],
     'gang': ['bandit'],
     'paladin': ['knight'],
 }
@@ -47,7 +48,10 @@ FOLLOW = {'wolf': ['wolf'], 'hyena': ['hyena'], 'wolf_spider': ['wolf_spider', '
           'wraith': ['skeleton', 'zombie'], 'skeleton': ['skeleton', 'skarcher'], 'zombie': ['zombie'], 'ghost': [],
           'cultist': ['zombie', 'skeleton'], 'ice_witch': ['wolf'], 'bandit': ['bandit', 'brigand'],
           'knight': ['soldier', 'crossbow'], 'drake': [],
-          'troll': [], 'ogre': [], 'crocodile': [], 'giant_scorpion': [], 'mantis': [], 'horn_beetle': []}
+          'troll': [], 'ogre': [], 'crocodile': [], 'giant_scorpion': [], 'mantis': [], 'horn_beetle': [],
+          'banshee': [], 'mummy': ['skeleton'], 'vampire_spawn': ['ghoul'], 'brown_bear': [], 'cave_bear': [],
+          'sabretooth': [], 'panther': [], 'manticore': [], 'wyvern': [], 'clawbeak': [], 'boar': ['boar'],
+          'mammoth': ['mammoth'], 'basilisk': []}
 RACE = {'orc_chief': 'orc', 'orc_berserker': 'orc', 'orc_warlock': 'orc', 'orc_shaman': 'orc', 'gob_boss': 'goblin',
         'gob_shaman': 'goblin', 'kob_chief': 'kobold', 'kob_sorcerer': 'kobold', 'hob_captain': 'hobgoblin',
         'gnoll_packlord': 'gnoll', 'gnoll_caller': 'gnoll', 'lizard_warrior': 'lizard', 'lizard_shaman': 'lizard',

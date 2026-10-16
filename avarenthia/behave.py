@@ -12,7 +12,9 @@ confused   your feet do not always go where you send them
 afraid     your blows falter now and then
 blinded    in a cloud of darkness: you see almost nothing
 diseased   no natural healing until cured or it passes
-cursed     you deal less damage and heal less"""
+cursed     you deal less damage and heal less
+weakened   your strength drained: you deal less damage
+charmed    you cannot bring yourself to strike the one who charmed you"""
 import random
 
 from . import data as D
@@ -22,11 +24,12 @@ STATUS = {
     'held': ('Held', (220, 220, 230)), 'paralysed': ('Paralysed', (255, 214, 90)), 'asleep': ('Asleep', (160, 160, 220)),
     'slowed': ('Slowed', (159, 216, 255)), 'confused': ('Confused', (230, 160, 230)), 'afraid': ('Afraid', (230, 200, 120)),
     'blinded': ('Blinded', (130, 120, 160)), 'diseased': ('Diseased', (170, 190, 90)), 'cursed': ('Cursed', (190, 110, 220)),
+    'weakened': ('Weakened', (200, 150, 130)), 'charmed': ('Charmed', (240, 160, 220)),
 }
 STATUS_END = {'held': 'You are free.', 'paralysed': 'You can move again.', 'asleep': 'You wake.',
               'slowed': 'Your limbs warm and quicken.', 'confused': 'Your head clears.', 'afraid': 'The fear passes.',
               'blinded': 'The darkness lifts.', 'diseased': 'The fever breaks. You feel yourself again.',
-              'cursed': 'The curse fades.'}
+              'cursed': 'The curse fades.', 'weakened': 'Your strength comes back.', 'charmed': 'The charm wears off.'}
 HELPLESS = ('paralysed', 'asleep')
 AREA_MODES = ('around', 'chain', 'storm', 'target_area', 'volley')
 
@@ -81,8 +84,12 @@ def on_spawn(game, mon):
     looks = d.get('looks')
     if looks:
         mon.look = fill(random.choice(looks), mon)
-    if beh(mon, 'burrow') or beh(mon, 'ambush'):
+    if beh(mon, 'burrow') or beh(mon, 'ambush') or beh(mon, 'disguise'):
         mon.lurk = True
+    if beh(mon, 'unseen'):
+        mon.invis = 999
+    if beh(mon, 'shield'):
+        mon.shield = 3
     if beh(mon, 'phase'):
         mon.faded, mon.phase_t = False, random.randint(1, 3)
 
@@ -137,7 +144,7 @@ def clear(game, k, quiet=False):
         st['steady'] = 6
 
 
-def cure(game, kinds=('diseased', 'cursed', 'confused', 'blinded', 'afraid', 'slowed')):
+def cure(game, kinds=('diseased', 'cursed', 'confused', 'blinded', 'afraid', 'slowed', 'weakened', 'charmed')):
     """A priest, an antidote or Purify: lift what can be lifted."""
     n = 0
     for k in kinds:
@@ -194,7 +201,7 @@ def heal_mult(game):
 
 def dmg_malus(game):
     """Percent off your damage from your states."""
-    return (20 if has(game, 'cursed') else 0) + (10 if has(game, 'afraid') else 0)
+    return (20 if has(game, 'cursed') else 0) + (10 if has(game, 'afraid') else 0) + (15 if has(game, 'weakened') else 0)
 
 
 def sight(game, r):
@@ -211,6 +218,9 @@ def before_move(game, dx, dy):
         game.msg('You stumble the wrong way.', 'bad')
     mon = m.mon_at(p.x + dx, p.y + dy)
     if mon and not mon.is_npc:
+        if has(game, 'charmed') and getattr(p, 'charmed_by', None) == mon.id:
+            game.msg(f'You cannot bring yourself to strike {mon.the()}.', 'bad')
+            return dx, dy, 1
         if has(game, 'afraid') and random.random() < .35:
             game.msg('Your nerve fails you. You hang back.', 'bad')
             return dx, dy, 1
@@ -326,6 +336,9 @@ def incoming(game, mon, dmg, weapon, elem):
         game.msg(f'Your blow passes through {mon.the()}.', 'info')
         return None
     area = getattr(game, '_area', False)
+    if beh(mon, 'blur') and not area and random.random() < .3:
+        game.msg(f'Your blow strikes only an image; {mon.the()} was a step to one side.', 'info')
+        return None
     if beh(mon, 'swarm'):
         if elem == 'fire' or area:
             dmg *= 2
@@ -362,7 +375,8 @@ def on_hit(game, mon, dmg):
         give(game, 'held', random.randint(3, 5), f'{name} seizes you! You are held fast.')
         p.held_by = mon.id
     if beh(mon, 'paralyse') and random.random() < .25:
-        give(game, 'paralysed', random.randint(1, 2), f"{name}'s bite numbs you. You cannot move!")
+        w = mon.tpl.get('hit_word', 'bite')
+        give(game, 'paralysed', random.randint(1, 2), f"{name}'s {w} {'numb' if w.endswith('s') else 'numbs'} you. You cannot move!")
     if (beh(mon, 'slows') or 'Frost-touched' in mon.mods) and random.random() < .35:
         give(game, 'slowed', random.randint(3, 5), 'The cold of the bite slows your limbs.')
     if beh(mon, 'disease') and random.random() < .3 and not has(game, 'diseased'):
@@ -386,6 +400,15 @@ def on_hit(game, mon, dmg):
             game.msg(f'{name} gets into your pack and devours your {it.name.lower()}!', 'bad')
     if beh(mon, 'knockback') and random.random() < .4:
         push(game, mon)
+    if beh(mon, 'drain') and random.random() < .3:
+        give(game, 'weakened', random.randint(40, 70), f"{name}'s touch is cold. Strength drains out of you. (Weakened)")
+    if beh(mon, 'mindsip') and p.mana > 0 and random.random() < .5:
+        n = min(p.mana, max(3, mon.dmg[1]))
+        p.mana -= n
+        game.msg(f'{name} drinks at your thoughts. Your mana runs out of you.', 'bad')
+    if beh(mon, 'unseen') and getattr(mon, 'invis', 0):
+        mon.invis = 0
+        game.msg(f'{name} flickers into sight!', 'bad')
     if beh(mon, 'greedy') and not getattr(mon, 'stolen', 0) and p.gold > 50 and random.random() < .3:
         n = min(p.gold, max(20, round(p.gold * random.uniform(.04, .1))), 2500)
         p.gold -= n
@@ -438,6 +461,14 @@ def _blast(game, cx, cy, r, mon, mult, elem, col, ch='*'):
 
 def turn(game, mon, df):
     """Special moves before the usual ones. Returns True if the monster used its turn."""
+    if _turn(game, mon, df):
+        return True
+    if beh(mon, 'rooted'):          # a plant or a stonemaw: it bites what comes near, and nothing else
+        return not mon.dmg[1] or cheb(mon.x, mon.y, game.player.x, game.player.y) > 1
+    return False
+
+
+def _turn(game, mon, df):
     p, m = game.player, game.map
     dist = cheb(mon.x, mon.y, p.x, p.y)
     seen = game.visible(mon.x, mon.y)
@@ -449,7 +480,7 @@ def turn(game, mon, df):
             return True
     # an ambusher that is already aware of you waits, unseen, until you come close
     if getattr(mon, 'lurk', False):
-        if dist <= 2 and seen:
+        if dist <= (1 if beh(mon, 'disguise') else 2) and seen:
             from . import ai as AI
             AI.on_wake(game, mon)
             return True
@@ -503,9 +534,20 @@ def turn(game, mon, df):
     if aim:
         mon.readying = None
         return _release(game, mon, aim, df)
+    if beh(mon, 'walls') and dist > 1 and _through_wall(game, mon):
+        return True
     if not seen or getattr(mon, 'fleeing', False):
         return _misc(game, mon, dist, seen)
     # moves that need a turn of warning
+    if beh(mon, 'wail') and dist <= 6 and not has(game, 'afraid') and random.random() < .2:
+        mon.readying = ('wail', p.x, p.y)
+        game.msg(f'{name} draws in a long breath that is not air...', 'bad')
+        return True
+    if beh(mon, 'gaze') and 2 <= dist <= 7 and _line_ok(game, mon) and random.random() < .22:
+        mon.readying = ('gaze', p.x, p.y)
+        game.msg(f'{name} fixes {his(mon)} eyes on you...', 'bad')
+        game.flash([(mon.x, mon.y)], (255, 120, 160), '!', .4)
+        return True
     if beh(mon, 'web') and 2 <= dist <= 6 and not has(game, 'held') and _line_ok(game, mon) and random.random() < .3:
         mon.readying = ('web', p.x, p.y)
         game.msg(f'{name} lifts {his(mon)} abdomen towards you...', 'bad')
@@ -538,6 +580,39 @@ def turn(game, mon, df):
         game.flash([(p.x + dx, p.y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)], (80, 70, 110), '░', .4)
         return True
     # moves without warning (not dangerous in themselves)
+    if beh(mon, 'shriek') and not getattr(mon, 'shrieked', False):
+        mon.shrieked = True
+        n = 0
+        for o in m.mons:
+            if not o.is_npc and o is not mon and not o.awake and cheb(o.x, o.y, mon.x, mon.y) <= 30:
+                o.awake, n = True, n + 1
+        game.flash([(mon.x, mon.y)], (230, 200, 255), '!', .4)
+        game.msg(f'{name} screams, a long rising shriek.' + (' Everything on the level wakes.' if n else ''), 'bad')
+        return True
+    if beh(mon, 'stench') and dist <= 1 and not has(game, 'slowed') and random.random() < .25:
+        give(game, 'slowed', 3, f'The stench of {mon.the()} turns your stomach. You retch and stagger.')
+        return True
+    if beh(mon, 'pollen') and dist <= 2 and random.random() < .25:
+        game.flash([(mon.x + dx, mon.y + dy) for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)], (240, 180, 220), '°', .3)
+        game.msg(f'{name} sheds a cloud of sweet pollen.', 'bad')
+        if random.random() * 100 >= game.stats()['res_poison']:
+            give(game, 'asleep', 2, 'Your eyes close by themselves...')
+        return True
+    if beh(mon, 'pull') and 2 <= dist <= 4 and _line_ok(game, mon) and random.random() < .3:
+        spots = free_around(game, m, mon.x, mon.y, 1)
+        if spots:
+            game.flash(game.line_clear(mon.x, mon.y, p.x, p.y)[:-1] or [(p.x, p.y)], (230, 120, 140), '~', .2)
+            p.x, p.y = min(spots, key=lambda c: cheb(c[0], c[1], p.x, p.y))
+            game.msg(f"{name}'s tongue lashes out and drags you in!", 'bad')
+            return True
+    if beh(mon, 'babble') and dist <= 4 and not has(game, 'confused') and random.random() < .2:
+        give(game, 'confused', 3, f'The babbling of {mon.the()} gets into your head. The world tilts.')
+        return True
+    if beh(mon, 'charm') and dist <= 4 and not has(game, 'charmed') and random.random() < .15:
+        give(game, 'charmed', random.randint(3, 5), mon.tpl.get('charm_msg', '{name} smiles at you')
+             .format(name=name) + f', and you cannot bring yourself to hurt {him(mon)}. (Charmed)')
+        p.charmed_by = mon.id
+        return True
     if beh(mon, 'curse') and dist <= 6 and not has(game, 'cursed') and random.random() < .18:
         game.msg(f'{name} points at you and speaks a word that sticks. You are cursed. (Cursed: less damage, less healing)', 'bad')
         give(game, 'cursed', 40)
@@ -601,6 +676,31 @@ def _misc(game, mon, dist, seen):
             return True
     if getattr(mon, 'invis', 0):
         mon.invis -= 1
+    elif beh(mon, 'unseen') and dist > 2 and random.random() < .15:
+        mon.invis = 999
+        if seen:
+            game.msg(f'{The(mon)} vanishes.', 'info')
+    return False
+
+
+def _through_wall(game, mon):
+    """A draugr does not go round: it walks into the rock and out again, nearer to you."""
+    p, m = game.player, game.map
+    dx, dy = (p.x > mon.x) - (p.x < mon.x), (p.y > mon.y) - (p.y < mon.y)
+    x, y = mon.x + dx, mon.y + dy
+    if not m.inb(x, y) or D.TILES[m.tile(x, y)].walk or random.random() < .4:
+        return False
+    for _ in range(5):
+        x, y = x + dx, y + dy
+        if not m.inb(x, y):
+            return False
+        if D.TILES[m.tile(x, y)].walk:
+            if game.occupied(m, x, y) or (x, y) == (p.x, p.y):
+                return False
+            mon.x, mon.y = x, y
+            if game.visible(x, y):
+                game.msg(f'{The(mon)} steps out of the wall!', 'bad')
+            return True
     return False
 
 
@@ -671,6 +771,27 @@ def _release(game, mon, aim, df):
         game.wear(None, 1.0)
         game.wear(None, 1.0)
         return True
+    if kind == 'wail':
+        game.flash([(mon.x + dx, mon.y + dy) for dx in range(-3, 4) for dy in range(-3, 4)], (220, 230, 255), '≈', .35)
+        if cheb(p.x, p.y, mon.x, mon.y) <= 7 and game.visible(mon.x, mon.y):
+            give(game, 'afraid', 6, f'{name} wails. The cry goes through you, and your courage drains away. (Afraid)')
+        else:
+            game.msg(f'{name} wails, far off.', 'info')
+        return True
+    if kind == 'gaze':
+        if not _line_ok(game, mon):
+            game.msg(f"{name}'s stare finds only stone.", 'info')
+            return True
+        st = mon.tpl.get('gaze', 'paralysed')
+        if st == 'any':
+            st = random.choice(['paralysed', 'confused', 'afraid', None])
+        if st is None:
+            return False                         # this eye shoots a ray instead
+        text = {'paralysed': f'Your limbs stiffen under the gaze of {mon.the()}. You cannot move!',
+                'confused': f'The gaze of {mon.the()} dazes you. The world tilts.',
+                'afraid': f'You meet the eyes of {mon.the()}, and dread fills you. (Afraid)'}[st]
+        give(game, st, {'paralysed': 2, 'confused': 3, 'afraid': 6}[st], text)
+        return True
     if kind == 'dark':
         game.flash([(tx + dx, ty + dy) for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)], (40, 30, 70), '▓', .4)
         if cheb(p.x, p.y, tx, ty) <= 2:
@@ -690,6 +811,11 @@ def shoot_extra(game, mon):
 # ------------------------------------------------------------------ waking and death
 def on_wake(game, mon):
     """Out of the ground, out of the dark."""
+    if beh(mon, 'disguise'):
+        mon.ambush_ready = True
+        game.msg(mon.tpl.get('reveal', '{name} was no {thing}!').format(name=The(mon), thing='statue'), 'bad')
+        game.flash([(mon.x, mon.y)], (255, 200, 80), '!', .3)
+        return True
     if beh(mon, 'ambush'):
         mon.ambush_ready = True
         game.msg(f'{The(mon)} was there all along!', 'bad')

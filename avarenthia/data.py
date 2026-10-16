@@ -204,6 +204,14 @@ for _k in ('kob_slinger', 'kob_trapper', 'kob_sorcerer'):
     MONSTERS[_k]['tags'] += ' lair_dragon'
 for _k in ('goblin', 'gobarcher', 'kobold'):
     MONSTERS[_k]['tags'] += ' warren'
+for _k in ('skeleton', 'skarcher', 'zombie'):
+    MONSTERS[_k]['tags'] += ' barrow'
+for _k in ('skeleton', 'skarcher'):
+    MONSTERS[_k]['tags'] += ' vault'
+for _k in ('drowned', 'giant_crab', 'octopus'):
+    MONSTERS[_k]['tags'] += ' grotto'
+for _k in ('rustgnawer', 'grey_ooze', 'violet_creeper'):
+    MONSTERS[_k]['tags'] += ' gloam'
 # what the elements do to each kind: resistances in percent (negative: a weakness), and the element of its attacks
 for _k, _res in (('skeleton', dict(cold=25, poison=100, fire=-25)), ('skarcher', dict(cold=25, poison=100, fire=-25)),
                  ('zombie', dict(poison=100, fire=-25)), ('ghost', dict(cold=75, poison=100, lightning=25)),

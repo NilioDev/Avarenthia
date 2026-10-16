@@ -577,6 +577,9 @@ class GameScreen(Screen):
                     if traps and (mx, my) in traps:
                         ch, fg = '^', (220, 190, 110)
                     o = mons.get((mx, my))
+                    if o and getattr(o, 'lurk', False) and o.tpl.get('disguise'):
+                        ch, fg = o.tpl['disguise'][0], D.hexrgb(o.tpl['disguise'][1])     # a chest, a statue, a stone
+                        o = None
                     if o and (getattr(o, 'lurk', False) or getattr(o, 'invis', 0)):
                         o = None                    # something waits there, unseen
                     if o:

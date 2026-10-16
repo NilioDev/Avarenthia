@@ -1429,6 +1429,9 @@ class Game:
             self.wear('weapon', .2)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
+        if getattr(mon, 'lurk', False):          # struck where it hid: it shows itself
+            AI.on_wake(self, mon)
+            mon.awake = True
         dmg = BH.incoming(self, mon, dmg, weapon, elem)
         if dmg is None:
             mon.awake = True
@@ -1511,7 +1514,8 @@ class Game:
         m.mons.remove(mon)
         self.kills += 1
         GD.on_kill(self, mon)
-        if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher'):
+        if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher') \
+                and mon.tpl.get('family') not in ('undead', 'construct', 'ooze', 'plant', 'fiend'):
             from .dress import add_blood
             add_blood(m, mon.x, mon.y, 2 if (mon.elite or mon.is_boss) else random.randint(0, 1))
         if not mon.is_npc:

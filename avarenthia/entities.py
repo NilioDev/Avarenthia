@@ -329,6 +329,8 @@ class Monster:
     def the(self):
         if self.is_npc or self.elite == 2 or self.is_boss:
             return self.name
+        if self.name.startswith('The '):                 # The Staring Dark, The Deep Mother
+            return 'the ' + self.name[4:]
         return 'the ' + self.name
 
 

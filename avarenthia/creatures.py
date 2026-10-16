@@ -604,8 +604,22 @@ THEMED = [
      ('grass', 'hills', 'coast')),
     (['Silkhollow', 'The Spider Wood Cave', 'Webbed Grotto', 'Weaver Deep'], 'cave', 'spiderlair', 'matriarch', '#6a6a78',
      ('forest', 'swamp')),
-    (['Goblin Warren', 'Snaggletooth Warrens', 'The Burrows of Grisk', 'Mudhole Warren'], 'cave', 'warren', 'gob_boss',
+    (['Goblin Warren', 'Snaggletooth Warrens', 'The Burrows of Grisk', 'Mudhole Warren'], 'cave', 'warren', 'goblin_king',
      '#7a6a4a', ('hills', 'forest', 'grass')),
     (['Ruin of the Coiled Throne', 'The Serpent Halls', 'Sunken Temple of Sseth', 'The Scaled Palace'], 'rooms', 'snakeruin',
      'viper_coil', '#b8a070', ('coast', 'grass', 'hills')),
 ]
+
+# round two (menagerie.py): the dead, the beasts of every land, the sea, the made things, the fey and the deep
+from . import menagerie as _MN
+NEW.update(_MN.NEW)
+BANDS.update(_MN.BANDS)
+HORDE.update(_MN.HORDE)
+GEAR.update(_MN.GEAR)
+BEASTS |= _MN.BEASTS
+for _b, _ks in _MN.BIOME_ADD.items():
+    BIOME_ADD.setdefault(_b, []).extend(_ks)
+for _c, _ks in _MN.CLIMATE_ADD.items():
+    CLIMATE_ADD.setdefault(_c, []).extend(_ks)
+NIGHT_ADD += _MN.NIGHT_ADD
+THEMED += _MN.THEMED

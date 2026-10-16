@@ -248,9 +248,20 @@ People forget, slowly.
   peoples below come in bands with classes: archers, bombers, shamans who plant totems, warlocks who curse, trappers
   who lay snares, legionaries who fight in line, and a chief whose death may break the band. Dangerous moves are
   announced a turn ahead (a lifted abdomen, a lit fuse, gathering shadows): step aside.
+- **And every other corner of the land has its own**: ghouls whose claws numb, ghasts that stink, skeleton warriors
+  behind shields, barrow draugr who step out of the rock, banshees whose wail fills you with fear, shades and wights
+  that drain your strength, vampire spawn; bears that hug, boars and rhinos that charge, panthers that stalk, snow apes,
+  mammoths and sabretooths in the north, frogs whose tongue drags you in, constrictors, winter wolves that breathe frost;
+  oozes that eat metal or split, rot flowers whose pollen sends you to sleep, shriekers that wake the whole level;
+  crabfolk, brinefolk and sea hags on the coast; animated armour and bronze guardians in the Varnish vaults, gargoyles
+  that stand as statues and mimics that wait as chests; Morrak's imps, which go unseen; pixies and dryads that charm
+  you so you cannot strike them; wyverns, drakes, basilisks whose gaze stiffens you, manticores; and the things of the
+  deep, under names of our own: skullsippers that drink your mana, babbling gibberflesh, stonemaws, gloomwings,
+  rustgnawers, gloomdiggers, burrowbacks.
 - **States**: held, paralysed (never twice in a row), asleep, slowed, confused, afraid, blinded, diseased (no natural
-  healing) and cursed (less damage and healing) show under your globes. Priests, antidotes and Purify lift them.
-- **New places**: an ant nest, a spider lair, a goblin warren and a snake ruin, each with its chief at the bottom, and
+  healing), cursed (less damage and healing), weakened (less damage) and charmed show under your globes. Priests, antidotes and Purify lift them.
+- **New places**: an ant nest, a spider lair, a goblin warren (with its king), a snake ruin, an old barrow (the Ghast
+  Lord), the Gloam (where the Staring Dark waits) and a drowned grotto (the Deep Mother), each with its lord at the bottom, and
   orc war camps (green `∆`) out in the hills.
 - Hidden places: ruins (`Π`), shrines (`†`), bandit camps (`∆`), standing stones (`Ψ`) and abandoned wagons (`¤`);
   along the old ways Varnish waystations (`Σ`), milestones (`╥`), sealed vaults (`Φ`), graveyards (`┼`) and a
@@ -362,6 +373,7 @@ avarenthia/data.py         tiles, skills, items, affixes, monsters, dungeons
 avarenthia/entities.py     Item, Monster, Player, GameMap; loot and monsters
 avarenthia/ai.py           monster habits and traits
 avarenthia/creatures.py    the families of round one: spiders, insects, goblinoids, the peoples below (pure data)
+avarenthia/menagerie.py    round two: the dead, beasts of every land, oozes, plants, the sea, constructs, fey, the deep
 avarenthia/behave.py       what those kinds do (web, grab, swarm, totems...), and your states (held, cursed...)
 avarenthia/named.py        named enemies, their fame and grudges, and hunting them
 avarenthia/world.py        the realm: regions, roads, settlement sizes and services

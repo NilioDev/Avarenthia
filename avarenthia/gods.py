@@ -36,6 +36,8 @@ TIERS = [(0, 'noticed'), (10, 'favoured'), (30, 'chosen')]
 DEVOTABLE = ['solmara', 'valdric', 'thessa', 'durnak', 'skell']
 
 UNDEAD = {'skeleton', 'skarcher', 'zombie', 'ghost', 'wraith', 'lich', 'drowned', 'drowned_king', 'cultist'}
+from .menagerie import UNDEAD as _UND
+UNDEAD |= _UND
 OUTLAWS = {'bandit', 'brigand', 'raider', 'robber_knight'}
 DEEP = {'kobold', 'goblin', 'gobarcher', 'troll', 'ogre', 'grolm', 'snagtooth', 'spider'}
 
