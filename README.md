@@ -15,7 +15,11 @@ growing quietly in the background while you are busy elsewhere.
 and what is left are broken roads, old ruins and young kingdoms quarrelling over the pieces. The history, the gods and
 the peoples are told by the people you meet, a little at a time, and in the help pages.
 
-**One continent, a frozen north, islands out at sea.** Every world is made the way Dwarf Fortress makes its
+**A different land every time, a frozen north, a few islands out at sea.** Each world draws its shape from a
+template, the way Azgaar's Fantasy Map Generator does: two continents joined by a neck of land, one great sprawling
+land, a land of long peninsulas, an isthmus, an old world bitten by deep gulfs, or a ring of land round an inner sea
+(and then the Sky-Seat hangs over that sea). Hills, mountain ranges and troughs raise the land, so it gets real
+gulfs, capes and bays; all of the main land can be walked. Then the world is made the way Dwarf Fortress makes its
 worlds: mountains rise in long chains, wet winds blow in from the western sea and drop their rain where the land
 climbs, so the land behind a range lies dry; the climate runs from the polar ice and pack ice of the north through
 tundra, taiga and the temperate woods and grasslands to savanna, desert and jungle in the far south. Rain gathers
@@ -27,7 +31,7 @@ double (`═║╔`), the others single (`─│┌`), with bridges (`╪`) wher
 **Wonders.** Each world has its rare sights, one of each at most and always where they belong: Starfall Crater, the
 Elder Tree, the Sundering, the White Waste, the Sea of Sand, the Steaming Fields, the Glass Hills, the Stone Wood, the
 Black Mire, the Glimmering, the Fjords, the Ashen Scar, the Burning Isle, the Wyrm's Bones in the desert, and far out
-in the warm southern sea the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a
+at sea (in the warm south, or in the inner sea) the Sky-Seat: a shard of the fallen Varnish capital still hanging in the air over a
 maelstrom, ringed by drowned towers and by a coral atoll that the currents have torn open on one side. It lies so far
 out that nobody on land can see it, not even from a watchtower; the sailors in the harbours talk about it. People talk about them; the first
 time you see one, you will know.

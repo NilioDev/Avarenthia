@@ -1,5 +1,6 @@
-"""The shape of the world, made the Dwarf Fortress way: one great continent and a scatter of islands in a
-cold-to-hot sea, mountains in long chains, and four smooth fields (elevation, temperature, rainfall and
+"""The shape of the world: land drawn from one of Azgaar's kind of templates (heightmap.py), so one world is two
+continents, the next one great sprawling land, a land of long peninsulas or a ring round an inner sea, with only a
+few islands in a cold-to-hot sea. Then the Dwarf Fortress way: mountains in long chains, and four smooth fields (elevation, temperature, rainfall and
 drainage) from which the biomes follow in broad natural belts. Water gathers and runs to the sea in real
 river systems. On top of that the world gets its wonders: rare sights, one of each at most.
 
@@ -130,34 +131,55 @@ def generate(SEED, W=320, H=180):
     ys, xs = np.mgrid[0:H, 0:W].astype(float)
     nx, ny = xs / W, ys / H
 
-    # ------------------------------------------------------------------ the main continent
-    # the sea always rings the world: land fades out towards the edges, and a continent that still
-    # reaches the border is thrown away and drawn again
-    edge = np.sqrt(((nx - .5) / .5) ** 2 + ((ny - .5) / .5) ** 2)       # round, so the coast never turns square
-    MARGIN = 12
-    for attempt in range(40):
-        cx, cy = .5 + rng.uniform(-.05, .05), .5 + rng.uniform(-.04, .04)
-        # an uneven blob: a few lobes so the coast gets bays, peninsulas and an inland sea
-        lobes = np.zeros((H, W))
-        for _ in range(7):
-            lx, ly = cx + rng.uniform(-.27, .27), cy + rng.uniform(-.22, .22)
-            rx, ry = rng.uniform(.18, .28), rng.uniform(.18, .27)
-            lobes = np.maximum(lobes, 1 - np.sqrt(((nx - lx) / rx) ** 2 + ((ny - ly) / ry) ** 2))
-        land = lobes * .7 + fbm(50, 6) * .85 - np.clip(edge - .58, 0, 1) * 1.6    # the falloff, before the warp
-        land = warp(land, 40)
-        # an inland sea cut into the continent
-        sx_, sy_ = cx + rng.uniform(-.12, .12), cy + rng.uniform(-.1, .1)
-        sea = 1 - np.sqrt(((nx - sx_) / .07) ** 2 + ((ny - sy_) / .06) ** 2)
-        land -= np.clip(sea, 0, 1) * .9 * warp(fbm(20, 3), 10) * 1.6
-        thr = np.quantile(land, .55)               # a good 40% of the world is the continent
-        mask = land > thr
-        lab, n = ndimage.label(mask)
-        sizes = ndimage.sum(mask, lab, range(1, n + 1))
-        main = lab == (np.argmax(sizes) + 1)
-        yy_, xx_ = np.nonzero(main)
-        if (xx_.min() >= MARGIN and xx_.max() < W - MARGIN and yy_.min() >= MARGIN * .7 and yy_.max() < H - MARGIN * .7
-                and main.sum() > W * H * .33):
+    # ------------------------------------------------------------------ the land
+    # Each world draws one shape (after Azgaar's templates): a coarse heightmap of hills, ranges and troughs,
+    # roughened with noise and warped so the coast turns ragged. Between a third and a half of the world is land;
+    # the sea always rings it.
+    from .heightmap import TEMPLATES, build as build_hm
+    shape = str(rng.choice(sorted(TEMPLATES)))
+    hm, inner = build_hm(rng, shape, W // 2, H // 2)
+    up = ndimage.gaussian_filter(np.kron(hm, np.ones((2, 2)))[:H, :W], 1.2)
+    f = warp(up + (fbm(18, 4) - .5) * 26 + (fbm(5, 3) - .5) * 8, 28)
+    thr = min(max(20, np.quantile(f, .52)), np.quantile(f, .68))
+    mask = f > thr
+    mask[:4, :] = mask[-4:, :] = False
+    mask[:, :4] = mask[:, -4:] = False
+    lab, n = ndimage.label(mask)
+    sizes = ndimage.sum(mask, lab, range(1, n + 1))
+    order_ = np.argsort(sizes)[::-1]
+    big = [i + 1 for i in order_ if sizes[i] > W * H * .01]
+    small = [i + 1 for k, i in enumerate(order_) if sizes[i] <= W * H * .01 and k < 6 and sizes[i] > 40]
+    # the landmasses are joined by necks of land where they lie closest, so all of it can be walked
+    main = lab == big[0]
+    for _ in range(len(big) - 1):
+        edge_ = main & ~(np.roll(main, 1, 0) & np.roll(main, -1, 0) & np.roll(main, 1, 1) & np.roll(main, -1, 1))
+        ay, ax = np.nonzero(edge_)
+        best = None
+        for k in big:
+            other = lab == k
+            if (other & main).any():
+                continue
+            oe = other & ~(np.roll(other, 1, 0) & np.roll(other, -1, 0) & np.roll(other, 1, 1) & np.roll(other, -1, 1))
+            oy, ox = np.nonzero(oe)
+            step = max(1, len(oy) // 400)
+            oy, ox = oy[::step], ox[::step]
+            d = (ax[:, None] - ox[None]) ** 2 + (ay[:, None] - oy[None]) ** 2
+            i, j = np.unravel_index(np.argmin(d), d.shape)
+            if best is None or d[i, j] < best[0]:
+                best = (d[i, j], k, ax[i], ay[i], ox[j], oy[j])
+        if best is None:
             break
+        _d, k, x1, y1, x2, y2 = best
+        main |= lab == k
+        steps = int(math.hypot(x2 - x1, y2 - y1)) + 1
+        wob = rng.uniform(-1, 1) * min(6, steps / 4)
+        for t in np.linspace(0, 1, steps * 2):
+            bx = x1 + (x2 - x1) * t - (y2 - y1) / max(1, steps) * wob * math.sin(t * math.pi)
+            by = y1 + (y2 - y1) * t + (x2 - x1) / max(1, steps) * wob * math.sin(t * math.pi)
+            r = 2.2 + 1.2 * math.sin(t * math.pi * 2) ** 2
+            main |= (xs - bx) ** 2 + (ys - by) ** 2 <= r * r
+    HMN = np.clip((f - thr) / max(1, np.quantile(f[main], .97) - thr), 0, 1)     # the template's heights, 0..1 on land
+    near_isles = np.isin(lab, small) & ~main
     continent = main.copy()
 
     # ------------------------------------------------------------------ islands, out at sea
@@ -165,7 +187,7 @@ def generate(SEED, W=320, H=180):
     islands = np.zeros((H, W), bool)
     island_cells = []
     tries = 0
-    want = rng.integers(4, 7)
+    want = rng.integers(1, 3)
     while len(island_cells) < want and tries < 400:
         tries += 1
         ix_, iy_ = rng.uniform(.06, .94) * W, rng.uniform(.08, .92) * H
@@ -182,12 +204,12 @@ def generate(SEED, W=320, H=180):
             islands |= lab_i == (np.argmax(sz) + 1)
         island_cells.append((ix_, iy_, r))
     # a scatter of islets near the coasts
-    for _ in range(rng.integers(10, 18)):
+    for _ in range(rng.integers(2, 6)):
         ix_, iy_ = rng.uniform(.03, .97) * W, rng.uniform(.04, .96) * H
         if 3 < dist_land[int(iy_), int(ix_)] < 9:
             d = np.sqrt((xs - ix_) ** 2 + (ys - iy_) ** 2) / rng.uniform(1.5, 3.2)
             islands |= (1 - d + (fbm(4, 2) - .5) * .6) > .3
-    is_land = main | islands
+    is_land = main | islands | near_isles
     is_land[[0, -1], :] = False
     is_land[:, [0, -1]] = False
 
@@ -198,6 +220,7 @@ def generate(SEED, W=320, H=180):
     ridge = 1 - np.abs(fbm(46, 5) * 2 - 1)
     ridge = ridge ** 3
     elev = .35 * fbm(30, 5) + .45 * ridge * (.4 + .6 * inland) + .25 * inland
+    elev = .5 * elev + .55 * HMN                 # the template's ranges are where the mountains stand
     elev = np.where(is_land, elev, 0)
     land_e = elev[is_land]
     e_hills, e_mount, e_peak = np.quantile(land_e, [.74, .88, .965])
@@ -535,6 +558,10 @@ def generate(SEED, W=320, H=180):
         pad = np.zeros((H + 2 * ay, W + 2 * ax), dtype=bool)
         pad[ay:ay + H, ax:ax + W] = continent if sink else is_land
         cand = np.argwhere(np.isin(B, ['ocean', 'sea']))
+        if inner:                                       # a world with an inner sea: the Sky-Seat hangs over it
+            ix0, iy0, irx, iry = inner[0] * W, inner[1] * H, inner[2] * W, inner[3] * H
+            cand = cand[((cand[:, 1] - ix0) / irx) ** 2 + ((cand[:, 0] - iy0) / iry) ** 2 < 1]
+            south = 0
         cand = cand[(cand[:, 0] >= max(H * south, 16)) & (cand[:, 0] < H - 19) & (cand[:, 1] >= 32) & (cand[:, 1] < W - 32)]
         rng.shuffle(cand)
         for y, x in cand[:6000]:
@@ -795,4 +822,4 @@ def generate(SEED, W=320, H=180):
         WONDERS.append(("The Wyrm's Bones", x0, y0))
 
     return dict(B=B, is_land=is_land, continent=continent, river=river, lake=lake, elev=elev, rain=rain,
-                temp=temp, over=OVER, shadow=SHADOW, wonders=WONDERS)
+                temp=temp, over=OVER, shadow=SHADOW, wonders=WONDERS, shape=shape)
