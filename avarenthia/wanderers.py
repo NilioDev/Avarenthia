@@ -4,6 +4,8 @@ in a dungeon or a town."""
 import random
 
 from . import data as D
+from . import seasons as SE
+from . import living as LV
 from .data import TOWN, CITY, ROAD
 from .world import dijkstra_path, scaled
 from .worldgen import D8, cheb
@@ -35,6 +37,9 @@ class Wanderer:
 
     def describe(self, game):
         w = game.world
+        own = LV.describe(self)
+        if own:
+            return own
         if self.kind == 'caravan':
             g, q = self.goods
             return f"A merchant caravan carrying {q} {D.GOODS[g]['name']} to {w.settlements[self.dest].name}."
@@ -149,6 +154,9 @@ def step(game, wd):
     on_over = game.cur == 'over'
     if wd.cooldown > 0:
         wd.cooldown -= 1
+    if wd.kind in LV.KINDS:
+        LV.step(game, wd)
+        return
     if wd.kind == 'warband':
         from .war import step_warband
         step_warband(game, wd)
@@ -237,6 +245,8 @@ def tick(game, turns):
         while wd.acc >= wd.speed and wd in w.wanderers:
             wd.acc -= wd.speed
             step(game, wd)
+            if wd.kind == 'monsters':
+                SE.track(game, wd)
     # bandits raid caravans, patrols chase off bandits
     for b in [x for x in w.wanderers if x.kind == 'bandits']:
         for c in [x for x in w.wanderers if x.kind == 'caravan' and cheb(x.x, x.y, b.x, b.y) <= 1]:
@@ -344,9 +354,19 @@ def spawn_monsters(game):
             break
     if not c:
         return
+    winter, near = SE.Now(game).winter, None
+    if winter and random.random() < .35:            # hungry wolves come down to the roads in winter
+        near = _far_cell(game, lambda x, y, t: t != ROAD and D.TILES[t].walk and t not in (TOWN, CITY) and any(
+            game.maps['over'].inb(x + dx, y + dy) and game.maps['over'].tile(x + dx, y + dy) == ROAD
+            for dx in (-2, 0, 2) for dy in (-2, 0, 2)))
+        c = near or c
     reg = w.region_at(*c)
     lvl = w.danger_at(*c) + random.randint(0, 1)
     keys = wild_pack(reg.biome, lvl, climate=getattr(reg, 'climate', None))
+    if near:
+        keys = ['wolf'] * random.randint(2, 4)
+    if SE.bears_sleep(game, keys):
+        return                                       # the bears are asleep
     r = random.random()
     elite = 2 if r < .04 + lvl * .01 else 1 if r < .15 + lvl * .015 else 0
     wd = make_group(game, 'monsters', c[0], c[1], lvl, keys, elite)

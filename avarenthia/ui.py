@@ -4,6 +4,9 @@ import math
 import random
 import time
 
+from . import anim as AN
+from . import seasons as SE
+from . import living as LV
 from . import data as D
 from . import economy as ECO
 from . import engine as E
@@ -22,6 +25,7 @@ from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
 from .folk import unfound as FKunfound
+from .tribes import LOOK as TRglow
 
 W, H = 110, 60          # square 8x8 cells: 880 x 480 pixels before scaling
 MAP_W, MAP_H = 80, 51
@@ -115,7 +119,7 @@ class App:
             wk = getattr(top, 'weather', 'clear')
             if wk not in ('clear', 'night') and wk not in WX.STILL:
                 return 1 / 24                      # falling rain and snow: smooth, at a steady pace
-            if getattr(top, 'marks', False) or wk != 'clear':
+            if getattr(top, 'marks', False) or getattr(top, 'moving', False) or wk != 'clear':
                 return 1 / 10
             if getattr(m, 'lights', None) and (m.kind == 'dungeon' or getattr(m, 'underground', False)
                                                 or (m.kind == 'town' and TW.lamp_light(g) > 0)):
@@ -511,7 +515,11 @@ class GameScreen(Screen):
         night = TW.is_night(g)
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
-        self.marks = False
+        self.marks = self.moving = False
+        day = g.turn // D.DAY_LEN
+        season = SE.Now(g) if m.kind == 'over' else None
+        fires = getattr(g.world, 'fires', None) if season else None
+        beam = getattr(m, 'beacon', None) if m.kind == 'town' and TW.lamp_light(g) > 0 else None
         self.weather = wk = WX.shown(g)
         WX.frame(ox, oy, WX.wetness(g))
         inline = wk != 'clear' and wk not in WX.NEEDS_CANVAS
@@ -540,14 +548,27 @@ class GameScreen(Screen):
                 if not v and not m.seen[i]:
                     continue
                 ch, fg, bg = LOOK.get(m, i)
+                if season:
+                    ch, fg, bg = SE.look(g, m, i, (ch, fg, bg), season, t)
+                    if fires and v and i in fires:
+                        self.moving = True
                 if ways and i in ways and i in ways_seen:
                     ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), g.world.evils[taint[i] - 1].d['taint'], i)
+                    if v:                           # the marked land breathes, slowly
+                        k = .9 + .1 * math.sin(t * .8 + (mx + my) * .12)
+                        fg, bg, self.moving = scale(fg, k), scale(bg, k), True
                 if deco and deco[i]:
                     ch, fg, bg = DR.deco_look(m, i, (ch, fg, bg))
+                elif v and m.t[i] in AN.MOVING:
+                    look = AN.cell(m, i, mx, my, (ch, fg, bg), t, night, day)
+                    if look:
+                        ch, fg, bg = look
+                        self.moving = True
                 if portal and (mx, my) == portal:
-                    ch, fg = '0', (90, 176, 255)
+                    ch, fg = '0', AN.portal(t)
+                    self.moving = True
                 if lamps and (mx, my) in lamps and lamps[(mx, my)] in m.lamp_on:
                     fl = DR.flicker(m, 0, t + lamps[(mx, my)])
                     ch, fg, bg = 'Γ', (255, int(200 * fl), int(110 * fl)), (int(90 * fl), int(52 * fl), 16)
@@ -562,6 +583,9 @@ class GameScreen(Screen):
                             gk = (1 - gd / 4) * .8
                             lr, lg, lb = lr + gk * gc[0] / 255, lg + gk * gc[1] / 255, lb + gk * gc[2] / 255
                     ch, fg, bg = DR.lit((ch, fg, bg), (lr + k, lg + k * .82, lb + k * .55))
+                    if beam:
+                        ch, fg, bg = AN.beacon(m, mx, my, (ch, fg, bg), t)
+                        self.moving = True
                 elif lighting:
                     fg = mix(scale(fg, .42), (40, 52, 96), .4)
                     bg = mix(scale(bg, .35), (8, 10, 22), .5)
@@ -575,6 +599,8 @@ class GameScreen(Screen):
                         ch, fg = it.glyph(), it.color()
                         if it.k == 'gear' and it.rar != 'normal':
                             bg = mix(bg, fg, .18)
+                            fg, _on = AN.sparkle(fg, t, mx, my, 17)
+                            self.moving = True
                     if traps and (mx, my) in traps:
                         ch, fg = '^', (220, 190, 110)
                     o = mons.get((mx, my))
@@ -634,6 +660,14 @@ class GameScreen(Screen):
                                              lightning, MAP_W, MAP_H)
                 cv.put(vx, vy, ch, fg, bg)
         if m.kind == 'over':
+            if season.midsummer:                     # the hill fires are seen from far off, beyond your sight
+                for i in SE.bonfires(m):
+                    bx, by = i % m.w, i // m.w
+                    vx, vy = bx - ox, by - oy
+                    if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (bx, by) != (p.x, p.y):
+                        f = AN.flame(t, bx, by)
+                        cv.put(vx, vy, '☼', (255, int(190 * f), 70), (int(90 * f), 30, 8))
+                        self.moving = True
             self.draw_overworld_extras(cv, ox, oy)
         wk = self.weather
         if wk in WX.NEEDS_CANVAS:
@@ -755,12 +789,17 @@ class GameScreen(Screen):
                         cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
         # temples, monasteries and watchtowers
         om = g.map
+        night = TW.is_night(g)
         for st in getattr(w, 'sites', ()):
             if om.seen[st.y * om.w + st.x] and not FKunfound(st):
                 vx, vy = st.x - ox, st.y - oy
                 if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (st.x, st.y) != (p.x, p.y):
                     ch, col = st.glyph
-                    cv.put(vx, vy, ch, col, (40, 34, 26))
+                    bg = (40, 34, 26)
+                    if night and st.kind in TRglow and g.vis[st.y * om.w + st.x]:
+                        bg = AN.camp_glow(time.monotonic(), st.x, st.y)     # their fires, seen from afar
+                        self.moving = True
+                    cv.put(vx, vy, ch, col, bg)
         # settlements, by size; dwarven holds are a gate in the mountainside
         LOOKS = {'metropolis': ('█', (255, 232, 150), (90, 70, 30)), 'city': ('■', (255, 216, 96), (60, 44, 20)),
                  'town': ('⌂', (250, 206, 90), (52, 38, 18)), 'village': ('⌂', (226, 186, 90), None),
@@ -770,6 +809,8 @@ class GameScreen(Screen):
                 vx, vy = s.x - ox, s.y - oy
                 if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (s.x, s.y) != (p.x, p.y):
                     ch, col, bg = LOOKS[s.kind]
+                    if LV.plundered(g, s):
+                        col, bg = scale(col, .6), (64, 16, 10)          # burnt and half empty
                     cv.put(vx, vy, ch, col, bg)
         # strongholds in their faction colour
         for h in w.holds:
@@ -808,13 +849,29 @@ class GameScreen(Screen):
                 elif not g.visible(poi.x, poi.y):
                     col = scale(col, .7)
                 cv.put(vx, vy, ch, col, (34, 28, 22))
+        # battlefields and crossroads shrines
+        for b in getattr(w, 'battles', ()):
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    bx_, by_ = b['x'] + dx, b['y'] + dy
+                    vx, vy = bx_ - ox, by_ - oy
+                    if 0 <= vx < MAP_W and 0 <= vy < MAP_H and om.inb(bx_, by_) and om.seen[by_ * om.w + bx_] \
+                            and (bx_, by_) != (p.x, p.y) and om.tile(bx_, by_) not in (D.WATER, D.MOUNTAIN, TOWN, D.CITY):
+                        lk = LV.battle_look(g, bx_, by_)
+                        if lk:
+                            cv.put(vx, vy, *lk)
+        for c in getattr(w, 'crossroads', ()):
+            vx, vy = c['x'] - ox, c['y'] - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and om.seen[c['y'] * om.w + c['x']] and (c['x'], c['y']) != (p.x, p.y):
+                cv.put(vx, vy, LV.SHRINE_LOOK[0], LV.SHRINE_LOOK[1], (40, 32, 22))
         # travellers
         for wd in w.wanderers:
             if not g.visible(wd.x, wd.y):
                 continue
             vx, vy = wd.x - ox, wd.y - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (wd.x, wd.y) != (p.x, p.y):
-                bg = (50, 16, 60) if wd.kind == 'hunt' else (70, 20, 16) if wd.hostile else (20, 30, 50) if wd.kind == 'patrol' else BG
+                bg = (50, 16, 60) if wd.kind == 'hunt' else (70, 20, 16) if wd.hostile else (20, 30, 50) if wd.kind == 'patrol' \
+                    else (8, 18, 44) if wd.kind == 'ship' else BG
                 ch = '☺' if wd.ch == '@' and not wd.hostile and wd.kind not in ('hunt', 'lawmen', 'bounty') else wd.ch
                 fg = wd.fg
                 if getattr(wd, 'offer', None) and not wd.hostile:
@@ -2734,7 +2791,7 @@ def _stock_word(s, g):
 
 
 class MarketScreen(Modal):
-    BOX_W, BOX_H = 104, 26
+    BOX_W, BOX_H = 104, 30
 
     def __init__(self, app, sid):
         super().__init__(app)
@@ -2783,6 +2840,10 @@ class MarketScreen(Modal):
                 age = g.day - day
                 col = GOOD if v > ECO.buy_price(s, gk) else DIM
                 cv.text(x + 60, yy, f"{fmt(v, True)} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
+        cheap, dear = ECO.in_season(SE.doy(g.day))
+        names = lambda gs: ', '.join(D.GOODS[k]['name'] for k in gs) or 'nothing'
+        cv.text(x + 2, y + self.BOX_H - 5, f'In season, cheap now: {names(cheap)}.', GOOD, PANEL, maxw=self.BOX_W - 4)
+        cv.text(x + 2, y + self.BOX_H - 4, f'Out of season, dear now: {names(dear)}.', BAD, PANEL, maxw=self.BOX_W - 4)
         cv.text(x + 2, y + self.BOX_H - 3, '+ made here (cheap)   ! wanted here (sells high)   weight: ' +
                 f"{D.GOODS[D.GOOD_ORDER[self.sel]]['name']} {D.GOODS[D.GOOD_ORDER[self.sel]]['w']} per unit", DIM, PANEL)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' ↑↓ select · b/s buy or sell 1 · B/S buy or sell 10 · A sell all · Esc leave ', DIM, PANEL)
@@ -3120,6 +3181,7 @@ class WorldMapScreen(Modal):
         g = self.game
         om = g.maps['over']
         w = g.world
+        season = SE.Now(g)
         x, y = self.box(cv, 104, 58, 'Map of the realm (close-up)')
         vw, vh = 100, 55
         self.cx = max(vw // 2, min(om.w - vw // 2, self.cx))
@@ -3137,7 +3199,7 @@ class WorldMapScreen(Modal):
                 i = my * om.w + mx
                 if not om.seen[i]:
                     continue
-                ch, fg, bg = LOOK.get(om, i)
+                ch, fg, bg = SE.look(g, om, i, LOOK.get(om, i), season)
                 if i in ways and i in ways_seen:
                     ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:
@@ -3208,6 +3270,7 @@ class WorldMapScreen(Modal):
         g = self.game
         om = g.maps['over']
         w = g.world
+        season = SE.Now(g)
         x, y = self.box(cv, 104, 60, 'Map of the realm')
         bx, by = x + 2, y + 1
         taint = getattr(w, 'taint', None)
@@ -3232,7 +3295,7 @@ class WorldMapScreen(Modal):
                             best, bt, bi = pr, t, i
                 if bt is None:
                     continue
-                ch, fg, bg = LOOK.get(om, bi)
+                ch, fg, bg = SE.look(g, om, bi, LOOK.get(om, bi), season)
                 if bg == LOOK.BG:
                     bg = PANEL
                 if nbl:

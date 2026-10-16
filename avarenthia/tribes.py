@@ -16,9 +16,9 @@ from .entities import GameMap, make_npc, make_monster, Item
 from .worldgen import cheb
 
 LOOK = {'warcamp': ('Ψ', (214, 96, 60)), 'ravine': ('¤', (190, 200, 90)), 'kobolds': ('∆', (226, 150, 84)),
-        'gnolls': ('¥', (214, 176, 96)), 'stilts': ('╥', (110, 190, 120))}
+        'gnolls': ('¥', (214, 176, 96)), 'stilts': ('╥', (110, 190, 120)), 'cove': ('¶', (220, 90, 70))}
 KIND_NAME = {'warcamp': 'an orc war camp', 'ravine': 'a goblin ravine', 'kobolds': 'the kobold caves',
-             'gnolls': 'a gnoll hunting camp', 'stilts': 'a lizardfolk village'}
+             'gnolls': 'a gnoll hunting camp', 'stilts': 'a lizardfolk village', 'cove': 'a pirate cove'}
 NAMES = {
     'warcamp': ['Skullgate', 'The Red Stockade', 'Gorefang Camp', 'Ironjaw Camp', 'The Bone Palisade', 'Blacktusk Camp'],
     'ravine': ['Snaggle Gully', 'Ratgut Ravine', 'The Knifecrack', 'Grubber\'s Gulch', 'The Stinkcleft', 'Nettle Gorge'],
@@ -41,11 +41,14 @@ WARN = {
     'kobolds': ['Shiny toll! Shiny toll, or go away! No toll, no caves!', 'Stop! Stop! Pay the shiny or go back up!'],
     'gnolls': ['Go. This is the hunting ground of the pack.', 'Walk away, meat. The pack is watching.'],
     'stilts': ['Ssstop. This water is ours. Go back the way you came.', 'No warm-blood comes to the egg pools. Go.'],
+    'cove': ['Easy now. Keep walking and keep your mouth shut.'],
 }
 FRIEND = {
     'warcamp': ['Trade at the smithy, if you have coin. Keep your hands off the cages.', 'The chief says you are no enemy. So, no enemy.'],
     'ravine': ['Market\'s down by the water. Nobody asks where anything came from.', 'You are wanted up there? Welcome down here.'],
     'kobolds': ['Toll is paid! Friend of the caves! Mind the carts.', 'Shiny friend! Come, come, see the hoard. Only look!'],
+    'cove': ['You never saw this place. Nobody ever does.', 'Grell buys anything. The captain buys nothing, and takes the rest.',
+             'Drink up. The tide waits for no one, but the rum does.'],
 }
 TOLL = 300                  # copper: three silver in bright coins buys the kobolds' welcome
 RANSOM = 2000               # copper: twenty silver buys a captive's freedom from the orcs
@@ -146,7 +149,7 @@ def welcome(game, site):
         return site.kind == 'ravine' and CR.max_heat(game) > 0
     if site.kind == 'kobolds':
         return bool(getattr(site, 'toll', False))
-    return False
+    return site.kind == 'cove'          # anyone who keeps their mouth shut
 
 
 # ------------------------------------------------------------------ building the maps
@@ -218,7 +221,9 @@ def who(game, m, x, y, look, name, foe=None, flee=False, job='folk', race=None, 
 
 
 def gen_camp(game, site):
-    fn = {'warcamp': war_camp, 'ravine': ravine, 'kobolds': kobold_caves, 'gnolls': gnoll_camp, 'stilts': stilt_village}
+    from .sailing import cove_map
+    fn = {'warcamp': war_camp, 'ravine': ravine, 'kobolds': kobold_caves, 'gnolls': gnoll_camp, 'stilts': stilt_village,
+          'cove': cove_map}
     m = fn[site.kind](game, site)
     m.centre = getattr(m, 'centre', (m.w // 2, m.h // 2))
     if getattr(site, 'angry', -1) > game.day:
@@ -228,7 +233,7 @@ def gen_camp(game, site):
 
 
 def tribe_name(site):
-    return {'warcamp': 'horde', 'ravine': 'gully', 'kobolds': 'caves', 'gnolls': 'pack', 'stilts': 'swamp'}[site.kind]
+    return {'warcamp': 'horde', 'ravine': 'gully', 'kobolds': 'caves', 'gnolls': 'pack', 'stilts': 'swamp', 'cove': 'crew'}[site.kind]
 
 
 def war_camp(game, site):
@@ -732,6 +737,12 @@ def stilt_village(game, site):
             m.set(x, y, FISHTRAP)
     for x in range(66, 74, 2):
         m.set(x, 16, RACK)
+    for x in range(66, 74):                     # a mud bank under the racks, where the fish are smoked
+        for y in (17, 18, 19):
+            if m.tile(x, y) in (WATER, SHALLOW, SWAMP):
+                m.set(x, y, GRASS)
+    fire(m, 69, 18, r=4)
+    fire(m, 46, 35, (255, 150, 70), 3)          # the shaman's fire before the totem
     for hx, hy in huts:
         who(game, m, hx - 1, hy, LIZ, 'A lizardfolk', random.choice(['lizard_warrior', 'lizard_spear']))
     for x, y in ((31, 24), (65, 24), (42, 48)):
@@ -820,7 +831,8 @@ def rouse(game, m, why):
                   'ravine': 'Shrieks echo from both cliffs. The goblins are coming!',
                   'kobolds': 'A gong clangs in the dark. Yip! Yip! The kobolds are coming!',
                   'gnolls': 'The hyenas start to laugh. The pack is coming!',
-                  'stilts': 'Drums on the water. The lizardfolk are coming!'}[site.kind], 'bad')
+                  'stilts': 'Drums on the water. The lizardfolk are coming!',
+                  'cove': 'A whistle shrills along the beach. Every pirate in the cove is coming!'}[site.kind], 'bad')
 
 
 def stale(game, site):
@@ -862,6 +874,10 @@ def talk(game, npc):
     if m.roused:
         game.msg(f'{npc.name} shrinks away from you.' if npc.flee else f'{npc.name} will not talk now.')
         return
+    if site.kind == 'cove':
+        from .sailing import cove_talk
+        if cove_talk(game, npc, site):
+            return
     friend = welcome(game, site)
     if npc.foe and not friend:
         opts = [('Back away', 'bye'), ('Attack', 'attack')]
@@ -1069,7 +1085,8 @@ def describe(site):
             'ravine': 'Goblins live down in this ravine. Their market buys and sells anything, even from the wanted.',
             'kobolds': 'Kobold caves: a mine, and a hoard of shiny things. Pay their toll and they trade.',
             'gnolls': 'A gnoll hunting camp. It moves when the game runs out.',
-            'stilts': 'A lizardfolk village on stilts. They guard their egg pools with their lives.'}[site.kind]
+            'stilts': 'A lizardfolk village on stilts. They guard their egg pools with their lives.',
+            'cove': 'A pirate cove: a fence, a tavern and the captain. Trade there, or root them out.'}[site.kind]
 
 
 def register():

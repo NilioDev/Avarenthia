@@ -408,6 +408,8 @@ class GameMap:
         st.pop('_light', None)
         st.pop('_light_dom', None)
         st.pop('_light_dyn', None)
+        for k in ('_flow', '_cold', '_passes', '_bonfires', '_sl', '_sl_key'):
+            st.pop(k, None)
         return st
 
     def inb(self, x, y):

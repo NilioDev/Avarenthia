@@ -545,6 +545,7 @@ def furnish(game, m, s, names):
     light = getattr(f, 'light_cell', None)
     if light:
         x, y = f.xy(*light)
+        m.beacon = (x, y)                     # its beam turns over the water at night
         m.over[y * m.w + x] = ('☼', (255, 230, 120) if tier == 'metropolis' else (255, 150, 60), (120, 90, 30))
         tw = getattr(f, 'tower', None)
         if tw:
@@ -592,6 +593,12 @@ def furnish(game, m, s, names):
         home = [(inn.x, inn.y + 1)] if inn else [work]
         t = townsfolk(game, m, home, work, names, 'sailor', fg='#b0c8d8')
         t.job = 'sailor'
+    # the skipper, who finds you a passage along the coast
+    quay = [c for c in walk if f.get(*c) == PLANK] or walk
+    if quay:
+        sx, sy = f.xy(*rng.choice(quay))
+        if not m.mon_at(sx, sy):
+            m.mons.append(make_npc(game, f'{names.pop() if names else "Old Tam"} the Skipper', 'skipper', '#d0d8e8', sx, sy, True))
     m.boats = boats
     m._look = None
 

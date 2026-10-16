@@ -326,7 +326,16 @@ GOODS = {
     'arms': dict(name='Arms', base=65, w=2),
     'spice': dict(name='Spices', base=80, w=1),
     'gems': dict(name='Gems', base=120, w=1),
+    # goods of the season: cheap where and when they are harvested, dear elsewhere and out of season
+    'fruit': dict(name='Apples and Cider', base=10, w=2),
+    'wine': dict(name='Wine', base=34, w=2),
+    'honey': dict(name='Honey', base=24, w=1),
+    'wool': dict(name='Wool', base=13, w=2),
+    'ice': dict(name='Ice', base=20, w=3),
 }
+# good: (the day of the year it is cheapest, how far the price swings either way)
+SEASONAL = {'grain': (255, .3), 'fruit': (285, .35), 'wine': (290, .2), 'honey': (195, .3), 'wool': (80, .3),
+            'ice': (15, .6), 'furs': (180, .3)}
 GOOD_ORDER = list(GOODS)
 
 # what settlements in each biome tend to make and want

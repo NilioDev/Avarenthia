@@ -35,6 +35,9 @@ from . import tribes as TR
 from . import deephold as DH
 from . import jobs as JB
 from . import lands as LN
+from . import seasons as SE
+from . import living as LV
+from . import sailing as SA
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -42,7 +45,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 22
+SAVE_VERSION = 23
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -207,6 +210,8 @@ class Game:
         p.life = max(1, p.life * 2 // 3)
         self.shops = {0: W.gen_shop(self)}
         WA.populate(self)
+        SA.place_coves(self)
+        LV.setup(self)
         MS.refresh_board(self, home)
         self.msg('You wake on a cold stone floor. Candles. Incense. A temple.', 'gold')
         self.msg(f'You remember your name, {p.name}, and nothing else.', 'gold')
@@ -222,6 +227,7 @@ class Game:
         FG.GAME = self
         ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
         ECO.race_factor = lambda st: RC.price_factor(self, getattr(st, 'race', 'human'))
+        ECO.today = lambda: SE.doy(self.day)
 
     def new_id(self):
         self._next_id += 1
@@ -451,7 +457,7 @@ class Game:
         """How far you see in the open land: far from the hills, little in the woods or the marsh, less at night."""
         p, m = self.player, self.map
         t = m.tile(p.x, p.y)
-        r = LN.sight(self, {D.HILLS: 6, D.FOREST: 2, D.SWAMP: 3}.get(t, 4))
+        r = SE.sight(self, LN.sight(self, {D.HILLS: 6, D.FOREST: 2, D.SWAMP: 3}.get(t, 4)))
         if TW.is_night(self):
             r = max(1, r // 2)
         if p.race in ('elf', 'goblin') and TW.is_night(self):
@@ -526,6 +532,7 @@ class Game:
         made = key not in self.maps
         if key not in self.maps:
             self.maps[key] = W.gen_dungeon(self, did, depth)
+            LV.on_dungeon_level(self, dg, self.maps[key], depth)
             if getattr(dg, 'mine', None) is not None:
                 DH.dress_mine(self, self.maps[key], dg, depth)
             if depth == dg.depth and getattr(dg, 'poi', False):
@@ -656,6 +663,7 @@ class Game:
         if esc:
             esc.x, esc.y = s.x, s.y
         self.msg(f'You enter {s.name}.', 'info')
+        LV.on_enter_town(self, s, m)
         MC.restock(self)
         MS.on_enter(self, sid)
         NM.hand_in(self, self.world.settlements[sid])
@@ -687,6 +695,7 @@ class Game:
         self.msg(f'You come to {site.name}.', 'info')
         if TR.is_camp(site):
             TR.on_enter(self, site, m)
+        LN.on_enter(self, site, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -764,6 +773,9 @@ class Game:
             return spent
         nx, ny = p.x + dx, p.y + dy
         if not m.inb(nx, ny):
+            if getattr(m, 'deck', False):
+                SA.off_deck(self)
+                return 0
             if m.kind in ('town', 'wild', 'siege'):
                 if (m.kind in ('wild', 'siege') or getattr(m, 'roused', False)) and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
                     self.msg('You cannot flee with an enemy next to you.', 'bad')
@@ -787,6 +799,8 @@ class Game:
                 if wd.kind == 'caravan':
                     EV.talk_caravan(self, wd)
                     return 0
+                if LV.talk(self, wd):
+                    return 0
                 self.msg(wd.describe(self), 'info')
                 return 0
         mon = m.mon_at(nx, ny)
@@ -800,6 +814,13 @@ class Game:
             self.melee(mon)
             return 1
         t = m.tile(nx, ny)
+        if m.kind == 'over':
+            why = SE.blocked(self, nx, ny)
+            if why:
+                self.msg(why, 'info')
+                return 0
+            if t == WATER and SE.walkable(self, nx, ny):
+                t = D.GRASS                     # frozen hard: walk across
         if t == DOOR:
             m.set(nx, ny, ODOOR)
             return 1
@@ -889,6 +910,11 @@ class Game:
             return 10
         if JB.step(self):
             return 1
+        shrine = LV.shrine_at(self, p.x, p.y)
+        if shrine:
+            LV.on_shrine(self, shrine)
+            return D.TILES[t].cost
+        LV.on_battlefield(self)
         poi = EV.poi_at(self, p.x, p.y)
         if poi:
             EV.reveal(self, poi)
@@ -898,8 +924,12 @@ class Game:
         HP.on_step(self)
         FK.on_step(self)
         LN.on_step(self)
+        SE.on_step(self)
+        if self.dead:
+            return 10
         old_way = HP.on_way(self, p.x, p.y)
-        cost = round(LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost) * WX.travel_factor(self))
+        cost = round(SE.cost(self, LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost))
+                     * WX.travel_factor(self))
         WX.strike(self)
         if self.dead:
             return cost
@@ -919,6 +949,7 @@ class Game:
             chance *= 1.3                           # nobody patrols the old ways
         chance *= WX.ambush_factor(self)                # fog and storms hide what waits by the road
         chance *= LN.ambush(self)                       # canyons hide robbers, birch woods hide little
+        chance *= LV.ambush_factor(self)                # a gift at the crossroads, or a theft
         if cheb(p.x, p.y, *self._home_xy()) <= 4:
             chance = 0
         if NM.step(self):
@@ -2008,6 +2039,9 @@ class Game:
                     p.poison = None
                     self.msg('The poison wears off.', 'good')
         WA.tick(self, cost)
+        SE.tick(self, cost)
+        if self.dead:
+            return
         if self.day != self.last_day:
             for _ in range(self.day - self.last_day):
                 ECO.daily(self)
@@ -2021,8 +2055,12 @@ class Game:
                 NM.daily(self)
                 JB.daily(self)
                 TR.daily(self)
+                SE.daily(self)
+                LV.daily(self)
             self.last_day = self.day
+        SE.midsummer_note(self)
         JB.pump(self)
+        SA.on_turn(self)
         EVL.whisper(self)
         WX.notice(self)
         self.compute_fov()
@@ -2715,6 +2753,9 @@ class Game:
             return
         if role == 'tribe':
             TR.talk(self, npc)
+            return
+        if role == 'skipper':
+            SA.talk(self, npc)
             return
         if role == 'gnome_elder':
             FK.gnome_talk(self, npc)

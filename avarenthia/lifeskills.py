@@ -141,6 +141,10 @@ def plan(game, water):
     turns = round((30 if over else 6) * (.6 if r >= 15 else .8 if r >= 5 else 1))
     chance = min(.92 if r >= 25 else .82, .35 + r * .025)
     p = game.player
+    from .anim import rising_near
+    if rising_near(game, p.x, p.y):
+        chance = min(.95, chance + .2)                # cast where the rings are
+        game.msg('Fish are rising here.', 'info')
     out = dict(water=water, rank=r, turns=turns, kind='none', fish=None, weight=0)
     from .evils import taint_at
     ev = taint_at(game, p.x, p.y) if over else None

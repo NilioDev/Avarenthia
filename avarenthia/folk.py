@@ -127,7 +127,7 @@ def discover(game, site, how=''):
     om = game.maps['over']
     om.seen[site.y * om.w + site.x] = 1
     if how is not None:
-        what = 'a gnome hamlet' if site.kind == 'gnomes' else 'an elven glade'
+        what = {'gnomes': 'a gnome hamlet', 'cove': 'a pirate cove'}.get(site.kind, 'an elven glade')
         game.msg((how + ' ' if how else '') + f'You have found {site.name}, {what}. It is on your map now.', 'unique')
 
 

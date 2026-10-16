@@ -153,6 +153,22 @@ def forage(game):
     return round(turns)
 
 
+def pick_season(game, grp):
+    """Berries or mushrooms found on the world map in autumn: picked by walking onto them. True if picked."""
+    from . import lifeskills as LS
+    cands = [k for k, v in PLANTS.items() if v[1] == grp]
+    key = random.choices(cands, [PLANTS[k][4] for k in cands])[0]
+    n = random.randint(2, 4)
+    it = make_plant(game, key, n)
+    if not game.add_to_inv(it):
+        game.msg('There are ' + ('berries' if grp == 'berry' else 'mushrooms') + ' here, but your pack is full.')
+        return False
+    LS.gain(game, 'foraging', .5)
+    game.msg(f'You pick {n} {plant_name(game, key)}.' if known(game, key) else f'You pick {plant_name(game, key)} ({n}).',
+             'good')
+    return True
+
+
 def eat_plant(game, it):
     from . import lifeskills as LS
     from .hunger import MAX

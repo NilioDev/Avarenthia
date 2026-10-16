@@ -10,6 +10,7 @@ from .money import fmt
 REF = 40.0
 faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
 race_factor = lambda s: 1.0  # set by the game: how the townsfolk's race feels about yours
+today = lambda: 0            # set by the game: the day of the year, for the prices of the season
 
 
 def _discount(s):
@@ -25,6 +26,9 @@ def init_markets(world):
         s.produce = random.sample(prod, min(len(prod), n))
         if s.id == 0:
             s.produce = ['grain', 'ale']
+        local = regional(world, s)
+        if local and local not in s.produce:
+            s.produce.append(local)
         s.demand = random.sample([g for g in dem if g not in s.produce], min(len([g for g in dem if g not in s.produce]), n + 1))
         if s.id == 0:
             s.demand = ['tools', 'salt', 'fish']
@@ -40,10 +44,42 @@ def init_markets(world):
             s.market[g] = [t, t, t]
 
 
+def regional(world, s):
+    """The good of the season this place makes, by where it lies: ice in the cold north, wine in the warm south,
+    apples and cider in the middle lands, honey on the grass, wool in the hills."""
+    from .world import WORLD_H
+    lat = s.y / WORLD_H
+    if lat < .25:
+        return 'ice' if random.random() < .6 else 'furs'
+    if lat > .7:
+        return 'wine'
+    if s.biome == 'hills':
+        return 'wool'
+    if s.biome == 'grass':
+        return random.choice(['honey', 'fruit'])
+    return 'fruit' if random.random() < .5 else None
+
+
+def season_factor(g, doy=None):
+    """Cheap at harvest, dear out of season: 1 - swing at the cheapest day, 1 + swing half a year later."""
+    sv = D.SEASONAL.get(g)
+    if not sv:
+        return 1.0
+    import math
+    d = today() if doy is None else doy
+    return 1 - sv[1] * math.cos(2 * math.pi * (d - sv[0]) / 360)
+
+
+def in_season(doy):
+    """(goods cheap now, goods dear now)."""
+    f = {g: season_factor(g, doy) for g in D.SEASONAL}
+    return [g for g, v in f.items() if v < .85], [g for g, v in f.items() if v > 1.15]
+
+
 def price(s, g):
     stock = max(1.0, s.market[g][0])
     f = (REF / stock) ** 0.55
-    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * 100     # copper
+    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100     # copper
 
 
 def buy_price(s, g):
@@ -137,8 +173,26 @@ def best_known_sale(game, g, exclude):
     return best
 
 
+def melt(game):
+    """Ice melts in your cargo on the way: fast in summer, slowly in spring and autumn, not at all in winter."""
+    p = game.player
+    n = p.cargo.get('ice', 0)
+    if not n:
+        return
+    from . import calendar as CAL
+    rate = {'summer': .12, 'spring': .05, 'autumn': .04}.get(CAL.season(game.day), 0)
+    lost = int(n * rate + random.random()) if rate else 0
+    if lost:
+        p.cargo['ice'] = n - min(n, lost)
+        if not p.cargo['ice']:
+            del p.cargo['ice']
+            p.cost_basis.pop('ice', None)
+        game.msg(f'{min(n, lost)} of your ice has melted away.', 'bad')
+
+
 def daily(game):
     w = game.world
+    melt(game)
     for s in w.settlements:
         if s.event:
             key, left = s.event

@@ -277,7 +277,7 @@ def place_sites(game, m, world, reach_set):
 
 def site_map(game, site):
     from .entities import GameMap, make_npc
-    from .data import SAND, GRASS, WATER, TREE, PATH, WALL, FLOOR, DOOR, FENCE, TABLE, BED
+    from .data import SAND, GRASS, WATER, TREE, PATH, WALL, FLOOR, DOOR, FENCE, TABLE, BED, FIREPIT
     from .towns import town_names, townsfolk
     names = town_names('human')
     if site.kind == 'oasis':
@@ -309,6 +309,7 @@ def site_map(game, site):
             townsfolk(game, m, [(15, 9)], (random.randint(16, 26), cy + random.choice((-2, 2))), names, 'carter', fg='#c8b088')
         for x, y in ((22, cy + 3), (24, cy + 4)):
             m.mons.append(make_npc(game, 'A camel', 'livestock', '#c8a060', x, y, False, ch='c'))
+        fires = [(27, cy + 3, 5)]                     # the caravan's fire on the shore
     else:
         w, h = 50, 22
         m = GameMap(site.map_key, 'town', site.name, w, h, GRASS)
@@ -322,6 +323,7 @@ def site_map(game, site):
         m.set(hx, cy, DOOR)
         m.set(hx + 5, hy + 1, BED)
         m.set(hx + 3, hy + 2, TABLE)
+        fires = [(hx + 5, hy + 4, 4)]                 # the hearth
         px, py = 32, cy - 5                         # the goat fold
         for y in range(py, py + 10):
             for x in range(px, px + 12):
@@ -333,6 +335,11 @@ def site_map(game, site):
                                    random.randint(py + 2, py + 7), False, ch='g'))
         m.mons.append(make_npc(game, f'Herder {names.pop()}', 'lands', '#d8c8a0', hx + 2, hy + 3, True))
         m.mons.append(make_npc(game, 'A sheepdog', 'dog', '#b89060', 28, cy + 1, False, ch='d'))
+    m.glows = []
+    for x, y, r in fires:
+        m.set(x, y, FIREPIT)
+        m.glows.append((x, y, (255, 140, 50), r))
+    m.lights = list(m.glows)
     m.radius, m.sid, m.hid, m.signs = 60, None, None, []
     m.site = site.id
     m.entry = (0, cy)
@@ -342,6 +349,22 @@ def site_map(game, site):
 
 
 CHEESE_PRICE, DATES_PRICE = 60, 30
+
+
+def on_enter(game, site, m):
+    """The herders' huts stand empty in winter: herder, flock and dog are down by the villages until spring."""
+    if site.kind != 'shieling':
+        return
+    from .seasons import herders_away
+    away = getattr(m, 'away', [])
+    if herders_away(game):
+        if not away:
+            m.away = [o for o in m.mons if o.role in ('lands', 'livestock', 'dog')]
+            m.mons = [o for o in m.mons if o not in m.away]
+        game.msg('The hut is shut up for the winter. The herder has taken the flock down to the villages.', 'info')
+    elif away:
+        m.mons += away
+        m.away = []
 
 
 def talk(game, npc):

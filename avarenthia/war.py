@@ -129,6 +129,10 @@ def siege(game, wd):
         return
     atk = wd.strength * random.uniform(.7, 1.35)
     attacker, defender = D.FACTIONS[wd.faction], D.FACTIONS[h.faction]
+    from .living import battle
+    if wd.path and len(wd.path) > 2:
+        bx, by = wd.path[-3]                            # the field before the walls
+        battle(game, bx, by, f"{attacker['short']} and {defender['short']} soldiers")
     if atk > h.garrison:
         old_title = h.title
         capture(game, h, wd.faction, wd.strength // 2 + 2)
@@ -150,6 +154,8 @@ def capture(game, h, faction, garrison):
         game.maps[h.map_key].stale = True
     else:
         game.maps.pop(h.map_key, None)
+    from .living import plunder
+    plunder(game, h.region, faction)
     if not any(o.faction == old and o.region == h.region for o in w.holds):
         flip_region(game, h.region, faction)
         for st in w.settlements:
@@ -173,6 +179,8 @@ def tick_fights(game):
                 continue
             win, lose = (a, b) if a.strength * random.uniform(.7, 1.3) >= b.strength * random.uniform(.7, 1.3) else (b, a)
             w.wanderers.remove(lose)
+            from .living import battle
+            battle(game, lose.x, lose.y, f"{D.FACTIONS[a.faction]['short']} and {D.FACTIONS[b.faction]['short']} soldiers")
             win.strength = max(3, win.strength - lose.strength // 2)
             if game.cur == 'over' and (game.visible(a.x, a.y) or game.visible(b.x, b.y)):
                 game.msg(f"{win.name} routs {lose.name.lower()} in a bloody clash.", 'info')

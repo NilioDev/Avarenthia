@@ -2552,9 +2552,185 @@ def lands():
     print('lands ok')
 
 
+def animations():
+    """Small things that move: fires flicker by day, water glints, rivers run, fish rise, wisps over the marsh at
+    night, camps glow on the world map; and the three places that had no fire now have one."""
+    from avarenthia import anim as AN, towns as TW, lifeskills as LS, look as LOOK
+    from avarenthia.sites import Site
+    g = E.Game('Anim', False, seed=12, race='human', gender='male')
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    w, om, p = g.world, g.maps['over'], g.player
+    if not any(q.kind == 'oasis' for q in w.sites):
+        s0 = w.settlements[0]
+        w.sites.append(Site(len(w.sites), 'oasis', s0.x + 1, s0.y + 1, 'Test Well'))
+    noon = (g.turn // D.DAY_LEN + 1) * D.DAY_LEN + D.DAY_LEN // 2
+    for kind in ('stilts', 'oasis', 'shieling'):
+        q = next(q for q in w.sites if q.kind == kind)
+        to_over(g)
+        p.x, p.y = q.x, q.y
+        g.enter_site(q.id)
+        m = g.map
+        fires = [i for i, t in enumerate(m.t) if t == D.FIREPIT]
+        assert fires and m.lights, kind
+        # by day the fire still flickers, and the screen keeps redrawing while it is in view
+        g.turn = noon
+        fx, fy = fires[0] % m.w, fires[0] // m.w
+        p.x, p.y = next((fx + dx, fy + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (2, 0))
+                        if m.inb(fx + dx, fy + dy) and D.TILES[m.tile(fx + dx, fy + dy)].walk)
+        g.compute_fov()
+        app.screens = [ui.GameScreen(app)]
+        app.render()
+        assert app.top.moving and app.frame_delay() in (1 / 10, 1 / 24), (kind, app.top.moving, app.frame_delay(), app.top.weather)
+        looks = {AN.cell(m, fires[0], fx, fy, LOOK.get(m, fires[0]), t / 7, False, 0)[1] for t in range(12)}
+        assert len(looks) > 3, looks
+        g.turn = noon + D.DAY_LEN * 5 // 12                    # at night
+        app.render()
+        check_colours(app)
+    # the world map: water glints, rivers run to the sea, fish rise near the shore and bite better there
+    flow = AN.flow(om)
+    assert flow and min(flow.values()) == 0
+    day = g.turn // D.DAY_LEN
+    spot = next(i for i, t in enumerate(om.t) if t == D.WATER and AN.rising(om, i % om.w, i // om.w, day))
+    sx, sy = spot % om.w, spot // om.w
+    shore = next((sx + dx, sy + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1))
+                 if om.inb(sx + dx, sy + dy) and D.TILES[om.tile(sx + dx, sy + dy)].walk)
+    to_over(g)
+    p.x, p.y = shore
+    g.compute_fov()
+    assert AN.rising_near(g, p.x, p.y)
+    rings = {AN.cell(om, spot, sx, sy, LOOK.get(om, spot), t / 4, False, day)[0] for t in range(12)}
+    assert rings & {'o', 'O'}, rings
+    LS.plan(g, 'sea')
+    assert any('Fish are rising' in t for t, _c in g.log[-3:])
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    assert app.top.moving
+    # swamp wisps only at night; the camps glow on the world map at night
+    sw = next(i for i, t in enumerate(om.t) if t == D.SWAMP)
+    assert AN.cell(om, sw, sw % om.w, sw // om.w, LOOK.get(om, sw), 1.0, False, day) is None
+    assert AN.cell(om, sw, sw % om.w, sw // om.w, LOOK.get(om, sw), 1.0, True, day) is not None
+    camp = next(q for q in w.sites if q.kind == 'warcamp')
+    p.x, p.y = camp.x + 1, camp.y
+    g.turn = noon + D.DAY_LEN * 5 // 12
+    assert TW.is_night(g)
+    g.compute_fov()
+    app.render()
+    vx, vy = camp.x - app.top.origin[0], camp.y - app.top.origin[1]
+    assert app.cv.bg[vy * app.cv.w + vx] != (40, 34, 26)
+    check_colours(app)
+    # the harbour lighthouse turns its beam over the water at night
+    m = type('M', (), {'beacon': (10, 10)})()
+    lit = sum(AN.beacon(m, 10 + dx, 10 + dy, ('.', (90, 90, 90), (10, 10, 10)), 0.0)[2] != (10, 10, 10)
+              for dx in range(-16, 17) for dy in range(-16, 17))
+    assert 3 < lit < 60, lit
+    print('animations ok')
+
+
+def seasons():
+    """The year on the world map: snow and its line, frozen water to walk on, thin ice in the thaw, passes shut,
+    leaves turning, berries to pick, tracks in the snow, grass fires, the herders down for the winter, short winter
+    days and the Midsummer fires on the hills."""
+    from avarenthia import seasons as SE, towns as TW, look as LOOK
+    g = E.Game('Year', False, seed=12, race='human', gender='male')
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    w, om, p = g.world, g.maps['over'], g.player
+
+    def on_day(doy, hour=12):
+        day = (doy - SE.doy(1)) % SE.YEAR_LEN + 1
+        g.turn = (day - 1) * D.DAY_LEN + D.DAY_LEN * hour // 24
+        g.last_day = g.day
+        assert SE.doy(g.day) == doy
+        return SE.Now(g)
+
+    def count(pred, st):
+        return sum(1 for i in range(len(om.t)) if pred(om, i, st))
+    st = on_day(15)
+    snow_w, ice = count(SE.snowy, st), count(SE.frozen, st)
+    assert snow_w > len(om.t) // 10 and ice > 50, (snow_w, ice)
+    assert count(SE.closed, st) > 0
+    assert count(SE.snowy, on_day(150)) < snow_w // 10
+    # walk out onto a frozen lake
+    to_over(g)
+    st = on_day(15)
+    i = next(i for i in range(len(om.t)) if om.t[i] == D.WATER and SE.frozen(om, i, st) and any(
+        D.TILES[om.t[i + d]].walk and om.t[i + d] not in (D.TOWN, D.CITY) for d in (1, -1)))
+    x, y = i % om.w, i // om.w
+    p.x, p.y = (x - 1, y) if D.TILES[om.t[i - 1]].walk else (x + 1, y)
+    g.try_move(x - p.x, 0)
+    assert (x, y) in ((p.x, p.y), tuple(g.over_pos)), 'walk on the ice'      # (or ambushed out there)
+    to_over(g)
+    assert 'Frozen' in SE.describe(g, x, y)
+    # a pass shut by the snow
+    c = next(i for i in range(len(om.t)) if SE.closed(om, i, st))
+    assert SE.blocked(g, c % om.w, c // om.w)
+    # thin ice in the thaw: a warning first
+    st = on_day(40)
+    thin = [i for i in range(len(om.t)) if SE.thin(om, i, st)]
+    if thin:
+        p.x, p.y = thin[0] % om.w, thin[0] // om.w
+        g.ice_warned = None
+        SE.on_step(g)
+        assert any('creaks' in t for t, _c in g.log[-2:])
+    # autumn: leaves turn, berries wait to be picked
+    st = on_day(300)
+    assert st.leaf > 0
+    i = next(i for i in range(len(om.t)) if SE.find(om, i, st, w))
+    p.x, p.y = i % om.w, i // om.w
+    n = len(p.inv)
+    SE.on_step(g)
+    assert len(p.inv) > n and SE.find(om, i, st, w) is None
+    # tracks in the snow
+    st = on_day(15)
+    sn = next(i for i in range(len(om.t)) if SE.snowy(om, i, st) and om.t[i] == D.GRASS)
+    wd = type('W', (), {'x': sn % om.w, 'y': sn // om.w, 'name': 'Dire Wolf pack'})()
+    SE.track(g, wd)
+    assert 'Tracks' in SE.describe(g, wd.x, wd.y)
+    # a grass fire spreads, burns out and leaves black ground
+    on_day(220)
+    gr = next(i for i in range(len(om.t)) if om.t[i] == D.GRASS and SE.biome(om, i) in SE.GRASSLAND)
+    w.fires = {gr: 2}
+    for _ in range(12):
+        SE.tick(g, D.DAY_LEN // 24)
+    assert gr in w.burnt and gr not in w.fires
+    assert SE.blocked(g, gr % om.w, gr // om.w) is None
+    # the herders are down in the valleys for the winter
+    hut = next((q for q in w.sites if q.kind == 'shieling'), None)
+    if hut:
+        on_day(15)
+        to_over(g)
+        p.x, p.y = hut.x, hut.y
+        g.enter_site(hut.id)
+        assert not any(o.role == 'lands' for o in g.map.mons)
+        to_over(g)
+        on_day(170)
+        g.enter_site(hut.id)
+        assert any(o.role == 'lands' for o in g.map.mons)
+    # short winter days: half past seven in the evening is night in winter, still light in summer
+    on_day(15, 20)
+    assert TW.is_night(g)
+    on_day(170, 20)
+    assert not TW.is_night(g) and TW.lamp_light(g) < 1
+    # every season drawn, the realm map too, and the Midsummer fires on the hills
+    to_over(g)
+    for doy in (15, 40, 70, 150, 220, 300, SE.MIDSUMMER):
+        on_day(doy, 23 if doy == SE.MIDSUMMER else 12)
+        g.compute_fov()
+        app.screens = [ui.GameScreen(app)]
+        app.render()
+        check_colours(app)
+        app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+        for z in (0, 1):
+            ui.WorldMapScreen.zoom = z
+            app.render()
+    assert SE.Now(g).midsummer and SE.bonfires(om)
+    print('seasons ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
-    parts = [lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
+    parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
              creatures_and_hunts, new_guilds, more_jobs, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite

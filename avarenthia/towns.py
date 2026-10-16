@@ -34,21 +34,32 @@ def hour(game):
 
 
 def lamp_light(game):
-    """How dark it is in the streets, 0 (day) to 1 (night): dusk from six to nine, dawn from five to seven."""
+    """How dark it is in the streets, 0 (day) to 1 (night): dusk over three hours from about six, dawn over two
+    from about five; earlier dusk and later dawn in winter, the other way round in summer."""
+    from .seasons import dusk, dawn
     t = (game.turn % D.DAY_LEN) * 24 / D.DAY_LEN
-    if 7 <= t < 18:
+    du, da = dusk(game.day), dawn(game.day)
+    if da + 2 <= t < du:
         return 0.0
-    if 18 <= t < 21:
-        return (t - 18) / 3
-    if 5 <= t < 7:
-        return 1 - (t - 5) / 2
+    if du <= t < du + 3:
+        return (t - du) / 3
+    if da <= t < da + 2:
+        return 1 - (t - da) / 2
     return 1.0
 
 
 def lamps_wanted(game):
-    """Should the street lamps burn now?"""
-    h = hour(game)
-    return h >= 18 or h < 6
+    """Should the street lamps burn now? From dusk until an hour after dawn."""
+    from .seasons import dusk, dawn
+    t = (game.turn % D.DAY_LEN) * 24 / D.DAY_LEN
+    return t >= dusk(game.day) or t < dawn(game.day) + 1
+
+
+def lamp_round(game):
+    """The hours the lamplighter is out: three at dusk, two at dawn."""
+    from .seasons import dusk, dawn
+    du, da = int(dusk(game.day)), int(dawn(game.day) + 1)
+    return {du, du + 1, du + 2, da - 1, da}
 
 
 LAMP_COL = (255, 176, 90)
@@ -113,7 +124,8 @@ def lamplighter(game, m, npc):
     want = lamps_wanted(game)
     todo = [k for k in range(len(lamps)) if (k in m.lamp_on) != want]
     h = hour(game)
-    if todo and (h in (18, 19, 20) or h in (5, 6)):
+    rnd = lamp_round(game)
+    if todo and h in rnd:
         k = min(todo, key=lambda j: cheb(lamps[j][0], lamps[j][1], npc.x, npc.y))
         lx, ly = lamps[k]
         if cheb(lx, ly, npc.x, npc.y) <= 1:
@@ -125,15 +137,16 @@ def lamplighter(game, m, npc):
         spots = [(lx + dx, ly + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)
                  if m.inb(lx + dx, ly + dy) and D.TILES[m.tile(lx + dx, ly + dy)].walk]
         return min(spots, key=lambda c: cheb(c[0], c[1], npc.x, npc.y)) if spots else npc.home_pos
-    if todo and h not in (18, 19, 20, 5, 6):        # the night came on, or the morning: the rest follow
+    if todo and h not in rnd:                       # the night came on, or the morning: the rest follow
         for k in todo:
             set_lamp(m, k, want)
     return npc.home_pos
 
 
 def is_night(game):
-    h = hour(game)
-    return h >= 21 or h < 5
+    from .seasons import dusk, dawn
+    t = (game.turn % D.DAY_LEN) * 24 / D.DAY_LEN
+    return t >= dusk(game.day) + 3 or t < dawn(game.day)
 
 
 # ------------------------------------------------------------------ building blocks

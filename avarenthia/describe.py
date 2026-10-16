@@ -67,6 +67,7 @@ DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.'
              10: 'Crystals glitter in the rock.', 11: 'Ash and cinders.', 12: 'Green slime, faintly glowing.',
              13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.'}
 ROLE_DESC = {
+    'skipper': 'A skipper. Walk into them to hire a passage along the coast.',
     'inn': 'The innkeeper. Jobs on the board, hot meals, a bed and the local gossip.',
     'factor': "A factor of the Merchants' Guild. Trade work, and talk of prices on the roads near here.",
     'captain': 'A soldier of the garrison. Knows where the trouble is, and pays bounties.',
@@ -272,6 +273,15 @@ def over(game, x, y):
                                           'stones': 'A ring of standing stones, humming with old power.',
                                           'wagon': 'An abandoned wagon.', 'waystation': 'A Varnish waystation: shelter, and old words.',
                                           'milestone': 'A Varnish milestone, carved with leagues and names.'}.get(poi.kind, '')]
+    from . import living as LV
+    if LV.shrine_at(game, x, y):
+        return 'A crossroads shrine', LV.SHRINE_LOOK[1], ['A small shrine where the roads meet. Travellers leave '
+                                                          'offerings for a safe road. Walk onto it.']
+    bf = LV.battle_at(game, x, y, 1)
+    if bf:
+        return 'A battlefield', (200, 120, 100), [f"{bf['who'][0].upper() + bf['who'][1:]} fought here. The dead lie "
+                                                   'unburied' + ('; their packs have been picked over.' if bf['looted'] else
+                                                                  '. Walk to the middle of it to search them.')]
     dg = w.dungeon_at(x, y)
     if dg:
         return dg.name, (232, 96, 62), ['A way down into the dark.', f'{dg.depth} levels deep.']
@@ -293,6 +303,10 @@ def over(game, x, y):
         lines.append({'blight': 'The land here is grey and dying.', 'scorch': 'The land here is burned black.',
                       'web': 'Webs hang from every branch.', 'warpath': 'Trampled, burned and bloodied ground.',
                       'mire': 'The ground is turning to bog.'}[ev.d['taint']])
+    from . import seasons as SE
+    note = SE.describe(game, x, y)
+    if note:
+        lines.insert(0, note)
     return title, col, lines
 
 
