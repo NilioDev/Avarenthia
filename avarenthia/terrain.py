@@ -505,6 +505,26 @@ def generate(SEED, W=320, H=180):
         carve(c[0], c[1], a0 + math.pi, 36, 1.9)
         WONDERS.append(('The Sundering', *c))
 
+    # ravines: narrow gullies cut into the hills and badlands, a few leagues long
+    def gully(x, y, a, length):
+        for i in range(length):
+            a += (noise_a[int(y) % H, int(x) % W] - .5) * .4 + rng.normal(0, .1)
+            x, y = x + math.cos(a), y + math.sin(a) * .75
+            ix, iy = int(round(x)), int(round(y))
+            if not (3 <= ix < W - 3 and 3 <= iy < H - 3) or B[iy, ix] not in ('hills', 'badlands', 'ravine', 'ravine_edge'):
+                return
+            B[iy, ix] = 'ravine'
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                if B[iy + dy, ix + dx] in ('hills', 'badlands'):
+                    B[iy + dy, ix + dx] = 'ravine_edge'
+    for _ in range(12):
+        c = spot({'hills', 'badlands'}, 3, far=8, inside=.7)
+        if c:
+            B[c[1], c[0]] = 'ravine'
+            a0 = rng.uniform(0, math.pi)
+            gully(c[0], c[1], a0, int(rng.integers(6, 12)))
+            gully(c[0], c[1], a0 + math.pi, int(rng.integers(6, 12)))
+
     # salt flats: a dead white plain in a dry basin, crusted, with brine pools
     c = spot({'desert', 'steppe', 'savanna'}, 7, south=.55)
     if c:

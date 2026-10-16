@@ -5,7 +5,7 @@ import math
 import random
 
 from . import data as D
-from .data import GRASS, TREE, PATH, FOREST, WATER, PLANK, DOOR, TABLE, ALTAR, STATUE, FIELD, STALL
+from .data import GRASS, TREE, PATH, FOREST, WATER, PLANK, DOOR, TABLE, ALTAR, STATUE, FIELD, STALL, ROOT, FLOOR, BED, BARREL
 from .entities import GameMap, make_npc
 from .worldgen import cheb
 
@@ -47,7 +47,7 @@ def settle_peoples(m, world):
     regs = world.regions
     homes = {}
     for s in world.settlements:
-        if not s.is_city and s.kind != 'deephold':
+        if not s.is_city and s.kind != 'deephold' and not getattr(s, 'dwarven', False):
             homes[s.region] = homes.get(s.region, 0) + 1
     cities = {s.region for s in world.settlements if s.is_city}
     bad = ('cult', 'horde', 'blackhand', 'clan')
@@ -78,7 +78,8 @@ def settle_peoples(m, world):
             s.race = 'elf'
             if 'circle' in D.FACTIONS:
                 s.faction = 'circle'
-        elif s.region in world.halfling_land and not s.is_city and s.kind != 'deephold' and s.id != 0:
+        elif s.region in world.halfling_land and not s.is_city and s.kind != 'deephold' and s.id != 0 \
+                and not getattr(s, 'dwarven', False):
             s.race = 'halfling'
             for _ in range(40):
                 nm = random.choice(HALF_A) + random.choice(HALF_B)
@@ -86,7 +87,7 @@ def settle_peoples(m, world):
                     taken.add(nm)
                     s.name = nm
                     break
-        elif s.race in ('halfling', 'elf'):
+        elif s.race in ('halfling', 'elf') and not getattr(s, 'dwarven', False):
             s.race = 'human'                     # elves and halflings live in their own lands now
 
 
@@ -126,7 +127,8 @@ def discover(game, site, how=''):
     om = game.maps['over']
     om.seen[site.y * om.w + site.x] = 1
     if how is not None:
-        game.msg((how + ' ' if how else '') + f'You have found {site.name}, an elven glade. It is on your map now.', 'unique')
+        what = 'a gnome hamlet' if site.kind == 'gnomes' else 'an elven glade'
+        game.msg((how + ' ' if how else '') + f'You have found {site.name}, {what}. It is on your map now.', 'unique')
 
 
 def on_step(game):
@@ -136,10 +138,13 @@ def on_step(game):
     for st in getattr(game.world, 'sites', ()):
         if unfound(st):
             d = cheb(st.x, st.y, p.x, p.y)
+            gnomes = st.kind == 'gnomes'
             if d <= 1:
-                discover(game, st, 'Between the trees you see lanterns, and a clearing beyond.')
-            elif d <= 3 and getattr(p, 'race', '') == 'elf':
-                discover(game, st, 'Somewhere in the trees, someone is singing in your own tongue.')
+                discover(game, st, 'Under the roots of a great tree you see a little round window, lit.' if gnomes else
+                         'Between the trees you see lanterns, and a clearing beyond.')
+            elif d <= 3 and getattr(p, 'race', '') == ('gnome' if gnomes else 'elf'):
+                discover(game, st, 'You smell woodsmoke and baking, the way it smells at home.' if gnomes else
+                         'Somewhere in the trees, someone is singing in your own tongue.')
 
 
 # ------------------------------------------------------------------ halfling homes
@@ -656,9 +661,225 @@ def climb(game, up):
     game.request = ('save',)
 
 
+# ------------------------------------------------------------------ the gnome hamlets
+GNOME_NAMES = ['Mossbottom', 'Acorn Hollow', 'Under-the-Oak', 'Fernhame', 'Toadstool Dell', 'Rootwick', 'Hazelhame',
+               'Old Beech Hollow', 'Owlhame']
+HERB_PRICE, SHROOM_PRICE, BEAST_FEE = 120, 60, 300
+
+
+def place_gnomes(game, m, world, reach_set, n=3):
+    """The gnome hamlets: a handful of homes under the roots of great trees, deep in the old forests, far from the
+    roads of the big folk. Like the glades, nobody finds them on a map before they have walked into one."""
+    from .sites import Site
+    w = m.w
+    names = getattr(m, 'biome_names', [])
+    deep = names.index('deep_forest') if 'deep_forest' in names else None
+    if deep is None:
+        return
+    taken = [(s.x, s.y) for s in world.settlements] + [(q.x, q.y) for q in world.sites] + \
+            [(d.x, d.y) for d in world.dungeons.values()] + [(h.x, h.y) for h in world.holds]
+    cands = [(i % w, i // w) for i in reach_set if m.biome[i] == deep and m.t[i] == FOREST and world.road_dist[i] >= 3
+             and 4 <= i % w < w - 4 and 4 <= i // w < m.h - 4 and i not in world.wonder_cells]
+    random.shuffle(cands)
+    gn = GNOME_NAMES[:]
+    random.shuffle(gn)
+    for x, y in cands:
+        if n <= 0 or not gn:
+            return
+        if any(cheb(x, y, a, b) < 8 for a, b in taken):
+            continue
+        if sum(1 for dy in range(-2, 3) for dx in range(-2, 3) if m.inb(x + dx, y + dy) and m.biome[(y + dy) * w + x + dx] == deep) < 16:
+            continue
+        st = Site(len(world.sites), 'gnomes', x, y, gn.pop())
+        st.hidden, st.found = True, False
+        world.sites.append(st)
+        taken.append((x, y))
+        n -= 1
+
+
+def great_tree(m, cx, cy, rx, ry, room, door, windows, big=False):
+    """A great old tree: its trunk, roots running out from it, and a home dug in among the roots. room is (x, y, w, h)
+    of the floor; the root mound round it is its wall. Returns the floor cells."""
+    for k in range(7):
+        a = k / 9 * math.tau + random.uniform(-.2, .2)
+        for j in range(random.randint(rx + 3, rx + 6)):
+            x, y = round(cx + math.cos(a) * j * 1.6), round(cy + math.sin(a) * j * .8)
+            if m.inb(x, y):
+                m.set(x, y, ROOT)
+    x0, y0, w, h = room
+    for y in range(y0 - 1, y0 + h + 1):
+        for x in range(x0 - 1, x0 + w + 1):
+            m.set(x, y, ROOT)
+    for x, y in oval(cx, cy, rx, ry):
+        m.set(x, y, D.TRUNK)
+    floor = [(x, y) for y in range(y0, y0 + h) for x in range(x0, x0 + w)]
+    for x, y in floor:
+        m.set(x, y, FLOOR)
+    m.set(door[0], door[1], DOOR if big else D.SMALLDOOR)
+    for x, y in windows:
+        m.set(x, y, D.WINDOW)
+        m.glows.append((x, y, (255, 200, 110), 3))
+    return floor
+
+
+def gnome_map(game, site):
+    """A mossy clearing deep in the wood, ringed by great trees with homes dug in under their roots. Only a deer track
+    leads in. The doors are too small for big folk; only the elder's guest room has a wide door."""
+    from .towns import town_names
+    W, H = 100, 56
+    m = GameMap(site.map_key, 'town', site.name, W, H, GRASS)
+    m.radius, m.sid, m.hid, m.signs = 60, None, None, []
+    m.site, m.wall_fg = site.id, LIVING
+    m.lights, m.glows = [], []
+    for i in range(len(m.t)):
+        m.t[i] = TREE if random.random() < .42 else GRASS
+    for x, y in oval(50, 30, 30, 15):
+        m.set(x, y, GRASS)
+    # the elder's tree: the guest room is dug wide enough for big folk
+    hall = great_tree(m, 50, 13, 5, 3, (42, 18, 16, 5), (50, 23), [(46, 23), (54, 23)], big=True)
+    for dx, dy, t in ((1, 1, BED), (1, 3, BED), (5, 2, TABLE), (8, 1, FIELD), (9, 1, FIELD), (10, 1, FIELD),
+                      (13, 1, D.FURS), (14, 3, D.FURS), (11, 3, D.FIREPIT)):
+        m.set(42 + dx, 18 + dy, t)
+    m.lights.append((53, 21, (255, 150, 70), 4))
+    m.signs.append((42, 6, "THE ELDER'S TREE"))
+    names = town_names('gnome')
+    m.mons.append(make_npc(game, f'{names.pop()}, elder of {site.name}', 'gnome_elder', '#e0d0f0', 49, 20, True, race='gnome'))
+    hurt = make_npc(game, 'A hurt deer', 'livestock', '#be8c5a', 55, 21, True, ch='d')
+    m.mons.append(hurt)
+    # the homes: small rooms among the roots
+    homes = []
+    for cx, cy, side in ((20, 18, 'left'), (79, 17, 'right'), (22, 42, 'left'), (77, 43, 'right'), (50, 47, 'up')):
+        if side == 'up':
+            room, door, wins = (cx - 3, cy - 5, 6, 2), (cx, cy - 2), [(cx - 3, cy - 2), (cx + 3, cy - 2)]
+        elif side == 'left':
+            room, door, wins = (cx + 4, cy - 1, 5, 2), (cx + 6, cy + 2), [(cx + 4, cy + 2), (cx + 8, cy + 2)]
+        else:
+            room, door, wins = (cx - 8, cy - 1, 5, 2), (cx - 6, cy + 2), [(cx - 8, cy + 2), (cx - 4, cy + 2)]
+        fl = great_tree(m, cx, cy, 3, 2, room, door, wins)
+        x0, y0 = room[0], room[1]
+        for dx, dy, t in ((0, 0, BED), (2, 0, TABLE), (4, 0, BARREL)):
+            m.set(x0 + dx, y0 + dy, t)
+        homes.append(fl)
+    # the spring, the woodpile, the vegetable plots, the ring of mushrooms
+    for x, y in oval(66, 32, 3, 1):
+        m.set(x, y, WATER)
+    for gx, gy in ((34, 36), (56, 38)):
+        for y in range(gy, gy + 3):
+            for x in range(gx, gx + 7):
+                m.set(x, y, FIELD)
+        for x in range(gx - 1, gx + 8):
+            m.set(x, gy - 1, D.FENCE)
+            m.set(x, gy + 3, D.FENCE)
+        for y in range(gy, gy + 3):
+            m.set(gx - 1, y, D.FENCE)
+            m.set(gx + 7, y, D.FENCE)
+    for k in range(10):
+        a = k / 10 * math.tau
+        m.set(round(46 + 4 * math.cos(a)), round(30 + 2 * math.sin(a)), D.SHROOM)
+    # only a deer track leads in
+    ey = 34
+    for a, b in (((0, ey), (40, 31)), ((50, 24), (50, 28)), ((26, 20), (44, 29)), ((73, 19), (54, 29)),
+                 ((28, 44), (40, 34)), ((71, 45), (62, 34)), ((50, 45), (50, 33))):
+        n = max(abs(b[0] - a[0]), abs(b[1] - a[1]))
+        for k in range(n + 1):
+            x, y = round(a[0] + (b[0] - a[0]) * k / n), round(a[1] + (b[1] - a[1]) * k / n)
+            if m.tile(x, y) in (GRASS, TREE):
+                m.set(x, y, PATH)
+    m.entry = (0, ey)
+    # the gnomes, and the beasts of the wood that walk in and out without fear
+    for x, y in ((48, 30), (66, 30), (33, 31), (55, 26), (25, 21), (74, 22), (51, 44)):
+        n = make_npc(game, names.pop(), 'villager', '#c8aae6', x, y, False, race='gnome')
+        n.job = 'any'
+        m.mons.append(n)
+    for (nm, ch, fg), (x, y) in zip([('A rabbit', 'r', '#beaa8c'), ('A deer', 'd', '#be8c5a'), ('A fox', 'f', '#dc783c'),
+                                     ('A badger', 'b', '#aaaaaa')] * 2, ((38, 34), (70, 28), (14, 30), (84, 38), (60, 42),
+                                                                         (30, 26), (8, 12), (90, 10))):
+        if m.tile(x, y) in (GRASS, PATH) and not m.mon_at(x, y):
+            m.mons.append(make_npc(game, nm, 'livestock', fg, x, y, False, ch=ch))
+    m.centre = (50, 30)
+    m.portal_pos = (50, 30)
+    m.lights = list(m.lights) + list(m.glows)
+    return m
+
+
+def gnome_talk(game, npc):
+    from .events import ask
+    from . import mercs as MC
+    from .money import fmt
+    site = game.world.sites[game.map.site]
+    f = game.flags
+    first = not f.get(f'gnomes{site.id}')
+    f[f'gnomes{site.id}'] = True
+    if first:
+        text = ('The elder peers up at you over a pair of spectacles. "A big one! Mind your head on the roots. '
+                'Well, you found us, so the wood must think you are all right. Sit, sit."')
+    else:
+        text = '"Back again, big one? The kettle is on. What can an old gnome do for you?"'
+    beast = MC.get(game, 'beast')
+    opts = []
+    if beast:
+        opts.append((f'Ask the elder to see to {beast.name} ({fmt(BEAST_FEE)})', 'beast'))
+    opts += [(f'Buy a bundle of healing herbs ({fmt(HERB_PRICE)})', 'herbs'),
+             (f'Buy a basket of good mushrooms ({fmt(SHROOM_PRICE)})', 'shrooms'),
+             ('Ask to learn the ways of the wood', 'teach'), ('Take your leave', 'bye')]
+    ask(game, 'gnomes', npc.name, text, opts, site=site.id)
+
+
+def r_gnomes(game, choice, ctx):
+    from . import mercs as MC, foraging as FG
+    from .money import fmt
+    p = game.player
+    if choice == 'beast':
+        mc = MC.get(game, 'beast')
+        if not mc:
+            return
+        if p.gold < BEAST_FEE:
+            game.msg(f'The elder asks {fmt(BEAST_FEE)} for the herbs it takes.', 'bad')
+            return
+        if mc.state == 'fallen':
+            p.gold -= BEAST_FEE
+            MC.raise_up(game, mc, free=True)
+            return
+        p.gold -= BEAST_FEE
+        mc.hp = MC.stats(game, mc)['max_hp']
+        mc.frail = 0
+        game.msg(f'The elder rubs salve into {mc.name}\'s hurts and hums to {mc.him()}. {mc.name} is whole again.', 'good')
+    elif choice in ('herbs', 'shrooms'):
+        price = HERB_PRICE if choice == 'herbs' else SHROOM_PRICE
+        if p.gold < price:
+            game.msg(f'That costs {fmt(price)}.', 'bad')
+            return
+        got = [('yarrow', 2), ('moonpetal', 1), ('feverfew', 1)] if choice == 'herbs' else [('chanterelle', 3)]
+        for k, n in got:
+            if not game.add_to_inv(FG.make_plant(game, k, n)):
+                game.msg('Your bag is full.', 'bad')
+                return
+            p.known_plants.add(k)
+        p.gold -= price
+        game.msg('The elder wraps them in a dock leaf and tells you what each one is.', 'gold')
+    elif choice == 'teach':
+        from .entities import make_tome
+        tm = make_tome(game, min(8, p.lvl), 'nature')
+        price = tm.value() // 2
+        if tm.t in p.known:
+            game.request = ('dialog', 'The elder', '"You know what I know already. Go and walk in the wood; it teaches better than I do."')
+            return
+        if p.gold < price:
+            game.request = ('dialog', 'The elder', f'"I could teach you {tm.name[8:]}. It would cost you {fmt(price)} in '
+                                                   f'candles and ink. Come back when you have it."')
+            return
+        if not game.add_to_inv(tm):
+            game.msg('Your bag is full.', 'bad')
+            return
+        p.gold -= price
+        game.request = ('dialog', 'The elder', f'"Here, I wrote it down for you, big one: {tm.name[8:]}. Read it slowly." '
+                                               f'(You pay {fmt(price)} for the {tm.name}.)')
+
+
 def register():
     from . import events as EV
     EV.RESOLVERS['glade'] = r_glade
+    EV.RESOLVERS['gnomes'] = r_gnomes
 
 
 register()

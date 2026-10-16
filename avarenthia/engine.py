@@ -31,6 +31,8 @@ from . import mercs as MC
 from . import behave as BH
 from . import named as NM
 from . import folk as FK
+from . import tribes as TR
+from . import deephold as DH
 from . import jobs as JB
 from .money import fmt, purse
 from . import world as WO
@@ -39,7 +41,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 20
+SAVE_VERSION = 21
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -106,7 +108,7 @@ def lore_rank(kills):
     return r
 
 
-SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('tool', 'kit'), ('tool', 'tent'), ('food', 'bread'),
+SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('tool', 'pick'), ('tool', 'kit'), ('tool', 'tent'), ('food', 'bread'),
             ('food', 'ration'), ('food', 'barley'), ('food', 'honey')]
 INV_MAX = 32
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
@@ -518,8 +520,11 @@ class Game:
             self.over_pos = (p.x, p.y)
         self.cur = key
         p.x = p.y = -5
+        made = key not in self.maps
         if key not in self.maps:
             self.maps[key] = W.gen_dungeon(self, did, depth)
+            if getattr(dg, 'mine', None) is not None:
+                DH.dress_mine(self, self.maps[key], dg, depth)
             if depth == dg.depth and getattr(dg, 'poi', False):
                 from .entities import make_tome
                 c = W.rand_free(self, self.maps[key], lambda t: t == FLOOR)
@@ -544,7 +549,8 @@ class Game:
             self.max_depth[did] = depth
         NM.on_enter_level(self, m)
         JB.on_level(self, did, depth)
-        self.msg(f"{dg.name}, level {depth}.", 'info')
+        self.msg(f"{m.name if getattr(dg, 'mine', None) is not None else dg.name}, level {depth}.", 'info')
+        DH.on_level(self, m, made)
         lair = next((e for e in self.world.evils if e.did == did and not e.known), None)
         if first and depth == dg.depth:
             self.msg('An evil presence fills the air. This is the deepest level.', 'bad')
@@ -667,6 +673,8 @@ class Game:
         site = self.world.sites[sid]
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
+        if TR.is_camp(site) and TR.stale(self, site):
+            self.maps.pop(site.map_key, None)          # the camp has calmed down and rebuilt what you broke
         if site.map_key not in self.maps:
             self.maps[site.map_key] = ST.gen_site_map(self, site)
         self.cur = site.map_key
@@ -674,6 +682,8 @@ class Game:
         p.x, p.y = m.entry[0] + 1, m.entry[1]
         TW.sync_lamps(self, m)
         self.msg(f'You come to {site.name}.', 'info')
+        if TR.is_camp(site):
+            TR.on_enter(self, site, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -752,7 +762,7 @@ class Game:
         nx, ny = p.x + dx, p.y + dy
         if not m.inb(nx, ny):
             if m.kind in ('town', 'wild', 'siege'):
-                if m.kind in ('wild', 'siege') and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
+                if (m.kind in ('wild', 'siege') or getattr(m, 'roused', False)) and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
                     self.msg('You cannot flee with an enemy next to you.', 'bad')
                     return 0
                 self.leave_to_over()
@@ -790,7 +800,22 @@ class Game:
         if t == DOOR:
             m.set(nx, ny, ODOOR)
             return 1
+        if t == D.SMALLDOOR and p.race != 'gnome':
+            self.msg('The door is too small for you. Only a gnome could get through it.')
+            return 0
         if not D.TILES[t].walk:
+            if t in (D.ORE, D.GEMS, D.RUBBLE):
+                return DH.dig(self, nx, ny)
+            if t == D.CHASM:
+                return DH.chasm(self)
+            if t == D.CART and getattr(m, 'carts', None):
+                DH.cart_talk(self)
+                return 0
+            if t == D.CAGE and getattr(m, 'tribe', None):
+                TR.cage(self)
+                return 0
+            if t == D.CHEST and getattr(m, 'tribe', None):
+                TR.theft(self)
             if t == WATER:
                 self.msg('You cannot swim here.')
             elif t == MOUNTAIN:
@@ -815,11 +840,15 @@ class Game:
         if m.kind == 'town' and self.portal and self.portal.get('sid') == m.sid and (nx, ny) == m.portal_pos:
             self.use_portal_back()
             return 1
-        if m.kind in ('dungeon', 'wild', 'siege'):
+        if m.kind in ('dungeon', 'wild', 'siege') or getattr(m, 'tribe', None):
             BH.stepped(self)
             if self.dead:
                 return 1
             BH.spot_traps(self)
+        if getattr(m, 'tribe', None):
+            TR.on_step(self)
+        if getattr(m, 'mine', None) is not None:
+            DH.on_step(self)
         self.auto_pickup()
         self.describe_here()
         return 1
@@ -907,6 +936,8 @@ class Game:
     def auto_pickup(self):
         m, p = self.map, self.player
         for it in [i for i in m.items if i.x == p.x and i.y == p.y]:
+            if it.k == 'gold' and getattr(m, 'tribe', None) == 'kobolds' and not m.roused:
+                TR.theft(self)
             if it.k == 'gold':
                 p.gold += it.n
                 self.num(p.x, p.y, '+' + fmt(it.n, True), C_GOLD)
@@ -1300,8 +1331,9 @@ class Game:
 
     def buy_supply(self, i):
         k, t = SUPPLIES[i]
-        if k == 'tool' and t in ('rod', 'tent') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
-            self.msg('You already have a fishing pole.')
+        if k == 'tool' and t in ('rod', 'tent', 'pick') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
+            self.msg({'rod': 'You already have a fishing pole.', 'tent': 'You already have a tent.',
+                      'pick': 'You already have a pick.'}[t])
             return
         it = Item(self.new_id(), k, t)
         p = self.player
@@ -1880,6 +1912,10 @@ class Game:
                 if getattr(mon, 'ally', False):
                     MC.act(self, mon)
                     continue
+                if getattr(mon, 'flee', False) and getattr(m, 'roused', False):
+                    if cheb(mon.x, mon.y, p.x, p.y) < 12:
+                        AI.step_away(self, mon)
+                    continue
                 if not mon.stay and not hasattr(mon, 'work_pos') and random.random() < .3:
                     self.random_step(mon)
                 continue
@@ -1978,6 +2014,7 @@ class Game:
                 MC.daily(self)
                 NM.daily(self)
                 JB.daily(self)
+                TR.daily(self)
             self.last_day = self.day
         JB.pump(self)
         EVL.whisper(self)
@@ -2669,6 +2706,15 @@ class Game:
             return
         if role == 'glade_elder':
             FK.glade_talk(self, npc)
+            return
+        if role == 'tribe':
+            TR.talk(self, npc)
+            return
+        if role == 'gnome_elder':
+            FK.gnome_talk(self, npc)
+            return
+        if role in ('cartwright', 'dwarf_king', 'foreman'):
+            DH.talk(self, npc)
             return
         if role in ('valley', 'valley_elder'):
             from . import hidden as HP

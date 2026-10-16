@@ -19,8 +19,11 @@ LIFE = {
                     perks={3: 'Recipe: Antidote', 5: 'Fewer ruined potions', 8: 'Recipe: Kingsfoil Elixir', 10: 'Potions rarely fail'}),
     'brewing': dict(name='Brewing', desc='Ale, mead and wine (P), at an inn or in a monastery cellar.',
                     perks={3: 'Recipe: Berry Wine', 5: 'Fewer spoiled batches', 6: 'Recipe: Mead', 10: 'You brew an extra mug now and then'}),
+    'mining': dict(name='Mining', desc='Dig ore and gems from veins (walk into one, with a pick).',
+                   perks={3: 'You dig a little faster', 6: 'You dig faster', 10: 'Now and then a gem among the ore',
+                          15: 'You dig much faster'}),
 }
-LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing']
+LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing', 'mining']
 
 # key: name, minimum rank, waters, weight, value, healing
 FISH = {

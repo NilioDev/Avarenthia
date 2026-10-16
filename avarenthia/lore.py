@@ -52,7 +52,7 @@ RACE_LORE = {
     'elf': ['The trees are older than your kingdoms. Some of them are older than the Ruin.',
             'We do not hurry. You humans hurry, and look where it got the empire.'],
     'halfling': ['A full pantry, a dry roof and a good pipe. What more do the big folk fight about?'],
-    'gnome': ['I took apart a Varnish lamp once. It still worked after. I have no idea why. Marvellous!'],
+    'gnome': ['The old trees remember the Varnish. Put your ear to the bark on a still night, and you hear them.'],
     'orc': ['They call us brutes. The empire called us worse, and the empire is dust.'],
     'goblin': ['Nobody watches the edges of things. That is where we live, and where we hear everything.'],
 }

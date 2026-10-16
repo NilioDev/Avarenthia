@@ -1236,7 +1236,10 @@ def gen_settlement_map(game, s):
     if s.kind == 'deephold':
         from .deephold import gen_deephold
         return gen_deephold(game, s)
-    if getattr(s, 'elder', False):
+    if getattr(s, 'dwarven', False):
+        from .deephold import gen_village as gen_dwarf_village
+        m = gen_dwarf_village(game, s)
+    elif getattr(s, 'elder', False):
         from .folk import gen_elder_city
         m = gen_elder_city(game, s)
     else:

@@ -2280,9 +2280,169 @@ def peoples():
     print('peoples ok')
 
 
+def camps_and_holds():
+    """The hostile peoples in their own camps (warned first, then up in arms; captives to free; kobolds who trade for
+    a shiny toll), the gnome hamlets under the old trees, and the dwarves: the hold, the villages, the cart line and the mines."""
+    from avarenthia import tribes as TR, deephold as DH, folk as FK, events as EV, crime as CR
+    from avarenthia.entities import Item
+    g = E.Game('Camps', False, seed=12, race='human', gender='male')
+    w, om, p = g.world, g.maps['over'], g.player
+    kinds = {q.kind for q in w.sites}
+    assert {'warcamp', 'ravine', 'kobolds', 'gnolls', 'stilts', 'gnomes'} <= kinds, kinds
+    assert 'kob_priest' not in D.MONSTERS
+    # every camp sits on fitting land; the goblin ravine lies in a ravine of the world map
+    fit = {'warcamp': ('badlands', 'steppe'), 'ravine': ('ravine',), 'gnolls': ('savanna',), 'stilts': ('swamp', 'marsh')}
+    for q in w.sites:
+        if q.kind in fit:
+            assert TR.biome_at(om, q.x, q.y) in fit[q.kind], (q.kind, TR.biome_at(om, q.x, q.y))
+
+    def site(kind):
+        q = next(q for q in w.sites if q.kind == kind)
+        g.cur = 'over'
+        p.x, p.y = q.x, q.y
+        g.enter_site(q.id)
+        return q, g.map
+
+    def walk_to(m, x, y):
+        p.x, p.y = x, y
+        TR.on_step(g)
+
+    # the war camp: everything built stands inside the palisade; a warning first, then the camp rises
+    q, m = site('warcamp')
+    assert all(c in m.inner for c in TR.solid(m)) and not m.roused
+    gx, gy = m.gate
+    walk_to(m, gx, gy + 3)
+    assert m.warned and not m.roused
+    inside = next(c for c in sorted(m.inner, key=lambda c: cheb(gx, gy, *c)) if cheb(gx, gy, *c) > 3 and not m.mon_at(*c)
+                  and D.TILES[m.tile(*c)].walk)
+    walk_to(m, *inside)
+    assert m.roused and getattr(q, 'angry', -1) > g.day
+    fighters = [o for o in m.mons if not o.is_npc]
+    runners = [o for o in m.mons if o.is_npc and getattr(o, 'flee', False)]
+    assert len(fighters) >= 10 and runners, (len(fighters), len(runners))
+    TR.ensure_captives(g, q, m)
+    caps = [o for o in m.mons if o.is_npc and getattr(o, 'tjob', '') == 'captive']
+    if caps:
+        town = min(w.settlements, key=lambda s: cheb(s.x, s.y, q.x, q.y))
+        before = town.rep
+        TR.captive_talk(g, caps[0], q)
+        EV.resolve(g, 'free')
+        assert not any(getattr(o, 'tjob', '') == 'captive' for o in m.mons) and town.rep > before
+    # a roused camp will not let you run off with a foe at your side
+    foe = fighters[0]
+    p.x, p.y = 0, m.h // 2
+    foe.x, foe.y, foe.awake = 1, m.h // 2, True
+    assert g.try_move(-1, 0) == 0 and g.map is m
+    for o in fighters:
+        g.kill(o)
+    g.leave_to_over()
+    print('war camp:', q.name, len(fighters), 'fighters rose,', len(caps), 'captives freed')
+    # the kobold caves: pay the shiny toll at the gate and they trade
+    q, m = site('kobolds')
+    assert m.underground and D.GLITTER in m.t and D.ORE in m.t
+    gate = next(o for o in m.mons if getattr(o, 'tjob', '') == 'gate')
+    p.gold = 5000
+    g.talk(gate)
+    EV.resolve(g, 'toll')
+    assert q.toll and TR.welcome(g, q) and p.gold == 5000 - TR.TOLL
+    trader = next(o for o in m.mons if getattr(o, 'tjob', '') == 'trader')
+    from avarenthia.entities import make_gear
+    ring = make_gear(g, 'ring', 'magic', 5)
+    g.add_to_inv(ring)
+    gold = p.gold
+    g.talk(trader)
+    EV.resolve(g, 'shiny')
+    assert ring not in p.inv and p.gold == gold + ring.value() * 2
+    g.talk(trader)
+    EV.resolve(g, 'ore')
+    assert p.cargo.get('ore') == 1
+    g.leave_to_over()
+    # the lizardfolk: come near the egg pools and the whole village rises
+    q, m = site('stilts')
+    walk_to(m, *m.eggs[0])
+    assert m.roused
+    for o in [o for o in m.mons if not o.is_npc]:
+        g.kill(o)
+    g.leave_to_over()
+    # a gnome hamlet: little doors that only a gnome fits through; the elder sells herbs
+    q = next(q for q in w.sites if q.kind == 'gnomes')
+    assert FK.unfound(q)
+    q, m = site('gnomes')
+    door = next((x, y) for y in range(m.h) for x in range(m.w) if m.tile(x, y) == D.SMALLDOOR)
+    p.x, p.y = door[0], door[1] + 1
+    assert g.try_move(0, -1) == 0 and (p.x, p.y) == (door[0], door[1] + 1)
+    elder = next(o for o in m.mons if o.role == 'gnome_elder')
+    gold = p.gold
+    g.talk(elder)
+    EV.resolve(g, 'herbs')
+    assert p.gold == gold - FK.HERB_PRICE and g.count('plant', 'yarrow') >= 2
+    g.leave_to_over()
+    print('kobolds, lizardfolk and gnomes ok')
+    # the dwarves: a hold under the mountain, villages in the hills before it, a cart line between them
+    holds = [s for s in w.settlements if s.kind == 'deephold']
+    villages = [s for s in w.settlements if getattr(s, 'dwarven', False)]
+    assert holds and villages and all(s.race == 'dwarf' for s in villages)
+    s = holds[0]
+    g.cur = 'over'
+    p.x, p.y = s.x, s.y
+    g.enter_town(s.id)
+    m = g.map
+    roles = {o.role for o in m.mons}
+    assert {'thane', 'recruit', 'cartwright', 'shop', 'market', 'inn', 'healer'} <= roles, roles
+    assert D.CHASM in m.t and D.MOLTEN in m.t and D.DOWN in m.t
+    cart = next(o for o in m.mons if o.role == 'cartwright')
+    g.talk(cart)
+    dest = g.pending['options'][0][1]
+    day, gold = g.day, p.gold
+    EV.resolve(g, dest)
+    there = w.settlements[int(dest[3:])]
+    assert g.here is there and g.day > day and p.gold < gold, (g.here, there)
+    g.leave_to_over()
+    # the mines: the working galleries belong to the clan; dig there unknown and it is a crime
+    g.cur = 'over'
+    p.x, p.y = s.x, s.y
+    g.enter_town(s.id)
+    dx, dy = next((x, y) for y in range(g.map.h) for x in range(g.map.w) if g.map.tile(x, y) == D.DOWN)
+    p.x, p.y = dx, dy
+    g.use_stairs('down')
+    mine = g.map
+    assert mine.mine_depth == 1 and mine.working and D.ORE in mine.t and D.PROP in mine.t
+    assert not any(not o.is_npc for o in mine.mons), 'the lamp-lit galleries are kept clear'
+    vein = next((x, y) for y in range(mine.h) for x in range(mine.w) if mine.tile(x, y) == D.ORE)
+    assert DH.dig(g, *vein) == 0 and mine.tile(*vein) == D.ORE      # no pick yet
+    g.add_to_inv(Item(g.new_id(), 'tool', 'pick'))
+    s.rep = 0
+    p.cargo.clear()
+    rep = s.rep
+    assert DH.dig(g, *vein) > 0 and p.cargo.get('ore') == 1 and mine.tile(*vein) == D.FLOOR and s.rep < rep, (s.rep, rep)
+    # the old galleries further down are anyone's, and their props are cracked
+    dg = w.dungeons[mine.did]
+    g.enter_dungeon(mine.did, 3, 'up')
+    m = g.map
+    assert not m.working and D.CRACKED in m.t
+    cx, cy = next((x, y) for y in range(2, m.h - 2) for x in range(2, m.w - 2) if m.tile(x, y) == D.CRACKED)
+    p.x, p.y = cx, cy + 1
+    life = p.life
+    DH.cave_in(g, cx, cy)                       # a cave-in brings the roof down around a cracked prop
+    assert m.tile(cx, cy) == D.RUBBLE and p.life < life
+    # the chasm at the gate of the hold: climb down and you fall into the mines
+    g.leave_to_over()
+    g.cur = 'over'
+    p.x, p.y = s.x, s.y
+    g.enter_town(s.id)
+    cx, cy = next((x, y) for y in range(g.map.h) for x in range(g.map.w) if g.map.tile(x, y) == D.CHASM)
+    p.x, p.y = cx - 1, cy
+    p.life = 999
+    g.try_move(1, 0)
+    assert g.pending and g.pending['key'] == 'chasm'
+    EV.resolve(g, 'down')
+    assert g.map.mine_depth == 1 and (p.x, p.y) != (cx, cy), g.map.name
+    print('dwarves ok:', s.name, '->', there.name, '| mine levels', dg.depth)
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
-    parts = [peoples, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
+    parts = [peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
              creatures_and_hunts, new_guilds, more_jobs, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite

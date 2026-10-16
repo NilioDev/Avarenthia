@@ -10,7 +10,9 @@ from .worldgen import cheb
 
 SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210)),
              'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84)), 'valley': ('•', (226, 196, 130)),
-             'glade': ('♠', (170, 236, 150))}
+             'glade': ('♠', (170, 236, 150)), 'gnomes': ('♣', (226, 204, 120))}
+from .tribes import LOOK as _CAMP_LOOK  # noqa: E402
+SITE_LOOK.update(_CAMP_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns']
 FARM_NAMES = ['Farm', 'Homestead', 'Steading', 'Croft', 'Farmstead']
@@ -163,6 +165,12 @@ def gen_site_map(game, site):
     if site.kind == 'glade':
         from .folk import glade_map
         return glade_map(game, site)
+    if site.kind == 'gnomes':
+        from .folk import gnome_map
+        return gnome_map(game, site)
+    from . import tribes as TR
+    if TR.is_camp(site):
+        return TR.gen_camp(game, site)
     m = _site_map(game, site)
     ex, ey = m.entry
     lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS

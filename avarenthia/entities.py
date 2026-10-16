@@ -57,6 +57,8 @@ class Item:
         if self.k == 'tool':
             if self.t == 'tent':
                 return 'Tent and Bedroll'
+            if self.t == 'pick':
+                return 'Miner\'s Pick'
             return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
@@ -194,6 +196,8 @@ class Item:
                 out.append('Sleep dry in the wild, and a little safer: rest (R) out in the open to make camp.')
             elif self.k == 'tool' and self.t == 'kit':
                 out.append('Needle, thread, rivets and oil. Use it to mend all your gear a little, anywhere.')
+            elif self.k == 'tool' and self.t == 'pick':
+                out.append('Walk into an ore or gem vein to dig it out. What you dig goes on your cart, to sell.')
             elif self.k == 'tool':
                 out.append('Stand next to water and press A to fish. Fishing grows the more you do it.')
             elif self.k == 'fish':
@@ -259,7 +263,7 @@ class Item:
             from .skills import SKILLS, UNLOCKS
             return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
         if self.k == 'tool':
-            return 25 if self.t == 'kit' else 60 if self.t == 'tent' else 8
+            return 25 if self.t == 'kit' else 60 if self.t == 'tent' else 15 if self.t == 'pick' else 8
         if self.k == 'food':
             from .hunger import FOODS
             return FOODS[self.t][2] / 100

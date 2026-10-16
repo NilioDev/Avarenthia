@@ -33,10 +33,11 @@ RACES = {
                      'eye you warily, and elves despise you.'),
     'gnome': dict(name='Gnome', plural='Gnomes', adj='gnomish', fg=(200, 170, 230),
                   stats=dict(str=-3, dex=1, vit=-1, ene=4), xp=1.0,
-                  learn={'storm': 1.3, 'shadow': 1.25, 'frost': 1.2}, perks=['Spells cost 15% less mana',
-                                                                           'Storm, shadow and frost magic grow faster'],
-                  desc='Small, clever tinkerers and illusionists from the hill burrows. Curious about everything, '
-                       'feeble in a brawl. Most folk find them odd but harmless.'),
+                  learn={'nature': 1.3, 'restoration': 1.25, 'shadow': 1.2}, perks=['Spells cost 15% less mana',
+                                                                                  'Can enter the little gnome homes',
+                                                                                  'Nature, restoration and shadow magic grow faster'],
+                  desc='Little folk of the old woods, who dig their homes under the roots of great trees, far from the '
+                       'big folk. They know every herb and beast; feeble in a brawl. Most folk find them odd but harmless.'),
     'goblin': dict(name='Goblin', plural='Goblins', adj='goblin', fg=(140, 200, 90),
                    stats=dict(str=-1, dex=4, vit=-1, ene=-1), xp=1.05,
                    learn={'daggers': 1.3, 'archery': 1.2}, perks=['Sees further in the dark', 'Fewer ambushes in the wild',
@@ -111,11 +112,11 @@ _SYL = {
                 ['ra', 'za', 'gha', 'nash', 'bra', 'eth', 'ka', 'ura', 'ma']),
         family=['Skullsplitter', 'Bonegnawer', 'Ironjaw', 'Bloodtusk', 'Ashborn', 'Halfblood', 'Stonefist', 'Grimscar']),
     'gnome': dict(
-        male=(['Fizz', 'Bim', 'Nim', 'Wren', 'Orryn', 'Tink', 'Zook', 'Gim', 'Bod', 'Fen', 'Pell', 'Quill'],
+        male=(['Fenn', 'Bim', 'Nim', 'Wren', 'Orryn', 'Tobb', 'Moss', 'Gim', 'Bod', 'Fen', 'Pell', 'Quill'],
               ['wick', 'ble', 'bo', 'nock', 'dle', 'kin', 'pip', 'zel', 'stan', 'ger']),
         female=(['Bree', 'Lini', 'Nissa', 'Tana', 'Ella', 'Zan', 'Roy', 'Mina', 'Orla', 'Pip'],
                 ['wyn', 'bell', 'ra', 'tink', 'ella', 'zie', 'pa', 'na', 'li', 'ette']),
-        family=['Cogwhistle', 'Sprocketeer', 'Fizzlebang', 'Tinkerton', 'Gearloose', 'Brassbottom', 'Copperpot', 'Sparkspindle']),
+        family=['Mosswhistle', 'Rootfoot', 'Acornbottom', 'Fernhollow', 'Toadstool', 'Barkbuckle', 'Hazelpot', 'Burrowby']),
     'goblin': dict(
         male=(['Snik', 'Grib', 'Nog', 'Skab', 'Rikk', 'Zit', 'Gob', 'Krag', 'Wort', 'Mug', 'Skrit', 'Nub'],
               ['nik', 'bit', 'gle', 'snot', 'tooth', 'rat', 'gak', 'iz', 'ub', 'ik']),

@@ -669,6 +669,15 @@ def _misc(game, mon, dist, seen):
             if seen:
                 m.known_traps = getattr(m, 'known_traps', set()) | {(mon.x, mon.y)}
                 game.msg(f'{The(mon)} sets a snare in the dirt.', 'info')
+    # kobolds cannot walk past a coin: they pick it up, and it drops again when they fall
+    if mon.tpl.get('family') == 'kobold' or mon.k == 'kobold':
+        gold = next((i for i in m.items if i.k == 'gold' and (i.x, i.y) == (mon.x, mon.y)), None)
+        if gold:
+            m.items.remove(gold)
+            mon.stolen = getattr(mon, 'stolen', 0) + gold.n
+            if seen:
+                game.msg(f'{The(mon)} snatches up the coins with a happy squeak.', 'info')
+            return True
     # a thief with your coin, or a band whose leader fell, runs
     if getattr(mon, 'fleeing', False) and (getattr(mon, 'stolen', 0) or getattr(mon, 'broken', False)):
         from .ai import step_away

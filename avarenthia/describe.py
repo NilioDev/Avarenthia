@@ -2,6 +2,23 @@
 from . import data as D
 
 TILE_DESC = {
+    'palisade': 'A palisade of sharpened logs, lashed together.', 'sharpened stakes': 'Stakes driven into the ground, points out.',
+    'wall of hide and timber': 'Hides stretched over a frame of timber and bone.', 'fire pit': 'A fire in a ring of stones.',
+    'totem': 'A carved pole hung with bones and feathers.', 'cage': 'A cage of iron bars. Walk into it to see who is inside.',
+    'bed of furs': 'A heap of furs to sleep on.', 'drying rack': 'Meat or hides drying in the air.',
+    'midden': 'A stinking heap of bones, peelings and worse.', 'cliff': 'A sheer wall of rock.',
+    'mushrooms': 'A patch of mushrooms.', 'heap of shiny things': 'Coins, glass, buttons and gems, heaped up with love.',
+    'rails': 'Iron rails for the ore carts.', 'cart': 'A cart on the rails. Walk into it to ride the cart line.',
+    'eggs in a warm pool': 'Leathery eggs in a pool of warm water. Their parents are never far.',
+    'fish trap': 'A wicker trap for fish.', 'stilt': 'A post holding a hut up out of the water.',
+    'little door': 'A little round door, far too small for big folk.', 'trunk of a great tree': 'The trunk of an enormous old tree.',
+    'round window': 'A little round window, lit from within.',
+    'ore vein': 'A vein of iron ore in the rock. Walk into it with a pick to dig it out.',
+    'gem vein': 'Gems glitter in the rock. Walk into them with a pick to dig them out.',
+    'pit prop': 'A timber prop holding up the roof.', 'cracked prop': 'A cracked prop. The roof here could come down at any time.',
+    'chasm': 'A chasm with no bottom you can see. Walk into it to climb down.',
+    'molten iron': 'Molten iron, white-hot, too bright to look at.', 'rubble': 'Fallen rock. Walk into it to clear it.',
+    'thorn bushes': 'A thick ring of thorn bushes.',
     'wall': 'Solid stone, cold and damp to the touch.',
     'floor': 'A worn stone floor.',
     'closed door': 'A heavy wooden door. Walk into it to open it.',
@@ -179,6 +196,8 @@ BIOME_DESC = {
     'peak': ('Peaks', 'Snow and ice; nothing lives up there.'), 'swamp': ('Swamp', 'Black water between the trees.'),
     'marsh': ('Marsh', 'Wet meadow, reeds and pools.'), 'pack_ice': ('Pack ice', 'Floes of ice grinding on the sea.'),
     'ice_shelf': ('Ice shelf', 'The ice of the far north, white without end.'),
+    'ravine': ('Ravine', 'A narrow gully between steep walls of rock. Hard going.'),
+    'ravine_edge': ('Ravine edge', 'The lip of a ravine; the ground drops away beside you.'),
 }
 
 
@@ -212,13 +231,17 @@ def over(game, x, y):
     from .sites import site_at
     site = site_at(w, x, y)
     if site and m.seen[y * m.w + x] and not (getattr(site, 'hidden', False) and not getattr(site, 'found', True)):
+        from . import tribes as TR
+        if TR.is_camp(site):
+            return site.name, site.glyph[1], [TR.describe(site)]
         return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
                                            'watchtower': 'A watchtower. From the top you can see far over the land.',
                                            'farm': 'A farmstead by the road. Farm folk often share a meal with travellers.',
                                            'roadinn': 'A roadside inn: stew, a bed and news from the road.',
                                            'valley': 'A hamlet hidden in a valley among the mountains. Nobody on the roads knows it.',
-                                           'glade': 'An elven glade, hidden deep in the wood. Its path shows only to those who have walked it.'}[site.kind]]
+                                           'glade': 'An elven glade, hidden deep in the wood. Its path shows only to those who have walked it.',
+                                           'gnomes': 'A gnome hamlet under the roots of great trees, far from the roads of the big folk.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]

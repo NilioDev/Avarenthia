@@ -13,6 +13,9 @@ def hexrgb(h):
  CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE, LAMP) = range(41)
 BOAT = 41
 HEDGE, SLOPE, EARTH, BRIDGE, ROOT = range(42, 47)   # the peoples' own places: hedges, hills dug into, the elder tree
+# the camps of the hostile peoples, the gnome hamlets and the dwarven holds and mines
+(PALISADE, STAKES, HIDE, FIREPIT, TOTEM, CAGE, FURS, RACK, MIDDEN, CLIFF, SHROOM, GLITTER, RAIL, CART, EGGS, FISHTRAP, STILT,
+ SMALLDOOR, TRUNK, WINDOW, ORE, GEMS, PROP, CRACKED, CHASM, MOLTEN, RUBBLE, THORNS) = range(47, 75)
 
 
 class Tile:
@@ -72,6 +75,34 @@ TILES = [
     Tile('#', '#a0784c', False, True, 'earthen wall'),
     Tile('═', '#b08050', True, False, 'bridge'),
     Tile('▓', '#a8804e', False, True, 'great root', bg='#3c2a16'),
+    Tile('║', '#a0703c', False, True, 'palisade', bg='#2a1c0e'),
+    Tile('↑', '#c8aa78', False, False, 'sharpened stakes'),
+    Tile('#', '#96704a', False, True, 'wall of hide and timber', bg='#34241a'),
+    Tile('☼', '#ff8c32', False, False, 'fire pit', bg='#46200a'),
+    Tile('Ψ', '#c8b48c', False, False, 'totem'),
+    Tile('╫', '#aaaaaa', False, False, 'cage'),
+    Tile('≡', '#96785a', False, False, 'bed of furs'),
+    Tile('#', '#aa5a46', False, False, 'drying rack'),
+    Tile('%', '#786e50', True, False, 'midden', bg='#1e180e'),
+    Tile('▓', '#7a7064', False, True, 'cliff', bg='#2c2824'),
+    Tile('τ', '#dc5a50', True, False, 'mushrooms'),
+    Tile('*', '#ffdc5a', False, False, 'heap of shiny things', bg='#28221c'),
+    Tile('═', '#8c8278', True, False, 'rails'),
+    Tile('◙', '#aa8250', False, False, 'cart'),
+    Tile('o', '#dce6be', False, False, 'eggs in a warm pool', bg='#1e2e1e'),
+    Tile('∩', '#aa8c5a', False, False, 'fish trap', bg='#0a1e1c'),
+    Tile('│', '#786446', False, False, 'stilt'),
+    Tile("'", '#6eaa50', True, False, 'little door', bg='#3c2a16'),
+    Tile('▒', '#78563a', False, True, 'trunk of a great tree', bg='#46301a'),
+    Tile('°', '#ffd278', False, True, 'round window', bg='#3c2a16'),
+    Tile('*', '#e0904a', False, True, 'ore vein', bg='#3a2e24'),
+    Tile('♦', '#78dcff', False, True, 'gem vein', bg='#2a2a34'),
+    Tile('╥', '#a07848', False, True, 'pit prop', bg='#3a2e24'),
+    Tile('╨', '#d06040', False, True, 'cracked prop', bg='#3a2e24'),
+    Tile(' ', '#3c2822', False, False, 'chasm', bg='#000000'),
+    Tile('≈', '#ff9030', False, False, 'molten iron', bg='#7a2a08'),
+    Tile(':', '#968c80', False, True, 'rubble', bg='#28241e'),
+    Tile('♠', '#8c8246', False, False, 'thorn bushes', bg='#1e1a0c'),
 ]
 
 # ---------------------------------------------------------------- classes and skills
@@ -206,8 +237,6 @@ for _k, _d in _CR.NEW.items():
     MONSTERS[_k] = _d
 for _k in ('wolf_spider', 'web_weaver', 'trapdoor', 'spider_swarm', 'brood_spider', 'webkin', 'jumping_spider'):
     MONSTERS[_k]['tags'] += ' lair_spider'
-for _k in ('kob_slinger', 'kob_trapper', 'kob_sorcerer'):
-    MONSTERS[_k]['tags'] += ' lair_dragon'
 for _k in ('goblin', 'gobarcher', 'kobold'):
     MONSTERS[_k]['tags'] += ' warren'
 for _k in ('skeleton', 'skarcher', 'zombie'):
@@ -236,7 +265,7 @@ CLIMATE_MONSTERS = {'cold': ['ice_witch'], 'arid': ['salamander'], 'marsh': ['bo
 ELEMENT_WORD = {'fire': 'fire', 'cold': 'cold', 'lightning': 'lightning', 'poison': 'poison'}
 for _k, _extra in (('kobold', 'den'),
                    ('goblin', 'deep'), ('gobarcher', 'deep'), ('orc', 'deep'), ('troll', 'deep'), ('ogre', 'deep'),
-                   ('spider', 'deep'), ('kobold', 'deep'), ('bat', 'deep'), ('kobold', 'lair_dragon'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
+                   ('spider', 'deep'), ('kobold', 'deep'), ('bat', 'deep'), ('spider', 'lair_spider'), ('bat', 'lair_spider'), ('orc', 'lair_orc'),
                    ('goblin', 'lair_orc'), ('gobarcher', 'lair_orc'), ('ogre', 'lair_orc'), ('zombie', 'lair_drowned'),
                    ('ghost', 'lair_drowned')):
     MONSTERS[_k]['tags'] += ' ' + _extra
@@ -397,7 +426,7 @@ LORE = {
             'Weak alone, dangerous in swarms. Fight them in corridors.'),
     'bat': ('Leathery wings, needle teeth, and no sense of direction.', 'Caves and old dungeons.',
             'They flit about at random. Let them come to you.'),
-    'kobold': ('Small, scaly scavengers that worship anything shiny.', 'Caves and dungeons.',
+    'kobold': ('Small cave folk who dig for ore and hoard anything that glitters.', 'Their own mines, caves and dungeons.',
                'Cowards at heart; kill the first and the rest falter.'),
     'goblin': ('Green-skinned raiders with crude blades and cruder manners.', 'Caves, dungeons and the wild hills.',
                'Goblins travel with archers. Close the distance fast.'),

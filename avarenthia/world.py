@@ -20,7 +20,7 @@ for _t, _bs in ((WATER, 'ocean sea shallows icy_water pack_ice ice_shelf berg la
                 (GRASS, 'meadow steppe shrubland shrubland_cold savanna tundra ashland scorched sinter crystal_ground '
                         'stone_ground tar_edge crater_isle'),
                 (FOREST, 'forest deep_forest conifer taiga dry_forest jungle petrified dead_trees shroom elder_tree atoll_palm'),
-                (HILLS, 'hills tundra_hills badlands crater_rim chasm_edge crystal geyser cliff'),
+                (HILLS, 'hills tundra_hills badlands crater_rim chasm_edge crystal geyser cliff ravine ravine_edge'),
                 (MOUNTAIN, 'mountain peak volcano glacier chasm lava scar_core'),
                 (SWAMP, 'swamp marsh tar')):
     for _b in _bs.split():
@@ -317,9 +317,11 @@ def gen_world(game):
             if s.kind == 'deephold':
                 did = f'deep{s.id}'
                 danger = world.region_at(s.x, s.y).danger
-                dg = Dungeon(did, f'Deep Roads of {s.name}', 4, danger + 2, random.choice(['rooms', 'cave']), 'deep', None,
+                from .deephold import MINE_DEPTH
+                dg = Dungeon(did, f'The Mines of {s.name}', MINE_DEPTH, danger + 1, 'cave', 'deep', None,
                              D.hexrgb('#8a7a6a'), s.x, s.y, True)
                 dg.town = s.id
+                dg.mine = s.id
                 world.dungeons[did] = dg
                 s.deep_did = did
         _assign_factions(m, world, start)
@@ -339,6 +341,10 @@ def gen_world(game):
         from .sites import gen_sites
         gen_sites(game, m, world)
         place_glades(game, m, world, reach_set)
+        from .folk import place_gnomes
+        place_gnomes(game, m, world, reach_set)
+        from .tribes import place_camps
+        place_camps(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways
@@ -463,6 +469,8 @@ def _place_settlements(game, m, world, reach_set, dist, start):
     # villages and hamlets
     sett[1].kind = 'metropolis'
     for s in sett[1 + len(cities):]:
+        if getattr(s, 'dwarven', False):
+            continue
         r = random.random()
         s.kind = 'town' if r < .25 else 'village' if r < .65 else 'hamlet'
     # dwarven deepholds, cut into the roots of the mountains
@@ -478,6 +486,29 @@ def _place_settlements(game, m, world, reach_set, dist, start):
             continue
         taken.append((x, y))
         sett.append(Settlement(len(sett), dnames.pop(), 'deephold', x, y))
+    # dwarf villages in the hills in front of each hold
+    from .deephold import village_name
+    for hold in [s for s in sett if s.kind == 'deephold']:
+        made = 0
+        near = [(hold.x + dx, hold.y + dy) for dx in range(-14, 15) for dy in range(-10, 11) if 5 <= max(abs(dx), abs(dy))]
+        random.shuffle(near)
+        for x, y in near:
+            if made >= 2:
+                break
+            i = y * w + x
+            if not m.inb(x, y) or i not in reach_set or m.t[i] != HILLS or not far_enough(x, y, 6):
+                continue
+            if not any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == MOUNTAIN for dx in range(-3, 4) for dy in range(-3, 4)):
+                continue
+            nm = village_name(names)
+            if not nm:
+                break
+            names.add(nm)
+            taken.append((x, y))
+            v = Settlement(len(sett), nm, 'village' if made == 0 else 'hamlet', x, y)
+            v.dwarven = True
+            sett.append(v)
+            made += 1
     # the elven city, at the foot of the Elder Tree
     from .folk import elder_spot, ELF_CITY_NAMES
     spot = elder_spot(m, world, reach_set, taken)
@@ -627,6 +658,8 @@ def _place_dungeons(m, world, reach, dist, start):
 def settlement_services(s):
     if s.kind == 'deephold':
         return {'inn', 'market', 'shop', 'temple'}
+    if getattr(s, 'dwarven', False):
+        return {'inn', 'market', 'shop'}
     if s.id == 0:
         return {'inn', 'market', 'shop', 'stables'}      # Thornfield's temple stands outside the village
     sv = {'inn', 'market'}
@@ -821,8 +854,8 @@ def _assign_factions(m, world, start):
     world.settlements[0].faction = 'crown'
     for st in world.settlements:
         st.race = D.FACTIONS[st.faction].get('race', 'human') if random.random() < .8 or st.id == 0 else \
-            random.choice(['human', 'human', 'halfling', 'dwarf', 'elf', 'gnome'])
-        if st.kind == 'deephold':
+            random.choice(['human', 'human', 'halfling', 'dwarf', 'elf'])
+        if st.kind == 'deephold' or getattr(st, 'dwarven', False):
             st.race = 'dwarf'
             if 'clan' in D.FACTIONS:
                 st.faction = 'clan'

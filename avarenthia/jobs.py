@@ -404,6 +404,15 @@ def _rescue(game, s):
     w = game.world
     name = name_of(game)
     who, his = random.choice(MISSING_WHO)
+    from . import tribes as TR
+    camp = TR.near_camp(game, s, 'warcamp', 55)
+    if camp and random.random() < .5 and not taken(game, 'camp', camp.id):
+        lvl = TR.level(game, camp)
+        return mission(game, s, 'rescue', f'Rescue {name} from {camp.name}',
+                       f'Orcs took {name}, {who}, on the road and dragged {him(his)} off to {camp.name}, their war camp to '
+                       f'the {_dir(s, camp.x, camp.y)}. They keep captives in a cage until they sell them. Break the cage, '
+                       f'or buy {him(his)} out if they will deal with you.', 40 + lvl * 5, (8, 12), game.day + 14,
+                       camp=camp.id, name=name, his=his, lvl=lvl, where=camp.name)
     camps = [q for q in w.pois if q.kind == 'orccamp' and q.ready_day < 10 ** 9 and cheb(q.x, q.y, s.x, s.y) <= 55
              and not taken(game, 'poi', q.id)]
     if camps and random.random() < .6:
@@ -858,6 +867,9 @@ def on_accept(game, s, m):
         game.reveal_place(t.x, t.y)
     if d.get('spot') and m.kind not in ('survey', 'missing'):
         game.reveal_place(*d['spot'])
+    if d.get('camp') is not None:
+        st = w.sites[d['camp']]
+        game.reveal_place(st.x, st.y)
     if m.kind == 'spy':
         h = w.holds[d['hold_t']]
         game.reveal_place(h.x, h.y)

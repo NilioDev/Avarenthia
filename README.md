@@ -102,8 +102,35 @@ market and stables lie on the forest floor between them. The houses, the inn, th
 crown, on decks joined by walkways along the boughs: climb a ladder by the paths, or the stair in the hall, to reach
 them.
 
-**Dwarven holds.** In the mountains lie underground dwarven cities (`▼`) with halls, forges, a throne room and stairs
-down to the Deep Roads, old dwarven tunnels now full of goblins and worse.
+Gnomes live like the little folk of the old tales: tiny hamlets (`♣`) tucked under the roots of great trees deep in the
+oldest forests, hidden like the glades (a gnome senses one from a few steps off). Their doors are too small for anyone
+but a gnome; only the elder's tree has a door wide enough for guests. The elder tends hurt beasts (your pet among them),
+sells herbs and mushrooms, and teaches the ways of the wood.
+
+**Dwarven holds.** In the mountains lie underground dwarven cities (`▼`). The way in runs over a bridge across a chasm,
+between statues of the old kings, to the Great Forge with its river of molten iron and a ring street of shops: smith,
+trade house, inn and healer. The king sits in the High Seat to the north, the clan guard (dwarves for hire) in the
+barracks to the west, the temple lies east and the homes south. Stairs lead down into the mines. In the hills before
+the mountains lie dwarf villages of stone houses with goat terraces, a mine above the village, a smelter, a mead hall
+and a watchtower. Ore carts run through the tunnels between the holds and the villages: pay the fare and the days go by
+in the dark.
+
+**The mines.** The upper galleries are lamp-lit and worked by the clan; below them lie the old galleries, dark, with
+cracked props that creak as you pass and sometimes give way. Past the Deep Gate run the Deep Roads, which the dwarves
+lost long ago; every level down is more dangerous. With a pick (outfitters sell them) bump an ore or gem vein to dig it
+out onto your cargo, and get better at **mining** as you go. Dig in the clan's own galleries while the clan does not
+know you and it is theft; the old galleries are anyone's. Climb down into the chasm at the gate of a hold and you fall
+into the mines.
+
+**The hostile peoples.** Orcs and goblins have their own places too, and so do kobolds, gnolls and lizardfolk, each on
+land that suits them: an orc war camp behind a palisade of stakes on the badlands or steppe, a goblin warren in a ravine
+of the world map, kobold caves in the hills under the mountains, a gnoll hunting camp on the savanna (it moves when the
+game runs out), a lizardfolk village on stilts in the swamp. They are whole peoples, not monster dens: guards warn you
+off first, and only if you go on does the place rise against you; then the young and the old run. The war camp keeps
+captives in a cage; break it open, or buy them free, and the town they came from will hear of it. Kobolds are miners who
+love shiny things: pay their shiny toll at the gate and you may trade in their caves (ore, a guide to an unknown dungeon,
+double price for rings and amulets), but touch their hoard and the whole warren comes. Orcs and goblins trade with
+friends of the horde, and the goblin fence buys anything from anyone.
 
 **Sleeping out.** Rest in the open and you make camp: with a fire the beasts keep off, but robbers see it from
 afar; without one, it is the other way round. A night out can bring wolves, robbers, a thief at your pack or a cold
@@ -227,8 +254,8 @@ side for a while, then fall away.
 
 ### Life skills
 
-Like in Project Gorgon, life skills grow by doing them: **fishing**, **foraging**, **herbalism**, **alchemy** and
-**brewing**. Buy a fishing pole and fish by any water (`a`): fishing opens a window of its own, with the water, the
+Like in Project Gorgon, life skills grow by doing them: **fishing**, **foraging**, **herbalism**, **alchemy**,
+**brewing** and **mining**. Buy a fishing pole and fish by any water (`a`): fishing opens a window of its own, with the water, the
 bank, you, the rod and the float. Wait for the bite (ripples are not bites) and strike in time; then reel in, keeping
 the fish in the green with the arrows while the line holds. The better you get, the more kinds bite, the wider the
 green and the longer the line holds; a master angler can take the quick way. Forage in the
@@ -438,9 +465,11 @@ avarenthia/world.py        the realm: regions, roads, settlement sizes and servi
 avarenthia/terrain.py      the shape of the world: continent, islands, climate, biomes, rivers, wonders
 avarenthia/worldgen.py     wilderness, dungeons (rooms and caves), shops
 avarenthia/towns.py        hamlets, villages, towns, cities and the metropolis; rivers and bridges through them
-avarenthia/folk.py         the peoples' own lands: the halfling country and its hill homes, elven glades, the elven city
+avarenthia/folk.py         the peoples' own lands: the halfling country and its hill homes, elven glades, the elven city,
+                           gnome hamlets
 avarenthia/sites.py        farms, roadside inns, temples, monasteries, watchtowers
-avarenthia/deephold.py     dwarven holds and the Deep Roads
+avarenthia/deephold.py     dwarven holds, dwarf villages, the mines, digging and the cart line
+avarenthia/tribes.py       the hostile peoples' own places: war camp, goblin ravine, kobold caves, gnoll camp, stilt village
 avarenthia/weather.py      climates, seasons and every weather effect
 avarenthia/lore.py         history, gods and peoples; what people say; rumours and hints
 avarenthia/gods.py         the pantheon, devotion, favour and blessings

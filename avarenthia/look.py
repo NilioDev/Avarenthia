@@ -95,6 +95,8 @@ BIOME_STYLE = {   # biome: (glyph choices, fg, bg) -- the overworld in the Dwarf
     'crater_isle': ([(1, '*')], (255, 220, 160), (40, 30, 26)),
     'chasm': ([(70, ' '), (30, '·')], (60, 40, 34), (0, 0, 0)),
     'chasm_edge': ([(45, '▒'), (35, '░'), (20, ':')], (176, 100, 64), (40, 18, 12)),
+    'ravine': ([(60, '░'), (40, ':')], (120, 80, 56), (22, 12, 8)),
+    'ravine_edge': ([(50, '▒'), (30, '∩'), (20, ':')], (168, 112, 70), (46, 26, 16)),
     'salt': ([(40, '·'), (25, '░'), (20, ' '), (15, '.')], (236, 236, 228), (120, 116, 108)),
     'geyser': ([(60, '°'), (40, '*')], (230, 250, 255), (40, 100, 110)),
     'hotpool': ([(60, '≈'), (40, '~')], (120, 230, 220), (20, 80, 90)),
@@ -300,7 +302,7 @@ def cell(m, i, depth=None):
         return WALL_GLYPH.get(key, '■'), _jit(fg, r2, .05), (30, 27, 24)
     if t in (WALL, ROCK):
         fg = m.wall_fg if (t == WALL and m.wall_fg) else td.fg
-        if m.kind == 'dungeon':
+        if m.kind == 'dungeon' or getattr(m, 'underground', False):
             return td.ch, _jit(fg, r2, .07), _jit(scale(fg, .32), r, .1)
         return td.ch, _jit(fg, r2, .07), td.bg or BG
     return td.ch, td.fg, td.bg or BG
