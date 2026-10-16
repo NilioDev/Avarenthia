@@ -153,7 +153,8 @@ def at_gate(game, s):
     opts = []
     if game.player.gold >= f:
         opts.append((f'Pay the fine of {fmt(f)}', 'pay'))
-    opts += [('Spend three days in the stocks', 'stocks'), ('Turn and run', 'run')]
+    opts += [('Spend three days in the stocks', 'stocks'), ('Swear it was someone else, and prove it', 'name'),
+             ('Turn and run', 'run')]
     ask(game, 'gate', f'The guards of {s.name}',
         f'Two guards block your way, hands on their swords. "You are wanted in {s.name} for {what}. '
         f'Pay your fine, or take your punishment."', opts, sid=s.id)
@@ -175,6 +176,11 @@ def r_gate(game, choice, ctx):
         p.gold -= lost
         game.end_turn(D.DAY_LEN * 3, True)
         game.msg(f'Three days in the stocks. Rotten fruit, jeers, and {fmt(lost)} "for your keep". Then they let you go.', 'bad')
+    elif choice == 'name':
+        from . import jobs as JB
+        game.leave_to_over()
+        if JB.clear_name(game, s):
+            game.msg('"Bring us the one who did it," says the sergeant. "Then we will talk." They let you go, for now.', 'info')
     else:
         game.leave_to_over()
         game.msg('You slip away before they can grab you.', 'bad')

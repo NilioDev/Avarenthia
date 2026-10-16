@@ -170,7 +170,7 @@ def r_factor(game, choice, ctx):
     if not npc:
         return
     if choice == 'work':
-        offer(game, npc, 'factor', ['freight', 'courier'], 1.2, '"Here is what the Guild needs moved:"')
+        offer(game, npc, 'factor', ['freight', 'courier', 'rush', 'debt', 'cargo'], 1.2, '"Here is what the Guild needs done:"')
     elif choice == 'prices':
         game.say(npc, trade_gossip(game))
 
@@ -189,7 +189,10 @@ def r_captain(game, choice, ctx):
         game.say(npc, danger(game) or random.choice(['Quiet, for now. I do not trust quiet.',
                                                      'Nothing worth my breath. Keep your eyes open on the roads.']))
     elif choice == 'work':
-        offer(game, npc, 'captain', ['hunt', 'hunt', 'bounty', 'escort'], 1.1, '"The garrison pays for these:"')
+        here = game.here
+        extra = ['boats'] if here is not None and getattr(here, 'harbour', False) else []
+        offer(game, npc, 'captain', ['hunt', 'hunt', 'bounty', 'escort', 'defend', 'deserter', 'rescue'] + extra, 1.1,
+              '"The garrison pays for these:"')
 
 
 def talk_sailor(game, npc):

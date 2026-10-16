@@ -515,7 +515,9 @@ def offer_work(game, key):
         s['board'] = []
         for _ in range(12):
             from .named import GUILD_PREY
-            m = MS.make_offer(game, here, kinds=GUILDS[key]['jobs'], prey=GUILD_PREY.get(key), max_rank=rank(game, key) // 2)
+            from . import jobs as JB
+            m = MS.make_offer(game, here, kinds=GUILDS[key]['jobs'] + JB.guild_kinds(game, key), prey=GUILD_PREY.get(key),
+                              max_rank=rank(game, key) // 2)
             if m:
                 flavour(game, key, m)
                 s['board'].append(m)
@@ -593,6 +595,8 @@ def flavour(game, key, m):
     elif key == 'coven' and m.kind == 'fetch':
         m.title = 'Bring Morrak ' + m.title.split('Recover ', 1)[-1]
         m.dark = 'desecration'
+    from . import jobs as JB
+    JB.flavour(game, key, m)
     m.title = f'{g["short"]}: {m.title}'
 
 

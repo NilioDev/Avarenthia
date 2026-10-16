@@ -371,6 +371,8 @@ def newsfolk(game, m, s, buildings, names):
 def staff(game, m, pl, role_key, names, s):
     """Put the person who runs a building behind its counter."""
     nm, col = TITLE[role_key]
+    if role_key == 'elder' and (s is None or s.id != 0):
+        nm = 'Elder {n}'
     label = nm.format(n=names.pop())
     if s is not None and s.id == 0 and role_key == 'shop':
         label = 'Dorien Hale the Merchant'
@@ -777,8 +779,8 @@ def gen_village(game, s):
     roads = road_cells(m)
     near_road = [c for c in roads if 6 < c[0] < w - 6 and 6 < c[1] < h - 6 and cheb(c[0], c[1], cx, cy) < (16 if tier == 'hamlet' else 40)]
     kinds = [k for k in ('inn', 'shop', 'temple', 'stables') if k in s.services]
-    if s.id == 0:
-        kinds.append('elder')
+    if s.id == 0 or tier in ('village', 'hamlet'):
+        kinds.append('elder')                    # the elder: Berend in Thornfield, and work for the village elsewhere
     from . import guilds as GU
     lodges = [k for k in GU.halls_in(game, s.id) if not GU.GUILDS[k]['secret'] and k != 'anglers']
     kinds += ['lodge:' + k for k in lodges]

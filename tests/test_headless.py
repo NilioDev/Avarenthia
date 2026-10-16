@@ -126,6 +126,7 @@ def smoke(games=9, steps=1200):
 
 
 def trade_and_jobs():
+    from avarenthia import jobs as JB
     random.seed(11)
     g = E.Game('Trader', False, 4242)
     g.player.vit = 300
@@ -152,8 +153,8 @@ def trade_and_jobs():
         s.board_day = -99
         MS.refresh_board(g, s)
         for mi in list(s.board):
-            if mi.kind in kinds_done or mi.kind == 'hunt':   # hunts: creatures_and_hunts
-                continue
+            if mi.kind in kinds_done or mi.kind == 'hunt' or mi.kind in JB.KINDS or mi.data.get('person'):
+                continue                                  # hunts: creatures_and_hunts; the others: more_jobs
             g.player.mounts = ['mule', 'cart']
             if not MS.accept(g, s, mi):
                 continue
@@ -1568,7 +1569,7 @@ def creatures_and_hunts():
     g.compute_fov()
     app.render()
     sh = make_monster(g, 'shrieker', x, y, 3)
-    sleeper = make_monster(g, 'goblin', 1, 1, 3)
+    sleeper = make_monster(g, 'goblin', max(1, x - 5), max(1, y - 5), 3)
     sleeper.awake = False
     g.map.mons += [sleeper]
     BH.turn(g, sh, g.stats()['armor'])
@@ -1786,11 +1787,425 @@ def new_guilds():
     print('new guilds ok:', ', '.join(GU.GUILDS[k]['short'] for k in ('moot', 'chapter', 'ossuary', 'stillhand', 'hound')))
 
 
+def more_jobs():
+    """The jobs back from the parking place: every kind made, taken and finished, and the choices in them."""
+    from avarenthia import jobs as JB, named as NM, guilds as GU, mercs as MC, lifeskills as LS, crime as CR
+    from avarenthia import calendar as CAL, foraging as FG
+    from avarenthia.entities import Item, make_monster
+    from avarenthia.canvas import Canvas, wrap_text
+    random.seed(5)
+    app = new_app('soft', 777)
+    g = app.game
+    p = g.player
+    p.lvl, p.vit, p.str, p.dex = 16, 400, 120, 60
+    p.gold = 10 ** 7
+    p.mounts = ['mule', 'cart']
+    w = g.world
+    done = {}
+
+    def heal():
+        p.life = g.stats()['max_life']
+        g.dead = False
+
+    def offer(kind, pred=None, tries=8):
+        towns = [s for s in w.settlements if s.kind != 'deephold']
+        random.shuffle(towns)
+        for s in towns:
+            if s.rep <= CR.WANTED_AT:
+                continue
+            g.cur = s.map_key if s.map_key in g.maps else g.cur
+            for _ in range(tries):
+                m = JB.make(g, s, kind)
+                if m and (not pred or pred(s, m)):
+                    return s, m
+        return None, None
+
+    def take(s, m):
+        s.board.append(m)
+        heal()
+        assert MS.accept(g, s, m), (m.kind, m.title, g.log[-1])
+        for line_ in wrap_text(m.desc, 38)[10:] + wrap_text(m.title, 38)[3:]:
+            raise AssertionError(f'{m.kind}: offer too long for the board: {m.desc}')
+
+    def overworld(x, y):
+        app.screens = [ui.GameScreen(app)]
+        g.maps.pop('wild', None)
+        g.cur = 'over'
+        g.pending = None
+        p.x, p.y = x, y
+        g.over_pos = (x, y)
+        g.compute_fov()
+
+    def arrive(m):
+        x, y = m.data['spot']
+        r = m.data.get('reach', 1)
+        overworld(x + (1 if r > 1 else 0), y)
+        heal()
+        return JB.step(g)
+
+    def answer(key=None):
+        JB.pump(g)
+        if g.pending:
+            choose(app, key)
+
+    def clear():
+        if g.cur == 'wild':
+            heal()
+            clear_wild(g)
+        answer('back')
+
+    def home(m):
+        s = w.settlements[m.giver]
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        answer()
+        if m.state == 'turnin':               # a question came first
+            g.enter_town(s.id)
+            answer()
+
+    def ok(m, want='done'):
+        assert m.state == want, (m.kind, m.title, m.state, g.log[-4:])
+        done[m.kind] = done.get(m.kind, 0) + 1
+        print(f'  {m.kind:9} {m.state:6} {m.title} ({m.reward}c)')
+
+    def finish(kind, pred=None):
+        s, m = offer(kind, pred)
+        assert m, f'no {kind} job could be made'
+        take(s, m)
+        return s, m
+
+    # fights out in the land, then home for the pay
+    for kind in ('harvest', 'nest', 'rescue', 'shrine', 'cargo'):
+        s, m = finish(kind, lambda s, m: m.data.get('spot'))
+        assert arrive(m), kind
+        clear()
+        assert m.state == 'turnin', (kind, m.state)
+        home(m)
+        ok(m)
+    s, m = finish('boats', lambda s, m: True)
+    arrive(m)
+    clear()
+    home(m)
+    ok(m)
+    # a nest down in a dungeon: kill what lays the eggs
+    s, m = finish('nest', lambda s, m: m.data.get('did'))
+    d = w.dungeons[m.data['did']]
+    to_over(g, s.id)
+    g.enter_dungeon(d.id, d.depth, 'up')
+    boss = next((o for o in g.map.mons if o.k == d.boss), None)
+    if not boss:
+        boss = make_monster(g, d.boss, p.x, p.y + 1, 8)
+        g.map.mons.append(boss)
+    g.kill(boss)
+    assert m.state == 'turnin'
+    home(m)
+    ok(m)
+    # the missing: tracks, and whatever became of them
+    for _ in range(3):
+        s, m = finish('missing')
+        x, y = m.data['area'][:2]
+        overworld(x, y)
+        for _ in range(200):
+            JB.track(g, m)
+        arrive(m)
+        clear()
+        answer('carry')
+        clear()
+        assert m.state == 'turnin', m.state
+        home(m)
+        ok(m)
+        print(f'    found: {m.data["outcome"]}')
+    # a raid comes: be there, or the village burns
+    s, m = finish('defend')
+    v = w.settlements[m.data['village']]
+    g.turn = (m.data['day'] - 1) * D.DAY_LEN + D.DAY_LEN // 2
+    g.last_day = g.day
+    to_over(g, v.id)
+    g.enter_town(v.id)
+    JB.daily(g)
+    answer('fight')
+    assert g.cur == 'wild', g.cur
+    assert any(getattr(o, 'thrall', 0) for o in g.map.mons), 'villagers fight with you'
+    clear()
+    ok(m)
+    s, m = finish('defend')
+    g.turn = (m.data['day'] - 1) * D.DAY_LEN + 10
+    g.last_day = g.day
+    v = w.settlements[m.data['village']]
+    far = max(w.settlements, key=lambda o: cheb(o.x, o.y, v.x, v.y))
+    to_over(g, far.id)
+    JB.daily(g)
+    ok(m, 'failed')
+    # the sick well, whatever poisons it
+    for cause in ('drowned', 'poisoner', 'roots'):
+        s, m = finish('well')
+        m.data['cause'] = cause
+        t = w.settlements[m.target]
+        to_over(g, t.id)
+        g.enter_town(t.id)
+        answer('climb')
+        clear()
+        if cause == 'poisoner':
+            arrive(m)
+            clear()
+        elif cause == 'roots':
+            p.cargo['medicine'] = 3
+            to_over(g, t.id)
+            g.enter_town(t.id)
+        assert m.state == 'turnin', (cause, m.state)
+        home(m)
+        ok(m)
+    # deliveries
+    town = next(o for o in w.settlements if o.kind == 'town' and o.id != 0)
+    town.event = ('plague', 9)
+    s, m = finish('rush')
+    p.cargo[m.data['good']] = m.data['qty']
+    to_over(g, m.target)
+    g.enter_town(m.target)
+    ok(m)
+    # a debt: three ways to collect it
+    for how, want in (('threat', 'done'), ('pay', 'done'), ('free', 'failed')):
+        s, m = finish('debt')
+        to_over(g, m.target)
+        g.enter_town(m.target)
+        answer(how)
+        if want == 'done':
+            home(m)
+        ok(m, want)
+    # smuggling: through the gate, or caught at it
+    s, m = finish('smuggle')
+    to_over(g, m.target)
+    g.enter_town(m.target)
+    answer('bribe')
+    assert m.state in ('done', 'failed'), m.state
+    ok(m, m.state)
+    # the deserter: back in chains, or home to his mother
+    for how, want in (('take', 'done'), ('free', 'failed')):
+        s, m = finish('deserter')
+        arrive(m)
+        answer(how)
+        if want == 'done':
+            home(m)
+        ok(m, want)
+    # spying on a fortress for a castellan
+    friendly = [h for h in w.holds if not E.WAR.is_hostile(g, h.faction)]
+    for h in friendly:
+        m = JB.make_hold(g, h, 'spy')
+        if m:
+            break
+    assert m, 'no spy job'
+    h.board.append(m)
+    assert MS.accept(g, h, m)
+    arrive(m)
+    answer('watch')
+    clear()
+    assert m.state == 'turnin', m.state
+    hx, hy = h.x, h.y
+    overworld(hx, hy)
+    g.enter_hold(h.id)
+    ok(m)
+    # faith: a pilgrimage, a relic from a ruined temple
+    s, m = finish('pilgrim')
+    arrive(m)
+    home(m)
+    ok(m)
+    s, m = finish('relic')
+    d = w.dungeons[m.data['dungeon']]
+    to_over(g, s.id)
+    g.enter_dungeon(d.id, d.depth, 'up')
+    relic = next(i for i in g.map.items if getattr(i, 'mission', None) == m.id)
+    p.x, p.y = relic.x, relic.y
+    g.auto_pickup()
+    assert m.state == 'turnin'
+    home(m)
+    ok(m)
+    # the Coven's work: foul a shrine
+    s, m = finish('desecrate')
+    arrive(m)
+    answer('defile')
+    home(m)
+    ok(m)
+    assert w.pois[m.data['poi']].defiled
+    # exploring: a survey, an old way to its end, the deep places
+    for kind in ('survey', 'lostway'):
+        s, m = finish(kind)
+        arrive(m)
+        assert m.state == 'turnin', (kind, m.state)
+        home(m)
+        ok(m)
+    s, m = finish('deep')
+    d = w.dungeons[m.data['did']]
+    to_over(g, s.id)
+    g.enter_dungeon(d.id, d.depth, 'down')
+    home(m)
+    ok(m)
+    # gathering herbs
+    s, m = finish('gather')
+    herb = next(k for k, v in FG.PLANTS.items() if v[1] == 'herb')
+    g.add_to_inv(Item(g.new_id(), 'plant', herb, m.data['n']))
+    home(m)
+    ok(m)
+    # the big one: it bites only when it bites
+    s, m = finish('bigone')
+    m.data['cond'], m.data['season'] = 'season', CAL.season(g.day)
+    rod = Item(g.new_id(), 'tool', 'rod')
+    g.add_to_inv(rod)
+    x, y = m.data['spot']
+    overworld(x, y)
+    for _ in range(400):
+        pl = LS.plan(g, LS.water_here(g) or 'lake')
+        if pl['kind'] == 'fish' and pl['fish'] == 'legend':
+            LS.land(g, pl, True)
+            break
+    assert m.state == 'turnin', 'the big one never bit'
+    home(m)
+    ok(m)
+    # an escort for someone who walks along
+    s, m = finish('person')
+    to_over(g, s.id)
+    wd = WA.make_group(g, 'bandits', p.x + 1, p.y, 2, ['bandit', 'bandit'])
+    w.wanderers.append(wd)
+    g.start_encounter(wd)
+    who = next(o for o in g.map.mons if o.role == 'escort')
+    assert who.name == m.data['person'], who.name
+    clear_wild(g)
+    g.enter_town(m.target)
+    ok(m)
+    # clear your name: wanted at the gate, swear it was someone else
+    s = next(o for o in w.settlements if o.kind == 'town' and o.id != 0)
+    s.rep = -40
+    s.crimes = ['robbery on the road']
+    to_over(g, s.id)
+    g.enter_town(s.id)
+    choose(app, 'name')
+    m = next(o for o in MS.active(g) if o.kind == 'name')
+    arrive(m)
+    clear()
+    home(m)
+    ok(m)
+    assert s.rep >= 0 and g.cur == s.map_key, (s.rep, g.cur)
+    # the rival hunter: too slow, and together
+    s, m = finish('rival')
+    for _ in range(m.data['rival']['left'] + 1):
+        JB.daily(g)
+    ok(m, 'failed')
+    s, m = finish('rival')
+    n = NM.get(g, m.data['nid'])
+    JB.r_rival(g, 'team', dict(mid=m.id))
+    overworld(n.x, n.y)
+    NM.meet(g, n, 'you')
+    assert any(o.name == m.data['rival']['name'] for o in g.map.mons), 'the rival fights with you'
+    clear()
+    print('  rival: hunting with', m.data['rival']['name'])
+    s, m = finish('legend')
+    assert NM.get(g, m.data['nid']).rank == 'legendary'
+    ok(m, 'active')
+    # a sellsword's debt
+    mc = MC.Merc('warrior', 'Odo Halfpenny', p.lvl)
+    MC.outfit(g, mc)
+    mc.hp = MC.stats(g, mc)['max_hp']
+    g.merc = mc
+    to_over(g, 0)
+    before = mc.morale
+    JB.due(g, 'mercdebt', None)
+    answer('face')
+    m = next(o for o in MS.active(g) if o.kind == 'mercdebt')
+    arrive(m)
+    clear()
+    ok(m)
+    assert mc.morale > before, (mc.morale, before)
+    # the calendar: a festival, and the Starfall
+    fd, fname = JB.next_festival(g.day + 5)
+    g.turn = (fd - 6) * D.DAY_LEN + 10
+    g.last_day = g.day
+    s, m = finish('festival')
+    g.turn = (fd - 1) * D.DAY_LEN + D.DAY_LEN // 2
+    g.last_day = g.day
+    to_over(g, s.id)
+    g.enter_town(s.id)
+    answer('str')
+    ok(m)
+    sd = JB.next_starfall(g.day)
+    g.turn = (sd - 1) * D.DAY_LEN + 5
+    g.last_day = g.day
+    to_over(g, 0)
+    JB.fall(g)
+    st = JB.star(g)
+    assert st, 'no star fell'
+    for key in ('magi',):
+        GU.state(g)[key]['joined'], GU.state(g)[key]['rep'] = True, GU.RANK_REP[3]
+    s, m = finish('starfall')
+    overworld(st['x'], st['y'])
+    JB.step(g)
+    assert any(i.k == 'star' for i in p.inv), 'no star-iron'
+    home(m)
+    ok(m)
+    # winter supplies, in autumn only
+    autumn = next(dd for dd in range(g.day, g.day + 400) if CAL.season(dd) == 'autumn')
+    g.turn = (autumn - 1) * D.DAY_LEN + 10
+    g.last_day = g.day
+    s, m = finish('winter')
+    p.cargo[m.data['good']] = m.data['qty']
+    to_over(g, m.target)
+    g.enter_town(m.target)
+    ok(m)
+    # the weight of choices: every kind of mark
+    town = w.settlements[0]
+    r0 = town.rep
+    st_ = GU.state(g)['wardens']
+    st_['joined'], st_['rep'] = True, 100
+    lines = JB.effects(g, town=[(0, 5)], faction=[('crown', -2)], god=0, guild=[('wardens', 10)], loyalty=5,
+                       crime=(1, 'littering', 0.0))
+    assert town.rep == r0 + 5 and st_['rep'] == 110 and len(lines) == 4, lines
+    # the guilds give their own work, by rank
+    for key, (low, high) in JB.GUILD_JOBS.items():
+        st_ = GU.state(g)[key]
+        st_['joined'], st_['rep'], st_['found'] = True, GU.RANK_REP[3], True
+        st_['board'], st_['board_day'] = [], -99
+        kinds = set(GU.GUILDS[key]['jobs']) | set(low) | set(high)
+        city = next(o for o in w.settlements if o.id in w.guild_halls.get(key, []) or not w.guild_halls.get(key))
+        to_over(g, city.id)
+        g.enter_town(city.id)
+        g.pending = None
+        GU.offer_work(g, key)
+        made = [m.kind for m in GU.state(g)[key]['board']]
+        assert all(k in kinds or k in ('hunt', 'escort') for k in made), (key, made)
+        st_['joined'] = False
+    # the boards, the journal and the questions: no sentence cut short
+    Canvas.cut = []
+    for s in [o for o in w.settlements if o.kind == 'village' and o.id != 0]:
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        if any(o.role == 'elder' for o in g.map.mons):
+            break
+    s.board = [m for m in (JB.make(g, s, k) for k in JB.VILLAGE + JB.FACTOR + JB.CAPTAIN) if m][:12]
+    app.screens = [ui.GameScreen(app), ui.BoardScreen(app, s.id)]
+    for i in range(len(s.board)):
+        app.top.sel = i
+        app.render()
+    cut = Canvas.cut
+    Canvas.cut = None
+    app.screens = [ui.GameScreen(app), ui.JournalScreen(app)]
+    app.render()
+    Canvas.cut = cut
+    elder = next((o for o in g.map.mons if o.role == 'elder'), None)
+    assert elder, 'no elder in the village'
+    app.screens = [ui.GameScreen(app)]
+    g.talk(elder)
+    app.after_action()
+    assert isinstance(app.top, ui.ChoiceScreen), app.top
+    app.render()
+    cut = Canvas.cut
+    Canvas.cut = None
+    assert not cut, f'text cut short: {cut}'
+    print('more jobs ok:', ', '.join(f'{k} {n}' for k, n in sorted(done.items())))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, text_fits]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

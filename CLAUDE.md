@@ -16,7 +16,7 @@ The plan for the next rounds of work is in `docs/plan.md`; read it before buildi
 
 ## Code map (biggest files first)
 - `avarenthia/ui.py` all screens; `engine.py` game rules; `towns.py` settlement maps; `weather.py`; `world.py`;
-  `terrain.py`; `data.py` tiles, monsters, items; `missions.py` jobs; `guilds.py`; `mercs.py` hirelings and threat;
+  `terrain.py`; `data.py` tiles, monsters, items; `missions.py` jobs; `jobs.py` the many job kinds (round 4); `guilds.py`; `mercs.py` hirelings and threat;
   `news.py` news through people; `harbour.py`; `hidden.py` old ways; `lifeskills.py` fishing etc.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.

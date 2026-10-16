@@ -175,6 +175,15 @@ Membership costs nothing, and what you learn you keep if you leave. But members 
 mended for less, and the higher their rank, the better paid the guild's work (and now and then there is a piece of
 gear on top).
 
+Each guild also has work of its own, and better work from the third rank: the Wardens a bad harvest and the missing,
+then legendary beasts and hunts with a rival hunter after the same prey (race them, hunt together and split the
+bounty, or make sure they never get there); the Iron Company escorts and stolen cargo, then deserters and raids; the
+Order of Dawn desecrated shrines, then relics of the gods; the Magi the deep places mapped, then the Starfall; the
+Cartographers surveys, then the old ways walked to their end and the deep places; the Brotherhood of the Net the big
+one (a legendary fish that bites only in rain, at night or in one season, landed with the fishing game), then what
+took the boats; Alembic and Barrel herbs, then the sick well; the Thieves smuggling past the gate, then debts
+collected their way; the Hollow Coven a shrine to foul, then a relic to steal.
+
 ### Hirelings
 
 In the barracks of the cities the Iron Company lets out sellswords by the day, and now and then one sits in an inn
@@ -234,6 +243,21 @@ factions that worship a rival god trust you less, and priests of a hostile god w
 - The inn's notice board has courier jobs, freight runs, bounties, escorts, dungeon delves and WANTED posters for named
   enemies (see *Named enemies*). A blinking yellow `!`
   above someone means work; a `?` means you can hand something in.
+- **More work, and who gives it.** The innkeeper and the elder of a village need a nest of ants or spiders cleared,
+  boars or worse driven off the fields, someone found who went into the woods and did not come back (follow the
+  tracks: alive, hurt, or too late), a captive cut out of the webs or taken back from an orc camp, the village
+  defended on the day the raiders come (be there, or it burns), the sick well put right, winter supplies brought to a
+  hamlet at the end of a long road (in autumn), and someone escorted who walks along with you and can die. The towns
+  keep four festivals a year: be there on the day and try the contests. The factor of the Merchants' Guild has rush
+  orders for towns hit by bad news, debts to collect (pay it yourself, lean on the debtor, or let it go) and cargo the
+  bandits took (bring it back, or keep it). The captain and the castellan want deserters brought back (or let go home),
+  enemy fortresses spied on, villages defended. The temple sends you on a pilgrimage to a far shrine, after a relic in a
+  ruined temple, or to take a shrine back from the dead. And when you are wanted, you can swear at the gate it was
+  someone else, and go and prove it on the one who works the same roads.
+- **Choices leave marks**: on your standing in a town, with a faction, with your god and your guild, on your record with
+  the law, and on your hireling's loyalty. A sellsword who has been with you a while may tell you about an old debt.
+- **The Starfall.** On the night of the 12th of Emberwane the sky rains stars, and one of them comes down whole. Follow
+  the scorched earth to it: star-iron for whoever is first, and others are looking too.
 - **Thornfield** has a pond with an old fisherman. Talk to him for your first pole and your first job: catch a fish.
 
 ## Factions, war and crime
@@ -415,6 +439,7 @@ avarenthia/news.py         news that travels on foot, and the people who tell it
 avarenthia/economy.py      goods and prices
 avarenthia/money.py        copper, silver and gold
 avarenthia/missions.py     jobs and quest marks
+avarenthia/jobs.py         village, trade, war, faith and exploring jobs, the calendar's, and the weight of choices
 avarenthia/lifeskills.py   fishing and the other life skills
 avarenthia/foraging.py     plants, foraging and herbalism
 avarenthia/brewing.py      alchemy and brewing

@@ -67,7 +67,7 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
-        if self.k in ('oldmap', 'vkey', 'trophy'):
+        if self.k in ('oldmap', 'vkey', 'trophy', 'star'):
             return self.name
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
@@ -108,6 +108,8 @@ class Item:
             return (200, 210, 170)
         if self.k == 'trophy':
             return (226, 190, 130)
+        if self.k == 'star':
+            return (196, 214, 255)
         return (238, 228, 194)
 
     def glyph(self):
@@ -139,6 +141,8 @@ class Item:
             return '-'
         if self.k == 'trophy':
             return '%'
+        if self.k == 'star':
+            return '☼'
         return D.SLOTGLYPH[self.slot]
 
     def aff_sum(self, stat):
@@ -161,6 +165,9 @@ class Item:
                 out.append('A map of the Varnish Empire, the ink nearly gone. Read it to find one of the old ways.')
             elif self.k == 'vkey':
                 out.append('A key of black Varnish iron. It opens a sealed vault.')
+            elif self.k == 'star':
+                out.append('Iron that fell from the sky, still faintly warm, shot through with silver. The Circle of Magi '
+                           'pays for it, and smiths dream of it.')
             elif self.k == 'trophy':
                 out.append('Proof of a kill. Bring it to a town that has a bounty on its owner: wherever the job came from, '
                            'or anywhere near where it lived.')
@@ -266,6 +273,8 @@ class Item:
             return 15
         if self.k == 'trophy':
             return 4
+        if self.k == 'star':
+            return 60
         if self.k != 'gear':
             return 0
         v = round(D.BASES[self.base]['val'] * D.RARITY_MULT[self.rar] + len(self.aff) * 10)

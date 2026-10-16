@@ -2861,7 +2861,8 @@ class BoardScreen(Modal):
             if mi.deadline:
                 cv.text(x + 60, yy + 2, f'Deadline: {CAL.short(mi.deadline)}', DIM, PANEL)
                 cv.text(x + 60, yy + 3, f'Today is {CAL.short(g.day)}.', DIM, PANEL)
-            cv.text(x + 60, yy + 4, self.KINDS[mi.kind], INFO, PANEL)
+            from . import jobs as JB
+            cv.text(x + 60, yy + 4, self.KINDS.get(mi.kind) or JB.LABEL.get(mi.kind, mi.kind.capitalize()), INFO, PANEL)
             if mi.faction:
                 cv.wrap(x + 60, yy + 5, 38, f"Reputation with the {D.FACTIONS[mi.faction]['short']}: +{mi.rep if self.hold else 2}", GOOD, PANEL, 2)
         from . import crime as CR
@@ -2909,9 +2910,10 @@ class BoardScreen(Modal):
 
 
 def hunt_areas(g):
-    """(x, y, radius) of each named enemy you are hunting out in the land."""
+    """(x, y, radius) of each named enemy you are hunting out in the land, of the missing and of the fallen star."""
     from . import named as NM
-    out = []
+    from . import jobs as JB
+    out = list(JB.areas(g))
     for mi in MS.active(g):
         if mi.kind == 'hunt' and mi.state == 'active':
             n = NM.get(g, mi.data.get('nid'))
@@ -2966,13 +2968,15 @@ class JournalScreen(Modal):
                 left = mi.deadline - g.day
                 extra += f' · {left} day{"s" if left != 1 else ""} left' if left >= 0 else ' · overdue'
             if mi.kind == 'escort':
-                extra += f" · caravan health {mi.data['hp']}"
+                extra += f" · {mi.data.get('person', 'caravan')} health {mi.data['hp']}"
+            from . import jobs as JB
+            if mi.kind in JB.KINDS and JB.line(g, mi):
+                extra += ' · ' + JB.line(g, mi)
             if mi.kind == 'hunt':
                 from . import named as NM
                 yy += cv.wrap(x + 4, yy + 1, 93, NM.job_line(g, mi), DIM, PANEL, 2) + 1
                 continue
-            cv.text(x + 4, yy + 1, extra, DIM, PANEL)
-            yy += 2
+            yy += cv.wrap(x + 4, yy + 1, 93, extra, DIM, PANEL, 2) + 1
         yy += 1
         cv.text(x + 2, yy, 'CARGO', DIM, PANEL)
         yy += 1
@@ -3424,6 +3428,9 @@ class TempleScreen(Modal):
             cv.text(x + 3, yy, k, GOLD if ok else DIM, PANEL)
             cv.text(x + 5, yy, a, FG if ok else DIM, PANEL)
             cv.text_right(x + 68, yy, b, GOLD if ok else DIM, PANEL)
+        if g.here is not None and not no:
+            cv.text(x + 3, y + 21, 'w', GOLD, PANEL)
+            cv.text(x + 5, y + 21, 'Ask if the temple has work for you', FG, PANEL)
         cv.text(x + 3, y + 22, f'Your purse: {fmt(p.gold)}', DIM, PANEL)
         cv.text_right(x + 68, y + 22, GD.standing(g), GD.GODS[mine]['fg'] if mine else DIM, PANEL)
         cv.text_center(W // 2, y + 23, ' letter: choose · Esc: leave ', DIM, PANEL)
@@ -3436,8 +3443,16 @@ class TempleScreen(Modal):
         if tok == 'esc':
             self.app.pop()
             return
-        if self.refused and tok in 'abcdefg':
+        if self.refused and tok in 'abcdefgw':
             self.said = '"You heard me. Out."'
+            return
+        if tok == 'w' and g.here is not None:
+            from . import news as NW
+            from . import jobs as JB
+            priest = next((o for o in g.map.mons if getattr(o, 'role', '') == 'healer'), None)
+            self.app.pop()
+            if priest:
+                NW.offer(g, priest, 'temple', JB.TEMPLE, 1.0, '"The faithful have need of someone like you:"')
             return
         if tok == 'a':
             s = g.stats()

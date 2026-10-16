@@ -46,14 +46,20 @@ def _other_settlement(game, s, lo, hi):
 
 
 def make_offer(game, s, kinds=None, prey=None, max_rank=None):
+    from . import jobs as JB
     w = game.world
     want = kinds
     kinds = ['courier'] * 3 + ['freight'] * 3 + ['bounty'] * 2 + ['escort'] * 2 + ['hunt'] * 2
     if any(d.relic is None and not d.main for d in w.dungeons.values()):
         kinds += ['fetch'] * 2
     if want:
-        kinds = [k for k in kinds if k in want] or ['courier']
+        kinds = [k for k in kinds if k in want] + [k for k in want if k in JB.KINDS or k in JB.EXTRA]
+        kinds = kinds or ['courier']
+    else:
+        kinds += JB.board_kinds(game, s)        # the village and town work of jobs.py
     kind = random.choice(kinds)
+    if kind in JB.KINDS or kind in JB.EXTRA:
+        return JB.make(game, s, kind)
     if kind == 'hunt':                  # a WANTED poster for a named enemy (named.py)
         from . import named as NM
         return NM.offer(game, s, prey, max_rank)
@@ -154,7 +160,10 @@ def make_hold_offer(game, h):
     w = game.world
     f = h.faction
     enemies = [e for e in D.FACTIONS[f]['enemies']]
-    kind = random.choice(['war_bounty', 'supply', 'supply', 'assault'])
+    kind = random.choice(['war_bounty', 'supply', 'supply', 'assault', 'spy', 'deserter'])
+    if kind in ('spy', 'deserter'):
+        from . import jobs as JB
+        return JB.make_hold(game, h, kind)
     m = Mission(game.new_id(), kind, None)
     m.hold, m.faction = h.id, f
     fname = D.FACTIONS[f]['short']
@@ -255,6 +264,9 @@ def accept(game, s, m):
     if m.kind == 'courier' and free_cargo(p) < 1:
         game.msg('You need 1 free cargo space for the parcel.', 'bad')
         return False
+    from . import jobs as JB
+    if m.kind in JB.KINDS and not JB.can_accept(game, m):
+        return False
     s.board.remove(m)
     m.state = 'active'
     game.missions.append(m)
@@ -289,6 +301,8 @@ def accept(game, s, m):
     elif m.kind == 'escort':
         wd = Wanderer(game.new_id(), 'escort', s.x, s.y)
         wd.ch, wd.fg, wd.name, wd.mission = '♦', ESCORT_FG, 'Your caravan', m.id
+        if m.data.get('person'):                    # someone who walks along with you
+            wd.ch, wd.name = '@', m.data['person']
         w.wanderers.append(wd)
     elif m.kind == 'fetch':
         d = w.dungeons[m.data['dungeon']]
@@ -301,6 +315,8 @@ def accept(game, s, m):
         key = f'{d.id}:{d.depth}'
         if key in game.maps:
             place_relic(game, game.maps[key], m)
+    if m.kind in JB.KINDS:
+        JB.on_accept(game, s, m)
     game.msg(f'Job accepted: {m.title}.', 'gold')
     return True
 
@@ -328,6 +344,8 @@ def complete(game, m, sids):
     from .war import change_rep
     p = game.player
     w = game.world
+    from . import jobs as JB
+    JB.before_complete(game, m)
     m.state = 'done'
     from . import guilds as GU
     GU.job_done(game, m)
@@ -351,7 +369,9 @@ def fail(game, m, why):
     w = game.world
     m.state = 'failed'
     from . import guilds as GU
+    from . import jobs as JB
     GU.job_failed(game, m)
+    JB.on_fail(game, m)
     if m.giver is not None:
         w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
     elif m.faction:
@@ -378,6 +398,8 @@ def on_enter(game, sid):
             complete(game, m, [m.giver, sid])
         elif m.kind in ('bounty', 'fetch') and m.state == 'turnin' and m.giver == sid and m.hold is None:
             complete(game, m, [sid])
+    from . import jobs as JB
+    JB.on_enter(game, sid)
 
 
 def on_group_defeated(game, wd):
@@ -431,7 +453,7 @@ def on_capture(game, hid):
 def on_escort_killed(game):
     for m in active(game):
         if m.kind == 'escort':
-            fail(game, m, 'The caravan was destroyed.')
+            fail(game, m, f"{m.data['person']} was killed." if m.data.get('person') else 'The caravan was destroyed.')
 
 
 def find(game, mid):
@@ -461,6 +483,9 @@ def escort_wanderer(game):
 def target_pos(game, m):
     """Where on the overworld this job wants you to go next."""
     w = game.world
+    from . import jobs as JB
+    if m.kind in JB.KINDS:
+        return JB.target_pos(game, m)
     if m.kind == 'personal':
         d = m.data
         if m.state == 'active' and d['sub'] == 'letter':
@@ -662,6 +687,10 @@ def quest_mark(game, npc):
                 and not f.get('met_priest'):
             return '!'
         return None
+    if role == 'elder' and getattr(game.map, 'sid', 0) != 0:
+        here = game.here
+        board = here.__dict__.get('boards', {}).get('elder') if here else None
+        return '!' if board is None or board else None
     if role == 'elder':
         if (f.get('ratking') and not f.get('reward_rat')) or (f.get('grolm') and not f.get('reward_grolm')):
             return '?'

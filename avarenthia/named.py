@@ -548,6 +548,8 @@ def meet(game, n, surprise=None):
     if n.knows_you:
         game.msg(f'{n.Full} knows you. {n.he().capitalize()} roars your name across the field: "{p.name.upper()}!"', 'bad')
     game.msg('Defeat them, or walk off the edge of the map to escape.')
+    from . import jobs as JB
+    JB.on_named_meet(game, n)
 
 
 def apply(game, mon, n):

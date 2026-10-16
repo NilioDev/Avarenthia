@@ -36,6 +36,7 @@ FISH = {
     'salmon': ('Silver Salmon', 12, 'river', 4, 32, 20),
     'tuna': ('Bluefin', 12, 'sea', 3, 36, 22),
     'golden': ('Golden Carp', 18, 'lake river swamp', 1, 140, 30),
+    'legend': ('Legendary Fish', 16, '', 0, 0, 0),           # the big one of a Brotherhood job: never caught by chance
 }
 JUNK = ['an old boot', 'a tangle of weed', 'a rusty helmet', 'a waterlogged branch']
 
@@ -145,6 +146,10 @@ def plan(game, water):
         keys = ['drowned', 'drowned'] if ev and ev.key == 'drowned' else ['zombie'] if game.world.danger_at(p.x, p.y) > 6 else ['jackal', 'jackal']
         out.update(kind='monster', keys=keys, lvl=lvl, weight=9)
         return out
+    from . import jobs as JB
+    if JB.big_bite(game, water):
+        out.update(kind='fish', fish='legend', weight=9)
+        return out
     if random.random() >= chance:
         return out
     if random.random() < max(.02, .12 - r * .008):
@@ -187,6 +192,11 @@ def land(game, pl, ok):
         game.msg(f'You reel in... {pl["junk"]}. You toss it back.')
         return pl['turns']
     k = pl['fish']
+    if k == 'legend':
+        from . import jobs as JB
+        JB.landed(game)
+        gain(game, 'fishing', 6)
+        return pl['turns']
     f = FISH[k]
     it = make_fish(game, k)
     if game.add_to_inv(it):

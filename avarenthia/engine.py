@@ -30,6 +30,7 @@ from . import news as NW
 from . import mercs as MC
 from . import behave as BH
 from . import named as NM
+from . import jobs as JB
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -37,7 +38,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 18
+SAVE_VERSION = 19
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -541,6 +542,7 @@ class Game:
         if first:
             self.max_depth[did] = depth
         NM.on_enter_level(self, m)
+        JB.on_level(self, did, depth)
         self.msg(f"{dg.name}, level {depth}.", 'info')
         lair = next((e for e in self.world.evils if e.did == did and not e.known), None)
         if first and depth == dg.depth:
@@ -581,6 +583,7 @@ class Game:
         wd = next((x for x in self.world.wanderers if x.id == self.encounter), None)
         self.encounter = None
         m = self.maps.get('wild')
+        JB.after_fight(self, m)
         esc = next((o for o in m.mons if o.role == 'escort'), None) if m else None
         if esc:
             for mi in MS.active(self):
@@ -709,6 +712,7 @@ class Game:
             leader, faction = None, None
             self.encounter = None
         self.cur = 'wild'
+        self.job_fight = None
         p.x = p.y = -5
         w = W.gen_wild(self, terrain, lvl, keys, elite, leader, faction)
         self.maps['wild'] = w
@@ -718,7 +722,8 @@ class Game:
                 spot = W.free_around(self, w, p.x, p.y, 1)
                 if spot:
                     from .entities import make_npc
-                    c = make_npc(self, 'Your caravan', 'escort', '#6ee2ec', spot[0][0], spot[0][1], True, ch='♦')
+                    who = mi.data.get('person')
+                    c = make_npc(self, who or 'Your caravan', 'escort', '#6ee2ec', spot[0][0], spot[0][1], True, ch='☺' if who else '♦')
                     c.hp = c.maxhp = mi.data['hp']
                     w.mons.append(c)
         if intro is not None:
@@ -847,6 +852,8 @@ class Game:
             else:
                 self.msg(f"You stand before {h.title} ({f['short']}). Press > or Enter to go in.", 'info')
             return 10
+        if JB.step(self):
+            return 1
         poi = EV.poi_at(self, p.x, p.y)
         if poi:
             EV.reveal(self, poi)
@@ -1582,6 +1589,7 @@ class Game:
             self.msg('The Lost Mine falls silent.', 'gold')
         if mon.tpl.get('boss'):
             EVL.on_kill(self, mon)
+        JB.on_kill(self, mon)
 
     def capture_hold(self, hid):
         h = self.world.holds[hid]
@@ -1824,10 +1832,14 @@ class Game:
                     self.num(esc.x, esc.y, f'-{dmg}', C_HURT)
                     if esc.hp <= 0:
                         m.mons.remove(esc)
-                        self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} destroys your caravan!', 'bad')
+                        if esc.name == 'Your caravan':
+                            self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} destroys your caravan!', 'bad')
+                        else:
+                            self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} kills {esc.name}!', 'bad')
                         MS.on_escort_killed(self)
                     elif esc.hp < esc.maxhp * .4 and random.random() < .3:
-                        self.msg('Your caravan is under heavy attack!', 'bad')
+                        self.msg('Your caravan is under heavy attack!' if esc.name == 'Your caravan' else
+                                 f'{esc.name} is badly hurt!', 'bad')
             else:
                 best = None
                 for ddx, ddy in D8:
@@ -1958,7 +1970,9 @@ class Game:
                 CR.daily(self)
                 MC.daily(self)
                 NM.daily(self)
+                JB.daily(self)
             self.last_day = self.day
+        JB.pump(self)
         EVL.whisper(self)
         WX.notice(self)
         self.compute_fov()
@@ -2589,6 +2603,9 @@ class Game:
                 self.reveal_place(dd.x, dd.y, 1)
                 return
             self.request = ('temple', npc.name)
+            return
+        if role == 'elder' and here is not None and here.id != 0:
+            JB.talk_elder(self, npc)
             return
         if role == 'elder':
             if not f.get('met_elder'):
