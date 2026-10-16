@@ -1,6 +1,6 @@
 # Avarenthia: notes for Claude
 
-ASCII open-world RPG in Python + python-tcod by Nilio (GitHub NilioDev, repo NilioDev/Cursed-Vale).
+ASCII open-world RPG in Python + python-tcod by Nilio (GitHub NilioDev, repo NilioDev/Avarenthia, formerly Cursed-Vale).
 The plan for the next rounds of work is in `docs/plan.md`; read it before building.
 
 ## Working with Nilio
