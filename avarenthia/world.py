@@ -323,6 +323,8 @@ def gen_world(game):
                 world.dungeons[did] = dg
                 s.deep_did = did
         _assign_factions(m, world, start)
+        from .folk import settle_peoples, place_glades
+        settle_peoples(m, world)
         _place_strongholds(m, world, reach)
         for h in world.holds:
             m.set(h.x, h.y, CASTLE if h.kind == 'castle' else FORT)
@@ -336,6 +338,7 @@ def gen_world(game):
         setup_world(world)
         from .sites import gen_sites
         gen_sites(game, m, world)
+        place_glades(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways
@@ -475,6 +478,14 @@ def _place_settlements(game, m, world, reach_set, dist, start):
             continue
         taken.append((x, y))
         sett.append(Settlement(len(sett), dnames.pop(), 'deephold', x, y))
+    # the elven city, at the foot of the Elder Tree
+    from .folk import elder_spot, ELF_CITY_NAMES
+    spot = elder_spot(m, world, reach_set, taken)
+    if spot:
+        es = Settlement(len(sett), random.choice(ELF_CITY_NAMES), 'city', *spot)
+        es.elder = True
+        taken.append(spot)
+        sett.append(es)
     for s in sett:
         s.region = world.region_of[s.y * w + s.x]
         s.biome = _settlement_biome(m, world, s.x, s.y)

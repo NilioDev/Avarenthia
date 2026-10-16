@@ -2201,9 +2201,88 @@ def more_jobs():
     print('more jobs ok:', ', '.join(f'{k} {n}' for k, n in sorted(done.items())))
 
 
+def peoples():
+    """The peoples in their own lands: the halfling country with its hill homes and hedges, the elven glades that are
+    hidden until found, the city under the Elder Tree, and rivers with bridges through the towns that lie on one."""
+    from avarenthia import towns as TW, folk as FK, events as EV
+    g = E.Game('Folk', False, seed=12, race='elf', gender='female')
+    w, om = g.world, g.maps['over']
+    half = [s for s in w.settlements if s.race == 'halfling']
+    print('halfling land:', [w.regions[r].name for r in w.halfling_land], [(s.name, s.kind) for s in half])
+    assert len(half) >= 2 and all(s.region in w.halfling_land for s in half), half
+    assert not any(s.race == 'elf' and not getattr(s, 'elder', False) for s in w.settlements)
+    s = max(half, key=lambda s: s.size)
+    g.enter_town(s.id)
+    m = g.map
+    assert D.EARTH in m.t and D.SLOPE in m.t and D.HEDGE in m.t and m.round_doors, s.kind
+    smial_doors = [(x, y) for y in range(m.h) for x in range(m.w) if m.tile(x, y) == D.DOOR
+                   and D.EARTH in (m.tile(x - 1, y), m.tile(x + 1, y))]
+    assert smial_doors and all(m.tile(x, y + 1) == D.PATH for x, y in smial_doors), smial_doors
+    homes = [o for o in m.mons if getattr(o, 'home_pos', None) and m.tile(*o.home_pos) == D.PLANK
+             and any(m.tile(o.home_pos[0] + dx, o.home_pos[1] + dy) == D.EARTH for dx in (-1, 0, 1) for dy in (-1, 0, 1))]
+    print(f'{s.name}: {len(smial_doors)} homes dug into the hills, {len(homes)} people living in them')
+    # the city under the Elder Tree
+    city = next(c for c in w.settlements if getattr(c, 'elder', False))
+    tree = next((x, y) for n, x, y in w.wonders if n == 'The Elder Tree')
+    assert cheb(city.x, city.y, *tree) <= 6 and city.race == 'elf' and city.is_city
+    g.enter_town(city.id)
+    m = g.map
+    crown = g.maps[FK.crown_key(city)]
+    ground_roles, crown_roles = {o.role for o in m.mons}, {o.role for o in crown.mons}
+    assert D.ROOT in m.t and {'market', 'elder', 'guard'} <= ground_roles, ground_roles
+    assert {'inn', 'shop', 'healer'} <= crown_roles and 'inn' not in ground_roles, crown_roles
+    # the houses are up in the crown: climb a ladder and come down again at the same spot
+    ux, uy = next((x, y) for y in range(m.h) for x in range(m.w) if m.tile(x, y) == D.UP)
+    g.player.x, g.player.y = ux, uy
+    g.use_stairs('up')
+    assert g.map is crown and (g.player.x, g.player.y) == (ux, uy) and crown.tile(ux, uy) == D.DOWN
+    g.use_stairs('down')
+    assert g.map is m and (g.player.x, g.player.y) == (ux, uy)
+    print('elven city:', city.name, next(o.name for o in m.mons if o.role == 'elder'))
+    # the glades: off the map until you walk close; then the elder there points the way
+    glades = [q for q in w.sites if q.kind == 'glade']
+    assert len(glades) >= 2 and all(FK.unfound(q) for q in glades), glades
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    g.request = None
+    to_over(g)
+    q = glades[0]
+    g.player.x, g.player.y = q.x + 3, q.y
+    FK.on_step(g)                                  # an elf hears the singing from three steps away
+    assert not FK.unfound(q) and om.seen[q.y * om.w + q.x]
+    for i in range(len(om.seen)):
+        om.seen[i] = 1
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    g.enter_site(q.id)
+    elder = next(o for o in g.map.mons if o.role == 'glade_elder')
+    g.talk(elder)
+    EV.resolve(g, 'glades')
+    assert sum(not FK.unfound(o) for o in glades) == 2
+    g.talk(elder)
+    EV.resolve(g, 'tree')
+    assert g.request[0] == 'dialog' and city.name in g.request[2]
+    keeper = next(o for o in g.map.mons if o.role == 'roadinn')
+    g.talk(keeper)
+    assert g.pending and g.pending['key'] == 'roadinn'
+    g.pending = None
+    app.render()
+    # rivers: a town by a river on the world map has the river on its own map, and a bridge where a road crosses
+    wet = []
+    for st in w.settlements:
+        if st.kind != 'deephold' and TW.river_course(g, st, TW.GameMap('x', 'town', 'x', 112, 72, D.GRASS), 12):
+            tm = g.maps.get(st.map_key) or TW.gen_settlement_map(g, st)
+            g.maps[tm.key] = tm
+            wet.append((st.name, sum(1 for t in tm.t if t in (D.WATER, D.SHALLOW)), sum(1 for t in tm.t if t == D.BRIDGE)))
+    print('towns on a river:', wet)
+    assert wet and all(n > 60 for _nm, n, _b in wet) and any(b for _nm, _n, b in wet), wet
+    print('peoples ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
-    parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
+    parts = [peoples, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
              creatures_and_hunts, new_guilds, more_jobs, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite

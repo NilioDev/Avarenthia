@@ -12,6 +12,7 @@ def hexrgb(h):
 (WALL, FLOOR, DOOR, ODOOR, DOWN, UP, WATER, GRASS, FOREST, MOUNTAIN, SWAMP, TOWN, ENTR, TREE, PATH, WELL, ROCK, ROAD, HILLS, SAND,
  CITY, FIELD, FENCE, TABLE, BED, STALL, FOUNTAIN, CASTLE, FORT, ANVIL, ALTAR, BARREL, PLANK, RIVER, SIGNPOST, SHALLOW, STATUE, CHEST, CHEST_OPEN, GRAVE, LAMP) = range(41)
 BOAT = 41
+HEDGE, SLOPE, EARTH, BRIDGE, ROOT = range(42, 47)   # the peoples' own places: hedges, hills dug into, the elder tree
 
 
 class Tile:
@@ -66,6 +67,11 @@ TILES = [
     Tile('┼', '#9a9aa0', False, False, 'gravestone'),
     Tile('Γ', '#8a7a60', False, False, 'lamp post'),
     Tile('◘', '#b08050', False, False, 'boat', bg='#173252'),
+    Tile('♣', '#2f7a30', False, False, 'hedge', bg='#0a1608'),
+    Tile('∩', '#78aa50', True, False, 'grassy slope'),
+    Tile('#', '#a0784c', False, True, 'earthen wall'),
+    Tile('═', '#b08050', True, False, 'bridge'),
+    Tile('▓', '#a8804e', False, True, 'great root', bg='#3c2a16'),
 ]
 
 # ---------------------------------------------------------------- classes and skills

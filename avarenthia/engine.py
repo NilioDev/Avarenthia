@@ -30,6 +30,7 @@ from . import news as NW
 from . import mercs as MC
 from . import behave as BH
 from . import named as NM
+from . import folk as FK
 from . import jobs as JB
 from .money import fmt, purse
 from . import world as WO
@@ -38,7 +39,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 19
+SAVE_VERSION = 20
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -841,6 +842,8 @@ class Game:
             return 10
         site = ST.site_at(self.world, p.x, p.y)
         if site:
+            if FK.unfound(site):
+                FK.discover(self, site, 'The trees part.')
             self.mark_visit('site', site.id)
             self.msg(f'{site.name}. Press > or Enter to go in.', 'info')
             return 10
@@ -861,6 +864,7 @@ class Game:
             return D.TILES[t].cost
         from . import hidden as HP
         HP.on_step(self)
+        FK.on_step(self)
         old_way = HP.on_way(self, p.x, p.y)
         cost = round((min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost) * WX.travel_factor(self))
         WX.strike(self)
@@ -1010,6 +1014,9 @@ class Game:
                 return 0
             self.msg('There is nothing to enter here.')
             return 0
+        if t in (UP, DOWN) and getattr(m, 'tree', None) is not None and d != ('down' if t == UP else 'up'):
+            FK.climb(self, t == UP)
+            return 1
         if t == DOWN and d != 'up':
             self.enter_dungeon(m.did, m.depth + 1, 'up')
             return 1
@@ -2660,6 +2667,9 @@ class Game:
             from . import guilds as GU
             GU.talk(self, npc)
             return
+        if role == 'glade_elder':
+            FK.glade_talk(self, npc)
+            return
         if role in ('valley', 'valley_elder'):
             from . import hidden as HP
             HP.valley_talk(self, npc)
@@ -2693,7 +2703,9 @@ class Game:
             self.farmer_talk(npc)
             return
         if role == 'roadinn':
-            EV.ask(self, 'roadinn', npc.name, f'"Come in, come in, out of the {self.weather_word()}! Food? A bed? '
+            EV.ask(self, 'roadinn', npc.name, '"Sit, guest. There is bread and broth, and a bed of fern if you would sleep '
+                   'under the trees tonight."' if getattr(m, 'glade', False) else
+                   f'"Come in, come in, out of the {self.weather_word()}! Food? A bed? '
                    f'The road is long and the night is longer."',
                    [(f'A bowl of stew ({fmt(self.STEW)})', 'stew'), (f'A hot meal and a bed for the night ({fmt(self.MEAL)})', 'meal'),
                     ('Any news from the road?', 'news'), ('Just passing through', 'leave')], npc=npc.id)

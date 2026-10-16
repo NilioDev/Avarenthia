@@ -18,6 +18,7 @@ The plan for the next rounds of work is in `docs/plan.md`; read it before buildi
 - `avarenthia/ui.py` all screens; `engine.py` game rules; `towns.py` settlement maps; `weather.py`; `world.py`;
   `terrain.py` (climate, rivers, wonders); `heightmap.py` (the shape of the land: Azgaar-like templates); `data.py` tiles, monsters, items; `missions.py` jobs; `jobs.py` the many job kinds (round 4); `guilds.py`; `mercs.py` hirelings and threat;
   `news.py` news through people; `harbour.py`; `hidden.py` old ways; `lifeskills.py` fishing etc.
+  `folk.py` the peoples' own lands (halfling country and hill homes, hidden elven glades, the city under the Elder Tree).
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.
 - Buffs: `p.buffs = [[kind, value, turns, label]]`. Money in copper (100c = 1s, 100s = 1g).

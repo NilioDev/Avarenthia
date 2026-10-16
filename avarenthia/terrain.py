@@ -469,7 +469,8 @@ def generate(SEED, W=320, H=180):
         WONDERS.append(('Starfall Crater', *c))
 
     # the elder tree: one enormous ancient tree in a ring of old forest
-    c = spot({'forest', 'deep_forest'}, 5)
+    c = spot({'forest', 'deep_forest'}, 5) or spot({'forest', 'deep_forest', 'conifer', 'dry_forest', 'meadow', 'shrubland'}, 4,
+                                                    far=14, inside=.6)       # there is always one
     if c:
         for (x, y), s in blob(c, 7, 1.4, .5).items():
             if chance(x, y, s * 1.6, 4):

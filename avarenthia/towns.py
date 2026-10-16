@@ -1,5 +1,6 @@
 """Villages, cities and strongholds that feel lived in: furnished buildings, fields and market
 stalls, and townsfolk who go to work by day and home at night."""
+import math
 import random
 import heapq
 from collections import deque
@@ -241,6 +242,12 @@ def furnish(m, pl):
         for xx in range(ix0, ix1 + 1, 2):
             put((xx, iy0), BED)
         put((ix1, iy1), BARREL)
+    elif k == 'keepsake':           # a hall of old curiosities nobody can bear to throw away
+        for xx in range(ix0, ix1 + 1, 2):
+            put((xx, iy0), D.STATUE if (xx - ix0) % 4 == 0 else BARREL)
+        put(((ix0 + ix1) // 2, (iy0 + iy1) // 2 + 1), TABLE)
+        put((ix0, iy1), D.CHEST_OPEN)
+        put((ix1, iy1), D.CHEST_OPEN)
     elif k == 'keep':
         for xx in range(ix0 + 2, ix1 - 1):
             put((xx, (iy0 + iy1) // 2), TABLE)
@@ -249,7 +256,7 @@ def furnish(m, pl):
 
 ROLE_OF = {'inn': 'inn', 'market': 'market', 'shop': 'shop', 'temple': 'healer', 'stables': 'stables', 'elder': 'elder'}
 SIGN = {'inn': 'INN', 'shop': 'OUTFITTER', 'temple': 'TEMPLE', 'stables': 'STABLES', 'elder': 'ELDER', 'keep': 'KEEP',
-        'barracks': 'BARRACKS'}
+        'barracks': 'BARRACKS', 'keepsake': 'KEEPSAKE HALL'}
 TITLE = {'inn': ('Innkeeper {n}', '#e0a060'), 'market': ('{n} the Trader', '#f2c44a'), 'shop': ('{n} the Outfitter', '#d8d0b0'),
          'temple': ('Sister {n}', '#f4f0e6'), 'stables': ('Stablemaster {n}', '#c8a070'), 'elder': ('Elder Berend Ashford', '#c08cf0')}
 
@@ -267,6 +274,9 @@ INN_NAMES = ["The Drowsy Mule", "The Crossed Keys", "The Last Lantern", "The Wea
              "The Hearth and Hound", "The Laughing Pike", "The Copper Kettle", "The Sleeping Giant", "The Silver Bell",
              "The Black Ram", "The Merry Miller", "The Lame Horse", "The Stag's Head", "The Rose and Thistle",
              "The Plough and Star", "The Barley Mow", "The Bishop's Mitre", "The Gilded Cup", "The White Swan"]
+HALFLING_INN_NAMES = ["The Plump Partridge", "The Sleepy Badger", "The Honey Pot", "The Merry Kettle", "The Pipe and Pickle",
+                      "The Second Breakfast", "The Mossy Stone", "The Crooked Chimney", "The Fat Goose", "The Warm Hearth",
+                      "The Bramble Bush", "The Laughing Trout"]
 SEA_INN_NAMES = ["The Salty Gull", "The Drowned Sailor", "The Mermaid's Rest", "The Anchor and Rope", "The Lantern Quay",
                  "The Tarred Hand", "The Ship's Cat"]
 
@@ -305,7 +315,8 @@ def name_buildings(game, m, s=None):
     """Give every building a proper name: the inns their own, the rest after who runs them."""
     from . import guilds as GU
     used = {b['name'] for gm in game.maps.values() for b in getattr(gm, 'buildings', []) if gm is not m}
-    pool = [n for n in INN_NAMES if n not in used] or INN_NAMES[:]
+    inns = HALFLING_INN_NAMES if getattr(s, 'race', '') == 'halfling' else INN_NAMES
+    pool = [n for n in inns if n not in used] or inns[:]
     random.shuffle(pool)
     sea = [n for n in SEA_INN_NAMES if n not in used] or SEA_INN_NAMES[:]
     random.shuffle(sea)
@@ -334,6 +345,8 @@ def name_buildings(game, m, s=None):
             b['name'], b['what'] = "The Elder's House", 'elder'
         elif k == 'barracks':
             b['name'], b['what'] = 'The Barracks', 'barracks'
+        elif k == 'keepsake':
+            b['name'], b['what'] = 'The Keepsake Hall', 'hall of old curiosities'
         elif k.startswith('guild:'):
             b['name'], b['what'] = GU.GUILDS[k[6:]]['name'], 'guild hall'
         else:
@@ -372,7 +385,7 @@ def staff(game, m, pl, role_key, names, s):
     """Put the person who runs a building behind its counter."""
     nm, col = TITLE[role_key]
     if role_key == 'elder' and (s is None or s.id != 0):
-        nm = 'Elder {n}'
+        nm = 'Mayor {n}' if getattr(s, 'race', '') == 'halfling' else 'Elder {n}'
     label = nm.format(n=names.pop())
     if s is not None and s.id == 0 and role_key == 'shop':
         label = 'Dorien Hale the Merchant'
@@ -425,7 +438,7 @@ def farmland(game, m, plots, sy, names, avoid=None, want=None):
             fp = Plot(fx, fy, fw, fh, kind)
             if any(fp.overlaps(o, 1) for o in plots) or (fy <= sy + 3 and fy + fh >= sy - 3):
                 continue
-            if any(m.tile(xx, yy) in (PATH, WALL, FLOOR, PLANK, WATER, SHALLOW, D.LAMP, WELL, STALL)
+            if any(m.tile(xx, yy) in (PATH, WALL, FLOOR, PLANK, WATER, SHALLOW, D.LAMP, WELL, STALL, D.BRIDGE, D.SLOPE, D.EARTH)
                    for yy in range(fy - 1, fy + fh + 1) for xx in range(fx - 1, fx + fw + 1) if m.inb(xx, yy)):
                 continue
             if avoid and avoid(fx, fy, fw, fh):
@@ -566,7 +579,7 @@ def house_plot(kind, x, y):
     """A plot for a building: homes are often L-shaped, with an annex on one side."""
     if kind in ('inn', 'temple'):
         pw, ph = random.randint(11, 14), random.randint(8, 10)
-    elif kind in ('shop', 'stables', 'elder'):
+    elif kind in ('shop', 'stables', 'elder', 'keepsake'):
         pw, ph = random.randint(8, 11), random.randint(6, 8)
     else:
         pw, ph = random.randint(6, 9), random.randint(5, 8)
@@ -711,6 +724,101 @@ def edge_point(m, cx, cy, dx, dy):
     return best
 
 
+D8 = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
+
+
+def river_course(game, s, m, k):
+    """When a river on the world map runs past a settlement, where it runs on the settlement's own map: a smooth line
+    of points from edge to edge, k cells of the town map for every cell of the world map. None when no river is near."""
+    om = game.maps['over']
+    riv = getattr(om, 'river', None)
+    if not riv:
+        return None
+    R = 4
+    cells = {(x, y) for dy in range(-R, R + 1) for dx in range(-R, R + 1) for x, y in [(s.x + dx, s.y + dy)]
+             if om.inb(x, y) and riv[y * om.w + x]}
+    if not any(cheb(x, y, s.x, s.y) <= 2 for x, y in cells):
+        return None
+    start = min(cells, key=lambda c: (cheb(c[0], c[1], s.x, s.y), c))
+    comp, todo = {start}, [start]
+    while todo:
+        c = todo.pop()
+        for dx, dy in D8:
+            n = (c[0] + dx, c[1] + dy)
+            if n in cells and n not in comp:
+                comp.add(n)
+                todo.append(n)
+    # follow the stretch from one end to the other
+    deg = lambda c: sum((c[0] + dx, c[1] + dy) in comp for dx, dy in D8[:4])
+    end = min(comp, key=lambda c: (deg(c), c))
+    line, left = [end], comp - {end}
+    while left:
+        c = line[-1]
+        nxt = [n for n in left if cheb(n[0], n[1], c[0], c[1]) == 1]
+        if not nxt:
+            break
+        n = min(nxt, key=lambda q: (abs(q[0] - c[0]) + abs(q[1] - c[1]), q))
+        line.append(n)
+        left.discard(n)
+    cx, cy = m.w // 2, m.h // 2
+    near = min(line, key=lambda c: (cheb(c[0], c[1], s.x, s.y), c))
+    line = [c for j, c in enumerate(line) if j in (0, len(line) - 1) or c == near]   # the bend that matters, no loops
+    pts = [(cx + (x - s.x) * k, cy + (y - s.y) * k) for x, y in line]
+    if len(pts) == 1:
+        pts = [(pts[0][0] - k, pts[0][1]), (pts[0][0] + k, pts[0][1])]
+    for _ in range(3):                                  # round off the corners of the world map's grid
+        out = [pts[0]]
+        for a, b in zip(pts, pts[1:]):
+            out += [(a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25), (a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75)]
+        pts = out + [pts[-1]]
+
+    def beyond(a, b):                                    # carry on past b, the way a-b points, off the map
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        n = max(1e-6, (dx * dx + dy * dy) ** .5)
+        return (b[0] + dx / n * (m.w + m.h), b[1] + dy / n * (m.w + m.h))
+    return [beyond(pts[1], pts[0])] + pts + [beyond(pts[-2], pts[-1])]
+
+
+def carve_river(m, pts, half=2.2, keep=()):
+    """Lay a river along the points: deep in the middle, shallow at the banks. Where a road crosses it, a bridge."""
+    keep = set(keep) | {FOUNTAIN, STALL, WELL}
+    wet = set()
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        # only the part of the segment that is on the map
+        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+        wob = random.random() * 6.28
+        for j in range(n + 1):
+            t = j / n
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            if not (-4 <= x < m.w + 4 and -4 <= y < m.h + 4):
+                continue
+            hw = half + .5 * math.sin(wob + (x + y) / 7)
+            for yy in range(int(y - hw - 1), int(y + hw + 2)):
+                for xx in range(int(x - hw - 1), int(x + hw + 2)):
+                    if not m.inb(xx, yy):
+                        continue
+                    d = ((xx - x) ** 2 + (yy - y) ** 2) ** .5
+                    if d > hw + .4:
+                        continue
+                    t0 = m.tile(xx, yy)
+                    if t0 in keep or t0 == WATER:
+                        continue
+                    if t0 in (PATH, D.BRIDGE):
+                        m.set(xx, yy, D.BRIDGE)
+                    else:
+                        m.set(xx, yy, WATER if d <= hw - .7 else SHALLOW)
+                    wet.add((xx, yy))
+    return wet
+
+
+def river_banks(m, wet):
+    """Thin out the trees along the banks, so the water shows."""
+    for x, y in wet:
+        for dx, dy in D8[:4]:
+            if m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == TREE and random.random() < .5:
+                m.set(x + dx, y + dy, GRASS)
+
+
 TIER = {   # size of the map, homes, fields/pastures/orchards, square
     'hamlet': ((88, 58), (4, 7), ((5, 2, 1)), None),
     'village': ((112, 72), (14, 19), ((14, 4, 3)), 'green'),
@@ -723,6 +831,8 @@ def gen_village(game, s):
     houses along them, a green or a market square where they meet, farmland and woods around."""
     tier = s.kind if s.kind in TIER else 'village'
     (w, h), (hmin, hmax), (nf, npast, norch), square = TIER[tier]
+    if tier == 'town' and getattr(s, 'race', '') == 'halfling':
+        w, h = 164, 104                          # room for the hedge, the hills inside it and the fields beyond
     m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
     wooded(m, game=game, s=s)
@@ -769,10 +879,27 @@ def gen_village(game, s):
         trader_spot = None
     for c in stalls:
         m.set(c[0], c[1], STALL)
+    halfling = getattr(s, 'race', '') == 'halfling'
+    if halfling:
+        m.round_doors = True
+        m.wall_fg = (186, 140, 90)               # timber and plaster
+        if tier == 'town':                       # a lane round the town inside the hedge, with houses and hills along it
+            from .folk import ring
+            rcx, rcy, rrx, rry = ring(m)
+            for j in range(900):
+                ang = j / 900 * math.tau
+                x, y = round(rcx + math.cos(ang) * (rrx - 14)), round(rcy + math.sin(ang) * (rry - 11))
+                if m.tile(x, y) in (GRASS, TREE):
+                    m.set(x, y, PATH)
+    # a river that runs past the village on the world map runs through it here, with bridges where the roads cross
+    course = river_course(game, s, m, 9 if tier == 'hamlet' else 12)
+    wet = carve_river(m, course, 1.8 if tier == 'hamlet' else 2.3) if course else set()
+    river_banks(m, wet)
+    m.stone_bridges = tier == 'town'
     from . import harbour as HB
     if getattr(s, 'harbour', False):
         plots.append(HB.carve(m, s))
-    if s.id == 0 or (tier != 'hamlet' and random.random() < .3):
+    if s.id == 0 or (tier != 'hamlet' and random.random() < .3 and not wet):
         pond = fishing_pond(game, m, plots, cy, names, fisher=s.id == 0)
         if pond:
             plots.append(pond)
@@ -784,7 +911,14 @@ def gen_village(game, s):
     from . import guilds as GU
     lodges = [k for k in GU.halls_in(game, s.id) if not GU.GUILDS[k]['secret'] and k != 'anglers']
     kinds += ['lodge:' + k for k in lodges]
-    kinds += ['home'] * random.randint(hmin, hmax)
+    smials = []
+    hedged = halfling and tier == 'town'
+    if halfling:                                 # halflings dig their homes into the hills, or build round-doored houses
+        from . import folk as FK
+        smials = FK.dig_hills(game, m, plots, near_road, tier)
+        if tier == 'town':
+            kinds.append('keepsake')
+    kinds += ['home'] * max(2, random.randint(hmin, hmax) - len(smials))
     buildings = []
     for k in kinds:
         for _ in range(500):
@@ -798,8 +932,13 @@ def gen_village(game, s):
             if any(bx.overlaps(o, 2) for o in plots):
                 continue
             cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
-            if any(c in roads for c in cells):
+            if any(c in roads or c in wet for c in cells):
                 continue
+            if any(m.tile(*c) in (D.SLOPE, D.EARTH, D.BRIDGE, WATER) for c in cells if m.inb(*c)):
+                continue
+            if hedged and not all(FK.in_ring(m, x, y) for x, y in ((bx.x, bx.y), (bx.x + bx.w, bx.y), (bx.x, bx.y + bx.h),
+                                                                    (bx.x + bx.w, bx.y + bx.h))):
+                continue                            # a halfling town keeps its houses inside its hedge
             if min(cheb(c[0], c[1], bx.x + bx.w // 2, bx.y + bx.h // 2) for c in near_road) > 9:
                 continue                            # houses stand by the road, not off in the woods
             plots.append(bx)
@@ -815,12 +954,19 @@ def gen_village(game, s):
             add_sign(m, pl, GU.GUILDS[pl.guild]['name'])
         elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
-        if pl.kind == 'home' and random.random() < .55:
+        if pl.kind == 'home' and random.random() < .55 and not (
+                hedged and not (FK.in_ring(m, pl.x, pl.y - 6) and FK.in_ring(m, pl.x + pl.w, pl.y + pl.h + 6))):
             gd = garden(m, pl, -1 if tgt[1] > pl.y + pl.h // 2 else 1, plots)
             if gd:
                 plots.append(gd)
-    fields, pastures = farmland(game, m, plots, -999, names, want=[('field', nf), ('pasture', npast), ('orchard', norch)])
+    for pl in smials:
+        furnish(m, pl)
+    buildings += smials
+    fields, pastures = farmland(game, m, plots, -999, names, want=[('field', nf), ('pasture', npast), ('orchard', norch)],
+                                avoid=(lambda fx, fy, fw, fh: not FK.outside_ring(m, fx, fy, fw, fh)) if hedged else None)
     fields = fields + pastures
+    if halfling:
+        FK.hedges(m, tier)
     # street lamps along the roads, round the square and by the doors that matter
     lamp_spots = []
     if tier != 'hamlet':
@@ -944,6 +1090,10 @@ def gen_city(game, s):
         for xx in range(px - 8, px + 9):
             m.set(xx, yy, PATH)
     m.set(px, py, FOUNTAIN)
+    course = river_course(game, s, m, 14)
+    if course:
+        carve_river(m, course, 3.0)
+    m.stone_bridges = True
     names = town_names(getattr(s, 'race', 'human'))
     plots = [Plot(px - 9, py - 4, 19, 9, 'plaza')]
     from . import harbour as HB
@@ -973,7 +1123,8 @@ def gen_city(game, s):
             cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
             if bx.x < 2 or bx.x + bx.w > w - 2 or bx.y + bx.h > h - 2:
                 continue
-            if any(m.tile(*c) in (PATH, WALL, STALL, FOUNTAIN) for c in cells) or any(bx.overlaps(o, 1) for o in plots):
+            if any(m.tile(*c) in (PATH, WALL, STALL, FOUNTAIN, WATER, SHALLOW, D.BRIDGE) for c in cells) or \
+                    any(bx.overlaps(o, 1) for o in plots):
                 continue
             plots.append(bx)
             buildings.append(pl)
@@ -1003,6 +1154,18 @@ def gen_city(game, s):
     for x in streets_x:
         spots += [(x + (2 if x == streets_x[2] else 1) * (1 if (y // 9) % 2 else -1), y) for y in range(5, h - 5, 9)]
     place_lamps(m, spots)
+    streets = [(x, y) for x in streets_x for y in range(2, h - 2)] + [(x, y) for y in streets_y for x in range(2, w - 2)]
+    people_city(game, m, s, buildings, names, px, py, stall_spots, streets, 14 if big else 9)
+    ex, ey = m.exits[0][:2]
+    m.entry = (ex, ey)
+    for i in range(len(m.seen)):
+        m.seen[i] = 1
+    return m
+
+
+def people_city(game, m, s, buildings, names, px, py, stall_spots, streets, n_guards, guard_name=None, harbour=True):
+    """Fill a city with its people: those who run things, the townsfolk with their days, the watch."""
+    from . import guilds as GU
     hearths(m, buildings)
     first = {}
     for pl in buildings:
@@ -1029,7 +1192,7 @@ def gen_city(game, s):
             break
     homes = [p for p in buildings if p.kind == 'home']
     inns = [p for p in buildings if p.kind == 'inn']
-    plaza_cells = [(xx, yy) for yy in range(py - 3, py + 4) for xx in range(px - 8, px + 9) if m.tile(xx, yy) == PATH]
+    plaza_cells = [(xx, yy) for yy in range(py - 3, py + 4) for xx in range(px - 8, px + 9) if m.tile(xx, yy) in (PATH, PLANK)]
     for pl in homes:
         beds = [c for c in pl.inside if m.tile(*c) in (FLOOR, PLANK)]
         for _ in range(random.randint(1, 2)):
@@ -1041,7 +1204,7 @@ def gen_city(game, s):
             elif r < .75:
                 work, job = random.choice(plaza_cells), 'child'
             else:
-                work, job = (random.choice(streets_x), random.randint(2, h - 3)), 'any'
+                work, job = random.choice(streets), 'any'
             if not D.TILES[m.tile(*work)].walk:
                 work = (px, py + 1)
             townsfolk(game, m, beds, work, names, job, ch='☺',
@@ -1052,31 +1215,32 @@ def gen_city(game, s):
             townsfolk(game, m, beds, (px, py + 1), names, 'lamplighter', fg='#e0c080')
     barracks = next((p for p in buildings if p.kind == 'barracks'), None)
     gfg = D.FACTIONS[s.faction]['fg']
-    for i in range(14 if big else 9):
+    gname = guard_name or f"A {D.FACTIONS[s.faction]['short']} guard"
+    for i in range(n_guards):
         home = free_inside(m, barracks) if barracks else [(px, py + 1)]
-        post = (random.choice(streets_x), random.choice(streets_y)) if i % 2 else (px + random.randint(-7, 7), py + random.choice([-3, 3]))
-        if not D.TILES[m.tile(*post)].walk:
+        post = random.choice(streets) if i % 2 else (px + random.randint(-7, 7), py + random.choice([-3, 3]))
+        if not m.inb(*post) or not D.TILES[m.tile(*post)].walk:
             post = (px, py + 1)
-        g = townsfolk(game, m, home, post, [f"A {D.FACTIONS[s.faction]['short']} guard"], 'guard', fg=gfg, role='guard')
-        g.name = f"A {D.FACTIONS[s.faction]['short']} guard"
+        g = townsfolk(game, m, home, post, [gname], 'guard', fg=gfg, role='guard')
+        g.name = gname
         g.night_watch = i < 2
-    if getattr(s, 'harbour', False):
+    if harbour and getattr(s, 'harbour', False):
+        from . import harbour as HB
         HB.furnish(game, m, s, names)
     name_buildings(game, m, s)
     m.portal_pos = (px + 2, py + 1)
-    ex, ey = m.exits[0][:2]
-    m.entry = (ex, ey)
     m.centre = (px, py + 4)
-    for i in range(len(m.seen)):
-        m.seen[i] = 1
-    return m
 
 
 def gen_settlement_map(game, s):
     if s.kind == 'deephold':
         from .deephold import gen_deephold
         return gen_deephold(game, s)
-    m = gen_city(game, s) if s.is_city else gen_village(game, s)
+    if getattr(s, 'elder', False):
+        from .folk import gen_elder_city
+        m = gen_elder_city(game, s)
+    else:
+        m = gen_city(game, s) if s.is_city else gen_village(game, s)
     place_signpost(m)
     return m
 

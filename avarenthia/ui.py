@@ -21,6 +21,7 @@ from . import war as WAR
 from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
+from .folk import unfound as FKunfound
 
 W, H = 110, 60          # square 8x8 cells: 880 x 480 pixels before scaling
 MAP_W, MAP_H = 80, 51
@@ -755,7 +756,7 @@ class GameScreen(Screen):
         # temples, monasteries and watchtowers
         om = g.map
         for st in getattr(w, 'sites', ()):
-            if om.seen[st.y * om.w + st.x]:
+            if om.seen[st.y * om.w + st.x] and not FKunfound(st):
                 vx, vy = st.x - ox, st.y - oy
                 if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (st.x, st.y) != (p.x, p.y):
                     ch, col = st.glyph
@@ -2282,6 +2283,9 @@ class HelpScreen(Modal):
             ('', 'you walk. Faster than open land, never patrolled. They lead over passes, to'),
             ('', 'waystations (Σ, a safe rest), milestones (╥), vaults (Φ) that open to the old word,'),
             ('', "graveyards, a smugglers' den, lost ruins, and over a pass into a hidden valley (•)."),
+            ('Glades', 'Elven glades (♠) hide deep in the woods, off the map until you walk close enough'),
+            ('', 'to see their lanterns. An elder there knows the next glade, and the way to the'),
+            ('', 'elven city under the Elder Tree.'),
             ('Gear', 'Ten slots. Normal, exceptional and elite grades; Strength and Dexterity needs.'),
             ('', 'Uniques roll within a range; sets of 2-4 pieces give bonuses. Two-handers take the'),
             ('', 'off-hand. Resist fire, cold, lightning and poison, up to 75%.'),
@@ -3145,7 +3149,7 @@ class WorldMapScreen(Modal):
         def inview(px, py):
             return ox <= px < ox + vw and oy <= py < oy + vh
         for st in getattr(w, 'sites', ()):
-            if om.seen[st.y * om.w + st.x] and inview(st.x, st.y):
+            if om.seen[st.y * om.w + st.x] and inview(st.x, st.y) and not FKunfound(st):
                 cv.put(bx + st.x - ox, by + st.y - oy, st.glyph[0], st.glyph[1], (40, 34, 26))
         for poi in w.pois:
             if poi.found and inview(poi.x, poi.y):

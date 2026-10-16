@@ -211,13 +211,14 @@ def over(game, x, y):
                                          + ', '.join(D.GOODS[k]['name'].lower() for k in s.demand) + '.']
     from .sites import site_at
     site = site_at(w, x, y)
-    if site and m.seen[y * m.w + x]:
+    if site and m.seen[y * m.w + x] and not (getattr(site, 'hidden', False) and not getattr(site, 'found', True)):
         return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
                                            'watchtower': 'A watchtower. From the top you can see far over the land.',
                                            'farm': 'A farmstead by the road. Farm folk often share a meal with travellers.',
                                            'roadinn': 'A roadside inn: stew, a bed and news from the road.',
-                                           'valley': 'A hamlet hidden in a valley among the mountains. Nobody on the roads knows it.'}[site.kind]]
+                                           'valley': 'A hamlet hidden in a valley among the mountains. Nobody on the roads knows it.',
+                                           'glade': 'An elven glade, hidden deep in the wood. Its path shows only to those who have walked it.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]

@@ -263,6 +263,31 @@ def cell(m, i, depth=None):
         key = tuple(1 if m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] == D.FENCE else 0
                     for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
         return FENCE_GLYPH.get(key, '─'), _jit((168, 124, 74), r2, .06), (24, 22, 12)
+    if t == D.SLOPE:        # a grassy hill with homes dug into it: a darker slope round a lighter top
+        key = sum(1 for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0))
+                  if m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] in (D.SLOPE, D.EARTH))
+        if key == 4:
+            return _pick(r, [(40, ' '), (25, '"'), (20, ','), (15, '.')]), _jit((120, 200, 90), r2, .12), (34, 66, 26)
+        return _pick(r, [(55, '∩'), (45, 'n')]), _jit((120, 170, 80), r2, .1), (22, 44, 17)
+    if t == D.EARTH:        # the walls of a hole in a hill; round windows where they face the open air
+        join = (D.EARTH, D.DOOR, D.ODOOR)
+        key = tuple(1 if m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] in join else 0
+                    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
+        below = m.t[(y + 1) * m.w + x] if m.inb(x, y + 1) else None
+        near_door = any(m.inb(x + dx, y) and m.t[y * m.w + x + dx] in (D.DOOR, D.ODOOR) for dx in (-1, 1))
+        if below in (D.SLOPE, D.PATH, GRASS) and key in ((0, 0, 1, 1),) and not near_door and r % 3 == 0:
+            return '°', (250, 220, 130), (46, 34, 20)
+        return WALL_GLYPH.get(key, '■'), _jit((160, 120, 76), r2, .05), (46, 34, 20)
+    if t == D.HEDGE:
+        return _pick(r, [(60, '♣'), (40, '♠')]), _jit((44, 122, 44), r2, .14), (8, 20, 8)
+    if t == D.BRIDGE:       # the deck runs the way the road does, across the water
+        wet_ns = sum(1 for dy in (-2, -1, 1, 2) if m.inb(x, y + dy) and m.t[(y + dy) * m.w + x] in (WATER, D.SHALLOW))
+        wet_we = sum(1 for dx in (-2, -1, 1, 2) if m.inb(x + dx, y) and m.t[y * m.w + x + dx] in (WATER, D.SHALLOW))
+        stone = getattr(m, 'stone_bridges', False)
+        return ('║' if wet_we > wet_ns else '═'), _jit((190, 184, 170) if stone else (176, 128, 80), r2, .06), \
+            (60, 58, 54) if stone else (44, 30, 16)
+    if t == D.DOOR and getattr(m, 'round_doors', False):     # halfling doors: round, and painted
+        return '○', [(200, 70, 50), (220, 180, 60), (60, 130, 60), (70, 110, 190)][r % 4], (30, 22, 14)
     if t == PATH and not over:      # village lanes: packed earth with ruts and stones
         return _pick(r, [(50, '.'), (25, ','), (15, '·'), (10, ' ')]), _jit((150, 118, 76), r2, .1), _jit((40, 31, 20), r, .06)
     if t in (FLOOR, PATH, PLANK):

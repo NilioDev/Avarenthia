@@ -86,6 +86,21 @@ stone quay at the head of a cove with three piers and a warehouse in a town; a s
 ship, a crane, a fish market under awnings, a customs house and a harbour wall with a beacon in a city; two basins, a
 lighthouse, a shipyard and ships everywhere in the metropolis. In a fjord there is no beach: a ledge on the rock, a
 tiny jetty, or nothing. There is no sailing yet.
+A settlement that lies by a river on the world map has that river running through its own map too, with a bridge
+wherever a road crosses it (wooden in villages, stone in towns and cities).
+
+**The peoples in their own lands.** The halflings have a green country of their own, a few regions of hills and
+farmland. They dig their homes into the south face of grassy hills (a round door and round windows in the slope, a
+hall behind, rooms running back into the hill) or build round-doored timber houses; hedges stand where others build
+fences, a halfling town has a hedge all round it instead of a wall and a Keepsake Hall full of old curiosities, and the
+village is run by a mayor. The elves live hidden in glades deep in the woods, far from the roads: a long hall, round
+houses of living wood, a healer, an herb garden and a moon pool ringed with standing stones, lanterns in the trees. A
+glade is not on the map until you walk close enough to see its lights (an elf hears the singing from further off); its
+elder will point you to the next glade, and to the one great city of the elves, in the roots of the Elder Tree. There
+the hall of the elven lord is inside the hollow trunk, roots as thick as walls run out through the city, and the
+market and stables lie on the forest floor between them. The houses, the inn, the shops and the guilds are up in the
+crown, on decks joined by walkways along the boughs: climb a ladder by the paths, or the stair in the hall, to reach
+them.
 
 **Dwarven holds.** In the mountains lie underground dwarven cities (`▼`) with halls, forges, a throne room and stairs
 down to the Deep Roads, old dwarven tunnels now full of goblins and worse.
@@ -422,7 +437,8 @@ avarenthia/named.py        named enemies, their fame and grudges, and hunting th
 avarenthia/world.py        the realm: regions, roads, settlement sizes and services
 avarenthia/terrain.py      the shape of the world: continent, islands, climate, biomes, rivers, wonders
 avarenthia/worldgen.py     wilderness, dungeons (rooms and caves), shops
-avarenthia/towns.py        hamlets, villages, towns, cities and the metropolis
+avarenthia/towns.py        hamlets, villages, towns, cities and the metropolis; rivers and bridges through them
+avarenthia/folk.py         the peoples' own lands: the halfling country and its hill homes, elven glades, the elven city
 avarenthia/sites.py        farms, roadside inns, temples, monasteries, watchtowers
 avarenthia/deephold.py     dwarven holds and the Deep Roads
 avarenthia/weather.py      climates, seasons and every weather effect
