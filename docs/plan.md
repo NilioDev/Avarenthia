@@ -1,6 +1,7 @@
-# The plan: rounds 1 to 4
+# The plan: rounds 1 to 3
 
-Agreed with Nilio on 15 October 2026. Build the rounds in order; after each round: tests (seeds 1-3, smoke),
+Agreed with Nilio on 15 October 2026; jobs and the bard parked on 16 October (docs/parked.md).
+Build the rounds in order; after each round: tests (seeds 1-3, smoke),
 push (CI builds), a short Dutch report. Then go on with the next round. He plays afterwards and sends feedback.
 
 Inspiration: Shadowdark (core book, Western Reaches, Cursed Scrolls 1-6), D&D, Pathfinder, Diablo, Final Fantasy,
@@ -68,7 +69,7 @@ Keep one letter per family (`s` spiders...), colour per kind; female/male per in
   description, the names of leaders. Fixed where it adds colour: matriarchs and queens, sea hags, banshees female;
   mammoth herds led by an old cow. Oozes, constructs, swarms, skeletons and true aberrations stay "it".
 
-### Named enemies
+### Named enemies (the creatures; the bounty jobs for them are parked)
 - Built from: name (fits people and gender) and epithet ("the Widow of Blackmere", "Old Snagjaw"); family, class,
   gender; rank: **notable** (one trait), **notorious** (2-3 traits and a following), **legendary** (rare, own lair,
   own loot); traits from a long Diablo-like list (Venomous, Frost-touched, Fire-blooded, Stone Skin, Thorny, Vampiric,
@@ -78,41 +79,16 @@ Keep one letter per family (`s` spiders...), colour per kind; female/male per in
   and moves prices, ambusher on one road, nocturnal); one or two looks (broken tusk, brand scar, bone armour); a past
   ("burned the mill at Ashwick"); a weakness you can hear about ("hates fire"); a trophy (head, ear, fang); loot only
   what it uses, always something special for legendary ones; **fame**: left alone too long it grows (a trait or more
-  followers) and its bounty rises.
-- Also met at random in the world, without a job. Kill first, find the poster later: the trophy can be handed in
-  wherever there is a bounty on it.
-
-### Hunting them (no live marker)
-- The job gives a **search area** on the world map (hatched), not a dot: "last seen near the Blackmere, three days
-  ago". Small for territorial ones, larger for roamers, and it grows as the report ages (news travels slowly). New
-  rumours from captains and travellers shrink it again.
-- Walking inside the area you sometimes find **signs** (tracks, a torn deer, a burnt cart, shed scales, webs in the
-  trees). Each sign shrinks and moves the area and tells direction and freshness ("heading north-east, a day old").
-  Foraging rank (or a Tracking skill) and the Wardens help. Rain washes tracks away, fresh snow shows them; nocturnal
-  ones are found by night.
-- Close enough: an encounter (you surprise it, or an ambusher surprises you). Its name shows in the panel only once
-  you see it. In a dungeon the job names the level; signs on the way (blood trail, fresh webs, gnawed bones); marked
-  only once seen.
+  followers) and its name spreads.
+- Met at random in the world: roaming, raiding or in their lairs. Their trophy is kept for later (bounties are parked,
+  see docs/parked.md).
 - **Fleeing and grudges**: a named enemy losing badly flees to its lair to heal, leaving a fresh blood trail. It comes
   back with a scar and a new epithet ("the Scarred"), knows your name, calls it out, and sometimes comes for you on the
   road. If it kills you (softcore) it grows ("Slayer of ...") and keeps a piece of your gear; kill it to get it back.
-- Journal: name, description, past, last seen, traits you have seen, reward. Rewards stay modest (coin, standing in
-  the town, guild standing, the trophy, sometimes a special piece).
-- Givers: the captain (raiders, orcs, beasts near villages), "WANTED" posters on the boards, and the guilds, each on
-  its own prey; higher guild rank, more dangerous and better paid hunts: Wardens (beasts), Order of Dawn (undead,
-  Morrak's spawn), Iron Company (warlords and gangs), Magi (aberrations and sorcerers), Thieves (rival gang bosses),
-  Coven (paladins). Chains as in an MMO: first his lieutenants, then where the boss hides.
-
-### Jobs in round 1, and the frame for choices
-- **Clear a nest** (spider or ant nest; village elder / innkeeper), **Defend** (a raid is coming to a village),
-  **Rescue a captive** (from an orc camp or a web), **Find the missing** (tracks, as with hunting; alive, wounded or
-  dead), **Rival hunter** (another bounty hunter after the same prey: be faster, work together, or cross him).
-- A frame for choices with consequences on: standing in a town, standing with a faction, a god's favour, guild rank,
-  crime, a hireling's loyalty.
 
 ---
 
-## Round 2: the other monsters, aberrations, and their jobs
+## Round 2: the other monsters and aberrations
 
 - **Undead**: Ghoul (paralyses) and a Ghast leader, Skeleton Warrior with shield, Skeleton Mage, Barrow Draugr (walks
   through walls), Banshee (fear wail), Mummy (disease, desert), Shade (drains strength), Wight, Vampire Spawn.
@@ -133,43 +109,10 @@ Keep one letter per family (`s` spiders...), colour per kind; female/male per in
   boss), Rustgnawer (eats metal), Midden Maw (lives in filth, disease), Gloomdigger (burrows, its gaze dazes), Pincer
   Horror, Burrowback (swims through the ground), The Deep Mother (ancient fish telepath; boss), Starspawn.
 - **Bosses per family**: Spider Matriarch, Ant Queen, Goblin King, Kobold Dragon Priest, Gnoll Packlord, Ghast Lord...
-- **Jobs**: The sick well (find what poisons a village well), Desecrated shrine, What took the boats (a harbour loses
-  boats: sea hag, octopus or brinefolk), The big one (Brotherhood of the Net: a legendary fish, in one season or
-  weather, with the fishing game), Map the deep (explore a dungeon to its bottom for a scholar).
 
 ---
 
-## Round 3: jobs of trade, faith, crime and the calendar
-
-- Trade: **Rush order** (a town hit by news needs medicine fast), **Debt collector** (pay it yourself, threaten, or let
-  it go), **Recover stolen cargo** (from a bandit camp), **Smuggle past the gate** (Thieves).
-- War and crime: **Spy** (look around an enemy fortress unrecognised), **Deserter** (hand him in: faction up, his
-  village down; let him go: the reverse), **Clear your name** (find the real culprit instead of paying the fine).
-- Faith: **Pilgrimage** (an offering to a far shrine), **Relic of the god** (from a ruined rival temple).
-- Exploring: **Survey** (Cartographers: a place not yet on their map), **Lost way** (walk an old way to its end).
-- Village: **Bad harvest** (boars, crows or worse), **Winter supplies** (autumn only: wood, meat or grain to a remote
-  hamlet), **Escort a person** (a pilgrim or merchant who walks along and can die).
-- Calendar: **The Starfall** (on the night of the Starfall a star lands somewhere; star-iron for whoever is first, and
-  others are looking too), **The festival** (light-hearted; standing as the reward).
-- Company: **A sellsword's debt** (help your hireling with an old debt: more loyalty).
-- Givers: village elder and innkeeper (village jobs, standing in the village), captain, factor of the Merchants' Guild,
-  temple, and the guilds by rank:
-
-| Guild | Low rank | High rank |
-|---|---|---|
-| Wardens | bad harvest, find the missing | legendary beast hunts, rival hunter |
-| Iron Company | escort, recover cargo | deserter, defend, warlord hunts |
-| Order of Dawn | desecrated shrine | relic of the god, ghast lords and Morrak's spawn |
-| Magi | map the deep | aberration hunts, the Starfall (star-iron) |
-| Cartographers | survey | lost way, maps of the deep |
-| Brotherhood of the Net | the big one | what took the boats |
-| Alembic and Barrel | gather for the alchemist | the sick well (find the cause) |
-| Thieves' Guild | smuggle past the gate | debt collector (their way), rival gang bosses |
-| Hollow Coven | desecrate a shrine | steal a relic of the god, paladins |
-
----
-
-## Round 4: six new combat guilds
+## Round 3: five new combat guilds
 
 The limit of two combat guilds stays. Crafts guilds (smith, herbalist, tanner) come later, not now.
 
@@ -178,14 +121,13 @@ The limit of two combat guilds stays. Crafts guilds (smith, herbalist, tanner) c
 | **The Green Moot** (Thessa) | druid and shaman | new: Nature | Entangle (roots hold), Spirit Totem (heals you and your hireling), Wild Shape (bear or wolf for a while) | groves in forest villages, by the standing stones | Coven, Ossuary |
 | **The Hallowed Chapter** (Solmara) | priest and healer, no sword | Healing | Mass Mend, Sanctuary (enemies cannot attack for a few turns), Rite of Return (raise your hireling in the field) | great temples in the cities; cheaper healing and raising | Coven, Ossuary |
 | **The Quiet Ossuary** (half secret) | necromancer | new: Necromancy | Raise Dead (a slain enemy fights for you a while), Bone Armour, Corpse Burst | found through old graveyards along the Varnish ways; tolerated by the dwarves (Durnak is god of the dead), hunted by the Crown and the Dawn; grave-robbing jobs, standing lost when it comes out | Dawn, Chapter, Moot |
-| **The Lark's Company** (Skell) | bard | new: Song | Inspire (you and your hireling fight better), Dirge (enemies near are weaker), Discord (one enemy confused); no taunt | great inns of the cities; perform for coin, hear more news from further, better prices | none |
 | **The Order of the Still Hand** | monk | Unarmed | Flurry, Stone Stance (less damage, slower), Pressure Point (one enemy stunned a turn), Wind Step (a few cells at once); stronger without heavy armour | the monasteries | none |
 | **The Houndwardens' Lodge** | beastmaster | new: Beastcraft | Tame (a wolf, bear, panther or hawk in the wild), Call of the Pack, Pack Fury | hunting lodges in hill villages, beside the Wardens | none |
 
 - The tamed beast follows the hireling rules (orders on `h`, threat, death and raising); it eats meat, no wage.
   A beastmaster may have a beast **and** a hireling. (Leadership, for more, comes later.)
 - Two-guild techniques: Moot + Wardens: Wildheart (hunt in beast shape); Ossuary + Coven: Lichcraft (dark, costs
-  life); Lark's + Thieves: Silver Tongue (deceive, distract); Still Hand + Dawn: Mendicant (holy fists);
+  life); Still Hand + Dawn: Mendicant (holy fists);
   Houndwardens + Iron: War-handler (war dogs).
 - Each new discipline needs about five to eight skills from tomes besides the three master techniques.
 
