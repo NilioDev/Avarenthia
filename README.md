@@ -121,8 +121,8 @@ cannot pay the temple, your tale ends there, and with it your one save. Enter a 
 
 ### No classes
 
-You become what you do. Ten disciplines (sword, axe and mace, dagger, bow, fire, ice, storm, healing, shadow and
-unarmed) grow by use. Skills (fifty of them) are learnt from **books** (`≡`): from monsters, deep in ruins, at standing
+You become what you do. Fourteen disciplines (sword, axe and mace, dagger, bow, fire, ice, storm, healing, shadow,
+warcraft, unarmed, nature, necromancy and beastcraft) grow by use. Skills (seventy of them) are learnt from **books** (`≡`): from monsters, deep in ruins, at standing
 stones, from pedlars and sometimes at a city outfitter. Harder books ask for a higher discipline. You carry six skills
 at a time and swap them in a town or castle. Weapon skills only work with the matching weapon in hand.
 
@@ -160,6 +160,16 @@ the secret guilds has a dark side, and the world notices. Your standing fades sl
 but never below your rank; the secret guilds let you fall. Leaving costs you your rank, and a secret guild sends
 someone after you.
 
+Five more combat guilds: **the Green Moot** (druids of Thessa, in groves in the forest villages: Entangle, Spirit
+Totem, Wild Shape), **the Hallowed Chapter** (Solmara's healers in the great temples: Mass Mend, Hallowed Ground,
+Rite of Return to raise your hireling in the field; its members pay less to have the fallen raised), **the Quiet
+Ossuary** (half secret, found through the old graveyards on the Varnish ways: Raise Dead, Bone Armour, Corpse Burst;
+its grave-robbing work costs you standing with the faithful when it comes out), **the Order of the Still Hand**
+(monks in the hill monasteries, who fight better without heavy armour: Hundred Hands, Stone Stance, Pressure Point,
+Wind Step) and **the Houndwardens' Lodge** (beastmasters in the hill villages: Tame, Call of the Pack, Pack Fury).
+New two-guild techniques: Wildheart (Moot and Wardens), Lichcraft (Ossuary and Coven), Mendicant's Fist (Still Hand
+and Dawn) and War-Handler (Houndwardens and Iron Company).
+
 Membership costs nothing, and what you learn you keep if you leave. But members buy from the guild's
 **quartermaster** at a discount that grows with their rank, sleep in the hall for little or nothing, have their gear
 mended for less, and the higher their rank, the better paid the guild's work (and now and then there is a piece of
@@ -181,6 +191,11 @@ who stands in its way, who looks soft (light armour, low on life), and how cleve
 throat; a clever foe goes for the healer; an archer picks the weakest it can see; and none of them turns lightly on
 whoever is hitting it hardest. In hardcore a fallen hireling is dead, and his gear lies with his body. In softcore a
 temple raises him for a fee; when you fall, he falls with you.
+
+A beastmaster can **tame** a wolf, bear, panther or hawk in the wild (easier when it is hurt) and keep it as well as
+a hireling. A beast follows the same orders and rules, has no gear and takes no wage, but eats meat from your pack
+once a day; go without and it goes back to the wild. Raised dead and called wolves are **thralls**: they fight at your
+side for a while, then fall away.
 
 ### Life skills
 

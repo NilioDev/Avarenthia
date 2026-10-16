@@ -1673,11 +1673,124 @@ def HU_food(g):
     return HUN.make_food(g, 'bread', 3)
 
 
+def new_guilds():
+    """Round three: five new guilds with halls and techniques, three new disciplines, a tamed beast and thralls."""
+    from avarenthia import guilds as GU, skills as SK, mercs as MC
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    random.seed(11)
+    app = new_app('soft', 5151)
+    g = app.game
+    p = g.player
+    p.lvl, p.vit, p.gold = 14, 300, 10 ** 7
+    halls = g.world.guild_halls
+    for k in ('moot', 'chapter', 'ossuary', 'stillhand', 'hound'):
+        assert halls.get(k), k
+    assert not GU.state(g)['ossuary']['found']
+    # the Ossuary is found at an old graveyard
+    gy = next((q for q in g.world.pois if q.kind == 'graveyard'), None)
+    if gy:
+        g.enter_dungeon(gy.did, 1, 'up')
+        assert GU.state(g)['ossuary']['found']
+    # rivals: the Chapter will not have a necromancer
+    st = GU.state(g)
+    st['ossuary'].update(found=True, joined=True)
+    assert GU.cant_join(g, 'chapter') and GU.cant_join(g, 'moot')
+    st['ossuary']['joined'] = False
+    # join the Houndwardens and the Still Hand, learn from their masters
+    for k in ('hound', 'stillhand'):
+        assert not GU.cant_join(g, k), k
+        GU.resolve(g, 'join', dict(guild=k))
+        st[k]['rep'] = 600
+    for line in ('beastcraft', 'unarmed', 'nature', 'necromancy', 'restoration'):
+        p.disc[line] = [30, 0]
+    for sid, *_ in GU.TEACH['hound'] + GU.TEACH['stillhand']:
+        GU.resolve(g, 'learn:' + sid, dict(guild='hound' if sid in [t[0] for t in GU.TEACH['hound']] else 'stillhand'))
+        assert sid in p.known, sid
+    assert GU.unarmoured(g) > 0 or g.eq_item('armor')
+    # tame a hurt bear in a dungeon; it fights, follows you down, and eats meat
+    g.enter_dungeon('mine', 2, 'up')
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    x, y = free_around(g, g.map, p.x, p.y, 1)[0]
+    bear = make_monster(g, 'brown_bear', x, y, 6)
+    bear.awake, bear.hp = True, 1
+    g.map.mons.append(bear)
+    g.compute_fov()
+    p.bar[0] = 'tame'
+    for _ in range(30):
+        p.cooldowns.clear()
+        p.mana = 99
+        SK.use(g, 0)
+        if MC.get(g, 'beast'):
+            break
+    bst = MC.get(g, 'beast')
+    assert bst and bst.body in g.map.mons, 'the bear was not tamed'
+    for k in ('goblin', 'orc'):
+        e = make_monster(g, k, *free_around(g, g.map, p.x, p.y, 3)[-1], 5)
+        e.awake = True
+        g.map.mons.append(e)
+    for _ in range(30):
+        g.end_turn(1)
+        p.life = max(p.life, 60)
+    app.render()
+    g.enter_dungeon('mine', 3, 'up')
+    assert bst.body in g.map.mons, 'the beast did not follow you down'
+    from avarenthia.entities import Item
+    from avarenthia import hunger as HU
+    p.inv = [it for it in p.inv if it.k != 'food']
+    meat = HU.make_food(g, 'meat') if hasattr(HU, 'make_food') else None
+    if meat:
+        g.add_to_inv(meat)
+        MC.daily(g)
+        assert not bst.hungry
+    # a hireling and a beast at once: the orders ask who for
+    mc = MC.Merc('archer', 'Test Archer', 5)
+    MC.outfit(g, mc)
+    mc.hp = MC.stats(g, mc)['max_hp']
+    g.merc = mc
+    MC.sync(g)
+    assert len(MC.party(g)) == 2
+    MC.menu(g)
+    app.render()
+    # every new skill, once, in a fight: tomes of the new disciplines and the techniques of the new guilds
+    new = [s.id for s in SK.SKILL_LIST if s.line in ('nature', 'necromancy', 'beastcraft')]
+    new += [t[0] for k in ('moot', 'chapter', 'ossuary') for t in GU.TEACH[k]] + ['wildheart', 'lichcraft', 'mendicant', 'war_handler']
+    for sid in new:
+        if sid not in p.known:
+            p.known.append(sid)
+    MC.hurt(g, bst, 9999)
+    for sid in new:
+        g.map.mons = [o for o in g.map.mons if o.is_npc]
+        for x, y in free_around(g, g.map, p.x, p.y, 2)[:2]:
+            e = make_monster(g, 'goblin', x, y, 6)
+            e.awake = True
+            g.map.mons.append(e)
+        g.compute_fov()
+        if SK.SKILLS[sid].mode in ('raise', 'burst'):
+            g.kill([o for o in g.map.mons if not o.is_npc][0])
+        p.bar[0] = sid
+        p.cooldowns.clear()
+        p.mana, p.life = 999, max(p.life, 200)
+        assert SK.use(g, 0), sid
+        assert SK.describe(SK.SKILLS[sid], 20), sid
+        for _ in range(3):
+            g.end_turn(1)
+        app.render()
+    assert bst.state == 'alive', 'Rite of Return did not raise the beast'
+    assert any(getattr(o, 'thrall', 0) for o in g.map.mons) or getattr(g, 'thralls', None) is not None
+    cs = ui.CharacterScreen(app)
+    app.screens = [ui.GameScreen(app), cs]
+    for _ in range(6):                  # every page of the character screen: disciplines and guilds fit
+        app.render()
+        cs.on_key('tab', False)
+    print('new guilds ok:', ', '.join(GU.GUILDS[k]['short'] for k in ('moot', 'chapter', 'ossuary', 'stillhand', 'hound')))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, text_fits]
+             creatures_and_hunts, new_guilds, text_fits]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

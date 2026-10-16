@@ -37,7 +37,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 17
+SAVE_VERSION = 18
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -356,6 +356,7 @@ class Game:
         if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
         buff_dmg -= BH.dmg_malus(self)
+        buff_dmg += GU.unarmoured(self)
         GD.apply(self, s)
         s['dr'] = min(60, s['dr'] + gear_dr)
         if getattr(p, 'race', '') == 'dwarf':
@@ -509,6 +510,8 @@ class Game:
         key = f'{did}:{depth}'
         p = self.player
         dg = self.world.dungeons[did]
+        if any(getattr(q, 'did', None) == did and q.kind == 'graveyard' for q in self.world.pois):
+            GU.on_graveyard(self)
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
         self.cur = key
@@ -770,7 +773,7 @@ class Game:
         mon = m.mon_at(nx, ny)
         if mon:
             if mon.is_npc:
-                if mon.role in ('escort', 'merc_ally') or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
+                if mon.role in ('escort', 'merc_ally', 'thrall') or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
                     mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
                     return 1
                 self.talk(mon)
@@ -1513,6 +1516,10 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        if not mon.is_npc:                             # where it fell: a necromancer has a use for that
+            sl = m.__dict__.setdefault('slain', [])
+            sl.append((mon.k, mon.x, mon.y, mon.lvl))
+            del sl[:-12]
         GD.on_kill(self, mon)
         if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher') \
                 and mon.tpl.get('family') not in ('undead', 'construct', 'ooze', 'plant', 'fiend'):
@@ -2547,7 +2554,7 @@ class Game:
             MC.talk_recruit(self, npc)
             return
         if role == 'merc_ally':
-            MC.menu(self)
+            MC.menu(self, getattr(npc, 'comp', 'merc'))
             return
         if role == 'factor':
             NW.talk_factor(self, npc)

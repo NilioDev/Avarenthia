@@ -176,6 +176,11 @@ NEW = {
                   looks=['A rhino, grey and plated, {his} horn chipped.'],
                   does='Charges in a straight line and does not stop.', weak='Step aside; its eyes are poor.',
                   home='The dry grassland of the south.'),
+    'giant_hawk': dict(ch='B', fg='#c0a070', name='Giant Hawk', family='beast', tags='wild', min_l=2,
+                       hp=.7, dmg=.9, df=1.4, xp=.9, fast=True, beh='pounce', gender='mf', noun='hawk',
+                       looks=['A giant hawk, red-brown, {his} talons as long as fingers.'],
+                       does='Stoops on you from high up, talons first.',
+                       weak='Frail; a bow. A beastmaster can tame one.', home='Hills and open forest.'),
     'giant_crab': dict(ch='x', fg='#d06040', name='Giant Crab', family='beast', tags='wild', min_l=3,
                        hp=1.3, dmg=1.0, df=1.8, xp=1.3, beh='grab', gender='mf', noun='giant crab',
                        looks=['A giant crab, red-shelled, {his} claws snapping.'],
@@ -502,7 +507,7 @@ GEAR = {
     'animated_armour': ['chainmail', 'ringmail', 'fullhelm', 'gauntlets', 'hboots'],
     'goblin_king': ['waraxe', 'mace', 'ringmail', 'fullhelm', 'roundshield', 'ring', 'amulet'],
 }
-BEASTS = {'brown_bear', 'cave_bear', 'boar', 'panther', 'snow_ape', 'mammoth', 'sabretooth', 'worg', 'winter_wolf',
+BEASTS = {'giant_hawk', 'brown_bear', 'cave_bear', 'boar', 'panther', 'snow_ape', 'mammoth', 'sabretooth', 'worg', 'winter_wolf',
           'giant_frog', 'constrictor', 'cobra', 'vulture', 'badger', 'rhino', 'giant_crab', 'clawbeak', 'shimmercat',
           'octopus', 'wyvern', 'swamp_drake', 'frost_drake', 'basilisk', 'cockatrice', 'manticore', 'chimera'}
 UNDEAD = {'ghoul', 'ghast', 'skel_warrior', 'skel_mage', 'draugr', 'banshee', 'mummy', 'shade', 'wight', 'vampire_spawn',
@@ -510,10 +515,10 @@ UNDEAD = {'ghoul', 'ghast', 'skel_warrior', 'skel_mage', 'draugr', 'banshee', 'm
 
 BIOME_ADD = {
     'grass': ['boar', 'vulture', 'cockatrice', 'scarecrow', 'burrowback', 'rhino'],
-    'forest': ['brown_bear', 'boar', 'panther', 'worg', 'badger', 'clawbeak', 'shimmercat', 'pixie', 'dryad', 'weald_hag',
+    'forest': ['giant_hawk', 'brown_bear', 'boar', 'panther', 'worg', 'badger', 'clawbeak', 'shimmercat', 'pixie', 'dryad', 'weald_hag',
                'strangle_vine', 'rot_flower'],
     'swamp': ['giant_frog', 'constrictor', 'swamp_drake', 'wisp', 'rot_flower', 'strangle_vine'],
-    'hills': ['brown_bear', 'worg', 'badger', 'wyvern', 'manticore', 'chimera', 'cockatrice'],
+    'hills': ['giant_hawk', 'brown_bear', 'worg', 'badger', 'wyvern', 'manticore', 'chimera', 'cockatrice'],
     'coast': ['giant_crab', 'crabfolk', 'brinefolk', 'octopus', 'merrow', 'sea_hag'],
 }
 CLIMATE_ADD = {'cold': ['snow_ape', 'mammoth', 'sabretooth', 'winter_wolf', 'frost_drake', 'cave_bear'],

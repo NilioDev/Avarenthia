@@ -3,6 +3,7 @@ crafts take anyone. Each has five ranks, earned with the guild's own jobs. Only 
 advanced techniques, and only to those of high enough rank and skill. Two guilds are secret: the Thieves' Guild
 is found through rumours and chalk marks, or it finds you after a crime or two; the Hollow Coven, who serve
 Morrak, is found only through those who already know. Their work has a dark side, and the world notices.
+The Quiet Ossuary, the necromancers, is half secret: you find it through the old graveyards along the Varnish ways.
 
 Standing with a guild fades slowly if you do nothing for it, but never below the rank you hold;
 the secret guilds are less patient and will let you fall."""
@@ -40,6 +41,28 @@ GUILDS = {
                   master='{n}, Voice of Morrak', ranks=['Seeker', 'Initiate', 'Witch', 'Warlock', 'Voice of Morrak'],
                   rivals=['dawn', 'magi'], jobs=['hunt', 'bounty', 'fetch'], halls=1, dark=True,
                   desc='Warlocks who bargain with Morrak, the Hollow One, for power. Morrak always collects.'),
+    'moot': dict(name='The Green Moot', short='Green Moot', kind='combat', secret=0, fg='#78c858', sign='THE GREEN MOOT',
+                 master='Grove-Mother {n}', ranks=['Sapling', 'Acorn', 'Thornkeeper', 'Oakheart', 'Voice of Thessa'],
+                 rivals=['coven', 'ossuary'], jobs=['hunt', 'fetch', 'courier'], halls=0,
+                 desc='Druids and shamans of Thessa, who keep the groves by the standing stones and speak for the wild.'),
+    'chapter': dict(name='The Hallowed Chapter', short='Hallowed Chapter', kind='combat', secret=0, fg='#f8f0c8',
+                    sign='THE HALLOWED CHAPTER', master='Abbess {n}', ranks=['Novice', 'Brother', 'Confessor', 'Prior', 'Hand of Solmara'],
+                    rivals=['coven', 'ossuary'], jobs=['bounty', 'courier', 'fetch'], halls=3,
+                    desc="Solmara's healers. They carry no sword: they mend, they shelter, and they bring back the fallen."),
+    'ossuary': dict(name='The Quiet Ossuary', short='Ossuary', kind='combat', secret=1, fg='#c8d0b0', sign=None,
+                    master='{n}, Keeper of Bones', ranks=['Gravedigger', 'Bonewright', 'Deathspeaker', 'Ossuarch', 'Keeper of the Quiet'],
+                    rivals=['dawn', 'chapter', 'moot'], jobs=['fetch', 'bounty'], halls=1, dark=True,
+                    desc='Necromancers. The dwarves tolerate them, for Durnak is god of the dead; the Crown and the Dawn '
+                         'hunt them.'),
+    'stillhand': dict(name='The Order of the Still Hand', short='Still Hand', kind='combat', secret=0, fg='#d8c8a8',
+                      sign='MONASTERY', master='Master {n}', ranks=['Novice', 'Disciple', 'Brother of the Hand', 'Elder', 'Still Master'],
+                      rivals=[], jobs=['hunt', 'bounty', 'escort'], halls=0,
+                      desc='Monks who fight with their hands and feet. They say armour is a cage; they fight best without it.'),
+    'hound': dict(name="The Houndwardens' Lodge", short='Houndwardens', kind='combat', secret=0, fg='#c89860',
+                  sign="HOUNDWARDENS' LODGE", master='Huntmaster {n}', ranks=['Kennel-hand', 'Handler', 'Packleader', 'Beastmaster',
+                                                                             'Lord of the Hunt'],
+                  rivals=[], jobs=['hunt', 'bounty', 'fetch'], halls=0,
+                  desc='Beastmasters of the hill country. They tame what others hunt, and keep a beast as well as a sellsword.'),
     # the crafts: no limit
     'alembic': dict(name='The Guild of Alembic and Barrel', short='Alembic and Barrel', kind='life', secret=0, fg='#e0a0e0',
                     sign='ALCHEMISTS', master='Mistress {n}', ranks=['Bottlewasher', 'Apprentice', 'Journeyman', 'Master', 'Grand Alembic'],
@@ -65,11 +88,21 @@ TEACH = {
     'wardens': [('hunters_mark', 1, 'archery', 6, 50), ('rain_of_arrows', 2, 'archery', 16, 150), ('thornbind', 4, 'archery', 26, 360)],
     'thieves': [('garrote', 1, 'daggers', 6, 60), ('smoke_bomb', 2, 'daggers', 14, 150), ('deaths_kiss', 4, 'daggers', 28, 450)],
     'coven': [('hellfire', 1, 'shadow', 8, 80), ('pact_of_blood', 2, 'shadow', 16, 160), ('morraks_hand', 4, 'shadow', 30, 500)],
+    'moot': [('entangle', 1, 'nature', 6, 60), ('spirit_totem', 2, 'nature', 14, 150), ('wild_shape', 4, 'nature', 26, 400)],
+    'chapter': [('mass_mend', 1, 'restoration', 6, 60), ('hallowed_ground', 2, 'restoration', 14, 160),
+                ('rite_of_return', 4, 'restoration', 26, 420)],
+    'ossuary': [('raise_dead', 1, 'necromancy', 6, 80), ('bone_armour', 2, 'necromancy', 14, 150),
+                ('corpse_burst', 4, 'necromancy', 28, 450)],
+    'stillhand': [('still_flurry', 1, 'unarmed', 6, 50), ('stone_stance', 2, 'unarmed', 12, 120), ('pressure_point', 2, 'unarmed', 16, 150),
+                  ('wind_step', 4, 'unarmed', 26, 380)],
+    'hound': [('tame', 1, 'beastcraft', 4, 60), ('call_of_the_pack', 2, 'beastcraft', 14, 160), ('pack_fury', 4, 'beastcraft', 26, 380)],
 }
 # techniques only those who serve two guilds at once can learn: (guild a, guild b) -> (skill, rank in both, price)
 COMBOS = {
     ('iron', 'magi'): ('spellblade', 2, 300), ('coven', 'thieves'): ('soul_knife', 2, 320),
     ('magi', 'wardens'): ('thornstorm', 2, 300), ('dawn', 'iron'): ('crusade', 2, 300),
+    ('moot', 'wardens'): ('wildheart', 2, 320), ('coven', 'ossuary'): ('lichcraft', 2, 340),
+    ('dawn', 'stillhand'): ('mendicant', 2, 300), ('hound', 'iron'): ('war_handler', 2, 320),
 }
 SECRET_WORDS = {
     'thieves': 'Chalk marks low on a doorpost, a circle crossed twice: those who know, knock there.',
@@ -132,7 +165,43 @@ def setup(world):
     rng.shuffle(woods)
     halls['wardens'] = [s.id for s in woods[:4]] or [s.id for s in world.settlements if not s.is_city][:2]
     halls['anglers'] = [s.id for s in world.settlements if getattr(s, 'harbour', False) and s.kind != 'hamlet']
+    villages = [s for s in world.settlements if not s.is_city and s.kind in ('village', 'town')]
+    # the Moot keeps groves in the forest villages, the monks their monasteries up in the hills, the Houndwardens
+    # their lodges in the hill villages; the Ossuary meets under a city, behind a door nobody notices
+    grove = [s.id for s in villages if s.biome in ('forest', 'swamp')]
+    rng.shuffle(grove)
+    halls['moot'] = grove[:3] or [s.id for s in villages][:2]
+    hills = [s.id for s in villages if s.biome == 'hills']
+    rng.shuffle(hills)
+    halls['hound'] = hills[:3] or [s.id for s in villages][-2:]
+    halls['stillhand'] = [i for i in hills if i not in halls['hound']][:2] or [s.id for s in villages if s.id not in halls['hound']][:2]
+    old = [s.id for s in cities if s.id not in halls['coven']] or [s.id for s in cities]
+    halls['ossuary'] = [rng.choice(old)] if old else []
     world.guild_halls = halls
+
+
+def temple_mult(game):
+    """The Hallowed Chapter raises its own, and its friends, for less."""
+    return .6 if state(game)['chapter']['joined'] else 1.0
+
+
+def unarmoured(game):
+    """A monk of the Still Hand fights best without heavy armour: percent more damage."""
+    if not state(game)['stillhand']['joined']:
+        return 0
+    it = game.eq_item('armor')
+    if it and D.BASES[it.base].get('family', it.base) not in ('quilted', 'leather'):
+        return 0
+    return 10 + 5 * rank(game, 'stillhand')
+
+
+def on_graveyard(game):
+    """An old graveyard on the Varnish ways: someone has been digging here, and left a sign for those who know."""
+    if not state(game)['ossuary']['found']:
+        ids = game.world.guild_halls.get('ossuary', [])
+        city = game.world.settlements[ids[0]].name if ids else 'the city'
+        discover(game, 'ossuary', f'Among the old stones, fresh earth, and a bone carved with a word and a street in {city}. '
+                 'The Quiet Ossuary leaves its mark where the dead are old.')
 
 
 def halls_in(game, sid):
@@ -507,6 +576,20 @@ def flavour(game, key, m):
         m.title = f'Silence the knights who hunt us'
         m.desc = 'A patrol of the Order of Dawn has come too close. ' + m.desc.split('. ', 1)[-1]
         m.dark = 'murder'
+    elif key == 'ossuary' and m.kind == 'fetch':
+        m.title = 'Rob the grave of ' + m.title.split('Recover ', 1)[-1]
+        m.desc = 'Under the stones of an old grave lies what we want. Dig quietly. ' + m.desc
+        m.dark = 'graverob'
+    elif key == 'ossuary' and m.kind == 'bounty':
+        m.data['keys'] = ['soldier', 'soldier', 'crossbow']
+        m.title = 'Silence the grave-watch'
+        m.desc = 'Templars of the Dawn are watching our graveyards. ' + m.desc.split('. ', 1)[-1]
+        m.dark = 'murder'
+    elif key == 'chapter' and m.kind == 'bounty':
+        m.data['keys'] = [random.choice(['zombie', 'ghoul', 'skeleton']) for _ in range(random.randint(3, 5))]
+        lead = m.data['leader']
+        m.title = f'Give rest to {lead}'
+        m.desc = f'The dead will not lie still around {lead}. ' + m.desc.split('. ', 1)[-1]
     elif key == 'coven' and m.kind == 'fetch':
         m.title = 'Bring Morrak ' + m.title.split('Recover ', 1)[-1]
         m.dark = 'desecration'
@@ -556,6 +639,15 @@ def consequences(game, m):
         state(game)['dawn']['rep'] = max(0, state(game)['dawn']['rep'] - 80)
         change_rep(game, 'crown', -6)
         GD.lose(game, 20, 'The blood of holy knights is on your hands. Your god is silent.')
+    elif dark == 'graverob':
+        if random.random() < .3:                # it comes out: the faithful will not forget it
+            for k in ('dawn', 'chapter'):
+                state(game)[k]['rep'] = max(0, state(game)[k]['rep'] - 40)
+            change_rep(game, 'crown', -4)
+            here = game.here
+            if here:
+                here.rep = max(-100, here.rep - 8)
+            game.msg('Someone saw you at the graves. Word gets around, and the faithful look at you with disgust.', 'bad')
     elif dark == 'desecration':
         if getattr(game.player, 'god', None) == 'morrak':
             GD.gain(game, 5)

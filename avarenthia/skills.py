@@ -1,4 +1,4 @@
-"""Classless skills. Ten disciplines grow by use; higher ranks unlock new skills in that
+"""Classless skills. Fourteen disciplines grow by use; higher ranks unlock new skills in that
 discipline. You carry six skills on your bar and can only change them in a town."""
 import random
 
@@ -19,10 +19,14 @@ DISCIPLINES = {
     'restoration': dict(name='Restoration', kind='magic'),
     'shadow': dict(name='Shadow Magic', kind='magic'),
     'warcraft': dict(name='Warcraft', kind='magic'),
+    'nature': dict(name='Nature', kind='magic'),
+    'necromancy': dict(name='Necromancy', kind='magic'),
+    'beastcraft': dict(name='Beastcraft', kind='magic'),
 }
 DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (210, 170, 120), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
               'fire': (255, 122, 44), 'frost': (159, 216, 255), 'storm': (242, 240, 122), 'restoration': (150, 255, 170),
-              'shadow': (176, 110, 255), 'warcraft': (242, 196, 67)}
+              'shadow': (176, 110, 255), 'warcraft': (242, 196, 67), 'nature': (120, 200, 90), 'necromancy': (190, 200, 170),
+              'beastcraft': (200, 150, 90)}
 DISC_ORDER = list(DISCIPLINES)
 WEAPON_LINE = {'dagger': 'daggers', 'shortsword': 'swords', 'longsword': 'swords', 'bastard': 'swords', 'runeblade': 'swords',
                'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'axes', 'warstaff': 'axes',
@@ -58,10 +62,16 @@ class Skill:
         self.glyph = kw.get('glyph', '*')
         self.flavor = kw.get('flavor', '')
         self.undead = kw.get('undead', 1)
+        self.party = kw.get('party', False)          # heals your hireling and your beast as well
+        self.summon = kw.get('summon')               # (kind, how many, turns): thralls that fight for you a while
+        self.shape = kw.get('shape')                 # (name, damage %, less damage taken %, turns)
+        self.life_cost = kw.get('life_cost', 0)      # paid in life, on top of the mana
+        self.fury = kw.get('fury', 0)                # your beast fights harder for this many turns
         self.guild = False
 
 
 S = Skill
+LEAF, BONE, BEAST = (120, 200, 90), (210, 210, 180), (200, 150, 90)
 FIRE, ICE, STORM, HOLY, DARK, STEEL, ARROW, WAR = (255, 122, 44), (159, 216, 255), (242, 240, 122), (150, 255, 170), (176, 110, 255), (255, 106, 74), (216, 208, 176), (242, 196, 67)
 SKILL_LIST = [
     # unarmed
@@ -130,6 +140,29 @@ SKILL_LIST = [
     S('second_wind', 'Second Wind', 'warcraft', 2, 6, 30, 'self', heal=(20, 1.5), cure=True, color=WAR, glyph='+'),
     S('iron_skin', 'Iron Skin', 'warcraft', 3, 8, 30, 'self', buff=('dr', 25, .3, 10), color=WAR, glyph='#'),
     S('charge', 'Charge', 'warcraft', 4, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
+    # nature
+    S('thorn_lash', 'Thorn Lash', 'nature', 0, 4, 1, 'bolt', lo=4, hi=8, r=.4, fx={'bleed': (2, .15, 4)}, color=LEAF, glyph='~'),
+    S('barkskin', 'Barkskin', 'nature', 1, 6, 30, 'self', buff=('def', 25, 1.3, 30), color=LEAF, glyph='#'),
+    S('grasping_roots', 'Grasping Roots', 'nature', 2, 7, 10, 'target_area', dtype='none', radius=1, fx={'stun': 3},
+      color=LEAF, glyph='"'),
+    S('healing_rain', 'Healing Rain', 'nature', 3, 10, 20, 'self', heal=(18, 1.2), buff=('regen', 2, .06, 12), party=True,
+      color=(130, 200, 255), glyph='+'),
+    S('wrath_of_oak', 'Wrath of the Oak', 'nature', 4, 14, 14, 'around', lo=12, hi=20, r=.6, radius=2, fx={'stun': 2},
+      color=LEAF, glyph='♣'),
+    # necromancy
+    S('grave_touch', 'Grave Touch', 'necromancy', 0, 4, 2, 'bolt', lo=4, hi=7, r=.4, drain=.3, range=4, color=BONE),
+    S('bone_spear', 'Bone Spear', 'necromancy', 1, 6, 4, 'pierce', lo=6, hi=11, r=.5, color=BONE, glyph='='),
+    S('death_mark', 'Mark of Death', 'necromancy', 2, 5, 8, 'curse', fx={'vuln': 10}, color=BONE),
+    S('raise_skeleton', 'Raise Skeleton', 'necromancy', 3, 10, 25, 'summon', summon=('skeleton', 1, 30), color=BONE, glyph='z'),
+    S('withering', 'Withering', 'necromancy', 4, 14, 14, 'around', lo=8, hi=14, r=.5, radius=3, drain=.3,
+      fx={'weaken': 6}, color=BONE),
+    # beastcraft
+    S('feral_howl', 'Feral Howl', 'beastcraft', 0, 4, 10, 'around', dtype='none', radius=2, fx={'weaken': 5}, color=BEAST, glyph='!'),
+    S('mend_beast', 'Lick the Wounds', 'beastcraft', 1, 5, 8, 'self', heal=(10, .8), party=True, color=BEAST, glyph='+'),
+    S('hawk_eye', 'Hawk Eye', 'beastcraft', 2, 5, 25, 'self', buff=('dmg', 15, .4, 15), fury=15, color=BEAST, glyph='!'),
+    S('call_wolf', 'Call a Wolf', 'beastcraft', 3, 10, 30, 'summon', summon=('wolf', 1, 30), color=BEAST, glyph='C'),
+    S('alpha_roar', 'Alpha Roar', 'beastcraft', 4, 12, 18, 'around', dtype='none', radius=3, fx={'stun': 2, 'weaken': 6},
+      fury=12, color=BEAST, glyph='!'),
 ]
 # techniques taught only by guild masters (see guilds.py); they never turn up in tomes
 TECHNIQUES = [
@@ -174,6 +207,47 @@ TECHNIQUES = [
       color=(160, 220, 110), glyph='~', flavor='Wardens and Circle of Magi'),
     S('crusade', 'Crusade', 'warcraft', 2, 10, 30, 'self', buff=('dmg', 45, .6, 15), color=(255, 232, 160), glyph='!',
       flavor='Order of Dawn and Iron Company'),
+    # the Green Moot
+    S('entangle', 'Entangle', 'nature', 1, 7, 12, 'around', dtype='none', radius=2, fx={'stun': 3}, color=LEAF, glyph='"',
+      flavor='The Green Moot'),
+    S('spirit_totem', 'Spirit Totem', 'nature', 2, 10, 30, 'self', heal=(20, 1.2), buff=('regen', 3, .08, 20), party=True,
+      color=(140, 230, 160), glyph='¶', flavor='The Green Moot'),
+    S('wild_shape', 'Wild Shape', 'nature', 4, 12, 50, 'shape', shape=('bear', 35, 25, 25), color=BEAST, glyph='q',
+      flavor='The Green Moot'),
+    # the Hallowed Chapter
+    S('mass_mend', 'Mass Mend', 'restoration', 1, 8, 8, 'self', heal=(16, 1.1), party=True, color=HOLY, glyph='+',
+      flavor='The Hallowed Chapter'),
+    S('hallowed_ground', 'Hallowed Ground', 'restoration', 2, 10, 30, 'around', dtype='none', radius=4, fx={'stun': 4},
+      color=(255, 240, 200), glyph='+', flavor='The Hallowed Chapter'),
+    S('rite_of_return', 'Rite of Return', 'restoration', 4, 20, 80, 'rite', color=HOLY, glyph='+', flavor='The Hallowed Chapter'),
+    # the Quiet Ossuary
+    S('raise_dead', 'Raise Dead', 'necromancy', 1, 10, 20, 'raise', color=BONE, glyph='z', flavor='The Quiet Ossuary'),
+    S('bone_armour', 'Bone Armour', 'necromancy', 2, 8, 30, 'self', buff=('dr', 20, .3, 20), color=BONE, glyph='#',
+      flavor='The Quiet Ossuary'),
+    S('corpse_burst', 'Corpse Burst', 'necromancy', 4, 14, 10, 'burst', lo=16, hi=26, r=.8, radius=2, color=(200, 220, 120),
+      flavor='The Quiet Ossuary'),
+    # the Order of the Still Hand
+    S('still_flurry', 'Hundred Hands', 'unarmed', 1, 5, 5, 'melee', pct=50, pct_r=1.2, hits=4, flavor='Order of the Still Hand'),
+    S('stone_stance', 'Stone Stance', 'unarmed', 2, 6, 25, 'self', buff=('dr', 35, .3, 12), color=(170, 160, 150), glyph='#',
+      flavor='Order of the Still Hand'),
+    S('pressure_point', 'Pressure Point', 'unarmed', 2, 5, 8, 'melee', pct=80, pct_r=1, fx={'stun': 2}, flavor='Order of the Still Hand'),
+    S('wind_step', 'Wind Step', 'unarmed', 4, 6, 6, 'leap', pct=140, pct_r=2, range=4, color=(220, 230, 255), glyph='~',
+      flavor='Order of the Still Hand'),
+    # the Houndwardens' Lodge
+    S('tame', 'Tame', 'beastcraft', 1, 8, 20, 'tame', color=BEAST, glyph='♥', flavor="The Houndwardens' Lodge"),
+    S('call_of_the_pack', 'Call of the Pack', 'beastcraft', 2, 12, 40, 'summon', summon=('wolf', 2, 30), color=BEAST, glyph='C',
+      flavor="The Houndwardens' Lodge"),
+    S('pack_fury', 'Pack Fury', 'beastcraft', 4, 10, 30, 'self', buff=('dmg', 25, .5, 15), fury=15, color=(230, 120, 60), glyph='!',
+      flavor="The Houndwardens' Lodge"),
+    # for those who serve two guilds
+    S('wildheart', 'Wildheart', 'nature', 2, 12, 50, 'shape', shape=('wolf', 55, 10, 25), fury=25, color=BEAST, glyph='C',
+      flavor='Green Moot and Wardens'),
+    S('lichcraft', 'Lichcraft', 'necromancy', 2, 10, 12, 'around', lo=14, hi=24, r=.8, radius=3, drain=.2, life_cost=12,
+      fx={'weaken': 6}, color=(150, 120, 220), flavor='Quiet Ossuary and Hollow Coven'),
+    S('mendicant', "Mendicant's Fist", 'unarmed', 2, 6, 5, 'melee', pct=190, pct_r=2, heal=(6, .5), fx={'stun': 1},
+      color=HOLY, flavor='Still Hand and Order of Dawn'),
+    S('war_handler', 'War-Handler', 'beastcraft', 2, 12, 40, 'summon', summon=('war_dog', 2, 40), fury=20, color=(200, 170, 120),
+      glyph='C', flavor="Houndwardens and Iron Company"),
 ]
 for _t in TECHNIQUES:
     _t.guild = True
@@ -190,7 +264,7 @@ def weapon_line(game):
     return WEAPON_LINE.get(w.base) if w else 'unarmed'
 
 
-LINE_ELEM = {'fire': 'fire', 'frost': 'cold', 'storm': 'lightning'}
+LINE_ELEM = {'fire': 'fire', 'frost': 'cold', 'storm': 'lightning', 'nature': 'poison', 'necromancy': 'cold'}
 GEAR_RANKS = 3        # each '+1 to a discipline' on your gear makes its skills strike as if three ranks higher
 
 
@@ -214,7 +288,7 @@ def describe(sk, r):
         dmg = ''
     m = sk.mode
     if m == 'melee':
-        parts.append(f"Strike an adjacent enemy{' twice' if sk.hits == 2 else ''} for {dmg}.")
+        parts.append(f"Strike an adjacent enemy{' twice' if sk.hits == 2 else f' {sk.hits} times' if sk.hits > 2 else ''} for {dmg}.")
     elif m == 'adjacent':
         parts.append(f'Hit every adjacent enemy for {dmg}.')
     elif m == 'around':
@@ -232,9 +306,27 @@ def describe(sk, r):
     elif m == 'storm':
         parts.append(f'Lightning strikes up to {sk.jumps} visible enemies for {dmg} each.')
     elif m == 'target_area':
-        parts.append(f'Strike the area around the nearest enemy ({sk.radius} tiles) for {dmg}.')
+        parts.append(f"Strike the area around the nearest enemy ({sk.radius} tile{'s' if sk.radius > 1 else ''})"
+                     + (f' for {dmg}.' if dmg else '.'))
     elif m == 'curse':
         parts.append('Afflict the nearest visible enemy.')
+    elif m == 'summon':
+        k, n, t = sk.summon
+        one, many = {'skeleton': ('a skeleton', 'skeletons'), 'wolf': ('a wolf', 'wolves'),
+                     'war_dog': ('a war dog', 'war dogs')}.get(k, (k, k))
+        parts.append(f"Call {one if n == 1 else f'{n} {many}'} to fight at your side for {t + r // 2} turns.")
+    elif m == 'raise':
+        parts.append(f'The last enemy to fall near you rises and fights for you for {20 + r // 2} turns.')
+    elif m == 'tame':
+        parts.append('Tame the wolf, bear, panther or hawk next to you; easier when it is hurt. It stays with you, '
+                     'eats meat and takes orders (h). One beast at a time.')
+    elif m == 'rite':
+        parts.append('Raise your fallen hireling or beast where it lies, without a temple.')
+    elif m == 'burst':
+        parts.append(f'The nearest corpse bursts: {dmg} to every enemy within {sk.radius} tiles of it.')
+    elif m == 'shape':
+        nm, dp, dr_, t = sk.shape
+        parts.append(f'Take the shape of a {nm} for {t} turns: +{dp + r // 4}% damage, {dr_}% less damage taken.')
     if sk.heal:
         parts.append(f'Heals {round(sk.heal[0] + sk.heal[1] * r)} life.')
     if sk.buff:
@@ -259,6 +351,12 @@ def describe(sk, r):
         parts.append(f"Target takes 25% more damage for {fx['vuln']} turns.")
     if sk.drain:
         parts.append(f'Heals you for {round(sk.drain * 100)}% of the damage.')
+    if sk.party:
+        parts.append('Heals your hireling and your beast as well.')
+    if sk.fury:
+        parts.append(f'Your beast fights 40% harder for {sk.fury} turns.')
+    if sk.life_cost:
+        parts.append(f'Costs {sk.life_cost} life.')
     if sk.crit:
         parts.append('Always a critical hit.')
     if sk.execute > 1:
@@ -332,9 +430,23 @@ def use(game, slot):
     if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
         game.msg(f"{sk.name} needs {d['weapon']} in your hands.", 'bad')
         return 0
+    if sk.life_cost and p.life <= sk.life_cost + 1:
+        game.msg(f'{sk.name} would take more life than you have.', 'bad')
+        return 0
     r = rank(game, sk.line)
     if not EXEC[sk.mode](game, sk, r):
         return 0
+    if sk.life_cost:
+        p.life -= sk.life_cost
+        game.msg(f'{sk.name} takes its price in life.', 'bad')
+    if sk.heal and sk.mode not in ('self',):
+        game.heal(round(sk.heal[0] + sk.heal[1] * r), show=True)
+    if sk.fury:
+        from . import mercs as MC
+        bst = MC.with_you(game, 'beast')
+        if bst:
+            bst.fury = max(bst.fury, sk.fury)
+            game.msg(f'{bst.name} bristles and bares its teeth.', 'good')
     p.mana -= cost
     p.cooldowns[sid] = sk.cd
     gain(game, sk.line, 3)
@@ -606,8 +718,18 @@ def x_self(game, sk, r):
     p = game.player
     did = False
     if sk.heal:
-        game.heal(round(sk.heal[0] + sk.heal[1] * r), show=True)
+        amt = round(sk.heal[0] + sk.heal[1] * r)
+        game.heal(amt, show=True)
         did = True
+        if sk.party:
+            from . import mercs as MC
+            for mc in MC.party(game):
+                mx = MC.stats(game, mc)['max_hp']
+                if mc.hp < mx:
+                    mc.hp = min(mx, mc.hp + amt)
+                    MC.refresh_body(game, mc)
+                    if mc.body is not None:
+                        game.num(mc.body.x, mc.body.y, f'+{amt}', (120, 240, 140))
     if sk.cure:
         p.poison = None
         p.burn = None
@@ -629,6 +751,120 @@ def ring_cells(x, y, r):
     return [(x + dx, y + dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1) if max(abs(dx), abs(dy)) == r]
 
 
-EXEC = {'melee': x_melee, 'adjacent': x_adjacent, 'around': x_around, 'bolt': x_bolt, 'shot': x_shot, 'volley': x_volley,
+def x_summon(game, sk, r):
+    from . import mercs as MC
+    p, m = game.player, game.map
+    k, n, t = sk.summon
+    if k not in _D.MONSTERS:
+        k = 'wolf'
+    spots = [c for c in free_around(game, m, p.x, p.y, 2) if c != (p.x, p.y)]
+    if not spots:
+        game.msg('There is no room.')
+        return False
+    random.shuffle(spots)
+    name = {'skeleton': 'Risen Skeleton', 'wolf': 'Wolf of the Pack', 'war_dog': 'War Dog'}.get(sk.summon[0])
+    for x, y in spots[:n]:
+        o = MC.thrall(game, k, x, y, t + r // 2, name)
+        if sk.summon[0] == 'war_dog':
+            o.hp = o.maxhp = round(o.maxhp * 1.4)
+            o.fg = (200, 170, 120)
+    game.flash(spots[:n], sk.color, sk.glyph, .25)
+    game.msg({'skeleton': 'Bones knit together out of the ground and stand up for you.',
+              'wolf': 'A howl answers from the dark, and wolves come loping to your side.' if n > 1 else
+                      'A wolf answers your call and falls in at your side.',
+              'war_dog': 'You whistle, and war dogs in spiked collars come running.'}.get(sk.summon[0], 'Help comes.'), 'good')
+    return True
+
+
+def x_raise(game, sk, r):
+    from . import mercs as MC
+    p, m = game.player, game.map
+    slain = [c for c in getattr(m, 'slain', []) if cheb(c[1], c[2], p.x, p.y) <= 7 and game.visible(c[1], c[2])
+             and not _D.MONSTERS[c[0]].get('chief') and not _D.MONSTERS[c[0]].get('boss')]
+    spot = None
+    while slain:
+        c = slain.pop()
+        if not game.occupied(m, c[1], c[2]) and (c[1], c[2]) != (p.x, p.y):
+            spot = c
+            break
+    if not spot:
+        game.msg('There is no fallen enemy near you to raise.')
+        return False
+    m.slain.remove(spot)
+    k, x, y, lvl = spot[:4]
+    o = MC.thrall(game, k, x, y, 20 + r // 2, 'Risen ' + _D.MONSTERS[k]['name'], lvl)
+    o.fg = (190, 200, 170)
+    game.flash([(x, y)], sk.color, sk.glyph, .3)
+    game.msg(f'You speak the word, and the {_D.MONSTERS[k]["name"].lower()} gets up again. It is yours, for a while.', 'good')
+    return True
+
+
+def x_burst(game, sk, r):
+    p, m = game.player, game.map
+    slain = [c for c in getattr(m, 'slain', []) if cheb(c[1], c[2], p.x, p.y) <= 7 and game.visible(c[1], c[2])]
+    if not slain:
+        game.msg('There is no corpse near you.')
+        return False
+    c = min(slain, key=lambda c: cheb(c[1], c[2], p.x, p.y))
+    m.slain.remove(c)
+    tx, ty = c[1], c[2]
+    cells = [(tx, ty)]
+    for rr in range(1, sk.radius + 1):
+        cells += ring_cells(tx, ty, rr)
+    game.flash(cells, sk.color, '*', .26)
+    game.msg('The corpse swells, and bursts.', 'good')
+    for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.radius]:
+        _hit(game, o, sk, r)
+    return True
+
+
+def x_tame(game, sk, r):
+    from . import mercs as MC
+    p = game.player
+    if MC.get(game, 'beast'):
+        game.msg(f'You already have {MC.get(game, "beast").name}. One beast at a time.')
+        return False
+    adj = [o for o in game.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= 1]
+    beasts = [o for o in adj if o.k in MC.TAME_OF and not o.elite and not getattr(o, 'named', None)]
+    if not beasts:
+        game.msg('Only a wolf, a bear, a panther or a hawk can be tamed, and it must be next to you.' if not adj else
+                 'That one will never be tamed.')
+        return False
+    o = min(beasts, key=lambda o: o.hp / max(1, o.maxhp))
+    chance = .15 + r / 120 + (1 - o.hp / max(1, o.maxhp)) * .5
+    game.flash([(o.x, o.y)], sk.color, sk.glyph, .3)
+    if random.random() >= chance:
+        o.awake = True
+        game.msg(f'You hold out your hand and speak low. {o.the()[0].upper() + o.the()[1:]} snarls and will not have it.', 'bad')
+        return True
+    mc = MC.tame(game, o)
+    game.msg(f'{o.the()[0].upper() + o.the()[1:]} lowers its head and sniffs your hand. It is yours now: you call it {mc.name}. '
+             'It eats meat; orders on h.', 'gold')
+    return True
+
+
+def x_rite(game, sk, r):
+    from . import mercs as MC
+    mc = MC.fallen(game)
+    if not mc:
+        game.msg('Nobody of yours lies dead.')
+        return False
+    MC.raise_up(game, mc, free=True)
+    return True
+
+
+def x_shape(game, sk, r):
+    p = game.player
+    nm, dp, dr_, t = sk.shape
+    p.buffs = [b for b in p.buffs if b[0] not in ('dmg', 'dr') or not b[3].endswith('shape')]
+    p.buffs += [['dmg', dp + r // 4, t, f'{nm.capitalize()} shape'], ['dr', dr_, t, f'{nm.capitalize()} shape']]
+    game.flash(ring_cells(p.x, p.y, 1), sk.color, sk.glyph, .25)
+    game.msg({'bear': 'Your body thickens and your hands turn to claws: you are a bear.',
+              'wolf': 'You drop to all fours, grey and lean: you are a wolf, and you hunt.'}.get(nm, f'You become a {nm}.'), 'good')
+    return True
+
+
+EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 'rite': x_rite, 'shape': x_shape,
+        'melee': x_melee, 'adjacent': x_adjacent, 'around': x_around, 'bolt': x_bolt, 'shot': x_shot, 'volley': x_volley,
         'pierce': x_pierce, 'chain': x_chain, 'storm': x_storm, 'target_area': x_target_area, 'curse': x_curse,
         'leap': x_leap, 'self': x_self}

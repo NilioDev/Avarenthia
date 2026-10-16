@@ -14,7 +14,11 @@ throat. A clever foe goes for the healer. An archer picks the weakest it can see
 its back on what is hitting it hardest.
 
 Death: in hardcore a fallen hireling is dead, and his gear lies with his body. In softcore a temple can raise him, for
-a fee; if you die, he falls with you."""
+a fee; if you die, he falls with you.
+
+A beastmaster of the Houndwardens' Lodge may have a tamed beast as well: a wolf, a bear, a panther or a hawk. It follows
+the same rules (orders, threat, falling and raising), but it has no gear and takes no wage; it eats meat.
+Thralls (the dead you raise, the wolves you call) fight for you a while, then fall away."""
 import random
 
 from . import data as D
@@ -36,7 +40,18 @@ KINDS = {
     'mage': dict(name='Mage', hp=22, hpl=6, courage=.45, ranged=True, wage=1.4,
                  weapons=['staff', 'warstaff'], shield=False, armour='light', caster='bolt',
                  desc='Fire from a distance. Soft as butter up close.'),
+    'beast': dict(name='Beast', hp=30, hpl=9, courage=.9, ranged=False, wage=0, weapons=[], shield=False, armour='light',
+                  desc='Tamed in the wild. It knows you, and nobody else.'),
 }
+# what can be tamed, and what it becomes: (name, glyph, colour, life, damage, armour, from these kinds)
+TAME = {
+    'wolf': dict(name='wolf', ch='C', fg='#c8c8c8', hp=1.0, dmg=1.0, armour=4, kinds=('wolf', 'worg', 'winter_wolf', 'jackal')),
+    'bear': dict(name='bear', ch='q', fg='#b08050', hp=1.5, dmg=1.15, armour=8, kinds=('brown_bear', 'cave_bear')),
+    'panther': dict(name='panther', ch='f', fg='#8a80a0', hp=.9, dmg=1.3, armour=3, kinds=('panther', 'sabretooth')),
+    'hawk': dict(name='hawk', ch='B', fg='#c0a070', hp=.6, dmg=.8, armour=1, kinds=('giant_hawk', 'vulture')),
+}
+TAME_OF = {k: sp for sp, d in TAME.items() for k in d['kinds']}
+BEAST_NAMES = ['Grey', 'Ash', 'Bramble', 'Fang', 'Shadow', 'Tuft', 'Moss', 'Ember', 'Rook', 'Sorrel', 'Thistle', 'Brand']
 ORDERS = [('follow', 'Follow me', 'stays close, fights what comes at you'),
           ('defend', 'Defend me', 'only fights what is next to you'),
           ('attack', 'Attack my target', 'goes for the one you have aimed at (Tab)'),
@@ -74,23 +89,67 @@ class Merc:
         self.body = None                 # the Monster that stands for him on the current map
         self.body_map = None
         self.idle = 0
+        self.slot = 'merc'               # 'merc' (game.merc) or 'beast' (game.beast)
+        self.species = None
+        self.fury = 0                    # turns of Pack Fury
 
     @property
     def tpl(self):
         return KINDS[self.kind]
 
+    @property
+    def who(self):
+        """Its key in the monsters' threat tables."""
+        return 'b' if getattr(self, 'slot', 'merc') == 'beast' else 'm'
+
     def title(self):
+        if self.kind == 'beast':
+            return f'{self.name}, your {TAME[self.species]["name"]}'
         return f'{self.name}, {self.tpl["name"].lower()}'
 
+    def he(self):
+        return 'it' if self.kind == 'beast' else 'he'
 
-def get(game):
-    mc = getattr(game, 'merc', None)
+    def his(self):
+        return 'its' if self.kind == 'beast' else 'his'
+
+    def him(self):
+        return 'it' if self.kind == 'beast' else 'him'
+
+
+def get(game, slot='merc'):
+    mc = getattr(game, slot, None)
     return mc if mc and mc.state != 'gone' else None
 
 
-def with_you(game):
-    mc = get(game)
+def with_you(game, slot='merc'):
+    mc = get(game, slot)
     return mc if mc and mc.state == 'alive' else None
+
+
+def party(game):
+    """Your companions who are with you: the hireling and the tamed beast."""
+    return [mc for mc in (with_you(game, 'merc'), with_you(game, 'beast')) if mc]
+
+
+def fallen(game):
+    """The first of your companions who lies dead and can still be raised."""
+    for slot in ('merc', 'beast'):
+        mc = get(game, slot)
+        if mc and mc.state == 'fallen':
+            return mc
+    return None
+
+
+def drop(game, mc):
+    """It is gone for good: free its place."""
+    mc.state = 'gone'
+    if getattr(game, getattr(mc, 'slot', 'merc'), None) is mc:
+        setattr(game, getattr(mc, 'slot', 'merc'), None)
+
+
+def of_body(game, b):
+    return next((mc for mc in party(game) if mc.body is b), None)
 
 
 # ------------------------------------------------------------------ numbers
@@ -110,6 +169,8 @@ def fee_for(kind, lvl):
 def stats(game, mc):
     k = mc.tpl
     lvl = mc.lvl = level_for(game)
+    if mc.kind == 'beast':
+        return beast_stats(game, mc, lvl)
     s = {}
     s['max_hp'] = k['hp'] + lvl * k['hpl']
     armour = sum(it.armor_value() for slot, it in mc.gear.items() if it and slot != 'weapon' and not broken(it))
@@ -130,6 +191,42 @@ def stats(game, mc):
     if mc.hungry:
         s['dmg'] = (max(1, round(s['dmg'][0] * .85)), max(1, round(s['dmg'][1] * .85)))
     return s
+
+
+def beast_stats(game, mc, lvl):
+    sp = TAME[mc.species]
+    craft = game.player.disc.get('beastcraft', [0, 0])[0]
+    k = 1 + craft / 100                                    # a beastmaster's beast grows with the craft
+    s = dict(max_hp=round((30 + lvl * 9) * sp['hp'] * k), armour=sp['armour'] + lvl // 2)
+    s['dr'] = min(45, round(s['armour'] * 100 / (s['armour'] + 40 + lvl * 6)))
+    s['df'] = s['armour'] + 8 + lvl * 3
+    lo, hi = (2 + lvl // 2) * sp['dmg'] * k, (5 + lvl) * sp['dmg'] * k
+    if mc.fury > 0:
+        lo, hi = lo * 1.4, hi * 1.4
+    s['dmg'] = (max(1, round(lo)), max(2, round(hi)))
+    s['hit'] = 28 + lvl * 6 + craft // 2
+    s['block'] = 0
+    if mc.frail > 0:
+        s['max_hp'] = round(s['max_hp'] * .75)
+    if mc.hungry:
+        s['dmg'] = (max(1, round(s['dmg'][0] * .85)), max(1, round(s['dmg'][1] * .85)))
+    return s
+
+
+def tame(game, mon, species=None):
+    """A wild beast becomes yours."""
+    sp = species or TAME_OF.get(mon.k)
+    mc = Merc('beast', random.choice(BEAST_NAMES), level_for(game))
+    mc.slot, mc.species = 'beast', sp
+    mc.hp = stats(game, mc)['max_hp']
+    mc.paid, mc.potions = game.day, 0
+    if mon is not None and mon in game.map.mons:
+        game.map.mons.remove(mon)
+    game.beast = mc
+    sync(game)
+    if mc.body is not None and mon is not None:
+        mc.body.x, mc.body.y = mon.x, mon.y
+    return mc
 
 
 def broken(it):
@@ -245,9 +342,14 @@ def place_recruits(game, m, s, buildings, names):
 def sync(game):
     """Keep the hireling's body next to you: through stairs, doors, towns and the wilds. On the world map he simply
     walks with you."""
-    mc = with_you(game)
-    if not mc:
-        return
+    for mc in party(game):
+        _sync(game, mc)
+    th = getattr(game, 'thralls', None)
+    if th:                                            # thralls do not follow you off the map they were raised on
+        game.thralls = [b for b in th if b in game.map.mons]
+
+
+def _sync(game, mc):
     m = game.map
     b = mc.body
     if b is not None and mc.body_map != game.cur:
@@ -262,8 +364,13 @@ def sync(game):
             place(game, mc, b)
         return
     from .entities import make_npc
-    b = make_npc(game, mc.name, 'merc_ally', '#f0e0b0', 0, 0, True, ch='☻')
+    if mc.kind == 'beast':
+        sp = TAME[mc.species]
+        b = make_npc(game, mc.name, 'merc_ally', sp['fg'], 0, 0, True, ch=sp['ch'])
+    else:
+        b = make_npc(game, mc.name, 'merc_ally', '#f0e0b0', 0, 0, True, ch='☻')
     b.ally = True
+    b.comp = mc.slot
     b.awake = True
     mc.body, mc.body_map = b, game.cur
     refresh_body(game, mc)
@@ -290,7 +397,8 @@ def refresh_body(game, mc):
     b.maxhp = s['max_hp']
     b.hp = mc.hp = min(mc.hp, s['max_hp'])
     b.df, b.dmg, b.hit_r, b.lvl = s['df'], s['dmg'], s['hit'], mc.lvl
-    b.fg = D.hexrgb('#f0e0b0') if not mc.fleeing else D.hexrgb('#b0a080')
+    base = TAME[mc.species]['fg'] if mc.kind == 'beast' else '#f0e0b0'
+    b.fg = D.hexrgb(base) if not mc.fleeing else D.hexrgb('#b0a080')
 
 
 def is_body(o):
@@ -298,8 +406,9 @@ def is_body(o):
 
 
 def on_watch(game):
-    """A hireling who is with you keeps watch while you sleep in the open."""
-    return with_you(game)
+    """A hireling (or a beast) who is with you keeps watch while you sleep in the open."""
+    pt = party(game)
+    return pt[0] if pt else None
 
 
 # ------------------------------------------------------------------ who the monsters go for
@@ -324,6 +433,7 @@ def decay(m):
 def score(game, mon, who, b, mc):
     p = game.player
     x, y = (p.x, p.y) if who == 'p' else (b.x, b.y)
+    who = 'p' if who == 'p' else mc.who
     d = cheb(mon.x, mon.y, x, y)
     s = mon.__dict__.get('threat', {}).get(who, 0)
     beast = not smart(mon)
@@ -347,26 +457,30 @@ def score(game, mon, who, b, mc):
 
 
 def pick(game, mon):
-    """'p' for you, 'm' for the hireling. Sticky: it does not turn on a whim."""
-    mc = with_you(game)
-    b = mc.body if mc else None
-    if not mc or b is None or b not in game.map.mons or mc.fleeing:
+    """'p' for you, 'm' for the hireling, 'b' for the beast. Sticky: it does not turn on a whim."""
+    cands = {mc.who: mc for mc in party(game) if mc.body is not None and mc.body in game.map.mons and not mc.fleeing}
+    if not cands:
         return 'p'
-    sp, sm = score(game, mon, 'p', b, mc), score(game, mon, 'm', b, mc)
+    sc = {'p': score(game, mon, 'p', None, None)}
+    for w, mc in cands.items():
+        sc[w] = score(game, mon, 'c', mc.body, mc)
     cur = getattr(mon, 'aim', 'p')
-    if cur == 'p' and sm > sp * 1.3 + 3:
-        cur = 'm'
-    elif cur == 'm' and sp > sm * 1.3 + 3:
+    if cur not in sc:
         cur = 'p'
+    best = max(sc, key=sc.get)
+    if best != cur and sc[best] > sc[cur] * 1.3 + 3:
+        cur = best
     mon.aim = cur
     return cur
 
 
 def mon_turn(game, mon, df):
-    """A monster that has picked the hireling. Returns False to let it go for you as usual."""
-    if pick(game, mon) != 'm':
-        return False
-    mc = with_you(game)
+    """A monster that has picked the hireling or the beast (or stands next to a thrall). Returns False to let it go for
+    you as usual."""
+    w = pick(game, mon)
+    if w == 'p':
+        return thrall_fight(game, mon)
+    mc = next(c for c in party(game) if c.who == w)
     b = mc.body
     d = cheb(mon.x, mon.y, b.x, b.y)
     t = mon.tpl
@@ -418,7 +532,7 @@ def hurt(game, mc, dmg, mon=None, block=0.0):
         game.num(b.x, b.y, f'-{dmg}', (236, 140, 92))
     wear(game, mc, None, .3)
     if mc.hp <= 0:
-        fall(game, mc, mon.the() if mon else 'his wounds')
+        fall(game, mc, mon.the() if mon else f'{mc.his()} wounds')
     elif mc.hp < s['max_hp'] * .25 and not mc.fleeing and random.random() > mc.tpl['courage'] * (.5 + mc.morale / 140):
         mc.fleeing = 14
         mc.flees += 1
@@ -435,25 +549,24 @@ def fall(game, mc, cause):
         m.mons.remove(b)
     if game.player.hardcore:
         game.msg(f'{mc.name} is dead, slain by {cause}.', 'bad')
-        if b is not None:
+        if b is not None and mc.kind != 'beast':
             body = Item(game.new_id(), 'corpse', 'corpse')
             body.name = f'the body of {mc.name}'
             body.payload = dict(items=[it for it in mc.gear.values() if it], cargo={}, cost={}, gold=0)
             body.x, body.y = b.x, b.y
             m.items.append(body)
-        mc.state = 'gone'
-        game.merc = None
+        drop(game, mc)
     else:
-        game.msg(f'{mc.name} falls, slain by {cause}. A temple can raise him.', 'bad')
+        game.msg(f'{mc.name} falls, slain by {cause}. A temple can raise {mc.him()}.', 'bad')
         mc.state = 'fallen'
         mc.hp = 0
     mc.body = None
 
 
 def on_player_death(game):
-    """When you fall, your hireling falls with you."""
-    mc = with_you(game)
-    if mc:
+    """When you fall, your hireling (and your beast) fall with you."""
+    game.thralls = []
+    for mc in party(game):
         b = mc.body
         if b is not None:
             for gm in game.maps.values():
@@ -464,16 +577,19 @@ def on_player_death(game):
         mc.hp = 0
 
 
-def raise_fee(game):
-    mc = get(game)
-    return game.raise_fee(mc.lvl) // 2 if mc else 0
+def raise_fee(game, mc=None):
+    mc = mc or fallen(game) or get(game)
+    if not mc:
+        return 0
+    from . import guilds as GU
+    return round(game.raise_fee(mc.lvl) // 2 * GU.temple_mult(game))
 
 
-def raise_up(game):
-    mc = get(game)
+def raise_up(game, mc=None, free=False):
+    mc = mc or fallen(game)
     if not mc or mc.state != 'fallen':
         return False
-    fee = raise_fee(game)
+    fee = 0 if free else raise_fee(game, mc)
     if game.player.gold < fee:
         return False
     game.player.gold -= fee
@@ -482,7 +598,7 @@ def raise_up(game):
     mc.hp = stats(game, mc)['max_hp'] // 2
     mc.fleeing = 0
     sync(game)
-    game.msg(f'{mc.name} draws breath again. He will be weak for a day or two.', 'good')
+    game.msg(f'{mc.name} draws breath again. {mc.he().capitalize()} will be weak for a day or two.', 'good')
     return True
 
 
@@ -582,7 +698,7 @@ def strike(game, mc, b, mon, s, ranged=False):
     if crit:
         dmg = round(dmg * 1.6)
     wear(game, mc, 'weapon', .15)
-    add_threat(mon, 'm', dmg * (1.6 if mc.kind == 'defender' else 1))
+    add_threat(mon, mc.who, dmg * (1.6 if mc.kind == 'defender' else 1))
     mon.awake = True
     if mon.hp - dmg <= 0:
         game.msg(f'{mc.name} kills {mon.the()}.', 'good')
@@ -604,12 +720,16 @@ def shoots_clear(game, b, mon):
 
 
 def act(game, b):
-    """One turn of the hireling."""
-    mc = with_you(game)
-    if not mc or mc.body is not b:
+    """One turn of the hireling, the beast or a thrall."""
+    if getattr(b, 'thrall', 0):
+        return thrall_act(game, b)
+    mc = of_body(game, b)
+    if not mc:
         if b in game.map.mons:
             game.map.mons.remove(b)
         return
+    if mc.fury > 0:
+        mc.fury -= 1
     p = game.player
     s = stats(game, mc)
     refresh_body(game, mc)
@@ -649,7 +769,7 @@ def act(game, b):
             game.heal(amt, True)
             mc.cd = 4
             for o in foes:
-                add_threat(o, 'm', amt * .5)
+                add_threat(o, mc.who, amt * .5)
             return
         if mc.hp < s['max_hp'] * .5:
             mc.hp = min(s['max_hp'], mc.hp + 6 + mc.lvl * 3)
@@ -680,7 +800,7 @@ def act(game, b):
             if mc.kind == 'defender' and mc.cd == 0 and mc.gear['shield'] and random.random() < .3:
                 mc.cd = 5
                 tgt.hold = max(tgt.hold, 1)
-                add_threat(tgt, 'm', 10)
+                add_threat(tgt, mc.who, 10)
                 game.msg(f'{mc.name} slams his shield into {tgt.the()}.', 'good')
                 return
             strike(game, mc, b, tgt, s)
@@ -699,6 +819,9 @@ def act(game, b):
 def daily(game):
     """A day's wage, a day's food. Short him either and his mood sours; let it sour far enough and he walks."""
     from .money import fmt
+    bst = with_you(game, 'beast')
+    if bst:
+        feed_beast(game, bst)
     mc = get(game)
     if not mc or mc.state != 'alive':
         return
@@ -723,12 +846,32 @@ def daily(game):
         leave(game, mc, 'unpaid' if mc.morale < 15 else 'afraid')
 
 
+def feed_beast(game, mc):
+    """No wage: meat. Without it the beast grows thin and sour, and in the end it goes back to the wild."""
+    p = game.player
+    food = [it for it in p.inv if it.k == 'food']
+    meat = [it for it in food if getattr(it, 't', '') in ('meat', 'jerky', 'fish', 'smoked_fish')]
+    if meat:
+        game.remove_one(min(meat, key=lambda f: f.value()))
+        mc.hungry = False
+        mc.morale = min(100, mc.morale + 3)
+    else:
+        mc.hungry = True
+        mc.morale -= 15
+        game.msg(f'{mc.name} goes hungry. A beast needs meat.', 'bad')
+    if mc.morale < 15:
+        b = mc.body
+        if b is not None and b in game.map.mons:
+            game.map.mons.remove(b)
+        drop(game, mc)
+        game.msg(f'{mc.name} looks at you a long while, then turns and lopes off into the wild.', 'bad')
+
+
 def leave(game, mc, why):
     b = mc.body
     if b is not None and b in game.map.mons:
         game.map.mons.remove(b)
-    mc.state = 'gone'
-    game.merc = None
+    drop(game, mc)
     game.msg(f'{mc.name} has had enough. ' + ('"Find someone else to starve."' if why == 'unpaid' else
                                               '"This is no work for a living man."') + ' He leaves, and takes his gear.', 'bad')
 
@@ -740,16 +883,97 @@ def restock(game):
         mc.potions = max(mc.potions, 2)
 
 
+# ------------------------------------------------------------------ thralls: the raised dead, the called pack
+def thrall(game, k, x, y, turns, name=None, lvl=None):
+    """Something that fights at your side for a while: a corpse you raised, a wolf that answered your call."""
+    from .entities import make_monster, make_npc
+    src = make_monster(game, k, x, y, lvl or game.player.lvl)        # its strength, in the shape of an ally
+    o = make_npc(game, name or src.name, 'thrall', '#c8c8c8', x, y, False, ch=src.ch)
+    o.fg, o.hp, o.maxhp, o.dmg, o.df, o.lvl = src.fg, src.hp, src.maxhp, src.dmg, src.df, src.lvl
+    o.ally, o.awake, o.thrall, o.thrall_k = True, True, turns, k
+    game.map.mons.append(o)
+    game.__dict__.setdefault('thralls', []).append(o)
+    return o
+
+
+def thrall_act(game, b):
+    b.thrall -= 1
+    if b.thrall <= 0 or b.hp <= 0:
+        if b in game.map.mons:
+            game.map.mons.remove(b)
+        if game.visible(b.x, b.y):
+            k = getattr(b, 'thrall_k', 'wolf')
+            game.msg(f'{b.name} ' + ('crumbles to dust.' if D.MONSTERS[k].get('family') == 'undead' or k in D.UNDEAD
+                                     else 'falls still, and is only a corpse again.' if b.name.startswith('Risen')
+                                     else 'slips away into the wild.'), 'info')
+        return
+    foes = hostiles(game)
+    if not foes:
+        if cheb(b.x, b.y, game.player.x, game.player.y) > 2:
+            follow_step(game, b)
+        return
+    t = min(foes, key=lambda o: cheb(o.x, o.y, b.x, b.y))
+    if cheb(t.x, t.y, b.x, b.y) <= 1:
+        acc = (b.lvl * 6 + 30) / (b.lvl * 6 + 30 + t.df * .8)
+        if random.random() < max(.3, min(.9, acc)):
+            dmg = random.randint(*b.dmg)
+            add_threat(t, 'p', dmg * .5)
+            t.awake = True
+            if t.hp - dmg <= 0:
+                game.msg(f'{b.name} kills {t.the()}.', 'good')
+                t.hp = 0
+                game.kill(t)
+            else:
+                t.hp -= dmg
+                game.num(t.x, t.y, str(dmg), (200, 200, 160))
+        else:
+            game.num(t.x, t.y, 'miss', (150, 150, 150))
+        return
+    step_to(game, b, t.x, t.y) or follow_step(game, b)
+
+
+def thrall_fight(game, mon):
+    """A monster with a thrall at its throat and you out of reach turns on the thrall."""
+    p = game.player
+    if cheb(mon.x, mon.y, p.x, p.y) <= 1:
+        return False
+    near = [b for b in getattr(game, 'thralls', []) if b in game.map.mons and cheb(b.x, b.y, mon.x, mon.y) <= 1]
+    if not near or random.random() < .3:
+        return False
+    b = near[0]
+    if random.random() < game.mon_hit_chance(mon, b.df):
+        dmg = random.randint(*mon.dmg)
+        b.hp -= dmg
+        game.num(b.x, b.y, f'-{dmg}', (236, 140, 92))
+        if b.hp <= 0:
+            b.thrall = 0
+            thrall_act(game, b)
+    return True
+
+
 # ------------------------------------------------------------------ orders (h)
-def menu(game):
+def menu(game, slot=None):
     from . import events as EV
     from .money import fmt
-    mc = get(game)
+    if slot is None and get(game, 'merc') and get(game, 'beast'):
+        a, b = get(game, 'merc'), get(game, 'beast')
+        EV.ask(game, 'merc_which', 'Orders', 'Who for?', [(a.title(), 'merc'), (b.title(), 'beast'), ('Close', 'bye')])
+        return
+    mc = get(game, slot) if slot else (get(game, 'merc') or get(game, 'beast'))
     if not mc:
         game.msg('You have no hireling. Sellswords are for hire in the barracks of the cities.', 'info')
         return
     if mc.state == 'fallen':
-        game.msg(f'{mc.name} lies dead. A temple can raise him, for {fmt(raise_fee(game))}.', 'info')
+        game.msg(f'{mc.name} lies dead. A temple can raise {mc.him()}, for {fmt(raise_fee(game, mc))}.', 'info')
+        return
+    if mc.kind == 'beast':
+        s = stats(game, mc)
+        mood = 'content' if mc.morale >= 60 else 'restless' if mc.morale >= 35 else 'close to going back to the wild'
+        text = (f'{mc.title()}, level {mc.lvl}. Life {max(0, mc.hp)}/{s["max_hp"]}, damage {s["dmg"][0]}-{s["dmg"][1]}. '
+                f'No wage; it eats meat, one a day. It is {mood}.')
+        opts = [((('» ' if mc.order == k else '') + w), 'order:' + k) for k, w, _ in ORDERS]
+        opts += [('Set it free', 'dismiss'), ('Close', 'bye')]
+        EV.ask(game, 'merc', mc.name, text, opts, slot='beast')
         return
     s = stats(game, mc)
     gear = ', '.join(f'{it.name}' + (f' ({it.dur}/{it.mdur})' if getattr(it, 'mdur', 0) else '') for it in mc.gear.values() if it)
@@ -761,14 +985,30 @@ def menu(game):
     EV.ask(game, 'merc', mc.name, text, opts)
 
 
+def r_which(game, choice, ctx):
+    if choice in ('merc', 'beast'):
+        menu(game, choice)
+
+
 def r_menu(game, choice, ctx):
     from . import events as EV
-    mc = get(game)
+    slot = ctx.get('slot', 'merc')
+    mc = get(game, slot)
     if not mc:
         return
     if choice.startswith('order:'):
         mc.order = choice[6:]
-        game.msg(f'{mc.name}: "{ORDER_LINE[mc.order]}"', 'talk')
+        if mc.kind == 'beast':
+            game.msg(f'{mc.name} ' + {'follow': 'falls in at your heel.', 'defend': 'keeps close, hackles up.',
+                                      'attack': 'fixes its eyes on your target.', 'hold': 'sits, and stays.',
+                                      'passive': 'lies down, ears flat.'}[mc.order], 'talk')
+        else:
+            game.msg(f'{mc.name}: "{ORDER_LINE[mc.order]}"', 'talk')
+        return
+    if choice == 'dismiss' and mc.kind == 'beast':
+        EV.ask(game, 'merc_dismiss', mc.name, f'Set {mc.name} free? It will go back to the wild.',
+               [('Set it free', 'yes'), ('No', 'bye')], slot='beast')
+        return
     elif choice == 'give':
         cands = [it for it in game.backpack() if it.k == 'gear' and D.BASES[it.base]['slot'] in SLOTS and fits(mc, it)]
         if not cands:
@@ -818,14 +1058,14 @@ def r_give(game, choice, ctx):
 
 
 def r_dismiss(game, choice, ctx):
-    mc = get(game)
+    mc = get(game, ctx.get('slot', 'merc'))
     if mc and choice == 'yes':
         b = mc.body
         if b is not None and b in game.map.mons:
             game.map.mons.remove(b)
-        mc.state = 'gone'
-        game.merc = None
-        game.msg(f'{mc.name} nods, shoulders his pack and goes.', 'info')
+        drop(game, mc)
+        game.msg(f'{mc.name} looks back once, and lopes off into the wild.' if mc.kind == 'beast' else
+                 f'{mc.name} nods, shoulders his pack and goes.', 'info')
 
 
 def worn(game):
@@ -837,7 +1077,7 @@ def worn(game):
 
 def register():
     from . import events as EV
-    EV.RESOLVERS.update(merc=r_menu, merc_give=r_give, merc_dismiss=r_dismiss, merc_hire=r_hire)
+    EV.RESOLVERS.update(merc=r_menu, merc_give=r_give, merc_dismiss=r_dismiss, merc_hire=r_hire, merc_which=r_which)
 
 
 register()

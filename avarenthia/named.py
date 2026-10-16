@@ -41,7 +41,8 @@ PREY = {
     'paladin': ['knight'],
 }
 PREY_OF = {k: p for p, ks in PREY.items() for k in ks}
-GUILD_PREY = {'wardens': 'beast', 'dawn': 'undead', 'iron': 'warlord', 'magi': 'sorcerer', 'thieves': 'gang', 'coven': 'paladin'}
+GUILD_PREY = {'wardens': 'beast', 'dawn': 'undead', 'iron': 'warlord', 'magi': 'sorcerer', 'thieves': 'gang', 'coven': 'paladin',
+              'moot': 'beast', 'chapter': 'undead', 'ossuary': 'paladin', 'stillhand': 'warlord', 'hound': 'beast'}
 # who follows whom (those with a band in creatures.BANDS bring their band)
 FOLLOW = {'wolf': ['wolf'], 'hyena': ['hyena'], 'wolf_spider': ['wolf_spider', 'jumping_spider'],
           'web_weaver': ['spider_swarm', 'wolf_spider'], 'brood_spider': ['spiderling'], 'frost_spider': ['frost_spider'],

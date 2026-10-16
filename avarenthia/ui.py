@@ -889,21 +889,22 @@ class GameScreen(Screen):
         for i in range(bw):
             cv.put(x + 3 + i, 15, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
         from . import mercs as MC
-        mc = MC.get(g)
-        if mc:                                         # the hireling: a name, a small bar, his orders
+        for row, mc in ((16, MC.get(g, 'merc')), (17, MC.get(g, 'beast'))):
+            if not mc:                                 # the hireling and the beast: a name, a small bar, the orders
+                continue
             first = mc.name.split()[0]
-            cv.text(x, 16, first[:9], (240, 224, 176) if mc.state == 'alive' else DIM, PANEL)
+            cv.text(x, row, first[:9], (240, 224, 176) if mc.state == 'alive' else DIM, PANEL)
             if mc.state == 'alive':
                 mx_ = MC.stats(g, mc)['max_hp']
                 bw2 = 10
                 fill = int(bw2 * max(0, min(1, mc.hp / max(1, mx_))))
                 col = BAD if mc.hp < mx_ * .3 else (200, 180, 90) if mc.hp < mx_ * .6 else GOOD
                 for i in range(bw2):
-                    cv.put(x + 10 + i, 16, '█' if i < fill else '░', col if i < fill else LINE, PANEL)
+                    cv.put(x + 10 + i, row, '█' if i < fill else '░', col if i < fill else LINE, PANEL)
                 word = 'fleeing' if mc.fleeing else MC.ORDER_WORD[mc.order].split()[0].lower()
-                cv.text_right(x + PW - 1, 16, word[:6], BAD if mc.fleeing else DIM, PANEL)
+                cv.text_right(x + PW - 1, row, word[:6], BAD if mc.fleeing else DIM, PANEL)
             else:
-                cv.text_right(x + PW - 1, 16, 'fallen', BAD, PANEL)
+                cv.text_right(x + PW - 1, row, 'fallen', BAD, PANEL)
         cv.text(x, 18, 'SKILLS', DIM, PANEL)
         from . import hunger as HU
         hs = HU.state(getattr(p, 'food', 500))
@@ -1564,17 +1565,18 @@ class CharacterScreen(Modal):
     def page_disc(self, cv, x, y):
         p = self.game.player
         cv.text(x + 3, y, 'Disciplines grow by use, and decide which tomes you understand.', DIM, PANEL)
-        for i, line in enumerate(SK.DISC_ORDER):
-            yy = y + 2 + i * 2
-            r, prog = p.disc[line]
+        for i, line in enumerate(SK.DISC_ORDER):          # one line each: name, rank, progress, skills, next tier
+            yy = y + 2 + i
+            r, prog = p.disc.get(line, [0, 0])
             d = SK.DISCIPLINES[line]
             cv.text(x + 3, yy, d['name'], FG if r else DIM, PANEL)
             cv.text_right(x + 24, yy, str(r), GOLD if r else DIM, PANEL)
-            self.bar(cv, x + 27, yy, 20, prog / SK.need_for(r), INFO)
+            self.bar(cv, x + 27, yy, 16, prog / SK.need_for(r), INFO)
             nxt = next((k for k in SK.by_line(line) if k.unlock > r), None)
+            n = len(SK.by_line(line))
             known = sum(1 for k in SK.by_line(line) if k.id in p.known)
-            cv.text(x + 49, yy, f'{known}/5 skills', DIM, PANEL)
-            cv.text(x + 5, yy + 1, f'next tier at {nxt.unlock}' if nxt else 'all tiers open', scale(DIM, .8), PANEL)
+            cv.text(x + 45, yy, f'{known}/{n} skills', DIM, PANEL)
+            cv.text(x + 57, yy, f'next {nxt.unlock}' if nxt else 'all open', scale(DIM, .8), PANEL)
 
     def page_guilds(self, cv, x, y):
         from . import guilds as GU
@@ -1583,24 +1585,26 @@ class CharacterScreen(Modal):
         cv.text(x + 3, y, 'Two combat guilds at most; the crafts take anyone. Standing fades.',
                 DIM, PANEL, maxw=66)
         rows = [k for k in GU.ORDER if st[k]['found']]
-        for i, k in enumerate(rows):
+        for i, k in enumerate(rows):                    # one line each: name, rank (or kind), standing
             gd, s = GU.GUILDS[k], st[k]
-            yy = y + 2 + i * 2
+            yy = y + 2 + i
             col = D.hexrgb(gd['fg'])
-            cv.text(x + 3, yy, gd['name'], col if s['joined'] else scale(col, .55), PANEL, maxw=34)
+            cv.text(x + 3, yy, gd['name'], col if s['joined'] else scale(col, .55), PANEL, maxw=31)
             if s['joined']:
                 r = GU.rank(g, k)
-                cv.text(x + 38, yy, gd['ranks'][r], GOLD, PANEL, maxw=18)
+                cv.text(x + 35, yy, gd['ranks'][r], GOLD, PANEL, maxw=20)
                 lo = GU.RANK_REP[r]
                 hi = GU.RANK_REP[r + 1] if r < 4 else lo + 1
-                self.bar(cv, x + 3, yy + 1, 30, (s['rep'] - lo) / max(1, hi - lo), col)
                 idle = g.day - s['last']
-                cv.text(x + 36, yy + 1, f"{s['rep']} standing" + (' · fading' if idle > GU.DECAY_AFTER else ''),
-                        BAD if idle > GU.DECAY_AFTER else DIM, PANEL)
+                self.bar(cv, x + 56, yy, 10, (s['rep'] - lo) / max(1, hi - lo), BAD if idle > GU.DECAY_AFTER else col)
             else:
-                cv.text(x + 38, yy, 'left' if s['left'] else ('combat' if gd['kind'] == 'combat' else 'craft'), DIM, PANEL)
+                cv.text(x + 35, yy, 'left' if s['left'] else ('combat' if gd['kind'] == 'combat' else 'craft'), DIM, PANEL)
+        yy = y + 3 + len(rows)
+        if any(st[k]['joined'] for k in rows):
+            cv.text(x + 3, yy, 'The bar is your standing towards the next rank; red when it fades.', scale(DIM, .8), PANEL)
+            yy += 1
         if len(rows) < len(GU.ORDER):
-            cv.text(x + 3, y + 3 + len(rows) * 2, 'Some say there are guilds that do not hang out a sign.', scale(DIM, .8), PANEL)
+            cv.text(x + 3, yy, 'Some say there are guilds that do not hang out a sign.', scale(DIM, .8), PANEL)
 
     def page_life(self, cv, x, y):
         from . import lifeskills as LS
@@ -3411,9 +3415,9 @@ class TempleScreen(Modal):
         if self.god in GD.DEVOTABLE and mine != self.god:
             rows.append(('f', f"Devote yourself to {gd['name']}", 'forsake ' + GD.GODS[mine]['name'] if mine else 'a vow', not no))
         from . import mercs as MC
-        mc = MC.get(g)
-        if mc and mc.state == 'fallen':
-            fee = MC.raise_fee(g)
+        mc = MC.fallen(g)
+        if mc:
+            fee = MC.raise_fee(g, mc)
             rows.append(('g', f'Raise {mc.name} from the dead', fmt(fee), p.gold >= fee and not no))
         for i, (k, a, b, ok) in enumerate(rows):
             yy = y + 8 + i * 2
@@ -3460,9 +3464,9 @@ class TempleScreen(Modal):
             self.said = GD.pray(g, self.god)
         elif tok == 'g':
             from . import mercs as MC
-            mc = MC.get(g)
-            if mc and mc.state == 'fallen':
-                if MC.raise_up(g):
+            mc = MC.fallen(g)
+            if mc:
+                if MC.raise_up(g, mc):
                     self.said = f'"Rise." Breath shudders back into {mc.name}.'
                 else:
                     self.said = f'"The prayers for the dead are long, and the candles are dear. {fmt(MC.raise_fee(g))}."'
