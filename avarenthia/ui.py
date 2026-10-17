@@ -382,7 +382,7 @@ class NameScreen(Screen):
             sel = i == self.sel
             cv.text(x0, y, ('► ' if sel else '  ') + lab, GOLD if sel else FG)
             cv.text(x0 + 12, y, v, FG, (40, 32, 26) if i == 0 else None)
-        cv.text(x0 + 12, y0 + 1, 'Tab: a random name for your people', DIM)
+        cv.text(x0 + 12, y0 + 1, 'Tab: a random name', DIM)
         r = RC.RACES[self.race_key]
         rx = 58
         cv.text(rx, y0, r['name'], r['fg'])
