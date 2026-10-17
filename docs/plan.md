@@ -20,6 +20,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Approved: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data. Not built yet |
+| **Approved: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; libraries in the cities; books and stones lead to places on the map. Opens with Enter on the journal's Lore tab. Not built yet |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
@@ -138,6 +139,46 @@ Adventurer's Handbook**. Mockups and every text: `/mnt/project-files/handleiding
   spring Seedwake to Blossomreign, summer Highsun to Goldfield, autumn Harvestmoon to Mistwane), from `calendar.py`.
 - **Standing rule (in CLAUDE.md):** every change to the game updates the handbook in the same commit, and the build
   report quotes the new or changed handbook lines so Nilio can read them.
+
+## The chronicle: what your hero knows (approved, not built)
+
+Approved by Nilio on 17 October 2026. Proposal and mockups: `/mnt/project-files/kennis/` (`voorstel.md`,
+`1_chronicle_war.png`, `2_chronicle_old_days.png`, `chronicle_mockup.py`).
+
+- **Two books, one screen.** The handbook (`?`) says how the game works and is the same for every hero. The chronicle
+  (*Aldra's Chronicle*) says what this hero knows of this world. It uses the handbook's book screen: chapters with
+  counts on the left, the page on the right.
+- **Where:** the journal `e`, tab Lore, becomes its contents; Enter opens the book (as Enter opens the bestiary now).
+  No new key. Enter on a page shows its place on the world map (a battlefield, a tomb, a seat), like following a job.
+- **Chapters:** The Old Days, The Realms, Lords and houses, Peoples, Gods, Places, Wonders, Your deeds, Creatures (the
+  bestiary), Signs.
+- **Every fact has a source**, with a sign before it: `·` heard (may be wrong or old), `≡` read (a book or a stone),
+  `☼` seen (you were there); under it, small: from whom, where, which day.
+- **Rumours can prove false.** When you later see or read better, a red line goes under the old one ("Not so: you saw
+  King Oswin ride through Kelmarch on day 30"). Heard news comes through `news.py` as it does now: late, sometimes wrong.
+- **Gaps are named** without giving the answer: "Who leads Hale's army, you have not heard. The scribes of Hale would
+  know." A dot marks what you have not read yet; one gold log line: "Your chronicle grows: The War of the Ford."
+- **Where knowledge comes from:** talk (the `lore.py` lines and the news, now kept as heard); what you see yourself
+  (battlefields, lords you meet, a town that falls, named enemies you kill: Your deeds, also for the death screen);
+  inscribed stones in ruins (bump one: a line of the old days; Varnish letters must be learnt in a library first,
+  until then "Old letters you cannot read"); rare old books in dungeons (a few per world; read them, or sell them to
+  a library for some coin); libraries.
+- **Libraries:** only in cities, plus the dwarves' own (the Grudge Book of a hold) and the elves' (the hall of songs
+  under the Elder Tree). A building with shelves and a scribe; bump the scribe for a choice: The old days, The realms,
+  A lord or house, This city, Varnish letters. Costs a few hours and a few silver per subject, a day for something
+  big; members of the mages' guild read for free. A library is true but slow: the past and its own realm are right,
+  far news is old or missing.
+- **Why it matters in play:** leads (a book names a tomb, a lost battlefield or an old road of the Empire, and the
+  place goes on your map); Varnish letters open the stones, which point to the old ways (`hidden.py`); when a job
+  asks you to take a side, you see what you know of that lord; a dwarf whose grudge you know talks differently to you.
+- **History up to now:** the myth in `lore.py` stays the start. Making the world also works out a short history of the
+  last ~200 years, 30-60 events (kings, marriages, wars, fallen houses, founded towns), each tied to a place on the map
+  (battlefields from `living.py`, ruins, seats). After the start the realms engine writes on.
+- **Cut:** the realms layer does not show borders "as you know them"; it shows the borders as they are.
+- **Order:** 1. the handbook (it builds the book screen). 2. Chronicle part 1, small: the book in the Lore tab,
+  sources, heard and seen facts, Your deeds, the old myth, stones and old books; works without kingdoms.
+  3. Chronicle part 2, with the realms round: the made history, libraries, false rumours of lords and wars, leads.
+- **Save:** a list of facts (id, source, day, true or proven false). Bump `SAVE_VERSION`.
 
 ## Place names (approved, not built)
 
