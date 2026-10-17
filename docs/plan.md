@@ -508,6 +508,23 @@ regions. Wars never start or end, there is no diplomacy. This round replaces tha
 - **Witch circles**: small hidden circles on the moors and in the marshes that sell herbs, curses and foretellings;
   hunted by the church, secretly visited by barons.
 
+**Jobs for and against them** (through `jobs.py`, with `effects` on reputation: one side gains, the other loses;
+jobs for these powers pay modestly, betrayal pays more; each played on the spot, on foot, with one key):
+- Sea raiders: warn a village and set a watch on the beach / sail along and plunder a church for a share.
+- Barbarians: bring a hostage back from the highlands / negotiate hired troops for a baron.
+- Desert riders: bring a caravan safely through the dunes / betray a caravan to the riders.
+- Ice raiders: break the river ice before they come / guide their sledges over the ice.
+- Pass clans: show an army a hidden pass / help loose the avalanche.
+- Wreckers: put out the false lights on a storm night / help strip a wreck and keep quiet.
+- Canyon riders: scout their cliff village for a baron / kill the baron's spy in the canyon.
+- Mist folk: find a child who vanished in the mist / take an envoy through the marshes to them.
+- Island voyagers: return a stolen pearl / plunder a reef for a merchant.
+- Church: track down a witch / warn a witch that they are coming.
+- Border Watch: bring supplies to a fort / let a convict escape before he arrives.
+- Mercenaries: deliver their pay / bribe a captain to change sides.
+- Peasants: catch the leader of the revolt / smuggle arms to the peasants.
+- The pretender: carry a letter to his followers / betray his hiding place.
+
 **The realms map:** a new layer on the world map (next to today's factions layer under F). Each realm washes the
 land in its colour, with a bright border where two realms meet and a faint one between baronies; the realm's name
 in the middle, ♦ a king's seat, · a baron's; town names hidden in this layer. **Borders are organic**: every seat
