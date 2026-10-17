@@ -20,6 +20,14 @@ land in a world-map layer (keys 1-5, L), where-you-stand in the line under the m
 named by the data (`guide.py`); a new key is taught by one first-time tip (`guide.TIPS`), never by screen text.
 Keys are learnt by playing: don't add hints like "c: your numbers" to the screen.
 
+## The handbook rule (Nilio, 17 Oct 2026)
+`?` opens The Adventurer's Handbook (see "The handbook" in `docs/plan.md`; until it is built, its texts live in
+`/mnt/project-files/handleiding/teksten.md`). Every change to the game updates the handbook in the same commit: a new
+or changed system gets its sentences in the right chapter, a removed one loses them. In the build report, quote the
+new or changed handbook lines (Nilio reads them there). Style: plain short English; a key is always in square brackets,
+`[e]`, `[Shift+Tab]` (drawn as a gold keycap); a map sign is never in brackets but stands free in its own colour, with
+"the sign" before it where needed ("tomes, the sign ≡"); no parentheses around keys or signs.
+
 ## Code map (biggest files first)
 - `avarenthia/ui.py` all screens; `engine.py` game rules; `towns.py` settlement maps; `weather.py`; `world.py`;
   `terrain.py` (climate, rivers, wonders); `heightmap.py` (the shape of the land: Azgaar-like templates); `data.py` tiles, monsters, items; `missions.py` jobs; `jobs.py` the many job kinds (round 4); `guilds.py`; `mercs.py` hirelings and threat;

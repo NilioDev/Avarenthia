@@ -132,7 +132,11 @@ Adventurer's Handbook**. Mockups and every text: `/mnt/project-files/handleiding
 - **From the data, so it cannot go stale:** peoples, gods, months, rarity colours, money, Signs (`guide.signs`) and All
   the keys (from `MenuScreen.GROUPS`). The texts live in their own file, `avarenthia/handbook.py`.
 - **Tests:** every menu key appears in All the keys; every text fits (wrap, never cut).
-- **Standing rule once built:** every change to the game updates the handbook in the same commit, and the build
+- **Keys and signs look different:** a key is always written in square brackets in the text, `[e]`, and drawn as a
+  gold keycap on a dark patch; a map sign never has brackets and stands free in its own colour ("tomes, the sign ≡").
+- **The year is exact:** a table of the four seasons with their three months each (winter Longnight to Thawmoon,
+  spring Seedwake to Blossomreign, summer Highsun to Goldfield, autumn Harvestmoon to Mistwane), from `calendar.py`.
+- **Standing rule (in CLAUDE.md):** every change to the game updates the handbook in the same commit, and the build
   report quotes the new or changed handbook lines so Nilio can read them.
 
 ## Place names (approved, not built)
