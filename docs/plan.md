@@ -14,6 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
+| **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -163,6 +164,190 @@ script that drew them are in the project files under `natuur/` (`natuur_mockups.
 **Shown but not yet decided:** stone arch over a river (a free crossing), lookout crag (shows the map around it),
 fairy ring, ice cave at a glacier's edge, quicksand, bird cliffs (eggs in spring), and a use for the wonders that
 are only for looking at today (geysers, tar pits, crystal hills, glowing mushrooms).
+
+---
+
+## Herds, hunting and the crafts (approved, not built)
+
+Approved on 17 October 2026 in the thread on herd animals. Mockups and the script that drew them are in the project
+files under `kuddes/` (`kuddes_mockups.py`, seed 6; `voorstel.md` is the Dutch version of this section). Today there
+are no prey animals: beasts drop Raw Meat 35% of the time, there is no cooking, leather armour is only loot or shop
+stock. Planned as one new module (`hunting.py`); new tiles (hoof tracks, stretching frame); `SAVE_VERSION` goes up.
+
+**The world map must not fill up with animals.**
+- Game is a number per stretch of country (`world.areas`): how many herds graze there. It is not drawn.
+- In normal sight you see only hoof tracks `:` where a herd passed; they fade in a day or two, like tracks in the snow.
+- The herd itself (one `q`) shows only within 4-5 cells (a little further on open land and with a higher Hunting,
+  less in woods). Walk away and it is gone: it is never remembered on the map.
+- Only 2-4 great herds per world really travel, with the seasons: reindeer, wisent and wildebeest go north and up to
+  the high meadows in summer, south and down to the valleys in winter. Wolves and gnolls follow them. This is the
+  "herds moving south" left open in round 5.
+- Hunting a herd sends it on and lowers the game there for a while.
+
+**The animals** (real animals only). All hoofed animals are `q` (like the bear and the boar now), each with its own
+colour; the leader of a herd is a `Q`. Small game (hares, grouse) never shows on the world map: only on the hunting
+map or through foraging.
+
+| Land | Animals (colour) | Behaviour |
+|---|---|---|
+| Forest, old forest, birch wood | red deer (red-brown), wild boar, hare | the boar charges if you come too close |
+| Taiga, marsh | elk (dark brown) | kicks back |
+| Tundra | reindeer (grey-white), travels | flees far |
+| Steppe, grassland | aurochs/wisent (black), travels; wild horses (light brown) | the bull charges |
+| Mountains, alpine meadow | ibex (grey), wild goats | flees into the rocks |
+| Savanna, desert edge | gazelle (sand), wildebeest (slate grey), travels | fast, skittish |
+| Cold north | fox, ermine (small game, fine fur) | |
+
+**Hunting** happens on its own small map. Walk into the herd on the world map: a hunting ground like an encounter
+map now (`gen_wild`). The herd grazes; the leader watches. The wind is in the log (and one arrow at the edge): with
+the wind in your face they do not smell you; tall grass and trees hide you. No sneak key: the closer and the more
+open, the sooner they see you. Bow (Tab to aim) or spear; a hit animal runs on a few steps, a blood trail `·` leads to
+where it falls `%`. The rest flee off the map.
+
+**Skinning** (its own life skill). Walk into the carcass with a knife or dagger: cuts of meat (named by animal:
+venison, boar, aurochs...), a hide, sometimes antlers, horn or tusks. Hide quality by rank: torn, rough, good, fine.
+It works on the existing beasts too: wolf pelt, bear fur, crocodile hide. No loot piñata: a beast has a hide, not a
+sword.
+
+**Tanning takes time; this is how the game shows it.**
+1. A fresh hide rots after two days; its name says how long it has left (*Fresh Wildebeest Hide (1 day)*).
+2. In the field: walk into a stretching frame `╬` (a tool you carry, like the tent) with salt in your pack: an hour of
+   scraping and salting, then it is a *Salted Hide*, which does not rot. Salt is cheap in every village, or scoop it
+   from the salt flats.
+3. Then either the **tanner** in a village or town (you pay, and the leather is ready for you after 3 days: you must
+   come back), or **yourself** with oak bark (bought, or foraged in woods): the salted hide tans in your pack and
+   counts down (*Tanning Hide (4 days)*) and becomes leather after 5 days. Cheap, but you carry the weight.
+4. **Leatherworking** (life skill) at a workbench in town (the tanner's or saddler's): leather armour, boots, gloves,
+   a quiver, a waterskin, mending a tent. Plain good work, no magic; higher rank, better stats.
+- Money: plain hides sell for little; fine fur (fox, ermine, bear) sells much better in cities and the cold north,
+  which is trade. The tanner, salt and the workbench cost coin.
+
+**Hunting** (life skill): reading tracks (how fresh, which animal), seeing herds from further off, being noticed later.
+
+**Cooking** (life skill): no fixed recipes.
+- You start knowing only Roast Meat and Grilled Fish. Rank never gives recipes: it means fewer burnt dishes, more
+  portions from one pot, stronger and longer buffs, and at a high rank tasting what is in someone else's simple or
+  hearty dish (then you know it).
+- Walk into a fire (camp fire, fire pit, an inn's hearth): the dishes you know and have everything for, and at the
+  bottom **Try something new**: pick up to three things from your pack, one short choice at a time ("That's all").
+  - A match teaches the dish: *"You have made something good: Hunter's Stew. You will remember how."*
+  - One thing short gives a hint: *"Not bad. It wants something sharp."* (onion), *"... something sweet."* (honey,
+    apples), *"... something green."* (a herb).
+  - Nothing right gives Camp Mush: edible, half the food; the ingredients are gone.
+  - An unknown plant may go in; you find out what it was when you eat it. Deathcap in the stew is deathcap in you.
+- **Hearing it from others is rare, and only simple local dishes.** About one inn in five has a keeper who shares a
+  recipe: his simple local dish, with what grows and lives there. Herders, hunters and fishers on the road share one
+  now and then. The peoples have their own kitchens, shared only with friends, and only the plain dishes.
+- **Luxury dishes are never taught.** You find them in the pot yourself, or in a very rare cookbook (a few per world:
+  an old ruin, a rich merchant's chest, a castle kitchen); each book teaches one luxury dish.
+- What you know is kept with your knowledge (like plants), not in a separate menu.
+- Drying and smoking: walk into a drying rack with meat or fish; after a night it is Dried Meat or Smoked Fish. Salt
+  makes it keep longer.
+- Money: a hot meal at the inn stays easier; cooking yourself is cheaper and better on the road. Luxury dishes are
+  trade: a city cook pays well for them.
+- Each dish is one line (name, ingredients, where, who, effect), so more are easy to add.
+
+**Local ingredients** (new, per land): found by foraging (F), hunting, fishing, or sold in the villages there. Like
+the plants now, each world gives them its own look until you know them. Also new: salt, eggs, milk, butter.
+
+| Land | Plants and fruit | Animals and catch |
+|---|---|---|
+| Forest, old forest | wild thyme, beechnuts, ceps | venison, boar, hare |
+| Birch wood | birch sap, wild strawberries | hare, black grouse |
+| Taiga | juniper berries, spruce tips | elk, snow hare |
+| Tundra | crowberries, lichen | reindeer, ptarmigan |
+| Moor | heather honey, bilberries | black grouse, heath sheep |
+| Mountains, alpine meadow | gentian, wild garlic | ibex, goat's milk |
+| Grassland, steppe | wild carrot, mustard seed | aurochs, wild horse, quail |
+| Savanna | baobab fruit, wild millet | gazelle, wildebeest, guinea fowl |
+| Desert, oasis | dates, figs, cactus fruit | desert hare, goat's milk (camps) |
+| Mesa, canyon | wild sage, pine nuts | bighorn sheep |
+| Marsh, floodplain | watercress, calamus root | eel, frog legs, duck |
+| Mangrove, coast | samphire, coconut (by palms), seaweed | crab, mussels, oysters |
+| Jungle | wild pepper, vanilla, mango | forest hog, parrot eggs |
+| Karst | cave mushrooms | blind cavefish (exists) |
+
+**The dishes.** Who teaches it: **I** innkeeper, **T** travellers, herders, hunters or fishers, **P** a people,
+**S** only by trying, **B** a rare book. 29 simple, 25 hearty, 10 luxury = 64.
+
+Simple (local dishes; innkeepers and travellers teach only these):
+
+| Dish | Ingredients | Where | Who | Effect |
+|---|---|---|---|---|
+| Roast Meat | meat | everywhere | everyone knows it | no stomach ache |
+| Grilled Fish | fish | everywhere | everyone knows it | |
+| Mushroom Skewer | chanterelles | forest | S | |
+| Barley Porridge | barley + milk | farmland | I T | lasts long |
+| Berry Porridge | barley + berries | | S | |
+| Baked Apples | apples + honey | orchards | I | |
+| Fish Soup | fish + wild onion | river, lake | T (fishers) | |
+| Omelette | eggs + wild onion | farmland | I | |
+| Cheese Toast | bread + cheese | | I | |
+| Thyme Rabbit | hare + wild thyme | forest | T (hunters) | |
+| Birch Water | birch sap | birch wood | I | a little healing |
+| Elk Broth | elk + spruce tips | taiga | I | warm in winter |
+| Reindeer Jerky | reindeer + salt (on the rack) | tundra | T (herders) | keeps very long |
+| Crowberry Mash | crowberries + lichen | tundra | T | |
+| Heather Honey Cake | heather honey + barley | moor | I | |
+| Goat Milk Curd | goat's milk | mountains | T (herders) | |
+| Wild Garlic Bread | wild garlic + bread | alpine meadow | I | less often ill |
+| Steppe Kebab | aurochs + wild carrot | steppe | T | |
+| Millet Cakes | wild millet + honey | savanna | I | keeps well |
+| Date Porridge | dates + barley | oasis | I | |
+| Fig Paste | figs + honey | desert | T | keeps well |
+| Sage Mutton | bighorn + wild sage | mesa | I | |
+| Eel in Ale | eel + ale | marsh | I | |
+| Fried Frog Legs | frog legs + watercress | marsh | T | |
+| Steamed Mussels | mussels + samphire | coast | I | |
+| Crab Boil | crab + seaweed | coast, mangrove | T (fishers) | |
+| Coconut Fish | fish + coconut | mangrove | I | |
+| Mango Pork | forest hog + mango | jungle | I | |
+| Cave Mushroom Fry | cave mushrooms + salt | karst, dwarves | T | |
+
+Hearty (mostly by trying):
+
+| Dish | Ingredients | Who | Effect |
+|---|---|---|---|
+| Hunter's Stew | meat + wild onion + chanterelles | S | much food, warm in winter |
+| Forest Fry | chanterelles + wild onion + hazelnuts | S | filling, no meat |
+| Venison Pie | venison + bread + bilberries | S | |
+| Boar Ribs | boar + honey + salt | S | |
+| Aurochs Steak | aurochs + salt + mustard seed | S | strength (+damage) for a while |
+| Herb Broth | yarrow + wild onion | S, monasteries | faster healing |
+| Fever Tea | feverfew + honey | S, monasteries | less often ill, cures stomach ache |
+| Yarrow Tea | yarrow + honey | S | a little healing |
+| Moon Soup | moonpetal + fish | S | mana comes back faster |
+| Trail Cakes | hazelnuts + honey + barley | S | light and keeps: a home-made travel ration |
+| Shepherd's Supper | goat cheese + bread + wild onion | S | |
+| Desert Plate | dates + goat cheese + figs | S | no heat exhaustion for a day |
+| Juniper Elk | elk + juniper + salt | S | warm in winter, longer |
+| Grouse in Heather | black grouse + heather honey + thyme | S | |
+| Ibex Stew | ibex + gentian + wild garlic | S | less trouble from cold and height |
+| Gazelle Skewers | gazelle + wild millet + baobab fruit | S | faster on the world map for a day |
+| Pepper Crab | crab + wild pepper | S | |
+| Pine Nut Bread | pine nuts + barley + sage | S | keeps very long |
+| Mulled Wine | wine + honey + apples | S | warm in winter |
+| Nut Loaf | hazelnuts + barley + honey | P (halflings) | |
+| Second Breakfast | eggs + bread + cheese | P (halflings) | much food |
+| Deep Bread | barley + cave mushrooms + salt | P (dwarves) | keeps very long |
+| Mead Stew | meat + mead + wild onion | P (dwarves) | warm, poison resistance |
+| Rootcake | calamus root + hazelnuts + honey | P (gnomes) | |
+| Starlight Broth | moonpetal + yarrow + wild strawberries | P (elves) | mana and healing |
+
+Luxury (only by trying, or a rare book; they sell well in cities):
+
+| Dish | Ingredients | Effect |
+|---|---|---|
+| Kingsfoil Stew | kingsfoil + meat + wild onion | strong healing |
+| Feast of the Hunt | meat + ceps + wine | for you, your hireling and your beast |
+| Oysters in Wine | oysters + wine + samphire | mana and luck (better finds) for a day |
+| Golden Carp Supper | golden carp + butter + wild thyme | everything a little better for a day |
+| Vanilla Cream | vanilla + goat's milk + honey | the hireling's spirits up; a week less wages |
+| Spiced Haunch | venison + wild pepper + juniper | +damage and warm, long |
+| Oasis Pilaf | wild millet + dates + pine nuts | no hunger for two days |
+| Cep Omelette | eggs + ceps + butter | faster healing and mana |
+| Wyrm-egg Custard | a drake egg (very rare) + milk + honey | fire resistance for a day |
+| Elder Tree Nectar | sap of the Elder Tree (elven city) + wild strawberries + honey | full healing, once a week |
 
 ---
 
