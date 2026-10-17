@@ -19,6 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
+| **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -588,10 +589,52 @@ Warcraft counts as magic. Fighting skills get their own resource: stamina.
 - **Not rage.** A pool that fills by hitting starts every fight empty; that fits a careful roguelike badly.
 - **UI.** Three orbs side by side on the panel, always all three in sight: LIFE, STAMINA, MANA. The panel is 27 cells
   wide, so three 9-wide orbs fit exactly once the small ornament between them goes; rows 12-13 get three labels and
-  three numbers. Stamina gets its own colour (bronze or sand; green is poison, gold is XP). Built only after the
-  player overview/UI round has landed, which reworks the same panel and the orb drawing.
+  three numbers. Stamina gets its own colour (bronze or sand; green is poison, gold is XP). The UI round with the
+  round globes has landed on main, so the third orb builds on its `orb()` drawing.
 - **Save data** changes shape (a stamina value on the player): bump `SAVE_VERSION`.
 - Full list of schools, skills and guild techniques as they stand: project files `magie/scholen.md`.
+
+## Magic schools with a character of their own (approved, not built)
+
+Approved by Nilio on 17 October 2026, together with stamina above. Today almost every school runs bolt, curse or
+buff, area, bigger area. Each school gets one role and one rule of its own that shows on the map, and **eight tome
+skills instead of five**, at ranks **0, 5, 12, 20, 30, 42, 55, 70** (today `UNLOCKS` = 0/8/20/35/55). The bar stays
+at six, so more skills means real choices. 72 tome skills instead of 45: each tome turns up a little more rarely.
+Full tables with what each skill does: project files `magie/voorstel_scholen.md` (the list as it stands today:
+`magie/scholen.md`).
+
+| School | Role | Its own rule | The eight tome skills |
+|---|---|---|---|
+| Fire | strongest on one target, burning, also areas | burning enemies take more fire damage; fire leaves burning ground (dry summer grass can start a steppe fire) | Firebolt, Immolate, Searing Brand, Fireball, Ring of Fire, Pyre, Meteor, Heart of the Sun |
+| Frost | defence and slowing | ice on the map: ice walls block a corridor until they melt; frost on water makes ice to walk on | Frost Shard, Frost Armor, Ice Wall, Frost Nova, Ice Lance, Glacial Ward, Blizzard, Ice Tomb |
+| Storm | crowds | water conducts: wet enemies and those in water take more and pass the arc further | Spark, Static Field, Gust, Chain Lightning, Thunderclap, Ball Lightning, Call the Storm, Tempest |
+| Restoration | keep you and your company whole | every restoration spell that hurts does double to the undead | Mend, Ward, Renewal, Purify, Turn Undead, Sanctuary, Divine Light, Martyr's Grace |
+| Shadow | curses, and the price | Morrak always collects: from rank 30 shadow spells cost life as well as mana; the only school that steals life | Life Drain, Curse of Weakness, Mark of Doom, Shadow Bolt, Dread, Plague, Soul Harvest, Morrak's Bargain |
+| Necromancy | the dead fight for you | corpses are the resource: the fallen leave a corpse on the map, the stronger spells use one up; no more life stealing | Grave Touch, Bone Spear, Bone Shield, Raise Skeleton, Grave Mist, Bone Prison, Withering, Army of the Dead |
+| Nature | the ground | roots and thorns become tiles; 25% stronger in forest and grass, 25% weaker in desert, on ice and underground | Thorn Lash, Barkskin, Grasping Roots, Bramble Patch, Healing Rain, Swarm, Wrath of the Oak, Awaken the Wood |
+| Beastcraft | everything through your beast | without a beast most skills do nothing; Tame moves from the Houndwardens to the tomes (rank 5) | Feral Howl, Tame, Sic 'Em, Lick the Wounds, Call a Wolf, Bond of Blood, Alpha Roar, Spirit of the Pack |
+| Warcraft (martial, stamina) | shouts and stances | works with any weapon in hand | War Cry, Battle Rage, Brace, Second Wind, Iron Skin, Rally, Charge, Unbroken |
+
+**Guild techniques** stay, with their guild and skill ranks and prices; only those that now repeat a tome skill or
+no longer fit their school change:
+- Quiet Ossuary: Raise Dead raises the corpse as itself, with its own attacks; Bone Golem replaces Bone Armour
+  (uses three corpses, stays until it falls). Corpse Burst stays.
+- Green Moot: Entangle leaves root tiles (r2) instead of a stun; Spirit Totem becomes a totem tile that heals your
+  company beside it while it stands. Wild Shape stays.
+- Hallowed Chapter: Hallowed Ground makes hallowed tiles (r4) the undead cannot enter, instead of a stun.
+- Hollow Coven: Pact of Blood and Morrak's Hand cost life as well.
+- Houndwardens: Pack Fury drops to guild rank 1; new at rank 4, **Packmaster**: keep two tamed beasts instead of one.
+- Iron Company, Wardens, Thieves, Still Hand: unchanged, now paid in stamina.
+- The eight two-guild techniques stay; those mixing martial and magic cost both (Spellblade and Crusade stamina and
+  mana; Lichcraft mana and life).
+
+**On the map and in the UI.** New signs, each a tile named in the data so the look legend and Signs know them:
+burning ground, ice wall, root tiles, thorn tiles, bone walls, corpses, hallowed ground, the totem, Ball Lightning.
+A tile under a spell in a fight shows in IN SIGHT like any other danger. No new keys: skills stay on the bar (1-6)
+and are chosen in town (Z). Two beasts (Packmaster) take the beast's place in the company screen (h).
+**Save data** changes (known skills, second beast, corpses): bump `SAVE_VERSION`.
+
+---
 
 ## Round 6: livelier settlements (on hold)
 
