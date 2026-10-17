@@ -11,9 +11,8 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 
 | Status | What |
 |---|---|
-| **Built** | Rounds 1-4 (monsters and behaviours, named enemies, five guilds, the jobs); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes |
-| **Next: round 5** | Seasons on the world map, seasonal goods, a livelier world, sailing |
-| **Then: round 6** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters |
+| **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
+| **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -42,81 +41,27 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 - **The bigger world** (`lands.py`, `terrain.py`). 480 x 270; moor, old forest, birch wood, alpine meadow,
   floodplain, mangrove, mesa and canyon, oasis, karst with sinkholes, each with one effect; big patches broken up;
   named stretches of country; oasis camps and herders' huts; small wonders may appear twice.
+- **Round 5: seasons, seasonal goods, a livelier world, sailing** (`seasons.py`, `economy.py`, `living.py`,
+  `sailing.py`). Snow that comes and goes with a snow line (slow off the road), frozen lakes and rivers to walk on,
+  thin ice in the thaw and fords running high with meltwater, passes snowed shut, leaves turning and bare woods
+  (+1 sight), berries and mushrooms to pick in autumn, tracks in the snow, wolves near the roads and bears asleep in
+  winter, mud on the roads in spring, streams running dry late in summer, grass fires, herders down from the high
+  meadows in winter, Midsummer fires on the hills, short winter days. Apples and cider, wine, honey, wool and ice
+  (it melts in your cargo), cheap at harvest and dear out of season. Battlefields with the dead to search,
+  plundered villages that are rebuilt, a rival party of adventurers, ferries, crossroads shrines (give or steal),
+  ships and a pirate ship at sea. Skippers hire out a fishing boat, coaster or merchant ship by harbour size;
+  pirates board some voyages (fight on deck or give up the cargo; an armed escort keeps them off); a hidden pirate
+  cove with a fence, a tavern and the captain. Not built: herds moving south (there are no herd animals yet).
+- **Animations** (`anim.py`). Fires and forges flicker by day too, water glints, rivers run towards the sea, molten
+  iron breathes, ore, gems and rare items catch the light, rings where fish rise (fishing is better there), wisps
+  over the marsh at night, tainted land breathes, the portal and altar candles pulse, the lighthouse beam turns,
+  hostile camps glow on the world map at night. The screen only redraws on a timer while one is in view.
 
 ---
 
-## Round 5: seasons, a livelier world, sailing
+## Round 6: livelier settlements (on hold)
 
-Overworld only; the seasons inside settlements (fields, market day, rest day) belong to the livelier-settlements
-round. The calendar stays as it is: 30-day months, 90-day seasons. What exists already: weather by climate and
-season, blossom and falling leaves, aurora and fireflies, floodplains slow in spring, the autumn winter-supplies job.
-What is missing is that the map itself changes. Everything below must show on the map or work with a bump.
-
-### The land through the year
-1. **Snow cover.** In winter the ground of the cold north and the mountains turns white; the snow line creeps south
-   and downhill as winter deepens and draws back in spring. Off the road you walk slower; roads stay open.
-2. **Frozen water.** Northern rivers and lakes freeze: you can walk across, a short cut. Fishing goes through a hole
-   in the ice (bump it with your pole). With the thaw the ice breaks and the fords are impassable for a while.
-3. **Passes snowed shut.** In winter a mountain pass becomes a tile of deep snow you cannot get through; villagers
-   below warn you.
-4. **Leaf colour.** Broadleaf forest turns gold and red in autumn and stands bare and grey in winter; conifers stay
-   green. In bare forest you see one tile further.
-5. **Wildlife.** Bears sleep in winter, wolves come closer to the roads, herds move south in autumn; berries and
-   mushrooms to pick with a bump in autumn only.
-6. **Short winter days.** Dusk comes earlier in winter, so you travel more in the dark.
-7. **Pack ice.** The sea ice grows south in winter and closes the northernmost harbours.
-8. **Tracks in snow.** Beasts and monsters leave tracks on snow tiles; follow a wolf back to its den.
-9. **Thin ice.** Early in spring the ice cracks first (a warning), and gives way if you go on.
-10. **Mud season.** With the thaw, dirt roads are slow in spring.
-11. **Drought.** Late in summer small streams and pools dry up into dry beds; oases shrink.
-12. **Grass fire.** In dry grass a fire can break out in summer and spread visibly over the tiles; burnt land grows
-    back in spring.
-13. **Herders move.** The herders' huts on the high meadows are lived in only in summer; in winter the flocks are
-    down by the villages.
-14. **Midsummer fires.** On Midsummer night fires burn on the hilltops, seen from far away (like the Starfall, one
-    fixed night a year).
-
-### Goods by season
-Each good is cheap where and when it is harvested, dear elsewhere and out of season. Small margins: trade pays,
-but it is no gold mine.
-- **Grain**: cheapest after the harvest (Harvestmoon), dearest in late winter.
-- **Fruit and cider**: autumn, the temperate middle.
-- **Wine**: harvested in autumn in the warm south; it keeps, so you can hold it until it is dear.
-- **Honey**: summer, heath and meadows.
-- **Wool**: spring shearing in the hills and high meadows.
-- **Ice**: cut in the north in winter; carry it south in summer, but it melts in your cargo on the way.
-- **Furs**: dear in autumn, cheap in summer.
-
-### A livelier world
-- **Battlefields and ruins** (18). Factions clash on the map: a battle leaves a battlefield, and a plundered village
-  lies in ruins for a while before it is rebuilt.
-- **Rival adventurers** (21). A rival party roams the land and sometimes clears a dungeon before you get there;
-  sometimes you find their camp, sometimes their bodies.
-- **Ferries** (22). On broad rivers a ferry with a ferryman: bump him, pay a few copper, cross.
-- **Crossroads shrine** (24). Travellers leave offerings: add one yourself, or steal them, with consequences.
-- **Ships at sea** (25). Ships sail visibly between the harbours on the world map, pirate ships among them.
-
-### Sailing (hire only, no ship of your own)
-The harbours already have boats and ships by size (harbour.py); now they sail.
-- **Hire a passage**: bump a skipper on the quay and pick a destination from a list. Days pass on the voyage, as on
-  the dwarves' cart line, and your cargo comes along.
-- **Three kinds of ship, by harbour size**:
-  - **Fishing boat**: any harbour, hamlets too; cheap, short hops along the coast, little cargo.
-  - **Coaster**: from villages to villages and up; further, more cargo.
-  - **Merchant ship**: only between cities and metropolises with a deep berth; most cargo, the longest routes.
-  So a remote hamlet means changing to a fishing boat.
-- **Seasons at sea**: fewer sailings and more storms in winter; pack ice closes the northern harbours.
-- **Pirates**: on some routes your ship can be boarded. That is a real fight on deck (a deck map, with your hireling
-  and the crew), or you give up your cargo. An armed ship or an escort costs more, and almost nobody attacks it.
-- **Pirate coves**: one or two in the whole world, well hidden in a fjord, the mangroves or on a reef islet. Found
-  through rumours, a captured pirate with a chart, or by following a pirate ship at sea. Inside: a fence who buys
-  stolen goods and sells contraband without questions, a tavern, and the pirate captain. Trade there, or root it out.
-
----
-
-## Round 6: livelier settlements
-
-Approved on 16 October 2026 for the next round after round 5. Everything must show as a tile or work with a bump.
+Approved on 16 October 2026 for the next round after round 5; on hold until Nilio says go (17 October 2026). Everything must show as a tile or work with a bump.
 What exists: a day rhythm (work and home), day and night watch, drinkers, children, the lamplighter, hearth glow,
 doors shut at night, dogs, cats and livestock, job barks, hints, news through people.
 
