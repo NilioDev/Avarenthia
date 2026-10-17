@@ -508,6 +508,16 @@ regions. Wars never start or end, there is no diplomacy. This round replaces tha
 - **Witch circles**: small hidden circles on the moors and in the marshes that sell herbs, curses and foretellings;
   hunted by the church, secretly visited by barons.
 
+**Not everything in every world** (like `factions.py` today, dwarves 75%, horde 65%): each world draws its own mix,
+so every power stays special and every new game feels different.
+- **Always there, the backbone:** the empire with kings, barons and lesser houses; the church; dwarves; elves; the
+  orc tribes; the outlaws; the cult.
+- **Raiding peoples: two or three per world**, and only where their biome is big enough (no ice raiders without
+  tundra, no island voyagers without atolls).
+- **Small powers grow out of what happens** instead of being there from the start: a peasant revolt only after
+  hunger and heavy levies; a pretender only when someone loses a succession war; the Border Watch only with a
+  raiding people in the north; mercenary companies when there is war; witch circles where there is moor or marsh.
+
 **Jobs for and against them** (through `jobs.py`, with `effects` on reputation: one side gains, the other loses;
 jobs for these powers pay modestly, betrayal pays more; each played on the spot, on foot, with one key):
 - Sea raiders: warn a village and set a watch on the beach / sail along and plunder a church for a share.
