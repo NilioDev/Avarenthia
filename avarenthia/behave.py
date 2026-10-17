@@ -844,6 +844,9 @@ def on_death(game, mon):
         from .entities import Item
         game.spill(m, mon.x, mon.y, Item(game.new_id(), 'gold', 'gold', mon.stolen))
         game.msg('Your coin spills on the ground.', 'good')
+    if getattr(mon, 'carry', None):
+        game.spill(m, mon.x, mon.y, mon.carry)
+        game.msg(f'{mon.carry.display_name()} falls to the ground.', mon.carry.rar)
     sp = mon.tpl.get('split') or ('Splitting' in mon.mods and mon.k)
     if sp and sp in D.MONSTERS:
         from .entities import make_monster

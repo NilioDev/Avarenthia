@@ -393,12 +393,14 @@ def e_peddler(game):
         what = it.name
         lines = ' · '.join(it.lines()[:3])
     opts = [(f'Buy it for {fmt(price)}', 'buy' if game.player.gold >= price else None)]
-    opts.append(('No thanks', 'leave'))
+    opts += [('Take it from him', 'rob'), ('No thanks', 'leave')]
     ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "Something special for you, '
         f'friend: {what}." ({lines})', opts, item=it, price=price)
 
 
 def r_peddler(game, choice, ctx):
+    if choice == 'rob':
+        return rob_peddler(game, ctx['item'])
     if choice != 'buy':
         return
     it, price = ctx['item'], ctx['price']
@@ -407,6 +409,25 @@ def r_peddler(game, choice, ctx):
         game.msg(f'You buy {it.display_name()}.', it.rar)
     else:
         game.msg('Your bag is full.', 'bad')
+
+
+def rob_peddler(game, it):
+    """He and the sellsword he pays fight for the pack; now and then he runs with it instead. Kill or catch him for it."""
+    from . import crime as CR
+    p = game.player
+    lvl = max(2, game.world.danger_at(p.x, p.y) + 1)
+    CR.commit(game, 20, 'robbing a peddler', .6)
+    game.start_encounter(None, None, lvl, ['merchant', 'mercenary'], 0, intro='')
+    peddler = next((o for o in game.map.mons if o.k == 'merchant'), None)
+    if not peddler:
+        return
+    peddler.carry = it
+    if random.random() < .4:
+        peddler.fleeing = peddler.broken = True
+        game.msg('The peddler drops the lead rope and runs, the pack on his back. His sellsword draws steel.', 'bad')
+    else:
+        game.msg('"Thief!" The peddler pulls a knife and shouts for his sellsword.', 'bad')
+    game.msg('Defeat them, or walk off the edge of the map to escape.')
 
 
 def e_pilgrims(game):
