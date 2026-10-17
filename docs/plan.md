@@ -85,6 +85,8 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   or he runs with the pack). Choices you cannot afford show greyed out. Village bridges are one straight deck from
   bank to bank. Orchards are fenced. The fisherman goes home at night. Calmer spring blossom that leaves water and
   trees alone. A town's name no longer covers you on the world map.
+- **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
+  opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
 ## The UI rule for every new round
 

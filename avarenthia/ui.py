@@ -17,6 +17,7 @@ from . import calendar as CAL
 from . import dress as DR
 from . import evils as EVL
 from . import weather as WX
+from . import world as WO
 from . import missions as MS
 from . import skills as SK
 from . import towns as TW
@@ -466,8 +467,8 @@ class OptionsScreen(Screen):
         elif self.sel == 1 and tok == 'backspace':
             self.seed = self.seed[:-1]
         elif tok == 'enter':
-            self.app.start_game(E.Game(self.name, self.hardcore, int(self.seed) if self.seed else None, self.race, self.gender))
-            self.app.push(IntroScreen(self.app))
+            self.app.replace(IntroScreen(self.app, self.name, self.race, self.hardcore,
+                                         int(self.seed) if self.seed else None, self.gender))
         elif tok == 'esc':
             self.app.replace(NameScreen(self.app))
 
@@ -2839,24 +2840,24 @@ class BestiaryScreen(Modal):
         self.sel = max(0, min(self.sel, n - 1)) if n else 0
 
 
+SPIN = '|/-\\'
+
+
 class IntroScreen(Modal):
-    """A short opening for a new game, written for this world."""
+    """A short opening for a new game, read while the world is being made in the background."""
+    overlay = False
 
     @property
     def PAGES(self):
-        g = self.game
-        if not g:
-            return [('', '')] * 3
         from . import races as RC
-        p = g.player
-        r = RC.RACES[p.race]
+        r = RC.RACES[self.race]
         return [
             ('...',
              'Darkness. Then voices, far away. Then the smell of candle smoke.\n\n'
              'You open your eyes on a stone ceiling. Your head aches, your mouth is dry, and when you try to remember '
              'how you got here, there is nothing. No road, no home, no faces. Nothing at all.'),
             ('A name',
-             f'Only one thing is left: your name. {p.name}. You hold on to it like a rope in deep water.\n\n'
+             f'Only one thing is left: your name. {self.name}. You hold on to it like a rope in deep water.\n\n'
              f'Your hands are the hands of a {r["name"].lower()}. A padded coat lies beside your cot, the only thing '
              'that might be yours. Whatever you were before, nobody here knows it. Neither do you.'),
             ('{name}',
@@ -2867,30 +2868,83 @@ class IntroScreen(Modal):
              'Enter does the obvious thing, Tab picks a target, Esc opens the menu, ? is help.'),
         ]
 
-    def __init__(self, app):
+    def __init__(self, app, name=None, race='human', hardcore=False, seed=None, gender='other'):
         super().__init__(app)
+        import threading
         self.page = 0
+        self.frac, self.what = 0.0, 'Raising the land'
+        self.made = self.error = self.thread = None
+        if name is None:                   # the opening of a world that already exists
+            self.made = app.game
+            self.name, self.race = app.game.player.name, app.game.player.race
+            return
+        self.name, self.race = name, race
+
+        def make():
+            WO.PROGRESS = self.step
+            try:
+                self.made = E.Game(name, hardcore, seed, race, gender)
+            except Exception as ex:          # shown in the main thread, not lost with this one
+                self.error = ex
+            finally:
+                WO.PROGRESS = None
+        self.thread = threading.Thread(target=make, daemon=True)
+        self.thread.start()
+
+    def step(self, frac, what):
+        self.frac, self.what = max(self.frac, frac), what
+
+    @property
+    def ready(self):
+        if self.error:
+            raise self.error
+        return self.made is not None
+
+    @property
+    def ambient(self):
+        return not self.ready              # redraw while the world takes shape
+
+    def wait(self):
+        """Let the world finish (tests)."""
+        if self.thread:
+            self.thread.join()
+        return self.ready
+
+    def begin(self):
+        self.app.start_game(self.made)
 
     def render(self, cv):
         title, text = self.PAGES[self.page]
-        title = title.format(name=self.game.player.name if self.game else 'You')
-        x, y = self.box(cv, 72, 24, f' {title} ')
+        x, y = self.box(cv, 72, 24, f' {title.format(name=self.name)} ')
         yy = y + 2
         for para in text.split('\n\n'):
             yy += cv.wrap(x + 4, yy, 64, para, FG, PANEL) + 1
+        ready = self.ready
+        bw = 40
+        fill = bw if ready else int(bw * self.frac)
+        cv.text(x + 16, y + 19, '█' * fill, GOOD if ready else GOLD, PANEL)
+        cv.text(x + 16 + fill, y + 19, '░' * (bw - fill), DIM, PANEL)
+        what = 'The world is ready.' if ready else self.what + ' ' + SPIN[int(time.monotonic() * 6) % 4]
+        cv.text_center(W // 2, y + 18, what, GOOD if ready else DIM, PANEL)
         dots = '  '.join('•' if i == self.page else '○' for i in range(len(self.PAGES)))
         cv.text_center(W // 2, y + 21, dots, GOLD, PANEL)
         last = self.page == len(self.PAGES) - 1
-        cv.text_center(W // 2, y + 23, ' Enter: begin your journey ' if last else ' Enter: continue · Esc: skip ', DIM, PANEL)
+        hint = (' Enter: begin your journey ' if ready else ' The world is still taking shape... ') if last else \
+            ' Enter: continue · Esc: skip '
+        cv.text_center(W // 2, y + 23, hint, DIM, PANEL)
 
     def on_key(self, tok, shift):
+        last = len(self.PAGES) - 1
         if tok == 'esc':
-            self.app.pop()
-        elif tok in ('enter', 'space', 'right', 'np_enter', 'np6'):
-            if self.page < len(self.PAGES) - 1:
-                self.page += 1
+            if self.ready:
+                self.begin()
             else:
-                self.app.pop()
+                self.page = last
+        elif tok in ('enter', 'space', 'right', 'np_enter', 'np6'):
+            if self.page < last:
+                self.page += 1
+            elif self.ready:
+                self.begin()
         elif tok in ('left', 'np4', 'backspace') and self.page:
             self.page -= 1
 

@@ -15,6 +15,14 @@ SCALE = WORLD_W * WORLD_H / (320 * 180)        # the world grew from 320 x 180: 
 LINEAR = SCALE ** .5                            # and this many times wider
 
 
+PROGRESS = None     # set while a new world is made: called with (fraction done, what is being made)
+
+
+def progress(frac, what):
+    if PROGRESS:
+        PROGRESS(frac, what)
+
+
 def scaled(n):
     """A count made for the old 320 x 180 world, for the world as it is now."""
     return max(1, round(n * SCALE))
@@ -276,6 +284,7 @@ def gen_world(game):
         m = GameMap('over', 'over', 'The Wilds', w, h, GRASS)
         m.radius = 10
         from . import terrain as TR
+        progress(.0, 'Raising the land')
         gen = TR.generate(random.getrandbits(32), w, h)
         B = gen['B']
         names = sorted(set(B.ravel().tolist()))
@@ -321,11 +330,14 @@ def gen_world(game):
         reach_set = set(reach)
         world.sinks = [(x, y) for x, y in gen['sinks'] if flat[y * w + x] == 'sinkhole']
         world.oases = [(x, y) for x, y in gen['oases'] if flat[y * w + x] == 'oasis']
+        progress(.33, 'Naming the regions')
         _make_regions(m, world, reach, start)
         LANDS.name_areas(m, world)
         if not _place_settlements(game, m, world, reach_set, dist, start):
             continue
+        progress(.39, 'Laying the roads')
         _build_roads(m, world)
+        progress(.44, 'Digging dungeons and mines')
         _place_dungeons(m, world, reach, dist, start)
         for s in world.settlements:
             if s.kind == 'deephold':
@@ -338,6 +350,7 @@ def gen_world(game):
                 dg.mine = s.id
                 world.dungeons[did] = dg
                 s.deep_did = did
+        progress(.7, 'Settling the peoples')
         _assign_factions(m, world, start)
         from .folk import settle_peoples, place_glades
         settle_peoples(m, world)
@@ -352,6 +365,7 @@ def gen_world(game):
                 m.set(d.x, d.y, ENTR)
         from .foraging import setup_world
         setup_world(world)
+        progress(.71, 'Raising temples and ruins')
         from .sites import gen_sites
         gen_sites(game, m, world)
         place_glades(game, m, world, reach_set, scaled(4))

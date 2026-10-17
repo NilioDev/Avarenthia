@@ -182,6 +182,7 @@ class Game:
         over, world = WO.gen_world(self)
         self.maps['over'] = over
         self.world = world
+        WO.progress(.86, 'Opening the markets')
         for st in world.settlements:
             st.services = WO.settlement_services(st)
         GU.setup(world)
@@ -214,6 +215,7 @@ class Game:
             spot = W.free_around(self, m, priest.x, priest.y, 1)
             if spot:
                 p.x, p.y = spot[0]
+        WO.progress(.87, 'Waking the wild')
         p.life = max(1, p.life * 2 // 3)
         self.shops = {0: W.gen_shop(self)}
         WA.populate(self)
@@ -224,6 +226,7 @@ class Game:
         self.msg(f'You remember your name, {p.name}, and nothing else.', 'gold')
         self.msg('Talk to the priestess beside you. Press ? or F1 for help.', 'info')
         self.compute_fov()
+        WO.progress(1, 'The world is ready')
 
     # ------------------------------------------------------------ basics
     def hook(self):

@@ -33,6 +33,8 @@ def new_app(mode='soft', seed=None):
             app.key(ch)
     app.key('enter')
     assert isinstance(app.top, ui.IntroScreen), app.top
+    app.render()                     # the first page while the world is still being made
+    assert app.top.wait()
     for _ in range(3):
         app.render()
         app.key('enter')
@@ -524,6 +526,7 @@ def world_and_people():
     app.render()
     app.key('enter')
     app.key('enter')
+    assert app.top.wait()
     for _ in range(3):
         app.render()
         app.key('enter')
