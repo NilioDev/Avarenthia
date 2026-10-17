@@ -17,6 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
+| **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -61,6 +62,26 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   iron breathes, ore, gems and rare items catch the light, rings where fish rise (fishing is better there), wisps
   over the marsh at night, tainted land breathes, the portal and altar candles pulse, the lighthouse beam turns,
   hostile camps glow on the world map at night. The screen only redraws on a timer while one is in view.
+- **Keeping it clear** (`guide.py`, `ui.py`, 17 October 2026). The line under the map: where you are, danger as
+  five blocks, the job you follow. The panel: Money with the potions and cargo; the combat numbers moved to the
+  character sheet (c); IN SIGHT lists every enemy in view with a bar and what it is doing (who it goes for stays
+  hidden). Round life and mana globes (quarter-block glyphs added to the tileset). The journal in tabs: Jobs (Enter
+  follows one: an arrow on the world map's edge, the goal lit), Road, Standing, Lore (every sign you have seen, made
+  from the data), Log (500 lines, repeats counted "(x3)", important lines marked ►). Map layers 1-5: Land, Danger,
+  Factions, Jobs, Trade (L: next; F still Factions). Look (o) lists what every sign in view means; Enter on a
+  creature opens its bestiary page. The company screen (h): hireling and beast side by side, 1-5 orders for one or
+  both, gear by slot. A tip in the log the first time something is useful, once per hero.
+
+## The UI rule for every new round
+
+Everything new finds its place in what is there; no new screen per system, no new letter keys in play:
+- **A list or a record** (realms, lords and houses, dishes, herds, wonders) goes in a tab of the journal (e).
+- **Something spread over the land** (realms and borders, herds, seasons) goes in a layer of the world map (m),
+  with its own legend line. The realms layer becomes key 4, after Factions.
+- **Something about where you stand** (the realm or baron, the wind when hunting, the zone) goes on the line under
+  the map. **Something in a fight** goes in IN SIGHT.
+- **A new sign** is named by the data (tile names, `guide.py`), so the look legend and the journal's Signs know it.
+- **A new key** is taught by one tip in `guide.TIPS` the first time it is useful, not by text on the screen.
 
 ---
 
@@ -535,7 +556,7 @@ jobs for these powers pay modestly, betrayal pays more; each played on the spot,
 - Peasants: catch the leader of the revolt / smuggle arms to the peasants.
 - The pretender: carry a letter to his followers / betray his hiding place.
 
-**The realms map:** a new layer on the world map (next to today's factions layer under F). Each realm washes the
+**The realms map:** a new layer on the world map (key 4, after Factions; see *The UI rule*). Each realm washes the
 land in its colour, with a bright border where two realms meet and a faint one between baronies; the realm's name
 in the middle, ♦ a king's seat, · a baron's; town names hidden in this layer. **Borders are organic**: every seat
 grows over the land, and crossing a river or ridge costs a lot, so borders follow rivers and ridges, with a little

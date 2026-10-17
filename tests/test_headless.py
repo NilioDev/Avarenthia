@@ -1291,8 +1291,11 @@ def hirelings_and_camp():
     # orders through h
     app.screens = [ui.GameScreen(app)]
     app.key('h')
-    choose(app, 'order:defend')
+    assert isinstance(app.top, ui.CompanyScreen), app.top
+    app.render()
+    app.key('2')
     assert mc.order == 'defend'
+    app.key('esc')
     mc.order = 'follow'
     # into a dungeon, a long fight; the hireling follows down the stairs
     did = next(d for d in g.world.dungeons if g.world.dungeons[d].depth >= 2)
@@ -1522,6 +1525,108 @@ def text_fits():
         print(f'  cut in {k}: {sorted(v)[:6]}')
     assert not sentence, f'text cut short: {sentence}'
     print('text fits')
+
+
+def overview():
+    """Keeping it clear: the log counts repeats, the journal tabs, a followed job, map layers, the look legend, the
+    company screen, tips once, round globes."""
+    from avarenthia import mercs as MC, guide as GD
+    app = new_app('soft', seed=21)
+    g = app.game
+    p = g.player
+    # the log: the same line again is counted
+    n = len(g.log)
+    for _ in range(3):
+        g.msg('The rat bites you.', 'bad')
+    assert len(g.log) == n + 1 and g.log[-1][0] == 'The rat bites you. (x3)', g.log[-3:]
+    g.msg('Something else.')
+    g.msg('The rat bites you.', 'bad')
+    assert g.log[-1][0] == 'The rat bites you.'
+    # a job, followed: the journal's Enter, the status line under the map, the arrow on the world map
+    to_over(g, 0)
+    s = g.world.settlements[0]
+    s.board_day = -99
+    MS.refresh_board(g, s)
+    mi = next(m for m in s.board if MS.accept(g, s, m))
+    app.screens = [ui.GameScreen(app)]
+    app.key('e')
+    assert isinstance(app.top, ui.JournalScreen)
+    ui.JournalScreen.tab = 0
+    app.key('enter')
+    assert g.tracked() is mi, 'Enter did not follow the job'
+    for _ in ui.JournalScreen.TABS:
+        app.render()
+        app.key('right')
+        app.key('down')
+    app.key('esc')
+    app.render()
+    line = ''.join(app.cv.ch[ui.MAP_H * ui.W:(ui.MAP_H + 1) * ui.W])
+    assert '►' in line, line
+    # the map: five layers, by number and by L, in both views
+    app.key('m')
+    for z in (1, 0):
+        ui.WorldMapScreen.zoom = z
+        for k in '12345':
+            app.key(k)
+            app.render()
+            assert ui.WorldMapScreen.layer == int(k) - 1
+        app.key('l')
+        assert ui.WorldMapScreen.layer == 0
+    app.key('f')
+    assert ui.WorldMapScreen.layer == 2
+    app.key('f')
+    app.key('esc')
+    # a fight: IN SIGHT in the panel, the look legend, Enter on a creature opens its bestiary page
+    g.start_encounter(None, terrain=D.GRASS, lvl=2, keys=['wolf', 'wolf', 'wolf'])
+    for i, o in enumerate([o for o in g.map.mons if not o.is_npc]):
+        o.x, o.y = p.x + 2 + i, p.y
+        g.map.t[o.y * g.map.w + o.x] = D.GRASS
+        g.bestiary.setdefault(o.k, [g.day, 0])
+    g.compute_fov()
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    panel = '|'.join(''.join(app.cv.ch[y * ui.W + ui.PX:(y + 1) * ui.W]) for y in range(ui.H))
+    assert 'IN SIGHT' in panel and 'Money' in panel and 'Accuracy' not in panel
+    cr, land, _things = GD.in_view(g)
+    assert cr and land, (cr, land)
+    app.key('o')
+    wolf = next(o for o in g.map.mons if not o.is_npc)
+    app.top.x, app.top.y = wolf.x, wolf.y
+    app.render()
+    assert 'IN VIEW' in ''.join(app.cv.ch[ui.PX:ui.W])
+    app.key('enter')
+    assert isinstance(app.top, ui.BestiaryScreen), app.top
+    app.screens = [ui.GameScreen(app)]
+    # the company: a hireling and a beast, one order for both, gear by slot
+    mc = MC.Merc('defender', 'Test Shield', 5)
+    MC.outfit(g, mc)
+    mc.hp = MC.stats(g, mc)['max_hp']
+    g.merc = mc
+    bst = MC.tame(g, next(o for o in g.map.mons if not o.is_npc), 'wolf')
+    MC.sync(g)
+    assert len(MC.party(g)) == 2
+    app.key('h')
+    assert isinstance(app.top, ui.CompanyScreen), app.top
+    app.render()
+    app.key('3')
+    assert mc.order == 'attack' and g.beast.order == 'attack'
+    app.key('right')
+    app.key('5')
+    assert mc.order == 'passive' and g.beast.order == 'attack'
+    app.key('enter')
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    # tips: once each, one at a time
+    g.tips = set()
+    n = len(g.log)
+    for _ in range(4):
+        app.key('.')
+    said = [t for t, _c in g.log[n:] if t.startswith('Tip:')]
+    assert len(said) == len(set(said)) and said, said
+    # signs and the round globes
+    assert len(GD.signs(g)) > 5
+    assert ui.two_tone([(0, 0, 0), (0, 0, 0), (255, 255, 255), (255, 255, 255)])[0] == '▀'
+    print('overview ok:', len(said), 'tips,', len(GD.signs(g)), 'signs')
 
 
 def creatures_and_hunts():
@@ -2732,7 +2837,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

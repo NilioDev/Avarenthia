@@ -5,7 +5,8 @@ All characters of the font are in the sheet, so any of them can be used in the g
 # ASCII, then the characters the game already uses, then everything else the font has
 EXTRA = '─│┌┐└┘┤├┬┴┼█▀▄▌▐░▒▓·…◄►▲▼×•♣♠■∩≈♦§⌂Ω☼♥↑↓→←√°±ⁿ═║π╬≡○¥▬☺Π†∆Ψ¤╔╗╚╝╠╣╦╩ß□Θ¡'
 MORE = '\xa0¢£ª«¬²µ¶º»¼½¿ÄÅÆÇÉÑÖÜàáâäåæçèéêëìíîïñòóôö÷ùúûüÿƒΓΣΦαδεστφ‼₧↔↕↨∙∞∟≤≥⌐⌠⌡╒╓╕╖╘╙╛╜╞╟╡╢╤╥╧╨╪╫◘◙☻♀♂♪♫'
-CHARS = ''.join(chr(c) for c in range(32, 127)) + EXTRA + MORE
+QUAD = '▖▗▘▝▙▛▜▟▚▞'       # quarter blocks, drawn by hand (tools/make_tileset.py): round globes
+CHARS = ''.join(chr(c) for c in range(32, 127)) + EXTRA + MORE + QUAD
 CHARMAP = [ord(c) for c in CHARS]
 COLUMNS = 16
 ROWS = (len(CHARS) + COLUMNS - 1) // COLUMNS

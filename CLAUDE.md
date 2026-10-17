@@ -14,6 +14,12 @@ The plan for the next rounds of work is in `docs/plan.md`; read it before buildi
 - Monster names: myth and folklore names are fine; names invented by RPG publishers (beholder, mind flayer, owlbear,
   displacer beast, Shadowdark's own creatures...) get our own names.
 
+## The UI rule (Nilio, 17 Oct 2026)
+Every new version must fit the layout, see "The UI rule" in `docs/plan.md`: lists go in a journal tab, things on the
+land in a world-map layer (keys 1-5, L), where-you-stand in the line under the map, fights in IN SIGHT; signs are
+named by the data (`guide.py`); a new key is taught by one first-time tip (`guide.TIPS`), never by screen text.
+Keys are learnt by playing: don't add hints like "c: your numbers" to the screen.
+
 ## Code map (biggest files first)
 - `avarenthia/ui.py` all screens; `engine.py` game rules; `towns.py` settlement maps; `weather.py`; `world.py`;
   `terrain.py` (climate, rivers, wonders); `heightmap.py` (the shape of the land: Azgaar-like templates); `data.py` tiles, monsters, items; `missions.py` jobs; `jobs.py` the many job kinds (round 4); `guilds.py`; `mercs.py` hirelings and threat;
@@ -25,7 +31,7 @@ The plan for the next rounds of work is in `docs/plan.md`; read it before buildi
   named stretches of country (`world.areas`), oasis camps and herders' huts.
   `seasons.py` the year on the world map (snow, ice, passes, leaves, fires; dusk/dawn by season); `living.py` battlefields,
   plundered villages, rivals, ferries, crossroads shrines, ships; `sailing.py` skippers, voyages, pirates, the cove;
-  `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
+  `guide.py` the look legend, Signs and first-time tips; `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
 - World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.

@@ -360,6 +360,8 @@ def complete(game, m, sids):
     w.wanderers = [x for x in w.wanderers if x.mission != m.id]
     p.inv = [it for it in p.inv if getattr(it, 'mission', None) != m.id]
     from .money import fmt
+    game.__dict__.setdefault('jobs_done', []).append((m.title, m.reward + bonus))
+    del game.jobs_done[:-10]
     game.msg(f"Job done: {m.title}. You receive {fmt(m.reward + bonus)}{f' ({fmt(bonus)} reputation bonus)' if bonus else ''}.", 'gold')
     game.num(p.x, p.y, '+' + fmt(m.reward + bonus, True), (242, 196, 67), True)
 

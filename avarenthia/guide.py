@@ -1,0 +1,123 @@
+"""Keeping the game readable: what each sign means, and a tip the first time something new turns up.
+
+Signs are never written by hand: they come from what you have seen, so the list is always right. The look mode (o)
+shows the signs in view; the journal (Lore) shows every sign you have seen on the world map and the map you are on.
+A tip is one line in the log, once per hero, the first time it is useful; it names the key, so the keys are learnt
+by playing."""
+from . import data as D
+from . import look as LOOK
+from . import missions as MS
+
+
+def cell_name(m, i):
+    """What a cell is called: the land's own name on the world map, the tile's name elsewhere."""
+    t = m.t[i]
+    bio = getattr(m, 'biome', None)
+    if m.kind == 'over' and bio is not None and t in LAND:
+        from .describe import BIOME_DESC
+        b = m.biome_names[bio[i]]
+        if b in BIOME_DESC:
+            return BIOME_DESC[b][0]
+    return D.TILES[t].name.capitalize()
+
+
+LAND = {D.WATER, D.GRASS, D.FOREST, D.MOUNTAIN, D.SWAMP, D.HILLS, D.SAND, D.TREE, D.SHALLOW}
+
+
+def legend(m, cells, out=None, most=4):
+    """{name: [(glyph, colour)...]} for the cells given, a few glyphs each, in the order first met."""
+    out = {} if out is None else out
+    for i in cells:
+        ch, fg, _bg = LOOK.get(m, i)
+        if ch == ' ':
+            continue
+        row = out.setdefault(cell_name(m, i), [])
+        if len(row) < most and all(c != ch for c, _f in row):
+            row.append((ch, fg))
+    return out
+
+
+def in_view(g):
+    """What you can see right now: (creatures, land, things), each a list of ([(glyph, colour)...], name)."""
+    m, p = g.map, g.player
+    r = 30
+    cells = [y * m.w + x for y in range(max(0, p.y - r), min(m.h, p.y + r + 1))
+             for x in range(max(0, p.x - r), min(m.w, p.x + r + 1)) if g.visible(x, y)]
+    land = [(v, k) for k, v in legend(m, cells).items()]
+    crs = {}
+    if m.kind == 'over':
+        for wd in g.world.wanderers:
+            if g.visible(wd.x, wd.y):
+                row = crs.setdefault(wd.name, [wd.ch, wd.fg, 0])
+                row[2] += 1
+    else:
+        for o in m.mons:
+            if g.visible(o.x, o.y) and not getattr(o, 'lurk', False) and not getattr(o, 'invis', 0):
+                row = crs.setdefault(o.name, [o.ch, o.fg, 0])
+                row[2] += 1
+    creatures = [([(ch, fg)], nm + (f' x{n}' if n > 1 else '')) for nm, (ch, fg, n) in crs.items()]
+    things = {}
+    for it in m.items:
+        if g.visible(it.x, it.y):
+            things.setdefault(it.display_name(), (it.glyph(), it.color()))
+    return creatures, land, [([(ch, col)], nm) for nm, (ch, col) in things.items()]
+
+
+def signs(g):
+    """Every sign you have seen: the world map's land and places, then the map you stand on, as
+    ([(glyph, colour)...], name); a heading (None, name) before the map you stand on."""
+    om = g.maps['over']
+    seen = [i for i, s in enumerate(om.seen) if s]
+    rows = legend(om, seen)
+    for poi in g.world.pois:
+        if poi.found:
+            rows.setdefault(NAMED_KIND.get(poi.kind, poi.name), [(poi.glyph[0], poi.glyph[1])])
+    out = [(v, k) for k, v in sorted(rows.items())]
+    m = g.map
+    if m is not om and getattr(m, 'seen', None) is not None:
+        here = legend(m, [i for i, s in enumerate(m.seen) if s])
+        out.append((None, m.name))
+        out += [(v, k) for k, v in sorted(here.items())]
+    return out
+
+
+NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war camp', 'stones': 'Standing stones',
+              'wagon': 'Abandoned wagon', 'waystation': 'Waystation', 'milestone': 'Milestone'}
+
+
+# ------------------------------------------------------------------ first-time tips
+TIPS = {
+    'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
+    'over': 'Tip: m opens the map; on it, the keys 1 to 5 show the land, danger, factions, jobs and trade.',
+    'job': 'Tip: e opens the journal. Enter on a job follows it, and an arrow on the edge of the map points the way.',
+    'merc': 'Tip: h gives orders to your company; there, 3 sends them at your target.',
+    'dungeon': 'Tip: x explores by itself until something turns up.',
+    'night': 'Tip: R rests. Out in the open you make camp: a fire keeps beasts off but draws robbers.',
+    'many': 'Tip: o lets you look around; it shows what every sign in view means.',
+}
+
+
+def tip(g, key):
+    """Say a tip once per hero."""
+    done = g.__dict__.setdefault('tips', set())
+    if key in done or key not in TIPS:
+        return False
+    done.add(key)
+    g.msg(TIPS[key], 'info')
+    return True
+
+
+def check(g):
+    """After every action: the first tip whose moment has come (one at a time, so the log stays calm)."""
+    from . import mercs as MC
+    from . import towns as TW
+    m = g.map
+    if g.dead:
+        return
+    foes = g.visible_hostiles()
+    moments = [('foe', bool(foes)), ('many', len(foes) >= 3), ('over', m.kind == 'over'), ('job', bool(MS.active(g))),
+               ('merc', bool(MC.party(g))), ('dungeon', m.kind == 'dungeon'),
+               ('night', m.kind in ('over', 'wild') and TW.is_night(g))]
+    for key, now in moments:
+        if now and tip(g, key):
+            return

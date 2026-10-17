@@ -47,6 +47,8 @@ BAD = (236, 106, 92)
 LOGCOL = {'talk': (200, 190, 160), '': FG, 'bad': BAD, 'good': GOOD, 'info': INFO, 'gold': GOLD,
           'magic': D.RARITY_COLOR['magic'], 'rare': D.RARITY_COLOR['rare'], 'unique': D.RARITY_COLOR['unique'], 'normal': FG}
 
+LOG_MARKED = ('gold', 'unique', 'rare')
+
 DIRS = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0),
         'np8': (0, -1), 'np2': (0, 1), 'np4': (-1, 0), 'np6': (1, 0), 'np7': (-1, -1), 'np9': (1, -1), 'np1': (-1, 1), 'np3': (1, 1),
         'home': (-1, -1), 'pageup': (1, -1), 'end': (-1, 1), 'pagedown': (1, 1)}
@@ -183,6 +185,9 @@ class App:
             if m.hit_flash:
                 self.hit_times[m.id] = now
                 m.hit_flash = 0
+        if not self.auto and isinstance(self.top, GameScreen):
+            from . import guide as GD
+            GD.check(g)
         req, g.request = g.request, None
         if g.dead and not isinstance(self.top, DeathScreen):
             E.delete_save()
@@ -212,6 +217,8 @@ class App:
         elif req[0] == 'choice':
             if g.pending:
                 self.push(ChoiceScreen(self))
+        elif req[0] == 'company':
+            self.push(CompanyScreen(self, req[1]))
         elif req[0] == 'talkpick':
             self.push(TalkScreen(self, req[1]))
         elif req[0] == 'win':
@@ -466,6 +473,53 @@ class OptionsScreen(Screen):
 
 
 # ====================================================================== game screen
+QUAD_CH = {0: ' ', 1: '▘', 2: '▝', 3: '▀', 4: '▖', 5: '▌', 6: '▞', 7: '▛', 8: '▗', 9: '▚', 10: '▐', 11: '▜', 12: '▄',
+           13: '▙', 14: '▟', 15: '█'}
+
+
+def two_tone(cols):
+    """Four pixels (TL TR BL BR) as one cell: the two colours furthest apart, each pixel the nearer of them.
+    Returns (glyph, fg, bg)."""
+    def dist(a, b):
+        return sum((a[i] - b[i]) ** 2 for i in range(3))
+    a, b = max(((p, q) for p in cols for q in cols), key=lambda pq: dist(*pq))
+    mask = 0
+    fa, fb = [], []
+    for i, c in enumerate(cols):
+        if dist(c, a) <= dist(c, b):
+            mask |= 1 << i
+            fa.append(c)
+        else:
+            fb.append(c)
+
+    def avg(cs):
+        return tuple(sum(c[k] for c in cs) // len(cs) for k in range(3))
+    fg, bg = avg(fa), avg(fb) if fb else avg(fa)
+    return QUAD_CH[mask], fg, bg
+
+
+def danger_blocks(dg):
+    """Danger as one to five blocks: the roads are one, the deep wild five."""
+    return max(1, min(5, 1 + dg // 3))
+
+
+def intent(g, o):
+    """What an enemy you can see is up to, in a word or two (who it goes for stays hidden, see mercs.py)."""
+    p = g.player
+    if getattr(o, 'fleeing', False):
+        return 'fleeing', BAD
+    if o.hold or getattr(o, 'frozen', False):
+        return 'stunned', INFO
+    if not o.awake:
+        return 'unaware of you', GOOD
+    d = cheb(o.x, o.y, p.x, p.y)
+    if d <= 1:
+        return 'at your side', GOLD
+    if o.tpl.get('ranged') or o.tpl.get('caster'):
+        return 'shooting' if d <= 7 else 'closing in', GOLD
+    return 'closing in', DIM
+
+
 class GameScreen(Screen):
     def view_origin(self):
         g = self.game
@@ -477,17 +531,68 @@ class GameScreen(Screen):
     def render(self, cv):
         g = self.game
         self.draw_map(cv)
+        self.draw_pointer(cv)
         for x in range(MAP_W):
             cv.put(x, MAP_H, '─', LINE, BG)
         for y in range(H):
             cv.put(MAP_W, y, '│', LINE, BG)
         cv.put(MAP_W, MAP_H, '┤', LINE, BG)
-        cv.text(2, MAP_H, f' {g.loc_name()} ', DIM, BG)
-        if self.app.auto:
-            cv.text_center(MAP_W // 2, MAP_H, f' {self.app.auto_label}... any key to stop ', GOLD, BG)
-        cv.text_right(MAP_W - 2, MAP_H, f' turn {g.turn} ', DIM, BG)
+        self.draw_status(cv)
         self.draw_log(cv)
         self.draw_panel(cv)
+
+    def draw_pointer(self, cv):
+        """On the world map: the goal of the job you follow, lit when in view, else an arrow on the edge towards it."""
+        g = self.game
+        mi = g.tracked()
+        if not mi or g.map.kind != 'over' or not hasattr(self, 'origin'):
+            return
+        (tx, ty), _w = MS.target_pos(g, mi)
+        vx, vy = tx - self.origin[0], ty - self.origin[1]
+        if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
+            if int(time.monotonic() * 2.5) % 2 == 0:
+                cv.put_bg(vx, vy, (200, 150, 40))
+            return
+        p = g.player
+        dx, dy = tx - p.x, ty - p.y
+        sx, sy = p.x - self.origin[0], p.y - self.origin[1]       # from you along the line to the goal, to the edge
+        k = min((((MAP_W - 1 - sx) if dx > 0 else sx) / abs(dx)) if dx else 9e9,
+                (((MAP_H - 1 - sy) if dy > 0 else sy) / abs(dy)) if dy else 9e9)
+        ex = max(0, min(MAP_W - 1, round(sx + dx * k)))
+        ey = max(0, min(MAP_H - 1, round(sy + dy * k)))
+        ch = ('→' if dx > 0 else '←') if abs(dx) >= abs(dy) else ('↓' if dy > 0 else '↑')
+        cv.put(ex, ey, ch, (20, 16, 12), GOLD)
+
+    def draw_status(self, cv):
+        """The line under the map: where you are, how dangerous it is, the job you follow."""
+        g = self.game
+        m = g.map
+        right = None
+        mi = g.tracked()
+        if mi:
+            (tx, ty), where = MS.target_pos(g, mi)
+            ox_, oy_ = g.world_pos()
+            d = cheb(tx, ty, ox_, oy_)
+            right = (f' ► {mi.title if len(mi.title) <= 30 else where}', f' {d} {E.DIR_SHORT[E.dir_name(tx - ox_, ty - oy_)]} ' if d else ' here ')
+        if self.app.auto:
+            cv.text_center(MAP_W // 2, MAP_H, f' {self.app.auto_label}... any key to stop ', GOLD, BG)
+            return
+        x = 2
+        name = f' {g.loc_name()} '
+        room = MAP_W - 4 - (len(right[0]) + len(right[1]) + 2 if right else 11) - 10
+        cv.text(x, MAP_H, name[:room], FG, BG)
+        x += min(len(name), room)
+        if m.kind in ('over', 'wild') and not getattr(m, 'underground', False):
+            wx, wy = g.world_pos()
+            n = danger_blocks(g.world.danger_at(wx, wy))
+            cv.text(x, MAP_H, '· ', DIM, BG)
+            cv.text(x + 2, MAP_H, '■' * n, (GOOD, GOOD, GOLD, BAD, BAD)[n - 1], BG)
+            cv.text(x + 2 + n, MAP_H, '□' * (5 - n) + ' ', LINE, BG)
+        if right:
+            cv.text_right(MAP_W - 2, MAP_H, right[1], INFO, BG)
+            cv.text_right(MAP_W - 2 - len(right[1]), MAP_H, right[0], GOLD, BG)
+        else:
+            cv.text_right(MAP_W - 2, MAP_H, f' turn {g.turn} ', DIM, BG)
 
     # ---------------------------------------------------------- map
     def draw_map(self, cv):
@@ -896,13 +1001,15 @@ class GameScreen(Screen):
         for idx in range(len(g.log) - 1, -1, -1):
             text, cls = g.log[idx]
             wrapped = wrap_text(text, MAP_W - 2)
-            for ln in reversed(wrapped):
-                lines.append((ln, cls, idx >= g.log_mark))
+            for j, ln in reversed(list(enumerate(wrapped))):
+                lines.append((ln, cls, idx >= g.log_mark, j == 0))
             if len(lines) >= H - LOG_Y:
                 break
         lines = lines[:H - LOG_Y][::-1]
-        for i, (ln, cls, new) in enumerate(lines):
+        for i, (ln, cls, new, first) in enumerate(lines):
             col = LOGCOL.get(cls, FG) if new else scale(LOGCOL.get(cls, FG), .55)
+            if first and cls in LOG_MARKED:                # what matters: a mark in the margin
+                cv.put(0, LOG_Y + i, '►', col)
             cv.text(1, LOG_Y + i, ln, col)
 
     # ---------------------------------------------------------- side panel
@@ -988,10 +1095,12 @@ class GameScreen(Screen):
         cv.text(x + 2, 33, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
         cv.text(x + 14, 33, 'W', GOLD, PANEL)
         cv.text(x + 16, 33, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
-        cv.text(x, 35, 'P', GOLD, PANEL)
-        cv.text(x + 2, 35, f'Portal x{tp}', FG if tp else DIM, PANEL)
+        cv.text(x, 34, 'P', GOLD, PANEL)
+        cv.text(x + 2, 34, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
-        cv.text_right(x + PW - 1, 35, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
+        cv.text_right(x + PW - 1, 34, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
+        cv.text(x, 35, 'Money', DIM, PANEL)
+        cv.text_right(x + PW - 1, 35, fmt(p.gold, True), GOLD, PANEL)
         from . import crime as CR
         wanted = CR.wanted_in(g)
         if wanted:
@@ -999,12 +1108,7 @@ class GameScreen(Screen):
             cv.text(x, 37, 'WANTED', BAD, PANEL)
             cv.text(x + 7, 37, '*' * st, GOLD, PANEL)
             cv.text_right(x + PW - 1, 37, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
-        rows = [('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}" + (' (bow)' if s['ranged'] else '')), ('Accuracy', str(s['ar'])),
-                ('Defense', str(s['def']) + (f" -{s['dr']}%" if s['dr'] else '')),
-                ('Critical', f"{s['crit']}%" + (f"  leech {s['leech']}%" if s['leech'] else '')), ('Money', fmt(p.gold, True))]
-        for i, (a, b) in enumerate(rows):
-            cv.text(x, 39 + i * 2, a, DIM, PANEL)
-            cv.text_right(x + PW - 1, 39 + i * 2, b, GOLD if a == 'Money' else FG, PANEL)
+        self.draw_insight(cv, x, 39)
         if p.stat_pts:
             cv.text(x, 49, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
         elif p.buffs:
@@ -1027,34 +1131,58 @@ class GameScreen(Screen):
             cv.text(cx + len(key) + 1, H - 1, word, scale(DIM, .8), PANEL)
             cx += len(key) + len(word) + 2
 
+    def draw_insight(self, cv, x, y):
+        """IN SIGHT: every enemy you can see, nearest first, with a bar and what it is doing; your target lit."""
+        g = self.game
+        p = g.player
+        foes = sorted(g.visible_hostiles(), key=lambda o: (cheb(o.x, o.y, p.x, p.y), o.id))
+        if not foes:
+            return
+        cv.text(x, y, 'IN SIGHT', DIM, PANEL)
+        tid = getattr(p, 'target', None)
+        for i, o in enumerate(foes[:4]):
+            yy = y + 1 + i * 2
+            bg = (52, 40, 28) if o.id == tid else PANEL
+            if o.id == tid:
+                cv.fill(x, yy, PW, 2, ' ', FG, bg)
+            cv.put(x, yy, o.ch, o.fg, bg)
+            cv.text(x + 2, yy, o.name, FG, bg, maxw=PW - 13)
+            fr = max(0, o.hp) / max(1, o.maxhp)
+            n = int(10 * fr + .99) if o.hp > 0 else 0
+            for j in range(10):
+                cv.put(x + PW - 10 + j, yy, '█' if j < n else '░', (BAD if fr < .4 else GOOD) if j < n else LINE, bg)
+            word, col = intent(g, o)
+            cv.text(x + 2, yy + 1, word, col, bg, maxw=PW - 2)
+        if len(foes) > 4:
+            cv.text(x, y + 9, f'and {len(foes) - 4} more', DIM, PANEL)
+
     def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
-        """A glass globe of life or mana, drawn with half blocks at twice the height: shaded liquid with a
-        rippling surface, a dark empty top, a highlight on the glass and a gold rim."""
+        """A glass globe of life or mana, drawn with quarter blocks (two by two pixels a cell, square pixels, so it is
+        truly round): shaded liquid with a rippling surface, a dark empty top, a highlight on the glass and a gold rim."""
         import math
         frac = max(0.0, min(1.0, frac))
         liquid = alt or col
         t = time.monotonic()
-        ph = h * 2
-        cx, cy = (w - 1) / 2, (ph - 1) / 2
-        rx, ry = w / 2 + .1, ph / 2 + .2            # a touch over half: the globe fills its box and stays round
+        pw, ph = w * 2, h * 2
+        cx, cy = (pw - 1) / 2, (ph - 1) / 2
+        r = min(pw, ph) / 2 + .15
         level = ph - frac * (ph - 1.5) - .75          # the row of the liquid's surface
 
         def inside(px, py):
-            dx, dy = (px - cx) / rx, (py - cy) / ry
+            dx, dy = (px - cx) / r, (py - cy) / r
             return dx * dx + dy * dy <= 1.0
 
         def pixel(px, py):
             if not inside(px, py):
                 return None
-            dx, dy = (px - cx) / rx, (py - cy) / ry
+            dx, dy = (px - cx) / r, (py - cy) / r
             d = dx * dx + dy * dy
-            # the rim: every pixel on the edge of the globe, diagonals included, so the glass is closed all round
             edge = any(not inside(px + ox_, py + oy_) for ox_ in (-1, 0, 1) for oy_ in (-1, 0, 1))
-            if edge or d > .84:                      # lit from the top left
+            if edge:                                 # the gold rim, lit from the top left
                 k = .5 - .5 * (dx + dy) / 1.4
                 return mix((70, 50, 26), (230, 186, 110), k)
             shade = 1 - .55 * d                      # rounder: darker towards the edge
-            wave = math.sin(px * 1.3 + t * 2.4) * .45 + math.sin(px * .7 - t * 1.6) * .3
+            wave = math.sin(px * .65 + t * 2.4) * .45 + math.sin(px * .35 - t * 1.6) * .3
             if py >= level + wave:
                 depth = (py - level) / max(1.0, ph - level)
                 c = mix(scale(liquid, 1.25), scale(liquid, .55), depth)
@@ -1063,22 +1191,17 @@ class GameScreen(Screen):
                     c = mix(c, (255, 240, 220), .35)
             else:
                 c = scale(mix((26, 20, 26), scale(liquid, .25), .35), shade)
-            hx, hy = (px - (cx - rx * .38)) / (rx * .28), (py - (cy - ry * .45)) / (ry * .22)
+            hx, hy = (px - (cx - r * .38)) / (r * .28), (py - (cy - r * .45)) / (r * .22)
             if hx * hx + hy * hy < 1:                # a highlight on the glass
                 c = mix(c, (255, 255, 255), .55 * (1 - (hx * hx + hy * hy)))
             return c
 
         for row in range(h):
             for c_ in range(w):
-                top, bot = pixel(c_, row * 2), pixel(c_, row * 2 + 1)
-                if top is None and bot is None:
+                quad = [pixel(c_ * 2 + i % 2, row * 2 + i // 2) for i in range(4)]     # TL TR BL BR
+                if all(q is None for q in quad):
                     continue
-                if top is None:
-                    cv.put(x + c_, y + row, '▄', bot, PANEL)
-                elif bot is None:
-                    cv.put(x + c_, y + row, '▀', top, PANEL)
-                else:
-                    cv.put(x + c_, y + row, '▀', top, bot)
+                cv.put(x + c_, y + row, *two_tone([PANEL if q is None else q for q in quad]))
 
     def draw_target(self, cv, x, y):
         g = self.game
@@ -2290,9 +2413,10 @@ class HelpScreen(Modal):
             ('Tab  Shift+Tab', 'Pick a target: the next or the previous enemy in sight'),
             ('q   w', 'Drink a health or a mana potion'),
             ('i', 'Your bag: what you carry and wear'),
-            ('m', 'The map of the realm; in a town, the town plan (Tab: the realm)'),
+            ('m', 'The map of the realm, in layers (1-5: land, danger, factions, jobs, trade);'),
+            ('', 'in a town, the town plan (Tab: the realm)'),
             ('t', 'Talk to whoever is near you'),
-            ('h', 'Your hireling: orders, gear, how he is doing'),
+            ('h', 'Your company: the hireling and the beast; 1-5 give the order'),
             ('Esc', 'Let go of your target; else the menu: everything else you can do'),
             ('', 'In a window, Esc goes back. Save and quit is in the menu, under Game.'),
             ('?', 'This help'),
@@ -2309,7 +2433,8 @@ class HelpScreen(Modal):
         ]),
         ('The world', [
             ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
-            ('Danger', 'Inspect the land (O) to see its danger. Night brings the dead and bigger packs.'),
+            ('Danger', 'The line under the map shows the danger where you stand (■■□□□); the map shows it all (2).'),
+            ('', 'Night brings the dead and bigger packs.'),
             ('Knowledge', 'At first you only know where Thornfield lies. Signposts (┬), townsfolk and'),
             ('', 'travellers tell you where places lie, but the land you only learn by walking it.'),
             ('Π ruin', 'An old ruin with a way down. Small, with a skill tome at the bottom.'),
@@ -2352,7 +2477,7 @@ class HelpScreen(Modal):
             ('', 'Standing fades if you do nothing for a guild, but not below your rank.'),
             ('Secrets', 'Some guilds hang out no sign. Listen for rumours, and watch the chalk marks.'),
             ('Harbours', 'A jetty in a hamlet, a quay in a town, a deep berth and a harbour wall in a city;'),
-            ('', 'boats, ships, fish markets and sailors full of tales. No sailing yet.'),
+            ('', 'boats and ships to rent, fish markets and sailors full of tales.'),
         ]),
         ('Coin and company', [
             ('Money', 'Jobs pay modestly; trade is where the money is. Coin goes on beds, meals, repairs,'),
@@ -2366,7 +2491,8 @@ class HelpScreen(Modal):
             ('Hirelings', 'Sellswords sign on in the barracks of the cities, now and then in an inn: a fee,'),
             ('', 'a daily wage and their food. Unpaid or unfed, they sour, and in the end they walk.'),
             ('', 'Defender, warrior, archer, healer or mage; four pieces of gear that wear like yours.'),
-            ('Orders (h)', 'Follow, defend me, attack my target (Tab), hold position, or stay out of it.'),
+            ('Orders (h)', 'Follow, defend me, attack my target (Tab), hold position, or stay out of it: 1-5'),
+            ('', 'on the company screen, for one of them or both at once.'),
             ('Danger', 'Monsters choose whom to go for: who hurt them lately, who stands in their way, who'),
             ('', 'looks soft. Beasts go for the nearest; clever foes for the healer. A defender takes'),
             ('', 'blows meant for you. Hurt badly, a hireling may run, and come back when it is over.'),
@@ -2504,6 +2630,28 @@ class LookScreen(Modal):
                     cv.text(2, yy, part, FG, (24, 20, 16))
                     yy += 1
         cv.text(1, H - 1, 'move: look around · Tab: next thing · Esc: done', DIM, (24, 20, 16))
+        self.draw_legend(cv)
+
+    def draw_legend(self, cv):
+        """The panel, while you look: what every sign in view means."""
+        from . import guide as GD
+        x = PX
+        cv.fill(MAP_W + 1, 0, W - MAP_W - 1, H, ' ', FG, PANEL)
+        cv.text(x, 0, 'IN VIEW', GOLD, PANEL)
+        yy = 2
+        for head, rows in zip(('CREATURES', 'LAND', 'ON THE GROUND'), GD.in_view(self.game)):
+            if not rows or yy > H - 4:
+                continue
+            cv.text(x, yy, head, DIM, PANEL)
+            yy += 1
+            for glyphs, name in rows:
+                if yy > H - 3:
+                    break
+                for j, (ch, col) in enumerate(glyphs[:4]):
+                    cv.put(x + j, yy, ch, col, PANEL)
+                cv.text(x + 5, yy, name, FG, PANEL, maxw=PW - 5)
+                yy += 1
+            yy += 1
 
     def on_key(self, tok, shift):
         d = DIRS.get(tok)
@@ -2517,7 +2665,16 @@ class LookScreen(Modal):
         elif tok == 'tab' and self.targets:
             self.ti = (self.ti + 1) % len(self.targets)
             self.x, self.y = self.targets[self.ti]
-        elif tok in ('esc', 'enter', 'o', ';', 'space'):
+        elif tok in ('enter', 'np_enter'):
+            o = self.game.map.mon_at(self.x, self.y) if self.game.map.kind != 'over' else None
+            if o and not o.is_npc and o.k in self.game.bestiary:
+                self.app.pop()
+                b = BestiaryScreen(self.app)
+                b.sel = b.entries().index(o.k)
+                self.app.push(b)
+            else:
+                self.app.pop()
+        elif tok in ('esc', 'o', ';', 'space'):
             self.app.pop()
 
 
@@ -2988,47 +3145,73 @@ def hunt_areas(g):
 
 
 class JournalScreen(Modal):
+    """The journal in tabs: jobs, the road (story, rumours, news), standing, lore (what you know, every sign) and the
+    log to read back. Left and right (or Tab) pick a tab; up and down move or scroll."""
+    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log']
+    tab = 0
+    BW, BH = 100, 30
+
+    def __init__(self, app, tab=None):
+        super().__init__(app)
+        if tab is not None:
+            JournalScreen.tab = tab
+        self.sel = 0
+        self.scroll = 0
+
     def render(self, cv):
         g = self.game
+        x, y = self.box(cv, self.BW, self.BH, f'Journal · {CAL.long(g.day)}')
+        xx = x + 3
+        for k, nm in enumerate(self.TABS):
+            on = k == self.tab
+            lab = f' {nm} '
+            cv.text(xx, y + 1, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
+            xx += len(lab) + 1
+        rows = [self.rows_jobs, self.rows_road, self.rows_standing, self.rows_lore, self.rows_log][self.tab]()
+        room = self.BH - 5
+        self.scroll = max(0, min(self.scroll, len(rows) - room))
+        for i, row in enumerate(rows[self.scroll:self.scroll + room]):
+            yy = y + 3 + i
+            if row.get('sel'):
+                cv.fill(x + 1, yy, self.BW - 2, 1, ' ', FG, (52, 40, 28))
+            bg = (52, 40, 28) if row.get('sel') else PANEL
+            for cx, text, col in row['parts']:
+                if cx >= 0:
+                    cv.text(x + cx, yy, text, col, bg)
+                else:
+                    cv.text_right(x + self.BW + cx, yy, text, col, bg)
+        if len(rows) > room:
+            cv.text_right(x + self.BW - 2, y + 2, f'{self.scroll + 1}-{min(len(rows), self.scroll + room)} of {len(rows)}', DIM, PANEL)
+        hint = {0: ' ↑↓ job · Enter: follow it on the map', 3: ' ↑↓ scroll · Enter: the bestiary', 4: ' ↑↓ PgUp PgDn: read back'}
+        cv.text_center(W // 2, y + self.BH - 1, f"{hint.get(self.tab, ' ↑↓ scroll')} · ←→ tab · Esc: close ", DIM, PANEL)
+
+    # each tab is a list of rows: {'parts': [(x, text, colour)...]} (x < 0: from the right edge); long text wraps
+    @staticmethod
+    def head(text):
+        return {'parts': [(3, text, DIM)]}
+
+    @staticmethod
+    def para(text, col=FG, x=5, w=92):
+        return [{'parts': [(x, ln, col)]} for ln in wrap_text(text, w)]
+
+    def rows_jobs(self):
+        g = self.game
         p = g.player
-        x, y = self.box(cv, 100, 28, f'Journal · {CAL.long(g.day)}')
-        here = g.here
-        ox, oy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
-        yy = y + 1
-        story = g.story()
-        if story:
-            cv.text(x + 2, yy, 'STORY', DIM, PANEL)
-            yy += 1
-            for title, text in story:
-                cv.text(x + 2, yy, '♦', GOLD, PANEL)
-                cv.text(x + 4, yy, title, GOLD, PANEL, maxw=24)
-                yy += cv.wrap(x + 30, yy, 67, text, FG, PANEL, 2)
-            yy += 1
-        heard = getattr(g, 'rumours', [])[-4:]
-        if heard:
-            cv.text(x + 2, yy, 'HEARD ON THE ROAD', DIM, PANEL)
-            yy += 1
-            for line in reversed(heard):
-                cv.text(x + 2, yy, '·', GOLD, PANEL)
-                n = len(wrap_text(line, 93)[:2])
-                cv.wrap(x + 4, yy, 93, line, scale(FG, .85), PANEL, 2)
-                yy += n
-            yy += 1
-        cv.text(x + 2, yy, 'ACTIVE JOBS', DIM, PANEL)
+        ox, oy = g.world_pos()
         jobs = MS.active(g)
-        yy += 1
+        self.sel = max(0, min(self.sel, len(jobs) - 1)) if jobs else 0
+        out = [self.head('ACTIVE JOBS')]
         if not jobs:
-            cv.text(x + 4, yy, 'None. Visit the inn of any town to find work.', DIM, PANEL)
-            yy += 1
-        for mi in jobs:
+            out += self.para('None. Visit the inn of any town to find work.', DIM)
+        tid = getattr(g, 'track', None)
+        for n, mi in enumerate(jobs):
             (tx, ty), where = MS.target_pos(g, mi)
             d = cheb(tx, ty, ox, oy)
-            status = 'return for reward' if mi.state == 'turnin' else 'in progress'
-            cv.text(x + 2, yy, '•', GOLD, PANEL)
-            cv.text(x + 4, yy, mi.title, FG, PANEL, maxw=44)
-            cv.text(x + 50, yy, f'{where}: {d} {E.dir_name(tx - ox, ty - oy) if d else "here"}', INFO, PANEL, maxw=30)
-            cv.text_right(x + 97, yy, fmt(mi.reward, True), GOLD, PANEL)
-            extra = status
+            sel = n == self.sel
+            out.append({'sel': sel, 'parts': [(3, '►' if mi.id == tid else '•', GOLD), (5, mi.title[:46], FG),
+                                              (53, f'{where}: {d} {E.DIR_SHORT[E.dir_name(tx - ox, ty - oy)]}'[:30] if d else f'{where}: here', INFO),
+                                              (-3, fmt(mi.reward, True), GOLD)]})
+            extra = 'return for reward' if mi.state == 'turnin' else 'in progress'
             if mi.deadline and mi.state == 'active':
                 left = mi.deadline - g.day
                 extra += f' · {left} day{"s" if left != 1 else ""} left' if left >= 0 else ' · overdue'
@@ -3039,73 +3222,159 @@ class JournalScreen(Modal):
                 extra += ' · ' + JB.line(g, mi)
             if mi.kind == 'hunt':
                 from . import named as NM
-                yy += cv.wrap(x + 4, yy + 1, 93, NM.job_line(g, mi), DIM, PANEL, 2) + 1
-                continue
-            yy += cv.wrap(x + 4, yy + 1, 93, extra, DIM, PANEL, 2) + 1
-        yy += 1
-        cv.text(x + 2, yy, 'CARGO', DIM, PANEL)
-        yy += 1
+                extra = NM.job_line(g, mi)
+            for r in self.para(extra, DIM, 5, 92):
+                r['sel'] = sel
+                out.append(r)
+        done = g.__dict__.get('jobs_done', [])
+        if done:
+            out.append({'parts': []})
+            out.append(self.head('DONE LATELY'))
+            for title, pay in reversed(done[-5:]):
+                out.append({'parts': [(5, '· ' + title, DIM), (-3, fmt(pay, True), scale(GOLD, .7))]})
+        out.append({'parts': []})
+        out.append(self.head('CARGO'))
         line = ', '.join(f"{q} {D.GOODS[k]['name']}" for k, q in p.cargo.items()) or 'empty'
-        n = cv.wrap(x + 4, yy, 92, line + (f" · job cargo: {', '.join(pc['name'] for pc in p.parcels)}" if p.parcels else ''), FG, PANEL, 2)
-        yy += n
+        out += self.para(line + (f" · job cargo: {', '.join(pc['name'] for pc in p.parcels)}" if p.parcels else ''))
         mounts = ', '.join(D.MOUNTS[k]['name'] for k in p.mounts) or 'none'
-        cv.text(x + 4, yy, f'Capacity {ECO.cargo_capacity(p)} · animals: {mounts}', DIM, PANEL)
-        yy += 2
-        cv.text(x + 2, yy, 'FACTIONS', DIM, PANEL)
+        out += self.para(f'Capacity {ECO.cargo_capacity(p)} · animals: {mounts}', DIM)
+        return out
+
+    def rows_road(self):
+        g = self.game
+        out = []
+        story = g.story()
+        if story:
+            out.append(self.head('STORY'))
+            for title, text in story:
+                lines = wrap_text(text, 66)
+                out.append({'parts': [(3, '♦', GOLD), (5, title[:24], GOLD), (31, lines[0], FG)]})
+                out += [{'parts': [(31, ln, FG)]} for ln in lines[1:]]
+            out.append({'parts': []})
+        heard = getattr(g, 'rumours', [])[-10:]
+        if heard:
+            out.append(self.head('HEARD ON THE ROAD'))
+            for line in reversed(heard):
+                lines = wrap_text(line, 92)
+                out.append({'parts': [(3, '·', GOLD), (5, lines[0], scale(FG, .85))]})
+                out += [{'parts': [(5, ln, scale(FG, .85))]} for ln in lines[1:]]
+            out.append({'parts': []})
+        known = [ev for ev in g.world.evils if ev.known]
+        if known:
+            out.append(self.head('DARK POWERS'))
+            for ev in known:
+                out.append({'parts': [(5, ev.name[:26], ev.fg if not ev.defeated else DIM),
+                                      (33, f'lair to the {g.dir_to(ev.did)}' if not ev.defeated else 'destroyed', FG if not ev.defeated else DIM)]})
+            out.append({'parts': []})
+        out.append(self.head('NEWS'))
+        evs = [st for st in g.world.settlements if st.event]
+        if not evs:
+            out += self.para('All quiet across the land.', DIM)
+        for st in evs:
+            out += self.para(D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)')
+        return out
+
+    def rows_standing(self):
+        g = self.game
         from . import gods as GD
-        cv.text_right(x + 97, yy, 'Faith: ' + GD.standing(g), GD.GODS[p.god]['fg'] if getattr(p, 'god', None) else DIM, PANEL)
-        yy += 1
+        from . import crime as CR
+        out = [{'parts': [(3, 'FACTIONS', DIM), (-3, 'Faith: ' + GD.standing(g), GD.GODS[g.player.god]['fg'] if getattr(g.player, 'god', None) else DIM)]}]
         for f in D.FACTION_ORDER:
             fd = D.FACTIONS[f]
             r = g.player.rep[f] if f != 'cult' else -100
             holds = sum(1 for h in g.world.holds if h.faction == f)
             regs = sum(1 for rg in g.world.regions if rg.faction == f)
-            cv.text(x + 4, yy, fd['name'], fd['fg'], PANEL)
-            cv.text(x + 32, yy, f'{WAR.standing(r)} ({r})', BAD if WAR.is_hostile(g, f) else GOOD if r >= 10 else FG, PANEL)
-            cv.text(x + 52, yy, f"{regs} region{'s' if regs != 1 else ''}, {holds} stronghold{'s' if holds != 1 else ''}", DIM, PANEL)
             pat = GD.PATRON.get(f)
-            if pat:
-                cv.text_right(x + 97, yy, f"worships {GD.GODS[pat]['name']}", scale(GD.GODS[pat]['fg'], .75), PANEL)
-            yy += 1
-        yy += 1
-        from . import crime as CR
-        marked = [st for st in g.world.settlements if st.rep and g.known_settlement(st)]
+            out.append({'parts': [(5, fd['name'][:26], fd['fg']),
+                                  (33, f'{WAR.standing(r)} ({r})', BAD if WAR.is_hostile(g, f) else GOOD if r >= 10 else FG),
+                                  (53, f"{regs} region{'s' if regs != 1 else ''}, {holds} stronghold{'s' if holds != 1 else ''}", DIM)]
+                        + ([(-3, f"worships {GD.GODS[pat]['name']}", scale(GD.GODS[pat]['fg'], .75))] if pat else [])})
+        marked = sorted([st for st in g.world.settlements if st.rep and g.known_settlement(st)], key=lambda q: q.rep)
         if marked:
-            cv.text(x + 2, yy, 'STANDING IN TOWNS', DIM, PANEL)
-            yy += 1
-            line = '   '.join(f'{st.name}: {CR.standing_word(st.rep)} ({st.rep})' for st in sorted(marked, key=lambda q: q.rep)[:5])
-            cv.text(x + 4, yy, line, BAD if any(st.rep <= CR.WANTED_AT for st in marked) else FG, PANEL, maxw=92)
-            yy += 2
-        known = [ev for ev in g.world.evils if ev.known]
-        if known:
-            cv.text(x + 2, yy, 'DARK POWERS', DIM, PANEL)
-            yy += 1
-            for ev in known:
-                cv.text(x + 4, yy, ev.name, ev.fg if not ev.defeated else DIM, PANEL, maxw=28)
-                cv.text(x + 32, yy, f'lair to the {g.dir_to(ev.did)}' if not ev.defeated else 'destroyed', FG if not ev.defeated else DIM, PANEL, maxw=64)
-                yy += 1
-            yy += 1
-        cv.text(x + 2, yy, 'NEWS', DIM, PANEL)
-        yy += 1
-        evs = [st for st in g.world.settlements if st.event]
-        if not evs:
-            cv.text(x + 4, yy, 'All quiet across the land.', DIM, PANEL)
-        for st in evs[:6]:
-            if yy >= y + 26:
-                break
-            cv.text(x + 4, yy, D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)', FG, PANEL, maxw=92)
-            yy += 1
-        cv.text_center(W // 2, y + 27, ' Esc: close ', DIM, PANEL)
+            out.append({'parts': []})
+            out.append(self.head('STANDING IN TOWNS'))
+            for st in marked:
+                out.append({'parts': [(5, st.name, FG), (33, f'{CR.standing_word(st.rep)} ({st.rep})',
+                                                         BAD if st.rep <= CR.WANTED_AT else GOOD if st.rep > 0 else FG)]})
+        return out
+
+    def rows_lore(self):
+        g = self.game
+        from . import guide as GD
+        out = [{'parts': [(3, 'CREATURES', DIM), (14, f"{len(g.bestiary)} kind{'s' if len(g.bestiary) != 1 else ''} met; the bestiary keeps what you learnt of them", FG)]}]
+        w = g.world
+        om = g.maps['over']
+        wonders = [n for n, wx, wy in getattr(w, 'wonders', ()) if om.inb(wx, wy) and om.seen[wy * om.w + wx]]
+        if wonders:
+            out.append({'parts': []})
+            out.append(self.head('WONDERS SEEN'))
+            out += self.para(', '.join(wonders))
+        out.append({'parts': []})
+        out.append(self.head('SIGNS · what you have seen means this'))
+        sg = GD.signs(g)
+        half = []
+        for glyphs, name in sg:
+            if glyphs is None:                    # a heading: the map you are on
+                if half:
+                    out.append({'parts': half})
+                    half = []
+                out.append({'parts': []})
+                out.append(self.head(name.upper()))
+                continue
+            cx = 5 if not half else 52
+            half += [(cx + j, ch, col) for j, (ch, col) in enumerate(glyphs[:4])] + [(cx + 6, name[:38], FG)]
+            if cx == 52:
+                out.append({'parts': half})
+                half = []
+        if half:
+            out.append({'parts': half})
+        return out
+
+    def rows_log(self):
+        g = self.game
+        out = []
+        for text, cls in g.log:
+            for j, ln in enumerate(wrap_text(text, 92)):
+                out.append({'parts': ([(3, '►', GOLD)] if j == 0 and cls in LOG_MARKED else []) + [(5, ln, LOGCOL.get(cls, FG))]})
+        return out
 
     def on_key(self, tok, shift):
-        if tok in ('esc', 'e', 'tab', 'enter'):
+        room = self.BH - 5
+        if tok in ('esc', 'e'):
             self.app.pop()
+        elif tok in ('right', 'np6', 'tab') and not (tok == 'tab' and shift):
+            JournalScreen.tab = (self.tab + 1) % len(self.TABS)
+            self.sel, self.scroll = 0, 10 ** 6 if self.tab == 4 else 0
+        elif tok in ('left', 'np4') or (tok == 'tab' and shift):
+            JournalScreen.tab = (self.tab - 1) % len(self.TABS)
+            self.sel, self.scroll = 0, 10 ** 6 if self.tab == 4 else 0
+        elif tok in ('up', 'np8', 'down', 'np2'):
+            step = -1 if tok in ('up', 'np8') else 1
+            if self.tab == 0:
+                self.sel += step
+            else:
+                self.scroll = max(0, self.scroll + step)
+        elif tok in ('pageup', 'pagedown'):
+            self.scroll = max(0, self.scroll + (room if tok == 'pagedown' else -room))
+        elif tok in ('enter', 'np_enter', 'space'):
+            g = self.game
+            if self.tab == 0:
+                jobs = MS.active(g)
+                if jobs:
+                    mi = jobs[max(0, min(self.sel, len(jobs) - 1))]
+                    g.track = None if getattr(g, 'track', None) == mi.id else mi.id
+            elif self.tab == 3:
+                self.app.push(BestiaryScreen(self.app))
+            else:
+                self.app.pop()
 
 
 class WorldMapScreen(Modal):
     tall = False
     """The overworld: a scrollable close-up, or the whole realm with each character covering 2x2 cells."""
-    show_factions = False
+    layer = 0         # what the map shows over the land: see LAYERS
+    LAYERS = ['Land', 'Danger', 'Factions', 'Jobs', 'Trade']
+    BANDS = [((44, 66, 40), 'safe'), ((92, 86, 36), 'watchful'), ((128, 62, 30), 'dangerous'), ((120, 26, 34), 'deadly')]
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
     zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
 
@@ -3177,6 +3446,95 @@ class WorldMapScreen(Modal):
         else:
             self.render_overview(cv)
 
+    def paint(self, mx, my, ch, fg, bg, base=None):
+        """One cell of the land, coloured by the layer that is on."""
+        w = self.game.world
+        lay = self.LAYERS[self.layer]
+        if lay == 'Land':
+            return ch, fg, bg
+        if lay == 'Factions':
+            return ch, fg, mix(base or bg, D.FACTIONS[w.region_at(mx, my).faction]['fg'], .28 if base else .25)
+        t = self.game.maps['over'].tile(mx, my)
+        if lay == 'Danger':
+            if t == D.WATER or not D.TILES[t].walk and t != D.MOUNTAIN:
+                return ch, scale(fg, .6), scale(bg, .6)
+            dg = w.danger_at(mx, my)
+            return ch, scale(fg, .75), self.BANDS[0 if dg <= 2 else 1 if dg <= 5 else 2 if dg <= 8 else 3][0]
+        return ch, scale(fg, .45), scale(bg, .5)        # jobs and trade: the land steps back
+
+    def layer_bar(self, cv, x, y, legend=False):
+        """The layers, one key each: 1 Land, 2 Danger... the one that is on lit."""
+        cv.fill(x, y, 100, 1, ' ', FG, PANEL)
+        xx = x
+        for k, nm in enumerate(self.LAYERS):
+            lab = f' {k + 1} {nm} '
+            on = k == self.layer
+            cv.text(xx, y, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
+            xx += len(lab) + 1
+        if legend:
+            self.legend(cv, xx + 1, y, room=x + 100 - xx - 1)
+        else:
+            cv.text_right(x + 99, y, 'L: next layer', DIM, PANEL)
+
+    def legend(self, cv, x, y, room=100):
+        """What the colours and signs of the layer mean, on one line."""
+        lay = self.LAYERS[self.layer]
+        if lay == 'Danger':
+            parts = [(' ', col, nm) for col, nm in self.BANDS]
+        elif lay == 'Factions':
+            parts = [('■', D.FACTIONS[f]['fg'], D.FACTIONS[f]['short']) for f in D.FACTION_ORDER]
+        elif lay == 'Jobs':
+            parts = [(' ', (110, 80, 16), 'where a job leads'), (' ', (200, 150, 40), 'the job you follow'),
+                     ('/', (230, 170, 80), 'hunting ground')]
+        elif lay == 'Trade':
+            parts = [('▲', GOOD, 'sells dear'), ('▼', INFO, 'cheap to buy'), ('·', DIM, 'faded: old prices')]
+        else:
+            parts = [(g_, DIM, n_) for g_, n_ in (('⌂', 'village'), ('■', 'city'), ('Ω', 'castle'), ('╬', 'fort'),
+                                                    ('>', 'dungeon'), ('Π', 'ruin'), ('†', 'shrine'), ('∆', 'camp'))]
+        xx = x
+        for ch, col, nm in parts:
+            if xx + len(nm) + 3 > x + room:
+                break
+            cv.put(xx, y, ch, col if ch != ' ' else FG, col if ch == ' ' else PANEL)
+            cv.text(xx + 2, y, nm, DIM, PANEL)
+            xx += len(nm) + 4
+
+    def trade_text(self, st):
+        """In the trade layer: a town's name with what sells dear there (▲) and what is cheap (▼), if you know."""
+        g = self.game
+        log = getattr(g, 'price_log', {})
+        if self.LAYERS[self.layer] != 'Trade' or st.id not in log:
+            return None
+        avg = {k: sum(r['sell'][k] for r in log.values()) / len(log) for k in D.GOOD_ORDER}
+        rec = log[st.id]
+        dear = max(D.GOOD_ORDER, key=lambda k: rec['sell'][k] / max(1, avg[k]))
+        cheap = min(D.GOOD_ORDER, key=lambda k: rec['buy'][k] / max(1, avg[k]))
+        return f"{st.name} ▲{D.GOODS[dear]['name']} ▼{D.GOODS[cheap]['name']}"
+
+    def trade_labels(self, cv, bx, by, S, taken):
+        """The trade layer: at every town whose prices you know, what sells dear there and what is cheap."""
+        if self.LAYERS[self.layer] != 'Trade':
+            return
+        g = self.game
+        log = getattr(g, 'price_log', {})
+        if not log:
+            cv.text(bx + 2, by + 1, 'You know no prices yet. Visit a market, or ask a factor of the Guild.', DIM, PANEL)
+            return
+        for sid, rec in log.items():
+            st = g.world.settlements[sid]
+            old = g.day - rec['day'] > 20
+            text = self.trade_text(st)
+            lx, ly = bx + S(st.x) + 1, by + S(st.y)
+            cells = {(lx + j, ly) for j in range(len(text))}
+            if cells & taken or lx + len(text) > bx + 100:
+                continue
+            taken |= cells
+            cv.text(lx, ly, text, DIM if old else FG, PANEL)
+            if not old:
+                i = text.index('▲')
+                cv.put(lx + i, ly, '▲', GOOD, PANEL)
+                cv.put(lx + text.index('▼'), ly, '▼', INFO, PANEL)
+
     def render_detail(self, cv):
         g = self.game
         om = g.maps['over']
@@ -3204,8 +3562,7 @@ class WorldMapScreen(Modal):
                     ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[taint[i] - 1].d['taint'], i)
-                if WorldMapScreen.show_factions:
-                    bg = mix(bg, D.FACTIONS[w.region_at(mx, my).faction]['fg'], .25)
+                ch, fg, bg = self.paint(mx, my, ch, fg, bg)
                 cv.put(bx + vx, by + vy, ch, fg, bg)
 
         def inview(px, py):
@@ -3233,6 +3590,11 @@ class WorldMapScreen(Modal):
         for rx_, ry_ in self.route:                   # the way you would walk
             if inview(rx_, ry_):
                 cv.put_bg(bx + rx_ - ox, by + ry_ - oy, (96, 70, 30))
+        mi = g.tracked()
+        if mi and int(time.monotonic() * 2.5) % 2 == 0:
+            (tx_, ty_), _w = MS.target_pos(g, mi)
+            if inview(tx_, ty_):
+                cv.put_bg(bx + tx_ - ox, by + ty_ - oy, (200, 150, 40))
         if self.pick is not None:
             k_, ref_, name_, kind_, tx_, ty_ = self.dests[self.pick]
             if inview(tx_, ty_) and int(time.monotonic() * 2.5) % 2 == 0:
@@ -3244,11 +3606,12 @@ class WorldMapScreen(Modal):
             cv.put(bx + px - ox, by + py - oy, '@', (255, 246, 220), (150, 40, 28))
         for st in w.settlements:
             if g.known_settlement(st) and inview(st.x, st.y):
-                lx = bx + st.x - ox - len(st.name) // 2
+                name = self.trade_text(st) or st.name
+                lx = bx + st.x - ox - len(name) // 2
                 ly = by + st.y - oy - 1
                 if by <= ly < by + vh:
-                    lx = max(bx, min(bx + vw - len(st.name) - 2, lx))
-                    cv.text(lx, ly, f' {st.name} ', (255, 226, 140) if st.is_city else (236, 210, 150), (30, 22, 14))
+                    lx = max(bx, min(bx + vw - len(name) - 2, lx))
+                    cv.text(lx, ly, f' {name} ', (255, 226, 140) if st.is_city else (236, 210, 150), (30, 22, 14))
         for name, wx, wy in getattr(w, 'wonders', ()):
             if inview(wx, wy) and om.seen[wy * om.w + wx]:
                 lx = max(bx, min(bx + vw - len(name) - 2, bx + wx - ox - len(name) // 2))
@@ -3263,8 +3626,9 @@ class WorldMapScreen(Modal):
                 line = f' {name_} ({kind_}) · you can only set out from the open land or a town · Tab: next '
             cv.text_center(W // 2, y + 57, line, GOLD, PANEL)
         else:
-            hint = ' Tab: pick a place you have been' if self.dests else ''
-            cv.text_center(W // 2, y + 57, f'{hint} · arrows: scroll · Z: whole realm · F: factions · Esc: close ', DIM, PANEL)
+            hint = ' Tab: pick a place you have been ·' if self.dests else ''
+            cv.text_center(W // 2, y + 57, f'{hint} arrows: scroll · Z: whole realm · Esc: close ', DIM, PANEL)
+        self.layer_bar(cv, x + 2, y + 56, legend=True)
 
     def render_overview(self, cv):
         g = self.game
@@ -3300,15 +3664,13 @@ class WorldMapScreen(Modal):
                     bg = PANEL
                 if nbl:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[nbl - 1].d['taint'], bi)
-                if WorldMapScreen.show_factions:
-                    rf = w.regions[w.region_of[min(om.h - 1, int(cy * f)) * om.w + int(cx * f)]].faction
-                    bg = mix(PANEL, D.FACTIONS[rf]['fg'], .28)
+                ch, fg, bg = self.paint(min(om.w - 1, int(cx * f)), min(om.h - 1, int(cy * f)), ch, fg, bg, PANEL)
                 cv.put(bx + cx, by + cy, ch, fg, bg)
         taken = set()
         for st in w.settlements:
             taken.add((bx + S(st.x), by + S(st.y)))
         for st in sorted(w.settlements, key=lambda q: not q.is_city):
-            if not g.known_settlement(st):
+            if not g.known_settlement(st) or self.LAYERS[self.layer] == 'Trade':
                 continue
             lx, ly = bx + S(st.x) + 1, by + S(st.y)
             name = st.name
@@ -3336,6 +3698,10 @@ class WorldMapScreen(Modal):
                 continue
             (tx, ty), _ = MS.target_pos(g, mi)
             cv.put_bg(bx + S(tx), by + S(ty), (110, 80, 16))
+        mi = g.tracked()
+        if mi and int(time.monotonic() * 2.5) % 2 == 0:
+            (tx, ty), _w = MS.target_pos(g, mi)
+            cv.put_bg(bx + S(tx), by + S(ty), (200, 150, 40))
         cv.put(bx + S(px), by + S(py), '@', (255, 246, 220), (150, 40, 28))
         for poi in w.pois:
             if poi.found:
@@ -3344,18 +3710,20 @@ class WorldMapScreen(Modal):
         for hd in w.holds:
             if om.seen[hd.y * om.w + hd.x]:
                 cv.put(bx + S(hd.x), by + S(hd.y), 'Ω' if hd.kind == 'castle' else '╬', D.FACTIONS[hd.faction]['fg'], PANEL)
-        if WorldMapScreen.show_factions:
-            lx = x + 2
-            for f in D.FACTION_ORDER:
-                cv.text(lx, y + 57, '■ ' + D.FACTIONS[f]['short'], D.FACTIONS[f]['fg'], PANEL)
-                lx += len(D.FACTIONS[f]['short']) + 4
-        else:
-            cv.text(x + 2, y + 57, '⌂ village ■ city Ω castle ╬ fort > dungeon Π ruin † shrine ∆ camp Ψ stones ¤ wagon', DIM, PANEL)
-        cv.text_center(W // 2, y + 59, ' Z or arrows: close-up · F: factions · Esc: close ', DIM, PANEL)
+        self.trade_labels(cv, bx, by, S, taken)
+        self.legend(cv, x + 2, y + 57)
+        self.layer_bar(cv, x + 2, y + 58)
+        cv.text_center(W // 2, y + 59, ' Z or arrows: close-up · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         if tok in ('f', 'F'):
-            WorldMapScreen.show_factions = not WorldMapScreen.show_factions
+            WorldMapScreen.layer = 0 if self.layer == 2 else 2
+            return
+        if tok in ('l', 'L'):
+            WorldMapScreen.layer = (self.layer + (-1 if shift or tok == 'L' else 1)) % len(self.LAYERS)
+            return
+        if tok in ('1', '2', '3', '4', '5'):
+            WorldMapScreen.layer = int(tok) - 1
             return
         if tok == 'tab' and self.dests:
             WorldMapScreen.zoom = 1
@@ -3577,9 +3945,9 @@ class MenuScreen(Modal):
                   ('C', 'Life skills', 'fishing, foraging, herbalism, alchemy, brewing'),
                   ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
                   ('v', 'Bestiary', 'the creatures you have met')]),
-        ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'story, jobs, rumours, cargo, factions, faith'),
+        ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'jobs, the road, standing, lore and every sign, the log'),
                    ('travel', 'Travel', 'on the map: Tab picks a place you have been, Enter sets out'), ('x', 'Explore', 'wander a dungeon until something turns up')]),
-        ('Actions', [('t', 'Talk', 'to someone near you'), ('h', 'Hireling', 'orders and gear for your sellsword'), ('o', 'Look around', 'inspect anything you can see'),
+        ('Actions', [('t', 'Talk', 'to someone near you'), ('h', 'Company', 'orders and gear for your hireling and your beast'), ('o', 'Look around', 'inspect anything you can see'),
                      ('g', 'Pick up', 'what lies at your feet'), ('d', 'Drop', 'something from your bag'),
                      ('E', 'Eat', 'the food that fits your hunger best'), ('F', 'Forage', 'search the wild for food and herbs'),
                      ('a', 'Fish', 'by water, with a fishing pole'), ('f', 'Shoot', 'at the nearest enemy, with a bow'),
@@ -3638,6 +4006,154 @@ class MenuScreen(Modal):
         gs = self.app.top
         if isinstance(gs, GameScreen):
             gs.on_key(k, False)
+
+
+class CompanyScreen(Modal):
+    """h: your hireling and your beast side by side. Left and right pick who (both, when you have two); 1-5 give the
+    order at once; up and down pick one of the hireling's four slots and Enter hands him something for it; x lets the
+    one you picked go."""
+    tall = False
+
+    def __init__(self, app, slot=None):
+        super().__init__(app)
+        from . import mercs as MC
+        self.MC = MC
+        self.who = self.choices().index(slot) if slot in self.choices() else 0
+        self.sel = 0
+
+    def choices(self):
+        MC = self.MC
+        have = [s_ for s_ in ('merc', 'beast') if MC.get(self.game, s_)]
+        alive = [s_ for s_ in have if MC.get(self.game, s_).state == 'alive']
+        return (['both'] if len(alive) == 2 else []) + have
+
+    def picked(self):
+        """The companions an order goes to."""
+        ch = self.choices()
+        if not ch:
+            return []
+        k = ch[min(self.who, len(ch) - 1)]
+        mcs = [self.MC.get(self.game, s_) for s_ in (('merc', 'beast') if k == 'both' else (k,))]
+        return [mc for mc in mcs if mc and mc.state == 'alive']
+
+    def bar(self, cv, x, y, w, frac, col):
+        n = int(w * max(0.0, min(1.0, frac)) + .99) if frac > 0 else 0
+        for i in range(w):
+            cv.put(x + i, y, '█' if i < n else '░', col if i < n else LINE, PANEL)
+
+    def card(self, cv, x, y, mc):
+        g, MC = self.game, self.MC
+        b = mc.body
+        ch, col = (b.ch, b.fg) if b is not None else ('@', FG)
+        cv.put(x, y, ch, col, PANEL)
+        cv.text(x + 2, y, mc.name, FG, PANEL, maxw=40)
+        kind = MC.TAME[mc.species]['name'] if mc.kind == 'beast' else mc.tpl['name'].lower()
+        cv.text(x + 2, y + 1, f'{kind}, level {mc.lvl}', DIM, PANEL)
+        if mc.state != 'alive':
+            cv.wrap(x, y + 3, 42, f'{mc.name} lies dead. A temple can raise {mc.him()}, for {fmt(MC.raise_fee(g, mc))}.', BAD, PANEL, 3)
+            return
+        s = MC.stats(g, mc)
+        fr = mc.hp / max(1, s['max_hp'])
+        cv.text(x, y + 3, 'Life', DIM, PANEL)
+        self.bar(cv, x + 9, y + 3, 20, fr, GOOD if fr > .6 else GOLD if fr > .3 else BAD)
+        cv.text(x + 31, y + 3, f"{max(0, mc.hp)}/{s['max_hp']}", FG, PANEL)
+        md = MC.mood(mc)
+        cv.text(x, y + 4, 'Mood', DIM, PANEL)
+        cv.text(x + 9, y + 4, md, GOOD if mc.morale >= 60 else GOLD if mc.morale >= 35 else BAD, PANEL, maxw=34)
+        cv.text(x, y + 5, 'Damage', DIM, PANEL)
+        cv.text(x + 9, y + 5, f"{s['dmg'][0]}-{s['dmg'][1]}" + (f" · armour {s['armour']}" if 'armour' in s else ''), FG, PANEL)
+        if mc.kind == 'beast':
+            cv.text(x, y + 6, 'Food', DIM, PANEL)
+            cv.text(x + 9, y + 6, 'meat, one a day' + (': hungry' if mc.hungry else ''), BAD if mc.hungry else FG, PANEL)
+        else:
+            cv.text(x, y + 6, 'Wage', DIM, PANEL)
+            cv.text(x + 9, y + 6, f'{fmt(mc.wage)} a day · potions {mc.potions}', FG, PANEL)
+        word = 'fleeing' if mc.fleeing else MC.ORDER_WORD[mc.order]
+        cv.text(x, y + 7, 'Order', DIM, PANEL)
+        cv.text(x + 9, y + 7, word, BAD if mc.fleeing else GOLD, PANEL)
+
+    def render(self, cv):
+        g, MC = self.game, self.MC
+        ch = self.choices()
+        if not ch:
+            self.app.pop()
+            return
+        self.who = min(self.who, len(ch) - 1)
+        bw, bh = 96, 34
+        x, y = self.box(cv, bw, bh, ' Your company ')
+        xx = x + 3
+        for k, s_ in enumerate(ch):
+            on = k == self.who
+            lab = ' Both ' if s_ == 'both' else f' {MC.get(g, s_).name} '
+            cv.text(xx, y + 2, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
+            xx += len(lab) + 1
+        mcs = [MC.get(g, s_) for s_ in ('merc', 'beast') if MC.get(g, s_)]
+        for c, mc in enumerate(mcs):
+            self.card(cv, x + 3 + c * 47, y + 4, mc)
+        if len(mcs) == 2:
+            for j in range(y + 4, y + 12):
+                cv.put(x + 48, j, '│', LINE, PANEL)
+        merc = MC.get(g, 'merc')
+        gy = y + 13
+        if merc and merc.state == 'alive':
+            cv.text(x + 3, gy, f"{merc.name.split()[0].upper()}'S GEAR", DIM, PANEL)
+            for i, slot in enumerate(MC.SLOTS):
+                yy = gy + 1 + i
+                on = i == self.sel
+                bg = (52, 40, 28) if on else PANEL
+                if on:
+                    cv.fill(x + 2, yy, bw - 4, 1, ' ', FG, bg)
+                it = merc.gear.get(slot)
+                cv.text(x + 5, yy, slot, DIM, bg)
+                cv.text(x + 14, yy, it.name if it else '-', FG if it else DIM, bg, maxw=30)
+                if it and getattr(it, 'mdur', 0):
+                    low = it.dur <= it.mdur * .2
+                    cv.text(x + 46, yy, f'{it.dur}/{it.mdur}', BAD if low else DIM, bg)
+                    if low:
+                        cv.text(x + 55, yy, 'nearly broken', BAD, bg)
+        oy = gy + 6
+        names = [mc.name.split()[0] for mc in self.picked()]
+        cv.text(x + 3, oy, 'ORDERS', DIM, PANEL)
+        cv.text_right(x + bw - 3, oy, 'for ' + ' and '.join(names) if names else '', GOLD, PANEL)
+        for i, (k, word, desc) in enumerate(MC.ORDERS):
+            yy = oy + 1 + i
+            cv.text(x + 5, yy, str(i + 1), GOLD, PANEL)
+            cv.text(x + 8, yy, word, FG, PANEL)
+            cv.text(x + 27, yy, desc, DIM, PANEL, maxw=54)
+            who = [mc.name.split()[0] for mc in self.picked() if mc.order == k]
+            if who:
+                cv.text_right(x + bw - 4, yy, '» ' + ', '.join(who), GOOD, PANEL)
+        hint = ' 1-5: order'
+        if len(ch) > 1:
+            hint += ' · ←→ who'
+        if merc and merc.state == 'alive':
+            hint += ' · ↑↓ Enter: gear'
+        hint += ' · x: let go · Esc: close '
+        cv.text_center(W // 2, y + bh - 1, hint, DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        g, MC = self.game, self.MC
+        ch = self.choices()
+        if tok in ('esc', 'h'):
+            self.app.pop()
+        elif tok in ('1', '2', '3', '4', '5'):
+            k = MC.ORDERS[int(tok) - 1][0]
+            for mc in self.picked():
+                MC.set_order(g, mc, k)
+        elif tok in ('left', 'np4', 'right', 'np6', 'tab') and ch:
+            self.who = (self.who + (-1 if tok in ('left', 'np4') or shift else 1)) % len(ch)
+        elif tok in ('up', 'np8'):
+            self.sel = (self.sel - 1) % len(MC.SLOTS)
+        elif tok in ('down', 'np2'):
+            self.sel = (self.sel + 1) % len(MC.SLOTS)
+        elif tok in ('enter', 'np_enter', 'space'):
+            MC.give_menu(g, MC.SLOTS[self.sel])
+        elif tok == 'x' and ch:
+            k = ch[self.who]
+            if k == 'both':
+                g.msg('Pick one of them first (left or right).', 'info')
+            else:
+                MC.dismiss_menu(g, k)
 
 
 class TalkScreen(Modal):

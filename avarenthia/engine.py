@@ -45,7 +45,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 23
+SAVE_VERSION = 24
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -93,6 +93,13 @@ def ring(x, y, r):
 
 def plural(n):
     return n[:-1] + 'ves' if n.endswith('f') else n + 's'
+
+
+LOG_KEEP = 500                     # lines of the log kept, to read back in the journal
+LOG_REPEAT = __import__('re').compile(r'^(.*) \(x(\d+)\)$')
+
+DIR_SHORT = {'east': 'E', 'southeast': 'SE', 'south': 'S', 'southwest': 'SW', 'west': 'W', 'northwest': 'NW', 'north': 'N',
+             'northeast': 'NE'}
 
 
 def dir_name(dx, dy):
@@ -250,9 +257,21 @@ class Game:
         return None
 
     def msg(self, text, cls=''):
+        if self.log:                               # the same line again: counted, not repeated
+            last, lcls = self.log[-1]
+            n = 1
+            mt = LOG_REPEAT.match(last)
+            if mt and mt.group(1) == text:
+                n = int(mt.group(2))
+            elif last != text:
+                n = 0
+            if n and lcls == cls:
+                self.log[-1] = (f'{text} (x{n + 1})', cls)
+                self.log_mark = min(getattr(self, 'log_mark', 0), len(self.log) - 1)
+                return
         self.log.append((text, cls))
-        if len(self.log) > 120:
-            cut = len(self.log) - 120
+        if len(self.log) > LOG_KEEP:
+            cut = len(self.log) - LOG_KEEP
             del self.log[:cut]
             self.log_mark = max(0, self.log_mark - cut)
 
@@ -511,6 +530,16 @@ class Game:
             area = LN.area_at(self.world, p.x, p.y)
             return f'{area} ({reg})' if area else reg
         return m.name
+
+    def world_pos(self):
+        """Where you are on the world map, wherever you stand."""
+        here, p = self.here, self.player
+        return (here.x, here.y) if here else (p.x, p.y) if self.cur == 'over' else self.over_pos
+
+    def tracked(self):
+        """The job you follow (Enter in the journal), while it is still open."""
+        tid = getattr(self, 'track', None)
+        return next((mi for mi in MS.active(self) if mi.id == tid), None) if tid is not None else None
 
     def dir_to(self, k):
         d = self.world.dungeons[k]

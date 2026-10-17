@@ -953,72 +953,61 @@ def thrall_fight(game, mon):
 
 # ------------------------------------------------------------------ orders (h)
 def menu(game, slot=None):
-    from . import events as EV
+    """h, or walking into your companion: the company screen (ui.CompanyScreen), opened on that companion."""
     from .money import fmt
-    if slot is None and get(game, 'merc') and get(game, 'beast'):
-        a, b = get(game, 'merc'), get(game, 'beast')
-        EV.ask(game, 'merc_which', 'Orders', 'Who for?', [(a.title(), 'merc'), (b.title(), 'beast'), ('Close', 'bye')])
-        return
-    mc = get(game, slot) if slot else (get(game, 'merc') or get(game, 'beast'))
-    if not mc:
+    mcs = [mc for mc in (get(game, 'merc'), get(game, 'beast')) if mc]
+    if not mcs:
         game.msg('You have no hireling. Sellswords are for hire in the barracks of the cities.', 'info')
         return
-    if mc.state == 'fallen':
+    if all(mc.state == 'fallen' for mc in mcs):
+        mc = mcs[0]
         game.msg(f'{mc.name} lies dead. A temple can raise {mc.him()}, for {fmt(raise_fee(game, mc))}.', 'info')
         return
+    game.request = ('company', slot)
+
+
+def set_order(game, mc, k):
+    """Give one companion an order; it answers in the log."""
+    mc.order = k
     if mc.kind == 'beast':
-        s = stats(game, mc)
-        mood = 'content' if mc.morale >= 60 else 'restless' if mc.morale >= 35 else 'close to going back to the wild'
-        text = (f'{mc.title()}, level {mc.lvl}. Life {max(0, mc.hp)}/{s["max_hp"]}, damage {s["dmg"][0]}-{s["dmg"][1]}. '
-                f'No wage; it eats meat, one a day. It is {mood}.')
-        opts = [((('» ' if mc.order == k else '') + w), 'order:' + k) for k, w, _ in ORDERS]
-        opts += [('Set it free', 'dismiss'), ('Close', 'bye')]
-        EV.ask(game, 'merc', mc.name, text, opts, slot='beast')
-        return
-    s = stats(game, mc)
-    gear = ', '.join(f'{it.name}' + (f' ({it.dur}/{it.mdur})' if getattr(it, 'mdur', 0) else '') for it in mc.gear.values() if it)
-    mood = 'content' if mc.morale >= 60 else 'grumbling' if mc.morale >= 35 else 'close to walking out'
-    text = (f'{mc.title()}, level {mc.lvl}. Life {max(0, mc.hp)}/{s["max_hp"]}, damage {s["dmg"][0]}-{s["dmg"][1]}, '
-            f'armour {s["armour"]}. Wage {fmt(mc.wage)} a day; he is {mood}. Potions: {mc.potions}.\n\nGear: {gear or "none"}.')
-    opts = [((('» ' if mc.order == k else '') + w), 'order:' + k) for k, w, _ in ORDERS]
-    opts += [('Hand him gear from your pack', 'give'), ('Dismiss him', 'dismiss'), ('Close', 'bye')]
-    EV.ask(game, 'merc', mc.name, text, opts)
+        game.msg(f'{mc.name} ' + {'follow': 'falls in at your heel.', 'defend': 'keeps close, hackles up.',
+                                  'attack': 'fixes its eyes on your target.', 'hold': 'sits, and stays.',
+                                  'passive': 'lies down, ears flat.'}[k], 'talk')
+    else:
+        game.msg(f'{mc.name}: "{ORDER_LINE[k]}"', 'talk')
 
 
-def r_which(game, choice, ctx):
-    if choice in ('merc', 'beast'):
-        menu(game, choice)
-
-
-def r_menu(game, choice, ctx):
+def give_menu(game, slot):
+    """Hand the hireling something for one of his four slots, from your pack."""
     from . import events as EV
-    slot = ctx.get('slot', 'merc')
+    mc = get(game, 'merc')
+    if not mc or mc.state != 'alive':
+        return
+    cands = [it for it in game.backpack() if it.k == 'gear' and D.BASES[it.base]['slot'] == slot and fits(mc, it)]
+    if not cands:
+        game.msg(f'Nothing in your pack that {mc.name} can use there.', 'info')
+        return
+    EV.ask(game, 'merc_give', mc.name, 'What do you hand him? He gives you back what he had.',
+           [(it.display_name(), f'g:{it.id}') for it in cands[:10]] + [('Nothing', 'bye')])
+
+
+def dismiss_menu(game, slot):
+    from . import events as EV
     mc = get(game, slot)
     if not mc:
         return
-    if choice.startswith('order:'):
-        mc.order = choice[6:]
-        if mc.kind == 'beast':
-            game.msg(f'{mc.name} ' + {'follow': 'falls in at your heel.', 'defend': 'keeps close, hackles up.',
-                                      'attack': 'fixes its eyes on your target.', 'hold': 'sits, and stays.',
-                                      'passive': 'lies down, ears flat.'}[mc.order], 'talk')
-        else:
-            game.msg(f'{mc.name}: "{ORDER_LINE[mc.order]}"', 'talk')
-        return
-    if choice == 'dismiss' and mc.kind == 'beast':
+    if mc.kind == 'beast':
         EV.ask(game, 'merc_dismiss', mc.name, f'Set {mc.name} free? It will go back to the wild.',
                [('Set it free', 'yes'), ('No', 'bye')], slot='beast')
-        return
-    elif choice == 'give':
-        cands = [it for it in game.backpack() if it.k == 'gear' and D.BASES[it.base]['slot'] in SLOTS and fits(mc, it)]
-        if not cands:
-            game.msg(f'Nothing in your pack that {mc.name} can use.', 'info')
-            return
-        EV.ask(game, 'merc_give', mc.name, 'What do you hand him? He gives you back what he had.',
-               [(it.display_name(), f'g:{it.id}') for it in cands[:10]] + [('Nothing', 'bye')])
-    elif choice == 'dismiss':
+    else:
         EV.ask(game, 'merc_dismiss', mc.name, f'Let {mc.name} go? He keeps his gear and his last wage.',
                [('Dismiss him', 'yes'), ('No', 'bye')])
+
+
+def mood(mc):
+    if mc.kind == 'beast':
+        return 'content' if mc.morale >= 60 else 'restless' if mc.morale >= 35 else 'close to going back to the wild'
+    return 'content' if mc.morale >= 60 else 'grumbling' if mc.morale >= 35 else 'close to walking out'
 
 
 ORDER_LINE = {'follow': 'Right behind you.', 'defend': 'Nothing gets to you.', 'attack': 'Point, and I go.',
@@ -1077,7 +1066,7 @@ def worn(game):
 
 def register():
     from . import events as EV
-    EV.RESOLVERS.update(merc=r_menu, merc_give=r_give, merc_dismiss=r_dismiss, merc_hire=r_hire, merc_which=r_which)
+    EV.RESOLVERS.update(merc_give=r_give, merc_dismiss=r_dismiss, merc_hire=r_hire)
 
 
 register()
