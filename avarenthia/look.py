@@ -297,10 +297,10 @@ def cell(m, i, depth=None):
     if t == D.HEDGE:
         return _pick(r, [(60, '♣'), (40, '♠')]), _jit((44, 122, 44), r2, .14), (8, 20, 8)
     if t == D.BRIDGE:       # the deck runs the way the road does, across the water
-        wet_ns = sum(1 for dy in (-2, -1, 1, 2) if m.inb(x, y + dy) and m.t[(y + dy) * m.w + x] in (WATER, D.SHALLOW))
-        wet_we = sum(1 for dx in (-2, -1, 1, 2) if m.inb(x + dx, y) and m.t[y * m.w + x + dx] in (WATER, D.SHALLOW))
+        run_ns = sum(1 for dy in (-2, -1, 1, 2) if m.inb(x, y + dy) and m.t[(y + dy) * m.w + x] == D.BRIDGE)
+        run_we = sum(1 for dx in (-2, -1, 1, 2) if m.inb(x + dx, y) and m.t[y * m.w + x + dx] == D.BRIDGE)
         stone = getattr(m, 'stone_bridges', False)
-        return ('║' if wet_we > wet_ns else '═'), _jit((190, 184, 170) if stone else (176, 128, 80), r2, .06), \
+        return ('║' if run_ns > run_we else '═'), _jit((190, 184, 170) if stone else (176, 128, 80), r2, .06), \
             (60, 58, 54) if stone else (44, 30, 16)
     if t == D.DOOR and getattr(m, 'round_doors', False):     # halfling doors: round, and painted
         return '○', [(200, 70, 50), (220, 180, 60), (60, 130, 60), (70, 110, 190)][r % 4], (30, 22, 14)

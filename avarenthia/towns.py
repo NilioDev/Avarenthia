@@ -796,6 +796,7 @@ def carve_river(m, pts, half=2.2, keep=()):
     """Lay a river along the points: deep in the middle, shallow at the banks. Where a road crosses it, a bridge."""
     keep = set(keep) | {FOUNTAIN, STALL, WELL}
     wet = set()
+    crossed = set()
     for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
         # only the part of the segment that is on the map
         n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
@@ -817,11 +818,91 @@ def carve_river(m, pts, half=2.2, keep=()):
                     if t0 in keep or t0 == WATER:
                         continue
                     if t0 in (PATH, D.BRIDGE):
-                        m.set(xx, yy, D.BRIDGE)
-                    else:
-                        m.set(xx, yy, WATER if d <= hw - .7 else SHALLOW)
+                        crossed.add((xx, yy))
+                    m.set(xx, yy, WATER if d <= hw - .7 else SHALLOW)
                     wet.add((xx, yy))
+    lay_bridges(m, pts, crossed, 3 if half >= 2.2 else 2)
     return wet
+
+
+def lay_bridges(m, pts, crossed, width):
+    """One straight bridge where each road met the water, square across the river from bank to bank,
+    with a bit of lane joining it to the road on either side."""
+    left = set(crossed)
+    while left:
+        group, todo = set(), [left.pop()]
+        while todo:
+            c = todo.pop()
+            group.add(c)
+            for dx, dy in D8:
+                n = (c[0] + dx, c[1] + dy)
+                if n in left:
+                    left.discard(n)
+                    todo.append(n)
+        gx = sum(c[0] for c in group) / len(group)
+        gy = sum(c[1] for c in group) / len(group)
+        # which way the river runs here: along the nearest stretch of its course
+        best = None
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            vx, vy = x1 - x0, y1 - y0
+            ll = vx * vx + vy * vy or 1
+            t = max(0.0, min(1.0, ((gx - x0) * vx + (gy - y0) * vy) / ll))
+            d = (x0 + vx * t - gx) ** 2 + (y0 + vy * t - gy) ** 2
+            if best is None or d < best[0]:
+                best = (d, vx, vy, x0 + vx * t, y0 + vy * t)
+        _d, vx, vy, rx, ry = best
+        across = (1, 0) if abs(vy) >= abs(vx) else (0, 1)          # the deck runs across the flow
+        side = (across[1], across[0])
+        mid = (round(rx), round(ry))
+        mid = (mid[0], round(gy)) if across == (1, 0) else (round(gx), mid[1])
+        rows = []
+        for k in range(-(width // 2), width - width // 2):
+            ox, oy = mid[0] + side[0] * k, mid[1] + side[1] * k
+            if not m.inb(ox, oy) or m.tile(ox, oy) not in (WATER, SHALLOW):
+                continue
+            ends = []
+            for sgn in (-1, 1):
+                j = 0
+                while j < 40 and m.inb(ox + across[0] * (j + 1) * sgn, oy + across[1] * (j + 1) * sgn) and \
+                        m.tile(ox + across[0] * (j + 1) * sgn, oy + across[1] * (j + 1) * sgn) in (WATER, SHALLOW):
+                    j += 1
+                ends.append(j * sgn)
+            rows.append((ox, oy, ends))
+        if not rows or any(abs(e) >= 40 for _x, _y, ends in rows for e in ends):
+            continue
+        lo = min(ends[0] for _x, _y, ends in rows)
+        hi = max(ends[1] for _x, _y, ends in rows)
+        for ox, oy, _e in rows:                 # every plank the same length: a square deck
+            for j in range(lo, hi + 1):
+                x, y = ox + across[0] * j, oy + across[1] * j
+                if m.inb(x, y):
+                    m.set(x, y, D.BRIDGE)
+            for j, sgn in ((lo - 1, -1), (hi + 1, 1)):
+                x, y = ox + across[0] * j, oy + across[1] * j
+                if m.inb(x, y) and m.tile(x, y) in (GRASS, TREE, FIELD):
+                    m.set(x, y, PATH)
+                if m.inb(x, y):
+                    join_road(m, x, y, (across[0] * sgn, across[1] * sgn))
+
+
+def join_road(m, x, y, out):
+    """From a bridge end, lay lane to the nearest road cell on this side of the water (if one is near)."""
+    roads = [(cheb(xx, yy, x, y), xx, yy) for yy in range(y - 12, y + 13) for xx in range(x - 12, x + 13)
+             if m.inb(xx, yy) and (xx, yy) != (x, y) and m.tile(xx, yy) == PATH
+             and (xx - x) * out[0] + (yy - y) * out[1] >= 0]
+    if not roads:
+        return
+    _d, tx, ty = min(roads)
+    cx, cy = x, y
+    while (cx, cy) != (tx, ty):
+        if cx != tx and (out[0] or cy == ty):      # first away from the water, then along the bank
+            cx += 1 if tx > cx else -1
+        else:
+            cy += 1 if ty > cy else -1
+        if m.tile(cx, cy) in (WATER, SHALLOW, D.BRIDGE):
+            return
+        if m.tile(cx, cy) in (GRASS, TREE, FIELD):
+            m.set(cx, cy, PATH)
 
 
 def river_banks(m, wet):
