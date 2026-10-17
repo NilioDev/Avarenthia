@@ -230,7 +230,7 @@ class Item:
             if self.cursed and self.curse_known:
                 out.append('It is cursed!')
             return out
-        u = unique_named(self.name) if self.rar == 'unique' else None
+        u = unique_named(self.name) if self.rar in ('unique', 'rare', 'magic') else None
         for s, v in self.aff:
             line = D.AFFTXT[s].format(v)
             rng = u and u['aff'].get(s)
@@ -530,9 +530,10 @@ def make_gear(game, bk, rar, ilvl):
 
 
 def make_unique(game, u):
-    """A unique: its powers roll within their ranges. All of them at the top makes a perfect one."""
+    """A unique: its powers roll within their ranges. All of them at the top makes a perfect one.
+    A named piece can be of a lower grade too (rar='magic'): a small boss's own weapon, known by name."""
     it = make_gear(game, u['base'], 'normal', u['lvl'])
-    it.rar = 'unique'
+    it.rar = u.get('rar', 'unique')
     it.name = u['name']
     it.aff = []
     top = True
@@ -594,7 +595,7 @@ def random_gear(game, ilvl, boost=1, bases=None, src=None):
         if opts:
             it = make_set_item(game, *random.choice(opts))
     if it is None:
-        rar = 'rare' if r < .025 * boost else 'magic' if r < .1 * boost else 'normal'
+        rar = 'rare' if r < .008 * boost else 'magic' if r < .035 * boost else 'normal'     # magic is meant to be special
         pool = bases or [f for f in dict.fromkeys(D.FAMILY_OF.values())]
         fams = [f for f in pool if f in D.FAMILY_OF.values() and D.BASES[D.grades(f)[0]]['lvl'] <= ilvl + 1
                 and not (rar == 'normal' and D.BASES[D.grades(f)[0]].get('magic_only'))]

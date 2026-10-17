@@ -1088,6 +1088,12 @@ def gen_village(game, s):
     if getattr(s, 'harbour', False):
         HB.furnish(game, m, s, names)
     homes = [p for p in buildings if p.kind == 'home']
+    old_fisher = next((o for o in m.mons if o.role == 'fisher'), None)
+    if old_fisher and homes:                       # the fisherman keeps hours too: out on his jetty by day, home at night
+        beds = [c for c in homes[-1].inside if m.tile(*c) in (FLOOR, PLANK)]
+        if beds:
+            old_fisher.home_pos, old_fisher.work_pos = random.choice(beds), (old_fisher.x, old_fisher.y)
+            old_fisher.job, old_fisher.path = 'fisher', []
     nm, col = TITLE['market']
     if trader_spot:
         m.set(*trader_spot, PATH if square == 'square' else GRASS)

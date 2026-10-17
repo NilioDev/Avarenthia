@@ -272,7 +272,7 @@ def chest(game, lvl, n):
     it = Item(game.new_id(), 'gold', 'gold', purse(lvl, 6))
     game.spill(m, cx, cy - 2, it)
     for _ in range(n):
-        g = random_gear(game, lvl, 2)
+        g = random_gear(game, lvl)
         game.spill(m, cx, cy - 2, g)
 
 
@@ -314,7 +314,7 @@ def loot_or_ambush(game, x, y):
             game.add_to_inv(Item(game.new_id(), 'potion', random.choice(['hp', 'hp', 'mp'])))
             found.append('a potion')
         if random.random() < .35:
-            g = random_gear(game, lvl, 2)
+            g = random_gear(game, lvl)
             if game.add_to_inv(g):
                 found.append(g.name)
         game.msg('You find ' + ', '.join(found) + '.', 'gold')
@@ -378,24 +378,25 @@ def r_hurt(game, choice, ctx):
 def e_peddler(game):
     from .entities import random_gear, make_gear, make_tome
     lvl = max(1, game.player.lvl)
-    if random.random() < .4:
+    r = random.random()
+    if r < .25:
         it = make_tome(game, lvl + 2)
         price = round(it.value() * 1.3)
         what = f'the {it.display_name()}'
         lines = it.lines()[1]
     else:
-        it = random_gear(game, lvl + 1, 3)
-        if it.rar == 'normal':
-            it = make_gear(game, it.base, 'magic', lvl + 1)
+        it = random_gear(game, lvl + 1)
+        it = make_gear(game, it.base, 'magic' if r > .85 else 'normal', lvl + 1)     # now and then something special
         it.ided = True
         it.curse = []
         price = round(it.value() * 1.2)
         what = it.name
         lines = ' · '.join(it.lines()[:3])
+    pitch = 'Something special for you, friend' if it.k == 'tome' or it.rar != 'normal' else 'Good honest work, friend'
     opts = [(f'Buy it for {fmt(price)}', 'buy' if game.player.gold >= price else None)]
     opts += [('Take it from him', 'rob'), ('No thanks', 'leave')]
-    ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "Something special for you, '
-        f'friend: {what}." ({lines})', opts, item=it, price=price)
+    ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "{pitch}: '
+        f'{what}." ({lines})', opts, item=it, price=price)
 
 
 def r_peddler(game, choice, ctx):

@@ -887,7 +887,9 @@ def thornfield_and_faith():
             assert inn not in g.nearby_people(), 'but not through a wall'
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + D.DAY_LEN // 2
     fisher = next(o for o in m.mons if o.role == 'fisher')
-    assert any(m.tile(fisher.x + dx, fisher.y + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+    wx, wy = fisher.work_pos                     # his place by day is out by the water; at night he goes home
+    assert any(m.tile(wx + dx, wy + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+    assert TW.target_for(g, fisher) == fisher.work_pos
     p.inv = [i for i in p.inv if not (i.k == 'tool')]
     g.talk(fisher)
     assert LS.has_pole(g) and g.flags.get('quest_fish')
@@ -920,7 +922,7 @@ def thornfield_and_faith():
     # the den: kobolds only, in ones and twos
     dm = WG.gen_dungeon(g, 'den', 1)
     keys = {o.k for o in dm.mons}
-    assert keys <= {'kobold', 'snagtooth'}, keys
+    assert all(k == 'snagtooth' or D.MONSTERS[k].get('family', k) == 'kobold' for k in keys), keys
     packs = {}
     for o in dm.mons:
         packs[o.pack] = packs.get(o.pack, 0) + 1

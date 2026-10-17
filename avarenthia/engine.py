@@ -1727,19 +1727,20 @@ class Game:
         elif mon.tpl.get('chief') and not mon.elite:
             n = random.randint(1, 2)
         elif boss:
-            n = random.randint(2, 3)
+            n = random.randint(1, 2)
         else:
-            n = (random.randint(1, 2) if random.random() < .8 else 0) if mon.elite == 2 else \
-                (1 if random.random() < .45 else 0) if mon.elite == 1 else (1 if random.random() < .08 else 0)
+            n = (1 if random.random() < .5 else 0) if mon.elite == 2 else \
+                (1 if random.random() < .2 else 0) if mon.elite == 1 else (1 if random.random() < .04 else 0)
+        u = None
         if boss:
             u = next((u for u in D.UNIQUES if u.get('boss') == mon.k), None)
             if u:
                 it = make_unique(self, u)
                 self.spill(m, mon.x, mon.y, it)
                 self.announce(it)
-        for _ in range(n):
+        for j in range(n):
             it = random_gear(self, lvl, boost, uses, mon.k)
-            if boost > 3 and it.rar == 'normal':
+            if boost > 3 and j == 0 and not u and it.rar == 'normal':     # a boss without a treasure of its own has one thing worth having
                 up = make_gear(self, it.base, 'magic', lvl)
                 it.rar, it.aff, it.name, it.ided = up.rar, up.aff, up.name, False
             self.spill(m, mon.x, mon.y, it)

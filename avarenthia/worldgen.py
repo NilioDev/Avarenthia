@@ -292,7 +292,7 @@ def gen_dungeon(game, did, depth):
         tag = 'vault' if getattr(d, 'varnish', False) and random.random() < .4 else d.tag     # what the Varnish left on guard
         if spawn_pack(game, m, lvl, tag, c, el, False):
             elites += 1
-    for _ in range(1 + random.randint(0, 2)):
+    for _ in range(random.randint(0, 1)):
         c = rand_free(game, m, lambda t: t == FLOOR)
         if c:
             it = random_gear(game, lvl)
@@ -336,8 +336,8 @@ def open_chest(game, x, y):
     m.set(x, y, D.CHEST_OPEN)
     lvl = getattr(m, 'level', 1)
     game.spill(m, x, y, Item(game.new_id(), 'gold', 'gold', purse(lvl, 6)))
-    for _ in range(random.randint(1, 2)):
-        game.spill(m, x, y, random_gear(game, lvl + 1, 2.5))
+    if random.random() < .7:
+        game.spill(m, x, y, random_gear(game, lvl + 1, 1.5))
     if random.random() < .2:
         game.spill(m, x, y, make_tome(game, lvl))
     dg = game.world.dungeons.get(getattr(m, 'did', None))
@@ -399,7 +399,7 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
 def gen_shop(game, city=False):
     lvl = max(1, game.player.lvl) + (1 if city else 0)
     ks = [k for k, b in D.BASES.items() if b['lvl'] <= lvl + 2]
-    stock = [make_gear(game, random.choice(ks), 'magic' if random.random() < .2 else 'normal', lvl) for _ in range(8)]
+    stock = [make_gear(game, random.choice(ks), 'magic' if random.random() < .06 else 'normal', lvl) for _ in range(8)]
     if city and random.random() < .5:
         from .entities import make_tome
         stock.append(make_tome(game, 0))
