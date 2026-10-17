@@ -656,19 +656,19 @@ def _petal_cell(kind, ch, fg, bg, lx, ly, t, dist):
     """Leaves in autumn or blossom in spring, drifting down and settling on the ground."""
     cols = LEAVES[kind]
     tint = (60, 30, 10) if kind == 'leaves' else (60, 30, 44)
-    bg = _mix(bg, tint, .12)
+    bg = _mix(bg, tint, .12 if kind == 'leaves' else .05)
     ground = ch in GROUND
     lie = _noise2(lx * .25, ly * .25, 171 if kind == 'leaves' else 172)
-    if ground and lie > (.62 if kind == 'leaves' else .7) and _h(lx, ly, 178) % (1 if kind == 'leaves' else 3) == 0:
+    if ground and lie > (.62 if kind == 'leaves' else .76) and _h(lx, ly, 178) % (1 if kind == 'leaves' else 5) == 0:
         ch, fg = (',' if _h(lx, ly, 173) % 2 else '.'), cols[_h(lx, ly, 174) % len(cols)]   # fallen ones
     for layer, speed in enumerate((2.0, 1.3)):
         u = ly - t * speed
         sway = math.sin(t * 1.1 + u * .5 + layer * 3) * 2.5 + t * (1.5 if kind == 'blossom' else .6)
         x = int(round(lx - sway))
-        if _h(x, int(math.floor(u)), 175 + layer) % (29 if kind == 'leaves' else 23) == 0:
-            if ground or ch in ',.':
+        if _h(x, int(math.floor(u)), 175 + layer) % (29 if kind == 'leaves' else 53) == 0:
+            if ground or ch in ',.':          # a petal shows on open ground; over water or a tree it is not drawn,
                 ch = ('`' if math.sin(t * 4 + lx) > 0 else ',') if kind == 'leaves' else ('∙' if layer else '·')
-            fg = cols[_h(x, int(u), 177) % len(cols)]
+                fg = cols[_h(x, int(u), 177) % len(cols)]       # so the water and the trees keep their own colour
             break
     return ch, fg, bg
 

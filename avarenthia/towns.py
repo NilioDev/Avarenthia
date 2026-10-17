@@ -466,8 +466,8 @@ def farmland(game, m, plots, sy, names, avoid=None, want=None):
                         m.set(xx, yy, FENCE if edge else FIELD)
                     elif kind == 'pasture':
                         m.set(xx, yy, FENCE if edge else GRASS)
-                    else:
-                        m.set(xx, yy, TREE if not edge and (xx - fx) % 2 == 1 and (yy - fy) % 2 == 1 else GRASS)
+                    else:                      # an orchard: fruit trees in rows behind a fence, so it reads as planted
+                        m.set(xx, yy, FENCE if edge else TREE if (xx - fx) % 2 == 1 and (yy - fy) % 2 == 1 else GRASS)
             gx = fx + fw // 2
             gy = fy + fh - 1 if (fy < sy if sy > -100 else fy + fh // 2 < h // 2) else fy
             m.set(gx, gy, PATH)
