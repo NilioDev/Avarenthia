@@ -75,6 +75,13 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   Factions, Jobs, Trade (L: next; F still Factions). Look (o) lists what every sign in view means; Enter on a
   creature opens its bestiary page. The company screen (h): hireling and beast side by side, 1-5 orders for one or
   both, gear by slot. A tip in the log the first time something is useful, once per hero.
+- **Fixes from play, 17 October 2026.** Magic made special: found gear is magic about 1 in 30 and rare about 1 in
+  125; dungeon floors, chests, elites, bosses, shops and road loot give far less. Named items come in every grade
+  (early ones plain magic, middle ones rare, the great ones unique), each power within its level's tier; Snagtooth's
+  Pick is now a small magic club. The peddler mostly sells plain gear and can be robbed (he and his sellsword fight,
+  or he runs with the pack). Choices you cannot afford show greyed out. Village bridges are one straight deck from
+  bank to bank. Orchards are fenced. The fisherman goes home at night. Calmer spring blossom that leaves water and
+  trees alone. A town's name no longer covers you on the world map.
 
 ## The UI rule for every new round
 
