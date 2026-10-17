@@ -12,6 +12,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
+| **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -56,6 +57,45 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   iron breathes, ore, gems and rare items catch the light, rings where fish rise (fishing is better there), wisps
   over the marsh at night, tainted land breathes, the portal and altar candles pulse, the lighthouse beam turns,
   hostile camps glow on the world map at night. The screen only redraws on a timer while one is in view.
+
+---
+
+## Place names (approved, not built)
+
+Approved on 17 October 2026. Today almost every place name comes from a short fixed list: 22 city names for the
+18 cities a world needs, so every game shows nearly the same cities; human villages are 24 x 14 parts for 85
+villages (Ashford, Ashwick and Ashmere in one world); the hostile camps have 6 names each for 4-5 camps; elven glades
+have 8 names for the 9 a world wants, so one glade is quietly lost. Halfling and dwarf villages already build names
+from parts.
+
+**One name maker** (`names.py`): for each people a small grammar of parts and patterns, with a small chance of a
+fixed, hand-made name. Picked at random per world, never twice in one world (`world` keeps the used names). Names
+are fixed when the world is made, so saves need nothing new. Every list that now caps how many places are made
+(glades, gnome hamlets, camps, holds) stops capping.
+
+**Names fit the land.** The maker looks at where the place lies: by a river -ford, -bridge, -wade; on the coast
+-haven, -mouth, Port; in hills and mountains Dun-, -crag, -fell; in wood and marsh -wood, -holt, -fen, -mere. An
+ending that does not fit the spot is not used (no -ford without a river).
+
+**Humans by region.** The human lands get three ways of speaking, by where they lie on the map:
+- **The north**: Norse-sounding (Thorby, Kettlethorpe, Ravensgarth, Skelwick).
+- **The west**: Celtic-sounding (Caer Lewyn, Penmorrow, Trevellan, Llanfarren).
+- **The heartland**: old English (Ashford, Market Hollin, Bramley Cross).
+Cities take grander forms (Port Varen, Highmarch, Kingsbridge); villages plainer ones.
+
+**The other peoples:**
+- **Halflings**: the parts they have now, plus forms like "Puddle-under-Hill" and "Little Tumbling".
+- **Elves**: flowing syllables for the cities (Ael-, Ith-, Syl- with -vael, -thiel, -ond); glades in plain English
+  (Moonwater Glade, Starfall Hollow).
+- **Dwarves**: hard syllables for the holds (Khaz, Karak, Dun, Zirak with -dum, -grund, -thar); miners' words for the
+  villages (Flintcleft, Anvilbrow).
+- **Gnomes**: cosy compounds (Moss, Toad, Acorn with -hame, -dell, -bottom).
+- **Orcs (war camps)**: after the totem or the tribe (The Split Tusk Camp, Camp of the Red Hand).
+- **Goblins (ravines)**: crude and plain (Ratgut Gully, Snot Gulch, The Grubcrack).
+- **Kobolds**: shiny and small (Shinydig, Tinklehole, Glimmerburrow).
+- **Gnolls**: after the pack (The Bone-Laugh Pack, Red Grass Camp).
+- **Lizardfolk**: hissing syllables (Sslathaar, Ix-Hessa, Ossk Vael).
+- Later, with round 6: names for the half-orc and goblin quarters in the cities and their shanty camps.
 
 ---
 
