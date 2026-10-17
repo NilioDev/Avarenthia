@@ -12,6 +12,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
+| **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
@@ -96,6 +97,72 @@ Cities take grander forms (Port Varen, Highmarch, Kingsbridge); villages plainer
 - **Gnolls**: after the pack (The Bone-Laugh Pack, Red Grass Camp).
 - **Lizardfolk**: hissing syllables (Sslathaar, Ix-Hessa, Ossk Vael).
 - Later, with round 6: names for the half-orc and goblin quarters in the cities and their shanty camps.
+
+---
+
+## Nature and wonders (approved, not built)
+
+Approved on 17 October 2026 in the thread on natural phenomena. Mockups (GIFs in the game's own tiles) and the
+script that drew them are in the project files under `natuur/` (`natuur_mockups.py`).
+
+**Rules for all of them:**
+- On the world map each one is **one cell**, like a village. The full look lives on its own play map.
+- Each one is a **site** (`world.sites`). Its play map is made on the first visit (`gen_site_map`) and kept in
+  `game.maps`, so it is saved, the same way oases and shielings work. Tides and night events come from the clock.
+- **Random per world:** which wonders a world has, where they lie, and how their maps are laid out (from the world
+  seed plus the site position); names are built from parts. Only a few great wonders have a fixed name, and each
+  appears once per world at most.
+- Each one must give the player something to do: a visible tile, used with one key or a bump.
+- **Water must move:** rivers and pools flow everywhere (frames of about 190 ms). Falling water is made of strands,
+  each with its own speed, thickness and gaps, never one pattern scrolling across the full width. Foam boils
+  irregularly. Where falling water lands there are rings and splash.
+- **Placement:** rivers rarely run straight out of mountain cells (`terrain.py`), so the waterfall placer looks for
+  the steps where a river leaves hills or mountains. Expect only a few per world.
+
+**Water:**
+- **Waterfall**: a cave behind the falls, better fishing in the pool, mist drifting off. One great named waterfall
+  per world.
+- **Cascade**: falls in many low steps down a hillside (like Pongour).
+- **Great falls**: a wide horseshoe curtain with rising spray (like Niagara or Victoria).
+- **Rapids**: white water with boulders. Stepping stones are the crossing; falling in sweeps you downstream.
+- **Hot spring**: bathe to heal; warms you in winter.
+- **Tidal causeway**: a path of poles to an islet, passable only at low tide.
+- **Frozen Stair**: in winter a waterfall freezes. Climb the ice to a ledge where something was left behind.
+
+**Fantasy wonders:**
+- **Drifting Isles**: rocks hanging over a vale. Super rare, and can appear in any ordinary biome (forest, desert,
+  savanna and so on); the vale and the isle tops take that biome's look. The isles are drawn in full; the one the
+  player walks under turns into its shadow only, like a roof vanishing. Not every isle has a fall. Falling water
+  drains away: pool, brook, small lake, then a river off the map. A chain to climb up to an isle-top map.
+- **Starwater**: a lake that shows the stars by day. A stair under it leads to its twin lake far away.
+- **Thunder Anvil**: lightning strikes an iron spike on a hill; a weapon left there is blessed.
+- **Hollow Hill**: at full moon a door opens in a green hill, with music inside. The fair folk sell strange things
+  and take no coin.
+- **The Unwintering**: a patch of spring in the middle of the snow, with herbs that grow nowhere else.
+- **Undying Flame**: fire burning out of bare rock. What a smith works in it holds an edge.
+- **Drowned Bell**: in a storm a bell rings under a lake. Only then can you swim down to the drowned chapel.
+- **Star Well**: an old well with stars in it by day. Throw in a coin and wish; the wish is not always the one
+  you meant.
+- **Singing Stones**: a ring of stones that hums at dusk. Sleep in the middle and dream of a hidden place.
+- **Northern lights**: green and violet light over the snow on winter nights in the far north. What it gives the
+  player is still to be settled.
+- **Starfall**: now and then a star falls at night and leaves a new crater with star-iron for the smith. Whoever
+  gets there first gets it.
+- **Wisp Fen**: blue lights over a marsh at night. Following them leads to old treasure or into the mire.
+- **Singing Sands**: dunes that hum underfoot. Where the hum is loudest, a buried ruin can be dug out.
+- **Glowing Bay**: on summer nights the waves break in blue light, and the fish bite better.
+- **Green Well (cenote)**: a clear pool in a hole in the jungle floor. Climb down a rope and dive for old
+  offerings.
+- **Stone Wood**: a petrified forest. The trees cannot be cut; amber lies in the grit and sometimes a fossil to
+  sell.
+
+**For the monsters:** trolls caught in sunlight turn to stone.
+
+**Dropped:** the Twin Kings, the Troll's Bridge, the mirage and the whirlpool.
+
+**Shown but not yet decided:** stone arch over a river (a free crossing), lookout crag (shows the map around it),
+fairy ring, ice cave at a glacier's edge, quicksand, bird cliffs (eggs in spring), and a use for the wonders that
+are only for looking at today (geysers, tar pits, crystal hills, glowing mushrooms).
 
 ---
 
