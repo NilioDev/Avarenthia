@@ -16,7 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
-| **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
+| **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -473,6 +473,24 @@ regions. Wars never start or end, there is no diplomacy. This round replaces tha
 - **Hill and steppe barbarians**: tribes with a chieftain (riders on the steppe, clans in the highlands), honour
   and blood feud. They raid in winter and in hunger (after a dry summer or a hard winter). Barons hire them
   against a neighbour, cheap and unreliable. They can take a border barony, which after some years becomes theirs.
+- **Desert riders** (desert, dunes, oases): fast riders on camels and horses who hold the oases and the caravan
+  roads. They take a toll or rob a caravan; in the dry season they ride north under cover of a sandstorm; a strong
+  leader can take a southern barony. Guest right holds in the tent; fine traders in salt, spice and horses.
+- **Ice raiders** (tundra, taiga): reindeer herders with sledges, peaceful in summer. In winter, when rivers and
+  lakes freeze, they ride south over the ice and raid (the frozen water of round 5 becomes a real danger); the
+  spring thaw ends their raids.
+- **Pass clans** (alpine, mountains): mountain folk who guard the passes and take a toll. They hire out as guides
+  or close a pass to an army, and now and then loose an avalanche on those who will not pay; a king who wants to
+  cross the mountains must deal with them (ties in with the passes that close in winter).
+- **Wreckers** (coast, moor): coast villages that lure ships onto the rocks with false lights in a storm and strip
+  the wreck; the lights are seen at night. They never attack a barony, but grow rich and buy a baron.
+- **Canyon riders** (mesa, canyon): fortified villages high in the cliff walls; they strike caravans from the
+  canyons (fits the ambush effect those biomes already have).
+- **Mist folk** (moor, marsh): raid only in the moor's morning mist and vanish into it again. Little is known of
+  them; tales say they know the marshes like no one else.
+- **Island voyagers** (atolls, lagoons): sea nomads in outriggers who steer by the stars and hold the reefs and the
+  pearls. Good to trade with, bloody in revenge on whoever plunders their reefs.
+- The names above are only labels: every one of these peoples gets a made name in its own sound.
 - The outlaws (robber knights) stay criminals inside the realm, and a baron can hire them against his neighbour.
 
 **More powers:**
