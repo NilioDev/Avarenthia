@@ -19,6 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
+| **Approved: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data. Not built yet |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
@@ -111,6 +112,28 @@ river is and how big the road is.
 - How broad and wild comes from the river on the world map (its size where it passes the place, and mountains or
   rapids upstream). The world-map ferries (`living.py`) stay as they are.
 - UI: the raft and the ferryman are signs named in `guide.py`; no new key.
+
+## The handbook (approved, not built)
+
+Approved by Nilio on 17 Oct 2026. The old `HelpScreen` (seven pages of key lines, partly stale) becomes **The
+Adventurer's Handbook**. Mockups and every text: `/mnt/project-files/handleiding/` (`voorstel.md`, `teksten.md`,
+`handbook_mockup.py`).
+
+- **Where it shows:** `?` (and Esc, Game, Help) opens it as a modal. Contents on the left (18 chapters; the chosen one
+  opens to show its sections), the page on the right: short plain sentences, gold headings, keys in `[ ]`, signs in
+  their own colours, now and then a real piece of the map, a tip in the margin.
+- **How it is controlled:** up and down pick a chapter, right (or Enter) goes into the page and up and down scroll it,
+  left goes back, Esc closes. No new keys in play.
+- **It opens where it fits:** in a fight at Fighting, in a town at Towns and people, at sea at Travel and sailing,
+  for a new hero at First steps; while the game runs it remembers the page you read last (not saved).
+- **Chapters:** First steps, Moving and looking, Fighting, Your hero, Gear, Towns and people, Jobs and money, The
+  land, Weather and seasons, Travel and sailing, Camp food and rest, Your company, Guilds, Gods, Wild peoples, Death,
+  Signs, All the keys.
+- **From the data, so it cannot go stale:** peoples, gods, months, rarity colours, money, Signs (`guide.signs`) and All
+  the keys (from `MenuScreen.GROUPS`). The texts live in their own file, `avarenthia/handbook.py`.
+- **Tests:** every menu key appears in All the keys; every text fits (wrap, never cut).
+- **Standing rule once built:** every change to the game updates the handbook in the same commit, and the build
+  report quotes the new or changed handbook lines so Nilio can read them.
 
 ## Place names (approved, not built)
 
