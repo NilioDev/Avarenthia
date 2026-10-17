@@ -13,6 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
+| **Approved: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge. Not built yet |
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
@@ -95,6 +96,21 @@ Everything new finds its place in what is there; no new screen per system, no ne
 - **A new key** is taught by one tip in `guide.TIPS` the first time it is useful, not by text on the screen.
 
 ---
+
+## Ferries in villages (approved, not built)
+
+Niels, 17 October 2026: a village river is not always crossed by a bridge; it depends on how broad and wild the
+river is and how big the road is.
+
+- **Small river or stream:** a bridge, as now (one straight deck from bank to bank).
+- **Broad or fast river, small road or lane:** a ferry instead. A flat raft (`▬` planks) on a rope across the water, a
+  landing on each bank, a ferryman's hut on one side. Bump the ferryman (or step onto the raft): a few copper, and
+  you are on the other bank; at night he is home and the raft is tied up. Farm fields across the water stay reachable.
+- **Broad river, main road** (one of the two busiest roads into the place): always a bridge, stone in towns, because
+  that fits the world.
+- How broad and wild comes from the river on the world map (its size where it passes the place, and mountains or
+  rapids upstream). The world-map ferries (`living.py`) stay as they are.
+- UI: the raft and the ferryman are signs named in `guide.py`; no new key.
 
 ## Place names (approved, not built)
 
