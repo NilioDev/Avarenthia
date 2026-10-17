@@ -1678,7 +1678,7 @@ def pump(game):
         amount = random.randint(25, 60) * 100
         EV.ask(game, 'jb_mercdebt', mc.name, f'{mc.name} has been quiet all day. At last: "I owe {creditor} {fmt(amount)}. Owed it '
                f'for years. His men are on the road behind us; I saw them at the last inn. I can run, as I always have. Or not."',
-               ([(f'Pay the debt for him ({fmt(amount)})', 'pay')] if game.player.gold >= amount else [])
+               [(f'Pay the debt for him ({fmt(amount)})', 'pay' if game.player.gold >= amount else None)]
                + [('Face his men with him', 'face'), ('It is not my problem', 'refuse')], creditor=creditor, amount=amount)
 
 

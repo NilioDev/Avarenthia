@@ -150,9 +150,7 @@ def at_gate(game, s):
     s.stopped_day = game.day
     f = fine(s)
     what = (getattr(s, 'crimes', None) or ['your crimes'])[-1]
-    opts = []
-    if game.player.gold >= f:
-        opts.append((f'Pay the fine of {fmt(f)}', 'pay'))
+    opts = [(f'Pay the fine of {fmt(f)}', 'pay' if game.player.gold >= f else None)]
     opts += [('Spend three days in the stocks', 'stocks'), ('Swear it was someone else, and prove it', 'name'),
              ('Turn and run', 'run')]
     ask(game, 'gate', f'The guards of {s.name}',

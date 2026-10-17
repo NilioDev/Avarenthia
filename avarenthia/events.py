@@ -152,7 +152,7 @@ def reveal(game, poi):
 
 # ------------------------------------------------------------------ choices
 def ask(game, key, title, text, options, **ctx):
-    """Open a choice dialog. options: list of (label, choice_key)."""
+    """Open a choice dialog. options: list of (label, choice_key); a key of None shows the option greyed out."""
     game.pending = dict(key=key, title=title, text=text, options=options, ctx=ctx)
     game.request = ('choice',)
 
@@ -392,7 +392,7 @@ def e_peddler(game):
         price = round(it.value() * 1.2)
         what = it.name
         lines = ' · '.join(it.lines()[:3])
-    opts = [(f'Buy it for {fmt(price)}', 'buy')] if game.player.gold >= price else []
+    opts = [(f'Buy it for {fmt(price)}', 'buy' if game.player.gold >= price else None)]
     opts.append(('No thanks', 'leave'))
     ask(game, 'peddler', 'A wandering peddler', f'A peddler with a laden mule waves you over. "Something special for you, '
         f'friend: {what}." ({lines})', opts, item=it, price=price)
@@ -488,7 +488,7 @@ def r_cart(game, choice, ctx):
 def e_toll(game):
     p = game.player
     fee = 300 * game.world.danger_at(p.x, p.y)
-    opts = [(f'Pay {fmt(fee)}', 'pay')] if p.gold >= fee else []
+    opts = [(f'Pay {fmt(fee)}', 'pay' if p.gold >= fee else None)]
     opts += [('Draw your weapon', 'fight'), ('Try to run', 'run')]
     bh = D.FACTIONS['blackhand']['name']
     ask(game, 'toll', 'A toll on the road', f'Armed men step onto the road. "Toll for {bh}. {fmt(fee)}, or blood."', opts, fee=fee)

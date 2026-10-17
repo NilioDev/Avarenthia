@@ -2693,9 +2693,10 @@ class ChoiceScreen(Modal):
             cv.text(x + 3, y + 2 + i, ln, FG, PANEL)
         yy = y + 3 + len(lines)
         for i, lb in enumerate(labels):
-            cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
+            off = ev['options'][i][1] is None
+            cv.text(x + 3, yy, LETTERS[i], DIM if off else GOLD, PANEL)
             for ln in lb:
-                cv.text(x + 5, yy, ln, FG, PANEL)
+                cv.text(x + 5, yy, ln, DIM if off else FG, PANEL)
                 yy += 1
         cv.text_center(W // 2, y + h - 1, ' press a letter to choose ', DIM, PANEL)
 
@@ -2711,7 +2712,7 @@ class ChoiceScreen(Modal):
             self.app.pop()
             return
         opts = ev['options']
-        if len(tok) == 1 and tok in LETTERS[:len(opts)]:
+        if len(tok) == 1 and tok in LETTERS[:len(opts)] and opts[LETTERS.index(tok)][1] is not None:
             self.choose(opts[LETTERS.index(tok)][1])
         elif tok == 'esc':
             leave = [k for _l, k in opts if k == 'leave']
