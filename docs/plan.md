@@ -14,6 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
+| **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
@@ -198,7 +199,7 @@ map or through foraging.
 | Savanna, desert edge | gazelle (sand), wildebeest (slate grey), travels | fast, skittish |
 | Cold north | fox, ermine (small game, fine fur) | |
 
-**Hunting** happens on its own small map. Walk into the herd on the world map: a hunting ground like an encounter
+**Hunting** happens on its own small map (with the zones, see *Walking the land*, the zone itself is the hunting ground). Walk into the herd on the world map: a hunting ground like an encounter
 map now (`gen_wild`). The herd grazes; the leader watches. The wind is in the log (and one arrow at the edge): with
 the wind in your face they do not smell you; tall grass and trees hide you. No sneak key: the closer and the more
 open, the sooner they see you. Bow (Tab to aim) or spear; a hit animal runs on a few steps, a blood trail `·` leads to
@@ -348,6 +349,68 @@ Luxury (only by trying, or a rare book; they sell well in cities):
 | Cep Omelette | eggs + ceps + butter | faster healing and mana |
 | Wyrm-egg Custard | a drake egg (very rare) + milk + honey | fire resistance for a day |
 | Elder Tree Nectar | sap of the Elder Tree (elven city) + wild strawberries + honey | full healing, once a week |
+
+---
+
+## Walking the land: zones (approved, not built)
+
+Approved on 17 October 2026 in the thread on seamless walking ("option B", the Caves of Qud model). The Dutch
+proposal with the measurements, a sketch script and pictures are in the project files under `naadloos/`
+(`voorstel.md`, `zones_mockup.py`, `zones_overview.png`, `zone_corner.png`, seed 7).
+
+**How it plays:**
+- The world map stays the way to travel, at today's speed.
+- `>` anywhere in open country puts you in that cell's **zone**: a play map of 80x51 tiles (one screen).
+- Walk off a zone's edge and you are in the neighbouring zone, not back on the world map. `<` anywhere in open
+  country takes you back up to the world map.
+- Towns, villages, sites, holds and dungeons keep their own maps. Walk into their zone's middle (or bump the gate)
+  and you are in; leave by any edge and you come out into the zone on that side.
+- An ambush on the world map is fought in the zone of that cell, not on a loose battle map; after the fight you
+  can walk on. Fleeing off the edge still works (you land in the next zone, the foes stay behind).
+- Wanderers live on the world map as now and appear in a zone when you are in their cell.
+
+**Why the world map stays:** a grass step on the world map costs 10 turns, a zone is 80 steps across. Crossing the
+world through zones would be ~38,000 steps (~128 days). Zones are for looking around, hunting, finding a waterfall;
+the world map is for distance.
+
+**How a zone is made:**
+- Every tile is a pure function of (world seed, global tile x, y): the world cell and its neighbours are blended
+  from cell centre to cell centre, roughened with noise, so forest frays into hills and grass with no seam at a zone
+  edge.
+- Rivers and roads run from a cell's middle to a point on the edge it shares with the next river or road cell;
+  that point comes from a hash of the edge, so both neighbours draw it the same, whenever they are made. A river
+  that starts on the world map starts at a spring in its zone. Roads over rivers get bridges.
+- Dungeon mouths, shrines, battlefields, shielings and other one-cell things stand in the middle of their zone.
+- Settlement maps get a strip along their edges that blends into the zones around them (their roads and rivers
+  already follow the world map).
+- On screen the 3x3 zones around you are stitched into one map, so the view, sight and chasing monsters run on
+  across the edges. Cross an edge and the window shifts: the zone that drops off is put away, the new one is made
+  (7-12 ms each in the sketch, with numpy).
+- Monsters in zones you are not near stand still.
+
+**Saving:**
+- An untouched zone is never saved: it is made again from the seed.
+- A visited zone keeps only what changed: items, corpses, dug or cut tiles, dead monsters, and what you have seen
+  (as bits). About 0.5-1 KB per zone; a long life of 2000 zones adds 1-2 MB.
+- With it (or before it, it stands alone): pack the save with zlib and keep the world map's tiles as bytes. Seed 7
+  today: 2.1 MB raw (0.9 MB of it the world map), 0.34 MB packed.
+- `SAVE_VERSION` goes up.
+
+**Seasons** are drawn over a zone (snow, ice, leaf colour, mud), never baked into its tiles, or a saved zone stays
+in the season you first saw it.
+
+**How the other plans fit:**
+- Nature and wonders: each stays a site with its own map, entered from its zone; a river you follow leads to its
+  waterfall, and a drifting isle's shadow can fall on the zones under it.
+- Herds and hunting: the hunting ground is the zone itself, not a separate small map; a herd on the world map has its
+  animals walking in its zone, and a wounded animal can flee into the next zone.
+- Place names: unchanged; the area's name shows on the bottom line as now.
+- Round 6: no clash, settlements keep their own maps.
+
+**Build:** one new module (`zones.py`: make, stitch, save only changes), changes in `try_move`, `leave_to_over`,
+`start_encounter`, save/load and the season drawing; every check of the map kind `'wild'` or `'over'` must know the
+zone. About the size of round 5. Tests: zone edges match from both sides, a saved zone comes back the same, an
+ambush in a zone, walking from a town edge into a zone and back.
 
 ---
 
