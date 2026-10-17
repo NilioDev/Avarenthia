@@ -885,7 +885,7 @@ class GameScreen(Screen):
             vx, vy = s.x - ox, s.y - oy - 1
             label = s.name
             lx = vx - len(label) // 2
-            if 0 <= vy < MAP_H and -len(label) < lx < MAP_W and not (p.y == s.y - 1 and lx <= p.x - ox < lx + len(label)):
+            if 0 <= vy < MAP_H and -len(label) < lx < MAP_W and not (p.y == s.y - 1 and lx - 1 <= p.x - ox <= lx + len(label)):
                 col = (255, 226, 140) if s.is_city else (236, 210, 150) if s.kind != 'hamlet' else (196, 176, 136)
                 if s.kind == 'metropolis':
                     label = label.upper()
