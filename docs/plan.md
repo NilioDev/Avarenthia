@@ -18,6 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
+| **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -569,6 +570,28 @@ the Seven Crowns); a barony after its chief place or its land (Barony of Caer Du
 family name with arms and a motto; dwarves, elves, orcs and raiders in their own sound.
 
 ---
+
+## Stamina for martial skills (approved, not built)
+
+Approved by Nilio on 17 October 2026. Today every skill costs mana, also Power Strike or Assassinate, and
+Warcraft counts as magic. Fighting skills get their own resource: stamina.
+
+- **Two pools.** Weapon skills (Unarmed, Swordsmanship, Axes and Maces, Daggers, Archery) and the martial skills
+  cost stamina; spells (Fire, Frost, Storm, Restoration, Shadow, Nature, Necromancy, Beastcraft) cost mana.
+  A character who fights and casts has both and must choose where the points go.
+- **Warcraft becomes martial**, a third kind beside weapon and magic (`skills.py` DISCIPLINES): it works with any
+  weapon in hand, costs stamina and grows on Strength, not Energy. Charge becomes a true weapon strike (today it is
+  counted as a spell with 0 base damage, so it only hits for about Energy/5: a bug to fix in the same round).
+  Guild techniques follow their discipline: the Iron Company's are martial, Spellblade too.
+- **Where it comes from.** Maximum stamina from Strength and Vitality (mana stays on Energy). Stamina comes back
+  quickly on any turn you do not attack, slower in heavy armour, and not at all while starving. No new keys.
+- **Not rage.** A pool that fills by hitting starts every fight empty; that fits a careful roguelike badly.
+- **UI.** Three orbs side by side on the panel, always all three in sight: LIFE, STAMINA, MANA. The panel is 27 cells
+  wide, so three 9-wide orbs fit exactly once the small ornament between them goes; rows 12-13 get three labels and
+  three numbers. Stamina gets its own colour (bronze or sand; green is poison, gold is XP). Built only after the
+  player overview/UI round has landed, which reworks the same panel and the orb drawing.
+- **Save data** changes shape (a stamina value on the player): bump `SAVE_VERSION`.
+- Full list of schools, skills and guild techniques as they stand: project files `magie/scholen.md`.
 
 ## Round 6: livelier settlements (on hold)
 
