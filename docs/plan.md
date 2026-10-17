@@ -16,6 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
+| **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -411,6 +412,95 @@ in the season you first saw it.
 `start_encounter`, save/load and the season drawing; every check of the map kind `'wild'` or `'over'` must know the
 zone. About the size of round 5. Tests: zone edges match from both sides, a saved zone comes back the same, an
 ambush in a zone, walking from a town edge into a zone and back.
+
+---
+
+## Realms, lords and wars (approved, not built)
+
+Approved on 17 October 2026 in the thread on the kingdoms. Mockups of the realms map and the sketch script are in
+the project files under `rijken/` (`realms_overview.png`, `realms_closeup.png`, `realms_mock.py`, seed 3).
+
+**What exists today:** `factions.py` makes crown, league, circle, outlaws, sometimes dwarf clans and an orc horde,
+and the cult, with enemy lists fixed when the world is made; `war.py` sends warbands to enemy holds, sieges flip
+regions. Wars never start or end, there is no diplomacy. This round replaces that with people who rule.
+
+**The human empire:**
+- One **emperor** in the great city; under him 3-5 **kings**; under each king the **barons**, one per region, seated
+  in its castle or fort; under each baron 2-3 **lesser houses** (knightly families).
+- Every lord is a named person: age, one or two traits (ambitious, greedy, pious, craven, honest), an heir, loyalty
+  to his liege. Every house has a name, arms and colours (banners, guards' tabards).
+- **Lesser houses have a seat** in their barony, by the village they hold and fitting the land (a hill, a river
+  bend, a forest edge): one world tile with its own small map. A poor house has a fortified farm with a palisade,
+  a middling one a stone tower house, a rich one a walled manor with hall, chapel and stables, everything inside
+  its wall. Inside: the head of the house, the heir, a few guards and servants. A house that rises gets a bigger
+  seat; one that becomes baron moves to the castle; a fallen house leaves a burnt or empty ruin to explore.
+- In the cities, rich **merchant families** buy influence with coin instead of swords (the league's place).
+- **In the background, once a month per court, a small event**, heard through the news: a lord dies (a disputed
+  succession means two claimants and a civil war; with no heir the lesser houses press their claims); an ambitious
+  baron rebels or claims his neighbour's land; a marriage binds two houses, an insult or murder breaks it; the
+  emperor calls his vassals against an outside foe. **Wars end too**: peace, a region changing hands, tribute, a
+  hostage.
+- **The player never rules** and gets no land. He is a piece in their game: swear fealty and become a knight,
+  carry letters, back a claimant, save or kill an heir, open a gate in a revolt, guard a wedding. Lesser houses
+  give most of the small work. Money stays modest: lords pay little (greedy ones less), a war levy makes bread and
+  arms dear, treason pays well and makes enemies.
+- Dwarves and elves also live in human cities under a king, but most of them live in their own lands.
+
+**The other peoples, each with its own engine (outside the empire):**
+- **Dwarves: the grudge book.** Each hold keeps a book of wrongs (an unpaid debt, a slain dwarf, a broken pact).
+  A full book means a feud or war that only ends when the debt is paid in gold or blood. Iron for grain makes
+  pacts with the empire. The player can settle a grudge: collect a debt, return a lost heirloom, hand over a
+  killer.
+- **Elves: the forest's edge.** They conquer nothing and defend their wood. Imperial logging pushes the forest edge
+  back, visible on the map (clear-cuts, stumps); too far and they close the wood and attack woodcutters and
+  travellers. The elders under the Elder Tree think in centuries: a promise or an insult counts for generations.
+  The player can mediate, chase the woodcutters off, or open a road through the wood for the empire.
+- **Orcs and goblins: strength.** Loose tribes with random names from their totem or founder (The Split Tusk, The
+  Red Hand) that fight each other; every chief has a strength that grows with each victory. When one is strong
+  enough he unites them into **the Gorvash** (an orc word, "all spears"): a real invasion out of the badlands
+  ("The Gorvash of Urzag Skullsplitter marches"), the emperor calls his vassals. The warlord dies and it splits
+  into feuding tribes again. Goblins serve under the orcs; during a march the half-orcs and goblins in the cities
+  are distrusted. The player can kill a rising warlord, challenge him to single combat, or sell them arms. The
+  name "Horde" goes (`factions.py`).
+- Kobolds, gnolls (follow the drought) and lizardfolk stay local, no realm.
+
+**Outlaw peoples who raid and can win a barony (humans with another law; trade, guest right and pacts possible):**
+- **Northern sea raiders** (their own name in game, e.g. the Fjordmen of Skarsvik): longhouses on the fjords, a
+  jarl and a mead hall; under his roof guest right holds. In spring their longships are seen at sea, land at coast
+  villages, plunder and take captives, and sail home in autumn. A strong jarl can take a coastal barony and stay:
+  a jarldom on the map, and the king must fight or accept him as vassal. The player can warn a village of sails on
+  the horizon, ransom captives, or sail along for a share (the realm frowns).
+- **Hill and steppe barbarians**: tribes with a chieftain (riders on the steppe, clans in the highlands), honour
+  and blood feud. They raid in winter and in hunger (after a dry summer or a hard winter). Barons hire them
+  against a neighbour, cheap and unreliable. They can take a border barony, which after some years becomes theirs.
+- The outlaws (robber knights) stay criminals inside the realm, and a baron can hire them against his neighbour.
+
+**More powers:**
+- **The Church**: a king needs the high priest's blessing to be lawful; the church can ban a rebel baron; a holy
+  order with its own keep hunts necromancers and witches. The player can get a claim blessed or bribe a priest.
+- **The Border Watch**: a knightly order on a line of forts along the northern border against barbarians and
+  raiders. They take anyone, convicts and disowned sons too; a baron can exile a rival there. When the watch
+  weakens, the raids reach further in.
+- **Mercenary companies**: named companies with a banner and a camp on the map, fighting for whoever pays most;
+  they can change sides mid-war, and a strong captain may take a town for himself.
+- **Peasant revolt**: high taxes, war levies and hunger raise the villages under a leader of their own. They win a
+  free commune or are put down (gallows along the road). The player chooses the peasants or the lord.
+- **The exiled pretender**: a driven-out heir holds court in exile (over the sea, in a hidden camp, with the
+  dwarves), gathers followers and waits for his moment; this starts succession wars by itself.
+- **Witch circles**: small hidden circles on the moors and in the marshes that sell herbs, curses and foretellings;
+  hunted by the church, secretly visited by barons.
+
+**The realms map:** a new layer on the world map (next to today's factions layer under F). Each realm washes the
+land in its colour, with a bright border where two realms meet and a faint one between baronies; the realm's name
+in the middle, ♦ a king's seat, · a baron's; town names hidden in this layer. **Borders are organic**: every seat
+grows over the land, and crossing a river or ridge costs a lot, so borders follow rivers and ridges, with a little
+noise; each people grows best over its own ground (elves in the wood, dwarves in the mountains, orcs in the
+badlands, sea raiders on the fjord coasts); land nobody reaches stays wild without colour.
+
+**Names are made, not picked from a short list** (with the place-name maker): a land name from syllables plus a
+form that fits (Kingdom, Realm, Crown, March of, Principality); the empire its own (The Aldic Empire, The Empire of
+the Seven Crowns); a barony after its chief place or its land (Barony of Caer Dunmor, The Wolfgate March); houses a
+family name with arms and a motto; dwarves, elves, orcs and raiders in their own sound.
 
 ---
 
