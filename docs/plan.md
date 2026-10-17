@@ -20,6 +20,8 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
+| **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
+| **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -633,6 +635,66 @@ burning ground, ice wall, root tiles, thorn tiles, bone walls, corpses, hallowed
 A tile under a spell in a fight shows in IN SIGHT like any other danger. No new keys: skills stay on the bar (1-6)
 and are chosen in town (Z). Two beasts (Packmaster) take the beast's place in the company screen (h).
 **Save data** changes (known skills, second beast, corpses): bump `SAVE_VERSION`.
+
+## Spell effects (approved, not built)
+
+Approved by Nilio on 17 October 2026 after two rounds of animated mockups (project files `magie/effecten/`, 17 GIFs,
+made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's effect in `magie/effecten.md` and
+`magie/effecten_rest.md`). Today a spell flashes once for ~0.2 s (`engine.py` `flash`).
+
+- **A small toolkit every school shares:** bolts that fly cell by cell with a fading tail; impacts that open out in
+  three or four frames (`*` `+` `·`); particles flying back to you (life drain); rising `+` (heals); rings and
+  waves; lasting colour on a creature (burning flickers orange, frozen has a pale blue ground, poisoned pulses
+  green, weakened is dimmed); living tiles (burning ground, ice walls, roots, thorns, bone walls, Ball Lightning).
+  Big spells draw light in for a frame before they strike.
+- **Each school its own hand:** Meteor throws its shadow first and falls in at a slant; lightning is a white zigzag
+  that fades to yellow and hops target to target; a corpse `%` greys and rises as `z`; Morrak's Bargain pulls your
+  own life out in red first. Monsters' spells use the same effects, so you see what is coming.
+- **Small areas.** Ordinary area spells (tome rank 0-30) have radius 1, a 3x3; big ones (42 and up) and the guilds'
+  top techniques radius 2; never more than 3, and 3 only for the heaviest (Morrak's Bargain, Army of the Dead).
+  Spells that pick targets (Chain Lightning, Call the Storm, Tempest) are not areas. Firebolt hits only its target;
+  Grasping Roots and Entangle make a 3x3 of roots.
+- **Wild Shape stays `@`.** You keep your sign and take the beast's colours (bear: orange-brown on dark brown, wolf:
+  white on slate grey), so you never lose yourself on the map; the shape and its turns show with your buffs.
+- **Calm:** no effect lasts longer than ~0.4 s, a key skips it, the game never waits for one; no screen shake, no
+  flashing screen except one frame for a great lightning stroke; colours from the school (`DISC_COLOR`). An option:
+  effects full, short or off.
+- **In the code:** a small queue of effect frames in `anim.py`, drawn over the map in the existing draw loop and its
+  timer (`GameScreen.moving`); `flash()` becomes a one-frame effect, so all that flashes today keeps working.
+- **Still open:** effects for the weapon skills (a swing arc, arrows that fly, blood on Sever Artery, a `*` on a
+  critical), to be worked out with the weapon skills.
+
+## Weapons: more kinds, few disciplines (approved, not built)
+
+Approved by Nilio on 17 October 2026 (project files `magie/wapens.md`). Today: 16 weapon kinds in three grades
+(48 weapons), four disciplines and Unarmed; shields exist (buckler, round, kite, tower; the grimoire also takes that
+hand) but have no skills. New weapons join the discipline they fit; only **Spears and Staves** is new. Each new
+weapon has one rule you notice in a fight. Everything comes in the three grades.
+
+| Discipline | Weapons (new in bold) | The new ones' rule |
+|---|---|---|
+| Unarmed | empty hands, **cestus**, **tiger claws** | cestus hits harder and still counts as unarmed (monks); claws bleed |
+| Swordsmanship | short sword, long sword, bastard sword, rune blade, greatsword, **scimitar** | quick and light (desert riders) |
+| Axes and Maces | club, mace, war axe, great axe, maul, **flail**, **war hammer** | a shield does not stop a flail; a war hammer is strong against heavy armour (dwarves) |
+| **Spears and Staves** | staff and war staff (moved here), **spear**, **halberd**, **scythe** | **reach**: strike an enemy 2 tiles away in a straight line, also past a friend; a spear can be thrown; a scythe hits the arc in front of you |
+| Daggers | dagger, **throwing knives** | thrown with the bow's key, picked up again |
+| Bows and Crossbows | short bow, long bow, war bow, **light crossbow**, **heavy crossbow**, **sling** | crossbows shoot and load in turn ("loaded" shows), go through armour, need little Dexterity; a sling is cheap and its stones lie everywhere (halflings) |
+
+26 weapon kinds (78 weapons), six weapon disciplines. A mage with a staff no longer trains axe fighting.
+- **Shields** get no discipline: shield skills go into Warcraft (martial, stamina), beside the Iron Company's Shield
+  Wall: Shield Bash (push one tile, short stun) and Block (the first blow of a turn is caught). Without a shield in
+  hand they do not work.
+- **Two weapons.** A light one-handed weapon (dagger, short sword, scimitar, club) can go in the second hand, the
+  shield slot. One bump is two blows: the main hand as usual, the second for about half. The price: no shield, no
+  block, no shield skills. Skills use the main hand, which decides the discipline that grows. Affixes of both count;
+  mind the balance when building (the second hand counting half). On screen two short swings; the character screen
+  shows the weapon as "off hand".
+- **Who carries what** (only those who use gear drop gear): dwarves hammers and crossbows, halflings slings, elves
+  long bows, desert riders scimitars, orcs and goblins spears and flails, the Border Watch halberds, necromancers
+  scythes.
+- **No wands**: the grimoire is already the magic second hand.
+- **Next:** eight tome skills per weapon discipline (ranks 0/5/12/20/30/42/55/70), then their effects.
+- **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
 
 ---
 
