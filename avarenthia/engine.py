@@ -224,7 +224,7 @@ class Game:
         MS.refresh_board(self, home)
         self.msg('You wake on a cold stone floor. Candles. Incense. A temple.', 'gold')
         self.msg(f'You remember your name, {p.name}, and nothing else.', 'gold')
-        self.msg('Talk to the priestess beside you. Press ? or F1 for help.', 'info')
+        self.msg('Talk to the priestess beside you. Press ? for the handbook.', 'info')
         self.compute_fov()
         WO.progress(1, 'The world is ready')
 

@@ -21,8 +21,7 @@ named by the data (`guide.py`); a new key is taught by one first-time tip (`guid
 Keys are learnt by playing: don't add hints like "c: your numbers" to the screen.
 
 ## The handbook rule (Nilio, 17 Oct 2026)
-`?` opens The Adventurer's Handbook (see "The handbook" in `docs/plan.md`; until it is built, its texts live in
-`/mnt/project-files/handleiding/teksten.md`). Every change to the game updates the handbook in the same commit: a new
+`?` opens The Adventurer's Handbook (`avarenthia/handbook.py`, drawn by `ui.BookScreen`). Every change to the game updates the handbook in the same commit: a new
 or changed system gets its sentences in the right chapter, a removed one loses them. In the build report, quote the
 new or changed handbook lines (Nilio reads them there). Style: plain short English; a key is always in square brackets,
 `[e]`, `[Shift+Tab]` (drawn as a gold keycap); a map sign is never in brackets but stands free in its own colour, with

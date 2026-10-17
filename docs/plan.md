@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
-| **Approved: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data. Not built yet |
+| **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
 | **Approved: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; libraries in the cities; books and stones lead to places on the map. Opens with Enter on the journal's Lore tab. Not built yet |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
@@ -85,6 +85,12 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   or he runs with the pack). Choices you cannot afford show greyed out. Village bridges are one straight deck from
   bank to bank. Orchards are fenced. The fisherman goes home at night. Calmer spring blossom that leaves water and
   trees alone. A town's name no longer covers you on the world map.
+- **The handbook** (`handbook.py`, `ui.BookScreen`, 17 October 2026). `?` opens The Adventurer's Handbook: 18
+  chapters on the left (the chosen one shows its sections), the page on the right with keys as gold keycaps and signs
+  in their own colours, a real piece of the map in a fight or a town, tips in the margin. Opens at First steps for a
+  new hero, at Fighting in a fight, at Towns and people in a town, at Travel and sailing on deck; else at the page
+  read last. Peoples, gods, the year, rarity, Signs and All the keys come from the data. The book screen is shared
+  with the chronicle to come.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -116,7 +122,7 @@ river is and how big the road is.
   rapids upstream). The world-map ferries (`living.py`) stay as they are.
 - UI: the raft and the ferryman are signs named in `guide.py`; no new key.
 
-## The handbook (approved, not built)
+## The handbook (built 17 October 2026; the spec)
 
 Approved by Nilio on 17 Oct 2026. The old `HelpScreen` (seven pages of key lines, partly stale) becomes **The
 Adventurer's Handbook**. Mockups and every text: `/mnt/project-files/handleiding/` (`voorstel.md`, `teksten.md`,

@@ -2402,187 +2402,349 @@ class QuitScreen(Modal):
             self.app.pop()
 
 
-class HelpScreen(Modal):
-    title = 'Help'
-    PAGES = [
-        ('Controls', [
-            ('arrows · numpad', 'Move. Walk into a monster to fight it, into a door to open it.'),
-            ('Shift + direction', 'Run, until something interesting happens'),
-            ('Enter  or  Space', 'Do the obvious thing here: go in, take the stairs, pick up,'),
-            ('', 'talk to whoever is near, read a signpost, open a chest, fish.'),
-            ('1  2  3  4  5  6', 'Use a skill from your bar (at your target, or the nearest enemy)'),
-            ('Tab  Shift+Tab', 'Pick a target: the next or the previous enemy in sight'),
-            ('q   w', 'Drink a health or a mana potion'),
-            ('i', 'Your bag: what you carry and wear'),
-            ('m', 'The map of the realm, in layers (1-5: land, danger, factions, jobs, trade);'),
-            ('', 'in a town, the town plan (Tab: the realm)'),
-            ('t', 'Talk to whoever is near you'),
-            ('h', 'Your company: the hireling and the beast; 1-5 give the order'),
-            ('Esc', 'Let go of your target; else the menu: everything else you can do'),
-            ('', 'In a window, Esc goes back. Save and quit is in the menu, under Game.'),
-            ('?', 'This help'),
-            ('.  or  5', 'Wait a turn'),
-            ('Panel, bottom', 'What you can do where you stand, with its key: Enter go in,'),
-            ('', 't talk, a fish, E eat, F forage, R rest... Learn them as you go.'),
-            ('', ''),
-            ('That is all you need.', 'Everything else is in the menu (Esc). Each item there shows'),
-            ('', 'a shortcut of its own, for when you know your way around:'),
-            ('', 'c character, C life skills, z skills, v bestiary, e journal,'),
-            ('', 'x explore, o look, g pick up, P brewing; travel: on the map (m, Tab).'),
-            ('', 'A capital letter means: with Shift.'),
-            ('F11  Alt+Enter', 'Fullscreen'),
-        ]),
-        ('The world', [
-            ('Roads', 'Roads are patrolled and fairly safe. The further you stray, the worse it gets.'),
-            ('Danger', 'The line under the map shows the danger where you stand (■■□□□); the map shows it all (2).'),
-            ('', 'Night brings the dead and bigger packs.'),
-            ('Knowledge', 'At first you only know where Thornfield lies. Signposts (┬), townsfolk and'),
-            ('', 'travellers tell you where places lie, but the land you only learn by walking it.'),
-            ('Π ruin', 'An old ruin with a way down. Small, with a skill tome at the bottom.'),
-            ('† shrine', 'Pray for a blessing. An offering makes it last longer. Every shrine has its god.'),
-            ('∆ camp', 'A bandit camp. Kill them all and the strongbox is yours.'),
-            ('Ψ stones', 'Standing stones. Touch them to learn from old memories.'),
-            ('¤ wagon', 'An abandoned wagon. Loot, or a trap.'),
-            ('Events', 'On the road things happen: wounded travellers, peddlers, tolls, storms...'),
-            ('@ travellers', 'Walk into a traveller to talk. Some have a job for you and wait for you afterwards'),
-            ('', 'at the inn of the town they were going to (see the journal).'),
-            ('Towns', 'Trader: goods · innkeeper: jobs, a bed, gossip (G) · outfitter: gear, identify, mend'),
-            ('', 'temple: heal, curses, raise the dead · stablemaster: mules and carts'),
-            ('', 'castellan (in strongholds): war jobs'),
-            ('Factions', 'Different every world. Work for one to win favour; hurt it and its gates close.'),
-            ('Peoples', 'Humans, elves, dwarves, halflings and half-orcs each like and distrust each other.'),
-            ('', 'How a town sees your people changes its prices and how its faction greets you.'),
-            ('News', 'News travels on foot, and slowly. Ask the innkeeper for gossip, the factor of the'),
-            ('', "Merchants' Guild for prices and trade work, the captain for trouble and bounties,"),
-            ('', 'travellers and sailors for news from far away. What comes from afar is old.'),
-            ('Calendar', 'Twelve months of thirty days, from Deepfrost to Longnight; seven days in a week.'),
-        ]),
-        ('Ways and guilds', [
-            ('Travel', 'On the map (M) Tab picks a place you have been and shows the way; Enter sets out:'),
-            ('', 'by the roads. Enemies, travellers, events, hunger, wounds or any key stop you.'),
-            ('Old ways', 'Hidden Varnish paths, a faint broken grey-green line. You see only what you have'),
-            ('', 'seen: walk on one, hear a rumour (where it starts), read an old map or buy a chart'),
-            ('', '(a stretch of it), or look out from a watchtower (as far as you can see). The rest'),
-            ('', 'you walk. Faster than open land, never patrolled. They lead over passes, to'),
-            ('', 'waystations (Σ, a safe rest), milestones (╥), vaults (Φ) that open to the old word,'),
-            ('', "graveyards, a smugglers' den, lost ruins, and over a pass into a hidden valley (•)."),
-            ('Glades', 'Elven glades (♠) hide deep in the woods, off the map until you walk close enough'),
-            ('', 'to see their lanterns. An elder there knows the next glade, and the way to the'),
-            ('', 'elven city under the Elder Tree.'),
-            ('Gear', 'Ten slots. Normal, exceptional and elite grades; Strength and Dexterity needs.'),
-            ('', 'Uniques roll within a range; sets of 2-4 pieces give bonuses. Two-handers take the'),
-            ('', 'off-hand. Resist fire, cold, lightning and poison, up to 75%.'),
-            ('Elements', 'Monsters resist some elements and fear others. Fight a kind to learn which.'),
-            ('Guilds', 'At most two combat guilds, and rivals will not share you; the crafts take anyone.'),
-            ('', 'Five ranks, earned with guild jobs. Masters teach techniques to those who earn them.'),
-            ('', 'Standing fades if you do nothing for a guild, but not below your rank.'),
-            ('Secrets', 'Some guilds hang out no sign. Listen for rumours, and watch the chalk marks.'),
-            ('Harbours', 'A jetty in a hamlet, a quay in a town, a deep berth and a harbour wall in a city;'),
-            ('', 'boats and ships to rent, fish markets and sailors full of tales.'),
-        ]),
-        ('Coin and company', [
-            ('Money', 'Jobs pay modestly; trade is where the money is. Coin goes on beds, meals, repairs,'),
-            ('', 'wages and the temple.'),
-            ('Wear', 'Gear wears with use and breaks when worn out. Outfitters mend it (R); a repair kit'),
-            ('', 'patches it up on the road.'),
-            ('Guilds', 'Members buy from the quartermaster for less, sleep in the hall cheap or for nothing,'),
-            ('', 'have their gear mended cheaper, and the higher their rank, the better the pay.'),
-            ('Sleeping out', 'Rest in the open and you make camp: a fire keeps beasts off but draws robbers.'),
-            ('', 'A tent keeps you dry and safer; a hireling keeps watch. An inn bed: Well rested.'),
-            ('Hirelings', 'Sellswords sign on in the barracks of the cities, now and then in an inn: a fee,'),
-            ('', 'a daily wage and their food. Unpaid or unfed, they sour, and in the end they walk.'),
-            ('', 'Defender, warrior, archer, healer or mage; four pieces of gear that wear like yours.'),
-            ('Orders (h)', 'Follow, defend me, attack my target (Tab), hold position, or stay out of it: 1-5'),
-            ('', 'on the company screen, for one of them or both at once.'),
-            ('Danger', 'Monsters choose whom to go for: who hurt them lately, who stands in their way, who'),
-            ('', 'looks soft. Beasts go for the nearest; clever foes for the healer. A defender takes'),
-            ('', 'blows meant for you. Hurt badly, a hireling may run, and come back when it is over.'),
-            ('Death', 'Hardcore: a fallen hireling is dead, his gear on his body. Softcore: a temple raises'),
-            ('', 'him for a fee. When you fall, he falls with you.'),
-        ]),
-        ('Weather', [
-            ('Seasons', 'Each region has its own weather: the cold north and mountains, the hot dry south,'),
-            ('', 'the marshes and the mild middle. It changes with the seasons, and by steps: drizzle'),
-            ('', 'grows into rain before it pours, a blizzard dies down to snow before the sky clears.'),
-            ('Sight', 'Rain, snow, mist, fog and dust shorten your sight; thick fog and sandstorms a lot.'),
-            ('Travel', 'Snow, storms and sand slow you down; ambushes are likelier when you cannot see.'),
-            ('Body', 'Cold weather makes you hungry sooner, and so does scorching heat.'),
-            ('Magic', 'Fire sputters in the wet and burns hotter in the heat; storm magic loves a storm.'),
-            ('Danger', 'In a thunderstorm, open land is no place to be: lightning strikes.'),
-            ('Omens', 'Falling ash, a sickly miasma, smoke on the wind: a great evil is near.'),
-            ('Quiet', 'Fireflies on summer nights, the northern lights in winter, dew in the morning.'),
-            ('', 'Under a roof you stay dry.'),
-            ('', ''),
-            ('! and ?', 'A blinking ! over someone: they have work for you. A ? : you can hand a job in.'),
-            ('Towns', 'Hamlet, village, town, city, metropolis. Farms along the roads share a meal with'),
-            ('', 'travellers; roadside inns offer a bed and the news.'),
-        ]),
-        ('Gods', [
-            ('Solmara', 'the Dawnmother: light, healing and mercy. Hates the undead.'),
-            ('Valdric', 'the Iron Judge: law, oaths and kings. Patron of the crown. Hunts outlaws.'),
-            ('Thessa', 'the Green Mother: harvest, beasts and the wild. Loves foragers and fishers.'),
-            ('Durnak', 'the Deep Smith: forge, stone and the dead. God of the dwarves.'),
-            ('Skell', 'the Grey Wanderer: luck, roads, trade and thieves.'),
-            ('Morrak', 'the Hollow King: death and hunger. No honest temple serves him.'),
-            ('', ''),
-            ('Devotion', 'At a temple you can swear yourself to its god. Pray there once a day, leave'),
-            ('', 'offerings and do what your god likes, and their favour grows: at "favoured" and'),
-            ('', '"chosen" they bless you, and prayer at their temples heals you.'),
-            ('Rivals', 'Solmara and Morrak, Valdric and Skell, Thessa and Durnak are old enemies.'),
-            ('', 'Factions that worship a rival of your god trust you less, and the priests of'),
-            ('', 'a rival temple will not tend to you. Choose with care, or choose no god at all.'),
-        ]),
-        ('Your hero', [
-            ('Skills', 'You start with none. Learn them from tomes (≡) found on monsters, in ruins, at'),
-            ('', 'standing stones, from peddlers and city outfitters. Disciplines grow by use and'),
-            ('', 'decide which tomes you can understand. Carry six skills; change them in a town (Z).'),
-            ('Life skills', 'Grow by doing. Fishing (a by water, with a pole), foraging (Shift+F), herbalism'),
-            ('', '(picking and knowing herbs), alchemy (potions, P) and brewing (ale, wine, mead, P).'),
-            ('Magic items', 'Rare, and unidentified when found. Outfitters and priests identify them.'),
-            ('', 'Some are cursed: once worn they stay on until a priest lifts the curse.'),
-            ('Bestiary', 'Every kill teaches you. Higher knowledge: more damage against that kind,'),
-            ('', 'and they hit you less often (V).'),
-            ('Death', 'Hardcore: final. Softcore: the priests raise you, for a fee from your purse;'),
-            ('', 'your pack stays with your body and you are weak for a day or two.'),
-            ('', 'No coin for the temple: your tale ends there.'),
-            ('Fishing', 'A game of its own (a, by water): strike when the float plunges, then keep the fish'),
-            ('', 'in the green while the line holds.'),
-            ('Rarity', 'normal · magic (blue) · rare (yellow) · unique (gold)'),
-            ('x', 'Auto-explore and travel play out step by step; press any key to stop.'),
-        ]),
-    ]
+KEYBG = (48, 38, 26)          # the patch under a key in the books: a gold keycap
+PAPER = (26, 21, 17)
+SEL = (52, 40, 28)
 
-    def __init__(self, app):
+
+def rich_len(s):
+    """How wide a text with [keys] and {signs} is when drawn: a key keeps its width, a sign loses its braces."""
+    import re
+    return sum(len(p[1:-1].split('|')[0]) if p.startswith('{') else len(p) for p in re.split(r'(\{[^}]+\})', s))
+
+
+def rich_wrap(s, w):
+    """Wrap a text with [keys] and {signs} in it, counting each as it is drawn."""
+    out, cur = [], ''
+    for wd in s.split(' '):
+        if cur and rich_len(cur + ' ' + wd) > w:
+            out.append(cur)
+            cur = wd
+        else:
+            cur = (cur + ' ' + wd) if cur else wd
+    return out + [cur]
+
+
+def rich_parts(x, s, fg=FG, bg=None):
+    """A line of text as parts (x, text, fg, bg): [keys] as gold keycaps, {signs} free in their own colour."""
+    import re
+    from . import handbook as HB
+    out = []
+    for part in re.split(r'(\[[^\]]+\]|\{[^}]+\})', s):
+        if not part:
+            continue
+        if part.startswith('[') and part.endswith(']') and len(part) > 2:
+            out.append((x, ' ' + part[1:-1] + ' ', GOLD, KEYBG))
+            x += len(part)
+        elif part.startswith('{') and part.endswith('}'):
+            glyphs, _bar, col = part[1:-1].partition('|')       # {C|170,150,130}: a sign in a colour of its own
+            for ch in glyphs:
+                out.append((x, ch, tuple(int(v) for v in col.split(',')) if col else HB.sign_col(ch), bg))
+                x += 1
+        else:
+            out.append((x, part, fg, bg))
+            x += len(part)
+    return out
+
+
+class BookScreen(Modal):
+    """A book: contents on the left (the chosen chapter opens to show its sections), the page on the right. Up and down
+    pick a chapter; right or Enter go into the page and up and down scroll it; left goes back; Esc closes.
+    The handbook (?) and the chronicle (Enter on the journal's Lore tab) are both books."""
+    tall = False
+    BW, BH = 106, 56
+    TOC = 26
+    title = 'A book'
+    last = {}                  # the chapter read last in each book, while the game runs (not saved)
+
+    def __init__(self, app, chapter=None, why=''):
         super().__init__(app)
-        self.page = 0
+        k = type(self).__name__
+        self.ch = chapter if chapter is not None else BookScreen.last.get(k, 0)
+        self.why = why
+        self.focus = 'toc'
+        self.scroll = 0
 
-    @classmethod
-    def lines(cls, page):
-        """The rows of a page, with any description too long for the box carried on to the next row."""
-        kw = 28 if page == 0 else 14
-        out = []
-        for k, d in cls.PAGES[page][1]:
-            parts = wrap_text(d, 98 - kw) if d else ['']
-            out.append((k, parts[0]))
-            out += [('', more) for more in parts[1:]]
+    # what a book must say
+    def names(self):
+        return []
+
+    def blocks(self, i):
+        return []
+
+    def toc_extra(self, i):
+        return ''
+
+    def page_w(self):
+        return self.BW - self.TOC - 8
+
+    def rows(self, i):
+        """The page laid out: a list of rows {'parts': [(dx, text, fg, bg)], 'sec': heading, 'snip': (kind, row)}."""
+        w = self.page_w()
+        out = [{'parts': [(0, self.names()[i].upper(), GOLD, PAPER)]},
+               {'parts': [(0, '─' * len(self.names()[i]), scale(GOLD, .5), PAPER)]}, {'parts': []}]
+
+        def para(text, x=0, fg=FG, width=None):
+            for ln in rich_wrap(text, width or w - x):
+                out.append({'parts': rich_parts(x, ln, fg, PAPER)})
+
+        prev = None
+        for b in self.blocks(i):
+            kind = b[0]
+            if prev == 'k' and kind not in ('k', 'h'):
+                out.append({'parts': []})
+            prev = kind
+            if kind == 'p':
+                para(b[1])
+                out.append({'parts': []})
+            elif kind == 'h':
+                if out and out[-1]['parts']:
+                    out.append({'parts': []})
+                out.append({'parts': [(0, b[1], GOLD, PAPER)], 'sec': b[1]})
+            elif kind in ('k', 'keys'):
+                rows = [(b[1], b[2])] if kind == 'k' else b[1]
+                col = 12 if kind == 'k' else 21
+                for keys, text in rows:
+                    kp = rich_parts(1, keys, GOLD, PAPER)
+                    kw = 1 + rich_len(keys)
+                    tx = max(col, kw + 2)
+                    lines = rich_wrap(text, w - tx)
+                    out.append({'parts': kp + rich_parts(tx, lines[0], FG, PAPER)})
+                    out += [{'parts': rich_parts(tx, ln, FG, PAPER)} for ln in lines[1:]]
+                if kind == 'keys':
+                    out.append({'parts': []})
+            elif kind == 'n':
+                for ln in rich_wrap(b[1], w - 4):
+                    out.append({'parts': [(0, '▌', scale(INFO, .7), PAPER)] + rich_parts(2, ln, INFO, PAPER)})
+                out.append({'parts': []})
+            elif kind in ('l', 'o'):
+                for j, text in enumerate(b[1]):
+                    mark = '·' if kind == 'l' else f'{j + 1}.'
+                    lines = rich_wrap(text, w - 4)
+                    out.append({'parts': [(1, mark, GOLD, PAPER)] + rich_parts(4, lines[0], FG, PAPER)})
+                    out += [{'parts': rich_parts(4, ln, FG, PAPER)} for ln in lines[1:]]
+                out.append({'parts': []})
+            elif kind in ('r', 'gods'):
+                lw = min(16, max(len(lab) for lab, _t in b[1]) + 2)
+                for lab, text in b[1]:
+                    col = GOLD
+                    if kind == 'gods':
+                        from . import gods as GODS
+                        col = next((v['fg'] for v in GODS.GODS.values() if v['name'] == lab), GOLD)
+                    lines = rich_wrap(text, w - lw - 1)
+                    out.append({'parts': [(1, lab, col, PAPER)] + rich_parts(lw + 1, lines[0], FG, PAPER)})
+                    out += [{'parts': rich_parts(lw + 1, ln, FG, PAPER)} for ln in lines[1:]]
+                out.append({'parts': []})
+            elif kind == 's':
+                for glyphs, text in b[1]:
+                    lines = rich_wrap(text, w - 6)
+                    out.append({'parts': [(1 + j, ch, col, PAPER) for j, (ch, col) in enumerate(glyphs[:4])]
+                                + rich_parts(6, lines[0], FG, PAPER)})
+                    out += [{'parts': rich_parts(6, ln, FG, PAPER)} for ln in lines[1:]]
+                out.append({'parts': []})
+            elif kind == 'signs':
+                half = []
+                cw = w // 2
+                for glyphs, name in b[1]:
+                    if glyphs is None:
+                        if half:
+                            out.append({'parts': half})
+                            half = []
+                        out.append({'parts': []})
+                        out.append({'parts': [(0, name.upper(), DIM, PAPER)]})
+                        continue
+                    cx = 1 if not half else cw + 1
+                    half += [(cx + j, ch, col, PAPER) for j, (ch, col) in enumerate(glyphs[:4])]
+                    half += [(cx + 5, ln, FG, PAPER) for ln in wrap_text(name, cw - 6)[:1]]
+                    if cx > 1:
+                        out.append({'parts': half})
+                        half = []
+                if half:
+                    out.append({'parts': half})
+                out.append({'parts': []})
+            elif kind == 't':
+                head, body = b[1], b[2]
+                cws = [max(len(str(r[c])) for r in [head] + body) + 3 for c in range(len(head))]
+                for r_, row in enumerate([head] + body):
+                    parts, cx = [], 1
+                    for c, cell in enumerate(row):
+                        parts.append((cx, str(cell), DIM if r_ == 0 else (GOLD if c == 0 else FG), PAPER))
+                        cx += cws[c]
+                    out.append({'parts': parts})
+                out.append({'parts': []})
+            elif kind == 'rar':
+                parts, cx = [], 1
+                for j, k in enumerate(('normal', 'magic', 'rare', 'unique')):
+                    if j:
+                        parts.append((cx, ' · ', DIM, PAPER))
+                        cx += 3
+                    parts.append((cx, k, D.RARITY_COLOR[k], PAPER))
+                    cx += len(k)
+                out += [{'parts': parts}, {'parts': []}]
+            elif kind == 'map':
+                cap = self.snip_caption(b[1])
+                if cap is None:
+                    continue
+                lines = []
+                for c in cap:
+                    lines += rich_wrap(c, w - 24) if c else ['']
+                for r_ in range(11):
+                    row = {'parts': rich_parts(23, lines[r_], FG, PAPER) if r_ < len(lines) else [], 'snip': (b[1], r_)}
+                    out.append(row)
+                out.append({'parts': []})
         return out
 
+    # a real piece of the map around you, as it is drawn now
+    def snip_caption(self, kind):
+        return None
+
+    def draw_snip(self, cv, x, y, r_):
+        g = self.game
+        m, p = g.map, g.player
+        if r_ in (0, 10):
+            cv.text(x, y, ('┌' if r_ == 0 else '└') + '─' * 18 + ('┐' if r_ == 0 else '┘'), scale(LINE, 1.2), PAPER)
+            return
+        cv.put(x, y, '│', scale(LINE, 1.2), PAPER)
+        cv.put(x + 19, y, '│', scale(LINE, 1.2), PAPER)
+        my = p.y - 5 + r_
+        mons = {(o.x, o.y): o for o in m.mons if g.visible(o.x, o.y) and not getattr(o, 'lurk', False)}
+        wds = {(wd.x, wd.y): wd for wd in g.world.wanderers if g.visible(wd.x, wd.y)} if m.kind == 'over' else {}
+        for j in range(18):
+            mx = p.x - 9 + j
+            ch, fg, bg = ' ', FG, (8, 7, 6)
+            if m.inb(mx, my) and (m.seen[my * m.w + mx] or g.visible(mx, my)):
+                ch, fg, bg = LOOK.get(m, my * m.w + mx)
+                if not g.visible(mx, my):
+                    fg, bg = scale(fg, .4), scale(bg, .5)
+                o = mons.get((mx, my)) or wds.get((mx, my))
+                if o:
+                    ch, fg = o.ch, o.fg
+                if (mx, my) == (p.x, p.y):
+                    ch, fg = '@', (255, 246, 220)
+            cv.put(x + 1 + j, y, ch, fg, bg)
+
     def render(self, cv):
-        name, rows = self.PAGES[self.page]
-        x, y = self.box(cv, 104, 28, f'Help: {name} ({self.page + 1}/{len(self.PAGES)})')
-        kw = 28 if self.page == 0 else 14
-        for i, (k, d) in enumerate(self.lines(self.page)):
-            cv.text(x + 3, y + 2 + i, k, GOLD, PANEL, maxw=kw)
-            cv.text(x + 4 + kw, y + 2 + i, d, FG, PANEL, maxw=98 - kw)
-        cv.text_center(W // 2, y + 27, ' Left/Right or Space: next page · Esc: close ', DIM, PANEL)
+        names = self.names()
+        x, y = (W - self.BW) // 2, (cv.h - self.BH) // 2
+        cv.frame(x, y, self.BW, self.BH, LINE, PANEL, f' {self.title} ', GOLD)
+        rows = self.rows(self.ch)
+        room = self.BH - 6
+        self.scroll = max(0, min(self.scroll, len(rows) - room))
+        secs = [r['sec'] for r in rows if r.get('sec')]
+        at = next((r['sec'] for r in reversed(rows[:self.scroll + 1]) if r.get('sec')), None) if self.focus == 'page' else None
+        cv.text(x + 2, y + 2, 'CONTENTS', DIM, PANEL)
+        yy = y + 4
+        for i, nm in enumerate(names):
+            on = i == self.ch
+            bg = SEL if on else PANEL
+            cv.fill(x + 1, yy, self.TOC, 1, ' ', FG, bg)
+            extra = self.toc_extra(i)
+            cv.text(x + 2, yy, ('► ' if on else '  ') + nm, GOLD if on else FG, bg, maxw=self.TOC - 2 - len(extra))
+            if extra:
+                cv.text_right(x + self.TOC - 1, yy, extra, DIM, bg)
+            yy += 1
+            if on:
+                for sname in secs:
+                    if yy >= y + self.BH - 2:
+                        break
+                    cv.text(x + 5, yy, sname, GOLD if sname == at else DIM, PANEL, maxw=self.TOC - 5)
+                    yy += 1
+        for yy in range(y + 1, y + self.BH - 1):
+            cv.put(x + self.TOC + 2, yy, '│', LINE, PANEL)
+        px = x + self.TOC + 3
+        cv.fill(px, y + 1, self.BW - self.TOC - 4, self.BH - 2, ' ', FG, PAPER)
+        if self.why:
+            cv.text_right(x + self.BW - 3, y + 2, f'opened at: {names[self.ch]}, {self.why}', scale(DIM, .8), PAPER)
+        ox, oy = px + 2, y + 4
+        for k, row in enumerate(rows[self.scroll:self.scroll + room]):
+            for dx, text, fg, bg in row['parts']:
+                cv.text(ox + dx, oy + k, text, fg, bg if bg is not None else PAPER)
+            if row.get('snip'):
+                self.draw_snip(cv, ox, oy + k, row['snip'][1])
+        if len(rows) > room:
+            cv.text_right(x + self.BW - 3, y + self.BH - 2, f'{self.scroll + 1}-{min(len(rows), self.scroll + room)} of {len(rows)}',
+                          DIM, PAPER)
+        foot = ' ↑↓ choose · → read · Esc close ' if self.focus == 'toc' else ' ↑↓ scroll · ← contents · Esc close '
+        cv.text_center(W // 2, y + self.BH - 1, foot, DIM, PANEL)
+
+    def turn_to(self, i):
+        self.ch, self.scroll, self.why = i % len(self.names()), 0, ''
+        BookScreen.last[type(self).__name__] = self.ch
+
+    def enter(self):
+        self.focus = 'page'
 
     def on_key(self, tok, shift):
-        if tok in ('right', 'space', 'np6', 'tab', 'l', 'enter', 'pagedown'):
-            self.page = (self.page + 1) % len(self.PAGES)
-        elif tok in ('left', 'np4', 'h', 'pageup'):
-            self.page = (self.page - 1) % len(self.PAGES)
-        else:
+        room = self.BH - 6
+        if tok in ('esc', '?', 'f1'):
             self.app.pop()
+        elif self.focus == 'toc':
+            if tok in ('up', 'np8'):
+                self.turn_to(self.ch - 1)
+            elif tok in ('down', 'np2', 'tab'):
+                self.turn_to(self.ch + 1)
+            elif tok in ('right', 'np6', 'enter', 'np_enter', 'space'):
+                self.enter()
+            elif tok in ('pagedown', 'pageup'):
+                self.focus = 'page'
+                self.on_key(tok, shift)
+        else:
+            if tok in ('left', 'np4'):
+                self.focus = 'toc'
+            elif tok in ('up', 'np8'):
+                self.scroll = max(0, self.scroll - 1)
+            elif tok in ('down', 'np2', 'space'):
+                self.scroll += 1
+            elif tok in ('pagedown', 'pageup'):
+                self.scroll = max(0, self.scroll + (room - 2 if tok == 'pagedown' else 2 - room))
+            elif tok in ('enter', 'np_enter'):
+                self.page_enter()
+
+    def page_enter(self):
+        pass
+
+
+class HelpScreen(BookScreen):
+    """The Adventurer's Handbook (?): how the game works, opened at the page that fits where you are."""
+    title = "The Adventurer's Handbook"
+
+    def __init__(self, app, chapter=None):
+        from . import handbook as HB
+        g = app.game
+        why = ''
+        if chapter is None and g:
+            chapter, why = HB.opening(g)
+            g.book_read = True
+        super().__init__(app, chapter, why)
+
+    def names(self):
+        from . import handbook as HB
+        return HB.NAMES
+
+    def blocks(self, i):
+        from . import handbook as HB
+        return HB.blocks(self.game, i)
+
+    def snip_caption(self, kind):
+        g = self.game
+        m = g.map
+        if kind == 'fight':
+            foes = g.visible_hostiles()
+            if not foes or m.kind == 'town':
+                return None
+            o = min(foes, key=lambda q: cheb(q.x, q.y, g.player.x, g.player.y))
+            n = sum(1 for q in foes if q.name == o.name)
+            what = f'{n} {E.plural(o.name)}' if n > 1 else o.the().capitalize()
+            col = ','.join(str(v) for v in o.fg)
+            return [f'{what}, the sign {{{o.ch}|{col}}}, close{"" if n > 1 else "s"} in on you, the sign {{@}}.', '',
+                    '[Tab] picks the nearest; the next [Tab], the one after that. What you know of your target shows '
+                    'under TARGET in the panel.']
+        if kind == 'town':
+            if m.kind != 'town':
+                return None
+            return [f'{m.name}, where you stand now, the sign {{@}}.', '',
+                    'Press [m] in a town to see its plan, with every shop named.']
+        return None
 
 
 class LookScreen(Modal):

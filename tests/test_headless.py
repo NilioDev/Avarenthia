@@ -408,8 +408,7 @@ def wilds():
         g.kill(o)
     assert g.lore('rat') == 2, g.bestiary
     for page in range(3):
-        app.screens = [ui.GameScreen(app), ui.HelpScreen(app)]
-        app.top.page = page
+        app.screens = [ui.GameScreen(app), ui.HelpScreen(app, chapter=page)]
         app.render()
     app.screens = [ui.GameScreen(app), ui.BestiaryScreen(app)]
     app.render()
@@ -1472,10 +1471,18 @@ def text_fits():
             cuts.setdefault(type(app.top).__name__, set()).update(Canvas.cut)
         Canvas.cut = None
     look(ui.GameScreen(app))
-    for pg in range(len(ui.HelpScreen.PAGES)):
-        h = ui.HelpScreen(app)
-        h.page = pg
+    from avarenthia import handbook as HB
+    for pg in range(len(HB.NAMES)):
+        h = ui.HelpScreen(app, chapter=pg)
         look(h)
+        for _ in range(4):                        # into the page and down it
+            h.on_key('pagedown' if _ else 'right', False)
+            look(h)
+    keys = HB.blocks(g, HB.NAMES.index('All the keys'))[0][1]
+    listed = ' '.join(k for k, _d in keys)
+    for _g, items in ui.MenuScreen.GROUPS:          # the handbook knows every key of the menu
+        for k, _n, _d in items:
+            assert k in ('quit', 'travel') or f'[{k}]' in listed, k
     for pg in range(len(ui.CharacterScreen.PAGES)):
         look(ui.CharacterScreen(app, page=pg))
     look(ui.MenuScreen(app))
