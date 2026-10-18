@@ -142,7 +142,10 @@ class World:
         """Region danger plus a bonus for being far from the roads."""
         rd = self.road_dist[y * WORLD_W + x] if self.road_dist else 0
         bl = getattr(self, 'blight', None)
-        return self.region_at(x, y).danger + min(5, rd // 5) + (2 if bl and bl[y * WORLD_W + x] else 0)
+        r = self.region_at(x, y)
+        pw = getattr(self, 'powers', None)
+        shut = 2 if pw and pw['forest'].get('closed') and r.faction == 'circle' else 0     # the elves have closed their wood
+        return r.danger + min(5, rd // 5) + (2 if bl and bl[y * WORLD_W + x] else 0) + shut
 
     def off_road(self, x, y):
         return self.road_dist[y * WORLD_W + x] if self.road_dist else 0
@@ -381,6 +384,9 @@ def gen_world(game):
         LANDS.place_sites(game, m, world, reach_set)
         from . import nature as NT
         NT.place(game, m, world, reach_set)
+        progress(.8, 'Crowning the kings')
+        from . import realms as RL
+        RL.generate(game, m, world)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways
@@ -403,12 +409,9 @@ def _make_regions(m, world, reach, start):
         if all(math.hypot(x - cx, y - cy) > 24 for cx, cy in centers):
             centers.append((x, y))
     world.regions = [Region(i, cx, cy) for i, (cx, cy) in enumerate(centers)]
-    import numpy as np
-    gy, gx = np.mgrid[0:m.h, 0:m.w]
-    cxs = np.array([c[0] for c in centers])[:, None, None]
-    cys = np.array([c[1] for c in centers])[:, None, None]
-    nearest = ((gx[None] - cxs) ** 2 + (gy[None] - cys) ** 2).argmin(axis=0).ravel().tolist()
-    rof = bytearray(nearest)
+    from .realms import organic           # the regions grow over the land: borders follow ridges and rivers
+    rof = organic(m, centers)
+    nearest = rof
     counts = [dict() for _ in centers]
     for i in range(m.w * m.h):
         best = nearest[i]

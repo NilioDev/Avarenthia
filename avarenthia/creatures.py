@@ -609,9 +609,13 @@ NEW.update(_MN.NEW)
 # the game animals of the herds and small game (hunting.py)
 from . import prey as _PR
 NEW.update(_PR.PREY)
+# the fighters of the raiding peoples and the smaller powers (powers.py)
+from . import outlanders as _OL
+NEW.update(_OL.OUTLANDERS)
 BANDS.update(_MN.BANDS)
 HORDE.update(_MN.HORDE)
 GEAR.update(_MN.GEAR)
+GEAR.update(_OL.GEAR)
 BEASTS |= _MN.BEASTS
 for _b, _ks in _MN.BIOME_ADD.items():
     BIOME_ADD.setdefault(_b, []).extend(_ks)

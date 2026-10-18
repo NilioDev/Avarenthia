@@ -253,6 +253,9 @@ def over(game, x, y):
         from . import nature as NT
         if NT.is_nature(site):
             return site.name, site.glyph[1], [NT.DESC[site.kind]]
+        from . import seats as SEATS
+        if SEATS.is_seat(site):
+            return site.name, site.glyph[1], [SEATS.describe(game, site)]
         return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
                                            'watchtower': 'A watchtower. From the top you can see far over the land.',

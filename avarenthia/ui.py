@@ -3721,7 +3721,7 @@ class WorldMapScreen(Modal):
     tall = False
     """The overworld: a scrollable close-up, or the whole realm with each character covering 2x2 cells."""
     layer = 0         # what the map shows over the land: see LAYERS
-    LAYERS = ['Land', 'Danger', 'Factions', 'Jobs', 'Trade']
+    LAYERS = ['Land', 'Danger', 'Factions', 'Realms', 'Jobs', 'Trade']
     BANDS = [((44, 66, 40), 'safe'), ((92, 86, 36), 'watchful'), ((128, 62, 30), 'dangerous'), ((120, 26, 34), 'deadly')]
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
     zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
@@ -3809,6 +3809,12 @@ class WorldMapScreen(Modal):
             return ch, fg, bg
         if lay == 'Factions':
             return ch, fg, mix(base or bg, D.FACTIONS[w.region_at(mx, my).faction]['fg'], .28 if base else .25)
+        if lay == 'Realms' and getattr(w, 'realm', None) is not None:
+            from . import realms as RL
+            col, border = RL.layer_look(w, self.game.maps['over'], mx, my)
+            if col is None:
+                return ch, scale(fg, .55), scale(base or bg, .6)       # lawless land
+            return ch, fg if border else scale(fg, .8), mix(base or bg, col, {2: .62, 1: .4, 0: .24}[border])
         t = self.game.maps['over'].tile(mx, my)
         if lay == 'Danger':
             if t == D.WATER or not D.TILES[t].walk and t != D.MOUNTAIN:
@@ -3838,6 +3844,10 @@ class WorldMapScreen(Modal):
             parts = [(' ', col, nm) for col, nm in self.BANDS]
         elif lay == 'Factions':
             parts = [('■', D.FACTIONS[f]['fg'], D.FACTIONS[f]['short']) for f in D.FACTION_ORDER]
+        elif lay == 'Realms' and getattr(self.game.world, 'realm', None) is not None:
+            R = self.game.world.realm
+            parts = [('♦', GOLD, "a king's seat"), ('·', FG, "a baron's seat")] + \
+                [('■', kg.fg, kg.short) for kg in R.kingdoms]
         elif lay == 'Jobs':
             parts = [(' ', (110, 80, 16), 'where a job leads'), (' ', (200, 150, 40), 'the job you follow'),
                      ('/', (230, 170, 80), 'hunting ground')]
@@ -3853,6 +3863,27 @@ class WorldMapScreen(Modal):
             cv.put(xx, y, ch, col if ch != ' ' else FG, col if ch == ' ' else PANEL)
             cv.text(xx + 2, y, nm, DIM, PANEL)
             xx += len(nm) + 4
+
+    def realm_marks(self, cv, X, Y, inview, vw, bx, taken=None):
+        """The realms layer: the kings' seats ♦ and the barons' seats ·, and each realm's name over its land."""
+        from . import realms as RL
+        w = self.game.world
+        om = self.game.maps['over']
+        for x, y, sign in RL.seats_on_map(w):
+            if inview(x, y) and om.seen[y * om.w + x]:
+                cv.put(X(x), Y(y), sign, GOLD if sign == '♦' else FG, (30, 22, 14))
+        taken = taken if taken is not None else set()
+        for key, (lx, ly) in w.realm.labels.items():
+            name, col = RL.realm_info(w, key)
+            if not name or not inview(lx, ly) or not om.seen[ly * om.w + lx]:
+                continue
+            name = name.upper()
+            x0 = max(bx, min(bx + vw - len(name) - 2, X(lx) - len(name) // 2))
+            cells = {(x0 + j, Y(ly)) for j in range(len(name) + 2)}
+            if cells & taken:
+                continue
+            taken |= cells
+            cv.text(x0, Y(ly), f' {name} ', mix(col, (255, 255, 255), .35), (24, 18, 12))
 
     def trade_text(self, st):
         """In the trade layer: a town's name with what sells dear there (▲) and what is cheap (▼), if you know."""
@@ -3964,8 +3995,11 @@ class WorldMapScreen(Modal):
         px, py = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
         if inview(px, py):
             cv.put(bx + px - ox, by + py - oy, '@', (255, 246, 220), (150, 40, 28))
+        realms = self.LAYERS[self.layer] == 'Realms' and getattr(w, 'realm', None) is not None
+        if realms:
+            self.realm_marks(cv, lambda v: v - ox + bx, lambda v: v - oy + by, inview, vw, bx)
         for st in w.settlements:
-            if g.known_settlement(st) and inview(st.x, st.y):
+            if g.known_settlement(st) and inview(st.x, st.y) and not realms:
                 name = self.trade_text(st) or st.name
                 lx = bx + st.x - ox - len(name) // 2
                 ly = by + st.y - oy - 1
@@ -4029,8 +4063,10 @@ class WorldMapScreen(Modal):
         taken = set()
         for st in w.settlements:
             taken.add((bx + S(st.x), by + S(st.y)))
+        if self.LAYERS[self.layer] == 'Realms' and getattr(w, 'realm', None) is not None:
+            self.realm_marks(cv, lambda v: bx + S(v), lambda v: by + S(v), lambda a, b: True, 100, bx, taken)
         for st in sorted(w.settlements, key=lambda q: not q.is_city):
-            if not g.known_settlement(st) or self.LAYERS[self.layer] == 'Trade':
+            if not g.known_settlement(st) or self.LAYERS[self.layer] in ('Trade', 'Realms'):
                 continue
             lx, ly = bx + S(st.x) + 1, by + S(st.y)
             name = st.name
@@ -4082,7 +4118,7 @@ class WorldMapScreen(Modal):
         if tok in ('l', 'L'):
             WorldMapScreen.layer = (self.layer + (-1 if shift or tok == 'L' else 1)) % len(self.LAYERS)
             return
-        if tok in ('1', '2', '3', '4', '5'):
+        if tok in ('1', '2', '3', '4', '5', '6'):
             WorldMapScreen.layer = int(tok) - 1
             return
         if tok == 'tab' and self.dests:

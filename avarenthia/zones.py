@@ -109,7 +109,8 @@ _CACHE = {}
 def _cells(game):
     """Per world cell: the four feelings and the ground tile, as arrays (h, w). Made once per game."""
     om = game.maps['over']
-    key = (id(om), game.seed)
+    cut = getattr(game.world, 'clearcut', ())
+    key = (id(om), game.seed, len(cut))
     if key in _CACHE:
         return _CACHE[key]
     _CACHE.clear()
@@ -139,6 +140,8 @@ def _cells(game):
             if mod[4] is not None:
                 ground[sel] = mod[4]
     ground[tt == D.SAND] = D.SAND
+    for i in cut:                                  # where the woodcutters were: stumps, a tree or two left
+        feel[0][i // om.w, i % om.w] = .03
     riv = np.frombuffer(bytes(om.river), dtype=np.uint8).reshape(om.h, om.w) if getattr(om, 'river', None) \
         else np.zeros((om.h, om.w), dtype=np.uint8)
     _CACHE[key] = (tt, feel, ground, riv)

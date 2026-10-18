@@ -13,8 +13,11 @@ import random
 from . import calendar as CAL
 from . import data as D
 
-CHAPTERS = ['The Old Days', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
+CHAPTERS = ['The Old Days', 'The Realms', 'Lords and houses', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
 MARK = {'heard': ('·', (217, 165, 71)), 'read': ('≡', (196, 170, 255)), 'seen': ('☼', (255, 226, 120))}
+
+
+RANK = {'heard': 0, 'read': 1, 'seen': 2}      # a seen fact beats a read one, a read one beats what you heard
 
 
 def facts(game):
@@ -22,13 +25,13 @@ def facts(game):
 
 
 def add(game, chapter, text, src, who=None, where=None, place=None, title=None, key=None, quiet=False):
-    """A new fact for the chronicle; the same fact twice is kept once (a seen one beats a heard one)."""
+    """A new fact for the chronicle; the same fact twice is kept once (seen beats read, read beats heard)."""
     fs = facts(game)
     key = key or text
     old = next((f for f in fs if f['key'] == key), None)
     if old:
-        if src != 'heard' and old['src'] == 'heard':
-            old.update(src=src, who=who, where=where or old['where'], day=game.day, new=True)
+        if RANK[src] > RANK[old['src']]:
+            old.update(src=src, who=who, where=where or old['where'], day=game.day, new=True, text=text)
         return old
     if where is None:
         here = game.here
@@ -266,6 +269,13 @@ def gaps(game, ch):
                        'old letters.')
         if len(fs) < 4:
             out.append('The old folk in every town remember the Ruin and the Hundred Winters. Ask them.')
+    elif ch == 'The Realms':
+        if len(fs) < 3:
+            out.append('News of the courts and the wars comes late on the roads, and not always right. The library of a '
+                       'city knows its own realm.')
+    elif ch == 'Lords and houses':
+        if len(fs) < 3:
+            out.append('Who rules where, and who comes after them, the scribes keep. Or go and see the lords yourself.')
     elif ch == 'Wonders':
         left = sum(1 for n, _x, _y in getattr(game.world, 'wonders', ()) if not any(f['key'] == 'w:' + n for f in fs))
         if left:

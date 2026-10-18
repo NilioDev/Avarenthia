@@ -40,6 +40,9 @@ class Wanderer:
         own = LV.describe(self)
         if own:
             return own
+        if self.kind in ('host', 'raid'):
+            from . import realms as RL, powers as PW
+            return (RL if self.kind == 'host' else PW).describe(self, game) or self.name + '.'
         if self.kind == 'caravan':
             g, q = self.goods
             return f"A merchant caravan carrying {q} {D.GOODS[g]['name']} to {w.settlements[self.dest].name}."
@@ -156,6 +159,10 @@ def step(game, wd):
         wd.cooldown -= 1
     if wd.kind in LV.KINDS:
         LV.step(game, wd)
+        return
+    if wd.kind in ('host', 'raid'):
+        from . import realms as RL, powers as PW
+        (RL if wd.kind == 'host' else PW).step(game, wd)
         return
     if wd.kind == 'warband':
         from .war import step_warband

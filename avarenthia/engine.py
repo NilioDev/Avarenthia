@@ -44,6 +44,10 @@ from . import living as LV
 from . import sailing as SA
 from . import hunting as HT
 from . import cooking as CK
+from . import realms as RL
+from . import powers as _PW  # noqa: F401  (the other powers register their choices)
+from . import realmjobs as _RJ  # noqa: F401
+from . import history as HI
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -51,7 +55,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 29
+SAVE_VERSION = 30
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1093,6 +1097,7 @@ class Game:
             LV.on_shrine(self, shrine)
             return D.TILES[t].cost
         LV.on_battlefield(self)
+        HI.on_step(self)
         poi = EV.poi_at(self, p.x, p.y)
         if poi:
             EV.reveal(self, poi)
@@ -2272,6 +2277,7 @@ class Game:
                 LV.daily(self)
                 NT.daily(self)
                 HT.daily(self)
+                RL.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2859,6 +2865,8 @@ class Game:
             if wd:
                 self.meet_wanderer(wd)
             return
+        if RL.talk(self, npc):
+            return
         if role == 'castellan':
             self.request = ('castellan', hid)
             return
@@ -2879,6 +2887,12 @@ class Game:
             if here is not None and here.rep < 0:
                 self.say(npc, random.choice(['I have my eye on you.', 'One wrong move, stranger.',
                                              f'They say you are trouble. Not in {here.name}, you are not.']))
+                return
+            from . import powers as PW
+            if here is not None and here.race not in ('orc', 'goblin') and getattr(self.world, 'powers', None) \
+                    and PW.distrusted(self) and random.random() < .6:
+                self.say(npc, random.choice(['Your kind marches with the Gorvash. Keep your hands where I can see them.',
+                                             'One of the tribes, in here? Walk slowly, and walk on.']))
                 return
             wanted = CR.wanted_in(self)
             if wanted and random.random() < .4:

@@ -146,7 +146,7 @@ LANDS = {
 # what grows and lives there: found by foraging, a few sold in its villages
 LOCAL = {
     'forest': ['wild_thyme', 'beechnut', 'cep', 'oak_bark'], 'birch': ['birch_sap', 'wild_strawberry'],
-    'taiga': ['juniper', 'spruce_tips'], 'tundra': ['crowberry', 'lichen'], 'moor': ['heather_honey', 'bilberry'],
+    'taiga': ['juniper', 'spruce_tips'], 'tundra': ['crowberry', 'lichen'], 'moor': [('food', 'heather_honey'), 'bilberry'],
     'mountain': ['gentian', 'wild_garlic'], 'steppe': ['wild_carrot', 'mustard_seed'],
     'savanna': ['baobab', 'wild_millet'], 'desert': ['fig', 'cactus_fruit'], 'canyon': ['wild_sage', 'pine_nut'],
     'marsh': ['watercress', 'calamus', ('food', 'frog_legs')], 'coast': ['samphire', 'coconut', 'seaweed',

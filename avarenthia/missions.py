@@ -419,6 +419,8 @@ def on_pickup(game, it):
 
 
 def giver_name(game, m):
+    if m.data.get('giver_name') and m.giver is None:
+        return m.data['giver_name']
     if m.kind == 'personal':
         return f"{m.data['client'].split()[0]} at the inn in {game.world.settlements[m.data['wait']].name}"
     if m.hold is not None:

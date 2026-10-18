@@ -17,10 +17,10 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
 | **Built: walking the land (zones)** | `>` in open country goes down into the zone of that world cell; walk off the edge into the next one, `<` goes back up. Ambushes are fought there; towns, sites and holds keep their own maps and are entered from the middle of their zone. The save is packed |
 | **Built: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting in the herd's zone, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking |
-| **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
+| **Built: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; court events every month; wars that start and end, hosts on the march; dwarves (the grudge book), elves (the wood's edge) and the orc tribes (the Gorvash); two or three raiding peoples per world; the church and its holy order, the Border Watch, mercenary companies, peasant revolts, a pretender, witch circles; 39 kinds of realm job; knighthood; a Realms layer on the map with organic borders |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
-| **Part built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books and stones lead to places on the map. Opens with Enter on the journal's Lore tab. Part 1 built; part 2 (libraries, the made history) comes with the realms |
+| **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
@@ -171,6 +171,40 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   a skinning knife and the frame are supplies. Four new life skills: Hunting, Skinning, Cooking, Leatherworking.
   Changed: Nut Loaf is hazelnuts, barley and butter, as the plan gave it Trail Cakes' three things. Not built: the
   quiver (there are no arrows to carry) and mending a tent (tents do not wear).
+- **Realms, lords and wars** (`realms.py`, `powers.py`, `seats.py`, `realmjobs.py`, `outlanders.py`). The regions
+  now grow over the land from their centres, so every border follows rivers and ridges. The crown faction becomes the
+  empire with a made name; 3-5 kingdoms (seats as far apart as the land allows, a made land name and form), a barony
+  per crown region (Barony of X, or a March on the border), houses with arms, colours and a motto, every lord with an
+  age, traits, loyalty and an heir. Lesser houses get a seat beside their village: fortified farm `╓`, tower house
+  `╥`, walled manor `╦` (empty `:` when the house falls), each with its own map, its people inside the wall. Barons
+  and kings sit in the finest house of their town (the house gets their name) or in their castle's keep; merchant
+  families in the cities. Once a month each court may have an event (deaths and successions, regents, civil wars,
+  rebel barons, claims, marriages, insults and murders, levies, taxes, the emperor's summons), heard through the
+  news and kept in the chronicle; one telling in four is wrong and gets corrected. Wars end in peace, a barony
+  changing hands, tribute or a hostage; hosts `K` march between the seats and burn villages on the way. Fealty to a
+  baron, king or the emperor (Friendly with the empire and enough favour with that realm): Sir or Dame, the levy as
+  a job, struck from the roll after two missed levies. The other powers (`powers.py`): a grudge book per dwarf hold
+  (feuds, settled by jobs), the elves' wood edge (clear-cuts on the map, the wood closed and more dangerous), named
+  orc tribes that fight until one warlord makes a Gorvash (the faction is renamed while it marches; half-orcs and
+  goblins pay more and are watched in other peoples' towns), two or three raiding peoples per world by biome, each
+  with a hall `Æ` (guest right), its own months, raids by land or sea (`R` on the map), captives, warned villages,
+  and a barony taken by a strong chief; the church's holy order `╪` (bans a rebel), the Border Watch `╫` (only with
+  northern raiders), mercenary companies `¶` (change sides, bribable), peasant risings `‼` (free commune or gallows),
+  a pretender in exile `º`, hidden witch circles `○`. 19 new fighters in `outlanders.py`. 39 kinds of realm job
+  (`realmjobs.py`) from lords, village boards, raider chiefs, the prior, witches, the Watch, mercenaries, rebels,
+  the pretender, the grudge keeper and the elves' loremaster, each played on the spot with one key, some with a
+  fight. Map layer 4 Realms (layers now 1-6): realm colours, bright borders between realms, faint ones between
+  baronies, `♦` kings' seats, `·` barons' seats, realm names instead of town names. Changed: the regions do not
+  grow faster over each people's own ground (only rivers and ridges steer them).
+- **The chronicle, part 2** (`history.py`). World making writes 30-60 events of the last ~200 years (the founding of
+  the empire, dynasties, kingdoms joining, wars with their field, raiders' first raids, an old Gorvash, marriages,
+  fallen houses whose seats are today's ruins, founded towns, plagues and hard winters, the holy order, the Watch,
+  the dwarves' oldest grudge, the elves shutting their wood), each tied to a place. The old folk tell them as hints,
+  one in four wrong; reading puts it right. City libraries (a home becomes the library, shelves `≡`, a scribe):
+  The old days, The realms, A lord or house, This city (3s and a few hours each), Varnish letters (8s and a day),
+  free for the Circle of Magi; they buy old books. The Grudge Book's keeper beside a dwarf king's High Seat and a
+  loremaster in the elven city. Records mark the ruins of fallen houses on the map; walking past an old battlefield
+  shows the bones. New chapters The Realms and Lords and houses; seen beats read, read beats heard.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -228,7 +262,7 @@ Adventurer's Handbook**. Mockups and every text: `/mnt/project-files/handleiding
 - **Standing rule (in CLAUDE.md):** every change to the game updates the handbook in the same commit, and the build
   report quotes the new or changed handbook lines so Nilio can read them.
 
-## The chronicle: what your hero knows (approved, not built)
+## The chronicle: what your hero knows (built 17-18 October 2026; the spec)
 
 Approved by Nilio on 17 October 2026. Proposal and mockups: `/mnt/project-files/kennis/` (`voorstel.md`,
 `1_chronicle_war.png`, `2_chronicle_old_days.png`, `chronicle_mockup.py`).
@@ -619,7 +653,7 @@ ambush in a zone, walking from a town edge into a zone and back.
 
 ---
 
-## Realms, lords and wars (approved, not built)
+## Realms, lords and wars (built 18 October 2026; the spec)
 
 Approved on 17 October 2026 in the thread on the kingdoms. Mockups of the realms map and the sketch script are in
 the project files under `rijken/` (`realms_overview.png`, `realms_closeup.png`, `realms_mock.py`, seed 3).

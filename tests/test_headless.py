@@ -1581,11 +1581,11 @@ def overview():
     app.render()
     line = ''.join(app.cv.ch[ui.MAP_H * ui.W:(ui.MAP_H + 1) * ui.W])
     assert '►' in line, line
-    # the map: five layers, by number and by L, in both views
+    # the map: six layers, by number and by L, in both views
     app.key('m')
     for z in (1, 0):
         ui.WorldMapScreen.zoom = z
-        for k in '12345':
+        for k in '123456':
             app.key(k)
             app.render()
             assert ui.WorldMapScreen.layer == int(k) - 1
@@ -3440,11 +3440,254 @@ def herds_and_cooking():
     print('herds and cooking ok:', len(CK.known(g)), 'dishes known')
 
 
+def talk_all(g, roles):
+    """Talk to everyone here with one of these roles, and try every choice they offer. How many were talked to."""
+    from avarenthia import events as EV_
+    n = 0
+    g.player.gold = max(g.player.gold, 100000)
+    for o in list(g.map.mons):
+        if getattr(o, 'role', '') not in roles:
+            continue
+        n += 1
+        g.talk(o)
+        if not g.pending:
+            continue
+        opts = [c for _l, c in g.pending['options'] if c and c != 'bye']
+        g.pending = None
+        for c in opts:
+            g.talk(o)
+            if g.pending:
+                EV_.resolve(g, c)
+            g.pending = None
+            g.request = None
+    g.missions = [x for x in g.missions if x.kind != 'realm']
+    return n
+
+
+def realms():
+    """Realms, lords and wars: the empire and its kingdoms on organic regions, houses with seats, the other powers,
+    the made history, libraries and scribes, talking to lords, fealty, every realm job played through, the months
+    of the courts and the realms layer of the map."""
+    from avarenthia import realms as RL, powers as PW, realmjobs as RJ, history as HI, chronicle as CH, events as EV_
+    from avarenthia import missions as MS_, calendar as CAL, seats as SEATS, wanderers as WA_
+    print('== realms')
+    app = new_app('soft', seed=21)
+    g = app.game
+    w, R, p = g.world, g.world.realm, g.player
+    assert 1 <= len(R.kingdoms) <= 5 and R.lord(R.emperor).title == 'emperor', 'an emperor over the kings'
+    assert E.D.FACTIONS['crown']['name'] == R.empire and E.D.FACTIONS['crown']['short'] == 'Empire'
+    crown = [r.id for r in w.regions if r.faction == 'crown']
+    assert all(rid in R.baronies and R.lord(R.baronies[rid].lord) for rid in crown), 'every crown region is a barony with a lord'
+    assert set(w.region_of) <= set(range(len(w.regions))), 'organic regions cover the map'
+    seats = [st for st in w.sites if st.kind == 'seat']
+    assert seats and all(R.houses[st.house].seat == ('site', st.id) for st in seats), 'lesser houses have seats'
+    H = HI.events(w)
+    assert 30 <= len(H) <= 60 and all(e['year'] < CAL.YEAR and w.region_of and 0 <= e['x'] < 480 for e in H), len(H)
+    assert H == sorted(H, key=lambda e: e['year'])
+    for st in w.sites:
+        if SEATS.is_seat(st):
+            assert st.glyph and SEATS.describe(g, st), st.kind
+    # every power's place has its own map
+    done = set()
+    for st in w.sites:
+        if SEATS.is_seat(st) and st.kind not in done:
+            done.add(st.kind)
+            to_over(g, 0)
+            g.enter_site(st.id)
+            assert g.map.kind != 'over', st.kind
+            app.render()
+            talk_all(g, PW.ROLES | HI.ROLES | RL.ROLES)
+    assert {'seat', 'hall', 'orderkeep'} <= done, done
+    for s_ in w.settlements:                       # the Grudge Book's keeper, the loremaster under the Elder Tree
+        if s_.kind == 'deephold' or getattr(s_, 'elder', False):
+            to_over(g, 0)
+            g.enter_town(s_.id)
+            assert talk_all(g, HI.ROLES), s_.name
+    # the library of the great city: shelves, a scribe, the old letters
+    to_over(g, 0)
+    g.enter_town(R.great)
+    m = g.map
+    assert any(t == E.D.SHELVES for t in m.t), 'the library has shelves'
+    scribe = next(o for o in m.mons if getattr(o, 'role', '') == 'scribe')
+    p.gold = 100000
+    n0 = len(CH.facts(g))
+    for ch in ('old', 'realms', 'lords', 'city', 'letters'):
+        g.talk(scribe)
+        assert g.pending and g.pending['key'] == 'library'
+        assert ch in [o[1] for o in g.pending['options']], (ch, g.pending['options'])
+        EV_.resolve(g, ch)
+    assert g.__dict__.get('varnish_letters') and len(CH.facts(g)) > n0 + 5, 'the scribe reads, and teaches the letters'
+    assert any(f['key'].startswith('hist:') and f['src'] == 'read' for f in CH.facts(g))
+    # a wrong telling heard, then read right
+    e = next(e for e in H if not HI.known(g, e))
+    CH.add(g, e['ch'], HI.garble(e), 'heard', 'an old man', key=f'hist:{e["id"]}f')
+    HI.learn(g, e, 'read', 'a scribe')
+    assert next(f for f in CH.facts(g) if f['key'] == f'hist:{e["id"]}f')['false'], 'reading puts the old tale right'
+    # a lord in his hall: greeting, news, work
+    lord = next((o for o in m.mons if getattr(o, 'role', '') == 'lord'), None)
+    assert lord, 'the emperor sits in the great city'
+    g.talk(lord)
+    assert g.pending and g.pending['key'] == 'lord'
+    EV_.resolve(g, 'news')
+    g.talk(lord)
+    EV_.resolve(g, 'work')
+    if g.pending and g.pending['key'] == 'realmoffer':
+        take = next(o[1] for o in g.pending['options'] if o[1] and o[1].startswith('take'))
+        EV_.resolve(g, take)
+        assert any(x.kind == 'realm' for x in MS_.active(g)), 'a realm job taken'
+    assert any(f['ch'] == 'Lords and houses' and f['src'] == 'seen' for f in CH.facts(g)), 'a lord met is a seen fact'
+    g.missions = []
+    # fealty: refused without a name, sworn with one
+    g.talk(lord)
+    EV_.resolve(g, 'fealty')
+    assert not getattr(p, 'knight', None)
+    p.rep['crown'] = 40
+    RL.add_favour(g, RL.kingdom_of_lord(R, R.lord(lord.lord)).id, 30)
+    g.talk(lord)
+    EV_.resolve(g, 'fealty')
+    assert getattr(p, 'knight', None), 'sworn'
+    from avarenthia import races as RC_
+    assert RC_.address(g).startswith(('my', 'sir'))
+    RJ.levy(g, R.kingdoms[0], None)
+    assert any(x.data.get('task') == 'levy' for x in MS_.active(g)), 'the liege calls the levy'
+    g.missions = []
+    p.knight = None
+    # every realm job: made, reached, every choice played, fights won. First the world is stirred: a war, a civil war,
+    # a rising baron, a peasant revolt, a pretender, weddings, feuds, and one raiding people of every kind
+    if len(R.kingdoms) >= 2:
+        RL.start_war(g, R.kingdoms[0], R.kingdoms[1], 'a test')
+    kg = R.kingdoms[-1]
+    lords_k = RL.lords_of(R, kg)
+    RL.civil_war(g, kg, next(lo for lo in lords_k if lo.id != kg.king))
+    for lo in lords_k:
+        if lo.title == 'baron':
+            lo.traits, lo.loyalty = ['ambitious', 'greedy'], 10
+    RL.rebel(g, kg, lords_k)
+    for k in R.kingdoms:
+        k.burden = 99
+    PW.revolt_month(g)
+    for _ in range(12):
+        PW.P(w)['pretender'] = None
+        PW.exile(g, next(lo for lo in lords_k if lo.id != kg.king), kg)
+        if PW.P(w)['pretender'] and PW.P(w)['pretender']['site'] is not None:
+            break
+    for _ in range(10):
+        RL.marry(g, kg, lords_k)
+        RL.insult(g, kg, lords_k)
+    for t_ in PW.P(w)['tribes']:
+        t_['strength'] = 9
+    season = CAL.season
+    CAL.season = lambda d: 'winter'              # the ice jobs come only in winter
+    rds = PW.raiders(w)
+    for k_ in PW.KINDS:
+        if not any(rd['kind'] == k_ for rd in rds):
+            rds.append(dict(rds[0], kind=k_, people=PW.KINDS[k_]['people'][0], held=[], warned={}))
+    givers = []
+    for lo in R.lords.values():
+        if lo.alive and lo.title in ('baron', 'lord', 'king', 'emperor') and R.houses[lo.house].seat:
+            givers.append(dict(kind='lord', lid=lo.id, house=lo.house, name=RL.style(R, lo, False)))
+    givers += [dict(kind='town', sid=s.id, name=s.name) for s in w.settlements if s.kind in ('village', 'town')][:12]
+    for i, rd in enumerate(PW.raiders(w)):
+        givers.append(dict(kind='chief', raider=i, rk=rd['kind'], site=rd['site'], name=rd['chief']))
+    for st in w.sites:
+        k = {'orderkeep': 'prior', 'circle': 'witch', 'watchfort': 'watch', 'merccamp': 'merc', 'rising': 'rebel',
+             'exile': 'pretender'}.get(st.kind)
+        if k:
+            givers.append(dict(kind=k, site=st.id, name='Someone'))
+    for s in w.settlements:
+        if s.kind == 'deephold':
+            givers.append(dict(kind='keeper', sid=s.id, name='Keeper'))
+        if getattr(s, 'elder', False):
+            givers.append(dict(kind='loremaster', sid=s.id, name='Loremaster'))
+    made = {}
+    for key, t in RJ.TASKS.items():
+        for gv in givers:
+            if t['giver'] != gv['kind'] and t['giver'] != 'chief:' + gv.get('rk', ''):
+                continue
+            mm = t['make'](g, gv)
+            if mm:
+                made[key] = (gv, mm)
+                break
+    played = 0
+    for key, (gv, mm) in made.items():
+        assert mm.title and mm.desc and mm.reward >= 0 and mm.data.get('spot'), key
+        sc = RJ.SCENES[key]
+        to_over(g, 0)
+        g.missions = [mm]
+        mm.state = 'active'
+        (tx, ty), where = MS_.target_pos(g, mm)
+        assert where, key
+        g.player.x, g.player.y = tx, ty
+        g.over_pos = (tx, ty)
+        out = sc[0](g, mm)
+        if not out:
+            continue
+        text, opts = out
+        for _label, choice in opts:
+            if choice is None:
+                continue
+            to_over(g, 0)
+            m2 = RJ.TASKS[key]['make'](g, gv) or mm
+            g.missions = [m2]
+            m2.state = 'active'
+            g.player.gold = 100000
+            g.player.x, g.player.y = m2.data['spot']
+            g.over_pos = tuple(m2.data['spot'])
+            sc[0](g, m2)
+            sc[1](g, m2, choice)
+            g.pending = None
+            g.request = None
+            if getattr(g, 'job_fight', None):
+                g.job_fight = None
+                RJ.won(g, m2, True)
+                g.pending = None
+            played += 1
+            if m2.state == 'turnin':
+                (gx, gy), nm = MS_.target_pos(g, m2)
+                assert nm, key
+    CAL.season = season
+    assert len(made) >= len(RJ.TASKS) - 3 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
+    # the months of the courts, the hosts and the raids
+    g.missions = []
+    to_over(g, 0)
+    for _ in range(24):
+        g.turn += CAL.DAYS_IN_MONTH * E.D.DAY_LEN
+        RL.monthly(g)
+        PW.daily(g)
+        for _ in range(60):
+            for wd in list(w.wanderers):
+                if wd.kind in ('host', 'raid'):
+                    WA_.step(g, wd)
+                    assert wd.describe(g)
+        g.pending = None
+        g.request = None
+    assert R.events > 20, 'the courts are busy'
+    from avarenthia import news as NW_
+    for _ in range(30):
+        NW_.tell(g, far=True)
+    assert any(f['ch'] in ('The Realms', 'Lords and houses', 'Peoples') and f['src'] == 'heard' for f in CH.facts(g))
+    # the realms layer of the map, close-up and whole
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    app.key('4')
+    assert ui.WorldMapScreen.LAYERS[app.top.layer] == 'Realms'
+    app.render()
+    app.key('z')
+    app.render()
+    app.key('1')
+    app.key('esc')
+    # a game saved and loaded keeps it all
+    E.save_game(g)
+    g2 = E.load_game()
+    assert g2.world.realm.empire == R.empire and len(g2.world.history) == len(H)
+    print('realms ok:', len(R.kingdoms), 'kingdoms,', len(R.houses), 'houses,', len(made), 'kinds of realm job,', played,
+          'choices played,', R.events, 'court events')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

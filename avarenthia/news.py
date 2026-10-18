@@ -65,7 +65,7 @@ def known(game, kinds=None, near=NEAR, far=False):
     return out
 
 
-def tell(game, kinds=None, near=NEAR, far=False):
+def tell(game, kinds=None, near=NEAR, far=False, npc=None):
     """One piece of news, preferring the freshest that has been told least."""
     cands = known(game, kinds, near, far)
     if not cands:
@@ -73,6 +73,9 @@ def tell(game, kinds=None, near=NEAR, far=False):
     cands.sort(key=lambda r: (r[0]['told'], r[1]))
     n, age, d = cands[0]
     n['told'] += 1
+    if n.get('fact'):
+        from . import realms as RL
+        RL.heard(game, n, npc)
     text = n['text'][0].lower() + n['text'][1:] if n['text'][:2] not in ('A ', 'I ') else n['text']
     return f'{_age_words(age)}, they say: {text}' if age >= 1 else f'Just today: {text}'
 

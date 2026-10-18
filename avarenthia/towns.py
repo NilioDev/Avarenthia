@@ -1108,6 +1108,7 @@ def gen_village(game, s):
             gd = garden(m, pl, -1 if tgt[1] > pl.y + pl.h // 2 else 1, plots)
             if gd:
                 plots.append(gd)
+    m.homes = [pl for pl in buildings if pl.kind == 'home' and pl.door]
     for pl in smials:
         furnish(m, pl)
     buildings += smials
@@ -1300,6 +1301,7 @@ def gen_city(game, s):
                 add_sign(m, pl, GU.GUILDS[pl.guild]['name'])
         elif pl.kind in SIGN:
             add_sign(m, pl, SIGN[pl.kind])
+    m.homes = [pl for pl in buildings if pl.kind == 'home' and pl.door]
     for i in range(len(m.t)):
         if m.t[i] == GRASS and random.random() < .008:
             m.t[i] = TREE
@@ -1390,7 +1392,10 @@ def people_city(game, m, s, buildings, names, px, py, stall_spots, streets, n_gu
 def gen_settlement_map(game, s):
     if s.kind == 'deephold':
         from .deephold import gen_deephold
-        return gen_deephold(game, s)
+        from . import history as HI
+        m = gen_deephold(game, s)
+        HI.furnish_folk(game, m, s)
+        return m
     if getattr(s, 'dwarven', False):
         from .deephold import gen_village as gen_dwarf_village
         m = gen_dwarf_village(game, s)
@@ -1401,6 +1406,10 @@ def gen_settlement_map(game, s):
         m = gen_city(game, s) if s.is_city else gen_village(game, s)
     from . import hunting as HT
     HT.furnish(game, m, s)
+    from . import realms as RL
+    RL.furnish_town(game, m, s)
+    from . import history as HI
+    HI.furnish_folk(game, m, s)
     place_signpost(m)
     return m
 
@@ -1607,6 +1616,8 @@ def _hold_map(game, hd, hostile):
             g.night_watch = i < 2
         m.signs.append((keep.x + 2, keep.y - 1, 'KEEP'))
         m.entry = (0, gate_y)
+        from . import realms as RL
+        RL.furnish_hold(game, m, hd)
     for i in range(len(m.seen)):
         m.seen[i] = 1 if not hostile else 0
     return m

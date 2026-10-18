@@ -100,7 +100,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 # ------------------------------------------------------------------ first-time tips
 TIPS = {
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
-    'over': 'Tip: m opens the map; on it, the keys 1 to 5 show the land, danger, factions, jobs and trade.',
+    'over': 'Tip: m opens the map; on it, the keys 1 to 6 show the land, danger, factions, realms, jobs and trade.',
     'job': 'Tip: e opens the journal. Enter on a job follows it, and an arrow on the edge of the map points the way.',
     'merc': 'Tip: h gives orders to your company; there, 3 sends them at your target.',
     'dungeon': 'Tip: x explores by itself until something turns up.',
@@ -110,6 +110,9 @@ TIPS = {
     'herd': 'Tip: walk into a herd on the world map to hunt it.',
     'hunt': 'Tip: the arrow on the edge shows where the wind comes from. Keep it in your face, or they smell you.',
     'skin': 'Tip: Enter on a carcass skins it; with a knife or a dagger you get the hide too.',
+    'knight': 'Tip: as a knight your liege may call you to the levy; the call comes as a job in your journal, e.',
+    'realmjob': 'Tip: a lord remembers the work you do. Enough of it, with a good name in the empire, and you may swear fealty.',
+    'library': 'Tip: what a scribe reads to you goes into your chronicle: e, the Lore tab, then Enter.',
     'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',
 }
 

@@ -75,6 +75,10 @@ def price_factor(game, town_race):
     rel = relation(town_race, getattr(p, 'race', 'human'))
     if rel < 0:
         k *= 1 - rel / 200          # -20 -> 10% dearer
+    if town_race != getattr(p, 'race', 'human') and getattr(game.world, 'powers', None):
+        from . import powers as PW
+        if PW.distrusted(game):
+            k *= 1.15               # while the Gorvash marches, half-orcs and goblins pay more
     return k
 
 
@@ -177,4 +181,6 @@ def names_for(race, n):
 def address(game):
     """How strangers address the player."""
     g = getattr(game.player, 'gender', 'other')
+    if getattr(game.player, 'knight', None):
+        return 'my lady' if g == 'female' else 'my lord' if g == 'male' else 'sir knight'
     return {'male': 'lad', 'female': 'lass'}.get(g, 'friend')

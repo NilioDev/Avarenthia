@@ -28,6 +28,8 @@ SIGN_COL = {
     '≈': (70, 130, 200), '♣': (47, 128, 64), '▲': (163, 156, 142), '∩': (154, 138, 90), '·': (200, 164, 106),
     '%': (180, 60, 50), '¡': (236, 176, 84), '¥': (206, 206, 216), '○': (106, 162, 216), '☼': (255, 140, 50),
     'q': (160, 88, 58), 'Q': (160, 88, 58), ':': (190, 160, 116),
+    '♦': (224, 190, 80), '╓': (220, 200, 150), '╦': (220, 200, 150), 'Æ': (214, 176, 120), '╪': (240, 236, 216),
+    '╫': (160, 168, 186), '¶': (226, 184, 90), '‼': (210, 178, 110), 'º': (220, 200, 150),
 }
 
 
@@ -86,7 +88,7 @@ def ch_moving(g):
         ('p', 'In a dungeon or a ruin, [x] walks by itself until something turns up. Any key stops it.'),
         ('h', 'The map'),
         ('p', '[m] opens the map of the realm. You only see the land you have walked or been told about. The keys [1] '
-              'to [5] show it in layers: Land, Danger, Factions, Jobs and Trade; [L] goes through them in turn. '
+              'to [6] show it in layers: Land, Danger, Factions, Realms, Jobs and Trade; [L] goes through them in turn. '
               'In a town, [m] shows the town plan with every shop named, and [Tab] switches to the realm.'),
     ]
 
@@ -216,7 +218,7 @@ def ch_towns(g):
         ('p', 'Different in every world. Work for one to win its favour; hurt it and its gates close to you. The '
               'Standing tab of the journal shows where you stand with each.'),
         ('n', "Jobs pay modestly. Trade is where the money is: buy where a good is common, sell where it is rare. The "
-              "map's Trade layer [5] shows it."),
+              "map's Trade layer [6] shows it."),
     ]
 
 
@@ -235,7 +237,7 @@ def ch_jobs(g):
               'goes on beds, meals, repairs, wages and the temple. What you cannot afford is shown in grey.'),
         ('h', 'Trade'),
         ('p', 'Every town has goods it makes cheaply and goods it wants. Buy where a good is common, carry it, sell '
-              'where it is rare. A mule or a cart from the stablemaster carries more. The map\'s Trade layer [5] shows '
+              'where it is rare. A mule or a cart from the stablemaster carries more. The map\'s Trade layer [6] shows '
               'what each town you know offers and wants. Prices change with the seasons.'),
     ]
 
@@ -491,30 +493,54 @@ def ch_gods(g):
 
 def ch_realms(g):
     return [
-        ('p', 'The human lands are an empire: an emperor in the great city, kings under him, a baron in every '
-              'region, and under each baron a few lesser houses with a seat of their own. Every lord has a name, an '
-              'age, a nature and an heir. Dwarves, elves and the orc tribes live outside the empire, each by their own '
-              'law. The Realms layer of the map [4] shows the realms as they are now.'),
+        ('p', 'The human lands are an empire: an emperor in the great city, three to five kings under him, a baron in '
+              'every region, and under each baron two or three lesser houses. Every lord has a name, an age, a nature '
+              'and an heir; every house has arms, colours and a motto. Dwarves, elves and the orc tribes live outside '
+              'the empire, each by their own law.'),
+        ('h', 'The Realms layer'),
+        ('p', 'Press [4] on the map. Each realm washes the land in its colour, with a bright edge where two realms '
+              'meet and a faint one between baronies. {♦} is a king\'s seat, {·} a baron\'s. The borders follow the '
+              'rivers and the ridges, and they move when a war is lost.'),
+        ('h', 'Lords and their seats'),
+        ('p', 'A baron or a king sits in the finest house of his town, or in the keep of his castle. A lesser house '
+              'has a seat beside the village it holds: {╓} a fortified farm, {╥} a tower house, {╦} a walled manor. '
+              'The seat of a fallen house stands empty, the sign {:}. The great cities also have rich merchant '
+              'families. Walk into a lord to talk: work, the news of the court, fealty.'),
         ('h', 'What happens'),
-        ('p', 'Lords die and their heirs quarrel, barons rebel, marriages bind houses and murders break them. Wars '
-              'start, and they end: in peace, a region changing hands, tribute or a hostage. You hear of it late, '
-              'through the news.'),
+        ('p', 'Every month each court has its small event. Lords die and their heirs quarrel, a child heir rules '
+              'through a regent, barons rebel or claim a neighbour\'s land, marriages bind houses and murders break '
+              'them. Wars start and they end: in peace, a barony changing hands, tribute or a hostage. Hosts march '
+              'across the map between the seats. You hear of it late, through the news, and not always right.'),
         ('h', 'Your part'),
         ('p', 'You never rule and you hold no land. You are a piece in their game: carry letters, back a claimant, '
-              'save or kill an heir, guard a wedding. The lesser houses give most of the small work. Lords pay '
-              'little; treason pays well and makes enemies.'),
-        ('h', 'The other peoples'),
-        ('l', ['Each dwarf hold keeps a grudge book of wrongs. A full book means a feud that ends only when the debt '
-               'is paid, in gold or in blood.',
-               'The elves defend their wood. Logging pushes the forest edge back, and if it goes too far they close '
-               'the wood.',
-               'The orc tribes fight one another, until one warlord grows strong enough to unite them in the Gorvash, '
-               'all spears, and march.']),
+              'save or kill an heir, open a gate, guard a wedding, bring back a hostage. Lords pay modestly; treason '
+              'pays well and makes enemies. A lord remembers the work you do for his realm.'),
+        ('h', 'Knighthood'),
+        ('p', 'With a good name in the empire and enough work done for one realm, a baron, a king or the emperor '
+              'will take your oath. You become Sir or Dame, and people call you my lord or my lady. Your liege may '
+              'call the levy: the call comes as a job in your journal. Stay away twice and your name is struck from '
+              'the roll. You can renounce your oath in your liege\'s hall.'),
+        ('h', 'The other powers'),
+        ('l', ['The Church has a holy order with a keep, the sign {╪}. Its knights hunt necromancers and witches.',
+               'Where raiders come from the north, the Border Watch holds its forts, the sign {╫}.',
+               'A war brings mercenary companies, who camp near the front, the sign {¶}, and serve whoever pays.',
+               'Heavy taxes and levies raise the villages, the sign {‼}: a free commune if they win, gallows if not.',
+               'A lord who lost a crown may wait in exile for his moment, in a hidden camp, the sign {º}.',
+               'Witches keep hidden circles on the moors and in the marshes, the sign {○}.']),
         ('h', 'Raiders'),
-        ('p', 'Two or three raiding peoples live in every world, where their land is big enough: sea raiders from the '
-              'fjords, barbarians of the hills and steppe, desert riders, ice raiders, pass clans, wreckers, canyon '
-              'riders, the mist folk, island voyagers. They raid and trade, keep guest right under their own roof, and '
-              'a strong leader may take a barony.'),
+        ('p', 'Two or three raiding peoples live in every world, where their land fits them: sea raiders, highland '
+              'and steppe clans, desert riders, ice raiders, pass clans, wreckers, canyon riders, the mist folk, '
+              'island voyagers. Each has a hall, the sign {Æ}, where guest right keeps you safe. They raid in their '
+              'own months, and a strong chief may take a barony. Village boards ask for help against them; their '
+              'chiefs have their own work, some of it betrayal.'),
+        ('h', 'The other peoples'),
+        ('l', ['Each dwarf hold keeps a Grudge Book of wrongs, with a keeper beside the High Seat who reads it to '
+               'you. A full book means a feud, until the debt is paid in gold or in blood.',
+               'The elves defend their wood. When the woodcutters push the edge back too far they close it, and the '
+               'wood grows dangerous for everyone.',
+               'The orc tribes each have a name and a chief, and fight one another until one warlord unites them in '
+               'a Gorvash and they march. Then half-orcs and goblins are watched in other peoples\' towns and pay '
+               'more.']),
     ]
 
 
@@ -556,6 +582,17 @@ def ch_chronicle(g):
         ('p', 'Inscribed stones, the sign {Θ}, stand in some ruins: walk into one to read it. Some are cut in Varnish '
               'letters you cannot read until a scribe has taught you them, and those name the old roads. A few old '
               'books lie in the deepest dungeons: read one from your bag, and it may name a place you did not know.'),
+        ('h', 'Libraries'),
+        ('p', 'Every city has a library, with shelves of books and a scribe. Walk into the scribe and choose: The old '
+              'days, The realms, A lord or house, This city, or the Varnish letters. A subject costs a few silver and '
+              'a few hours, the letters a day; members of the Circle of Magi read for free. A library is true but '
+              'slow: its own realm it knows well, far realms late. It also buys the old books you find.'),
+        ('p', 'The dwarves keep their Grudge Book, and under the Elder Tree a loremaster sings of the old days.'),
+        ('h', 'Two hundred years'),
+        ('p', 'The old folk tell of the founding of the empire, its wars and the houses that fell, where it happened '
+              'near them. Some of them have it wrong; what you read later puts it right. A record may name the ruin '
+              'where a fallen house had its seat, and it goes on your map. Walk past an old battlefield and you find '
+              'the bones still in the grass.'),
         ('h', 'Your deeds'),
         ('p', 'The named enemies you bring down and the evils you destroy are kept under Your deeds, and remembered '
               'when you fall.'),
@@ -610,7 +647,7 @@ CHAPTERS = [
     ('Your hero', ch_hero), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
     ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
-    ('Guilds', ch_guilds), ('Gods', ch_gods),
+    ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
     ('All the keys', ch_keys),
 ]

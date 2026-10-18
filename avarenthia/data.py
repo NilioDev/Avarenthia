@@ -139,12 +139,15 @@ TILES = [
     Tile('☼', '#ff9a40', False, False, 'hearth', bg='#3a1a0a'),
     Tile('╬', '#c8a070', False, False, 'stretching frame'),
     Tile('╤', '#b08860', False, False, 'workbench'),
+    Tile('≡', '#c09858', False, False, 'shelves of books', bg='#2a1c10'),
+    Tile('╥', '#e0b860', False, False, 'high seat', bg='#3a2410'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
  FLAME, DARKWATER, STARWELL, SINGSTONE, EVERBLOOM, STONETREE, AMBER, GRIT, TROLLSTONE, CAIRN, ROPEDOWN, GREENWATER,
  BAREROCK, SNOW) = range(78, 107)
 HEARTH, FRAME, BENCH = range(107, 110)      # cooking at the inn, a hide stretched to scrape, the leatherworker's bench
+SHELVES, HIGHSEAT = 110, 111                # a library's books, the lord's high seat in his hall
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

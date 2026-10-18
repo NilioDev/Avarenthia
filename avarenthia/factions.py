@@ -55,12 +55,12 @@ ROLES = {
         desc='Proud dwarf clans of the hills and mountain roots. Slow to trust, never forget a debt.'),
     'horde': dict(
         races=[('orc', 3), ('goblin', 2)], start=-30,
-        names={'orc': ['The {fam} Horde', 'The {fam} Tribes', 'The Clans of the Red Tusk'],
-               'goblin': ['The {fam} Warrens', 'The Goblin Tribes of the {fam}']},
-        short=['Horde', 'Tribes'], fg=['#a0c050', '#b8a040'],
+        names={'orc': ['The Orc Tribes', 'The Tribes of the {fam}'],
+               'goblin': ['The Goblin Tribes', 'The Goblin Tribes of the {fam}']},
+        short=['Tribes'], fg=['#a0c050', '#b8a040'],
         troops={'*': ['orc', 'orc', 'gobarcher', 'ogre']},
         castle=['War Camp', 'Skull Hall'], fort=['Raid Camp', 'Bone Fence'],
-        desc='Orc tribes from the badlands. They respect strength, and little else.'),
+        desc='Orc tribes from the badlands, each with its own name and chief. They respect strength, and little else; when one warlord beats them all, they march together as a Gorvash.'),
 }
 GLYPH = {'crown': 'K', 'league': 'M', 'circle': 'D', 'blackhand': 'R', 'cult': 'U', 'clan': 'h', 'horde': 'O'}
 
