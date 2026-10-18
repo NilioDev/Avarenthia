@@ -1,7 +1,14 @@
 # Avarenthia: notes for Claude
 
 ASCII open-world RPG in Python + python-tcod by Nilio (GitHub NilioDev, repo NilioDev/Avarenthia, formerly Cursed-Vale).
-The plan for the next rounds of work is in `docs/plan.md`; read it before building.
+The plan for the next rounds of work is in `docs/plan.md`; read it before building. What is already built is in
+`docs/built.md` (summaries and the specs of built rounds): read only the section a round touches, never the whole file.
+
+## Keeping plan.md short (Nilio, 18 Oct 2026)
+`docs/plan.md` holds only what is still to build. When a round is built, move its spec section and its At a glance
+row from `plan.md` to `docs/built.md` in the same commit (summary in built.md's Built list, spec as
+"## <name> (built <date>; the spec)"). A new approved proposal goes into `plan.md` as a short spec; long detail stays
+in the project files and is linked.
 
 ## Working with Nilio
 - Talk to him in **Dutch**. Everything in the game and the README is **English**.
