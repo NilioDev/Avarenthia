@@ -669,6 +669,9 @@ def on_kill(game, mon):
     ox, oy = game.over_pos if game.cur != 'over' else (game.player.x, game.player.y)
     NW.post(game, 'danger', f'{n.Full} is dead. Someone brought down {n.his()} {n.rank} hide at last.', ox, oy)
     game.msg(f'You take {t.name}. Anyone who posted a bounty on {n.his()} head will pay for it.', 'gold')
+    from . import chronicle as CH
+    CH.deed(game, f'{n.Full} slain', f'You brought down {n.Full}, the {n.rank} {D.MONSTERS[mon.k]["name"].lower()}, '
+                                     f'in {m.name}.', (ox, oy))
     # a lieutenant's body tells where the boss hides
     if n.boss is not None:
         b = get(game, n.boss)

@@ -1599,6 +1599,13 @@ class InventoryScreen(Modal):
             app.pop()
             HP.read_map(g, it)
             return
+        if it.k == 'oldbook':
+            from . import chronicle as CH
+            app.pop()
+            used = CH.read_book(g, it)
+            if used:
+                g.end_turn(used)
+            return
         if it.k == 'tool' and it.t == 'kit':
             app.pop()
             used = g.use_kit(it)
@@ -1657,7 +1664,7 @@ class InventoryScreen(Modal):
                     self.use()
 
     def on_click(self, x, y, button):
-        bx, by = (W - self.BOX_W) // 2, (cv.h - self.BOX_H) // 2
+        bx, by = (W - self.BOX_W) // 2, (self.app.cv.h - self.BOX_H) // 2
         sc = getattr(self, 'scroll', 0)
         if bx + 2 <= x < bx + 56:
             if by + 4 <= y < by + 4 + self.NE:
@@ -2581,6 +2588,30 @@ class BookScreen(Modal):
                     parts.append((cx, k, D.RARITY_COLOR[k], PAPER))
                     cx += len(k)
                 out += [{'parts': parts}, {'parts': []}]
+            elif kind == 'fact':
+                from . import chronicle as CH
+                f = b[1]
+                ch_, col = CH.MARK[f['src']]
+                first = {'parts': [(0, '•' if f['new'] else ' ', GOLD, PAPER), (1, ch_, col, PAPER)], 'place': f.get('place')}
+                lines = []
+                if f.get('title'):
+                    lines.append((f['title'], GOLD))
+                lines += [(ln, scale(FG, .7) if f['false'] else FG) for ln in wrap_text(f['text'], w - 4)]
+                for k, (ln, c) in enumerate(lines):
+                    row = first if k == 0 else {'parts': []}
+                    row['parts'].append((3, ln, c, PAPER))
+                    out.append(row)
+                for ln in wrap_text(CH.source_line(f), w - 6):
+                    out.append({'parts': [(5, ln, scale(DIM, .85), PAPER)]})
+                if f['false']:
+                    for ln in wrap_text('Not so: ' + f['false'], w - 4):
+                        out.append({'parts': [(3, ln, BAD, PAPER)]})
+                out.append({'parts': []})
+            elif kind == 'gap':
+                lines = wrap_text(b[1], w - 4)
+                out.append({'parts': [(1, '?', scale(DIM, .8), PAPER), (3, lines[0], DIM, PAPER)]})
+                out += [{'parts': [(3, ln, DIM, PAPER)]} for ln in lines[1:]]
+                out.append({'parts': []})
             elif kind == 'map':
                 cap = self.snip_caption(b[1])
                 if cap is None:
@@ -2745,6 +2776,46 @@ class HelpScreen(BookScreen):
             return [f'{m.name}, where you stand now, the sign {{@}}.', '',
                     'Press [m] in a town to see its plan, with every shop named.']
         return None
+
+
+class ChronicleScreen(BookScreen):
+    """Aldra's Chronicle: what this hero knows of this world, each fact with where it came from. Enter on a page shows
+    its place on the world map; on Creatures it opens the bestiary."""
+
+    def __init__(self, app, chapter=0):
+        super().__init__(app, chapter)
+        self.title = f"{app.game.player.name}'s Chronicle"
+        self.focus = 'page'
+
+    def names(self):
+        from . import chronicle as CH
+        return CH.CHAPTERS
+
+    def toc_extra(self, i):
+        from . import chronicle as CH
+        g = self.game
+        n = CH.count(g, CH.CHAPTERS[i])
+        return ('•' if CH.unread(g, CH.CHAPTERS[i]) else '') + ('' if n is None else str(n))
+
+    def blocks(self, i):
+        from . import chronicle as CH
+        return CH.blocks(self.game, i)
+
+    def render(self, cv):
+        super().render(cv)
+        from . import chronicle as CH
+        if self.focus == 'page':
+            CH.seen_all(self.game, CH.CHAPTERS[self.ch])
+
+    def page_enter(self):
+        from . import chronicle as CH
+        if CH.CHAPTERS[self.ch] == 'Creatures':
+            self.app.push(BestiaryScreen(self.app))
+            return
+        rows = self.rows(self.ch)
+        place = next((r['place'] for r in rows[self.scroll:] if r.get('place')), None)
+        if place:
+            self.app.push(WorldMapScreen(self.app, mark=place))
 
 
 class LookScreen(Modal):
@@ -3117,14 +3188,23 @@ class DeathScreen(Modal):
     def render(self, cv):
         g = self.game
         p = g.player
-        x, y = self.box(cv, 60, 15)
+        from . import chronicle as CH
+        deeds = [f['title'] for f in CH.deeds(g)][-4:]
+        x, y = self.box(cv, 60, 15 + (len(deeds) + 1 if deeds else 0))
         end = 'In hardcore, death is final.' if p.hardcore else 'Your tale ends here.'
         cv.wrap(x + 3, y + 2, 54, f"{p.name} was slain by {g.cause or 'fate'} in {g.loc_name()}. {end}", FG, PANEL, 3)
         rows = [('Level', p.lvl), ('Experience', p.xp), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 5 + i, a, DIM, PANEL)
             cv.text(x + 18, y + 5 + i, str(b), FG, PANEL)
-        cv.text(x + 3, y + 12, '[N] New game    [Esc] Quit', GOLD, PANEL)
+        yy = y + 11
+        if deeds:
+            cv.text(x + 3, yy, 'Remembered for', DIM, PANEL)
+            for d in deeds:
+                cv.text(x + 18, yy, d, GOLD, PANEL, maxw=40)
+                yy += 1
+            yy += 1
+        cv.text(x + 3, yy + 1, '[N] New game    [Esc] Quit', GOLD, PANEL)
 
     def on_key(self, tok, shift):
         if tok in ('n', 'enter'):
@@ -3399,7 +3479,7 @@ class JournalScreen(Modal):
                     cv.text_right(x + self.BW + cx, yy, text, col, bg)
         if len(rows) > room:
             cv.text_right(x + self.BW - 2, y + 2, f'{self.scroll + 1}-{min(len(rows), self.scroll + room)} of {len(rows)}', DIM, PANEL)
-        hint = {0: ' ↑↓ job · Enter: follow it on the map', 3: ' ↑↓ scroll · Enter: the bestiary', 4: ' ↑↓ PgUp PgDn: read back'}
+        hint = {0: ' ↑↓ job · Enter: follow it on the map', 3: ' ↑↓ chapter · Enter: open the chronicle', 4: ' ↑↓ PgUp PgDn: read back'}
         cv.text_center(W // 2, y + self.BH - 1, f"{hint.get(self.tab, ' ↑↓ scroll')} · ←→ tab · Esc: close ", DIM, PANEL)
 
     # each tab is a list of rows: {'parts': [(x, text, colour)...]} (x < 0: from the right edge); long text wraps
@@ -3516,35 +3596,25 @@ class JournalScreen(Modal):
         return out
 
     def rows_lore(self):
+        """The chronicle's contents: its chapters, how much each holds, a dot where something is new."""
         g = self.game
-        from . import guide as GD
-        out = [{'parts': [(3, 'CREATURES', DIM), (14, f"{len(g.bestiary)} kind{'s' if len(g.bestiary) != 1 else ''} met; the bestiary keeps what you learnt of them", FG)]}]
-        w = g.world
-        om = g.maps['over']
-        wonders = [n for n, wx, wy in getattr(w, 'wonders', ()) if om.inb(wx, wy) and om.seen[wy * om.w + wx]]
-        if wonders:
-            out.append({'parts': []})
-            out.append(self.head('WONDERS SEEN'))
-            out += self.para(', '.join(wonders))
+        from . import chronicle as CH
+        out = [{'parts': [(3, f"{g.player.name.upper()}'S CHRONICLE", DIM), (-3, 'what you know of this world', DIM)]}]
+        self.sel = max(0, min(self.sel, len(CH.CHAPTERS) - 1))
+        for i, ch in enumerate(CH.CHAPTERS):
+            n = CH.count(g, ch)
+            out.append({'sel': i == self.sel, 'parts': [(3, '•' if CH.unread(g, ch) else ' ', GOLD), (5, ch, FG),
+                                                       (33, '' if n is None else str(n), INFO)]})
         out.append({'parts': []})
-        out.append(self.head('SIGNS · what you have seen means this'))
-        sg = GD.signs(g)
-        half = []
-        for glyphs, name in sg:
-            if glyphs is None:                    # a heading: the map you are on
-                if half:
-                    out.append({'parts': half})
-                    half = []
-                out.append({'parts': []})
-                out.append(self.head(name.upper()))
-                continue
-            cx = 5 if not half else 52
-            half += [(cx + j, ch, col) for j, (ch, col) in enumerate(glyphs[:4])] + [(cx + 6, name[:38], FG)]
-            if cx == 52:
-                out.append({'parts': half})
-                half = []
-        if half:
-            out.append({'parts': half})
+        fs = [f for f in CH.facts(g) if f['ch'] not in ('Creatures', 'Signs')]
+        if fs:
+            f = fs[-1]
+            out.append(self.head('LATEST'))
+            mk, col = CH.MARK[f['src']]
+            lines = wrap_text(f['text'], 88)
+            out.append({'parts': [(5, mk, col), (7, lines[0], FG)]})
+            out += [{'parts': [(7, ln, FG)]} for ln in lines[1:]]
+            out += [{'parts': [(7, CH.source_line(f), DIM)]}]
         return out
 
     def rows_log(self):
@@ -3567,7 +3637,7 @@ class JournalScreen(Modal):
             self.sel, self.scroll = 0, 10 ** 6 if self.tab == 4 else 0
         elif tok in ('up', 'np8', 'down', 'np2'):
             step = -1 if tok in ('up', 'np8') else 1
-            if self.tab == 0:
+            if self.tab in (0, 3):
                 self.sel += step
             else:
                 self.scroll = max(0, self.scroll + step)
@@ -3581,7 +3651,7 @@ class JournalScreen(Modal):
                     mi = jobs[max(0, min(self.sel, len(jobs) - 1))]
                     g.track = None if getattr(g, 'track', None) == mi.id else mi.id
             elif self.tab == 3:
-                self.app.push(BestiaryScreen(self.app))
+                self.app.push(ChronicleScreen(self.app, self.sel))
             else:
                 self.app.pop()
 
@@ -3595,13 +3665,20 @@ class WorldMapScreen(Modal):
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
     zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
 
-    def __init__(self, app, travel=False):
+    def __init__(self, app, travel=False, mark=None):
         super().__init__(app)
         g = self.game
         p = g.player
         here = g.here
         self.cx, self.cy = (here.x, here.y) if here else (p.x, p.y) if g.cur == 'over' else g.over_pos
         self.origin = (self.cx, self.cy)
+        self.mark = mark                 # a place from the chronicle, lit on the map
+        self.ambient = bool(mark)
+        if mark:
+            om = g.maps['over']
+            om.seen[mark[1] * om.w + mark[0]] = 1
+            self.cx, self.cy = mark
+            self.zoom = 1
         self.dests = self.destinations()
         self.pick = None                 # the place picked to travel to (index in dests)
         self.route = []
@@ -3781,6 +3858,11 @@ class WorldMapScreen(Modal):
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), w.evils[taint[i] - 1].d['taint'], i)
                 ch, fg, bg = self.paint(mx, my, ch, fg, bg)
                 cv.put(bx + vx, by + vy, ch, fg, bg)
+
+        def inview(px, py):
+            return ox <= px < ox + vw and oy <= py < oy + vh
+        if self.mark and inview(*self.mark) and int(time.monotonic() * 2.5) % 2 == 0:
+            cv.put_bg(bx + self.mark[0] - ox, by + self.mark[1] - oy, (200, 150, 40))
 
         def inview(px, py):
             return ox <= px < ox + vw and oy <= py < oy + vh

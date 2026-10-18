@@ -69,7 +69,7 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
-        if self.k in ('oldmap', 'vkey', 'trophy', 'star'):
+        if self.k in ('oldmap', 'vkey', 'trophy', 'star', 'oldbook'):
             return self.name
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
@@ -112,6 +112,8 @@ class Item:
             return (226, 190, 130)
         if self.k == 'star':
             return (196, 214, 255)
+        if self.k == 'oldbook':
+            return (176, 132, 88)
         return (238, 228, 194)
 
     def glyph(self):
@@ -127,7 +129,7 @@ class Item:
             return '§'
         if self.k == 'corpse':
             return '%'
-        if self.k == 'tome':
+        if self.k in ('tome', 'oldbook'):
             return '≡'
         if self.k == 'tool':
             return '/'
@@ -167,6 +169,9 @@ class Item:
                 out.append('A map of the Varnish Empire, the ink nearly gone. Read it to find one of the old ways.')
             elif self.k == 'vkey':
                 out.append('A key of black Varnish iron. It opens a sealed vault.')
+            elif self.k == 'oldbook':
+                out.append('An old book, its pages brown and brittle. Read it for your chronicle; a library pays '
+                           'something for it.')
             elif self.k == 'star':
                 out.append('Iron that fell from the sky, still faintly warm, shot through with silver. The Circle of Magi '
                            'pays for it, and smiths dream of it.')
@@ -275,6 +280,8 @@ class Item:
             return FISH[self.t][4] * .5
         if self.k == 'oldmap':
             return 15
+        if self.k == 'oldbook':
+            return 12
         if self.k == 'trophy':
             return 4
         if self.k == 'star':

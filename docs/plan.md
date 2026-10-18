@@ -20,7 +20,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
-| **Approved: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; libraries in the cities; books and stones lead to places on the map. Opens with Enter on the journal's Lore tab. Not built yet |
+| **Part built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books and stones lead to places on the map. Opens with Enter on the journal's Lore tab. Part 1 built; part 2 (libraries, the made history) comes with the realms |
 | **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
@@ -91,6 +91,14 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   new hero, at Fighting in a fight, at Towns and people in a town, at Travel and sailing on deck; else at the page
   read last. Peoples, gods, the year, rarity, Signs and All the keys come from the data. The book screen is shared
   with the chronicle to come.
+- **The chronicle, part 1** (`chronicle.py`, `ui.ChronicleScreen`). The journal's Lore tab is its contents (chapters
+  with counts, a dot where something is new); Enter opens the book at that chapter. Facts marked heard ·, read ≡ or
+  seen ☼, with who, where and the day; a red "Not so" line when one proves false; gaps named without the answer.
+  Heard: the old days, gods, peoples, places and wonders people tell of. Seen: great sights, the dungeons you go down
+  into, battlefields you walk, Your deeds (named enemies and great evils brought down, also on the death screen).
+  Read: inscribed stones Θ on the first level of some worked dungeons (Varnish ones unreadable until the letters are
+  learnt; once read they show where an old way starts) and six old books in the deepest levels (one may name a
+  dungeon and mark it). Enter on a page shows its place on the world map. Creatures opens the bestiary.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 

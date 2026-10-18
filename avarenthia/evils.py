@@ -269,6 +269,8 @@ def on_kill(game, mon):
     for e in game.world.evils:
         if not e.defeated and mon.k == e.d['boss']:
             defeat(game, e)
+            from . import chronicle as CH
+            CH.deed(game, f'{e.name} destroyed', f'You destroyed {e.name} in its lair.', (e.x, e.y) if hasattr(e, 'x') else None)
 
 
 # ------------------------------------------------------------------ the evils at work

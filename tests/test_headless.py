@@ -1493,6 +1493,13 @@ def text_fits():
     look(ui.JournalScreen(app))
     look(ui.BestiaryScreen(app))
     look(ui.SkillsScreen(app))
+    from avarenthia import chronicle as CH, lore as LORE
+    for _ in range(40):
+        LORE.chatter(g, next(o for o in g.map.mons if o.is_npc))
+    CH.deed(g, 'A long deed with a long name to fit', 'You did something that takes a long sentence to tell, and it '
+                                                   'must wrap rather than be cut short anywhere in the book.')
+    for i in range(len(CH.CHAPTERS)):
+        look(ui.ChronicleScreen(app, i))
     city = next(s_ for s_ in g.world.settlements if s_.kind in ('city', 'metropolis'))
     to_over(g, city.id)
     g.enter_town(city.id)
@@ -1531,7 +1538,7 @@ def text_fits():
         GU.talk(g, m)
         app.after_action()
         look()
-    sentence = {k: v for k, v in cuts.items() if k in ('ChoiceScreen', 'DialogScreen', 'HelpScreen', 'BoardScreen',
+    sentence = {k: v for k, v in cuts.items() if k in ('ChoiceScreen', 'DialogScreen', 'HelpScreen', 'BoardScreen', 'ChronicleScreen',
                                                       'MenuScreen', 'TempleScreen', 'FishingScreen', 'IntroScreen')}
     for k, v in sorted(cuts.items()):
         print(f'  cut in {k}: {sorted(v)[:6]}')
@@ -2845,11 +2852,73 @@ def seasons():
     print('seasons ok')
 
 
+def chronicle():
+    """The chronicle: heard lines kept with who told them, seen places and deeds, stones (Varnish ones unread until the
+    letters are learnt), an old book that names a place, the book screen from the Lore tab, the death screen."""
+    from avarenthia import chronicle as CH, lore as LORE, data as D_
+    app = new_app('soft', seed=33)
+    g = app.game
+    npc = next(o for o in g.map.mons if o.is_npc)
+    for _ in range(60):
+        LORE.chatter(g, npc)
+    fs = CH.facts(g)
+    assert any(f['src'] == 'heard' and f['who'] == npc.name for f in fs), fs[:3]
+    # a stone in a ruin
+    did = next(d.id for d in g.world.dungeons.values() if d.style != 'cave' and getattr(d, 'mine', None) is None)
+    to_over(g, 0)
+    g.enter_dungeon(did, 1, 'up')
+    m, p = g.map, g.player
+    assert any(f['key'] == f'dg:{did}' for f in CH.facts(g))
+    spot = next((x, y) for y in range(1, m.h - 1) for x in range(1, m.w - 1)
+                if m.tile(x, y) == D_.FLOOR and m.tile(x + 1, y) == D_.FLOOR and not m.mon_at(x, y) and not m.mon_at(x + 1, y))
+    m.mons = [o for o in m.mons if o.is_npc]
+    p.x, p.y = spot
+    m.set(spot[0] + 1, spot[1], D_.STELE)
+    g.vis = bytearray(len(m.t))
+    for k in range(40):                       # a stone may be Varnish: unread until you know the letters
+        m.key = f'test{k}'
+        g.try_move(1, 0)
+    n_read = sum(1 for f in CH.facts(g) if f['src'] == 'read')
+    g.varnish_letters = True
+    for k in range(40, 80):
+        m.key = f'test{k}'
+        g.try_move(1, 0)
+    assert sum(1 for f in CH.facts(g) if f['src'] == 'read') > n_read
+    # an old book
+    it = CH.make_book(g)
+    g.add_to_inv(it)
+    known = sum(1 for d in g.world.dungeons.values() if g.known_dungeon(d))
+    assert CH.read_book(g, it) and any(f['src'] == 'read' and f['ch'] != 'Places' for f in CH.facts(g))
+    assert sum(1 for d in g.world.dungeons.values() if g.known_dungeon(d)) >= known
+    CH.deed(g, 'Testing slain', 'You slew a test.', (3, 3))
+    CH.disprove(g, CH.facts(g)[0]['key'], 'you saw otherwise.')
+    # the book screen from the Lore tab
+    app.screens = [ui.GameScreen(app), ui.JournalScreen(app, 3)]
+    app.render()
+    for i in range(len(CH.CHAPTERS)):
+        app.screens = [ui.GameScreen(app), ui.JournalScreen(app, 3)]
+        app.top.sel = i
+        app.key('enter')
+        assert isinstance(app.top, ui.ChronicleScreen)
+        app.render()
+        app.key('enter')
+        app.render()
+    assert not CH.unread(g, 'Your deeds')
+    app.screens = [ui.GameScreen(app), ui.ChronicleScreen(app, CH.CHAPTERS.index('Your deeds'))]
+    app.key('enter')
+    assert isinstance(app.top, ui.WorldMapScreen) and app.top.mark == (3, 3)
+    app.render()
+    app.screens = [ui.GameScreen(app), ui.DeathScreen(app)]
+    app.render()
+    assert 'Testing slain' in app.cv.dump()
+    print('chronicle ok:', len(CH.facts(g)), 'facts,', {s_: sum(1 for f in CH.facts(g) if f['src'] == s_) for s_ in CH.MARK})
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

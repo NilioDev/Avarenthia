@@ -103,7 +103,9 @@ TILES = [
     Tile('≈', '#ff9030', False, False, 'molten iron', bg='#7a2a08'),
     Tile(':', '#968c80', False, True, 'rubble', bg='#28241e'),
     Tile('♠', '#8c8246', False, False, 'thorn bushes', bg='#1e1a0c'),
+    Tile('Θ', '#b4ae9e', False, False, 'inscribed stone', bg='#2a2620'),
 ]
+STELE = 75
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

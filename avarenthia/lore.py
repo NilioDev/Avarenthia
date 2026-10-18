@@ -134,6 +134,8 @@ def hint_place(game):
     if not hidden:
         return None
     q = min(hidden, key=lambda q: cheb(q.x, q.y, ox, oy) + random.randint(0, 12))
+    global LAST_PLACE
+    LAST_PLACE = (q.x, q.y)
     d = cheb(q.x, q.y, ox, oy)
     what = random.choice(POI_HINT.get(q.kind, ['something strange']))
     region = game.world.region_at(q.x, q.y).name
@@ -155,6 +157,8 @@ def hint_dungeon(game):
         return None
     d = random.choice(cands)
     dist = cheb(d.x, d.y, ox, oy)
+    global LAST_PLACE
+    LAST_PLACE = (d.x, d.y)
     return random.choice([f'They say there is a way down into {d.name}, {dist_word(dist)} to the {dir_name(d.x - ox, d.y - oy)}. '
                           'Treasure, they say. And worse.',
                           f'Nobody goes near {d.name} any more. It is to the {dir_name(d.x - ox, d.y - oy)}, if you must know.'])
@@ -291,6 +295,8 @@ def hint_wonder(game):
     if not cands:
         return None
     n, x, y = random.choice(cands)
+    global LAST_PLACE
+    LAST_PLACE = (x, y)
     line = random.choice(WONDERS[n][1])
     if random.random() < .5:
         line += f' It lies {dist_word(cheb(x, y, ox, oy))} to the {dir_name(x - ox, y - oy)}.'
@@ -301,14 +307,24 @@ HINTS = [(hint_wonder, 1.5), (hint_place, 4), (hint_dungeon, 2), (hint_plant, 2)
          (hint_news, 1.5), (hint_lore, 2.5)]
 
 
+LAST_PLACE = None         # where the last hint pointed, for the chronicle
+
+
 def hint(game, npc=None):
     """Something worth hearing: a hidden place, a herb, a war, a great evil, the price of grain, the old days."""
+    from . import chronicle as CH
+    global LAST_PLACE
     for _ in range(6):
         fn = random.choices([h for h, _w in HINTS], [w for _h, w in HINTS])[0]
+        LAST_PLACE = None
         line = fn(game, npc) if fn is hint_lore else fn(game)
         if line:
             if fn not in (hint_lore, hint_trade):
                 remember(game, line)
+            if fn is hint_lore:
+                CH.heard_lore(game, line, npc)
+            elif fn in (hint_place, hint_dungeon, hint_wonder):
+                CH.heard_place(game, line, LAST_PLACE, npc, 'Wonders' if fn is hint_wonder else 'Places')
             return line
     return random.choice(HISTORY)
 
@@ -341,5 +357,8 @@ def chatter(game, npc):
         pool = BARKS.get(job, []) + BARKS['any']
         return random.choice(pool)
     if r < .55:
-        return hint_lore(game, npc)
+        from . import chronicle as CH
+        line = hint_lore(game, npc)
+        CH.heard_lore(game, line, npc)
+        return line
     return hint(game, npc)

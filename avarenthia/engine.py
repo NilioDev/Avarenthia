@@ -45,7 +45,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 24
+SAVE_VERSION = 25
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -436,6 +436,8 @@ class Game:
                 seen.add(name)
                 text = LORE.WONDERS.get(name, ('You see ' + name + '.',))[0]
                 self.msg(f'{name}. {text}', 'info')
+                from . import chronicle as CH
+                CH.seen_wonder(self, name, x, y)
 
     def compute_fov(self):
         m, p = self.map, self.player
@@ -567,6 +569,11 @@ class Game:
             LV.on_dungeon_level(self, dg, self.maps[key], depth)
             if getattr(dg, 'mine', None) is not None:
                 DH.dress_mine(self, self.maps[key], dg, depth)
+            from . import chronicle as CH
+            CH.place_stone(self, self.maps[key], dg, depth)
+            CH.maybe_book(self, self.maps[key], dg, depth)
+            if depth == 1 and getattr(dg, 'mine', None) is None:
+                CH.seen_place(self, f'dg:{did}', dg.name, f'You went down into {dg.name}.', (dg.x, dg.y))
             if depth == dg.depth and getattr(dg, 'poi', False):
                 from .entities import make_tome
                 c = W.rand_free(self, self.maps[key], lambda t: t == FLOOR)
@@ -867,6 +874,9 @@ class Game:
             if t == D.CART and getattr(m, 'carts', None):
                 DH.cart_talk(self)
                 return 0
+            if t == D.STELE:
+                from . import chronicle as CH
+                return CH.read_stone(self, nx, ny)
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0

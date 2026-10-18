@@ -433,6 +433,7 @@ def ch_death(g):
         ('p', 'Softcore: the priests raise you, for a fee from your purse. Your pack stays with your body, and you are '
               'weak for a day or two. No coin for the temple: your tale ends there.'),
         ('p', 'Hardcore: death is final. There is one save, and it is gone.'),
+        ('p', 'When you fall, the death screen names the deeds you are remembered for.'),
         ('p', 'A fallen hireling: in Hardcore they are dead, their gear on their body. In Softcore a temple raises them '
               'for a fee. When you fall, they fall with you.'),
     ]
@@ -440,18 +441,21 @@ def ch_death(g):
 
 def ch_chronicle(g):
     return [
-        ('p', 'The handbook says how the world works. Aldra\'s Chronicle says what your hero knows of this world: '
-              'open the journal [e], go to the Lore tab and press [Enter].'),
+        ('p', 'The handbook says how the world works. The chronicle says what your hero knows of this world: open the '
+              'journal [e], go to the Lore tab, pick a chapter and press [Enter].'),
         ('h', 'Where it comes from'),
         ('s', [([('·', (217, 165, 71))], 'heard: from someone, somewhere; it may be wrong or old'),
                ([('≡', SIGN_COL['≡'])], 'read: in a book or on a stone'),
                ([('☼', (255, 226, 120))], 'seen: you were there')]),
-        ('p', 'When you later see or read better, a red line under an old rumour says so. Inscribed stones in the ruins '
-              'tell of the old days; Varnish letters must be learnt in a library before you can read them. Rare old '
-              'books lie in the dungeons: read them, or sell them to a library.'),
-        ('h', 'Libraries'),
-        ('p', 'Only in the cities, and in the dwarf holds and the hall of songs under the Elder Tree. Walk into the '
-              'scribe: a subject costs a few hours and a few silver. A library is true but slow: far news is old.'),
+        ('p', 'Under each line stands who told it, where and on which day. When you later see or read better, a red '
+              'line under an old rumour says so. A dot marks what you have not read yet.'),
+        ('h', 'Stones and old books'),
+        ('p', 'Inscribed stones, the sign {Θ}, stand in some ruins: walk into one to read it. Some are cut in Varnish '
+              'letters you cannot read until a scribe has taught you them, and those name the old roads. A few old '
+              'books lie in the deepest dungeons: read one from your bag, and it may name a place you did not know.'),
+        ('h', 'Your deeds'),
+        ('p', 'The named enemies you bring down and the evils you destroy are kept under Your deeds, and remembered '
+              'when you fall.'),
         ('n', '[Enter] on a page of the chronicle shows its place on the map, if it has one.'),
     ]
 
@@ -502,8 +506,8 @@ CHAPTERS = [
     ('Your hero', ch_hero), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
     ('Camp, food and rest', ch_camp), ('Your company', ch_company), ('Guilds', ch_guilds), ('Gods', ch_gods),
-('Wild peoples', ch_wild_peoples), ('Death', ch_death),
-('Signs', ch_signs), ('All the keys', ch_keys),
+    ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
+    ('All the keys', ch_keys),
 ]
 NAMES = [n for n, _f in CHAPTERS]
 

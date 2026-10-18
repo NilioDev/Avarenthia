@@ -5,6 +5,7 @@ Ferrymen take you over the rivers for a few coppers, even when the fords run hig
 the crossroads shrines. And ships sail between the harbours, pirates among them."""
 import random
 
+from . import calendar as CAL
 from . import data as D
 from .money import fmt
 from .worldgen import cheb
@@ -52,6 +53,9 @@ def on_battlefield(game):
     if not b or b['looted']:
         return
     b['looted'] = True
+    from . import chronicle as CH
+    CH.seen_place(game, f"bf:{b['x']}:{b['y']}:{b['day']}", f"The field of {b['who']}",
+                  f"You walked the field where {b['who']} fought, {CAL.short(b['day'])}.", (b['x'], b['y']))
     from .entities import random_gear
     game.msg(f"The dead of {b['who']} lie where they fell. You take what is still of use.", 'info')
     coin = random.randint(20, 60) + b['lvl'] * 6
