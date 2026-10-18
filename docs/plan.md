@@ -1,8 +1,9 @@
 # The plan: where we stand
 
 Kept up to date after every round. Built work is summarised here; the full specs of rounds 1-4 are in the git
-history of this file (before 16 October 2026, 23:00). After each round: tests (seeds 1-3, smoke), push (CI builds),
-a short Dutch report. Nilio plays afterwards and sends feedback.
+history of this file (before 16 October 2026, 23:00). After each round: that round's own test part
+(plus `text_fits` when text changed), push (CI runs the whole suite and builds), a short Dutch report. The full run
+(seeds 1-3, smoke, bot) happens once, at the end of a build, before merging to main. Nilio plays afterwards and sends feedback.
 
 Inspiration: Shadowdark (core book, Western Reaches, Cursed Scrolls 1-6), D&D, Pathfinder, Diablo, Final Fantasy,
 WoW. Take the ideas, never the text, stat blocks or invented names.

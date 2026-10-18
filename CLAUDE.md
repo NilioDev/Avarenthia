@@ -51,7 +51,12 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
 
 ## Tests and CI
 - `python tests/test_headless.py` (no tcod needed). Parts: `TEST_ONLY=part1,part2`, seed: `TEST_SEED=n`.
-  Run seeds one after another (they share a save file); `smoke` takes ~5 minutes, run it on its own.
+  Run seeds one after another (they share a save file). A full seed takes ~23 minutes (`smoke` ~9 of them);
+  almost every part spends ~17 s making a fresh world.
+- How much to test (Nilio, 18 Oct 2026; saves his usage limit):
+  - After each round: only that round's own part (`TEST_ONLY=<part>`), plus `text_fits` when text changed.
+  - Once, at the end of a build, before merging to `main`: seeds 1-3, then `smoke`, then the bot.
+  - CI runs the whole suite (seed 1 with `smoke`) on every push: read its result, don't run it again locally.
 - `python tests/bot.py 2` lets a bot play.
 - `text_fits` fails when a sentence is cut short with "…": wrap text, don't truncate it.
 - Push to `main`; GitHub Actions runs the tests and builds Windows/macOS/Linux executables.
