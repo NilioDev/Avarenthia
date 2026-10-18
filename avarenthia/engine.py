@@ -42,6 +42,8 @@ from . import lands as LN
 from . import seasons as SE
 from . import living as LV
 from . import sailing as SA
+from . import hunting as HT
+from . import cooking as CK
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -49,7 +51,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 28
+SAVE_VERSION = 29
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -125,7 +127,7 @@ def lore_rank(kills):
 
 
 SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('tool', 'pick'), ('tool', 'kit'), ('tool', 'tent'), ('food', 'bread'),
-            ('food', 'ration'), ('food', 'barley'), ('food', 'honey')]
+            ('food', 'ration'), ('food', 'barley'), ('food', 'honey'), ('food', 'salt'), ('tool', 'knife'), ('tool', 'frame')]
 INV_MAX = 32
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
@@ -390,6 +392,8 @@ class Game:
                 s['dr'] = max(s['dr'], v)
             elif k == 'dmg':
                 buff_dmg += v
+            elif k in ('res_fire', 'res_poison'):
+                s[k] += v
             elif k == 'frail':                      # back from the dead, and not yet yourself
                 buff_dmg -= v
                 s['frail'] = v
@@ -729,6 +733,9 @@ class Game:
                         break
         if 'shop' in s.services:
             self.shops[sid] = W.gen_shop(self, s.is_city)
+            if not s.is_city:
+                del self.shops[sid][6:]
+            self.shops[sid] += CK.shop_stock(self, s)
         MS.refresh_board(self, s)
         esc = MS.escort_wanderer(self)
         if esc:
@@ -925,6 +932,9 @@ class Game:
                     p.x, p.y = nx, ny
                     return self.over_step(moved_escort=True)
                 return self.meet_wanderer(wd)
+            herd = HT.herd_at(self, nx, ny)
+            if herd:
+                return HT.hunt(self, herd)
         mon = m.mon_at(nx, ny)
         if mon:
             if zone and getattr(mon, 'wd', None) is not None:
@@ -976,6 +986,16 @@ class Game:
                 return FY.bump(self, nx, ny)
             if t in NT.BUMP:
                 return NT.bump(self, nx, ny)
+            if t in (D.HEARTH, D.FIREPIT) and not (getattr(m, 'tribe', None) and not getattr(m, 'friendly', False)):
+                CK.at_fire(self, 'hearth' if t == D.HEARTH else 'pit')
+                return 0
+            if t == D.RACK and not getattr(m, 'tribe', None):
+                return CK.rack(self, nx, ny)
+            if t == D.FRAME:
+                return HT.frame(self, nx, ny)
+            if t == D.BENCH:
+                HT.bench(self, nx, ny)
+                return 0
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0
@@ -1082,12 +1102,13 @@ class Game:
         HP.on_step(self)
         FK.on_step(self)
         LN.on_step(self)
+        HT.on_step(self)
         SE.on_step(self)
         if self.dead:
             return 10
         old_way = HP.on_way(self, p.x, p.y)
         cost = round(SE.cost(self, LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost))
-                     * WX.travel_factor(self))
+                     * WX.travel_factor(self) * (.8 if any(b[0] == 'swift' for b in p.buffs) else 1))
         WX.strike(self)
         if self.dead:
             return cost
@@ -1163,7 +1184,7 @@ class Game:
                 p.mana = min(s['max_mana'], p.mana + round(s['max_mana'] * .1))
                 self.num(p.x, p.y, f'+{h}', C_HEAL)
                 self.msg('The health orb restores you.', 'good')
-            elif it.dropped or (it.k == 'gear' and it.rar == 'normal' and not it.name.startswith('Your')):
+            elif it.dropped or it.k == 'carcass' or (it.k == 'gear' and it.rar == 'normal' and not it.name.startswith('Your')):
                 continue
             else:
                 if not self.add_to_inv(it):
@@ -1177,7 +1198,9 @@ class Game:
     def describe_here(self):
         m, p = self.map, self.player
         its = [i for i in m.items if i.x == p.x and i.y == p.y]
-        if len(its) == 1:
+        if len(its) == 1 and its[0].k == 'carcass':
+            self.msg(f'You see the {its[0].display_name().lower()}.')
+        elif len(its) == 1:
             self.msg(f'You see {its[0].display_name()}. Press g to pick it up.')
         elif its:
             self.msg('Several items lie here. Press g to pick them up.')
@@ -1189,7 +1212,7 @@ class Game:
 
     def pickup(self):
         m, p = self.map, self.player
-        its = [i for i in m.items if i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb')]
+        its = [i for i in m.items if i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb', 'carcass')]
         if not its:
             self.msg('There is nothing here.')
             return 0
@@ -1443,6 +1466,8 @@ class Game:
         p.gold -= self.STEW
         p.food = min(HU.MAX, p.food + 450)
         self.msg('A bowl of hot stew and a heel of bread. That hits the spot.', 'good')
+        if self.here is not None:
+            CK.taste(self, self.here)
 
     def inn_meal(self, price=None, line=None):
         p = self.player
@@ -1542,9 +1567,10 @@ class Game:
 
     def buy_supply(self, i):
         k, t = SUPPLIES[i]
-        if k == 'tool' and t in ('rod', 'tent', 'pick') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
+        if k == 'tool' and t in ('rod', 'tent', 'pick', 'knife', 'frame') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
             self.msg({'rod': 'You already have a fishing pole.', 'tent': 'You already have a tent.',
-                      'pick': 'You already have a pick.'}[t])
+                      'pick': 'You already have a pick.', 'knife': 'You already have a skinning knife.',
+                      'frame': 'You already have a stretching frame.'}[t])
             return
         it = Item(self.new_id(), k, t)
         p = self.player
@@ -1571,6 +1597,9 @@ class Game:
         shop.pop(i)
         p.gold -= price
         self.msg(f'You buy {it.name}.', it.rar)
+        if it.k == 'plant':
+            from . import foraging as FG
+            FG.learn(self, it.t, 'the outfitter told you')
 
     def buy_mount(self, key):
         p = self.player
@@ -1905,7 +1934,9 @@ class Game:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', purse(lvl, 8 if boss else 2.5 if mon.elite else 1)))
         if special or random.random() < .16:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
-        if mon.k in HU.BEASTS and random.random() < .35:
+        if HT.carcass(self, mon):
+            pass                                    # a carcass to skin: meat, a hide, sometimes horn
+        elif mon.k in HU.BEASTS and random.random() < .35:
             self.spill(m, mon.x, mon.y, HU.make_food(self, 'meat'))
         if (uses or carrier) and random.random() < (.5 if special else .06):
             t = 'rejuv' if random.random() < .12 else 'hp' if random.random() < .6 else 'mp'
@@ -2135,6 +2166,9 @@ class Game:
             if mon.k == 'troll' and NT.sunlit(self, m):
                 NT.to_stone(self, mon)
                 continue
+            if getattr(mon, 'prey', None) is not None:
+                HT.prey_turn(self, mon)
+                continue
             if (d['regen'] or 'Regenerating' in mon.mods) and mon.hp < mon.maxhp:
                 mon.hp = min(mon.maxhp, mon.hp + -(-mon.maxhp // 40))
             if mon.effects:
@@ -2204,7 +2238,8 @@ class Game:
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
             if self.turn % 2 == 0 and p.mana < s['max_mana']:
-                p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40)
+                p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40 +
+                             sum(b[1] for b in p.buffs if b[0] == 'mregen'))
             if p.poison:
                 p.life -= p.poison[1]
                 if not quiet:
@@ -2236,6 +2271,7 @@ class Game:
                 SE.daily(self)
                 LV.daily(self)
                 NT.daily(self)
+                HT.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2250,6 +2286,7 @@ class Game:
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)
         elif self.cur == 'over':
+            HT.over_tick(self)
             EV.discover(self)
             EVL.sense(self)
             wd = WA.hostile_adjacent(self) if not self.pending else None
@@ -2557,7 +2594,7 @@ class Game:
             return
         if self.map.kind in ('over', 'wild') and not self.hostile_visible():
             s = self.stats()
-            if p.life < s['max_life'] or p.mana < s['max_mana'] or TW.is_night(self):
+            if p.life < s['max_life'] or p.mana < s['max_mana'] or TW.is_night(self) or CK.pot_items(self):
                 self.make_camp()
                 return
         self.rest_here()
@@ -2586,7 +2623,8 @@ class Game:
         tent = any(it.k == 'tool' and it.t == 'tent' for it in self.player.inv)
         EV.ask(self, 'camp_night', 'Make camp', 'You find a sheltered spot to rest' + (' and pitch your tent.' if tent else '.') +
                ' A fire keeps the beasts away, but it can be seen from far off.',
-               [('Light a fire and rest', 'fire'), ('Rest in the dark, without a fire', 'dark'), ('Walk on', 'leave')])
+               [('Light a fire and rest', 'fire'), ('Rest in the dark, without a fire', 'dark')] +
+               ([('Light a fire and cook', 'cook')] if CK.pot_items(self) else []) + [('Walk on', 'leave')])
 
     def camp(self, fire):
         """A night (or a rest) in the open: wild animals, robbers, a thief, or a bad night's sleep."""
@@ -2828,7 +2866,12 @@ class Game:
             self.request = ('shop', f'h{hid}' if hid is not None else (here.id if here else 0))
             return
         if role in ('market', 'inn', 'stables'):
+            if role == 'inn' and here is not None:
+                CK.at_inn(self, here, npc)
             self.request = (role, here.id if here else 0)
+            return
+        if role == 'tanner':
+            HT.talk_tanner(self, npc)
             return
         if role == 'guard':
             h = self.world.holds[hid] if hid is not None else None
@@ -3080,7 +3123,10 @@ class Game:
         m, p = self.map, self.player
         if self.usable_here():
             return self.use_stairs('auto')
-        if any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb') for i in m.items):
+        cc = HT.carcass_here(self)
+        if cc:
+            return HT.skin(self, cc)
+        if any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb', 'carcass') for i in m.items):
             return self.pickup()
         if self.nearby_people():
             return self.talk_nearby()
@@ -3101,7 +3147,9 @@ class Game:
         foe = self.hostile_visible()
         if self.usable_here():
             out.append(('Enter', 'go in' if m.kind == 'over' else 'stairs'))
-        elif any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb') for i in m.items):
+        elif HT.carcass_here(self):
+            out.append(('Enter', 'skin'))
+        elif any(i.x == p.x and i.y == p.y and i.k not in ('gold', 'orb', 'carcass') for i in m.items):
             out.append(('Enter', 'pick up'))
         elif self.nearby_people():
             out.append(('t', 'talk'))

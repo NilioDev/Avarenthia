@@ -535,6 +535,7 @@ class GameScreen(Screen):
         g = self.game
         self.draw_map(cv)
         self.draw_pointer(cv)
+        self.draw_wind(cv)
         for x in range(MAP_W):
             cv.put(x, MAP_H, '─', LINE, BG)
         for y in range(H):
@@ -565,6 +566,17 @@ class GameScreen(Screen):
         ey = max(0, min(MAP_H - 1, round(sy + dy * k)))
         ch = ('→' if dx > 0 else '←') if abs(dx) >= abs(dy) else ('↓' if dy > 0 else '↑')
         cv.put(ex, ey, ch, (20, 16, 12), GOLD)
+
+    def draw_wind(self, cv):
+        """On the hunting ground: one arrow at the edge the wind comes from, pointing the way it blows."""
+        from . import hunting as HTM
+        got = HTM.wind_arrow(self.game)
+        if not got:
+            return
+        ch, (wx, wy) = got
+        ex = MAP_W // 2 + wx * (MAP_W // 2 - 1)
+        ey = MAP_H // 2 + wy * (MAP_H // 2 - 1)
+        cv.put(ex, ey, ch, (20, 16, 12), (150, 190, 220))
 
     def draw_status(self, cv):
         """The line under the map: where you are, how dangerous it is, the job you follow."""
@@ -992,6 +1004,19 @@ class GameScreen(Screen):
             vx, vy = c['x'] - ox, c['y'] - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and om.seen[c['y'] * om.w + c['x']] and (c['x'], c['y']) != (p.x, p.y):
                 cv.put(vx, vy, LV.SHRINE_LOOK[0], LV.SHRINE_LOOK[1], (40, 32, 22))
+        # hoof tracks and the herds near you (never remembered on the map)
+        from . import hunting as HTM
+        for (hx, hy), _v in list(HTM.hoof(g).items()):
+            vx, vy = hx - ox, hy - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (hx, hy) != (p.x, p.y) and g.visible(hx, hy):
+                lk = HTM.track_look(g, hx, hy)
+                if lk:
+                    cv.put(vx, vy, lk[0], lk[1])
+        for h in HTM.herds(g):
+            vx, vy = h.x - ox, h.y - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (h.x, h.y) != (p.x, p.y) and HTM.seen_herd(g, h):
+                ch, fg = HTM.look(g, h)
+                cv.put(vx, vy, ch, fg, (30, 26, 16))
         # travellers
         for wd in w.wanderers:
             if not g.visible(wd.x, wd.y):
@@ -1634,10 +1659,22 @@ class InventoryScreen(Modal):
             if used:
                 g.end_turn(used)
             return
-        if it.k in ('fish', 'food'):
+        if it.k in ('fish', 'food', 'dish'):
             app.pop()
             if g.eat(it):
                 g.end_turn(1)
+            return
+        if it.k == 'cookbook':
+            from . import cooking as CKM
+            app.pop()
+            g.end_turn(CKM.read_book(g, it))
+            return
+        if it.k == 'hide' or (it.k == 'tool' and it.t == 'frame'):
+            from . import hunting as HTM
+            app.pop()
+            used = HTM.use(g, it)
+            if used:
+                g.end_turn(used)
             return
         if it.k == 'plant':
             from . import foraging as FGM
@@ -1822,14 +1859,16 @@ class CharacterScreen(Modal):
         p = self.game.player
         cv.text(x + 3, y, 'Crafts grow by doing them, with something new along the way.', DIM, PANEL)
         for i, key in enumerate(LS.LIFE_ORDER):
-            yy = y + 2 + i * 4
+            yy = y + 2 + i * 2                  # two lines each: how to begin, or once begun what comes next
             r, prog = p.life_sk.get(key, [0, 0])
             cv.text(x + 3, yy, LS.LIFE[key]['name'], FG if r else DIM, PANEL)
             cv.text_right(x + 24, yy, str(r), GOLD if r else DIM, PANEL)
             self.bar(cv, x + 27, yy, 20, prog / LS.need_for(r), GOOD)
-            cv.wrap(x + 5, yy + 1, 64, LS.LIFE[key]['desc'], scale(DIM, .9), PANEL, 1)
+            if not r and not prog:
+                cv.wrap(x + 5, yy + 1, 64, LS.LIFE[key]['desc'], scale(DIM, .9), PANEL, 1)
+                continue
             nxt = min((k for k in LS.LIFE[key]['perks'] if k > r), default=None)
-            cv.text(x + 5, yy + 2, f"next at {nxt}: {LS.LIFE[key]['perks'][nxt]}" if nxt else 'mastered', scale(GOLD, .75),
+            cv.text(x + 5, yy + 1, f"next at {nxt}: {LS.LIFE[key]['perks'][nxt]}" if nxt else 'mastered', scale(GOLD, .75),
                     PANEL, maxw=64)
 
     def on_key(self, tok, shift):

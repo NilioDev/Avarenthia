@@ -570,6 +570,12 @@ def gen_elder_city(game, s):
         if b['kind'] == 'elder':
             b['name'], b['what'] = 'The Hall of the Tree', 'hall of the elven lord'
     m.tree = s.id
+    from .hunger import make_food           # a cup of the Tree's own sap, set out where the roots meet the hall
+    sap = make_food(game, 'elder_sap')
+    sap.x, sap.y = next(((x, y) for r in range(2, 12) for y in range(py + 4 - r, py + 5 + r) for x in range(px - r, px + r + 1)
+                         if m.inb(x, y) and D.TILES[m.tile(x, y)].walk and not m.mon_at(x, y)), (px, py + 4))
+    sap.dropped = True
+    m.items.append(sap)
     m.portal_pos = (px + 2, py + 1)
     m.centre = (px, py + 4)
     m.entry = m.exits[0][:2]

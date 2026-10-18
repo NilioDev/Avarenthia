@@ -1399,6 +1399,8 @@ def gen_settlement_map(game, s):
         m = gen_elder_city(game, s)
     else:
         m = gen_city(game, s) if s.is_city else gen_village(game, s)
+    from . import hunting as HT
+    HT.furnish(game, m, s)
     place_signpost(m)
     return m
 

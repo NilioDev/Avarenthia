@@ -348,7 +348,7 @@ def site_map(game, site):
     return m
 
 
-CHEESE_PRICE, DATES_PRICE = 60, 30
+CHEESE_PRICE, DATES_PRICE, MILK_PRICE = 60, 30, 25
 
 
 def on_enter(game, site, m):
@@ -381,9 +381,13 @@ def talk(game, npc):
                'We carry what the towns forgot to make, and dates."',
                [('See the goods', 'shop'), (f'Buy dates ({fmt(DATES_PRICE)})', 'dates'), ('Goodbye', 'bye')], site=site.id)
     else:
+        from . import cooking as CK
+        if not getattr(site, 'recipe_told', False) and CK.from_herder(game):
+            site.recipe_told = True
         EV.ask(game, 'lands', npc.name, '"Up here it is the goats and me, all summer. Cheese, if you want it. '
                'And mind the eagles; they take kids."',
-               [(f'Buy goat cheese ({fmt(CHEESE_PRICE)})', 'cheese'), ('Goodbye', 'bye')], site=site.id)
+               [(f'Buy goat cheese ({fmt(CHEESE_PRICE)})', 'cheese'), (f"Buy goat's milk ({fmt(MILK_PRICE)})", 'milk'),
+                ('Goodbye', 'bye')], site=site.id)
 
 
 def r_lands(game, choice, ctx):
@@ -392,12 +396,12 @@ def r_lands(game, choice, ctx):
     p = game.player
     if choice == 'shop':
         game.request = ('shop', f'oasis{ctx["site"]}')
-    elif choice in ('dates', 'cheese'):
-        price = DATES_PRICE if choice == 'dates' else CHEESE_PRICE
+    elif choice in ('dates', 'cheese', 'milk'):
+        price = {'dates': DATES_PRICE, 'cheese': CHEESE_PRICE, 'milk': MILK_PRICE}[choice]
         if p.gold < price:
             game.msg(f'That costs {fmt(price)}.', 'bad')
             return
-        it = make_food(game, 'dates' if choice == 'dates' else 'goat_cheese', 2 if choice == 'dates' else 1)
+        it = make_food(game, {'dates': 'dates', 'cheese': 'goat_cheese', 'milk': 'goat_milk'}[choice], 2 if choice == 'dates' else 1)
         if not game.add_to_inv(it):
             game.msg('Your pack is full.', 'bad')
             return

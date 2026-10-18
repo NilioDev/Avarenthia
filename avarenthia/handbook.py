@@ -27,6 +27,7 @@ SIGN_COL = {
     '□': (58, 46, 34), '!': (255, 214, 40), '?': (134, 196, 111), '⌂': (242, 196, 74), '>': (232, 96, 62),
     '≈': (70, 130, 200), '♣': (47, 128, 64), '▲': (163, 156, 142), '∩': (154, 138, 90), '·': (200, 164, 106),
     '%': (180, 60, 50), '¡': (236, 176, 84), '¥': (206, 206, 216), '○': (106, 162, 216), '☼': (255, 140, 50),
+    'q': (160, 88, 58), 'Q': (160, 88, 58), ':': (190, 160, 116),
 }
 
 
@@ -144,7 +145,11 @@ def ch_hero(g):
                'Foraging: search the wild for food and herbs: [F].',
                'Herbalism: picking herbs and knowing them.',
                'Alchemy and brewing: potions, ale, wine and mead: [P].',
-               'Mining: walk into an ore vein with a pick to dig it.']),
+               'Mining: walk into an ore vein with a pick to dig it.',
+               'Hunting: reading tracks and stalking herds.',
+               'Skinning: [Enter] on a carcass, with a knife or a dagger.',
+               'Cooking: walk into a fire or a hearth.',
+               'Leatherworking: at a workbench, and tanning with oak bark.']),
     ]
 
 
@@ -376,11 +381,64 @@ def ch_camp(g):
         ('p', 'You burn food slowly. A full belly lasts about a week: after a day or two you are hungry, after four or '
               'so weak: you heal no more and hit softer. Then you faint, and only after six or seven days without a '
               'bite do you starve. [E] eats the food that fits your hunger best. Bread, rations, cheese, fish and meat '
-              'all do; an inn serves a hot meal.'),
+              'all do; an inn serves a hot meal. Raw meat may upset your stomach; cooked, it never does.'),
         ('h', 'Resting'),
         ('p', '[R] rests until you are healed. In a town, rest in a bed. Out in the open you make camp: a fire keeps '
               'beasts off but draws robbers. A tent keeps you dry and safer, and a hireling keeps watch while you '
               'sleep.'),
+    ]
+
+
+def ch_hunt(g):
+    return [
+        ('h', 'Herds'),
+        ('p', 'Game lives in every stretch of wild country, but you rarely see it. Where a herd passed you find hoof '
+              'tracks, the sign {:}, that fade in a day or two. The herd itself, the sign {q}, shows only when you '
+              'are a few steps away; further on open land and with more Hunting, less in the woods.'),
+        ('p', 'A few great herds of reindeer, aurochs or wildebeest travel with the seasons: north and up to the high '
+              'pastures in summer, south and down in winter. Wolves and gnolls follow them.'),
+        ('p', 'Walk onto tracks and you may read them: how fresh, which animal, which way.'),
+        ('h', 'The hunt'),
+        ('p', 'Walk into a herd on the world map and you stand at the edge of its grazing ground. The leader, the '
+              'sign {Q}, keeps watch. The wind is named in the log, and an arrow on the edge of the map shows where it '
+              'comes from: keep it in your face, or they smell you. Trees and rocks hide you; the closer and the more '
+              'open, the sooner they see you.'),
+        ('p', 'Shoot with a bow, [Tab] to aim, or close in with a spear. A hit animal runs on a few steps, leaving '
+              'blood, and falls. The rest of the herd flees. An aurochs bull or a boar may charge; an elk kicks. '
+              'Hunting a herd sends it on, and the game there is thin for a while.'),
+        ('n', 'Small game, hares and grouse, never shows on the world map. You meet it on the hunting ground, or '
+              'snare it while you forage.'),
+        ('h', 'Skinning'),
+        ('p', 'Stand on a carcass and press [Enter]. With a knife or a dagger you get cuts of meat named by the animal, '
+              'a hide, and sometimes antlers, horn or tusks; without one, only some raw meat. Beasts you fight can be '
+              'skinned too: a wolf pelt, a bear fur, a crocodile hide. The better your Skinning, the fewer torn '
+              'hides.'),
+        ('h', 'Hides and leather'),
+        ('o', ['A fresh hide rots in two days. Its name says how long it has left.',
+               'Set up a stretching frame out in the land and walk into it with salt in your pack: an hour of '
+               'scraping, and the hide is salted. A salted hide keeps.',
+               'A tanner in a village or town tans it for a fee; come back for the leather three days later. Or rub '
+               'oak bark into a salted hide and it tans in your pack in five days.',
+               'Work the leather at a workbench in the tanner\'s shop: leather armour, gloves, boots, a belt, a '
+               'waterskin. Better Leatherworking, sturdier work.']),
+        ('p', 'Plain hides sell for little. Fine fur, fox, ermine, bear, fetches much more in the cities and the cold '
+              'north.'),
+        ('h', 'Cooking'),
+        ('p', 'You know two dishes at the start: Roast Meat and Grilled Fish. Walk into a fire, a fire pit or an inn\'s '
+              'hearth, or choose to cook when you make camp with [R]. You see the dishes you have everything for, '
+              'and Try something new: put up to three things from your pack in the pot.'),
+        ('l', ['The right things teach you the dish, and you will remember how.',
+               'One thing short, and the cook in you says what it wants: something sharp, sweet, green.',
+               'Nothing right gives Camp Mush. It fills a hole.']),
+        ('p', 'Cooking never teaches recipes by itself. It burns fewer dishes, gives more portions and stronger '
+              'effects, and at a high rank you taste what is in the inn\'s stew. Dishes warm you, heal, strengthen '
+              'or keep you going; most go bad after some days, a few keep long.'),
+        ('p', 'Now and then an innkeeper shares the dish of the house, and herders, hunters and fishers on the road '
+              'tell you theirs. The peoples share their own kitchen only with friends. The finest dishes nobody '
+              'teaches: you find them in the pot, or in a rare old cookbook.'),
+        ('p', 'Every land has its own herbs, fruit and catch: foraging there finds them, and its village outfitter '
+              'sells some. Salt, eggs, milk and butter come from the villages.'),
+        ('p', 'Hang meat or fish on a drying rack overnight: Dried Meat and Smoked Fish keep, longer with salt.'),
     ]
 
 
@@ -501,6 +559,7 @@ def ch_chronicle(g):
         ('h', 'Your deeds'),
         ('p', 'The named enemies you bring down and the evils you destroy are kept under Your deeds, and remembered '
               'when you fall.'),
+        ('p', 'The dishes you know, and what goes in them, are under The kitchen.'),
         ('n', '[Enter] on a page of the chronicle shows its place on the map, if it has one.'),
     ]
 
@@ -550,7 +609,8 @@ CHAPTERS = [
     ('First steps', ch_first_steps), ('Moving and looking', ch_moving), ('Fighting', ch_fighting),
     ('Your hero', ch_hero), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
-    ('Camp, food and rest', ch_camp), ('Your company', ch_company), ('Guilds', ch_guilds), ('Gods', ch_gods),
+    ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
+    ('Guilds', ch_guilds), ('Gods', ch_gods),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
     ('All the keys', ch_keys),
 ]
@@ -570,6 +630,8 @@ def opening(g):
     m = g.map
     if g.turn < D.DAY_LEN // 2 and not g.__dict__.get('book_read'):
         return 0, 'a new hero'
+    if getattr(m, 'hunt', None) is not None and all(getattr(o, 'prey', None) is not None for o in g.visible_hostiles()):
+        return NAMES.index('Hunting and cooking'), 'you are on the hunt'
     if g.visible_hostiles() and m.kind != 'town':
         return NAMES.index('Fighting'), 'you are in a fight'
     if getattr(m, 'deck', False):

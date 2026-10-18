@@ -346,6 +346,11 @@ def open_chest(game, x, y):
         game.spill(m, x, y, make_map_item(game))
     if random.random() < .5:
         game.spill(m, x, y, Item(game.new_id(), 'potion', random.choice(['hp', 'hp', 'mp', 'rejuv'])))
+    if (getattr(dg, 'poi', False) or m.kind in ('siege', 'town')) and random.random() < .04:   # an old ruin, a castle kitchen
+        from .cooking import cookbook
+        book = cookbook(game)
+        if book:
+            game.spill(m, x, y, book)
     game.msg('You open the chest. Treasure!', 'gold')
 
 

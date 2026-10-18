@@ -136,11 +136,15 @@ TILES = [
     Tile('≈', '#4ac8a0', False, False, 'green water', bg='#0a2e28'),
     Tile('.', '#8c8478', True, False, 'bare rock'),
     Tile('.', '#e6eef2', True, False, 'snow', cost=14),
+    Tile('☼', '#ff9a40', False, False, 'hearth', bg='#3a1a0a'),
+    Tile('╬', '#c8a070', False, False, 'stretching frame'),
+    Tile('╤', '#b08860', False, False, 'workbench'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
  FLAME, DARKWATER, STARWELL, SINGSTONE, EVERBLOOM, STONETREE, AMBER, GRIT, TROLLSTONE, CAIRN, ROPEDOWN, GREENWATER,
  BAREROCK, SNOW) = range(78, 107)
+HEARTH, FRAME, BENCH = range(107, 110)      # cooking at the inn, a hide stretched to scrape, the leatherworker's bench
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

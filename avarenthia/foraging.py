@@ -29,13 +29,40 @@ PLANTS = {
     'feverfew': ('Feverfew', 'herb', 10, 'cure', 6),
     'kingsfoil': ('Kingsfoil', 'herb', 20, 'heal2', 2),
     'everbloom': ('Everbloom', 'herb', 10, 'heal2', 0),          # grows only in the Unwintering
+    # what grows in one land only (cooking.LOCAL): never found by plain foraging, only where it grows
+    'wild_thyme': ('Wild Thyme', 'herb', 10, None, 0), 'beechnut': ('Beechnuts', 'nut', 60, None, 0),
+    'cep': ('Ceps', 'mushroom', 110, None, 0), 'oak_bark': ('Oak Bark', 'bark', 0, None, 0),
+    'birch_sap': ('Birch Sap', 'sap', 40, None, 0), 'wild_strawberry': ('Wild Strawberries', 'berry', 60, None, 0),
+    'juniper': ('Juniper Berries', 'berry', 20, None, 0), 'spruce_tips': ('Spruce Tips', 'herb', 10, None, 0),
+    'crowberry': ('Crowberries', 'berry', 50, None, 0), 'lichen': ('Reindeer Lichen', 'herb', 20, None, 0),
+    'bilberry': ('Bilberries', 'berry', 60, None, 0), 'gentian': ('Gentian', 'herb', 5, None, 0),
+    'wild_garlic': ('Wild Garlic', 'root', 40, None, 0), 'wild_carrot': ('Wild Carrot', 'root', 70, None, 0),
+    'mustard_seed': ('Mustard Seed', 'seed', 10, None, 0), 'baobab': ('Baobab Fruit', 'fruit', 90, None, 0),
+    'wild_millet': ('Wild Millet', 'seed', 60, None, 0), 'fig': ('Figs', 'fruit', 90, None, 0),
+    'cactus_fruit': ('Cactus Fruit', 'fruit', 70, None, 0), 'wild_sage': ('Wild Sage', 'herb', 10, None, 0),
+    'pine_nut': ('Pine Nuts', 'nut', 80, None, 0), 'watercress': ('Watercress', 'herb', 30, None, 0),
+    'calamus': ('Calamus Root', 'root', 50, None, 0), 'samphire': ('Samphire', 'herb', 30, None, 0),
+    'coconut': ('Coconut', 'fruit', 120, None, 0), 'seaweed': ('Seaweed', 'herb', 30, None, 0),
+    'wild_pepper': ('Wild Pepper', 'seed', 5, None, 0), 'vanilla': ('Vanilla Pods', 'seed', 5, None, 0),
+    'mango': ('Mango', 'fruit', 100, None, 0), 'cave_mushroom': ('Cave Mushrooms', 'mushroom', 70, None, 0),
 }
+ALCHEMY = {'yarrow', 'moonpetal', 'feverfew', 'kingsfoil', 'everbloom'}
 LOOKS = {
-    'berry': ['red berries', 'black berries', 'purple berries', 'orange berries', 'pale berries'],
-    'nut': ['small brown nuts', 'hard green nuts'],
-    'mushroom': ['a white mushroom', 'a speckled red mushroom', 'a pale brown mushroom', 'a grey mushroom', 'a yellow mushroom'],
-    'root': ['a thick root', 'a knobbly white root', 'a red root'],
-    'herb': ['a feathery herb', 'a blue flower', 'a silvery leaf', 'a yellow flower', 'a broad green leaf', 'a star-shaped flower'],
+    'berry': ['red berries', 'black berries', 'purple berries', 'orange berries', 'pale berries', 'blue berries',
+              'dark red berries', 'tiny red berries', 'glossy black berries'],
+    'nut': ['small brown nuts', 'hard green nuts', 'tiny three-sided nuts', 'pale seeds from a cone'],
+    'mushroom': ['a white mushroom', 'a speckled red mushroom', 'a pale brown mushroom', 'a grey mushroom', 'a yellow mushroom',
+                 'a fat brown-capped mushroom', 'a pale mushroom from the dark', 'a frilled orange mushroom'],
+    'root': ['a thick root', 'a knobbly white root', 'a red root', 'a bulb with broad leaves', 'a thin orange root',
+             'a fragrant reed root'],
+    'herb': ['a feathery herb', 'a blue flower', 'a silvery leaf', 'a yellow flower', 'a broad green leaf', 'a star-shaped flower',
+             'a tiny grey-leaved herb', 'soft green shoots', 'a crust of pale growth', 'a cluster of purple bells',
+             'a spiky blue-grey herb', 'round peppery leaves', 'a fleshy green stalk', 'a ribbon of dark green weed'],
+    'fruit': ['a hard-shelled fruit', 'a soft purple fruit', 'a spiny red fruit', 'a heavy brown fruit', 'a sweet yellow fruit',
+              'a green-skinned fruit'],
+    'seed': ['tiny yellow seeds', 'a head of wild grain', 'small hot red pods', 'long dark pods', 'a pinch of black seeds'],
+    'sap': ['a pale sap', 'a sweet clear sap'],
+    'bark': ['rough grey bark', 'dark furrowed bark'],
 }
 # where things grow: terrain -> groups and weights
 WHERE = {
@@ -120,10 +147,15 @@ def forage(game):
     r = LS.rank(game, 'foraging')
     turns = (25 if m.kind == 'over' else 6) * (.7 if r >= 10 else 1)
     LS.gain(game, 'foraging', .6)
-    if random.random() > .35 + r * .03 + (.1 if getattr(p, 'race', '') in ('elf', 'halfling', 'goblin') else 0):
+    luck = .1 if any(b[0] == 'luck' for b in p.buffs) else 0
+    if random.random() > .35 + r * .03 + luck + (.1 if getattr(p, 'race', '') in ('elf', 'halfling', 'goblin') else 0):
         game.msg(random.choice(['You search the undergrowth, but find nothing worth taking.', 'Nothing but weeds and nettles.',
                                 'You find a few berries, but the birds got there first.']))
         return round(turns)
+    if m.kind in ('over', 'wild'):
+        from . import cooking as CK
+        if CK.forage_local(game):
+            return round(turns)
     grp = random.choices(list(where), list(where.values()))[0]
     cands = [k for k, v in PLANTS.items() if v[1] == grp]
     rare = (3 if LS.rank(game, 'herbalism') >= 8 else 1) * boost

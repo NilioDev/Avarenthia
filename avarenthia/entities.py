@@ -4,6 +4,17 @@ import random
 from . import data as D
 
 
+# kinds kept by their own module: display(game, it), lines(game, it), value(game, it), glyph(it), color(it)
+CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'hunting', 'carcass': 'hunting',
+         'leather': 'hunting'}
+
+
+def _craft(it):
+    import importlib
+    from . import foraging as FG
+    return importlib.import_module('avarenthia.' + CRAFT[it.k]), getattr(FG, 'GAME', None)
+
+
 class Item:
     def __init__(self, uid, k, t, n=1):
         self.id = uid
@@ -42,6 +53,9 @@ class Item:
 
     # ---------------------------------------------------------- presentation
     def display_name(self):
+        if self.k in CRAFT:
+            mod, g = _craft(self)
+            return mod.display(g, self)
         if self.k == 'gold':
             from .money import fmt
             return fmt(self.n) + ' in coins'
@@ -59,6 +73,8 @@ class Item:
                 return 'Tent and Bedroll'
             if self.t == 'pick':
                 return 'Miner\'s Pick'
+            if self.t in ('knife', 'frame', 'waterskin'):
+                return {'knife': 'Skinning Knife', 'frame': 'Stretching Frame', 'waterskin': 'Waterskin'}[self.t]
             return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
@@ -82,6 +98,8 @@ class Item:
         return self.name
 
     def color(self):
+        if self.k in CRAFT:
+            return _craft(self)[0].color(self)
         if self.k == 'gear':
             return D.RARITY_COLOR[self.rar]
         if self.k == 'potion':
@@ -120,6 +138,8 @@ class Item:
         return (238, 228, 194)
 
     def glyph(self):
+        if self.k in CRAFT:
+            return _craft(self)[0].glyph(self)
         if self.k == 'gold':
             return '$'
         if self.k == 'orb':
@@ -162,6 +182,9 @@ class Item:
 
     def lines(self):
         out = []
+        if self.k in CRAFT:
+            mod, g = _craft(self)
+            return mod.lines(g, self)
         if self.k != 'gear':
             if self.k == 'potion':
                 out.append({'hp': 'Restores 45% of your life.', 'mp': 'Restores 50% of your mana.',
@@ -193,8 +216,10 @@ class Item:
                     out.append({'deadly': 'Deadly poison. Do not eat.', 'poison': 'Poisonous.', 'sick': 'Makes you sick.',
                                 'sleep': 'Puts you to sleep.', 'heal': 'A healing herb.', 'heal2': 'A strong healing herb.',
                                 'mana': 'Restores a little mana.', 'cure': 'Settles the stomach and cures poison.'}.get(eff, 'Edible.'))
-                    if grp == 'herb':
+                    if self.t in FG.ALCHEMY:
                         out.append('Used in alchemy (P to brew potions).')
+                    if self.t == 'oak_bark':
+                        out.append('Tanners use it: rub it into a salted hide and the hide tans in your pack.')
                     if self.t == 'blackberry':
                         out.append('Brewers make berry wine from these.')
                 else:
@@ -209,6 +234,12 @@ class Item:
                 out.append('Sleep dry in the wild, and a little safer: rest (R) out in the open to make camp.')
             elif self.k == 'tool' and self.t == 'kit':
                 out.append('Needle, thread, rivets and oil. Use it to mend all your gear a little, anywhere.')
+            elif self.k == 'tool' and self.t == 'knife':
+                out.append('A short, curved blade. Stand on a carcass and press Enter to skin it.')
+            elif self.k == 'tool' and self.t == 'frame':
+                out.append('Use it out in the land to set it up; walk into it with salt in your pack to salt your hides.')
+            elif self.k == 'tool' and self.t == 'waterskin':
+                out.append('Water at hand: heat wears on you less.')
             elif self.k == 'tool' and self.t == 'pick':
                 out.append('Walk into an ore or gem vein to dig it out. What you dig goes on your cart, to sell.')
             elif self.k == 'tool':
@@ -268,6 +299,9 @@ class Item:
         return round(self._value_silver() * 100)
 
     def _value_silver(self):
+        if self.k in CRAFT:
+            mod, g = _craft(self)
+            return mod.value(g, self)
         if self.k == 'potion':
             return D.POTIONS[self.t]['val']
         if self.k == 'scroll':
@@ -276,7 +310,7 @@ class Item:
             from .skills import SKILLS, UNLOCKS
             return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
         if self.k == 'tool':
-            return 25 if self.t == 'kit' else 60 if self.t == 'tent' else 15 if self.t == 'pick' else 8
+            return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4}.get(self.t, 8)
         if self.k == 'food':
             from .hunger import FOODS
             return FOODS[self.t][2] / 100
@@ -314,7 +348,8 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant') or (self.k == 'tool' and self.t == 'kit')
+        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant', 'dish', 'part', 'leather') or \
+            (self.k == 'tool' and self.t == 'kit')
 
 
 class Monster:

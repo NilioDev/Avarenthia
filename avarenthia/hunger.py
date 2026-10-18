@@ -22,7 +22,30 @@ FOODS = {
     'valley_cheese': ('Valley Goat Cheese', 600, 400, (250, 236, 180)),
     'goat_cheese': ('Goat Cheese', 350, 60, (246, 232, 190)),
     'dates': ('Dried Dates', 200, 15, (170, 100, 50)),
+    # cuts of game, named by the animal (skinning, hunting.py)
+    'venison': ('Venison', 200, 70, (176, 70, 60)), 'boar_meat': ('Boar Meat', 200, 60, (190, 96, 86)),
+    'hare_meat': ('Hare Meat', 120, 35, (196, 110, 96)), 'grouse': ('Grouse', 110, 40, (150, 100, 80)),
+    'elk_meat': ('Elk Meat', 220, 70, (160, 64, 56)), 'reindeer_meat': ('Reindeer Meat', 200, 70, (170, 72, 66)),
+    'ptarmigan': ('Ptarmigan', 100, 40, (200, 160, 150)), 'mutton': ('Mutton', 190, 55, (200, 120, 110)),
+    'ibex_meat': ('Ibex Meat', 190, 70, (170, 90, 80)), 'aurochs_meat': ('Aurochs Meat', 240, 80, (150, 50, 46)),
+    'horse_meat': ('Horse Meat', 200, 50, (166, 76, 70)), 'quail': ('Quail', 80, 35, (190, 150, 120)),
+    'gazelle_meat': ('Gazelle Meat', 180, 60, (186, 96, 80)), 'wildebeest_meat': ('Wildebeest Meat', 210, 55, (156, 70, 64)),
+    'guinea_fowl': ('Guinea Fowl', 110, 40, (170, 140, 130)), 'bighorn_meat': ('Bighorn Meat', 190, 70, (176, 96, 84)),
+    'duck': ('Wild Duck', 130, 45, (170, 120, 90)), 'hog_meat': ('Hog Meat', 200, 55, (190, 100, 90)),
+    'frog_legs': ('Frog Legs', 60, 30, (170, 190, 130)),
+    # from farms, shores and far places (cooking.py)
+    'eggs': ('Eggs', 120, 30, (240, 230, 200)), 'milk': ('Jug of Milk', 90, 20, (244, 244, 236)),
+    'butter': ('Pat of Butter', 100, 40, (250, 230, 140)), 'goat_milk': ("Jug of Goat's Milk", 90, 25, (240, 236, 220)),
+    'salt': ('Bag of Salt', 0, 20, (236, 236, 240)), 'smoked_fish': ('Smoked Fish', 260, 120, (190, 130, 80)),
+    'drake_egg': ('Drake Egg', 200, 2500, (220, 120, 70)), 'elder_sap': ('Sap of the Elder Tree', 60, 3000, (220, 240, 170)),
+    'crab': ('Crab', 130, 60, (220, 110, 70)), 'mussels': ('Mussels', 90, 40, (90, 90, 120)),
+    'oysters': ('Oysters', 80, 200, (200, 200, 190)), 'parrot_eggs': ('Parrot Eggs', 90, 60, (230, 220, 170)),
+    'heather_honey': ('Heather Honey', 160, 110, (210, 150, 70)),
 }
+# raw meat that may upset your stomach (cook it: Roast Meat never does)
+RAW = {'meat', 'venison', 'boar_meat', 'hare_meat', 'grouse', 'elk_meat', 'reindeer_meat', 'ptarmigan', 'mutton',
+       'ibex_meat', 'aurochs_meat', 'horse_meat', 'quail', 'gazelle_meat', 'wildebeest_meat', 'guinea_fowl',
+       'bighorn_meat', 'duck', 'hog_meat', 'frog_legs'}
 DRINKS = {'ale', 'wine', 'mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}
 from .creatures import BEASTS as _NEW_BEASTS
@@ -46,6 +69,8 @@ def state(food):
 
 def tick(game, turns=1):
     p = game.player
+    if any(b[0] == 'fed' for b in p.buffs):
+        return                                       # a pilaf that keeps you going for days
     before = state(p.food)
     p.food_acc = getattr(p, 'food_acc', 0.0) + RATE * turns
     burn = int(p.food_acc)
@@ -74,6 +99,9 @@ def food_value(it):
         return food if FG.known(FG.GAME, it.t) and eff in (None, 'heal', 'heal2', 'mana', 'cure') else 0
     if it.k == 'food':
         return FOODS[it.t][1]
+    if it.k == 'dish':
+        from . import cooking as CK
+        return CK.food_value(it)
     if it.k == 'fish':
         from .lifeskills import FISH
         return 80 + FISH[it.t][5] * 12
@@ -91,6 +119,9 @@ def eat(game, it):
     if it.k == 'plant':
         from . import foraging as FG
         return FG.eat_plant(game, it)
+    if it.k == 'dish':
+        from . import cooking as CK
+        return CK.eat(game, it)
     game.remove_one(it)
     p.food = min(MAX, p.food + v)
     if it.k == 'fish':
@@ -101,9 +132,9 @@ def eat(game, it):
         game.msg({'ale': 'You down the ale. Warm, bitter and good.', 'wine': 'Sweet, dark berry wine. Your cheeks glow.',
                   'mead': 'Golden mead, thick with honey. You feel like singing.'}[it.t], 'good')
         return 1
-    if it.k == 'food' and it.t == 'meat' and random.random() < .15:
+    if it.k == 'food' and it.t in RAW and random.random() < .15:
         p.poison = [4, 1]
-        game.msg('You eat the raw meat. Your stomach does not like it.', 'bad')
+        game.msg(f'You eat the {FOODS[it.t][0].lower()} raw. Your stomach does not like it.', 'bad')
     else:
         game.msg(f'You eat the {it.display_name().split("x ", 1)[-1].lower()}. {state(p.food) or "You feel fine."}', 'good')
     return 1

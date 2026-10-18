@@ -3301,11 +3301,150 @@ def zones():
     print('zones ok:', len(g.zones), 'zones keep changes')
 
 
+def herds_and_cooking():
+    """Herds on the world map, the hunting ground, skinning, hides and leather, and cooking without recipes."""
+    from avarenthia import hunting as HT
+    from avarenthia import cooking as CK
+    from avarenthia import foraging as FG
+    from avarenthia import zones as ZN
+    from avarenthia.entities import Item
+    from avarenthia.hunger import make_food
+    from avarenthia import towns as TW
+    print('== herds_and_cooking')
+    g = E.Game('Hunter', False, seed=11, race='human', gender='female')
+    p = g.player
+    to_over(g, 0)
+    HT.setup(g)
+    great = [h for h in HT.herds(g) if h.great]
+    assert 1 <= len(great) <= 4 and all(h.kind in HT.GREAT for h in great), f'two to four great herds: {great}'
+    x0, y0 = great[0].x, great[0].y
+    for _ in range(40):
+        HT.daily(g)
+        g.turn += E.D.DAY_LEN
+    assert (great[0].x, great[0].y) != (x0, y0), 'a great herd travels with the seasons'
+    # a herd beside you on the world map: walk into it and its zone is the hunting ground
+    om = g.maps['over']
+    spot = None
+    for sid, st in enumerate(g.world.settlements):
+        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1), (2, 0), (0, 2)):
+            x, y = st.x + dx * 3, st.y + dy * 3
+            if om.inb(x + 1, y) and HT.prey_for(g, x + 1, y) and E.D.TILES[om.tile(x + 1, y)].walk \
+                    and E.D.TILES[om.tile(x, y)].walk and not g.world.settlement_at(x + 1, y) and ZN.open_cell(g, (x + 1, y)):
+                spot = (x, y)
+                break
+        if spot:
+            break
+    assert spot, 'somewhere a herd can graze'
+    g.cur, (p.x, p.y) = 'over', spot
+    g.compute_fov()
+    hd = HT.Herd(g.new_id(), HT.prey_for(g, spot[0] + 1, spot[1])[0], spot[0] + 1, spot[1], 5)
+    HT.herds(g).append(hd)
+    assert HT.herd_at(g, spot[0], spot[1]) is None and HT.herd_at(g, spot[0] + 1, spot[1]) is hd, 'you see the herd beside you'
+    g.try_move(1, 0)
+    m = g.map
+    prey = [o for o in m.mons if getattr(o, 'prey', None) == hd.id]
+    assert g.cur == ZN.KEY and m.hunt == hd.id and len(prey) >= 3, 'walking into the herd opens the hunting ground'
+    assert any(o.ch == 'Q' for o in prey) and HT.wind_arrow(g), 'a leader watches, and the wind blows'
+    from avarenthia.worldgen import cheb
+    assert all(cheb(o.x, o.y, p.x, p.y) >= 7 for o in prey), 'the herd grazes a long shot away'
+    # a hit animal runs on and falls; the rest flee
+    o = prey[0]
+    o.hp = o.maxhp // 3
+    for _ in range(12):
+        g.end_turn(1)
+        if o not in m.mons:
+            break
+    assert o not in m.mons, 'the wounded animal falls'
+    cc = next((i for i in m.items if i.k == 'carcass'), None)
+    assert cc and all(o.ps != 'graze' for o in m.mons if getattr(o, 'prey', None) == hd.id), 'a carcass, and the herd in flight'
+    # skinning: without a knife only meat; with one, cuts named by the animal and a hide
+    p.x, p.y = cc.x, cc.y
+    m.mons = [o for o in m.mons if getattr(o, 'prey', None) is None]
+    assert ('Enter', 'skin') in g.context_hints()
+    g.act_here()
+    assert any(i.k == 'food' and i.t == 'meat' for i in p.inv) and not any(i.k == 'hide' for i in p.inv), 'no knife: raw meat'
+    p.inv.append(Item(g.new_id(), 'tool', 'knife'))
+    for k in ('red_deer', 'aurochs', 'wolf'):
+        c2 = Item(g.new_id(), 'carcass', k)
+        c2.x, c2.y = p.x, p.y
+        m.items.append(c2)
+        g.act_here()
+    hides = [i for i in p.inv if i.k == 'hide']
+    assert len(hides) == 3 and any(i.k == 'food' and i.t == 'venison' for i in p.inv), 'venison and three hides'
+    assert 'day' in hides[0].display_name() and hides[0].display_name().startswith('Fresh'), hides[0].display_name()
+    # a fresh hide rots; a salted one keeps; oak bark tans it into leather
+    hides[2].until = g.day
+    HT.spoil(g)
+    assert hides[2] not in p.inv, 'a fresh hide rots in two days'
+    p.inv.append(Item(g.new_id(), 'tool', 'frame'))
+    p.inv.append(make_food(g, 'salt', 3))
+    fr = next(i for i in p.inv if i.k == 'tool' and i.t == 'frame')
+    assert HT.use(g, fr) and not any(i.k == 'tool' and i.t == 'frame' for i in p.inv)
+    fx, fy = next((p.x + dx, p.y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if m.tile(p.x + dx, p.y + dy) == E.D.FRAME)
+    g.try_move(fx - p.x, fy - p.y)
+    assert all(h.state == 'salted' for h in hides[:2]), 'salt on the frame: they keep'
+    g.try_move(fx - p.x, fy - p.y)
+    assert any(i.k == 'tool' and i.t == 'frame' for i in p.inv) and m.tile(fx, fy) != E.D.FRAME, 'the frame packs up again'
+    p.inv.append(FG.make_plant(g, 'oak_bark', 2))
+    for h in hides[:2]:
+        HT.use(g, h)
+    assert all(h.state == 'tanning' for h in hides[:2]) and 'Tanning' in hides[0].display_name()
+    for h in hides[:2]:
+        h.until = g.day
+    HT.spoil(g)
+    leather = sum(i.n for i in p.inv if i.k == 'leather')
+    assert leather >= 3, f'the hides tanned into leather: {leather}'
+    p.gold += 1000
+    leather_it = next(i for i in p.inv if i.k == 'leather')
+    leather_it.n = 6
+    HT.r_bench(g, 'make:armour', {})
+    assert any(i.k == 'gear' and i.base == 'leather' for i in p.inv), 'leather armour from the bench'
+    # the tanner in town
+    tan = 0
+    for st in g.world.settlements[:12]:
+        if st.kind in ('village', 'town', 'city') and not getattr(st, 'dwarven', False) and not getattr(st, 'elder', False):
+            tm = TW.gen_settlement_map(g, st)
+            tan += any(o.role == 'tanner' for o in tm.mons)
+            assert not any(getattr(o, 'prey', None) for o in tm.mons)
+    assert tan, 'towns have a tanner'
+    # cooking: no recipes, only what you find in the pot
+    assert CK.known(g) == {'roast_meat', 'grilled_fish'}
+    for k in ('wild_onion', 'chanterelle', 'hazelnut'):
+        p.known_plants.add(k)
+        p.inv.append(FG.make_plant(g, k, 3))
+    assert any(k == 'roast_meat' for k, _t in CK.cookable(g)), 'roast meat from venison'
+    ven = next(i for i in p.inv if i.k == 'food' and i.t == 'venison')
+    onion = next(i for i in p.inv if i.k == 'plant' and i.t == 'wild_onion')
+    shroom = next(i for i in p.inv if i.k == 'plant' and i.t == 'chanterelle')
+    CK.attempt(g, [onion.id, shroom.id])
+    assert any('It wants' in l[0] for l in g.log[-4:]) or any('mush' in l[0].lower() for l in g.log[-4:]), 'one thing short: a hint'
+    CK.attempt(g, [ven.id, onion.id, shroom.id])
+    assert 'hunters_stew' in CK.known(g), "Hunter's Stew found in the pot"
+    stew = next((i for i in p.inv if i.k == 'dish' and i.t == 'hunters_stew'), None)
+    if stew:
+        p.food = 300
+        g.eat(stew)
+        assert p.food > 300 and any(b[0] == 'warm' for b in p.buffs), 'a hearty stew warms you'
+    meat = make_food(g, 'elk_meat', 2)
+    p.inv.append(meat)
+    rx, ry = p.x + 1, p.y
+    m.set(rx, ry, E.D.RACK)
+    CK.rack(g, rx, ry)
+    g.turn += E.D.DAY_LEN
+    CK.rack(g, rx, ry)
+    assert any(i.k == 'food' and i.t == 'jerky' for i in p.inv), 'dried meat off the rack'
+    # it all keeps across a save
+    E.save_game(g)
+    g = E.load_game()
+    assert g and 'hunters_stew' in CK.known(g) and HT.herds(g), 'what you know and the herds come back'
+    print('herds and cooking ok:', len(CK.known(g)), 'dishes known')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

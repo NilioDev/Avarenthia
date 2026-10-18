@@ -22,8 +22,20 @@ LIFE = {
     'mining': dict(name='Mining', desc='Dig ore and gems from veins (walk into one, with a pick).',
                    perks={3: 'You dig a little faster', 6: 'You dig faster', 10: 'Now and then a gem among the ore',
                           15: 'You dig much faster'}),
+    'hunting': dict(name='Hunting', desc='Tracks and herds: walk into a herd on the world map.',
+                    perks={3: 'You read how old tracks are', 6: 'Game notices you a little later',
+                           10: 'You see herds from further off', 15: 'You snare small game more often'}),
+    'skinning': dict(name='Skinning', desc='Stand on a carcass and press Enter, with a knife or a dagger.',
+                     perks={3: 'Fewer torn hides', 8: 'Good hides more often', 15: 'An extra cut of meat',
+                            20: 'Fine hides more often'}),
+    'cooking': dict(name='Cooking', desc='Walk into a fire or a hearth. No recipes: try things in the pot.',
+                    perks={5: 'Fewer burnt dishes', 10: 'An extra portion from every pot',
+                           15: 'You taste what is in the inn\'s stew', 20: 'Another portion, and stronger dishes'}),
+    'leatherworking': dict(name='Leatherworking', desc='Leather goods at a workbench; oak bark tans a salted hide.',
+                           perks={5: 'Sturdier work', 15: 'Fine work: better armour'}),
 }
-LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing', 'mining']
+LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing', 'mining', 'hunting', 'skinning', 'cooking',
+              'leatherworking']
 
 # key: name, minimum rank, waters, weight, value, healing
 FISH = {

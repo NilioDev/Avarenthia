@@ -128,6 +128,8 @@ def give(game, k, turns, text=None):
         return False
     if k in HELPLESS:
         turns = min(turns, 2)
+    if k == 'diseased' and any(b[0] == 'hale' for b in game.player.buffs) and random.random() < .5:
+        return False                                 # wild garlic bread and fever tea: hale and hearty
     st[k] = max(st.get(k, 0), turns)
     if text:
         game.msg(text, 'bad')

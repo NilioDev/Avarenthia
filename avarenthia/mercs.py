@@ -826,14 +826,18 @@ def daily(game):
     if not mc or mc.state != 'alive':
         return
     p = game.player
-    if p.gold >= mc.wage:
+    if getattr(mc, 'free_days', 0) > 0:
+        mc.free_days -= 1                            # a week for a vanilla cream
+        mc.paid = game.day
+    elif p.gold >= mc.wage:
         p.gold -= mc.wage
         mc.paid = game.day
         mc.morale = min(100, mc.morale + 2)
     else:
         mc.morale -= 20
         game.msg(f'You cannot pay {mc.name} his {fmt(mc.wage)}. He says nothing, which is worse.', 'bad')
-    food = [it for it in p.inv if it.k == 'food']
+    from .hunger import food_value
+    food = [it for it in p.inv if it.k in ('food', 'dish') and food_value(it) >= 60 and it.t not in ('drake_egg', 'elder_sap')]
     if food:
         it = min(food, key=lambda f: f.value())
         game.remove_one(it)
@@ -850,7 +854,8 @@ def feed_beast(game, mc):
     """No wage: meat. Without it the beast grows thin and sour, and in the end it goes back to the wild."""
     p = game.player
     food = [it for it in p.inv if it.k == 'food']
-    meat = [it for it in food if getattr(it, 't', '') in ('meat', 'jerky', 'fish', 'smoked_fish')]
+    from .hunger import RAW
+    meat = [it for it in food if getattr(it, 't', '') in RAW | {'jerky', 'fish', 'smoked_fish'}]
     if meat:
         game.remove_one(min(meat, key=lambda f: f.value()))
         mc.hungry = False

@@ -46,9 +46,15 @@ def in_view(g):
     land = [(v, k) for k, v in legend(m, cells).items()]
     crs = {}
     if m.kind == 'over':
+        from . import hunting as HT
         for wd in g.world.wanderers:
             if g.visible(wd.x, wd.y):
                 row = crs.setdefault(wd.name, [wd.ch, wd.fg, 0])
+                row[2] += 1
+        for h in HT.herds(g):
+            if HT.seen_herd(g, h):
+                ch, fg = HT.look(g, h)
+                row = crs.setdefault(HT.herd_name(h), [ch, fg, 0])
                 row[2] += 1
     else:
         for o in m.mons:
@@ -101,6 +107,10 @@ TIPS = {
     'night': 'Tip: R rests. Out in the open you make camp: a fire keeps beasts off but draws robbers.',
     'many': 'Tip: o lets you look around; it shows what every sign in view means.',
     'land': 'Tip: > in open country takes you down into the land itself; walk on across its edges, and < brings you back up.',
+    'herd': 'Tip: walk into a herd on the world map to hunt it.',
+    'hunt': 'Tip: the arrow on the edge shows where the wind comes from. Keep it in your face, or they smell you.',
+    'skin': 'Tip: Enter on a carcass skins it; with a knife or a dagger you get the hide too.',
+    'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',
 }
 
 
@@ -118,13 +128,18 @@ def check(g):
     """After every action: the first tip whose moment has come (one at a time, so the log stays calm)."""
     from . import mercs as MC
     from . import towns as TW
+    from . import hunting as HT
+    from . import cooking as CK
     m = g.map
     if g.dead:
         return
     foes = g.visible_hostiles()
     moments = [('foe', bool(foes)), ('many', len(foes) >= 3), ('over', m.kind == 'over'), ('land', m.kind == 'over' and g.turn > 600), ('job', bool(MS.active(g))),
                ('merc', bool(MC.party(g))), ('dungeon', m.kind == 'dungeon'),
-               ('night', m.kind in ('over', 'wild') and TW.is_night(g))]
+               ('night', m.kind in ('over', 'wild') and TW.is_night(g)),
+               ('herd', m.kind == 'over' and any(HT.seen_herd(g, h) for h in HT.herds(g))),
+               ('skin', bool(HT.carcass_here(g))),
+               ('cook', m.kind in ('over', 'wild') and g.turn > 900 and bool(CK.pot_items(g)) and not g.visible_hostiles())]
     for key, now in moments:
         if now and tip(g, key):
             return

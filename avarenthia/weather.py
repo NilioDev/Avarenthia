@@ -1008,8 +1008,16 @@ def ambush_factor(game):
 def food_factor(game):
     eff = EFFECTS.get(current(game))
     f = eff[3] if eff else 1.0
-    if f > 1 and any(b[0] == 'warm' for b in game.player.buffs):
-        return 1.0                                   # warmed through by a hot spring: the cold costs nothing
+    p = game.player
+    hot = current(game) in ('heat', 'sandstorm', 'haboob')
+    if f > 1 and hot:
+        if any(b[0] == 'cool' for b in p.buffs):
+            return 1.0                               # a desert plate: the heat costs nothing
+        if any(it.k == 'tool' and it.t == 'waterskin' for it in p.inv):
+            return 1 + (f - 1) / 2
+        return f
+    if f > 1 and any(b[0] == 'warm' for b in p.buffs):
+        return 1.0                                   # warmed through by a hot spring or a hot stew: the cold costs nothing
     return f
 
 

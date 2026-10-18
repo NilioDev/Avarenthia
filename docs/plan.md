@@ -16,7 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
 | **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
 | **Built: walking the land (zones)** | `>` in open country goes down into the zone of that world cell; walk off the edge into the next one, `<` goes back up. Ambushes are fought there; towns, sites and holds keep their own maps and are entered from the middle of their zone. The save is packed |
-| **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
+| **Built: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting in the herd's zone, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
@@ -147,6 +147,30 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   zone on that side. Snow, ice and autumn leaves are drawn over a zone from its world cell, never baked in. The save
   is packed with zlib (seed 7: about 0.38 MB). Not built: the settlement maps' blending strip along their edges, and
   a drifting isle's shadow on the zones under it.
+- **Herds, hunting and the crafts** (`hunting.py`, `cooking.py`, `prey.py`). Game is a number per stretch of country
+  (`world.game_stock`, by area), never drawn. Herds (one `q`) come and go within a few cells of you and are seen only
+  within 4-6 cells (open land and Hunting 10 further, woods less); they leave hoof tracks `:` that fade in two days
+  and can be read (age, animal, way). Two to four great herds (reindeer, aurochs, wildebeest) travel north in spring
+  and summer and south in autumn and winter, wolves or gnolls behind them. Walking into a herd opens its zone as the
+  hunting ground: the herd some 14 tiles off, its leader a `Q`, a few hares or grouse about; the wind in the log and
+  one arrow at the edge it comes from; sight (less behind trees and rocks, less with Hunting) and smell (downwind of
+  you). A hit animal bolts, bleeds and falls after 3-6 steps; the herd flees off the map; bulls and boars charge, elk
+  kick, ibex vanish into the rocks. Prey and the skinnable beasts leave a carcass: Enter skins it (knife or dagger:
+  cuts named by the animal, a hide torn/rough/good/fine by Skinning, antlers, horn, tusks, claws, fangs, ivory,
+  sometimes a drake egg; without a knife only raw meat). Fresh hides rot in two days (the name counts down); the
+  stretching frame `╬` (carried, set up in the land) salts them; a tanner in every village and town (frame and
+  workbench `╤` in the stables or the outfitter's) tans for a fee, ready in three days, or oak bark tans a salted hide
+  in your pack in five. The workbench makes leather armour, gloves, boots, a belt and a waterskin (heat costs half).
+  Fine fur sells for more in cities and the cold north. Cooking: 64 dishes in one table, Roast Meat and Grilled Fish
+  known; walk into a hearth (every inn), a fire pit, or cook when making camp; Try something new (up to three things)
+  teaches, hints at what is missing, or gives Camp Mush; rank means fewer burnt dishes, more portions, stronger and
+  longer effects, and from 15 tasting the inn's stew. One inn in five shares its local dish, travellers and herders
+  now and then theirs, the peoples theirs with friends, four cookbooks per world in chests (luxury dishes). Drying
+  racks make Dried Meat and Smoked Fish. Local herbs and fruit per land (their own look per world) are found by
+  foraging there, with small game snared now and then; village outfitters sell one local thing and farm food; salt,
+  a skinning knife and the frame are supplies. Four new life skills: Hunting, Skinning, Cooking, Leatherworking.
+  Changed: Nut Loaf is hazelnuts, barley and butter, as the plan gave it Trail Cakes' three things. Not built: the
+  quiver (there are no arrows to carry) and mending a tent (tents do not wear).
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -349,7 +373,7 @@ are only for looking at today (geysers, tar pits, crystal hills, glowing mushroo
 
 ---
 
-## Herds, hunting and the crafts (approved, not built)
+## Herds, hunting and the crafts (built 18 October 2026; the spec)
 
 Approved on 17 October 2026 in the thread on herd animals. Mockups and the script that drew them are in the project
 files under `kuddes/` (`kuddes_mockups.py`, seed 6; `voorstel.md` is the Dutch version of this section). Today there

@@ -624,7 +624,9 @@ def r_traveller(game, choice, ctx):
         rob_traveller(game, wd)
     elif choice == 'news':
         from . import news as NW
-        game.say_text(wd.name, (random.random() < .6 and NW.far_news(game)) or game.rumor())
+        from . import cooking as CK
+        if not CK.from_traveller(game, wd):
+            game.say_text(wd.name, (random.random() < .6 and NW.far_news(game)) or game.rumor())
     elif choice == 'help' and wd.offer:
         o = wd.offer
         first = wd.name.split()[0]
@@ -699,6 +701,9 @@ def r_roadinn(game, choice, ctx):
 def r_camp_night(game, choice, ctx):
     if choice in ('fire', 'dark'):
         game.camp(choice == 'fire')
+    elif choice == 'cook':
+        from . import cooking as CK
+        CK.at_fire(game, 'camp')
 
 
 RESOLVERS = {'camp_night': r_camp_night, 'roadinn': r_roadinn, 'caravan': r_caravan, 'gate': r_gate,

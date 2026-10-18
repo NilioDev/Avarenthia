@@ -13,7 +13,7 @@ import random
 from . import calendar as CAL
 from . import data as D
 
-CHAPTERS = ['The Old Days', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'Signs']
+CHAPTERS = ['The Old Days', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
 MARK = {'heard': ('·', (217, 165, 71)), 'read': ('≡', (196, 170, 255)), 'seen': ('☼', (255, 226, 120))}
 
 
@@ -53,6 +53,9 @@ def disprove(game, key, why):
 def count(game, ch):
     if ch == 'Creatures':
         return len(game.bestiary)
+    if ch == 'The kitchen':
+        from . import cooking as CK
+        return len(CK.known(game))
     if ch == 'Signs':
         return None
     return sum(1 for f in facts(game) if f['ch'] == ch)
@@ -293,6 +296,14 @@ def blocks(game, i):
                                                               f"{kills} slain"))
         out = [('p', 'Every kind you have met. [Enter] opens the bestiary, with all you learnt of them.')]
         return out + ([('s', rows)] if rows else [('p', 'You have met no creature yet.')])
+    if ch == 'The kitchen':
+        from . import cooking as CK
+        rows = []
+        for k in sorted(CK.known(game), key=lambda k: (('simple', 'hearty', 'luxury').index(CK.DISHES[k][1]), CK.DISHES[k][0])):
+            name, tier, ings, *_r = CK.DISHES[k]
+            words = ' '.join(CK.WORDS[e] for e in CK.effects(k) if e in CK.WORDS)
+            rows.append((name, ' + '.join(CK.ing_name(i) for i in ings) + '. ' + words))
+        return [('p', 'The dishes you know, and what goes in them. More you find in the pot, or hear of.'), ('r', rows)]
     if ch == 'Signs':
         from . import handbook as HB
         return HB.ch_signs(game)

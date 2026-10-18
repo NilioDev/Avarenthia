@@ -606,6 +606,9 @@ THEMED = [
 # round two (menagerie.py): the dead, the beasts of every land, the sea, the made things, the fey and the deep
 from . import menagerie as _MN
 NEW.update(_MN.NEW)
+# the game animals of the herds and small game (hunting.py)
+from . import prey as _PR
+NEW.update(_PR.PREY)
 BANDS.update(_MN.BANDS)
 HORDE.update(_MN.HORDE)
 GEAR.update(_MN.GEAR)
