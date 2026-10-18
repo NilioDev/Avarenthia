@@ -792,6 +792,39 @@ def river_course(game, s, m, k):
     return [beyond(pts[1], pts[0])] + pts + [beyond(pts[-2], pts[-1])]
 
 
+HIGH_LAND = {'mountain', 'hills', 'alpine', 'tundra_hills', 'canyon', 'peak', 'glacier', 'mesa', 'badlands'}
+
+
+def river_kind(game, s):
+    """How big and how wild the world map's river is where it passes a settlement: (size, wild).
+    Size is 'stream', 'river' or 'broad' by the length of the river it belongs to; wild when it comes
+    down out of hills or mountains close by."""
+    om = game.maps['over']
+    riv = getattr(om, 'river', None)
+    if not riv:
+        return 'river', False
+    cells = [(x, y) for y in range(s.y - 2, s.y + 3) for x in range(s.x - 2, s.x + 3) if om.inb(x, y) and riv[y * om.w + x]]
+    if not cells:
+        return 'river', False
+    start = min(cells, key=lambda c: (cheb(c[0], c[1], s.x, s.y), c))
+    names = getattr(om, 'biome_names', None)
+    seen, todo, wild = {start}, deque([(start, 0)]), False
+    while todo and len(seen) < 400:
+        (x, y), d = todo.popleft()
+        for dx, dy in D8:
+            n = (x + dx, y + dy)
+            if n in seen or not om.inb(*n):
+                continue
+            i = n[1] * om.w + n[0]
+            if names and d < 12 and names[om.biome[i]] in HIGH_LAND:
+                wild = True
+            if riv[i]:
+                seen.add(n)
+                todo.append((n, d + 1))
+    size = 'broad' if len(seen) >= 25 else 'stream' if len(seen) < 12 and not wild else 'river'
+    return size, wild
+
+
 def carve_river(m, pts, half=2.2, keep=()):
     """Lay a river along the points: deep in the middle, shallow at the banks. Where a road crosses it, a bridge."""
     keep = set(keep) | {FOUNTAIN, STALL, WELL}
@@ -872,6 +905,15 @@ def lay_bridges(m, pts, crossed, width):
             continue
         lo = min(ends[0] for _x, _y, ends in rows)
         hi = max(ends[1] for _x, _y, ends in rows)
+        if getattr(m, 'ferry_ok', False) and not group & getattr(m, 'main_roads', set()):
+            # a lane over a broad or wild river: a ferry on a rope instead of a bridge
+            from . import ferries as FY
+            ox, oy, _e = rows[len(rows) // 2]
+            for la in FY.lay(m, ox, oy, across, lo, hi):
+                if m.tile(*la) in (GRASS, TREE, FIELD):
+                    m.set(*la, PATH)
+                join_road(m, la[0], la[1], (la[0] - ox, la[1] - oy) if (la[0], la[1]) != (ox, oy) else across)
+            continue
         for ox, oy, _e in rows:                 # every plank the same length: a square deck
             for j in range(lo, hi + 1):
                 x, y = ox + across[0] * j, oy + across[1] * j
@@ -943,6 +985,8 @@ def gen_village(game, s):
         pts = meander((cx, cy), (ex, ey), 6, 1, abs(ex - cx) >= abs(ey - cy))
         lay_road(m, pts, 3 if k < 2 and tier != 'hamlet' else 2)
         m.exits.append((ex, ey, other))
+        if k == 1 and tier != 'hamlet':           # the two busiest roads always get a bridge
+            m.main_roads = road_cells(m)
     names = town_names(getattr(s, 'race', 'human'))
     plots = []
     # where the roads meet: a green with a well, a paved market square with a fountain, or just a bend
@@ -986,10 +1030,21 @@ def gen_village(game, s):
                 if m.tile(x, y) in (GRASS, TREE):
                     m.set(x, y, PATH)
     # a river that runs past the village on the world map runs through it here, with bridges where the roads cross
+    # a stream gets a narrow bed, a broad river a wide one; a lane over a broad or wild river crosses by ferry
     course = river_course(game, s, m, 9 if tier == 'hamlet' else 12)
-    wet = carve_river(m, course, 1.8 if tier == 'hamlet' else 2.3) if course else set()
+    size, wild = river_kind(game, s) if course else ('river', False)
+    if len(dirs) == 1 and tier != 'hamlet':
+        m.main_roads = road_cells(m)
+    m.ferry_ok = size == 'broad' or wild
+    half = {'stream': 1.5, 'river': 1.9 if tier == 'hamlet' else 2.3, 'broad': 3.0}[size]
+    wet = carve_river(m, course, half) if course else set()
+    for a in ('ferry_ok', 'main_roads'):
+        m.__dict__.pop(a, None)
     river_banks(m, wet)
     m.stone_bridges = tier == 'town'
+    if getattr(m, 'ferries', None):
+        from . import ferries as FY
+        FY.settle(game, m, s, plots, names)
     from . import harbour as HB
     if getattr(s, 'harbour', False):
         plots.append(HB.carve(m, s))

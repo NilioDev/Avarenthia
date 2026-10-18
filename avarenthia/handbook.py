@@ -189,6 +189,10 @@ def ch_towns(g):
         ('p', 'Hamlet, village, town, city, metropolis. The bigger the place, the more it has: barracks with '
               'sellswords and a deep harbour are only found in the cities. Farms along the roads share a '
               'meal with travellers; roadside inns offer a bed and the news.'),
+        ('h', 'Rivers in town'),
+        ('p', 'A stream is crossed by a bridge. Where a lane meets a broad or wild river there is a ferry instead, the '
+              'sign {▬|200,154,98} on its rope: walk into the raft or the ferryman, and for a few copper you are on '
+              'the other bank. At night he is home and the raft is tied up. The main roads always cross on a bridge.'),
         ('h', 'Inns and beds'),
         ('p', 'A night in an inn bed and a hot meal leave you full and Well rested: you heal faster for a day. Sleeping '
               'out in the open is cheaper, but not safe.'),

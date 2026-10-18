@@ -104,8 +104,10 @@ TILES = [
     Tile(':', '#968c80', False, True, 'rubble', bg='#28241e'),
     Tile('♠', '#8c8246', False, False, 'thorn bushes', bg='#1e1a0c'),
     Tile('Θ', '#b4ae9e', False, False, 'inscribed stone', bg='#2a2620'),
+    Tile('▬', '#c89a62', False, False, 'ferry raft', bg='#1c3a60'),
+    Tile('─', '#c8b48a', False, False, 'ferry rope', bg='#12284a'),
 ]
-STELE = 75
+STELE, RAFT, ROPE = 75, 76, 77
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

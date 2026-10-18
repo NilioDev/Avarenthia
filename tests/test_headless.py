@@ -2914,11 +2914,60 @@ def chronicle():
     print('chronicle ok:', len(CH.facts(g)), 'facts,', {s_: sum(1 for f in CH.facts(g) if f['src'] == s_) for s_ in CH.MARK})
 
 
+def ferries():
+    """Village ferries: a raft on a rope where a lane crosses a broad or wild river, a ferryman by day."""
+    from avarenthia import ferries as FY, towns as TV, events as EV
+    print('== ferries')
+    g = E.Game('Ferry', False, seed=7, race='human', gender='male')
+    m = None
+    for s in g.world.settlements:
+        if s.is_city or s.kind == 'deephold' or getattr(s, 'dwarven', False) or getattr(s, 'elder', False):
+            continue
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        if getattr(g.map, 'ferries', None):
+            m = g.map
+            break
+    assert m, 'no village ferry in seed 7'
+    la, lb, ra, rb = m.ferries[0]
+    man = FY.ferryman(g, m, 0)
+    assert man and man.job == 'ferryman', 'a ferry has its ferryman'
+    assert D.RAFT in (m.tile(*ra), m.tile(*rb)) and m.tile(*la) != D.ROPE
+    day0 = g.turn - g.turn % D.DAY_LEN
+    p = g.player
+    p.gold = 100
+    g.turn = day0 + D.DAY_LEN * 12 // 24               # noon: the ferryman is at work
+    p.x, p.y = la
+    raft = ra if m.tile(*ra) == D.RAFT else rb
+    g.try_move(raft[0] - p.x if abs(raft[0] - p.x) <= 1 else 0, raft[1] - p.y if abs(raft[1] - p.y) <= 1 else 0)
+    if not g.pending:
+        FY.bump(g, *raft)
+    assert g.pending and g.pending['key'] == 'townferry', 'bumping the raft offers the crossing'
+    fare = g.pending['ctx']['fare']
+    EV.resolve(g, 'cross')
+    assert max(abs(p.x - lb[0]), abs(p.y - lb[1])) <= 1, 'the ferry takes you to the far landing'
+    assert p.gold == 100 - fare and m.tile(*rb) == D.RAFT and m.tile(*ra) == D.ROPE
+    FY.offer(g, 0)
+    EV.resolve(g, 'cross')
+    assert max(abs(p.x - la[0]), abs(p.y - la[1])) <= 1 and m.tile(*ra) == D.RAFT, 'and back again'
+    g.turn = day0 + D.DAY_LEN * 23 // 24              # late at night: tied up
+    g.pending = None
+    FY.offer(g, 0)
+    assert not g.pending, 'no crossing at night'
+    # a stream gets a bridge, never a ferry
+    for s in g.world.settlements[:40]:
+        if TV.river_kind(g, s) == ('stream', False) and not (s.is_city or s.kind == 'deephold' or
+                                                             getattr(s, 'dwarven', False) or getattr(s, 'elder', False)):
+            mm = TV.gen_village(g, s)
+            assert not mm or not getattr(mm, 'ferries', None), 'no ferry on a stream'
+    print('ferries ok:', m.name, 'fare', fare)
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

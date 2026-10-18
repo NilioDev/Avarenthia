@@ -8,6 +8,7 @@ from . import economy as ECO
 from . import fov
 from . import skills as SK
 from . import missions as MS
+from . import ferries as _FY  # noqa: F401  (the village ferries register their choice)
 from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
@@ -45,7 +46,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 25
+SAVE_VERSION = 26
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -877,6 +878,9 @@ class Game:
             if t == D.STELE:
                 from . import chronicle as CH
                 return CH.read_stone(self, nx, ny)
+            if t in (D.RAFT, D.ROPE):
+                from . import ferries as FY
+                return FY.bump(self, nx, ny)
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0
@@ -2837,6 +2841,10 @@ class Game:
             return
         if role == 'fisher':
             self.fisher_talk(npc)
+            return
+        if role == 'ferryman':
+            from . import ferries as FY
+            FY.talk(self, npc)
             return
         if role == 'farmer':
             self.farmer_talk(npc)

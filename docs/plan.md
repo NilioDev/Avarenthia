@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
-| **Approved: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge. Not built yet |
+| **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
 | **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
@@ -99,6 +99,12 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   Read: inscribed stones Θ on the first level of some worked dungeons (Varnish ones unreadable until the letters are
   learnt; once read they show where an old way starts) and six old books in the deepest levels (one may name a
   dungeon and mark it). Enter on a page shows its place on the world map. Creatures opens the bestiary.
+- **Ferries in villages** (`ferries.py`, `towns.river_kind`). The world map's river decides the village river: a
+  stream (short river) gets a narrow bed, a broad one (long river) a wide bed; wild when it comes out of hills or
+  mountains close by. Where a lane crosses a broad or wild river: a rope ─ over the water, a raft ▬ at one end, a
+  landing on each bank and the ferryman's hut by one of them. Bump the raft, the rope or the ferryman by day: 3c
+  (8c when the river is in spate), and you step off on the far bank; the raft stays on that side. At night he is
+  home and the raft is tied up. The two busiest roads always keep their bridges, stone ones in towns.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -115,7 +121,7 @@ Everything new finds its place in what is there; no new screen per system, no ne
 
 ---
 
-## Ferries in villages (approved, not built)
+## Ferries in villages (built 18 October 2026; the spec)
 
 Niels, 17 October 2026: a village river is not always crossed by a bridge; it depends on how broad and wild the
 river is and how big the road is.

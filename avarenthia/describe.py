@@ -91,6 +91,7 @@ ROLE_DESC = {
     'farmer': 'A farmer, hands like old leather. Farm folk share their table with travellers.',
     'roadinn': 'The keeper of a lonely roadside inn. Stew, a bed, and news from the road.',
     'fisher': 'An old fisherman, patient as a heron. Knows every fish in the pond by name.',
+    'ferryman': 'Arms like rope from poling the raft over. A few copper takes you across the river.',
     'lands': 'Weathered by sun and wind. Trades in what the land up here or out there gives.',
 }
 
@@ -98,7 +99,7 @@ ROLE_DESC = {
 JOB_WORD = {'inn': 'innkeeper', 'market': 'trader', 'shop': 'outfitter', 'healer': 'priest', 'stables': 'stablemaster',
             'elder': 'village elder', 'castellan': 'castellan', 'guard': 'guard', 'thane': 'thane', 'herbalist': 'herbalist',
             'tower': 'captain of the watch', 'fisher': 'fisherman', 'client': 'client', 'farmer': 'farmer',
-            'roadinn': 'innkeeper', 'lands': 'trader', 'factor': 'guild factor', 'captain': 'captain', 'sailor': 'sailor', 'merc': 'mercenary'}
+            'roadinn': 'innkeeper', 'lands': 'trader', 'factor': 'guild factor', 'captain': 'captain', 'sailor': 'sailor', 'merc': 'mercenary', 'ferryman': 'ferryman'}
 NOUN = {'male': 'man', 'female': 'woman'}
 
 
@@ -120,7 +121,7 @@ def person(game, mon):
         who = f"{rc['adj'].capitalize()} {noun}"
     else:
         who = f"{rc['name']}" + (f", {'male' if gender == 'male' else 'female'}" if gender in NOUN else '')
-    job = ('fisherwoman' if mon.role == 'fisher' and gender == 'female' else None) or JOB_WORD.get(mon.role) or (getattr(mon, 'job', '') if getattr(mon, 'job', 'any') not in ('any', 'child') else '')
+    job = ('fisherwoman' if mon.role == 'fisher' and gender == 'female' else 'ferrywoman' if mon.role == 'ferryman' and gender == 'female' else None) or JOB_WORD.get(mon.role) or (getattr(mon, 'job', '') if getattr(mon, 'job', 'any') not in ('any', 'child') else '')
     lines.append(f'People: {who}' + (f' · {job}' if job else '') + '.')
     lines.append(ROLE_DESC.get(mon.role, 'Someone from around here.'))
     god = getattr(mon, 'god', None)
