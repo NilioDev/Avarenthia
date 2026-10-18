@@ -141,6 +141,17 @@ TILES = [
     Tile('╤', '#b08860', False, False, 'workbench'),
     Tile('≡', '#c09858', False, False, 'shelves of books', bg='#2a1c10'),
     Tile('╥', '#e0b860', False, False, 'high seat', bg='#3a2410'),
+    # what spells leave on the ground (spellmap.py); each melts, burns out or crumbles after a while
+    Tile('^', '#ff8a32', True, False, 'burning ground', bg='#4a1a06'),
+    Tile('█', '#cfeaff', False, False, 'ice wall', bg='#6a9ac0'),
+    Tile('.', '#d8f0ff', True, False, 'spell ice', bg='#3a6688'),
+    Tile('"', '#a8d060', True, False, 'grasping roots', bg='#1e2a10'),
+    Tile('♠', '#9ab048', True, False, 'bramble patch', bg='#1e1a0c'),
+    Tile('#', '#e0dcc8', False, False, 'bone wall', bg='#3a362c'),
+    Tile('+', '#fff0c0', True, False, 'hallowed ground', bg='#3a3218'),
+    Tile('¶', '#a0f0b0', False, False, 'spirit totem', bg='#16301e'),
+    Tile('¤', '#fffbb0', True, False, 'ball lightning', bg='#4a4a10'),
+    Tile('.', '#f2f6fa', True, False, 'snowdrift', cost=14),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -148,6 +159,7 @@ STELE, RAFT, ROPE = 75, 76, 77
  BAREROCK, SNOW) = range(78, 107)
 HEARTH, FRAME, BENCH = range(107, 110)      # cooking at the inn, a hide stretched to scrape, the leatherworker's bench
 SHELVES, HIGHSEAT = 110, 111                # a library's books, the lord's high seat in his hall
+(BURNING, ICEWALL, SPELLICE, ROOTS, BRAMBLE, BONEWALL, HALLOWED, SPIRITTOTEM, BALL, DRIFT) = range(112, 122)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

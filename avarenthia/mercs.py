@@ -16,7 +16,8 @@ its back on what is hitting it hardest.
 Death: in hardcore a fallen hireling is dead, and his gear lies with his body. In softcore a temple can raise him, for
 a fee; if you die, he falls with you.
 
-A beastmaster of the Houndwardens' Lodge may have a tamed beast as well: a wolf, a bear, a panther or a hawk. It follows
+Whoever has learnt Tame from a Beastcraft tome may have a tamed beast as well: a wolf, a bear, a panther or a hawk
+(a Packmaster of the Houndwardens' Lodge keeps two). It follows
 the same rules (orders, threat, falling and raising), but it has no gear and takes no wage; it eats meat.
 Thralls (the dead you raise, the wolves you call) fight for you a while, then fall away."""
 import random
@@ -89,9 +90,10 @@ class Merc:
         self.body = None                 # the Monster that stands for him on the current map
         self.body_map = None
         self.idle = 0
-        self.slot = 'merc'               # 'merc' (game.merc) or 'beast' (game.beast)
+        self.slot = 'merc'               # 'merc' (game.merc), 'beast' (game.beast) or 'beast2' (Packmaster's second)
         self.species = None
         self.fury = 0                    # turns of Pack Fury
+        self.grown = 0                   # turns of Spirit of the Pack
 
     @property
     def tpl(self):
@@ -100,7 +102,7 @@ class Merc:
     @property
     def who(self):
         """Its key in the monsters' threat tables."""
-        return 'b' if getattr(self, 'slot', 'merc') == 'beast' else 'm'
+        return {'beast': 'b', 'beast2': 'b2'}.get(getattr(self, 'slot', 'merc'), 'm')
 
     def title(self):
         if self.kind == 'beast':
@@ -127,14 +129,31 @@ def with_you(game, slot='merc'):
     return mc if mc and mc.state == 'alive' else None
 
 
+COMPANY = ('merc', 'beast', 'beast2')
+
+
 def party(game):
-    """Your companions who are with you: the hireling and the tamed beast."""
-    return [mc for mc in (with_you(game, 'merc'), with_you(game, 'beast')) if mc]
+    """Your companions who are with you: the hireling and the tamed beast (two, for a Packmaster)."""
+    return [mc for mc in (with_you(game, s_) for s_ in COMPANY) if mc]
+
+
+def beasts(game):
+    """Your tamed beasts, alive or fallen."""
+    return [mc for mc in (get(game, 'beast'), get(game, 'beast2')) if mc]
+
+
+def beast_room(game):
+    """The slot a newly tamed beast goes to, or None when you have as many as you may keep."""
+    if not get(game, 'beast'):
+        return 'beast'
+    if 'packmaster' in game.player.known and not get(game, 'beast2'):
+        return 'beast2'
+    return None
 
 
 def fallen(game):
     """The first of your companions who lies dead and can still be raised."""
-    for slot in ('merc', 'beast'):
+    for slot in COMPANY:
         mc = get(game, slot)
         if mc and mc.state == 'fallen':
             return mc
@@ -203,6 +222,9 @@ def beast_stats(game, mc, lvl):
     lo, hi = (2 + lvl // 2) * sp['dmg'] * k, (5 + lvl) * sp['dmg'] * k
     if mc.fury > 0:
         lo, hi = lo * 1.4, hi * 1.4
+    if getattr(mc, 'grown', 0) > 0:                         # Spirit of the Pack: it grows, for a while
+        lo, hi = lo * 1.4, hi * 1.4
+        s['max_hp'] = round(s['max_hp'] * 1.4)
     s['dmg'] = (max(1, round(lo)), max(2, round(hi)))
     s['hit'] = 28 + lvl * 6 + craft // 2
     s['block'] = 0
@@ -216,13 +238,15 @@ def beast_stats(game, mc, lvl):
 def tame(game, mon, species=None):
     """A wild beast becomes yours."""
     sp = species or TAME_OF.get(mon.k)
-    mc = Merc('beast', random.choice(BEAST_NAMES), level_for(game))
-    mc.slot, mc.species = 'beast', sp
+    slot = beast_room(game) or 'beast'
+    taken = {b.name for b in beasts(game)}
+    mc = Merc('beast', random.choice([n for n in BEAST_NAMES if n not in taken]), level_for(game))
+    mc.slot, mc.species = slot, sp
     mc.hp = stats(game, mc)['max_hp']
     mc.paid, mc.potions = game.day, 0
     if mon is not None and mon in game.map.mons:
         game.map.mons.remove(mon)
-    game.beast = mc
+    setattr(game, slot, mc)
     sync(game)
     if mc.body is not None and mon is not None:
         mc.body.x, mc.body.y = mon.x, mon.y
@@ -730,6 +754,8 @@ def act(game, b):
         return
     if mc.fury > 0:
         mc.fury -= 1
+    if getattr(mc, 'grown', 0) > 0:
+        mc.grown -= 1
     p = game.player
     s = stats(game, mc)
     refresh_body(game, mc)
@@ -819,9 +845,9 @@ def act(game, b):
 def daily(game):
     """A day's wage, a day's food. Short him either and his mood sours; let it sour far enough and he walks."""
     from .money import fmt
-    bst = with_you(game, 'beast')
-    if bst:
-        feed_beast(game, bst)
+    for bst in [with_you(game, s_) for s_ in ('beast', 'beast2')]:
+        if bst:
+            feed_beast(game, bst)
     mc = get(game)
     if not mc or mc.state != 'alive':
         return
@@ -960,7 +986,7 @@ def thrall_fight(game, mon):
 def menu(game, slot=None):
     """h, or walking into your companion: the company screen (ui.CompanyScreen), opened on that companion."""
     from .money import fmt
-    mcs = [mc for mc in (get(game, 'merc'), get(game, 'beast')) if mc]
+    mcs = [mc for mc in (get(game, s_) for s_ in COMPANY) if mc]
     if not mcs:
         game.msg('You have no hireling. Sellswords are for hire in the barracks of the cities.', 'info')
         return
@@ -1003,7 +1029,7 @@ def dismiss_menu(game, slot):
         return
     if mc.kind == 'beast':
         EV.ask(game, 'merc_dismiss', mc.name, f'Set {mc.name} free? It will go back to the wild.',
-               [('Set it free', 'yes'), ('No', 'bye')], slot='beast')
+               [('Set it free', 'yes'), ('No', 'bye')], slot=slot)
     else:
         EV.ask(game, 'merc_dismiss', mc.name, f'Let {mc.name} go? He keeps his gear and his last wage.',
                [('Dismiss him', 'yes'), ('No', 'bye')])

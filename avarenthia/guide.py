@@ -66,6 +66,9 @@ def in_view(g):
     for it in m.items:
         if g.visible(it.x, it.y):
             things.setdefault(it.display_name(), (it.glyph(), it.color()))
+    for c in getattr(m, 'slain', ()):
+        if g.visible(c[1], c[2]):
+            things.setdefault('Corpse', ('%', (150, 130, 110)))
     if getattr(m, 'zone', None) is not None:
         from . import zones as ZN
         for (x, y), got in m.marks.items():

@@ -48,6 +48,7 @@ from . import realms as RL
 from . import powers as _PW  # noqa: F401  (the other powers register their choices)
 from . import realmjobs as _RJ  # noqa: F401
 from . import history as HI
+from . import spellmap as SM
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -55,7 +56,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 31
+SAVE_VERSION = 32
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1795,13 +1796,16 @@ class Game:
         if elem in D.ELEMENT_RES:
             dmg *= 1 - s[D.ELEMENT_RES[elem]] / 100
         dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
+        dmg = SM.guard(self, dmg)
+        if dmg <= 0:
+            return
         p.life -= dmg
         BH.on_hurt(self)
         big = dmg >= s['max_life'] * .2
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
         if big:
             self.shake()
-        if p.life <= 0:
+        if p.life <= 0 and not SM.martyr(self):
             self.die(src)
             return
         if p.life < s['max_life'] * .3 and not self.low_warned:
@@ -1821,6 +1825,11 @@ class Game:
             sl.append((mon.k, mon.x, mon.y, mon.lvl))
             del sl[:-12]
         GD.on_kill(self, mon)
+        if 'plague' in mon.effects:                    # the plague leaps to those beside it
+            for o in [o for o in m.mons if not o.is_npc and cheb(o.x, o.y, mon.x, mon.y) <= 1]:
+                o.effects['poison'] = [6, mon.effects['plague'][1]]
+                o.effects.setdefault('plague', [6, mon.effects['plague'][1]])
+                self.num(o.x, o.y, '*', (143, 220, 90))
         if not mon.tpl.get('tags', '').startswith('crypt') and mon.k not in ('ghost', 'wraith', 'skeleton', 'skarcher') \
                 and mon.tpl.get('family') not in ('undead', 'construct', 'ooze', 'plant', 'fiend'):
             from .dress import add_blood
@@ -2008,6 +2017,8 @@ class Game:
             th = self.stats()['thorns']
             self.wear(None, .3)
             self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
+            if not self.dead:
+                SM.chill(self, mon)
             if not self.dead and mon in self.map.mons:
                 BH.on_hit(self, mon, dmg)
             if th and not self.dead and mon in self.map.mons:
@@ -2188,8 +2199,9 @@ class Game:
             if mon.effects:
                 for k in list(mon.effects):
                     t, v = mon.effects[k]
-                    if k in ('burn', 'bleed', 'poison') and v:
-                        col = {'burn': (255, 140, 60), 'bleed': (220, 60, 60), 'poison': (143, 220, 90)}[k]
+                    if k in ('burn', 'bleed', 'poison', 'swarm') and v:
+                        col = {'burn': (255, 140, 60), 'bleed': (220, 60, 60), 'poison': (143, 220, 90),
+                               'swarm': (210, 200, 100)}[k]
                         mon.hp -= v
                         self.num(mon.x, mon.y, str(v), col)
                         if mon.hp <= 0:
@@ -2217,14 +2229,19 @@ class Game:
                         AI.on_wake(self, mon)
                     else:
                         continue
-            if d['slow'] and self.turn % 2 == 0:
+            if (d['slow'] or 'slow' in mon.effects) and self.turn % 2 == 0:
                 continue
+            if 'fear' in mon.effects and self.visible(mon.x, mon.y):
+                AI.step_away(self, mon)                 # dread, or the light of the dawn on the dead: it runs
+                continue
+            ox_, oy_ = mon.x, mon.y
             acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Fast' in mon.mods else 0)
             if BH.has(self, 'slowed') and self.turn % 2 == 0:
                 acts += 1
             while acts > 0 and not self.dead and mon in m.mons and self.cur == key:
                 acts -= 1
                 self.mon_turn(mon, df)
+            SM.after_move(self, mon, ox_, oy_)
 
     def end_turn(self, cost, quiet=False):
         p = self.player
@@ -2301,6 +2318,8 @@ class Game:
             TW.live(self, self.map)
         if self.map.kind != 'over':
             self.monsters_act()
+            if not self.dead and self.map.kind != 'town':
+                SM.tick(self)
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)
         elif self.cur == 'over':

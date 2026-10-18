@@ -22,12 +22,16 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
 | **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
 | **Built: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft is martial (and Charge is a true weapon strike); a third orb on the panel, LIFE, STAMINA and MANA always in sight |
-| **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
+| **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
+
+**Left of the big build (paused 18 October 2026 after the magic schools, at Nilio's word):** in this order,
+spell effects, then weapons, then round 6 (Nilio's go for the whole plan covers it). Their specs are below; nothing
+of them is built yet.
 
 ---
 
@@ -212,6 +216,26 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   plate, not at all while starving (food under 100). Charge is a weapon strike (200% + rank) instead of a 0-damage
   spell. The panel shows three globes side by side (the ornament went); the skill bar shows `st` or `mp`. Gnomes'
   cheaper skills apply to mana only.
+- **Magic schools** (`skills.py`, `spellmap.py`). Eight tome skills for each school and Warcraft at ranks 0, 5, 12,
+  20, 30, 42, 55, 70 (the weapon disciplines keep five at 0, 8, 20, 35, 55): 72 instead of 45, each tome a little
+  rarer. The rules: burning foes take a quarter more fire (Searing Brand and Heart of the Sun double), Ring of Fire,
+  Meteor and Inferno leave burning ground, which can start a grass fire on a dry summer plain; Ice Wall, frost on
+  water as ice to walk on, Blizzard's snowdrifts that slow, Glacial Ward, Ice Tomb; a wet foe (in water, or out in
+  the rain) takes a quarter more lightning and the arc jumps once more and further; Gust, Ball Lightning that rolls on
+  by itself, Tempest; every hurting restoration spell does at least double to the undead, Ward, Turn Undead, Martyr's
+  Grace; shadow from rank 30 costs life (Dread, Plague that leaps on death, Soul Harvest, Morrak's Bargain at a
+  quarter of your life) and is the only school that steals life; corpses `%` lie where the fallen fell (the last
+  twelve) and Bone Shield, Raise Skeleton, Grave Mist, Bone Golem and Army of the Dead use them, Bone Prison walls a
+  foe in; Grasping Roots and Bramble Patch as tiles, Swarm, Awaken the Wood, nature a quarter stronger in forest and
+  grass and weaker in desert, on ice and underground; Tame is a tome (rank 5), Sic 'Em, Bond of Blood, Spirit of the
+  Pack, most beastcraft needs the beast beside you; Warcraft Brace, Rally, Unbroken. Guilds: Bone Golem replaces Bone
+  Armour, Entangle leaves roots, Spirit Totem is a tile, Hallowed Ground makes tiles the undead cannot enter, Pact of
+  Blood and Morrak's Hand cost life, Pack Fury at guild rank 1, Packmaster at 4 (two beasts, both on the company
+  screen and the panel), Spellblade and Crusade cost stamina and mana, Lichcraft mana and life. Ten new tiles
+  (burning ground, ice wall, spell ice, grasping roots, bramble patch, bone wall, hallowed ground, spirit totem, ball
+  lightning, snowdrift); a foe standing in one says so under IN SIGHT. Areas already follow the spell-effects rule
+  (radius 1 up to rank 30, 2 from 42, 3 only for Morrak's Bargain and Army of the Dead). Changed: Hallowed Ground has
+  radius 3 instead of 4 (the effects rule allows no more than 3); Mark of Doom (was Mark of Death) moved to shadow.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -816,7 +840,7 @@ Warcraft counts as magic. Fighting skills get their own resource: stamina.
 - **Save data** changes shape (a stamina value on the player): bump `SAVE_VERSION`.
 - Full list of schools, skills and guild techniques as they stand: project files `magie/scholen.md`.
 
-## Magic schools with a character of their own (approved, not built)
+## Magic schools with a character of their own (built 18 October 2026; the spec)
 
 Approved by Nilio on 17 October 2026, together with stamina above. Today almost every school runs bolt, curse or
 buff, area, bigger area. Each school gets one role and one rule of its own that shows on the map, and **eight tome

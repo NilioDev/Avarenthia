@@ -9,7 +9,8 @@ from .canvas import mix, scale
 from .look import _h
 
 WATERS = (D.WATER, D.SHALLOW, D.RIVER)
-MOVING = {D.FIREPIT, D.MOLTEN, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP}
+MOVING = {D.FIREPIT, D.MOLTEN, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP,
+          D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM}
 RISE_EVERY = 25           # about one water cell in this many along a shore has fish rising, a new set each day
 
 
@@ -83,6 +84,16 @@ def cell(m, i, x, y, look, t, night, day):
     """The look of cell i at time t, or None when it does not move now."""
     ch, fg, bg = look
     tt = m.t[i]
+    if tt == D.BURNING:                                     # burning ground: low flames that lick and flicker
+        f = flame(t * 1.3, x, y)
+        return ('^' if f > .82 else '*' if f > .74 else ','), mix(scale(fg, f), (255, 220, 120), max(0.0, f - .9) * 3), \
+            scale(bg, .7 + .4 * (f - .7))
+    if tt == D.BALL:                                        # ball lightning crackles
+        k = .5 + .5 * math.sin(t * 17 + x * 3.1)
+        return ('¤' if k > .3 else '○'), mix(fg, (255, 255, 255), k * .6), mix(bg, (120, 120, 30), k * .5)
+    if tt in (D.HALLOWED, D.SPIRITTOTEM):                   # a soft light that breathes
+        k = .5 + .5 * math.sin(t * 1.6 + (x + y) * .4)
+        return ch, mix(fg, (255, 255, 255), k * .3), scale(bg, .85 + .25 * k)
     if tt == D.FIREPIT:
         f = flame(t, x, y)
         return ch, mix(scale(fg, f), (255, 220, 120), max(0.0, f - .9) * 3), scale(bg, .8 + .3 * (f - .7))

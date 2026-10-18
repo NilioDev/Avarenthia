@@ -145,6 +145,27 @@ def ch_hero(g):
         ('p', 'You start with none. Learn them from tomes, the sign {≡}, found on monsters, in ruins and at standing '
               'stones, or bought from peddlers and city outfitters. Disciplines grow as you use them, and decide which '
               'tomes you can understand. You carry six skills on your bar; change them in a town with [z].'),
+        ('p', 'A weapon discipline has five tome skills, opening at ranks 0, 8, 20, 35 and 55. Each school of magic, '
+              'and Warcraft, has eight, at ranks 0, 5, 12, 20, 30, 42, 55 and 70. Six places for so many: choose.'),
+        ('h', 'The schools'),
+        ('p', 'Each school has a rule of its own, and most of them show on the map.'),
+        ('l', ['Fire: the hardest blows on one foe. The burning take more fire, and fire leaves burning ground; in '
+               'a dry summer it can set the grass of the plain alight.',
+               'Frost: walls of ice across a corridor, ice on water to walk over, snow that slows. They melt again.',
+               'Storm: crowds. Water carries lightning: a foe in water or out in the rain takes more, and the arc '
+               'leaps further from it. Ball Lightning rolls on by itself.',
+               'Restoration: keeps you and your company whole. What it hurts, it hurts twice as hard if it is undead.',
+               'Shadow: curses, and a price. From rank 30 Morrak takes life as well as mana. Shadow alone steals life '
+               'back.',
+               'Necromancy: the fallen leave a corpse, the sign {%}, where they died. The stronger spells use '
+               'corpses up: to rise and fight for you, to shield you, to breathe out poison. Walls of bone hold a '
+               'foe fast.',
+               'Nature: roots that hold and brambles that cut grow on the ground. A quarter stronger in forest and '
+               'grass, a quarter weaker in the desert, on ice and under the ground.',
+               'Beastcraft: almost everything goes through your beast; Tame is a tome of its own.',
+               'Warcraft: shouts and stances, with any weapon in hand.']),
+        ('p', 'What a spell leaves on the ground is named when you look with [o], and a foe standing in it says so '
+              'under IN SIGHT.'),
         ('h', 'Life skills'),
         ('p', 'They grow by doing; [C] shows them all.'),
         ('l', ['Fishing: by water, with a pole: [a]. Strike when the float plunges, then keep the fish in the green '
@@ -457,10 +478,11 @@ def ch_company(g):
               'defender, warrior, archer, healer and mage. They carry four pieces of gear that wear like yours, and '
               'they grow with you.'),
         ('h', 'A beast'),
-        ('p', 'A beastmaster of the Houndwardens\' Lodge can tame a beast: a wolf, a bear, a panther or a hawk. It '
-              'takes no wage and wears no gear, but it eats meat every day.'),
+        ('p', 'Learn Tame from a Beastcraft tome and you can tame a beast: a wolf, a bear, a panther or a hawk, beside '
+              'you and best when it is hurt. It takes no wage and wears no gear, but it eats meat every day. One '
+              'beast at a time; a Packmaster of the Houndwardens\' Lodge keeps two.'),
         ('h', 'Orders'),
-        ('p', '[h] opens your company. The keys [1] to [5] give an order to one of them or to both: follow, defend me, '
+        ('p', '[h] opens your company. The keys [1] to [5] give an order to one of them or to all: follow, defend me, '
               'attack my target, hold position, stay out of it.'),
         ('h', 'Who gets hit'),
         ('p', 'Monsters choose whom they go for: who hurt them lately, who stands in their way, who looks soft. A beast '
@@ -476,6 +498,8 @@ def ch_guilds(g):
               'quartermaster, sleep in the hall for little or nothing, have their gear mended cheaper, and are paid '
               'better the higher they rise. Only a guild master teaches the advanced techniques, and only to those '
               'who have earned them.'),
+        ('p', 'Who serves two guilds may learn a technique of both. One that mixes weapon and spell costs stamina and '
+              'mana alike; the Hollow Coven\'s techniques cost life as well.'),
         ('p', 'Standing with a guild fades slowly if you do nothing for it, but never below your rank.'),
         ('p', 'Some guilds hang out no sign. Listen for rumours, and watch for chalk marks on the walls.'),
     ]

@@ -4,6 +4,7 @@ import math
 import random
 import time
 
+from . import spellmap as SMAP
 from . import anim as AN
 from . import nature as NT
 from . import zones as ZN
@@ -510,8 +511,11 @@ def danger_blocks(dg):
 def intent(g, o):
     """What an enemy you can see is up to, in a word or two (who it goes for stays hidden, see mercs.py)."""
     p = g.player
-    if getattr(o, 'fleeing', False):
+    if getattr(o, 'fleeing', False) or 'fear' in o.effects:
         return 'fleeing', BAD
+    spell = SMAP.under_spell(g, o)
+    if spell:
+        return spell, INFO
     if o.hold or getattr(o, 'frozen', False):
         return 'stunned', INFO
     if not o.awake:
@@ -621,6 +625,7 @@ class GameScreen(Screen):
             sx, sy = random.choice([(-1, 0), (1, 0), (0, -1), (0, 1)])
         self.origin = (ox, oy)
         mons = {(o.x, o.y): o for o in m.mons}
+        dead = SMAP.corpse_at(m) if getattr(m, 'slain', None) else {}
         items = {}
         for it in m.items:
             items[(it.x, it.y)] = it
@@ -735,6 +740,8 @@ class GameScreen(Screen):
                         d = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
                         k = max(0.0, 1 - d / 8)
                         bg = (13 + int(34 * k), 11 + int(20 * k), 10 + int(8 * k))
+                    if dead and (mx, my) in dead and D.TILES[m.t[i]].walk:
+                        ch, fg = '%', mix(D.hexrgb(D.MONSTERS[dead[(mx, my)]]['fg']), (120, 104, 88), .55)
                     it = items.get((mx, my))
                     if it:
                         ch, fg = it.glyph(), it.color()
@@ -1105,7 +1112,19 @@ class GameScreen(Screen):
         for i in range(bw):
             cv.put(x + 3 + i, 15, '█' if i < filled else '░', GOLD if i < filled else LINE, PANEL)
         from . import mercs as MC
-        for row, mc in ((16, MC.get(g, 'merc')), (17, MC.get(g, 'beast'))):
+        pair = [b_ for b_ in (MC.get(g, 'beast'), MC.get(g, 'beast2')) if b_]
+        if len(pair) == 2:                             # a Packmaster's two beasts share a line: a name and a bar each
+            half = PW // 2
+            for k_, mc in enumerate(pair):
+                xx = x + k_ * half
+                cv.text(xx, 17, mc.name[:5], (240, 224, 176) if mc.state == 'alive' else DIM, PANEL)
+                mx_ = MC.stats(g, mc)['max_hp']
+                bw2 = half - 7
+                fill = int(bw2 * max(0, min(1, mc.hp / max(1, mx_)))) if mc.state == 'alive' else 0
+                col = BAD if mc.hp < mx_ * .3 else (200, 180, 90) if mc.hp < mx_ * .6 else GOOD
+                for i in range(bw2):
+                    cv.put(xx + 6 + i, 17, '█' if i < fill else '░', col if i < fill else LINE, PANEL)
+        for row, mc in ((16, MC.get(g, 'merc')), (17, pair[0] if len(pair) == 1 else None)):
             if not mc:                                 # the hireling and the beast: a name, a small bar, the orders
                 continue
             first = mc.name.split()[0]
@@ -4424,9 +4443,9 @@ class CompanyScreen(Modal):
 
     def choices(self):
         MC = self.MC
-        have = [s_ for s_ in ('merc', 'beast') if MC.get(self.game, s_)]
+        have = [s_ for s_ in MC.COMPANY if MC.get(self.game, s_)]
         alive = [s_ for s_ in have if MC.get(self.game, s_).state == 'alive']
-        return (['both'] if len(alive) == 2 else []) + have
+        return (['both'] if len(alive) >= 2 else []) + have
 
     def picked(self):
         """The companions an order goes to."""
@@ -4434,7 +4453,7 @@ class CompanyScreen(Modal):
         if not ch:
             return []
         k = ch[min(self.who, len(ch) - 1)]
-        mcs = [self.MC.get(self.game, s_) for s_ in (('merc', 'beast') if k == 'both' else (k,))]
+        mcs = [self.MC.get(self.game, s_) for s_ in (self.MC.COMPANY if k == 'both' else (k,))]
         return [mc for mc in mcs if mc and mc.state == 'alive']
 
     def bar(self, cv, x, y, w, frac, col):
@@ -4480,22 +4499,26 @@ class CompanyScreen(Modal):
             self.app.pop()
             return
         self.who = min(self.who, len(ch) - 1)
-        bw, bh = 96, 34
+        two = MC.get(g, 'beast2') is not None              # a Packmaster's second beast: its card under the first
+        bw, bh = 96, 34 + (9 if two else 0)
         x, y = self.box(cv, bw, bh, ' Your company ')
         xx = x + 3
+        alive = sum(1 for s_ in MC.COMPANY if MC.get(g, s_) and MC.get(g, s_).state == 'alive')
         for k, s_ in enumerate(ch):
             on = k == self.who
-            lab = ' Both ' if s_ == 'both' else f' {MC.get(g, s_).name} '
+            lab = (' All ' if alive > 2 else ' Both ') if s_ == 'both' else f' {MC.get(g, s_).name} '
             cv.text(xx, y + 2, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
             xx += len(lab) + 1
         mcs = [MC.get(g, s_) for s_ in ('merc', 'beast') if MC.get(g, s_)]
         for c, mc in enumerate(mcs):
             self.card(cv, x + 3 + c * 47, y + 4, mc)
-        if len(mcs) == 2:
-            for j in range(y + 4, y + 12):
+        if two:
+            self.card(cv, x + 50, y + (13 if MC.get(g, 'merc') else 4), MC.get(g, 'beast2'))
+        if len(mcs) == 2 or two:
+            for j in range(y + 4, y + (21 if two else 12)):
                 cv.put(x + 48, j, '│', LINE, PANEL)
         merc = MC.get(g, 'merc')
-        gy = y + 13
+        gy = y + 13 + (9 if two else 0)
         if merc and merc.state == 'alive':
             cv.text(x + 3, gy, f"{merc.name.split()[0].upper()}'S GEAR", DIM, PANEL)
             for i, slot in enumerate(MC.SLOTS):

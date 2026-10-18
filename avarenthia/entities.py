@@ -307,8 +307,8 @@ class Item:
         if self.k == 'scroll':
             return 20
         if self.k == 'tome':
-            from .skills import SKILLS, UNLOCKS
-            return 90 + UNLOCKS.index(SKILLS[self.t].unlock) * 110
+            from .skills import SKILLS
+            return 90 + round(SKILLS[self.t].step * 110)
         if self.k == 'tool':
             return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4}.get(self.t, 8)
         if self.k == 'food':
@@ -671,11 +671,11 @@ def random_gear(game, ilvl, boost=1, bases=None, src=None):
 
 def make_tome(game, lvl, line=None):
     """A skill tome suited to monsters of this level, preferring skills you do not know yet."""
-    from .skills import SKILL_LIST, UNLOCKS
+    from .skills import SKILL_LIST
     top = min(4, max(0, lvl // 4))
-    cands = [s for s in SKILL_LIST if UNLOCKS.index(s.unlock) <= top and (line is None or s.line == line)]
+    cands = [s for s in SKILL_LIST if s.step <= top and (line is None or s.line == line)]
     known = set(game.player.known)
-    wts = [(4 if s.id not in known else 1) * (3 if UNLOCKS.index(s.unlock) == 0 else 1) for s in cands]
+    wts = [(4 if s.id not in known else 1) * (3 if s.unlock == 0 else 1) for s in cands]
     sk = random.choices(cands, wts)[0]
     it = Item(game.new_id(), 'tome', sk.id)
     it.name = f'Tome of {sk.name}'

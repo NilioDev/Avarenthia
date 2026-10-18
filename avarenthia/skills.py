@@ -1,6 +1,12 @@
 """Classless skills. Fourteen disciplines grow by use; higher ranks unlock new skills in that
 discipline. You carry six skills on your bar and can only change them in a town.
 
+Each school of magic (and Warcraft) has eight tome skills, opening at ranks 0, 5, 12, 20, 30, 42, 55 and 70, and a rule
+of its own that shows on the map (spellmap.py): fire burns the ground and burns hotter on the burning, frost makes ice,
+water carries lightning, restoration sears the dead, shadow takes life and steals it back, the dead are the
+necromancer's to raise, nature is strong where things grow, and a beastmaster works through the beast. The weapon
+disciplines keep five tome skills, at 0, 8, 20, 35 and 55.
+
 Two pools pay for them: the weapon skills and Warcraft (martial, any weapon, grows on Strength) cost stamina,
 the spells cost mana."""
 import random
@@ -8,7 +14,8 @@ import random
 from .worldgen import cheb, free_around
 
 BAR_SIZE = 6
-UNLOCKS = (0, 8, 20, 35, 55)
+UNLOCKS = (0, 8, 20, 35, 55)                 # the weapon disciplines' tome skills, and the guilds' techniques
+TOME = (0, 5, 12, 20, 30, 42, 55, 70)        # the schools of magic and Warcraft: eight tome skills each
 
 DISCIPLINES = {
     'unarmed': dict(name='Unarmed', kind='weapon', weapon='empty hands'),
@@ -43,7 +50,8 @@ for _k, _b in _D.BASES.items():          # exceptional and elite grades fight li
 
 class Skill:
     def __init__(self, sid, name, line, tier, cost, cd, mode, **kw):
-        self.id, self.name, self.line, self.unlock = sid, name, line, UNLOCKS[tier]
+        self.id, self.name, self.line, self.tier = sid, name, line, tier
+        self.unlock, self.step = UNLOCKS[min(4, tier)], tier          # set again below for the schools' tomes
         self.cost, self.cd, self.mode = cost, cd, mode
         self.dtype = kw.get('dtype', 'weapon' if DISCIPLINES[line]['kind'] in ('weapon', 'martial') else 'spell')
         self.pct, self.pct_r = kw.get('pct', 100), kw.get('pct_r', 1.5)
@@ -70,6 +78,15 @@ class Skill:
         self.shape = kw.get('shape')                 # (name, damage %, less damage taken %, turns)
         self.life_cost = kw.get('life_cost', 0)      # paid in life, on top of the mana
         self.fury = kw.get('fury', 0)                # your beast fights harder for this many turns
+        self.buff2 = kw.get('buff2')                 # a second state that comes with the buff (Frost Armor's chill)
+        self.field = kw.get('field')                 # (tile, turns): what it leaves on the ground (spellmap.py)
+        self.corpses = kw.get('corpses', 0)          # corpses near you it uses up
+        self.need_beast = kw.get('need_beast', False)
+        self.bonus_burning = kw.get('bonus_burning', 1)
+        self.only_undead = kw.get('only_undead', False)
+        self.life_frac = kw.get('life_frac', 0)      # paid in a share of the life you have
+        self.both = kw.get('both', False)            # costs stamina and mana alike (martial and magic mixed)
+        self.passive = kw.get('passive', False)      # a way of doing things, not a skill for the bar
         self.guild = False
 
 
@@ -107,72 +124,105 @@ SKILL_LIST = [
     S('fire_arrow', 'Burning Arrow', 'archery', 2, 5, 5, 'shot', pct=120, fx={'burn': (4, .3, 5)}, color=FIRE, glyph='-'),
     S('volley', 'Volley', 'archery', 3, 8, 10, 'volley', pct=80, pct_r=1.2, radius=7, color=ARROW, glyph='-'),
     S('pierce', 'Piercing Arrow', 'archery', 4, 8, 9, 'pierce', pct=220, pct_r=2.5, color=ARROW, glyph='='),
-    # fire
-    S('firebolt', 'Firebolt', 'fire', 0, 4, 1, 'bolt', lo=5, hi=9, r=.45, color=FIRE),
+    # fire: the strongest against one; burning enemies take more fire, and fire leaves burning ground
+    S('firebolt', 'Firebolt', 'fire', 0, 4, 1, 'bolt', lo=5, hi=9, r=.45, fx={'ignite': (.2, 3, .25, 4)}, color=FIRE),
     S('immolate', 'Immolate', 'fire', 1, 5, 6, 'curse', fx={'burn': (4, .35, 6)}, color=FIRE),
-    S('fireball', 'Fireball', 'fire', 2, 9, 5, 'bolt', lo=9, hi=15, r=.6, splash=1, color=FIRE),
-    S('flame_ring', 'Ring of Fire', 'fire', 3, 10, 10, 'around', lo=8, hi=13, r=.5, radius=2, fx={'burn': (3, .25, 4)}, color=FIRE),
-    S('meteor', 'Meteor', 'fire', 4, 16, 16, 'bolt', lo=22, hi=34, r=1, splash=2, color=FIRE),
-    # frost
-    S('frost_shard', 'Frost Shard', 'frost', 0, 4, 1, 'bolt', lo=4, hi=7, r=.4, fx={'freeze_chance': .25}, color=ICE),
-    S('frost_armor', 'Frost Armor', 'frost', 1, 8, 40, 'self', buff=('def', 20, 1.2, 40), color=ICE),
-    S('nova', 'Frost Nova', 'frost', 2, 9, 9, 'around', lo=4, hi=8, r=.4, radius=2, fx={'freeze': 3}, color=ICE),
-    S('ice_lance', 'Ice Lance', 'frost', 3, 8, 4, 'bolt', lo=10, hi=16, r=.6, bonus_frozen=2.5, color=ICE),
-    S('blizzard', 'Blizzard', 'frost', 4, 15, 15, 'target_area', lo=10, hi=18, r=.6, radius=2, fx={'freeze': 2}, color=ICE),
-    # storm
+    S('searing_brand', 'Searing Brand', 'fire', 2, 7, 5, 'bolt', lo=10, hi=16, r=.6, range=6, bonus_burning=2, color=FIRE),
+    S('fireball', 'Fireball', 'fire', 3, 9, 5, 'bolt', lo=9, hi=15, r=.6, splash=1, fx={'burn': (3, .25, 4)}, color=FIRE),
+    S('flame_ring', 'Ring of Fire', 'fire', 4, 10, 10, 'around', lo=8, hi=13, r=.5, radius=1, field=(_D.BURNING, 6),
+      fx={'burn': (3, .25, 4)}, color=FIRE),
+    S('pyre', 'Pyre', 'fire', 5, 11, 8, 'pyre', lo=14, hi=22, r=.7, radius=2, color=FIRE),
+    S('meteor', 'Meteor', 'fire', 6, 16, 16, 'bolt', lo=22, hi=34, r=1, splash=2, field=(_D.BURNING, 6), color=FIRE),
+    S('heart_of_the_sun', 'Heart of the Sun', 'fire', 7, 22, 20, 'bolt', lo=40, hi=60, r=1.4, bonus_burning=2, color=(255, 214, 90)),
+    # frost: defence and slowing; ice on the map
+    S('frost_shard', 'Frost Shard', 'frost', 0, 4, 1, 'bolt', lo=4, hi=7, r=.4, fx={'slow': 3, 'freeze_chance': .2}, color=ICE),
+    S('frost_armor', 'Frost Armor', 'frost', 1, 8, 40, 'self', buff=('def', 20, 1.2, 40), buff2=('chill', 1, 0, 40), color=ICE),
+    S('ice_wall', 'Ice Wall', 'frost', 2, 7, 14, 'wall', color=ICE, glyph='█'),
+    S('nova', 'Frost Nova', 'frost', 3, 9, 9, 'around', lo=4, hi=8, r=.4, radius=1, fx={'freeze': 3}, color=ICE),
+    S('ice_lance', 'Ice Lance', 'frost', 4, 8, 4, 'bolt', lo=10, hi=16, r=.6, bonus_frozen=2.5, color=ICE),
+    S('glacial_ward', 'Glacial Ward', 'frost', 5, 10, 30, 'self', buff=('ward', 30, 1.5, 30), color=ICE, glyph='#'),
+    S('blizzard', 'Blizzard', 'frost', 6, 15, 15, 'target_area', lo=10, hi=18, r=.6, radius=2, fx={'slow': 4},
+      field=(_D.DRIFT, 12), color=ICE),
+    S('ice_tomb', 'Ice Tomb', 'frost', 7, 14, 60, 'tomb', color=ICE, glyph='█'),
+    # storm: crowds; water conducts
     S('spark', 'Spark', 'storm', 0, 3, 1, 'bolt', lo=1, hi=13, r=.5, color=STORM, glyph='~'),
-    S('static', 'Static Field', 'storm', 1, 6, 6, 'around', lo=4, hi=9, r=.35, radius=2, color=STORM, glyph='~'),
-    S('chain', 'Chain Lightning', 'storm', 2, 10, 6, 'chain', lo=7, hi=14, r=.55, jumps=3, color=STORM, glyph='~'),
-    S('thunderclap', 'Thunderclap', 'storm', 3, 7, 9, 'adjacent', dtype='spell', lo=9, hi=14, r=.5, fx={'stun': 2}, color=STORM, glyph='!'),
-    S('storm_call', 'Call the Storm', 'storm', 4, 16, 16, 'storm', lo=12, hi=22, r=.8, radius=8, jumps=6, color=STORM, glyph='~'),
-    # restoration
+    S('static', 'Static Field', 'storm', 1, 6, 6, 'around', lo=4, hi=9, r=.35, radius=1, color=STORM, glyph='~'),
+    S('gust', 'Gust', 'storm', 2, 6, 8, 'gust', lo=2, hi=5, r=.2, radius=2, color=(220, 230, 240), glyph='~'),
+    S('chain', 'Chain Lightning', 'storm', 3, 10, 6, 'chain', lo=7, hi=14, r=.55, jumps=3, color=STORM, glyph='~'),
+    S('thunderclap', 'Thunderclap', 'storm', 4, 7, 9, 'adjacent', dtype='spell', lo=9, hi=14, r=.5, fx={'stun': 2}, color=STORM, glyph='!'),
+    S('ball_lightning', 'Ball Lightning', 'storm', 5, 12, 14, 'ball', lo=6, hi=11, r=.4, color=STORM, glyph='¤'),
+    S('storm_call', 'Call the Storm', 'storm', 6, 16, 16, 'storm', lo=12, hi=22, r=.8, radius=8, jumps=6, color=STORM, glyph='~'),
+    S('tempest', 'Tempest', 'storm', 7, 20, 40, 'tempest', lo=14, hi=24, r=.8, color=(255, 255, 255), glyph='~'),
+    # restoration: keep you and your company whole; light against the dead
     S('mend', 'Mend', 'restoration', 0, 5, 3, 'self', heal=(10, .9), color=HOLY, glyph='+'),
-    S('renewal', 'Renewal', 'restoration', 1, 6, 15, 'self', buff=('regen', 2, .08, 15), color=HOLY, glyph='+'),
-    S('purify', 'Purify', 'restoration', 2, 6, 10, 'self', heal=(15, .8), cure=True, color=HOLY, glyph='+'),
-    S('sanctuary', 'Sanctuary', 'restoration', 3, 10, 30, 'self', buff=('dr', 20, .3, 12), color=HOLY, glyph='+'),
-    S('divine', 'Divine Light', 'restoration', 4, 14, 25, 'self', heal=(40, 2.2), cure=True, color=HOLY, glyph='+'),
-    # shadow
+    S('ward', 'Ward', 'restoration', 1, 6, 20, 'self', buff=('ward', 15, 1.0, 25), color=HOLY, glyph='#'),
+    S('renewal', 'Renewal', 'restoration', 2, 6, 15, 'self', buff=('regen', 2, .08, 15), color=HOLY, glyph='+'),
+    S('purify', 'Purify', 'restoration', 3, 6, 10, 'self', heal=(15, .8), cure=True, color=HOLY, glyph='+'),
+    S('turn_undead', 'Turn Undead', 'restoration', 4, 8, 12, 'around', lo=8, hi=14, r=.5, radius=1, only_undead=True,
+      fx={'fear': 5}, color=(255, 240, 200), glyph='+'),
+    S('sanctuary', 'Sanctuary', 'restoration', 5, 10, 30, 'self', buff=('dr', 20, .3, 12), color=HOLY, glyph='+'),
+    S('divine', 'Divine Light', 'restoration', 6, 14, 25, 'self', heal=(40, 2.2), cure=True, party=True, color=HOLY, glyph='+'),
+    S('martyrs_grace', "Martyr's Grace", 'restoration', 7, 16, 80, 'self', buff=('martyr', 1, 0, 30), color=(255, 240, 200), glyph='+'),
+    # shadow: curses, and the price; from rank 30 Morrak takes life as well as mana, and only shadow steals it back
     S('drain', 'Life Drain', 'shadow', 0, 4, 2, 'bolt', lo=4, hi=8, r=.4, drain=.5, color=DARK),
     S('weakness', 'Curse of Weakness', 'shadow', 1, 5, 8, 'curse', fx={'weaken': 8}, color=DARK),
-    S('shadow_bolt', 'Shadow Bolt', 'shadow', 2, 8, 3, 'bolt', lo=10, hi=18, r=.65, color=DARK),
-    S('plague', 'Plague', 'shadow', 3, 10, 10, 'around', lo=2, hi=5, r=.2, radius=3, fx={'poison': (4, .3, 8)}, color=DARK),
-    S('soul_harvest', 'Soul Harvest', 'shadow', 4, 15, 16, 'around', lo=10, hi=16, r=.6, radius=3, drain=.35, color=DARK),
-    # warcraft
-    S('warcry', 'War Cry', 'warcraft', 0, 5, 12, 'around', dtype='none', radius=3, fx={'stun': 1}, color=WAR, glyph='!'),
-    S('rage', 'Battle Rage', 'warcraft', 1, 6, 25, 'self', buff=('dmg', 20, .5, 12), color=WAR, glyph='!'),
-    S('second_wind', 'Second Wind', 'warcraft', 2, 6, 30, 'self', heal=(20, 1.5), cure=True, color=WAR, glyph='+'),
-    S('iron_skin', 'Iron Skin', 'warcraft', 3, 8, 30, 'self', buff=('dr', 25, .3, 10), color=WAR, glyph='#'),
-    S('charge', 'Charge', 'warcraft', 4, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
-    # nature
+    S('doom_mark', 'Mark of Doom', 'shadow', 2, 5, 8, 'curse', fx={'vuln': 10}, color=DARK),
+    S('shadow_bolt', 'Shadow Bolt', 'shadow', 3, 8, 3, 'bolt', lo=10, hi=18, r=.65, color=DARK),
+    S('dread', 'Dread', 'shadow', 4, 7, 12, 'around', dtype='none', radius=1, fx={'fear': 4}, life_cost=4, color=DARK, glyph='!'),
+    S('plague', 'Plague', 'shadow', 5, 10, 10, 'around', lo=2, hi=5, r=.2, radius=2, fx={'poison': (4, .3, 8), 'plague': 8},
+      life_cost=6, color=DARK),
+    S('soul_harvest', 'Soul Harvest', 'shadow', 6, 15, 16, 'around', lo=10, hi=16, r=.6, radius=2, drain=.35, life_cost=10, color=DARK),
+    S('morraks_bargain', "Morrak's Bargain", 'shadow', 7, 20, 30, 'around', lo=30, hi=50, r=1.2, radius=3, life_frac=.25,
+      color=(200, 40, 60)),
+    # necromancy: the dead fight for you; corpses are the resource
+    S('grave_touch', 'Grave Touch', 'necromancy', 0, 4, 2, 'bolt', lo=4, hi=7, r=.4, range=4, fx={'slow': 3}, color=BONE),
+    S('bone_spear', 'Bone Spear', 'necromancy', 1, 6, 4, 'pierce', lo=6, hi=11, r=.5, color=BONE, glyph='='),
+    S('bone_shield', 'Bone Shield', 'necromancy', 2, 6, 25, 'self', buff=('dr', 20, .3, 20), corpses=1, color=BONE, glyph='#'),
+    S('raise_skeleton', 'Raise Skeleton', 'necromancy', 3, 10, 25, 'summon', summon=('skeleton', 1, 30), corpses=1, color=BONE, glyph='z'),
+    S('grave_mist', 'Grave Mist', 'necromancy', 4, 8, 8, 'mist', lo=3, hi=6, r=.25, fx={'poison': (3, .25, 6)}, color=(160, 200, 120)),
+    S('bone_prison', 'Bone Prison', 'necromancy', 5, 10, 14, 'prison', color=BONE, glyph='#'),
+    S('withering', 'Withering', 'necromancy', 6, 14, 14, 'around', lo=8, hi=14, r=.5, radius=2, fx={'weaken': 6}, color=BONE),
+    S('army_of_the_dead', 'Army of the Dead', 'necromancy', 7, 20, 50, 'army', summon=('skeleton', 6, 25), radius=3, color=BONE, glyph='z'),
+    # nature: the ground; stronger in forest and grass, weaker in desert, on ice and under the ground
     S('thorn_lash', 'Thorn Lash', 'nature', 0, 4, 1, 'bolt', lo=4, hi=8, r=.4, fx={'bleed': (2, .15, 4)}, color=LEAF, glyph='~'),
     S('barkskin', 'Barkskin', 'nature', 1, 6, 30, 'self', buff=('def', 25, 1.3, 30), color=LEAF, glyph='#'),
-    S('grasping_roots', 'Grasping Roots', 'nature', 2, 7, 10, 'target_area', dtype='none', radius=1, fx={'stun': 3},
-      color=LEAF, glyph='"'),
-    S('healing_rain', 'Healing Rain', 'nature', 3, 10, 20, 'self', heal=(18, 1.2), buff=('regen', 2, .06, 12), party=True,
+    S('grasping_roots', 'Grasping Roots', 'nature', 2, 7, 10, 'target_area', dtype='none', radius=1, fx={'stun': 2},
+      field=(_D.ROOTS, 8), color=LEAF, glyph='"'),
+    S('bramble_patch', 'Bramble Patch', 'nature', 3, 8, 12, 'target_area', dtype='none', radius=1, field=(_D.BRAMBLE, 14),
+      color=(154, 176, 72), glyph='♠'),
+    S('healing_rain', 'Healing Rain', 'nature', 4, 10, 20, 'self', heal=(18, 1.2), buff=('regen', 2, .06, 12), party=True,
       color=(130, 200, 255), glyph='+'),
-    S('wrath_of_oak', 'Wrath of the Oak', 'nature', 4, 14, 14, 'around', lo=12, hi=20, r=.6, radius=2, fx={'stun': 2},
+    S('swarm', 'Swarm', 'nature', 5, 9, 10, 'curse', fx={'swarm': (4, .35, 8)}, color=(200, 190, 90), glyph='∙'),
+    S('wrath_of_oak', 'Wrath of the Oak', 'nature', 6, 14, 14, 'around', lo=12, hi=20, r=.6, radius=2, fx={'stun': 2},
       color=LEAF, glyph='♣'),
-    # necromancy
-    S('grave_touch', 'Grave Touch', 'necromancy', 0, 4, 2, 'bolt', lo=4, hi=7, r=.4, drain=.3, range=4, color=BONE),
-    S('bone_spear', 'Bone Spear', 'necromancy', 1, 6, 4, 'pierce', lo=6, hi=11, r=.5, color=BONE, glyph='='),
-    S('death_mark', 'Mark of Death', 'necromancy', 2, 5, 8, 'curse', fx={'vuln': 10}, color=BONE),
-    S('raise_skeleton', 'Raise Skeleton', 'necromancy', 3, 10, 25, 'summon', summon=('skeleton', 1, 30), color=BONE, glyph='z'),
-    S('withering', 'Withering', 'necromancy', 4, 14, 14, 'around', lo=8, hi=14, r=.5, radius=3, drain=.3,
-      fx={'weaken': 6}, color=BONE),
-    # beastcraft
-    S('feral_howl', 'Feral Howl', 'beastcraft', 0, 4, 10, 'around', dtype='none', radius=2, fx={'weaken': 5}, color=BEAST, glyph='!'),
-    S('mend_beast', 'Lick the Wounds', 'beastcraft', 1, 5, 8, 'self', heal=(10, .8), party=True, color=BEAST, glyph='+'),
-    S('hawk_eye', 'Hawk Eye', 'beastcraft', 2, 5, 25, 'self', buff=('dmg', 15, .4, 15), fury=15, color=BEAST, glyph='!'),
-    S('call_wolf', 'Call a Wolf', 'beastcraft', 3, 10, 30, 'summon', summon=('wolf', 1, 30), color=BEAST, glyph='C'),
-    S('alpha_roar', 'Alpha Roar', 'beastcraft', 4, 12, 18, 'around', dtype='none', radius=3, fx={'stun': 2, 'weaken': 6},
-      fury=12, color=BEAST, glyph='!'),
+    S('awaken_the_wood', 'Awaken the Wood', 'nature', 7, 16, 50, 'awaken', color=LEAF, glyph='♠'),
+    # beastcraft: everything through your beast
+    S('feral_howl', 'Feral Howl', 'beastcraft', 0, 4, 10, 'around', dtype='none', radius=1, fx={'weaken': 5}, color=BEAST, glyph='!'),
+    S('tame', 'Tame', 'beastcraft', 1, 8, 20, 'tame', color=BEAST, glyph='♥'),
+    S('sic_em', "Sic 'Em", 'beastcraft', 2, 5, 8, 'sic', fx={'stun': 2}, need_beast=True, color=BEAST, glyph='!'),
+    S('mend_beast', 'Lick the Wounds', 'beastcraft', 3, 5, 8, 'self', heal=(10, .8), party=True, need_beast=True, color=BEAST, glyph='+'),
+    S('call_wolf', 'Call a Wolf', 'beastcraft', 4, 10, 30, 'summon', summon=('wolf', 1, 30), color=BEAST, glyph='C'),
+    S('bond_of_blood', 'Bond of Blood', 'beastcraft', 5, 8, 30, 'self', buff=('bond', 30, .2, 20), need_beast=True,
+      color=(200, 60, 60), glyph='♥'),
+    S('alpha_roar', 'Alpha Roar', 'beastcraft', 6, 12, 18, 'around', dtype='none', radius=2, fx={'stun': 2, 'weaken': 6},
+      fury=12, need_beast=True, color=BEAST, glyph='!'),
+    S('spirit_of_the_pack', 'Spirit of the Pack', 'beastcraft', 7, 14, 45, 'spirit', need_beast=True, color=(230, 200, 140), glyph='C'),
+    # warcraft (martial, stamina): shouts and stances, with any weapon in hand
+    S('warcry', 'War Cry', 'warcraft', 0, 5, 12, 'around', dtype='none', radius=1, fx={'stun': 1}, color=WAR, glyph='!'),
+    S('rage', 'Battle Rage', 'warcraft', 1, 6, 25, 'self', buff=('dmg', 20, .5, 12), color=WAR, glyph='!'),
+    S('brace', 'Brace', 'warcraft', 2, 5, 18, 'self', buff=('dr', 20, .25, 8), color=WAR, glyph='#'),
+    S('second_wind', 'Second Wind', 'warcraft', 3, 6, 30, 'self', heal=(20, 1.5), cure=True, color=WAR, glyph='+'),
+    S('iron_skin', 'Iron Skin', 'warcraft', 4, 8, 30, 'self', buff=('dr', 25, .3, 10), color=WAR, glyph='#'),
+    S('rally', 'Rally', 'warcraft', 5, 10, 35, 'self', heal=(15, 1.0), buff=('dmg', 15, .3, 12), party=True, fury=12, color=WAR, glyph='!'),
+    S('charge', 'Charge', 'warcraft', 6, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
+    S('unbroken', 'Unbroken', 'warcraft', 7, 10, 45, 'self', buff=('unbroken', 3, .05, 15), color=WAR, glyph='#'),
 ]
 # techniques taught only by guild masters (see guilds.py); they never turn up in tomes
 TECHNIQUES = [
     S('mage_armor', 'Mage Armor', 'frost', 1, 8, 30, 'self', buff=('dr', 15, .25, 20), color=ICE, flavor='Circle of Magi'),
     S('arcane_barrage', 'Arcane Barrage', 'storm', 2, 12, 6, 'chain', lo=9, hi=17, r=.6, jumps=4, color=STORM, glyph='~',
       flavor='Circle of Magi'),
-    S('inferno', 'Inferno', 'fire', 4, 18, 14, 'around', lo=16, hi=26, r=.8, radius=3, fx={'burn': (5, .4, 6)}, color=FIRE,
+    S('inferno', 'Inferno', 'fire', 4, 18, 14, 'around', lo=16, hi=26, r=.8, radius=2, fx={'burn': (5, .4, 6)}, field=(_D.BURNING, 6), color=FIRE,
       flavor='Circle of Magi'),
     S('shield_wall', 'Shield Wall', 'warcraft', 1, 6, 25, 'self', buff=('def', 40, 1.5, 15), color=WAR, glyph='#',
       flavor='Iron Company'),
@@ -182,7 +232,7 @@ TECHNIQUES = [
     S('smite', 'Smite', 'restoration', 1, 6, 3, 'bolt', lo=8, hi=14, r=.5, undead=2, color=HOLY, glyph='+', flavor='Order of Dawn'),
     S('holy_shield', 'Holy Shield', 'restoration', 2, 10, 30, 'self', buff=('dr', 30, .3, 12), color=HOLY, glyph='+',
       flavor='Order of Dawn'),
-    S('dawnbreak', 'Dawnbreak', 'restoration', 4, 16, 16, 'around', lo=14, hi=24, r=.7, radius=3, undead=2.5, color=HOLY, glyph='*',
+    S('dawnbreak', 'Dawnbreak', 'restoration', 4, 16, 16, 'around', lo=14, hi=24, r=.7, radius=2, undead=2.5, color=HOLY, glyph='*',
       flavor='Order of Dawn'),
     S('hunters_mark', "Hunter's Mark", 'archery', 1, 4, 6, 'shot', pct=160, pct_r=2, fx={'vuln': 8}, color=ARROW, glyph='-',
       flavor='Wardens of the Wild'),
@@ -197,36 +247,34 @@ TECHNIQUES = [
     S('deaths_kiss', "Death's Kiss", 'daggers', 4, 10, 16, 'melee', pct=380, pct_r=3, crit=True, execute=2.5, flavor="Thieves' Guild"),
     S('hellfire', 'Hellfire', 'shadow', 1, 7, 3, 'bolt', lo=10, hi=18, r=.6, drain=.25, splash=1, color=(220, 60, 120),
       flavor='Hollow Coven'),
-    S('pact_of_blood', 'Pact of Blood', 'shadow', 2, 4, 30, 'self', buff=('dmg', 40, .6, 15), color=(200, 40, 60), glyph='!',
+    S('pact_of_blood', 'Pact of Blood', 'shadow', 2, 4, 30, 'self', buff=('dmg', 40, .6, 15), life_cost=8, color=(200, 40, 60), glyph='!',
       flavor='Hollow Coven'),
-    S('morraks_hand', "Morrak's Hand", 'shadow', 4, 18, 16, 'around', lo=18, hi=30, r=.9, radius=3, drain=.5, color=DARK,
+    S('morraks_hand', "Morrak's Hand", 'shadow', 4, 18, 16, 'around', lo=18, hi=30, r=.9, radius=2, drain=.5, life_cost=12, color=DARK,
       flavor='Hollow Coven'),
     # for those who serve two guilds
-    S('spellblade', 'Spellblade', 'warcraft', 2, 8, 6, 'melee', dtype='weapon', pct=210, pct_r=2, fx={'burn': (4, .3, 5)}, color=FIRE,
+    S('spellblade', 'Spellblade', 'warcraft', 2, 8, 6, 'melee', dtype='weapon', pct=210, pct_r=2, fx={'burn': (4, .3, 5)}, both=True, color=FIRE,
       flavor='Iron Company and Circle of Magi'),
     S('soul_knife', 'Soul Knife', 'shadow', 2, 8, 4, 'bolt', lo=12, hi=22, r=.7, drain=.4, range=3, color=DARK,
       flavor="Thieves' Guild and Hollow Coven"),
-    S('thornstorm', 'Thornstorm', 'storm', 2, 12, 10, 'around', lo=10, hi=18, r=.6, radius=3, fx={'bleed': (3, .25, 5), 'stun': 1},
+    S('thornstorm', 'Thornstorm', 'storm', 2, 12, 10, 'around', lo=10, hi=18, r=.6, radius=2, fx={'bleed': (3, .25, 5), 'stun': 1},
       color=(160, 220, 110), glyph='~', flavor='Wardens and Circle of Magi'),
-    S('crusade', 'Crusade', 'warcraft', 2, 10, 30, 'self', buff=('dmg', 45, .6, 15), color=(255, 232, 160), glyph='!',
+    S('crusade', 'Crusade', 'warcraft', 2, 10, 30, 'self', buff=('dmg', 45, .6, 15), both=True, color=(255, 232, 160), glyph='!',
       flavor='Order of Dawn and Iron Company'),
     # the Green Moot
-    S('entangle', 'Entangle', 'nature', 1, 7, 12, 'around', dtype='none', radius=2, fx={'stun': 3}, color=LEAF, glyph='"',
+    S('entangle', 'Entangle', 'nature', 1, 7, 12, 'around', dtype='none', radius=1, fx={'stun': 1}, field=(_D.ROOTS, 8), color=LEAF, glyph='"',
       flavor='The Green Moot'),
-    S('spirit_totem', 'Spirit Totem', 'nature', 2, 10, 30, 'self', heal=(20, 1.2), buff=('regen', 3, .08, 20), party=True,
-      color=(140, 230, 160), glyph='¶', flavor='The Green Moot'),
+    S('spirit_totem', 'Spirit Totem', 'nature', 2, 10, 30, 'totem', heal=(3, .1), color=(140, 230, 160), glyph='¶', flavor='The Green Moot'),
     S('wild_shape', 'Wild Shape', 'nature', 4, 12, 50, 'shape', shape=('bear', 35, 25, 25), color=BEAST, glyph='q',
       flavor='The Green Moot'),
     # the Hallowed Chapter
     S('mass_mend', 'Mass Mend', 'restoration', 1, 8, 8, 'self', heal=(16, 1.1), party=True, color=HOLY, glyph='+',
       flavor='The Hallowed Chapter'),
-    S('hallowed_ground', 'Hallowed Ground', 'restoration', 2, 10, 30, 'around', dtype='none', radius=4, fx={'stun': 4},
+    S('hallowed_ground', 'Hallowed Ground', 'restoration', 2, 10, 30, 'around', dtype='none', radius=3, field=(_D.HALLOWED, 20),
       color=(255, 240, 200), glyph='+', flavor='The Hallowed Chapter'),
     S('rite_of_return', 'Rite of Return', 'restoration', 4, 20, 80, 'rite', color=HOLY, glyph='+', flavor='The Hallowed Chapter'),
     # the Quiet Ossuary
     S('raise_dead', 'Raise Dead', 'necromancy', 1, 10, 20, 'raise', color=BONE, glyph='z', flavor='The Quiet Ossuary'),
-    S('bone_armour', 'Bone Armour', 'necromancy', 2, 8, 30, 'self', buff=('dr', 20, .3, 20), color=BONE, glyph='#',
-      flavor='The Quiet Ossuary'),
+    S('bone_golem', 'Bone Golem', 'necromancy', 2, 14, 40, 'golem', corpses=3, color=BONE, glyph='Z', flavor='The Quiet Ossuary'),
     S('corpse_burst', 'Corpse Burst', 'necromancy', 4, 14, 10, 'burst', lo=16, hi=26, r=.8, radius=2, color=(200, 220, 120),
       flavor='The Quiet Ossuary'),
     # the Order of the Still Hand
@@ -237,15 +285,16 @@ TECHNIQUES = [
     S('wind_step', 'Wind Step', 'unarmed', 4, 6, 6, 'leap', pct=140, pct_r=2, range=4, color=(220, 230, 255), glyph='~',
       flavor='Order of the Still Hand'),
     # the Houndwardens' Lodge
-    S('tame', 'Tame', 'beastcraft', 1, 8, 20, 'tame', color=BEAST, glyph='♥', flavor="The Houndwardens' Lodge"),
+    S('pack_fury', 'Pack Fury', 'beastcraft', 1, 10, 30, 'self', buff=('dmg', 25, .5, 15), fury=15, color=(230, 120, 60), glyph='!',
+      flavor="The Houndwardens' Lodge"),
     S('call_of_the_pack', 'Call of the Pack', 'beastcraft', 2, 12, 40, 'summon', summon=('wolf', 2, 30), color=BEAST, glyph='C',
       flavor="The Houndwardens' Lodge"),
-    S('pack_fury', 'Pack Fury', 'beastcraft', 4, 10, 30, 'self', buff=('dmg', 25, .5, 15), fury=15, color=(230, 120, 60), glyph='!',
+    S('packmaster', 'Packmaster', 'beastcraft', 4, 0, 0, 'passive', passive=True, color=BEAST, glyph='C',
       flavor="The Houndwardens' Lodge"),
     # for those who serve two guilds
     S('wildheart', 'Wildheart', 'nature', 2, 12, 50, 'shape', shape=('wolf', 55, 10, 25), fury=25, color=BEAST, glyph='C',
       flavor='Green Moot and Wardens'),
-    S('lichcraft', 'Lichcraft', 'necromancy', 2, 10, 12, 'around', lo=14, hi=24, r=.8, radius=3, drain=.2, life_cost=12,
+    S('lichcraft', 'Lichcraft', 'necromancy', 2, 10, 12, 'around', lo=14, hi=24, r=.8, radius=2, life_cost=12,
       fx={'weaken': 6}, color=(150, 120, 220), flavor='Quiet Ossuary and Hollow Coven'),
     S('mendicant', "Mendicant's Fist", 'unarmed', 2, 6, 5, 'melee', pct=190, pct_r=2, heal=(6, .5), fx={'stun': 1},
       color=HOLY, flavor='Still Hand and Order of Dawn'),
@@ -254,6 +303,14 @@ TECHNIQUES = [
 ]
 for _t in TECHNIQUES:
     _t.guild = True
+for _s in SKILL_LIST:
+    if DISCIPLINES[_s.line]['kind'] != 'weapon':
+        _s.unlock, _s.step = TOME[_s.tier], _s.tier * 4 / 7
+    if _s.line == 'restoration':                 # light against the dead
+        _s.undead = max(2, _s.undead)
+for _t in TECHNIQUES:
+    if _t.line == 'restoration':
+        _t.undead = max(2, _t.undead)
 SKILLS = {s.id: s for s in SKILL_LIST + TECHNIQUES}
 STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None]
 
@@ -270,7 +327,10 @@ def cost_of(game, sk):
 
 def can_pay(game, sk):
     p = game.player
-    return (getattr(p, 'stamina', 0) if pool(sk) == 'stamina' else p.mana) >= cost_of(game, sk)
+    c = cost_of(game, sk)
+    if sk.both:
+        return getattr(p, 'stamina', 0) >= c and p.mana >= c
+    return (getattr(p, 'stamina', 0) if pool(sk) == 'stamina' else p.mana) >= c
 
 
 def by_line(line):
@@ -332,12 +392,15 @@ def describe(sk, r):
         k, n, t = sk.summon
         one, many = {'skeleton': ('a skeleton', 'skeletons'), 'wolf': ('a wolf', 'wolves'),
                      'war_dog': ('a war dog', 'war dogs')}.get(k, (k, k))
-        parts.append(f"Call {one if n == 1 else f'{n} {many}'} to fight at your side for {t + r // 2} turns.")
+        if sk.corpses:
+            parts.append(f'A corpse near you rises as {one} and fights at your side for {t + r // 2} turns.')
+        else:
+            parts.append(f"Call {one if n == 1 else f'{n} {many}'} to fight at your side for {t + r // 2} turns.")
     elif m == 'raise':
-        parts.append(f'The last enemy to fall near you rises and fights for you for {20 + r // 2} turns.')
+        parts.append(f'A corpse near you rises as what it was, with its own attacks, and fights for you for {20 + r // 2} turns.')
     elif m == 'tame':
         parts.append('Tame the wolf, bear, panther or hawk next to you; easier when it is hurt. It stays with you, '
-                     'eats meat and takes orders (h). One beast at a time.')
+                     'eats meat and takes orders (h). One beast at a time; a Packmaster keeps two.')
     elif m == 'rite':
         parts.append('Raise your fallen hireling or beast where it lies, without a temple.')
     elif m == 'burst':
@@ -345,13 +408,56 @@ def describe(sk, r):
     elif m == 'shape':
         nm, dp, dr_, t = sk.shape
         parts.append(f'Take the shape of a {nm} for {t} turns: +{dp + r // 4}% damage, {dr_}% less damage taken.')
-    if sk.heal:
+    elif m == 'wall':
+        parts.append(f"Raise a wall of ice, {3 + (r >= 30) + (r >= 60)} tiles wide, across the way to the nearest enemy. "
+                     f"It melts after {14 + r // 5} turns.")
+    elif m == 'gust':
+        parts.append(f"Throw every enemy within {sk.radius} tiles {2 + (r >= 40)} tiles back, for {dmg}.")
+    elif m == 'ball':
+        parts.append(f'A ball of lightning rolls towards the nearest enemy for {8 + r // 20} turns, striking all beside it '
+                     f'for {dmg} each turn.')
+    elif m == 'tempest':
+        parts.append(f'For {5 + r // 20} turns lightning comes down on an enemy in sight every turn.')
+    elif m == 'tomb':
+        parts.append(f'Shut yourself in ice for {4 + r // 30} turns: nothing can hurt you and you heal, but you can do nothing.')
+    elif m == 'pyre':
+        parts.append(f'The nearest burning enemy bursts for {dmg}; its fire leaps to every enemy within {sk.radius} tiles.')
+    elif m == 'mist':
+        parts.append(f'Every corpse near you breathes out poison: {dmg} to each enemy beside one.')
+    elif m == 'prison':
+        parts.append(f'Walls of bone close around the nearest enemy; it is held for {4 + r // 15} turns.')
+    elif m == 'army':
+        k, n, t = sk.summon
+        parts.append(f'Every corpse within {sk.radius} tiles, up to {n + r // 25}, rises as a skeleton for {t + r // 2} turns.')
+    elif m == 'awaken':
+        parts.append(f'A tree beside you wakes and fights for you for {30 + r // 2} turns. Only where trees stand.')
+    elif m == 'sic':
+        parts.append('Your beast springs at the nearest enemy and strikes.')
+    elif m == 'spirit':
+        parts.append(f'Your beast grows for {15 + r // 5} turns: 40% more life and damage.')
+    elif m == 'totem':
+        parts.append(f'Drive a totem into the ground beside you; for 20 turns it heals you and your company next to it '
+                     f'{round(sk.heal[0] + sk.heal[1] * r)} life a turn.')
+    elif m == 'golem':
+        parts.append('Three corpses become one Bone Golem, which stays with you until it falls.')
+    elif m == 'passive':
+        parts.append('You may keep two tamed beasts instead of one. Nothing to put on the bar.')
+    if sk.field:
+        parts.append({_D.BURNING: 'Leaves burning ground.', _D.ROOTS: 'Leaves grasping roots that hold who stands in them.',
+                      _D.BRAMBLE: 'Leaves brambles that make who walks through them bleed.',
+                      _D.DRIFT: 'Leaves snowdrifts that slow who wades through them.',
+                      _D.HALLOWED: 'Makes the ground hallowed for 20 turns: the undead cannot step onto it.'}.get(sk.field[0], ''))
+    if sk.heal and m != 'totem':
         parts.append(f'Heals {round(sk.heal[0] + sk.heal[1] * r)} life.')
     if sk.buff:
         k, b, br, t = sk.buff
         v = round(b + br * r)
         parts.append({'def': f'+{v} defense', 'regen': f'+{v} life per turn', 'dr': f'{min(60, v)}% less damage taken',
-                      'dmg': f'+{v}% damage'}[k] + f' for {t} turns.')
+                      'dmg': f'+{v}% damage', 'ward': f'A ward takes the next {v} damage', 'bond': f'Your beast takes {min(50, v)}% '
+                      'of the blows you take', 'unbroken': f'Every blow you take gives you {v} stamina',
+                      'martyr': 'A blow that would kill you leaves you on one life, once,'}[k] + f' for {t} turns.')
+    if sk.buff2 and sk.buff2[0] == 'chill':
+        parts.append('Who strikes you in melee is slowed.')
     fx = sk.fx
     if 'stun' in fx:
         parts.append(f"Stuns for {fx['stun']} turn{'s' if fx['stun'] > 1 else ''}.")
@@ -363,18 +469,41 @@ def describe(sk, r):
         if k in fx:
             b, br, t = fx[k]
             parts.append(f'{word} for {round(b + br * r)} per turn over {t} turns.')
+    if 'ignite' in fx:
+        parts.append(f"{round(fx['ignite'][0] * 100)}% chance to set it burning.")
+    if 'swarm' in fx:
+        b, br, t = fx['swarm']
+        parts.append(f'A swarm stings it for {round(b + br * r)} a turn over {t} turns.')
+    if 'slow' in fx:
+        parts.append(f"Slows for {fx['slow']} turns.")
+    if 'fear' in fx:
+        parts.append(f"{'The undead flee' if sk.only_undead else 'They flee'} for {fx['fear']} turns.")
+    if 'plague' in fx:
+        parts.append('When a plagued enemy dies, the plague leaps to those beside it.')
     if 'weaken' in fx:
         parts.append(f"Weakened enemies deal 30% less damage for {fx['weaken']} turns.")
     if 'vuln' in fx:
         parts.append(f"Target takes 25% more damage for {fx['vuln']} turns.")
     if sk.drain:
         parts.append(f'Heals you for {round(sk.drain * 100)}% of the damage.')
+    if sk.line == 'restoration' and sk.dtype == 'spell':
+        parts.append(f'x{max(2, sk.undead):g} damage against the undead.')
     if sk.party:
         parts.append('Heals your hireling and your beast as well.')
     if sk.fury:
         parts.append(f'Your beast fights 40% harder for {sk.fury} turns.')
     if sk.life_cost:
         parts.append(f'Costs {sk.life_cost} life.')
+    if sk.life_frac:
+        parts.append(f'Costs {round(sk.life_frac * 100)}% of your life.')
+    if sk.corpses and m not in ('golem', 'summon'):
+        parts.append('Uses up a corpse near you.' if sk.corpses == 1 else f'Uses up {sk.corpses} corpses near you.')
+    if sk.need_beast:
+        parts.append('Needs your beast at your side.')
+    if sk.both:
+        parts.append('Costs stamina and mana alike.')
+    if sk.bonus_burning > 1:
+        parts.append(f'x{sk.bonus_burning:g} damage against burning enemies.')
     if sk.crit:
         parts.append('Always a critical hit.')
     if sk.execute > 1:
@@ -442,8 +571,11 @@ def use(game, slot):
         return 0
     cost = cost_of(game, sk)
     kind = pool(sk)
+    if sk.passive:
+        game.msg(f'{sk.name} needs no calling: it is simply how you do things.')
+        return 0
     if not can_pay(game, sk):
-        game.msg(f'Not enough {kind} for {sk.name} ({cost} needed).', 'bad')
+        game.msg(f"Not enough {'stamina and mana' if sk.both else kind} for {sk.name} ({cost} needed).", 'bad')
         return 0
     d = DISCIPLINES[sk.line]
     if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
@@ -452,24 +584,37 @@ def use(game, slot):
     if sk.life_cost and p.life <= sk.life_cost + 1:
         game.msg(f'{sk.name} would take more life than you have.', 'bad')
         return 0
+    if sk.need_beast:
+        from . import mercs as MC
+        if not with_beast(game):
+            game.msg(f'{sk.name} needs your beast at your side.' if MC.beasts(game) else
+                     f'{sk.name} needs a beast of your own: tame one first.', 'bad')
+            return 0
+    if sk.corpses and sk.mode == 'self':
+        from . import spellmap as SM
+        if not SM.use_corpses(game, sk.corpses):
+            game.msg(f"{sk.name} needs {'a corpse' if sk.corpses == 1 else f'{sk.corpses} corpses'} near you.", 'bad')
+            return 0
     r = rank(game, sk.line)
     if not EXEC[sk.mode](game, sk, r):
         return 0
-    if sk.life_cost:
-        p.life -= sk.life_cost
-        game.msg(f'{sk.name} takes its price in life.', 'bad')
+    price = sk.life_cost + (round(p.life * sk.life_frac) if sk.life_frac else 0)
+    if price:
+        p.life = max(1, p.life - price)
+        game.num(p.x, p.y, f'-{price}', (200, 40, 60))
+        game.msg(f'{sk.name} takes its price in life.' if sk.line != 'shadow' else 'Morrak takes his price in life.', 'bad')
     if sk.heal and sk.mode not in ('self',):
         game.heal(round(sk.heal[0] + sk.heal[1] * r), show=True)
     if sk.fury:
         from . import mercs as MC
         bst = MC.with_you(game, 'beast')
-        if bst:
+        for bst in [b for b in (MC.with_you(game, 'beast'), MC.with_you(game, 'beast2')) if b]:
             bst.fury = max(bst.fury, sk.fury)
             game.msg(f'{bst.name} bristles and bares its teeth.', 'good')
-    if kind == 'stamina':
+    if kind == 'stamina' or sk.both:
         p.stamina -= cost
         p.strained = game.turn
-    else:
+    if kind == 'mana' or sk.both:
         p.mana -= cost
     p.cooldowns[sid] = sk.cd
     gain(game, sk.line, 3)
@@ -488,6 +633,9 @@ def _spell_dmg(game, sk, r):
             dmg = round(dmg * 1.15)
         elif sk.line == 'storm' and wx in ('storm', 'drystorm'):
             dmg = round(dmg * 1.25)                     # the sky lends its lightning
+    if sk.line == 'nature':
+        from . import spellmap as SM
+        dmg = round(dmg * SM.nature_factor(game))
     return dmg
 
 
@@ -506,8 +654,14 @@ def _hit(game, mon, sk, r, ranged=False):
         game._area = sk.mode in ('around', 'chain', 'storm', 'target_area', 'volley')
         if sk.bonus_frozen > 1 and mon.hold > 0:
             dmg *= sk.bonus_frozen
-        if sk.undead > 1 and not mon.is_npc and mon.k in _D.UNDEAD:
+        if sk.undead > 1 and not mon.is_npc and (mon.k in _D.UNDEAD or mon.tpl.get('family') == 'undead'):
             dmg *= sk.undead
+        if sk.line == 'fire' and 'burn' in mon.effects:
+            dmg *= sk.bonus_burning if sk.bonus_burning > 1 else 1.25      # the burning burn hotter
+        if sk.line == 'storm':
+            from . import spellmap as SM
+            if SM.wet(game, mon):
+                dmg *= 1.25                                                # water carries the arc
         before = mon.hp
         dead = game.damage_mon(mon, dmg, col=sk.color, elem=LINE_ELEM.get(sk.line))
         game._area = False
@@ -535,11 +689,47 @@ def apply_fx(game, mon, sk, r):
         if k in fx:
             b, br, t = fx[k]
             mon.effects[k] = [t, max(1, round(b + br * r))]
-    if 'weaken' in fx:
-        mon.effects['weaken'] = [fx['weaken'], 0]
-    if 'vuln' in fx:
-        mon.effects['vuln'] = [fx['vuln'], 0]
+    if 'ignite' in fx and random.random() < fx['ignite'][0]:
+        _c, b, br, t = fx['ignite']
+        mon.effects['burn'] = [t, max(1, round(b + br * r))]
+    if 'swarm' in fx:
+        b, br, t = fx['swarm']
+        v = max(1, round((b + br * r) * (_nat(game) if sk.line == 'nature' else 1)))
+        mon.effects['swarm'] = [t, v]
+    for k in ('weaken', 'vuln', 'slow', 'fear'):
+        if k in fx:
+            mon.effects[k] = [fx[k], 0]
+    if 'plague' in fx:
+        mon.effects['plague'] = [fx['plague'], max(1, round(4 + .3 * r))]
     mon.awake = True
+
+
+def _nat(game):
+    from . import spellmap as SM
+    return SM.nature_factor(game)
+
+
+def with_beast(game):
+    """Your beast, if one stands with you on this map (the first of two)."""
+    from . import mercs as MC
+    for mc in (MC.with_you(game, 'beast'), MC.with_you(game, 'beast2')):
+        if mc and mc.body is not None and mc.body in game.map.mons:
+            return mc
+    return None
+
+
+def lay(game, sk, r, cells):
+    """What the spell leaves on the ground: its own tile, ice on water for frost, a grass fire in a dry summer."""
+    from . import spellmap as SM
+    m = game.map
+    if sk.field:
+        tile, turns = sk.field
+        power = max(2, round(2 + r / 8))
+        n = SM.area(game, m, cells, tile, turns, power)
+        if n and tile == _D.BURNING:
+            SM.grass_fire(game, m, *cells[0])
+    if sk.line == 'frost' and sk.mode in ('around', 'target_area', 'bolt'):
+        SM.freeze_water(game, cells)
 
 
 def _melee_target(game):
@@ -584,12 +774,16 @@ def x_adjacent(game, sk, r):
 def x_around(game, sk, r):
     p = game.player
     t = [o for o in game.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= sk.radius]
+    if sk.only_undead:
+        from . import spellmap as SM
+        t = [o for o in t if SM.undead(o)]
     cells = []
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(p.x, p.y, rr)
     game.flash(cells, sk.color, sk.glyph, .22)
+    lay(game, sk, r, cells)
     if not t:
-        game.msg('No enemies in range.')
+        game.msg('No undead in range.' if sk.only_undead else 'No enemies in range.')
         return True
     for o in t:
         _hit(game, o, sk, r)
@@ -617,6 +811,7 @@ def x_bolt(game, sk, r, ranged=False):
         for rr in range(1, sk.splash + 1):
             cells += ring_cells(tx, ty, rr)
         game.flash(cells, sk.color, '*', .22)
+        lay(game, sk, r, [(tx, ty)] + cells)
         for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.splash and (o.x, o.y) != (tx, ty)]:
             _hit(game, o, sk, r, ranged)
     return True
@@ -663,6 +858,7 @@ def x_chain(game, sk, r):
     t = _projectile_target(game, sk)
     if not t:
         return False
+    from . import spellmap as SM
     hit = set()
     frm = (game.player.x, game.player.y)
     jumps = 1 + sk.jumps + r // 25
@@ -671,8 +867,11 @@ def x_chain(game, sk, r):
         game.flash(game.cells_between(frm, (t.x, t.y)), sk.color, sk.glyph, .2)
         hit.add(t.id)
         frm = (t.x, t.y)
+        wet = SM.wet(game, t)
+        if wet:
+            jumps += 1                                  # water carries it on, and further
         _hit(game, t, sk, r)
-        cand = [o for o in game.visible_hostiles() if o.id not in hit and cheb(o.x, o.y, *frm) <= 4]
+        cand = [o for o in game.visible_hostiles() if o.id not in hit and cheb(o.x, o.y, *frm) <= (6 if wet else 4)]
         t = min(cand, key=lambda o: cheb(o.x, o.y, *frm)) if cand else None
     return True
 
@@ -703,6 +902,7 @@ def x_target_area(game, sk, r):
     game.flash(cells, sk.color, '*', .26)
     for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.radius]:
         _hit(game, o, sk, r)
+    lay(game, sk, r, cells)
     return True
 
 
@@ -742,7 +942,7 @@ def x_self(game, sk, r):
     p = game.player
     did = False
     if sk.heal:
-        amt = round(sk.heal[0] + sk.heal[1] * r)
+        amt = round((sk.heal[0] + sk.heal[1] * r) * (_nat(game) if sk.line == 'nature' else 1))
         game.heal(amt, show=True)
         did = True
         if sk.party:
@@ -765,6 +965,9 @@ def x_self(game, sk, r):
         if k == 'dr':
             v = min(60, v)
         p.buffs = [x for x in p.buffs if x[0] != k] + [[k, v, t, sk.name]]
+        if sk.buff2:
+            k2, b2, br2, t2 = sk.buff2
+            p.buffs = [x for x in p.buffs if x[0] != k2] + [[k2, round(b2 + br2 * r), t2, sk.name]]
         did = True
     game.flash(ring_cells(p.x, p.y, 1), sk.color, sk.glyph, .2)
     game.msg(f'You use {sk.name}.', 'good')
@@ -781,11 +984,21 @@ def x_summon(game, sk, r):
     k, n, t = sk.summon
     if k not in _D.MONSTERS:
         k = 'wolf'
-    spots = [c for c in free_around(game, m, p.x, p.y, 2) if c != (p.x, p.y)]
+    if sk.corpses:                                   # the dead get up where they lie
+        from . import spellmap as SM
+        cs = [c for c in SM.corpses(game) if not game.occupied(m, c[1], c[2])]
+        if len(cs) < sk.corpses:
+            game.msg(f'{sk.name} needs a corpse near you.', 'bad')
+            return False
+        for c in cs[:n]:
+            m.slain.remove(c)
+        spots = [(c[1], c[2]) for c in cs[:n]]
+    else:
+        spots = [c for c in free_around(game, m, p.x, p.y, 2) if c != (p.x, p.y)]
+        random.shuffle(spots)
     if not spots:
         game.msg('There is no room.')
         return False
-    random.shuffle(spots)
     name = {'skeleton': 'Risen Skeleton', 'wolf': 'Wolf of the Pack', 'war_dog': 'War Dog'}.get(sk.summon[0])
     for x, y in spots[:n]:
         o = MC.thrall(game, k, x, y, t + r // 2, name)
@@ -802,9 +1015,9 @@ def x_summon(game, sk, r):
 
 def x_raise(game, sk, r):
     from . import mercs as MC
+    from . import spellmap as SM
     p, m = game.player, game.map
-    slain = [c for c in getattr(m, 'slain', []) if cheb(c[1], c[2], p.x, p.y) <= 7 and game.visible(c[1], c[2])
-             and not _D.MONSTERS[c[0]].get('chief') and not _D.MONSTERS[c[0]].get('boss')]
+    slain = [c for c in SM.corpses(game)[::-1] if not _D.MONSTERS[c[0]].get('chief') and not _D.MONSTERS[c[0]].get('boss')]
     spot = None
     while slain:
         c = slain.pop()
@@ -824,12 +1037,13 @@ def x_raise(game, sk, r):
 
 
 def x_burst(game, sk, r):
-    p, m = game.player, game.map
-    slain = [c for c in getattr(m, 'slain', []) if cheb(c[1], c[2], p.x, p.y) <= 7 and game.visible(c[1], c[2])]
+    from . import spellmap as SM
+    m = game.map
+    slain = SM.corpses(game)
     if not slain:
         game.msg('There is no corpse near you.')
         return False
-    c = min(slain, key=lambda c: cheb(c[1], c[2], p.x, p.y))
+    c = slain[0]
     m.slain.remove(c)
     tx, ty = c[1], c[2]
     cells = [(tx, ty)]
@@ -845,8 +1059,10 @@ def x_burst(game, sk, r):
 def x_tame(game, sk, r):
     from . import mercs as MC
     p = game.player
-    if MC.get(game, 'beast'):
-        game.msg(f'You already have {MC.get(game, "beast").name}. One beast at a time.')
+    if not MC.beast_room(game):
+        names = ' and '.join(b.name for b in MC.beasts(game))
+        game.msg(f'You already have {names}. ' + ('Two beasts are all even a Packmaster can keep.' if 'packmaster' in p.known
+                                                   else 'One beast at a time.'))
         return False
     adj = [o for o in game.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= 1]
     beasts = [o for o in adj if o.k in MC.TAME_OF and not o.elite and not getattr(o, 'named', None)]
@@ -888,7 +1104,279 @@ def x_shape(game, sk, r):
     return True
 
 
+# ------------------------------------------------------------------ the schools' own ways
+def _dir(a, b):
+    return (b[0] > a[0]) - (b[0] < a[0]), (b[1] > a[1]) - (b[1] < a[1])
+
+
+def x_wall(game, sk, r):
+    """Ice Wall: three to five cells of ice across the way between you and the nearest enemy."""
+    from . import spellmap as SM
+    p, m = game.player, game.map
+    t = game.nearest_target(sk.range, False)
+    if not t:
+        game.miss_target('No enemy to wall off.')
+        return False
+    sx, sy = _dir((p.x, p.y), (t.x, t.y))
+    d = cheb(p.x, p.y, t.x, t.y)
+    cx, cy = (p.x + sx * 2, p.y + sy * 2) if d > 2 else (p.x + sx, p.y + sy)
+    px_, py_ = -sy, sx                                 # across the way
+    n = 3 + (1 if r >= 30 else 0) + (1 if r >= 60 else 0)
+    cells = [(cx + px_ * k, cy + py_ * k) for k in range(-(n // 2), n - n // 2)]
+    placed = [c for c in cells if SM.place(game, m, c[0], c[1], _D.ICEWALL, 14 + r // 5)]
+    if not placed:
+        game.msg('There is no room for a wall there.')
+        return False
+    game.flash(placed, sk.color, '█', .25)
+    game.msg('Ice cracks up out of the ground and stands, a wall.', 'good')
+    return True
+
+
+def x_gust(game, sk, r):
+    """Gust: every enemy within reach is thrown back a few tiles."""
+    p, m = game.player, game.map
+    t = sorted([o for o in game.visible_hostiles() if cheb(o.x, o.y, p.x, p.y) <= sk.radius],
+               key=lambda o: -cheb(o.x, o.y, p.x, p.y))
+    cells = []
+    for rr in range(1, sk.radius + 1):
+        cells += ring_cells(p.x, p.y, rr)
+    game.flash(cells, sk.color, sk.glyph, .2)
+    if not t:
+        game.msg('No enemies in range.')
+        return True
+    push = 2 + (1 if r >= 40 else 0)
+    for o in t:
+        sx, sy = _dir((p.x, p.y), (o.x, o.y))
+        for _ in range(push):
+            nx, ny = o.x + sx, o.y + sy
+            if not m.inb(nx, ny) or not _D.TILES[m.tile(nx, ny)].walk or game.occupied(m, nx, ny):
+                break
+            o.x, o.y = nx, ny
+        _hit(game, o, sk, r)
+    return True
+
+
+def x_ball(game, sk, r):
+    """Ball Lightning: a ball of lightning that rolls on by itself, striking whatever is beside it."""
+    from . import spellmap as SM
+    p, m = game.player, game.map
+    t = game.nearest_target(sk.range, False)
+    spots = [c for c in ring_cells(p.x, p.y, 1) if not game.occupied(m, *c)]
+    if t:
+        spots.sort(key=lambda c: cheb(c[0], c[1], t.x, t.y))
+    grow = round(r * sk.r + game.stats()['ene'] / 5)
+    for c in spots:
+        if SM.place(game, m, c[0], c[1], _D.BALL, 8 + r // 20, (sk.lo + grow, sk.hi + grow)):
+            game.flash([c], sk.color, '¤', .25)
+            game.msg('A ball of lightning hums into being and starts to roll.', 'good')
+            return True
+    game.msg('There is no room for it.')
+    return False
+
+
+def x_tempest(game, sk, r):
+    p = game.player
+    t = 5 + r // 20
+    p.buffs = [b for b in p.buffs if b[0] != 'tempest'] + [['tempest', round(sk.hi + r * sk.r), t, sk.name]]
+    game.flash(ring_cells(p.x, p.y, 1), sk.color, '~', .25)
+    game.msg('The sky darkens over you, and the thunder answers.', 'good')
+    return True
+
+
+def x_tomb(game, sk, r):
+    """Ice Tomb: shut in ice for a few turns; nothing touches you, you heal, you do nothing."""
+    p = game.player
+    t = 4 + r // 30
+    p.buffs = [b for b in p.buffs if b[0] != 'tomb'] + [['tomb', 1, t + 1, sk.name]]
+    game.flash(ring_cells(p.x, p.y, 1), sk.color, '█', .3)
+    game.msg('Ice closes over you. Through it the world is blue and far away.', 'good')
+    s = game.stats()
+    for _ in range(t - 1):
+        game.end_turn(1, True)
+        if game.dead:
+            return True
+        p.life = min(s['max_life'], p.life + max(1, s['max_life'] // 16))
+    p.life = min(s['max_life'], p.life + max(1, s['max_life'] // 16))
+    return True
+
+
+def x_pyre(game, sk, r):
+    """Pyre: a burning enemy bursts, and its fire leaps to those beside it."""
+    p = game.player
+    burning = [o for o in game.visible_hostiles() if 'burn' in o.effects and cheb(o.x, o.y, p.x, p.y) <= sk.range]
+    if not burning:
+        game.msg('No burning enemy in sight.')
+        return False
+    t = min(burning, key=lambda o: cheb(o.x, o.y, p.x, p.y))
+    fire = list(t.effects['burn'])
+    tx, ty = t.x, t.y
+    cells = [(tx, ty)]
+    for rr in range(1, sk.radius + 1):
+        cells += ring_cells(tx, ty, rr)
+    game.flash(cells, sk.color, '*', .26)
+    _hit(game, t, sk, r)
+    for o in [o for o in game.visible_hostiles() if o is not t and cheb(o.x, o.y, tx, ty) <= sk.radius]:
+        o.effects['burn'] = [max(fire[0], 4), fire[1]]
+        o.awake = True
+        game.num(o.x, o.y, '*', sk.color)
+    game.msg('The fire bursts out of it and leaps to its neighbours.', 'good')
+    return True
+
+
+def x_mist(game, sk, r):
+    """Grave Mist: the corpses near you breathe out poison on the enemies beside them."""
+    from . import spellmap as SM
+    cs = SM.corpses(game, 6)
+    if not cs:
+        game.msg('There is no corpse near you.')
+        return False
+    cells, hit = [], set()
+    for c in cs:
+        cells += [(c[1], c[2])] + ring_cells(c[1], c[2], 1)
+        for o in game.visible_hostiles():
+            if cheb(o.x, o.y, c[1], c[2]) <= 1 and o.id not in hit:
+                hit.add(o.id)
+                _hit(game, o, sk, r)
+    game.flash(cells, sk.color, '░', .26)
+    game.msg('A green mist seeps out of the dead.' if hit else 'A green mist seeps out of the dead, and finds nobody.', 'good')
+    return True
+
+
+def x_prison(game, sk, r):
+    """Bone Prison: walls of bone close around an enemy."""
+    from . import spellmap as SM
+    m = game.map
+    t = game.nearest_target(sk.range, False)
+    if not t:
+        game.miss_target('No target in sight.')
+        return False
+    turns = 5 + r // 15
+    placed = [c for c in ring_cells(t.x, t.y, 1) if SM.place(game, m, c[0], c[1], _D.BONEWALL, turns)]
+    t.hold = max(t.hold, turns - 1)
+    t.awake = True
+    game.flash(placed + [(t.x, t.y)], sk.color, '#', .26)
+    game.msg(f'Bones burst up out of the ground and lock around {t.the()}.', 'good')
+    return True
+
+
+def x_army(game, sk, r):
+    """Army of the Dead: every corpse near you gets up and fights for you a while."""
+    from . import mercs as MC
+    from . import spellmap as SM
+    m = game.map
+    k, n, t = sk.summon
+    cs = [c for c in SM.corpses(game, sk.radius) if not game.occupied(m, c[1], c[2])][:n + r // 25]
+    if not cs:
+        game.msg('There is no corpse near you.')
+        return False
+    for c in cs:
+        m.slain.remove(c)
+        o = MC.thrall(game, k, c[1], c[2], t + r // 2, 'Risen Skeleton')
+        o.fg = (230, 226, 210)
+    game.flash([(c[1], c[2]) for c in cs], sk.color, 'z', .3)
+    game.msg('You call, and the dead around you answer. They stand up, all of them.', 'good')
+    return True
+
+
+def x_awaken(game, sk, r):
+    """Awaken the Wood: a tree beside you pulls its roots out of the ground and fights for you."""
+    from . import mercs as MC
+    p, m = game.player, game.map
+    trees = [c for rr in (1, 2) for c in ring_cells(p.x, p.y, rr) if m.inb(*c) and m.tile(*c) in (_D.TREE, _D.FOREST)]
+    if not trees:
+        game.msg('No tree stands near you.')
+        return False
+    x, y = trees[0]
+    m.set(x, y, _D.GRASS)
+    o = MC.thrall(game, 'troll', x, y, 30 + r // 2, 'Awakened Oak')
+    o.ch, o.fg = '♠', (110, 180, 80)
+    o.hp = o.maxhp = round(o.maxhp * _nat(game))
+    game.flash([(x, y)], sk.color, '♠', .3)
+    game.msg('The tree shudders, tears its roots out of the earth and strides to your side.', 'good')
+    return True
+
+
+def x_sic(game, sk, r):
+    """Sic 'Em: your beast springs at your target and knocks it down."""
+    from . import mercs as MC
+    m = game.map
+    mc = with_beast(game)
+    t = game.nearest_target(sk.range, False)
+    if not t:
+        game.miss_target('No target in sight.')
+        return False
+    b = mc.body
+    if cheb(b.x, b.y, t.x, t.y) > 1:
+        spots = [c for c in free_around(game, m, t.x, t.y, 1) if c != (t.x, t.y)]
+        if not spots:
+            game.msg(f'{mc.name} cannot get at it.')
+            return False
+        dst = min(spots, key=lambda c: cheb(c[0], c[1], b.x, b.y))
+        game.flash(game.cells_between((b.x, b.y), dst), sk.color, '!', .18)
+        b.x, b.y = dst
+    MC.strike(game, mc, b, t, MC.stats(game, mc))
+    if t in m.mons:
+        apply_fx(game, t, sk, r)
+    game.msg(f'{mc.name} springs at {t.the()}!', 'good')
+    return True
+
+
+def x_spirit(game, sk, r):
+    """Spirit of the Pack: your beasts grow, for a while: more life, more bite."""
+    from . import mercs as MC
+    t = 15 + r // 5
+    for mc in [b for b in (MC.with_you(game, 'beast'), MC.with_you(game, 'beast2')) if b]:
+        mc.grown = t
+        mc.hp = MC.stats(game, mc)['max_hp']
+        MC.refresh_body(game, mc)
+        if mc.body is not None:
+            game.flash([(mc.body.x, mc.body.y)], sk.color, 'C', .3)
+        game.msg(f'{mc.name} swells, bigger than any of its kind, and howls.', 'good')
+    return True
+
+
+def x_totem(game, sk, r):
+    """Spirit Totem: a totem in the ground that heals you and your company beside it while it stands."""
+    from . import spellmap as SM
+    p, m = game.player, game.map
+    heal = round((sk.heal[0] + sk.heal[1] * r) * _nat(game))
+    for c in ring_cells(p.x, p.y, 1) + ring_cells(p.x, p.y, 2):
+        if SM.place(game, m, c[0], c[1], _D.SPIRITTOTEM, 20, heal):
+            game.flash([c], sk.color, '¶', .3)
+            game.msg('You drive the totem into the ground. The spirits gather round it.', 'good')
+            return True
+    game.msg('There is no room for a totem here.')
+    return False
+
+
+def x_golem(game, sk, r):
+    """Bone Golem: three corpses become one, and it stays with you until it falls."""
+    from . import mercs as MC
+    from . import spellmap as SM
+    m = game.map
+    cs = [c for c in SM.corpses(game) if not game.occupied(m, c[1], c[2])]
+    if len(cs) < sk.corpses:
+        game.msg(f'{sk.name} needs {sk.corpses} corpses near you.', 'bad')
+        return False
+    for c in cs[:sk.corpses]:
+        m.slain.remove(c)
+    x, y = cs[0][1], cs[0][2]
+    o = MC.thrall(game, 'skeleton', x, y, 100000, 'Bone Golem')
+    o.ch, o.fg = 'Z', (230, 226, 200)
+    o.hp = o.maxhp = round(o.maxhp * (3 + r / 40))
+    o.dmg = (round(o.dmg[0] * 1.5), round(o.dmg[1] * 1.5))
+    game.flash([(c[1], c[2]) for c in cs[:sk.corpses]], sk.color, 'Z', .3)
+    game.msg('The bones of the dead crawl together and stand up as one great shape.', 'good')
+    return True
+
+
+def x_passive(game, sk, r):
+    return False
+
+
 EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 'rite': x_rite, 'shape': x_shape,
         'melee': x_melee, 'adjacent': x_adjacent, 'around': x_around, 'bolt': x_bolt, 'shot': x_shot, 'volley': x_volley,
         'pierce': x_pierce, 'chain': x_chain, 'storm': x_storm, 'target_area': x_target_area, 'curse': x_curse,
-        'leap': x_leap, 'self': x_self}
+        'leap': x_leap, 'self': x_self, 'wall': x_wall, 'gust': x_gust, 'ball': x_ball, 'tempest': x_tempest,
+        'tomb': x_tomb, 'pyre': x_pyre, 'mist': x_mist, 'prison': x_prison, 'army': x_army, 'awaken': x_awaken, 'sic': x_sic,
+        'spirit': x_spirit, 'totem': x_totem, 'golem': x_golem, 'passive': x_passive}

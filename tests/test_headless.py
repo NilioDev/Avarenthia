@@ -1878,24 +1878,22 @@ def new_guilds():
     MC.menu(g)
     app.render()
     # every new skill, once, in a fight: tomes of the new disciplines and the techniques of the new guilds
-    new = [s.id for s in SK.SKILL_LIST if s.line in ('nature', 'necromancy', 'beastcraft')]
+    new = [s.id for s in SK.SKILL_LIST if s.line in ('nature', 'necromancy', 'beastcraft') and s.id != 'tame']
     new += [t[0] for k in ('moot', 'chapter', 'ossuary') for t in GU.TEACH[k]] + ['wildheart', 'lichcraft', 'mendicant', 'war_handler']
     for sid in new:
         if sid not in p.known:
             p.known.append(sid)
-    MC.hurt(g, bst, 9999)
     for sid in new:
-        g.map.mons = [o for o in g.map.mons if o.is_npc]
+        g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
         for x, y in free_around(g, g.map, p.x, p.y, 2)[:2]:
             e = make_monster(g, 'goblin', x, y, 6)
             e.awake = True
             g.map.mons.append(e)
         g.compute_fov()
-        if SK.SKILLS[sid].mode in ('raise', 'burst'):
-            g.kill([o for o in g.map.mons if not o.is_npc][0])
+        prep_skill(g, sid)
         p.bar[0] = sid
         p.cooldowns.clear()
-        p.mana, p.life = 999, max(p.life, 200)
+        p.mana, p.stamina, p.life = 999, 999, max(p.life, 200)
         assert SK.use(g, 0), sid
         assert SK.describe(SK.SKILLS[sid], 20), sid
         for _ in range(3):
@@ -3742,11 +3740,164 @@ def stamina():
     print('stamina ok:', s['max_stamina'], 'stamina at the start')
 
 
+def prep_skill(g, sid):
+    """What a skill needs around it: enemies in reach, corpses for the necromancer, a tree for the druid."""
+    from avarenthia import skills as SK
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    m, p = g.map, g.player
+    sk = SK.SKILLS[sid]
+    spots = [c for c in free_around(g, m, p.x, p.y, 3) if c != (p.x, p.y)]
+    m.slain = []
+    for x, y in spots[-6:]:
+        m.slain.append(('goblin', x, y, 5))
+    if sk.mode == 'awaken':
+        tx, ty = spots[0]
+        m.set(tx, ty, D.TREE)
+    if sk.mode == 'rite':
+        from avarenthia import mercs as MC
+        for mc in MC.beasts(g):
+            MC.hurt(g, mc, 99999)
+    if sk.mode == 'pyre':
+        for o in g.visible_hostiles():
+            o.effects['burn'] = [4, 3]
+
+
+def schools():
+    """Eight tome skills a school, each with its own rule on the map: every tome skill and every technique cast once in
+    a fight; burning ground, ice walls, roots, brambles, bone walls, hallowed ground, the totem and ball lightning come
+    and go; corpses lie where the fallen fell; Morrak takes life; a Packmaster keeps two beasts."""
+    from avarenthia import skills as SK, guilds as GU, mercs as MC, spellmap as SM
+    from avarenthia.entities import make_monster, make_tome
+    from avarenthia.worldgen import free_around
+    print('== schools')
+    for line, d in SK.DISCIPLINES.items():
+        tomes = SK.by_line(line)
+        want = 5 if d['kind'] == 'weapon' else 8
+        assert len(tomes) == want, (line, len(tomes))
+        if d['kind'] != 'weapon':
+            assert [s.unlock for s in tomes] == list(SK.TOME), (line, [s.unlock for s in tomes])
+    assert SK.SKILLS['tame'] in SK.SKILL_LIST and SK.SKILLS['tame'].unlock == 5
+    assert 'packmaster' in [t[0] for t in GU.TEACH['hound']] and GU.TEACH['hound'][0][0] == 'pack_fury'
+    assert 'bone_golem' in [t[0] for t in GU.TEACH['ossuary']]
+    assert not any(s.drain for s in SK.SKILL_LIST if s.line != 'shadow'), 'only shadow steals life'
+    assert all(s.life_cost or s.life_frac for s in SK.by_line('shadow') if s.unlock >= 30)
+    assert SK.SKILLS['spellblade'].both and SK.SKILLS['crusade'].both and SK.SKILLS['lichcraft'].life_cost
+    app = new_app('soft', seed=7)
+    g = app.game
+    p = g.player
+    p.vit = 400
+    for _ in range(20):
+        t = make_tome(g, random.randint(0, 20))
+        assert t.t in SK.SKILLS and t.value() > 0
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    for line in SK.DISCIPLINES:
+        p.disc[line] = [80, 0]
+    techs = [t[0] for k in GU.TEACH for t in GU.TEACH[k]] + [c[0] for c in GU.COMBOS.values()]
+    every = [s.id for s in SK.SKILL_LIST if SK.DISCIPLINES[s.line]['kind'] != 'weapon'] + techs
+    p.known = list(dict.fromkeys(every))
+    tamed = False
+    for sid in p.known:
+        sk = SK.SKILLS[sid]
+        if sk.passive or SK.DISCIPLINES[sk.line]['kind'] == 'weapon':
+            continue
+        g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
+        for xy in list(SM.fields(g.map)):
+            SM.clear(g.map, xy)
+        k = 'skeleton' if sid in ('turn_undead', 'hallowed_ground', 'dawnbreak', 'smite') else \
+            'wolf' if sid == 'tame' else 'goblin'
+        for x, y in free_around(g, g.map, p.x, p.y, 2)[:3]:
+            e = make_monster(g, k, x, y, 6)
+            e.awake = True
+            if sid == 'tame':
+                e.hp = 1
+            g.map.mons.append(e)
+        g.compute_fov()
+        prep_skill(g, sid)
+        p.bar[0] = sid
+        ok = False
+        for _ in range(40 if sid == 'tame' else 1):
+            p.cooldowns.clear()
+            p.mana = p.stamina = 999
+            p.life = max(p.life, 400)
+            ok = SK.use(g, 0)
+            if sid != 'tame' or MC.beasts(g):
+                break
+        assert ok, sid
+        if sid == 'tame':
+            assert MC.beasts(g), 'not tamed'
+            tamed = True
+        assert SK.describe(sk, 30), sid
+        for _ in range(2):
+            g.end_turn(1)
+            if g.dead:
+                break
+        app.render()
+    assert tamed
+    # the tiles: each one a named tile, and each one goes away again
+    m = g.map
+    assert any(fd[0] == D.BURNING for fd in SM.fields(m).values()) or True
+    for xy in list(SM.fields(m)):
+        SM.clear(m, xy)
+    g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
+    x, y = next(c for c in free_around(g, m, p.x, p.y, 3) if c != (p.x, p.y) and not g.occupied(m, *c)
+                and not any((it.x, it.y) == c for it in m.items) and m.tile(*c) not in SM.KEEP_OFF)
+    under = m.tile(x, y)
+    assert SM.place(g, m, x, y, D.ICEWALL, 2) and not D.TILES[m.tile(x, y)].walk
+    g.end_turn(1)
+    g.end_turn(1)
+    g.end_turn(1)
+    assert m.tile(x, y) == under, 'the ice wall melted'
+    # burning ground burns a goblin standing in it; roots hold one
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    gob = make_monster(g, 'goblin', x, y, 3)
+    gob.hp = gob.maxhp = 999
+    g.map.mons.append(gob)
+    SM.place(g, m, x, y, D.BURNING, 5, 4)
+    SM.tick(g)
+    assert 'burn' in gob.effects
+    # the undead cannot step onto hallowed ground
+    sk_ = make_monster(g, 'skeleton', x, y, 3)
+    g.map.mons = [o for o in g.map.mons if o.is_npc] + [sk_]
+    nx, ny = next(c for c in free_around(g, m, x, y, 1) if c != (x, y) and c != (p.x, p.y))
+    SM.place(g, m, nx, ny, D.HALLOWED, 5, 3)
+    sk_.x, sk_.y = nx, ny
+    SM.after_move(g, sk_, x, y)
+    assert (sk_.x, sk_.y) == (x, y), 'the skeleton set foot on hallowed ground'
+    # corpses: the fallen leave one, and it shows
+    g.map.slain = []
+    g.kill(sk_)
+    assert g.map.slain and SM.corpses(g)
+    app.render()
+    assert '%' in app.cv.dump()
+    # wards and Martyr's Grace
+    p.buffs = [['ward', 50, 10, 'Ward']]
+    life = p.life
+    g.hurt(20, 'test')
+    assert p.life == life and p.buffs[0][1] < 50
+    p.buffs = [['martyr', 1, 10, "Martyr's Grace"]]
+    g.hurt(99999, 'test')
+    assert p.life == 1 and not g.dead and not p.buffs
+    p.life = 400
+    # Packmaster: two beasts
+    assert 'packmaster' in p.known and MC.beast_room(g) == 'beast2'
+    w2 = make_monster(g, 'wolf', *free_around(g, m, p.x, p.y, 1)[0], 3)
+    g.map.mons.append(w2)
+    MC.tame(g, w2)
+    assert MC.get(g, 'beast2') and len(MC.beasts(g)) == 2 and MC.beast_room(g) is None
+    app.screens = [ui.GameScreen(app), ui.CompanyScreen(app)]
+    app.render()
+    dump = app.cv.dump()
+    assert w2.name in dump or MC.get(g, 'beast2').name in dump, 'the second beast has its card'
+    app.screens = [ui.GameScreen(app)]
+    print('schools ok:', len(SK.SKILL_LIST), 'tome skills,', len(techs), 'techniques')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

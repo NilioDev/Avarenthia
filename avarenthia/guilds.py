@@ -91,11 +91,11 @@ TEACH = {
     'moot': [('entangle', 1, 'nature', 6, 60), ('spirit_totem', 2, 'nature', 14, 150), ('wild_shape', 4, 'nature', 26, 400)],
     'chapter': [('mass_mend', 1, 'restoration', 6, 60), ('hallowed_ground', 2, 'restoration', 14, 160),
                 ('rite_of_return', 4, 'restoration', 26, 420)],
-    'ossuary': [('raise_dead', 1, 'necromancy', 6, 80), ('bone_armour', 2, 'necromancy', 14, 150),
+    'ossuary': [('raise_dead', 1, 'necromancy', 6, 80), ('bone_golem', 2, 'necromancy', 14, 150),
                 ('corpse_burst', 4, 'necromancy', 28, 450)],
     'stillhand': [('still_flurry', 1, 'unarmed', 6, 50), ('stone_stance', 2, 'unarmed', 12, 120), ('pressure_point', 2, 'unarmed', 16, 150),
                   ('wind_step', 4, 'unarmed', 26, 380)],
-    'hound': [('tame', 1, 'beastcraft', 4, 60), ('call_of_the_pack', 2, 'beastcraft', 14, 160), ('pack_fury', 4, 'beastcraft', 26, 380)],
+    'hound': [('pack_fury', 1, 'beastcraft', 6, 60), ('call_of_the_pack', 2, 'beastcraft', 14, 160), ('packmaster', 4, 'beastcraft', 26, 380)],
 }
 # techniques only those who serve two guilds at once can learn: (guild a, guild b) -> (skill, rank in both, price)
 COMBOS = {
