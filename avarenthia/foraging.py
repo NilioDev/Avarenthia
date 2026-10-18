@@ -28,6 +28,7 @@ PLANTS = {
     'moonpetal': ('Moonpetal', 'herb', 10, 'mana', 6),
     'feverfew': ('Feverfew', 'herb', 10, 'cure', 6),
     'kingsfoil': ('Kingsfoil', 'herb', 20, 'heal2', 2),
+    'everbloom': ('Everbloom', 'herb', 10, 'heal2', 0),          # grows only in the Unwintering
 }
 LOOKS = {
     'berry': ['red berries', 'black berries', 'purple berries', 'orange berries', 'pale berries'],

@@ -1007,7 +1007,10 @@ def ambush_factor(game):
 
 def food_factor(game):
     eff = EFFECTS.get(current(game))
-    return eff[3] if eff else 1.0
+    f = eff[3] if eff else 1.0
+    if f > 1 and any(b[0] == 'warm' for b in game.player.buffs):
+        return 1.0                                   # warmed through by a hot spring: the cold costs nothing
+    return f
 
 
 def notice(game):

@@ -106,8 +106,41 @@ TILES = [
     Tile('Θ', '#b4ae9e', False, False, 'inscribed stone', bg='#2a2620'),
     Tile('▬', '#c89a62', False, False, 'ferry raft', bg='#1c3a60'),
     Tile('─', '#c8b48a', False, False, 'ferry rope', bg='#12284a'),
+    # nature and wonders (nature.py)
+    Tile('║', '#f4fbff', True, False, 'waterfall', cost=20, bg='#3c6ea8'),
+    Tile('≈', '#eef8ff', False, False, 'foaming pool', bg='#2c5a8a'),
+    Tile('°', '#bcdcec', True, False, 'spray', bg='#142228'),
+    Tile('▀', '#9c968a', False, True, 'rock ledge', bg='#2e2c28'),
+    Tile('≈', '#e6f4ff', False, False, 'rapids', bg='#3a6a9a'),
+    Tile('■', '#8e8880', False, False, 'boulder', bg='#2c4c6c'),
+    Tile('•', '#d2c8b4', True, False, 'stepping stone', bg='#24486e'),
+    Tile('≈', '#c8f0e6', True, False, 'hot spring', cost=14, bg='#1e5a5a'),
+    Tile('╫', '#a08a64', True, False, 'causeway of poles', bg='#20344a'),
+    Tile('║', '#e8f6ff', False, False, 'frozen waterfall', bg='#5a86b0'),
+    Tile('§', '#b4b4bc', False, False, 'hanging chain'),
+    Tile(' ', '#000000', False, False, 'empty air', bg='#0e1420'),
+    Tile('▼', '#c8d4ff', False, False, 'stair under the water', bg='#101838'),
+    Tile('↑', '#c4c8d0', False, False, 'iron spike', bg='#2a2a30'),
+    Tile('∩', '#8ad070', False, False, 'door in the hill', bg='#1a2a10'),
+    Tile('▲', '#ffb040', False, False, 'undying flame', bg='#4a1a06'),
+    Tile('≈', '#5a7aa8', False, False, 'dark water', bg='#0a1428'),
+    Tile('o', '#c8d8ff', False, False, 'star well', bg='#101830'),
+    Tile('Π', '#c0b8a8', False, False, 'singing stone', bg='#24221e'),
+    Tile('♣', '#a8e8a0', False, False, 'everbloom', bg='#16301a'),
+    Tile('♣', '#a8a090', False, True, 'stone tree', bg='#26241e'),
+    Tile('*', '#f0a838', False, False, 'amber in the grit', bg='#2a261e'),
+    Tile('.', '#8a8478', True, False, 'grey grit'),
+    Tile('T', '#8a8a82', False, False, 'troll turned to stone', bg='#2a2a26'),
+    Tile('▲', '#b0a890', False, False, 'cairn'),
+    Tile('§', '#c8a878', False, False, 'rope down'),
+    Tile('≈', '#4ac8a0', False, False, 'green water', bg='#0a2e28'),
+    Tile('.', '#8c8478', True, False, 'bare rock'),
+    Tile('.', '#e6eef2', True, False, 'snow', cost=14),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
+(FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
+ FLAME, DARKWATER, STARWELL, SINGSTONE, EVERBLOOM, STONETREE, AMBER, GRIT, TROLLSTONE, CAIRN, ROPEDOWN, GREENWATER,
+ BAREROCK, SNOW) = range(78, 107)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

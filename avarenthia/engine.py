@@ -9,6 +9,7 @@ from . import fov
 from . import skills as SK
 from . import missions as MS
 from . import ferries as _FY  # noqa: F401  (the village ferries register their choice)
+from . import nature as NT
 from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
@@ -46,7 +47,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 26
+SAVE_VERSION = 27
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -736,6 +737,8 @@ class Game:
         if TR.is_camp(site):
             TR.on_enter(self, site, m)
         LN.on_enter(self, site, m)
+        if NT.is_nature(site):
+            NT.on_enter(self, site, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -861,6 +864,11 @@ class Game:
                 return 0
             if t == WATER and SE.walkable(self, nx, ny):
                 t = D.GRASS                     # frozen hard: walk across
+        if getattr(m, 'nature', None):
+            why = NT.blocked(self, nx, ny)
+            if why:
+                self.msg(why, 'info')
+                return 0
         if t == DOOR:
             m.set(nx, ny, ODOOR)
             return 1
@@ -881,6 +889,8 @@ class Game:
             if t in (D.RAFT, D.ROPE):
                 from . import ferries as FY
                 return FY.bump(self, nx, ny)
+            if t in NT.BUMP:
+                return NT.bump(self, nx, ny)
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0
@@ -919,6 +929,8 @@ class Game:
             TR.on_step(self)
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
+        if getattr(m, 'nature', None):
+            NT.on_step(self)
         self.auto_pickup()
         self.describe_here()
         return 1
@@ -2004,6 +2016,9 @@ class Game:
                     self.random_step(mon)
                 continue
             d = mon.tpl
+            if mon.k == 'troll' and NT.sunlit(self, m):
+                NT.to_stone(self, mon)
+                continue
             if (d['regen'] or 'Regenerating' in mon.mods) and mon.hp < mon.maxhp:
                 mon.hp = min(mon.maxhp, mon.hp + -(-mon.maxhp // 40))
             if mon.effects:
@@ -2104,6 +2119,7 @@ class Game:
                 TR.daily(self)
                 SE.daily(self)
                 LV.daily(self)
+                NT.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2414,6 +2430,8 @@ class Game:
 
     def rest(self):
         p = self.player
+        if getattr(self.map, 'ring', None) and NT.rest(self):
+            return
         if self.map.kind in ('over', 'wild') and not self.hostile_visible():
             s = self.stats()
             if p.life < s['max_life'] or p.mana < s['max_mana'] or TW.is_night(self):

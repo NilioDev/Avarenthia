@@ -379,6 +379,8 @@ def gen_world(game):
         from .tribes import place_camps
         place_camps(game, m, world, reach_set)
         LANDS.place_sites(game, m, world, reach_set)
+        from . import nature as NT
+        NT.place(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways

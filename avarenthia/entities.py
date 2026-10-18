@@ -69,7 +69,7 @@ class Item:
         if self.k == 'fish':
             from .lifeskills import FISH
             return (f'{self.n}x ' if self.n > 1 else '') + FISH[self.t][0]
-        if self.k in ('oldmap', 'vkey', 'trophy', 'star', 'oldbook'):
+        if self.k in ('oldmap', 'vkey', 'trophy', 'star', 'oldbook', 'curio'):
             return self.name
         if self.k == 'gear' and not self.identified:
             return f"{D.BASES[self.base]['name']} (unidentified)"
@@ -114,6 +114,9 @@ class Item:
             return (196, 214, 255)
         if self.k == 'oldbook':
             return (176, 132, 88)
+        if self.k == 'curio':
+            from .nature import CURIO
+            return CURIO[self.t][2]
         return (238, 228, 194)
 
     def glyph(self):
@@ -131,6 +134,8 @@ class Item:
             return '%'
         if self.k in ('tome', 'oldbook'):
             return '≡'
+        if self.k == 'curio':
+            return '*'
         if self.k == 'tool':
             return '/'
         if self.k == 'food':
@@ -169,6 +174,9 @@ class Item:
                 out.append('A map of the Varnish Empire, the ink nearly gone. Read it to find one of the old ways.')
             elif self.k == 'vkey':
                 out.append('A key of black Varnish iron. It opens a sealed vault.')
+            elif self.k == 'curio':
+                from .nature import CURIO
+                out.append(CURIO[self.t][3])
             elif self.k == 'oldbook':
                 out.append('An old book, its pages brown and brittle. Read it for your chronicle; a library pays '
                            'something for it.')
@@ -282,6 +290,9 @@ class Item:
             return 15
         if self.k == 'oldbook':
             return 12
+        if self.k == 'curio':
+            from .nature import CURIO
+            return CURIO[self.t][1]
         if self.k == 'trophy':
             return 4
         if self.k == 'star':

@@ -250,6 +250,9 @@ def over(game, x, y):
         from . import tribes as TR
         if TR.is_camp(site):
             return site.name, site.glyph[1], [TR.describe(site)]
+        from . import nature as NT
+        if NT.is_nature(site):
+            return site.name, site.glyph[1], [NT.DESC[site.kind]]
         return site.name, site.glyph[1], [{'temple': 'A temple. Priests heal the sick and lift curses; a place to wake if you fall.',
                                            'monastery': 'A walled monastery. Monks, a herb garden, a warm meal for travellers.',
                                            'watchtower': 'A watchtower. From the top you can see far over the land.',

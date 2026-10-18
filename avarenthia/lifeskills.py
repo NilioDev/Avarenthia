@@ -145,6 +145,8 @@ def plan(game, water):
     if rising_near(game, p.x, p.y):
         chance = min(.95, chance + .2)                # cast where the rings are
         game.msg('Fish are rising here.', 'info')
+    from .nature import fish_bonus
+    chance = min(.95, chance + fish_bonus(game))
     out = dict(water=water, rank=r, turns=turns, kind='none', fish=None, weight=0)
     from .evils import taint_at
     ev = taint_at(game, p.x, p.y) if over else None

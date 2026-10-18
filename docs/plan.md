@@ -12,7 +12,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
-| **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
+| **Built: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway, the Frozen Stair; the Drifting Isles, the Starwater, the Thunder Anvil and eleven more wonders, each a site with its own saved map; trolls turn to stone in the sun |
 | **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
 | **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
@@ -113,6 +113,25 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   (Hobble-under-Hill, Little Puddling), elf cities and glades, dwarf holds and miners' villages, gnome hamlets, and
   each hostile camp kind its own way. A small chance of a hand-made name. Glades, gnome hamlets, camps, holds and
   cities are no longer capped by a list. The handbook's Towns chapter has a Names section.
+- **Nature and wonders** (`nature.py`). One world-map cell each, a site with its own saved play map made from the
+  world seed and its place. Falls at the steps where a river leaves the hills (about four a world, one with a great
+  name): waterfall with a hollow and a chest behind the curtain, cascade and great falls with a lookout cairn that
+  maps the land around, the Frozen Stair in the cold (climb the ice in winter to a ledge with a chest). Rapids with
+  stepping stones (a slip sweeps you downstream), hot springs (heal half once a day, warm: the cold costs no extra
+  food), a tidal causeway to an islet chapel (two tides a day; the sea covers it at high tide). Wonders, each at most
+  once: the Drifting Isles (isles drawn over the vale, the one above you only a shadow; water off one isle runs pool,
+  brook, lake, river; a chain up to an isle top with a chest), the Starwater and its twin (a stair under the lake
+  between them), the Thunder Anvil (a weapon left at the spike gets lightning damage in a storm), the Hollow Hill (at
+  full moon by night: trade a thing you carry for a fey thing, or dance away a day), the Unwintering (Everbloom), the
+  Undying Flame (a weapon tempered once: +10% damage, more durability), the Drowned Bell (dive in a storm: the
+  chapel's offerings, and something follows you up), the Star Well (a silver coin and one of four wishes a day, three
+  in ten twisted), the Singing Stones (rest in the ring at dusk or night: dream of a hidden place, once a week), the
+  Wisp Fen (follow five lights at night: a chest or the mire), the Singing Sands (the hum grows louder towards a
+  buried chest), the Glowing Bay (summer nights: waves glow, fish bite), the Green Well (rope down, three dives for
+  offerings), the Stone Wood (amber and fossils to sell). Falling water in strands of their own speed, boiling foam,
+  drifting spray, flowing water on the site maps. Now and then a star falls on an ordinary night (the Starfall's
+  machinery). Trolls in daylight turn to stone. Not built: the northern lights stay weather (what they give is not
+  settled); the "shown but not decided" list stays open.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -249,7 +268,7 @@ Cities take grander forms (Port Varen, Highmarch, Kingsbridge); villages plainer
 
 ---
 
-## Nature and wonders (approved, not built)
+## Nature and wonders (built 18 October 2026; the spec)
 
 Approved on 17 October 2026 in the thread on natural phenomena. Mockups (GIFs in the game's own tiles) and the
 script that drew them are in the project files under `natuur/` (`natuur_mockups.py`).

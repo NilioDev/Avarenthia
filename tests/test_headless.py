@@ -2989,11 +2989,208 @@ def place_names():
     print('place names ok:', len(names), 'e.g.', ', '.join(random.sample(names, 8)))
 
 
+def nature_sites():
+    """The falls, springs and wonders: each one's map, and the one thing to do there."""
+    from avarenthia import nature as NT, events as EV
+    print('== nature and wonders')
+    seen = set()
+    for seed in (12, 3, 5):
+        g = E.Game('Nature', False, seed=seed, race='human', gender='male')
+        p = g.player
+        p.gold = 5000
+        day0 = g.turn - g.turn % D.DAY_LEN
+
+        def at(hour, day=0):
+            g.turn = day0 + day * D.DAY_LEN + int(D.DAY_LEN * hour / 24)
+
+        def go(kind):
+            q = next((q for q in g.world.sites if q.kind == kind), None)
+            if not q:
+                return None
+            to_over(g, 0)
+            p.x, p.y = q.x, q.y
+            g.enter_site(q.id)
+            seen.add(kind)
+            return q
+
+        def find(tile):
+            m = g.map
+            return next(((i % m.w, i // m.w) for i, t in enumerate(m.t) if t == tile), None)
+
+        def bump(tile):
+            m = g.map
+            x, y = find(tile)
+            for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (1, -1), (-1, -1)):
+                if m.inb(x + dx, y + dy) and D.TILES[m.tile(x + dx, y + dy)].walk:
+                    p.x, p.y = x + dx, y + dy
+                    break
+            return g.try_move(x - p.x, y - p.y)
+        at(12)
+        for kind in NT.BUILD:
+            q = next((q for q in g.world.sites if q.kind == kind), None)
+            if q and kind not in seen:
+                m = NT.site_map(g, q)
+                x, y = m.entry
+                assert D.TILES[m.tile(x + 1, y)].walk, (kind, D.TILES[m.tile(x + 1, y)].name)
+        if go('falls'):
+            fx, fy = find(D.FALLS)
+            p.x, p.y = fx, fy + 2 if D.TILES[g.map.tile(fx, fy + 2)].walk else fy
+            g.map.soaked = False
+            p.x, p.y = fx, fy
+            NT.on_step(g)
+            assert g.map.soaked
+            assert NT.fish_bonus(g) > 0
+        if go('frozenfalls'):
+            at(12, (300 - g.day % 360) % 360)               # deep winter
+            p.x, p.y = g.map.ledge_back
+            NT.climb_ice(g)
+            assert (p.x, p.y) == g.map.ledge, 'the frozen falls are climbed in winter'
+            NT.climb_ice(g)
+            assert (p.x, p.y) == g.map.ledge_back
+            at(12)
+        if go('hotspring'):
+            p.life = 1
+            p.x, p.y = find(D.HOTPOOL)
+            p.bathed_day = -1
+            NT.on_step(g)
+            assert p.life > 1 and any(b[0] == 'warm' for b in p.buffs)
+        if go('causeway'):
+            m = g.map
+            cx, cy = find(D.CAUSEWAY)
+            for k in range(D.DAY_LEN):
+                g.turn += 1
+                if not NT.low_tide(g):
+                    break
+            p.x, p.y = cx - 1, cy
+            assert NT.blocked(g, cx, cy), 'the sea covers the causeway at high tide'
+            for k in range(D.DAY_LEN):
+                g.turn += 1
+                if NT.low_tide(g):
+                    break
+            assert not NT.blocked(g, cx, cy)
+            at(12)
+        if go('isles'):
+            q = NT.site_of(g)
+            bump(D.CHAIN)
+            assert g.cur == q.map_key + ':top', g.cur
+            bump(D.CHAIN)
+            assert g.cur == q.map_key
+        if not g.eq_item('weapon'):
+            from avarenthia.entities import make_gear
+            sw = make_gear(g, next(k for k, b in D.BASES.items() if b['slot'] == 'weapon' and b.get('req', 1) <= 1), 'normal', 1)
+            sw.rstr = sw.rdex = 0
+            p.inv.append(sw)
+            g.equip(sw)
+        w = g.eq_item('weapon')
+        if w and go('anvil'):
+            q = NT.site_of(g)
+            bump(D.SPIKE)
+            assert g.pending and g.pending['key'] == 'nature'
+            EV.resolve(g, 'anvil_leave')
+            assert q.left is w and not g.eq_item('weapon')
+            NT.bless(g, q)
+            bump(D.SPIKE)
+            EV.resolve(g, 'anvil_take')
+            assert any(a[0] == 'light_dmg' for a in w.aff) and w in p.inv
+        if go('mound'):
+            at(23, 13 - g.day % 28 + 28)
+            assert NT.full_moon(g)
+            bump(D.MOUNDDOOR)
+            assert g.pending, 'the hill opens at full moon'
+            t0 = g.turn
+            EV.resolve(g, 'fey_dance')
+            assert g.turn >= t0 + D.DAY_LEN
+            at(12)
+        if go('unwintering'):
+            bump(D.EVERBLOOM)
+            assert any(i.k == 'plant' and i.t == 'everbloom' for i in p.inv)
+        if go('flame') and g.eq_item('weapon'):
+            ww = g.eq_item('weapon')
+            bump(D.FLAME)
+            assert getattr(ww, 'tempered', False) and any(a[0] == 'ed' for a in ww.aff)
+        if go('bell'):
+            keep = NT.storm_at
+            NT.storm_at = lambda game, site: True
+            n0 = len(g.map.items)
+            bump(D.DARKWATER)
+            NT.storm_at = keep
+            assert len(g.map.items) > n0 and NT.site_of(g).bell_done
+            g.map.mons = [o for o in g.map.mons if o.is_npc]
+        if go('starwell'):
+            bump(D.STARWELL)
+            assert g.pending
+            EV.resolve(g, 'luck')
+            assert NT.site_of(g).wish_day == g.day
+        if go('wisps'):
+            at(23)
+            m = g.map
+            m.wisp_day = -1
+            for pt in m.wisp:
+                p.x, p.y = pt
+                NT.on_step(g)
+            assert m.wisp_day == g.day, 'following the lights to the end'
+            at(12)
+        if go('bay'):
+            at(23, (120 - g.day % 360) % 360)            # a summer night
+            assert NT.summer(g) and NT.fish_bonus(g) > 0
+            at(12)
+        if go('cenote'):
+            bump(D.ROPEDOWN)
+            assert (p.x, p.y) == g.map.rope_bottom
+            for _ in range(4):
+                bump(D.GREENWATER)
+            assert g.map.dives == 0
+        if go('stonewood'):
+            bump(D.AMBER)
+            assert any(i.k == 'curio' for i in p.inv)
+            assert next(i for i in p.inv if i.k == 'curio').value() > 0
+        if go('stones'):
+            at(23)
+            m = g.map
+            p.x, p.y = m.ring[0], m.ring[1]
+            m.mons = [o for o in m.mons if o.is_npc]
+            NT.site_of(g).dream_day = -99
+            assert NT.rest(g)
+            at(12)
+        if go('sands'):
+            m = g.map
+            p.x, p.y = m.dig
+            NT.on_step(g)
+            assert m.dug and find(D.CHEST)
+        if go('starwater'):
+            q = NT.site_of(g)
+            bump(D.STARSTAIR)
+            assert g.cur == g.world.sites[q.twin].map_key
+        for kind in ('cascade', 'greatfalls'):
+            if go(kind):
+                bump(D.CAIRN)
+                assert NT.site_of(g).looked
+        if go('rapids'):
+            keep = random.random
+            random.random = lambda: 0.0
+            p.x, p.y = find(D.STEPSTONE)
+            NT.slip(g)
+            random.random = keep
+            assert g.map.tile(p.x, p.y) != D.STEPSTONE, 'a slip sweeps you off the stones'
+        # trolls caught by the sun turn to stone
+        go('falls') or go('rapids')
+        at(12)
+        from avarenthia.entities import make_monster
+        m = g.map
+        tr = make_monster(g, 'troll', p.x + 2, p.y, 5)
+        tr.awake = True
+        m.mons.append(tr)
+        g.monsters_act()
+        assert tr not in m.mons and m.tile(tr.x, tr.y) == D.TROLLSTONE
+    assert len(seen) >= 20, sorted(set(NT.BUILD) - seen)
+    print('nature ok:', ', '.join(sorted(seen)))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

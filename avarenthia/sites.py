@@ -14,6 +14,8 @@ SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 1
              'shieling': ('⌂', (214, 200, 170))}
 from .tribes import LOOK as _CAMP_LOOK  # noqa: E402
 SITE_LOOK.update(_CAMP_LOOK)
+from .nature import LOOK as _NATURE_LOOK  # noqa: E402
+SITE_LOOK.update(_NATURE_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns', 'The Broken Wheel', 'The Milestone',
                  'The Sleeping Dog', 'The Pilgrim\'s Staff', 'The Black Kettle']
@@ -182,6 +184,9 @@ def gen_site_map(game, site):
     if site.kind in ('oasis', 'shieling'):
         from .lands import site_map
         return site_map(game, site)
+    from . import nature as NT
+    if NT.is_nature(site):
+        return NT.site_map(game, site)
     m = _site_map(game, site)
     ex, ey = m.entry
     lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS

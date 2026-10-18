@@ -5,6 +5,7 @@ import random
 import time
 
 from . import anim as AN
+from . import nature as NT
 from . import seasons as SE
 from . import living as LV
 from . import data as D
@@ -638,6 +639,7 @@ class GameScreen(Screen):
         way_of = getattr(g.world, 'way_of', {})
         ways_seen = g.__dict__.get('ways_seen', set())
         traps = getattr(m, 'known_traps', None)
+        nat = getattr(m, 'nature', None)
         # fire beetles and ember spiders light the dark around them
         glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
                  and not getattr(o, 'lurk', False)]
@@ -672,6 +674,16 @@ class GameScreen(Screen):
                     if look:
                         ch, fg, bg = look
                         self.moving = True
+                if nat:
+                    if v and m.t[i] in NT.ANIM:
+                        look = NT.cell(g, m, i, mx, my, (ch, fg, bg), t, night)
+                        if look:
+                            ch, fg, bg = look
+                            self.moving = True
+                    look, mv = NT.overlay(g, m, mx, my, i, (ch, fg, bg), t, night, v)
+                    if look:
+                        ch, fg, bg = look
+                        self.moving = self.moving or mv
                 if portal and (mx, my) == portal:
                     ch, fg = '0', AN.portal(t)
                     self.moving = True

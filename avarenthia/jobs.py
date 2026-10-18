@@ -1821,7 +1821,7 @@ def on_named_meet(game, n):
 
 
 # ------------------------------------------------------------------ the Starfall
-def fall(game):
+def fall(game, rare=False):
     from . import news as NW
     from .engine import dir_name
     w = game.world
@@ -1840,6 +1840,11 @@ def fall(game):
     near = min((cheb(s.x, s.y, *spot) for s in cities), default=60)
     game.star = dict(x=spot[0], y=spot[1], r=8, day=game.day, rivals=game.day + 2 + min(4, near // 18), taken=False,
                      cx=spot[0] + random.randint(-4, 4), cy=spot[1] + random.randint(-4, 4))
+    if rare:
+        game.msg(f'A star falls in the night, and does not burn out: it comes down whole, far to the '
+                 f'{dir_name(spot[0] - x0, spot[1] - y0)}, and the ground shakes.', 'unique')
+        NW.post(game, 'trade', 'A star fell on an ordinary night and came down whole. Seekers are on the road.', *spot)
+        return
     game.msg(f'The sky rains stars tonight. One of them does not burn out: it comes down whole, far to the '
              f'{dir_name(spot[0] - x0, spot[1] - y0)}, and the ground shakes.', 'unique')
     NW.post(game, 'trade', 'A star came down whole on the night of the Starfall. Every seeker in the realm is on the road.', *spot)
