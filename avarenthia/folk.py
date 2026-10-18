@@ -9,14 +9,8 @@ from .data import GRASS, TREE, PATH, FOREST, WATER, PLANK, DOOR, TABLE, ALTAR, S
 from .entities import GameMap, make_npc
 from .worldgen import cheb
 
-HALF_A = ['Apple', 'Barley', 'Bramble', 'Clover', 'Honey', 'Little', 'Mossy', 'Nether', 'Puddle', 'Tumble', 'Under',
-          'Willow', 'Thistle', 'Button', 'Pipe', 'Hazel']
-HALF_B = ['bottom', 'burrow', 'combe', 'hollow', 'well', 'by', 'end', 'field', 'hithe', 'dell', 'brook', 'hill', 'wick']
 LAND_NAMES = ['The Barleydowns', 'The Clover Hills', 'The Green Downs', 'The Honeyfolds', 'The Hollow Hills',
               'The Tumbledowns', 'The Apple Country']
-ELF_CITY_NAMES = ['Aelindor', 'Calemyr', 'Ithelmar', 'Sylvaranth', 'Orrenvael', 'Mirathiel']
-GLADE_NAMES = ['Moonwater Glade', 'Thistlelight', 'Silverbirch Glade', 'Dawnfern', 'Starmoss Hollow', 'Whisperleaf',
-               'Lanternwood', 'The Glade of Falling Stars']
 LIVING = (150, 180, 110)          # walls of living wood and woven branches
 ELF_FG = '#aae6aa'
 LANTERN = (140, 200, 255)
@@ -72,7 +66,6 @@ def settle_peoples(m, world):
         if names:
             r.name = names.pop()
     world.halfling_land = [r.id for r in land]
-    taken = {s.name for s in world.settlements}
     for s in world.settlements:
         if getattr(s, 'elder', False):
             s.race = 'elf'
@@ -80,13 +73,7 @@ def settle_peoples(m, world):
                 s.faction = 'circle'
         elif s.region in world.halfling_land and not s.is_city and s.kind != 'deephold' and s.id != 0 \
                 and not getattr(s, 'dwarven', False):
-            s.race = 'halfling'
-            for _ in range(40):
-                nm = random.choice(HALF_A) + random.choice(HALF_B)
-                if nm not in taken:
-                    taken.add(nm)
-                    s.name = nm
-                    break
+            s.race = 'halfling'                  # named in names.py, like every place
         elif s.race in ('halfling', 'elf') and not getattr(s, 'dwarven', False):
             s.race = 'human'                     # elves and halflings live in their own lands now
 
@@ -100,17 +87,16 @@ def place_glades(game, m, world, reach_set, n=4):
     cands = [(i % w, i // w) for i in reach_set if m.t[i] == FOREST and world.road_dist[i] >= 3
              and 4 <= i % w < w - 4 and 4 <= i // w < m.h - 4 and i not in world.wonder_cells]
     random.shuffle(cands)
-    names = GLADE_NAMES[:]
-    random.shuffle(names)
+    from . import names as NM
     for wood, road in ((36, 6), (28, 4), (20, 3)):       # deep in the wood and far from roads if the land allows
         for x, y in cands:
-            if n <= 0 or not names:
+            if n <= 0:
                 return
             if world.road_dist[y * w + x] < road or any(cheb(x, y, a, b) < 12 for a, b in taken):
                 continue
             if sum(1 for dy in range(-3, 4) for dx in range(-3, 4) if m.tile(x + dx, y + dy) == FOREST) < wood:
                 continue
-            st = Site(len(world.sites), 'glade', x, y, names.pop())
+            st = Site(len(world.sites), 'glade', x, y, NM.make(world, 'elf', 'glade', NM.land_at(m, x, y)))
             st.hidden, st.found = True, False
             st.faction = world.region_at(x, y).faction
             world.sites.append(st)
@@ -683,8 +669,6 @@ def climb(game, up):
 
 
 # ------------------------------------------------------------------ the gnome hamlets
-GNOME_NAMES = ['Mossbottom', 'Acorn Hollow', 'Under-the-Oak', 'Fernhame', 'Toadstool Dell', 'Rootwick', 'Hazelhame',
-               'Old Beech Hollow', 'Owlhame']
 HERB_PRICE, SHROOM_PRICE, BEAST_FEE = 120, 60, 300
 
 
@@ -702,16 +686,15 @@ def place_gnomes(game, m, world, reach_set, n=3):
     cands = [(i % w, i // w) for i in reach_set if m.biome[i] == deep and m.t[i] == FOREST and world.road_dist[i] >= 3
              and 4 <= i % w < w - 4 and 4 <= i // w < m.h - 4 and i not in world.wonder_cells]
     random.shuffle(cands)
-    gn = GNOME_NAMES[:]
-    random.shuffle(gn)
+    from . import names as NM
     for x, y in cands:
-        if n <= 0 or not gn:
+        if n <= 0:
             return
         if any(cheb(x, y, a, b) < 8 for a, b in taken):
             continue
         if sum(1 for dy in range(-2, 3) for dx in range(-2, 3) if m.inb(x + dx, y + dy) and m.biome[(y + dy) * w + x + dx] == deep) < 16:
             continue
-        st = Site(len(world.sites), 'gnomes', x, y, gn.pop())
+        st = Site(len(world.sites), 'gnomes', x, y, NM.make(world, 'gnome', 'hamlet', NM.land_at(m, x, y)))
         st.hidden, st.found = True, False
         world.sites.append(st)
         taken.append((x, y))

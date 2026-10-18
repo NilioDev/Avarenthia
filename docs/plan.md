@@ -14,7 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Approved: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway; the Drifting Isles, the Starwater, the Thunder Anvil and fourteen more wonders, each a site with its own saved map. Not built yet |
 | **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
-| **Approved: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land. Not built yet |
+| **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
 | **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
@@ -105,6 +105,14 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   landing on each bank and the ferryman's hut by one of them. Bump the raft, the rope or the ferryman by day: 3c
   (8c when the river is in spate), and you step off on the far bank; the raft stays on that side. At night he is
   home and the raft is tied up. The two busiest roads always keep their bridges, stone ones in towns.
+- **Place names** (`names.py`). One name maker for every people, a name never twice in one world
+  (`world.used_names`) and never three places on the same stem. Names fit the land (`names.land_at`): river words
+  only by a river, coast words only by the sea, hill, wood and marsh words likewise. Humans by region: the north
+  Norse (Kettlehowe, Wathmouth), the west Celtic (Penmaris, Caer Morrow, Rhydfynnon), the heartland old English
+  (Market Kingshill, Foxbridge, Great Bexchurch); cities grander (Port Hollis, Stoneminster, Konungsgarth). Halflings
+  (Hobble-under-Hill, Little Puddling), elf cities and glades, dwarf holds and miners' villages, gnome hamlets, and
+  each hostile camp kind its own way. A small chance of a hand-made name. Glades, gnome hamlets, camps, holds and
+  cities are no longer capped by a list. The handbook's Towns chapter has a Names section.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -202,7 +210,7 @@ Approved by Nilio on 17 October 2026. Proposal and mockups: `/mnt/project-files/
   3. Chronicle part 2, with the realms round: the made history, libraries, false rumours of lords and wars, leads.
 - **Save:** a list of facts (id, source, day, true or proven false). Bump `SAVE_VERSION`.
 
-## Place names (approved, not built)
+## Place names (built 18 October 2026; the spec)
 
 Approved on 17 October 2026. Today almost every place name comes from a short fixed list: 22 city names for the
 18 cities a world needs, so every game shows nearly the same cities; human villages are 24 x 14 parts for 85

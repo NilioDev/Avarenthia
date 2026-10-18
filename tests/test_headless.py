@@ -2963,11 +2963,37 @@ def ferries():
     print('ferries ok:', m.name, 'fare', fare)
 
 
+def place_names():
+    """Every place has a name of its own people, fitting its land, never twice in one world."""
+    from avarenthia import names as NM
+    print('== place names')
+    g = E.Game('Names', False, seed=21, race='human', gender='male')
+    om, w = g.maps['over'], g.world
+    places = [(s.name, s.x, s.y) for s in w.settlements] + [(q.name, q.x, q.y) for q in w.sites
+                                                             if q.kind in ('glade', 'gnomes', 'warcamp', 'ravine', 'kobolds', 'gnolls', 'stilts')]
+    names = [n for n, _x, _y in places]
+    assert all(names) and len(set(names)) == len(names), [n for n in names if names.count(n) > 1]
+    assert w.settlements[0].name == 'Thornfield'
+    for s in w.settlements:
+        if s.race != 'halfling':
+            assert NM.fits(s.name, NM.land_at(om, s.x, s.y)), (s.name, NM.land_at(om, s.x, s.y))
+    assert max(len(n) for n in names) <= 27, max(names, key=len)
+    from avarenthia.world import scaled
+    glades = [q for q in w.sites if q.kind == 'glade']
+    assert len(glades) >= scaled(4) - 1, len(glades)
+    for d in w.dungeons.values():
+        if getattr(d, 'mine', None) is not None:
+            assert d.name == f'The Mines of {w.settlements[d.mine].name}'
+    for _ in range(300):                             # the grammar never runs dry
+        assert NM.make(w, 'stilts', 'camp')
+    print('place names ok:', len(names), 'e.g.', ', '.join(random.sample(names, 8)))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

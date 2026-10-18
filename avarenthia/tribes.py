@@ -19,13 +19,6 @@ LOOK = {'warcamp': ('Ψ', (214, 96, 60)), 'ravine': ('¤', (190, 200, 90)), 'kob
         'gnolls': ('¥', (214, 176, 96)), 'stilts': ('╥', (110, 190, 120)), 'cove': ('¶', (220, 90, 70))}
 KIND_NAME = {'warcamp': 'an orc war camp', 'ravine': 'a goblin ravine', 'kobolds': 'the kobold caves',
              'gnolls': 'a gnoll hunting camp', 'stilts': 'a lizardfolk village', 'cove': 'a pirate cove'}
-NAMES = {
-    'warcamp': ['Skullgate', 'The Red Stockade', 'Gorefang Camp', 'Ironjaw Camp', 'The Bone Palisade', 'Blacktusk Camp'],
-    'ravine': ['Snaggle Gully', 'Ratgut Ravine', 'The Knifecrack', 'Grubber\'s Gulch', 'The Stinkcleft', 'Nettle Gorge'],
-    'kobolds': ['The Glitter Caves', 'Shinydig', 'The Tinkle Mines', 'Copperhole', 'The Bright Burrows', 'Pebblegleam'],
-    'gnolls': ['The Laughing Camp', 'Bonepole Camp', 'The Hyena Ring', 'Red Grass Camp', 'The Carrion Fires'],
-    'stilts': ['Sslathaar', 'Ix-Hessa', 'Thesk Mire', 'Shass Ko', 'The Reed Hives', 'Ossk Vael'],
-}
 # who lives there: the fighters (and what they become when roused), and their colours
 ORC, ORC_YOUNG, ORC_OLD = ('o', (110, 180, 70)), ('o', (170, 210, 130)), ('o', (140, 150, 120))
 GOB, GOB_YOUNG = ('g', (190, 200, 90)), ('g', (220, 230, 150))
@@ -92,12 +85,11 @@ def place_camps(game, m, world, reach_set):
     cells = [i for i in reach_set if 3 <= i % w < w - 3 and 3 <= i // w < m.h - 3 and i not in world.wonder_cells]
     random.shuffle(cells)
     from .world import scaled
+    from . import names as NM
     for kind, n in (('warcamp', scaled(2)), ('ravine', scaled(2)), ('kobolds', scaled(2)), ('gnolls', scaled(2)), ('stilts', scaled(2))):
-        names = NAMES[kind][:]
-        random.shuffle(names)
         made = 0
         for i in cells:
-            if made >= n or not names:
+            if made >= n:
                 break
             x, y = i % w, i // w
             if not D.TILES[m.tile(x, y)].walk or m.tile(x, y) in (D.ROAD, D.RIVER) or world.road_dist[i] < 2:
@@ -106,7 +98,7 @@ def place_camps(game, m, world, reach_set):
                 continue
             if not fits(kind, x, y):
                 continue
-            st = Site(len(world.sites), kind, x, y, names.pop())
+            st = Site(len(world.sites), kind, x, y, NM.make(world, kind, 'camp', NM.land_at(m, x, y)))
             st.faction = 'horde' if kind in ('warcamp', 'ravine') and 'horde' in D.FACTIONS else None
             if kind == 'ravine':
                 st.course = ravine_course(m, x, y)

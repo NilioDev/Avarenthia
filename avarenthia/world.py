@@ -354,6 +354,11 @@ def gen_world(game):
         _assign_factions(m, world, start)
         from .folk import settle_peoples, place_glades
         settle_peoples(m, world)
+        from . import names as NM
+        NM.name_settlements(m, world)
+        for s in world.settlements:
+            if s.kind == 'deephold':
+                world.dungeons[s.deep_did].name = f'The Mines of {s.name}'
         _place_strongholds(m, world, reach)
         for h in world.holds:
             m.set(h.x, h.y, CASTLE if h.kind == 'castle' else FORT)
@@ -449,7 +454,6 @@ def _settlement_biome(m, world, x, y):
 def _place_settlements(game, m, world, reach_set, dist, start):
     w = m.w
     taken = [start]
-    names = set(['Thornfield'])
 
     def far_enough(x, y, d):
         return all(cheb(x, y, a, b) >= d for a, b in taken)
@@ -473,10 +477,8 @@ def _place_settlements(game, m, world, reach_set, dist, start):
             break
     if len(cities) < N_CITIES - 1:
         return False
-    city_names = random.sample(D.CITY_NAMES, min(len(cities), len(D.CITY_NAMES)))
-    cities = cities[:len(city_names)]
-    for (x, y), nm in zip(cities, city_names):
-        sett.append(Settlement(len(sett), nm, 'city', x, y))
+    for x, y in cities:                     # every place is named once the peoples are settled (names.py)
+        sett.append(Settlement(len(sett), '', 'city', x, y))
     # villages: spread over regions
     for i in cells:
         if len(sett) >= 1 + len(cities) + N_VILLAGES:
@@ -484,15 +486,8 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         x, y = i % w, i // w
         if not far_enough(x, y, 11):
             continue
-        nm = None
-        for _ in range(30):
-            cand = random.choice(D.TOWN_A) + random.choice(D.TOWN_B)
-            if cand not in names:
-                nm = cand
-                break
-        names.add(nm)
         taken.append((x, y))
-        sett.append(Settlement(len(sett), nm, 'village', x, y))
+        sett.append(Settlement(len(sett), '', 'village', x, y))
     if len(sett) < 1 + len(cities) + N_VILLAGES - 4:
         return False
     # sizes: the first coastal city is the great metropolis; the rest of the small places are towns,
@@ -504,10 +499,9 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         r = random.random()
         s.kind = 'town' if r < .25 else 'village' if r < .65 else 'hamlet'
     # dwarven deepholds, cut into the roots of the mountains
-    from .deephold import DEEP_NAMES
-    dnames = random.sample(DEEP_NAMES, min(len(DEEP_NAMES), scaled(2)))
+    holds = scaled(2)
     for i in cells:
-        if not dnames:
+        if not holds:
             break
         x, y = i % w, i // w
         if m.t[i] != HILLS or dist[i] < 15 or not far_enough(x, y, 14):
@@ -515,9 +509,9 @@ def _place_settlements(game, m, world, reach_set, dist, start):
         if not any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == MOUNTAIN for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
             continue
         taken.append((x, y))
-        sett.append(Settlement(len(sett), dnames.pop(), 'deephold', x, y))
+        sett.append(Settlement(len(sett), '', 'deephold', x, y))
+        holds -= 1
     # dwarf villages in the hills in front of each hold
-    from .deephold import village_name
     for hold in [s for s in sett if s.kind == 'deephold']:
         made = 0
         near = [(hold.x + dx, hold.y + dy) for dx in range(-14, 15) for dy in range(-10, 11) if 5 <= max(abs(dx), abs(dy))]
@@ -530,20 +524,16 @@ def _place_settlements(game, m, world, reach_set, dist, start):
                 continue
             if not any(m.inb(x + dx, y + dy) and m.tile(x + dx, y + dy) == MOUNTAIN for dx in range(-3, 4) for dy in range(-3, 4)):
                 continue
-            nm = village_name(names)
-            if not nm:
-                break
-            names.add(nm)
             taken.append((x, y))
-            v = Settlement(len(sett), nm, 'village' if made == 0 else 'hamlet', x, y)
+            v = Settlement(len(sett), '', 'village' if made == 0 else 'hamlet', x, y)
             v.dwarven = True
             sett.append(v)
             made += 1
     # the elven city, at the foot of the Elder Tree
-    from .folk import elder_spot, ELF_CITY_NAMES
+    from .folk import elder_spot
     spot = elder_spot(m, world, reach_set, taken)
     if spot:
-        es = Settlement(len(sett), random.choice(ELF_CITY_NAMES), 'city', *spot)
+        es = Settlement(len(sett), '', 'city', *spot)
         es.elder = True
         taken.append(spot)
         sett.append(es)

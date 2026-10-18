@@ -371,12 +371,6 @@ for _b, _ks in _CR.BIOME_ADD.items():
     BIOME_MONSTERS[_b] += _ks
 for _c, _ks in _CR.CLIMATE_ADD.items():
     CLIMATE_MONSTERS[_c] = CLIMATE_MONSTERS.get(_c, []) + _ks
-TOWN_A = ['Ash', 'Bram', 'Cold', 'Dun', 'Elm', 'Fen', 'Gold', 'Hollow', 'Iron', 'Kings', 'Mill', 'Oak', 'Raven',
-          'Salt', 'Stone', 'Wolf', 'Wyn', 'Black', 'Red', 'Long', 'Briar', 'Marsh', 'Copper', 'Gull']
-TOWN_B = ['ford', 'wick', 'haven', 'mere', 'stead', 'bury', 'dale', 'moor', 'gate', 'holm', 'ton', 'brook', 'hollow', 'cross']
-CITY_NAMES = ['Port Varen', 'Highmarch', 'Caer Dunmor', 'Westergate', 'Lindholm', 'Saltreach', 'Aldmark', 'Kingsbridge', 'Marrowgate', 'Vellhaven',
-              'Eastwatch', 'Corrinhall', 'Brackenford', 'Dunharrow', 'Silverlea', 'Merrow Bay', 'Stonebridge', 'Hollin', 'Ravensmoor',
-              'Thalmere', 'Wyvernrest', 'Oldcastle']
 SIDE_DUNGEONS = [('Howling Cave', 'cave', 'cave'), ('Sunken Chapel', 'rooms', 'crypt'), ('Old Barrow', 'rooms', 'crypt'),
                  ('Gloomhollow', 'cave', 'cave'), ('Drowned Halls', 'rooms', 'dungeon'), ('Wyrm Den', 'cave', 'cave'),
                  ('Bandit Hideout', 'rooms', 'dungeon'), ('Forgotten Delve', 'rooms', 'dungeon'),

@@ -189,6 +189,10 @@ def ch_towns(g):
         ('p', 'Hamlet, village, town, city, metropolis. The bigger the place, the more it has: barracks with '
               'sellswords and a deep harbour are only found in the cities. Farms along the roads share a '
               'meal with travellers; roadside inns offer a bed and the news.'),
+        ('h', 'Names'),
+        ('p', 'A name tells you where a place lies: a -ford or -bridge stands on a river, a -haven or a Port on the '
+              'coast, a -fell, a Bryn- or a Dun- in the hills, a -holt or a Coed- in the woods. In the north the names '
+              'sound old and Norse, in the west they sound Celtic. Every people names its homes in its own way.'),
         ('h', 'Rivers in town'),
         ('p', 'A stream is crossed by a bridge. Where a lane meets a broad or wild river there is a ferry instead, the '
               'sign {▬|200,154,98} on its rope: walk into the raft or the ferryman, and for a few copper you are on '

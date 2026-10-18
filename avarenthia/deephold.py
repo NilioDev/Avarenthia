@@ -18,9 +18,6 @@ from .data import (FLOOR, ROCK, DOOR, DOWN, UP, STALL, ANVIL, ALTAR, BED, TABLE,
 from .entities import GameMap, make_npc
 from .worldgen import cheb
 
-DEEP_NAMES = ['Khaz Durim', 'Karak Varn', 'Dun Ithrand', 'Barazgund', 'Erebkar', 'Gundholm', 'Zirak Thorn', 'Thrumgard Deep']
-VILLAGE_A = ['Stone', 'Iron', 'Copper', 'Anvil', 'Flint', 'Slate', 'Coal', 'Tin', 'Granite', 'Hammer']
-VILLAGE_B = ['stead', 'holm', 'cleft', 'combe', 'barrow', 'brow', 'gate', 'by', 'thorpe', 'delve']
 THANE_LINES = [
     'Welcome to {hold}, surface-dweller. Mind the forges, and mind your manners.',
     'Our fathers dug these halls when your kind still lived in trees. The Deep Roads below were ours too, once.',
@@ -47,14 +44,6 @@ def hold_of(game, s):
 
 def is_dwarven(s):
     return s.kind == 'deephold' or getattr(s, 'dwarven', False)
-
-
-def village_name(taken):
-    for _ in range(60):
-        n = random.choice(VILLAGE_A) + random.choice(VILLAGE_B)
-        if n not in taken:
-            return n
-    return None
 
 
 # ------------------------------------------------------------------ the city
