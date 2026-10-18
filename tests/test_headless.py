@@ -3683,11 +3683,70 @@ def realms():
           'choices played,', R.events, 'court events')
 
 
+def stamina():
+    """Two pools: weapon skills and Warcraft cost stamina, spells mana; Charge is a true weapon strike; stamina comes
+    back on turns you do not strike, slower in plate; three orbs on the panel."""
+    from avarenthia import skills as SK
+    print('== stamina')
+    app = new_app('soft', seed=5)
+    g = app.game
+    p = g.player
+    s = g.stats()
+    assert s['max_stamina'] == 10 + s['str'] + s['vit'] and p.stamina == s['max_stamina']
+    assert SK.pool(SK.SKILLS['power_strike']) == 'stamina' and SK.pool(SK.SKILLS['charge']) == 'stamina'
+    assert SK.pool(SK.SKILLS['firebolt']) == 'mana' and SK.SKILLS['charge'].dtype == 'weapon'
+    assert SK.pool(SK.SKILLS['spellblade']) == 'stamina' and SK.pool(SK.SKILLS['shield_wall']) == 'stamina'
+    g.start_encounter(None, terrain=D.GRASS, lvl=1, keys=['wolf'])
+    wolf = next(o for o in g.map.mons if not o.is_npc)
+    wolf.hp = wolf.maxhp = 999
+    spot = next(c for c in [(wolf.x + 1, wolf.y), (wolf.x - 1, wolf.y), (wolf.x, wolf.y + 1), (wolf.x, wolf.y - 1)]
+                if D.TILES[g.map.tile(*c)].walk and not g.map.mon_at(*c))
+    p.x, p.y = spot
+    g.compute_fov()
+    p.known = ['power_strike', 'firebolt', 'charge']
+    p.bar = ['power_strike', 'firebolt', 'charge', None, None, None]
+    p.disc['warcraft'] = [60, 0]
+    w = g.eq_item('weapon')
+    st0, mp0 = p.stamina, p.mana
+    from avarenthia.skills import use
+    if SK.weapon_line(g) == 'swords':
+        assert use(g, 0) and p.stamina == st0 - 3 and p.mana == mp0, (p.stamina, p.mana)
+    st1 = p.stamina
+    p.cooldowns.clear()
+    before = wolf.hp
+    assert use(g, 2), 'Charge works with any weapon'
+    assert p.stamina == st1 - 9 and before - wolf.hp > 3, ('Charge hits like a weapon now', before - wolf.hp)
+    p.stamina = 0
+    p.strained = g.turn
+    g.end_turn(1)
+    assert p.stamina == 0, 'no breath back on the turn you struck'
+    g.end_turn(3)
+    assert p.stamina > 0
+    p.stamina = 0
+    g.end_turn(4)
+    light = p.stamina
+    p.stamina = 0
+    from avarenthia.entities import make_gear
+    plate = make_gear(g, 'platemail', 'normal', 1)
+    p.inv.append(plate)
+    p.eq['armor'] = plate.id
+    g.end_turn(4)
+    assert 0 < p.stamina < light and g.heavy_armour(), (p.stamina, light)
+    p.food = 50
+    p.stamina = 0
+    g.end_turn(4)
+    assert p.stamina == 0, 'starving: no stamina comes back'
+    app.render()
+    dump = app.cv.dump()
+    assert 'STAMINA' in dump and 'LIFE' in dump and 'MANA' in dump
+    print('stamina ok:', s['max_stamina'], 'stamina at the start')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

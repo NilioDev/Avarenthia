@@ -21,7 +21,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
 | **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
-| **Approved: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft becomes martial (and Charge gets fixed); a third orb on the panel, LIFE, STAMINA and MANA always in sight. Not built yet |
+| **Built: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft is martial (and Charge is a true weapon strike); a third orb on the panel, LIFE, STAMINA and MANA always in sight |
 | **Approved: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school; guild techniques adjusted; Packmaster lets you keep two beasts. Not built yet |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
@@ -205,6 +205,13 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   free for the Circle of Magi; they buy old books. The Grudge Book's keeper beside a dwarf king's High Seat and a
   loremaster in the elven city. Records mark the ruins of fallen houses on the map; walking past an old battlefield
   shows the bones. New chapters The Realms and Lords and houses; seen beats read, read beats heard.
+- **Stamina** (`skills.pool`, `engine.stats`, `ui.draw_panel`). The weapon disciplines and Warcraft (now kind
+  'martial': any weapon, its spell damage grows on Strength) cost stamina; the spells mana; guild techniques follow
+  their discipline (Iron Company and Spellblade martial). Maximum stamina 10 + Strength + Vitality + 2 a level. It
+  comes back 1 + max/20 a turn on every turn you do not strike or use a martial skill, every other turn in chain or
+  plate, not at all while starving (food under 100). Charge is a weapon strike (200% + rank) instead of a 0-damage
+  spell. The panel shows three globes side by side (the ornament went); the skill bar shows `st` or `mp`. Gnomes'
+  cheaper skills apply to mana only.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -787,7 +794,7 @@ family name with arms and a motto; dwarves, elves, orcs and raiders in their own
 
 ---
 
-## Stamina for martial skills (approved, not built)
+## Stamina for martial skills (built 18 October 2026; the spec)
 
 Approved by Nilio on 17 October 2026. Today every skill costs mana, also Power Strike or Assassinate, and
 Warcraft counts as magic. Fighting skills get their own resource: stamina.

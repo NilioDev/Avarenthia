@@ -1481,7 +1481,7 @@ def r_nature(game, choice, ctx):
                  'When you look back, the door is only turf.', 'unique')
     elif choice == 'fey_dance':
         s = game.stats()
-        p.life, p.mana = s['max_life'], s['max_mana']
+        p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
         p.buffs = [b for b in p.buffs if b[0] != 'regen'] + [['regen', 2, D.DAY_LEN, 'Danced with the fair folk']]
         game.end_turn(D.DAY_LEN, True)
         game.msg('You dance. It is only one dance, you are sure of it. When you come out, a whole day has gone by, and you '

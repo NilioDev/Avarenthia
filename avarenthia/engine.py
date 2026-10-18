@@ -55,7 +55,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 30
+SAVE_VERSION = 31
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -190,7 +190,7 @@ class Game:
         self.add_to_inv(Item(self.new_id(), 'potion', 'hp', 2))
         self.add_to_inv(HU.make_food(self, 'bread', 2))
         s = self.stats()
-        p.life, p.mana = s['max_life'], s['max_mana']
+        p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
 
         over, world = WO.gen_world(self)
         self.maps['over'] = over
@@ -417,6 +417,7 @@ class Game:
         if getattr(p, 'toll', 0):                    # what Morrak has taken
             s['max_life'] = max(10, round(s['max_life'] * (1 - p.toll / 100)))
         s['max_mana'] = int(10 + s['ene'] * 2 + (p.lvl - 1) * 2 + s['mana'])
+        s['max_stamina'] = int(10 + s['str'] + s['vit'] + (p.lvl - 1) * 2 + s.get('stamina', 0))
         w = self.eq_item('weapon')
         if w and getattr(w, 'mdur', 0) and w.dur <= 0:
             w = None
@@ -434,10 +435,16 @@ class Game:
         s['ranged'] = bool(w and D.BASES[w.base].get('ranged'))
         return s
 
+    def heavy_armour(self):
+        """Chain or plate on your back: stamina comes back at half the pace."""
+        it = self.eq_item('armor')
+        return bool(it) and D.BASES[it.base].get('family', it.base) in ('chainmail', 'platemail')
+
     def clamp_vitals(self):
         s, p = self.stats(), self.player
         p.life = min(p.life, s['max_life'])
         p.mana = min(p.mana, s['max_mana'])
+        p.stamina = min(getattr(p, 'stamina', 0), s['max_stamina'])
 
     # ------------------------------------------------------------ vision
     def _see_wonders(self):
@@ -1483,7 +1490,7 @@ class Game:
         p.gold -= price
         p.food = HU.MAX
         s = self.stats()
-        p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
+        p.life, p.mana, p.stamina, p.poison = s['max_life'], s['max_mana'], s['max_stamina'], None
         self.end_turn(D.DAY_LEN // 3, True)
         p.buffs = [b for b in p.buffs if b[0] != 'regen'] + [['regen', 2, D.DAY_LEN, 'Well rested']]
         self.msg((line or 'A bowl of stew, a mug of ale, a straw bed. You wake rested and full.') + ' (Well rested)', 'good')
@@ -1761,6 +1768,7 @@ class Game:
     def melee(self, mon):
         s = self.stats()
         self.player.last_target = mon.id
+        self.player.strained = self.turn
         if s['ranged']:
             s['dmg'] = (max(1, s['dmg'][0] // 2), max(1, s['dmg'][1] // 2))
         if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + mon.df), .25, .95):
@@ -1776,6 +1784,7 @@ class Game:
             self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
 
     def weapon_strike(self, mon, pct, force_crit=False, ranged=False):
+        self.player.strained = self.turn            # no breath gets back while you swing
         s = self.stats()
         crit = force_crit or random.random() < s['crit'] / 100
         return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True)
@@ -1961,7 +1970,7 @@ class Game:
             p.lvl += 1
             p.stat_pts += D.LEVEL_STAT_POINTS
             s = self.stats()
-            p.life, p.mana = s['max_life'], s['max_mana']
+            p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
             self.num(p.x, p.y, 'LEVEL UP', C_GOLD, True)
             self.shake()
             self.msg(f'You reach level {p.lvl}! Press C to spend {D.LEVEL_STAT_POINTS} attribute points.', 'gold')
@@ -2242,6 +2251,9 @@ class Game:
                 p.life = min(s['max_life'], p.life + 1 + s['max_life'] // 60)
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
+            if p.stamina < s['max_stamina'] and self.turn - p.strained > 1 and p.food >= HU.FAINT \
+                    and (self.turn % 2 == 0 or not self.heavy_armour()):
+                p.stamina = min(s['max_stamina'], p.stamina + 1 + s['max_stamina'] // 20)    # breath comes back quickly
             if self.turn % 2 == 0 and p.mana < s['max_mana']:
                 p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40 +
                              sum(b[1] for b in p.buffs if b[0] == 'mregen'))
@@ -2382,7 +2394,7 @@ class Game:
             [st for st in getattr(self.world, 'sites', []) if st.kind in ('temple', 'monastery')]
         dest = min(temples, key=lambda st: cheb(st.x, st.y, ox, oy)) if temples else here
         s = self.stats()
-        p.life, p.mana = max(1, s['max_life'] // 2), s['max_mana'] // 2
+        p.life, p.mana, p.stamina = max(1, s['max_life'] // 2), s['max_mana'] // 2, s['max_stamina'] // 2
         p.poison = p.burn = None
         p.gold -= fee
         p.buffs = [['frail', 25, D.DAY_LEN * 2, 'Weakened by death']]
@@ -2476,6 +2488,7 @@ class Game:
             return 0
         p = self.player
         p.last_target = t.id
+        p.strained = self.turn
         self.flash(self.path_to(t)[:-1], (216, 208, 176), '-', .15)
         if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + t.df), .25, .95):
             self.num(t.x, t.y, 'miss', C_MISS)

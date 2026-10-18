@@ -1,5 +1,8 @@
 """Classless skills. Fourteen disciplines grow by use; higher ranks unlock new skills in that
-discipline. You carry six skills on your bar and can only change them in a town."""
+discipline. You carry six skills on your bar and can only change them in a town.
+
+Two pools pay for them: the weapon skills and Warcraft (martial, any weapon, grows on Strength) cost stamina,
+the spells cost mana."""
 import random
 
 from .worldgen import cheb, free_around
@@ -18,7 +21,7 @@ DISCIPLINES = {
     'storm': dict(name='Storm Magic', kind='magic'),
     'restoration': dict(name='Restoration', kind='magic'),
     'shadow': dict(name='Shadow Magic', kind='magic'),
-    'warcraft': dict(name='Warcraft', kind='magic'),
+    'warcraft': dict(name='Warcraft', kind='martial'),
     'nature': dict(name='Nature', kind='magic'),
     'necromancy': dict(name='Necromancy', kind='magic'),
     'beastcraft': dict(name='Beastcraft', kind='magic'),
@@ -42,7 +45,7 @@ class Skill:
     def __init__(self, sid, name, line, tier, cost, cd, mode, **kw):
         self.id, self.name, self.line, self.unlock = sid, name, line, UNLOCKS[tier]
         self.cost, self.cd, self.mode = cost, cd, mode
-        self.dtype = kw.get('dtype', 'weapon' if DISCIPLINES[line]['kind'] == 'weapon' else 'spell')
+        self.dtype = kw.get('dtype', 'weapon' if DISCIPLINES[line]['kind'] in ('weapon', 'martial') else 'spell')
         self.pct, self.pct_r = kw.get('pct', 100), kw.get('pct_r', 1.5)
         self.lo, self.hi, self.r = kw.get('lo', 0), kw.get('hi', 0), kw.get('r', .4)
         self.radius = kw.get('radius', 1)
@@ -255,6 +258,21 @@ SKILLS = {s.id: s for s in SKILL_LIST + TECHNIQUES}
 STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None]
 
 
+def pool(sk):
+    """What a skill costs: 'stamina' for the weapon skills and Warcraft, 'mana' for spells."""
+    return 'stamina' if DISCIPLINES[sk.line]['kind'] in ('weapon', 'martial') else 'mana'
+
+
+def cost_of(game, sk):
+    gnome = getattr(game.player, 'race', '') == 'gnome' and pool(sk) == 'mana'
+    return max(1, round(sk.cost * (.85 if gnome else 1)))
+
+
+def can_pay(game, sk):
+    p = game.player
+    return (getattr(p, 'stamina', 0) if pool(sk) == 'stamina' else p.mana) >= cost_of(game, sk)
+
+
 def by_line(line):
     return [s for s in SKILL_LIST if s.line == line]
 
@@ -422,9 +440,10 @@ def use(game, slot):
     if m.kind in ('over', 'town') and sk.mode != 'self':
         game.msg('There is nothing to fight here.')
         return 0
-    cost = max(1, round(sk.cost * (.85 if getattr(p, 'race', '') == 'gnome' else 1)))
-    if p.mana < cost:
-        game.msg(f'Not enough mana for {sk.name} ({cost} needed).', 'bad')
+    cost = cost_of(game, sk)
+    kind = pool(sk)
+    if not can_pay(game, sk):
+        game.msg(f'Not enough {kind} for {sk.name} ({cost} needed).', 'bad')
         return 0
     d = DISCIPLINES[sk.line]
     if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
@@ -447,14 +466,19 @@ def use(game, slot):
         if bst:
             bst.fury = max(bst.fury, sk.fury)
             game.msg(f'{bst.name} bristles and bares its teeth.', 'good')
-    p.mana -= cost
+    if kind == 'stamina':
+        p.stamina -= cost
+        p.strained = game.turn
+    else:
+        p.mana -= cost
     p.cooldowns[sid] = sk.cd
     gain(game, sk.line, 3)
     return 1
 
 
 def _spell_dmg(game, sk, r):
-    dmg = random.randint(round(sk.lo + r * sk.r), round(sk.hi + r * sk.r)) + game.stats()['ene'] // 5
+    grow = 'str' if DISCIPLINES[sk.line]['kind'] == 'martial' else 'ene'
+    dmg = random.randint(round(sk.lo + r * sk.r), round(sk.hi + r * sk.r)) + game.stats()[grow] // 5
     if sk.line in ('fire', 'storm'):
         from . import weather as WX
         wx = WX.current(game)

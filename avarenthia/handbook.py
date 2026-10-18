@@ -64,7 +64,7 @@ def ch_first_steps(g):
         ('p', 'That is all you need to play. Other keys you learn as you go: the first time something new turns up, a '
               'tip in the log names its key.'),
         ('h', 'What the screen shows'),
-        ('p', 'The map on the left. The panel on the right: your life and mana, your money, and IN SIGHT, the '
+        ('p', 'The map on the left. The panel on the right: your life, stamina and mana, your money, and IN SIGHT, the '
               'enemies you can see. The line under the map: where you stand and how dangerous it is. The log at the '
               'bottom: what just happened.'),
         ('h', 'Saving'),
@@ -102,8 +102,8 @@ def ch_fighting(g):
         ('k', '[Tab]', 'the next enemy in sight; [Shift+Tab] the one before.'),
         ('k', '[Esc]', 'let go of your target.'),
         ('h', 'Skills and potions'),
-        ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. You start with none: '
-                       'skills come from tomes, the sign {≡}.'),
+        ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. Weapon skills and '
+                       'Warcraft cost stamina, spells mana. You start with none: skills come from tomes, the sign {≡}.'),
         ('k', '[q] [w]', 'drink a health or a mana potion. It takes a turn.'),
         ('k', '[f]', 'shoot with a bow at your target.'),
         ('h', 'IN SIGHT'),
@@ -132,10 +132,15 @@ def ch_hero(g):
         ('h', 'Attributes'),
         ('p', f'Strength, Dexterity, Vitality and Energy. Every level gives you {D.LEVEL_STAT_POINTS} points to spend '
               'on the character sheet [c].'),
-        ('l', ['Strength: harder blows in melee, and the heavy gear asks for it.',
+        ('l', ['Strength: harder blows in melee, more stamina, and the heavy gear asks for it.',
                'Dexterity: aim, defence and bows; the light gear asks for it.',
-               'Vitality: more life.',
+               'Vitality: more life, and more stamina.',
                'Energy: more mana, and stronger spells.']),
+        ('h', 'Stamina and mana'),
+        ('p', 'The weapon skills and Warcraft cost stamina; spells cost mana. Warcraft works with any weapon in hand '
+              'and grows stronger with Strength. Stamina comes back quickly on every turn you do not strike, at half '
+              'the pace in chain or plate, and not at all while you are starving. A fighter who also casts must '
+              'choose where the points go.'),
         ('h', 'Skills'),
         ('p', 'You start with none. Learn them from tomes, the sign {≡}, found on monsters, in ruins and at standing '
               'stones, or bought from peddlers and city outfitters. Disciplines grow as you use them, and decide which '

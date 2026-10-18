@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from avarenthia import engine as E, data as D, worldgen as WG  # noqa: E402
 from avarenthia.entities import Item  # noqa: E402
+from avarenthia import skills as SK  # noqa: E402
 
 E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'avarenthia_bot.dat')
 ORDER = [('rat', 3), ('mine', 4)]   # followed by the lairs of this world's great evils
@@ -123,7 +124,7 @@ def turn(g):
                 continue
             if k.mode in ('adjacent',) and len(adj) < 2:
                 continue
-            if p.mana < k.cost or p.cooldowns.get(sid):
+            if not SK.can_pay(g, k) or p.cooldowns.get(sid):
                 continue
             g.msg_quiet = True
             if act(g, lambda: g.use_skill(i)):

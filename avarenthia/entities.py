@@ -248,9 +248,9 @@ class Item:
                 from .lifeskills import FISH
                 out.append(f'Eat it to heal {FISH[self.t][5]} life, or sell it.')
             elif self.k == 'tome':
-                from .skills import SKILLS, DISCIPLINES, describe
+                from .skills import SKILLS, DISCIPLINES, describe, pool
                 sk = SKILLS[self.t]
-                out.append(f"A {DISCIPLINES[sk.line]['name']} skill. {sk.cost} mana, recharge {sk.cd} turns.")
+                out.append(f"A {DISCIPLINES[sk.line]['name']} skill. {sk.cost} {pool(sk)}, recharge {sk.cd} turns.")
                 out.append(describe(sk, 0))
                 out.append(f"Needs {DISCIPLINES[sk.line]['name']} {sk.unlock} to learn." if sk.unlock else 'Anyone can learn it.')
                 out.append('Read it from your inventory to learn the skill.')
@@ -435,6 +435,8 @@ class Player:
         self.race, self.gender = 'human', 'other'
         self.life = 1
         self.mana = 1
+        self.stamina = 1
+        self.strained = -9      # the last turn you struck or used a martial skill
         self.last_target = None
         self.target = None          # the enemy picked with Tab
 

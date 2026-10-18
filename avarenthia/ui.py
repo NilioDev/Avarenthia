@@ -44,6 +44,7 @@ DIM = (143, 133, 115)
 GOLD = (217, 165, 71)
 BLOOD = (196, 58, 44)
 MANA = (60, 99, 200)
+STAMINA = (184, 124, 56)        # bronze: green is poison, gold is XP
 GOOD = (134, 196, 111)
 INFO = (136, 182, 220)
 BAD = (236, 106, 92)
@@ -1079,14 +1080,16 @@ class GameScreen(Screen):
             if wk not in ('clear',) and wk not in WX.QUIET:
                 lab = WX.NAMES.get(wk, wk)
                 cv.text_right(x + PW - 1, 2, f'{lab} {WX.PANEL_ICON.get(wk, "")}', INFO, PANEL)
+        st = max(0, int(getattr(p, 'stamina', 0)))
         self.orb(cv, x, 3, p.life / max(1, s['max_life']), BLOOD, (100, 160, 60) if p.poison else None)
-        self.orb(cv, x + PW - 9, 3, p.mana / max(1, s['max_mana']), MANA)
+        self.orb(cv, x + 9, 3, st / max(1, s['max_stamina']), STAMINA)
+        self.orb(cv, x + 18, 3, p.mana / max(1, s['max_mana']), MANA)
         cv.text_center(x + 4, 12, 'LIFE' if not p.poison else 'POISON', BAD if p.poison else scale(BLOOD, 1.3), PANEL)
-        cv.text_center(x + PW - 5, 12, 'MANA', scale(MANA, 1.3), PANEL)
+        cv.text_center(x + 13, 12, 'STAMINA', scale(STAMINA, 1.3), PANEL)
+        cv.text_center(x + 22, 12, 'MANA', scale(MANA, 1.3), PANEL)
         cv.text_center(x + 4, 13, f"{max(0, int(p.life))}/{s['max_life']}", FG, PANEL)
-        cv.text_center(x + PW - 5, 13, f"{max(0, int(p.mana))}/{s['max_mana']}", FG, PANEL)
-        for i, ch in enumerate('·♦·'):                  # a small ornament between the globes
-            cv.put(x + PW // 2 - 1 + i, 7, ch, scale(GOLD, .6 if ch == '·' else .9), PANEL)
+        cv.text_center(x + 13, 13, f"{st}/{s['max_stamina']}", FG, PANEL)
+        cv.text_center(x + 22, 13, f"{max(0, int(p.mana))}/{s['max_mana']}", FG, PANEL)
         from . import behave as BH
         cx = x
         for lab, col in BH.shown(g):                   # held, slowed, cursed...
@@ -1133,9 +1136,11 @@ class GameScreen(Screen):
                 continue
             sk = SK.SKILLS[sid]
             cd = p.cooldowns.get(sid, 0)
-            ok = p.mana >= sk.cost and not cd
+            ok = SK.can_pay(g, sk) and not cd
+            stam = SK.pool(sk) == 'stamina'
             cv.text(x + 2, y, sk.name, FG if ok else DIM, PANEL, maxw=PW - 8)
-            cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f'{sk.cost}mp', BAD if cd else (INFO if ok else DIM), PANEL)
+            cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f"{SK.cost_of(g, sk)}{'st' if stam else 'mp'}",
+                          BAD if cd else ((scale(STAMINA, 1.3) if stam else INFO) if ok else DIM), PANEL)
         hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
         mp = g.count('potion', 'mp') + g.count('potion', 'rejuv')
         tp = g.count('scroll')
@@ -1784,8 +1789,8 @@ class CharacterScreen(Modal):
             cv.text_right(x + 20, yy, str(s[st]), FG, PANEL)
             cv.text(x + 23, yy, helps[st], DIM, PANEL)
         cv.text(x + 3, y + 9, 'IN NUMBERS', DIM, PANEL)
-        tots = [('Life', f"{p.life}/{s['max_life']}"), ('Mana', f"{p.mana}/{s['max_mana']}"), ('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"),
-                ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])), ('Critical', f"{s['crit']}%"),
+        tots = [('Life', f"{p.life}/{s['max_life']}"), ('Stamina', f"{int(p.stamina)}/{s['max_stamina']}"),
+                ('Mana', f"{p.mana}/{s['max_mana']}"), ('Damage', f"{s['dmg'][0]}-{s['dmg'][1]}"), ('Accuracy', str(s['ar'])), ('Defense', str(s['def'])), ('Critical', f"{s['crit']}%"),
                 ('Life leech', f"{s['leech']}%"), ('Experience', f'{p.xp}/{E.xp_for(p.lvl)}')]
         for i, (a, b) in enumerate(tots):
             cx_ = x + 3 + (i % 2) * 34
@@ -1931,7 +1936,7 @@ class SkillsScreen(Modal):
             sk = known[self.sel]
             r = p.disc[sk.line][0]
             cv.text(x + 54, y + 2, sk.name, GOLD, PANEL)
-            cv.text(x + 54, y + 3, f"{SK.DISCIPLINES[sk.line]['name']} {r} · {sk.cost} mana · recharge {sk.cd} turns", DIM, PANEL, maxw=48)
+            cv.text(x + 54, y + 3, f"{SK.DISCIPLINES[sk.line]['name']} {r} · {sk.cost} {SK.pool(sk)} · recharge {sk.cd} turns", DIM, PANEL, maxw=48)
             n = cv.wrap(x + 54, y + 5, 47, SK.describe(sk, r), FG, PANEL, 10)
             d = SK.DISCIPLINES[sk.line]
             if d['kind'] == 'weapon':
@@ -4291,7 +4296,7 @@ class TempleScreen(Modal):
             if p.life >= s['max_life'] and p.mana >= s['max_mana'] and not p.poison and not sick:
                 self.said = '"You look well, child. Come back when the world has had its way with you."'
                 return
-            p.life, p.mana, p.poison = s['max_life'], s['max_mana'], None
+            p.life, p.mana, p.stamina, p.poison = s['max_life'], s['max_mana'], s['max_stamina'], None
             from . import behave as BH
             BH.cure(g)
             g.num(p.x, p.y, 'healed', E.C_HEAL, True)
