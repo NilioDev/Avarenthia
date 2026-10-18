@@ -320,7 +320,7 @@ def wilds():
             continue
         key = {'shrine': 'offer', 'stones': 'touch', 'wagon': 'search', 'camp': 'attack'}[kind]
         choose(app, key)
-        if g.cur == 'wild':
+        if g.map.kind == 'wild':
             camp = g.encounter_poi is not None
             clear_wild(g)
             if camp:
@@ -340,7 +340,7 @@ def wilds():
             opts = g.pending['options']
             n_opts = len(opts)
             choose(app, opts[i][1])
-            if g.cur == 'wild':
+            if g.map.kind == 'wild':
                 clear_wild(g)
             i += 1
             if i >= n_opts:
@@ -628,7 +628,7 @@ def crime_and_coin():
     app.screens = [ui.GameScreen(app)]
     g.try_move(-1, 0)
     choose(app, 'rob')
-    assert g.cur == 'wild'
+    assert g.map.kind == 'wild'
     gold0 = p.gold
     for o in [o for o in g.map.mons if not o.is_npc]:
         g.kill(o)
@@ -1384,7 +1384,7 @@ def hirelings_and_camp():
         g.cur = 'over'
         p.life = max(1, p.life)
         g.camp(k % 2 == 0)
-        if g.cur == 'wild':
+        if g.map.kind == 'wild':
             clear_wild(g)
         assert not g.dead
     # guild perks
@@ -1735,7 +1735,7 @@ def creatures_and_hunts():
         p.x, p.y = camp.x, camp.y
         g.over_step()
         choose(app, 'attack')
-        assert g.cur == 'wild' and any(o.k == 'orc_chief' for o in g.map.mons)
+        assert g.map.kind == 'wild' and any(o.k == 'orc_chief' for o in g.map.mons)
         clear_wild(g)
         assert camp.ready_day >= 10 ** 9
     # a whole hunt: the poster, the signs, the fight, the trophy, the reward
@@ -1763,7 +1763,7 @@ def creatures_and_hunts():
     assert NM.area(g, n)[2] < r or r <= 3, 'signs shrink the area'
     p.x, p.y = n.x + 1, n.y
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + (290 if n.habit == 'nocturnal' else 10)
-    assert NM.step(g) and g.cur == 'wild'
+    assert NM.step(g) and g.map.kind == 'wild'
     boss = next(o for o in g.map.mons if getattr(o, 'named', None) == n.id)
     boss.hp = 1
     g.kill(boss)
@@ -1973,7 +1973,7 @@ def more_jobs():
             choose(app, key)
 
     def clear():
-        if g.cur == 'wild':
+        if g.map.kind == 'wild':
             heal()
             clear_wild(g)
         answer('back')
@@ -2048,7 +2048,7 @@ def more_jobs():
     g.enter_town(v.id)
     JB.daily(g)
     answer('fight')
-    assert g.cur == 'wild', g.cur
+    assert g.map.kind == 'wild', g.cur
     assert any(getattr(o, 'thrall', 0) for o in g.map.mons), 'villagers fight with you'
     clear()
     ok(m)
@@ -3186,11 +3186,126 @@ def nature_sites():
     print('nature ok:', ', '.join(sorted(seen)))
 
 
+def zones():
+    """Walking the land: zones seam with their neighbours, keep what changed, hold ambushes and lead in and out of towns."""
+    from avarenthia import zones as ZN
+    from avarenthia.entities import Item
+    print('== zones')
+    g = E.Game('Walker', False, seed=7, race='human', gender='male')
+    p = g.player
+    s = g.world.settlements[0]
+    a, _ = ZN.make(g, s.x - 1, s.y - 1)
+    b, _ = ZN.make(g, s.x, s.y)
+    assert (a[ZN.ZH:, ZN.ZW:] == b[:2 * ZN.ZH, :2 * ZN.ZW]).all(), 'zones agree on what they share, from both sides'
+    assert (ZN.make(g, s.x - 1, s.y - 1)[0] == a).all(), 'a zone is made the same every time'
+    # out of the town by its west edge: into the zone of its cell, west of the gate
+    to_over(g, 0)
+    g.enter_town(0)
+    m = g.map
+    p.x, p.y = 0, m.entry[1]
+    g.try_move(-1, 0)
+    assert g.cur == ZN.KEY and g.over_pos == (s.x, s.y), 'leaving a town by its edge you come out into its zone'
+    zm = g.map
+    mx, my = ZN.local_mid(g, zm)
+    assert p.x < mx and (mx, my) in zm.marks, 'on the side you walked out, the town in the middle'
+    # walk west into the next zone: the window moves with you
+    for _ in range(300):
+        r = g.try_move(-1, 0) or g.try_move(-1, 1) or g.try_move(-1, -1)
+        if r:
+            g.end_turn(r)
+        if zm.zone != (s.x, s.y):
+            break
+    assert zm.zone[0] == s.x - 1 and g.over_pos == zm.zone, 'walk off a zone and you are in the next one'
+    # what you change stays; what you never touched is made again
+    it = Item(g.new_id(), 'gold', 'gold')
+    it.n = 7
+    spot = next((x, y) for x, y in [(p.x + dx, p.y + dy) for dx in range(-3, 4) for dy in range(-3, 4)]
+                if D.TILES[zm.tile(x, y)].walk and (x, y) != (p.x, p.y))
+    it.x, it.y = spot
+    zm.items.append(it)
+    gx, gy = spot[0] + zm.org[0], spot[1] + zm.org[1]
+    rock = (gx + 2, gy)
+    zm.set(rock[0] - zm.org[0], rock[1] - zm.org[1], D.ROCK)
+    here = zm.zone
+    ZN.recentre(g, zm, (here[0] - 3, here[1]))
+    assert not zm.items and here in g.zones, 'a zone you leave keeps only its changes'
+    E.save_game(g)
+    g = E.load_game()
+    assert g and g.cur == ZN.KEY, 'a saved game comes back in its zone'
+    zm, p = g.map, g.player
+    ZN.recentre(g, zm, here)
+    back = [(i.x + zm.org[0], i.y + zm.org[1], i.n) for i in zm.items]
+    assert (gx, gy, 7) in back, f'the coin lies where you left it: {back}'
+    assert zm.tile(rock[0] - zm.org[0], rock[1] - zm.org[1]) == D.ROCK, 'and so does the stone'
+    # an ambush on the world map is fought in its zone
+    g.leave_to_over()
+    assert g.cur == 'over' and ZN.KEY not in g.maps
+    g.start_encounter(None, None, 2, ['wolf', 'wolf'], 0)
+    assert g.cur == ZN.KEY and g.zone_fight and len(ZN.foes_left(g.map)) == 2, 'the ambush falls in the zone'
+    for o in ZN.foes_left(g.map):
+        o.hp = 0
+    g.map.mons = [o for o in g.map.mons if o.hp > 0]
+    g.end_turn(1)
+    assert not g.zone_fight, 'the fight is won and you walk on'
+    # flee into the next zone: they stay behind
+    g.start_encounter(None, None, 2, ['jackal'], 0)
+    zm, p = g.map, g.player
+    for o in ZN.foes_left(zm):
+        o.awake = False
+        o.x, o.y = p.x + 8, p.y
+    c0 = zm.zone
+    edge = (c0[0] - zm.org[0] // ZN.ZW) * ZN.ZW    # the west edge of the middle zone, in window tiles
+    p.x = edge
+    while not D.TILES[zm.tile(p.x, p.y)].walk or not D.TILES[zm.tile(p.x - 1, p.y)].walk:
+        p.y += 1
+    g.try_move(-1, 0)
+    assert zm.zone != c0 and not g.zone_fight and not ZN.foes_left(zm), 'cross into the next zone and the foes stay behind'
+    # up to the world map and down again; walk into a town from its zone
+    assert g.use_stairs('up') and g.cur == 'over'
+    p.x, p.y = s.x + 1, s.y
+    g.over_pos = (p.x, p.y)
+    if ZN.open_cell(g, (p.x, p.y)):
+        assert g.use_stairs('down') and g.cur == ZN.KEY
+        g.leave_to_over()
+    ZN.enter(g, (s.x, s.y), near=(4, 0))
+    zm, p = g.map, g.player
+    for _ in range(12):
+        tx, ty = ZN.local_mid(g, zm)
+        dx, dy = (tx > p.x) - (tx < p.x), (ty > p.y) - (ty < p.y)
+        r = g.try_move(dx, dy)
+        if r:
+            g.end_turn(r)
+        if g.cur != ZN.KEY:
+            break
+    assert g.cur == s.map_key, 'walk into the middle of its zone and you are in the town'
+    # travellers on the roads stand in their zone, and a long walk breaks nothing
+    g.leave_to_over()
+    wd = next((w for w in g.world.wanderers if w.kind == 'caravan' and ZN.open_cell(g, (w.x, w.y))), None)
+    if wd:
+        ZN.enter(g, (wd.x, wd.y))
+        assert any(getattr(o, 'wd', None) == wd.id for o in g.map.mons), 'a caravan in your zone stands there'
+    rnd = random.Random(5)
+    for _ in range(1500):
+        if g.dead:
+            break
+        if g.pending:
+            g.pending = None
+        if g.cur != ZN.KEY:
+            g.leave_to_over() if g.map.kind != 'over' else None
+            if g.cur == 'over' and ZN.open_cell(g, (g.player.x, g.player.y)):
+                ZN.enter(g, (g.player.x, g.player.y))
+            continue
+        r = g.try_move(rnd.choice((-1, 0, 1)), rnd.choice((-1, 0, 1)))
+        if r:
+            g.end_turn(r)
+    print('zones ok:', len(g.zones), 'zones keep changes')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

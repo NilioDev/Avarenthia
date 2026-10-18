@@ -6,6 +6,7 @@ import time
 
 from . import anim as AN
 from . import nature as NT
+from . import zones as ZN
 from . import seasons as SE
 from . import living as LV
 from . import data as D
@@ -625,6 +626,9 @@ class GameScreen(Screen):
         self.marks = self.moving = False
         day = g.turn // D.DAY_LEN
         season = SE.Now(g) if m.kind == 'over' else None
+        zone = getattr(m, 'zone', None) is not None
+        zseason = SE.Now(g) if zone else None
+        zmarks = getattr(m, 'marks', None) if zone else None
         fires = getattr(g.world, 'fires', None) if season else None
         beam = getattr(m, 'beacon', None) if m.kind == 'town' and TW.lamp_light(g) > 0 else None
         self.weather = wk = WX.shown(g)
@@ -660,6 +664,12 @@ class GameScreen(Screen):
                     ch, fg, bg = SE.look(g, m, i, (ch, fg, bg), season, t)
                     if fires and v and i in fires:
                         self.moving = True
+                elif zseason:
+                    ch, fg, bg = ZN.look(g, m, i, (ch, fg, bg), zseason)
+                    if zmarks and (mx, my) in zmarks:
+                        lk = ZN.mark_look(g, *zmarks[(mx, my)])
+                        if lk:
+                            ch, fg, bg = lk
                 if ways and i in ways and i in ways_seen:
                     ch, fg = ways[i], LOOK.PATH_FG
                 if taint and taint[i]:

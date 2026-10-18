@@ -342,6 +342,17 @@ def ch_weather(g):
 
 def ch_travel(g):
     return [
+        ('h', 'Walking the land'),
+        ('p', 'The world map is for distance: one step there is a long stretch of country. [>] anywhere in open '
+              'country takes you down into the land itself, a stretch of a few minutes across. Walk off its edge and '
+              'you are in the next stretch; [<] brings you back up to the world map.'),
+        ('p', 'Down there you see what the map only hints at: the river with its fords and bridges, the road, the '
+              'fields round a village, the hill a dungeon mouth is cut into. Walk into a town, a site or a keep in '
+              'the middle of its stretch and you are in; leave it by any edge and you come out on that side. Travellers '
+              'and caravans on the road stand there too; bump them to talk.'),
+        ('p', 'An ambush on the world map is fought down in the land where it falls on you. Win, and walk on. Or get '
+              'away into the next stretch with no foe beside you, and they stay behind. Snow, ice and autumn leaves '
+              'come and go there with the seasons, and what you leave lying stays where you left it.'),
         ('h', 'Travelling far'),
         ('p', 'On the map [m], [Tab] picks a place you have been to and shows the way; [Enter] sets out along the '
               'roads. Enemies, travellers, events, hunger, wounds or any key stop you on the way.'),
@@ -514,7 +525,7 @@ BASIC_KEYS = [
     ('[Tab] [Shift+Tab]', 'next, previous target'),
     ('[1-6]', 'use a skill'),
     ('[q] [w]', 'health potion, mana potion'),
-    ('[>] [<]', 'go in or down; climb up'),
+    ('[>] [<]', 'go in, down or into the land; climb up'),
 ]
 
 

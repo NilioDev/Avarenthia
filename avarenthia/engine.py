@@ -2,6 +2,7 @@
 import os
 import pickle
 import random
+import zlib
 
 from . import data as D
 from . import economy as ECO
@@ -10,6 +11,7 @@ from . import skills as SK
 from . import missions as MS
 from . import ferries as _FY  # noqa: F401  (the village ferries register their choice)
 from . import nature as NT
+from . import zones as ZN
 from . import wanderers as WA
 from . import war as WAR
 from . import towns as TW
@@ -47,7 +49,8 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 27
+SAVE_VERSION = 28
+SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
 C_CRIT = (255, 154, 60)
@@ -149,6 +152,8 @@ class Game:
         self.missions = []
         self.price_log = {}
         self.encounter = None
+        self.zone_fight = False
+        self.zones = {}           # what changed in the zones you have walked: (cx, cy) -> changes
         self.last_day = 1
         self.low_warned = False
         self.events = []        # transient effects for the UI
@@ -444,7 +449,8 @@ class Game:
     def compute_fov(self):
         m, p = self.map, self.player
         r = m.radius
-        if m.kind in ('over', 'town') and TW.is_night(self) and not getattr(m, 'underground', False):
+        if (m.kind in ('over', 'town') or getattr(m, 'zone', None) is not None) and TW.is_night(self) \
+                and not getattr(m, 'underground', False):
             r = 5 if m.kind == 'over' else 9
             if self.player.race in ('elf', 'goblin'):
                 r += 2
@@ -531,10 +537,10 @@ class Game:
         m = self.map
         if m.kind == 'dungeon':
             return f'{m.name} - level {m.depth}'
-        if m.kind == 'over':
-            p = self.player
-            reg = self.world.region_at(p.x, p.y).name
-            area = LN.area_at(self.world, p.x, p.y)
+        if m.kind == 'over' or getattr(m, 'zone', None) is not None:
+            x, y = (self.player.x, self.player.y) if m.kind == 'over' else self.over_pos
+            reg = self.world.region_at(x, y).name
+            area = LN.area_at(self.world, x, y)
             return f'{area} ({reg})' if area else reg
         return m.name
 
@@ -610,10 +616,16 @@ class Game:
         if lair:
             EVL.learn(self, lair)
 
-    def leave_to_over(self):
+    def leave_to_over(self, walk=None):
+        """Back to the world map. walk: the step (dx, dy) that took you off the edge of a town, site or hold; you
+        then come out into the zone of its cell, on that side."""
         p = self.player
         m = self.map
-        if m.kind == 'wild':
+        if getattr(m, 'zone', None) is not None:
+            if self.encounter is not None or getattr(self, 'zone_fight', False):
+                self.resolve_encounter()
+            ZN.leave(self)
+        elif m.kind == 'wild':
             self.resolve_encounter()
             self.maps.pop('wild', None)
         elif getattr(m, 'hid', None) is not None:
@@ -627,6 +639,10 @@ class Game:
         elif m.kind == 'town':
             s = self.world.settlements[m.sid]
             self.over_pos = (s.x, s.y)
+        if walk is not None and m.kind != 'wild' and not getattr(m, 'deck', False) and ZN.out_of(self, walk[0], walk[1], *self.over_pos):
+            self.msg(f'You walk out into {self.loc_name()}.')
+            self.request = ('save',)
+            return
         self.cur = 'over'
         p.x, p.y = self.over_pos
         esc = MS.escort_wanderer(self)
@@ -636,11 +652,25 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
 
+    def fight_map(self):
+        """The map a fight from the world map is fought on: its own battle map, or the zone you are in."""
+        m = self.maps.get('wild')
+        if m is None and getattr(self, 'zone_fight', False):
+            m = self.maps.get(ZN.KEY)
+        return m
+
     def resolve_encounter(self):
+        m = self.fight_map()
+        try:
+            self._resolve_encounter(m)
+        finally:
+            if m is not None and getattr(m, 'zone', None) is not None:
+                ZN.end_fight(self, m)
+
+    def _resolve_encounter(self, m):
         NM.after_fight(self)
         wd = next((x for x in self.world.wanderers if x.id == self.encounter), None)
         self.encounter = None
-        m = self.maps.get('wild')
         JB.after_fight(self, m)
         esc = next((o for o in m.mons if o.role == 'escort'), None) if m else None
         if esc:
@@ -766,6 +796,10 @@ class Game:
 
     def start_encounter(self, wd=None, terrain=None, lvl=1, keys=None, elite=0, intro=None):
         p = self.player
+        if self.cur in ('over', ZN.KEY):
+            cell = (p.x, p.y) if self.cur == 'over' else self.over_pos
+            if ZN.open_cell(self, cell):
+                return self._zone_encounter(cell, wd, lvl, keys, elite, intro)
         self.over_pos = (p.x, p.y)
         if terrain is None:
             terrain = self.maps['over'].tile(p.x, p.y)
@@ -804,6 +838,56 @@ class Game:
             self.msg('Defeat them, or walk off the edge of the map to escape.')
         self.compute_fov()
 
+    def _zone_encounter(self, cell, wd, lvl, keys, elite, intro):
+        """An ambush fought in the zone of the cell where it fell on you."""
+        p = self.player
+        if wd:
+            g = wd.group
+            lvl, keys, elite, leader = g['lvl'], g['keys'], g['elite'], g.get('leader')
+            faction = g.get('faction')
+            self.encounter = wd.id
+        else:
+            leader, faction = None, None
+            self.encounter = None
+        self.job_fight = None
+        w = ZN.fight(self, cell, lvl, keys or [], elite, leader, faction)
+        for mi in MS.active(self):
+            if mi.kind == 'escort':
+                spot = W.free_around(self, w, p.x, p.y, 1)
+                if spot:
+                    from .entities import make_npc
+                    who = mi.data.get('person')
+                    c = make_npc(self, who or 'Your caravan', 'escort', '#6ee2ec', spot[0][0], spot[0][1], True, ch='☺' if who else '♦')
+                    c.hp = c.maxhp = mi.data['hp']
+                    c.enc = True
+                    w.mons.append(c)
+        if intro is not None:
+            pass
+        elif wd:
+            n = len(keys)
+            what = wd.name if n == 1 or wd.kind in ('bounty', 'bandits') else f"{n} {plural(D.MONSTERS[keys[0]]['name'])}"
+            self.msg(f'{what} attack{"s" if n == 1 or wd.kind in ("bounty", "bandits") else ""}!', 'bad')
+        else:
+            self.msg('You are ambushed!', 'bad')
+        if intro is None:
+            self.msg('Defeat them, or get away into the next stretch of land.')
+        self.compute_fov()
+
+    def escape_hint(self):
+        if getattr(self.map, 'zone', None) is not None:
+            return 'Defeat them, or get away into the next stretch of land.'
+        return 'Defeat them, or walk off the edge of the map to escape.'
+
+    def zone_up(self):
+        """From a zone back up to the world map."""
+        m, p = self.map, self.player
+        if any(getattr(o, 'enc', False) and not o.is_npc and o.hp > 0 and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1
+               for o in m.mons):
+            self.msg('You cannot flee with an enemy next to you.', 'bad')
+            return 0
+        self.leave_to_over()
+        return 1
+
     def dungeon_at(self, x, y):
         d = self.world.dungeon_at(x, y)
         return d.id if d else None
@@ -823,8 +907,12 @@ class Game:
                 if (m.kind in ('wild', 'siege') or getattr(m, 'roused', False)) and any(not o.is_npc and o.awake and cheb(o.x, o.y, p.x, p.y) <= 1 for o in m.mons):
                     self.msg('You cannot flee with an enemy next to you.', 'bad')
                     return 0
-                self.leave_to_over()
+                self.leave_to_over(walk=(dx, dy))
                 return 1
+            return 0
+        zone = getattr(m, 'zone', None) is not None
+        if zone and ZN.fleeing_blocked(self, nx, ny):
+            self.msg('You cannot flee with an enemy next to you.', 'bad')
             return 0
         if m.kind == 'over':
             wd = WA.wanderer_at(self, nx, ny)
@@ -836,18 +924,13 @@ class Game:
                     wd.x, wd.y = p.x, p.y
                     p.x, p.y = nx, ny
                     return self.over_step(moved_escort=True)
-                if wd.kind == 'traveler':
-                    EV.talk_traveller(self, wd)
-                    return 0
-                if wd.kind == 'caravan':
-                    EV.talk_caravan(self, wd)
-                    return 0
-                if LV.talk(self, wd):
-                    return 0
-                self.msg(wd.describe(self), 'info')
-                return 0
+                return self.meet_wanderer(wd)
         mon = m.mon_at(nx, ny)
         if mon:
+            if zone and getattr(mon, 'wd', None) is not None:
+                wd = ZN.wanderer_of(self, mon)
+                if wd:
+                    return self.meet_wanderer(wd)
             if mon.is_npc:
                 if mon.role in ('escort', 'merc_ally', 'thrall') or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
                     mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
@@ -864,6 +947,8 @@ class Game:
                 return 0
             if t == WATER and SE.walkable(self, nx, ny):
                 t = D.GRASS                     # frozen hard: walk across
+        if zone and t == WATER and ZN.frozen_at(self, m, nx, ny):
+            t = D.GRASS
         if getattr(m, 'nature', None):
             why = NT.blocked(self, nx, ny)
             if why:
@@ -931,9 +1016,24 @@ class Game:
             DH.on_step(self)
         if getattr(m, 'nature', None):
             NT.on_step(self)
+        if zone and ZN.after_move(self):
+            return 1
         self.auto_pickup()
         self.describe_here()
         return 1
+
+    def meet_wanderer(self, wd):
+        """Bumping into someone on the road: talk, trade, or read who they are."""
+        if wd.kind == 'traveler':
+            EV.talk_traveller(self, wd)
+            return 0
+        if wd.kind == 'caravan':
+            EV.talk_caravan(self, wd)
+            return 0
+        if LV.talk(self, wd):
+            return 0
+        self.msg(wd.describe(self), 'info')
+        return 0
 
     def over_step(self, moved_escort=False):
         m, p = self.map, self.player
@@ -1105,6 +1205,14 @@ class Game:
     def use_stairs(self, d='auto'):
         m, p = self.map, self.player
         t = m.tile(p.x, p.y)
+        if getattr(m, 'zone', None) is not None:
+            got = m.marks.get((p.x, p.y))
+            if got and d != 'up':
+                return 1 if ZN.go_in(self, got) else 0
+            if d == 'down':
+                self.msg('There is nothing to enter here.')
+                return 0
+            return self.zone_up()
         if m.kind == 'over':
             if d == 'up':
                 self.msg('You are already on the surface.')
@@ -1138,6 +1246,11 @@ class Game:
             if poi:
                 EV.on_poi(self, poi)
                 return 0
+            if ZN.open_cell(self, (p.x, p.y)):
+                ZN.enter(self, (p.x, p.y))
+                self.msg(f'You leave the road and walk into {self.loc_name()}.', 'info')
+                self.request = ('save',)
+                return 1
             self.msg('There is nothing to enter here.')
             return 0
         if t in (UP, DOWN) and getattr(m, 'tree', None) is not None and d != ('down' if t == UP else 'up'):
@@ -1162,7 +1275,10 @@ class Game:
                 self.msg('You climb back up into the halls of the hold.')
                 self.compute_fov()
                 return 1
-            if m.depth == 1:
+            if m.depth == 1 and ZN.out_of(self, 0, 1, *self.over_pos):
+                self.msg('You climb back into the daylight.')
+                self.request = ('save',)
+            elif m.depth == 1:
                 self.cur = 'over'
                 p.x, p.y = self.over_pos
                 self.msg('You climb back into the daylight.')
@@ -2131,6 +2247,8 @@ class Game:
             TW.live(self, self.map)
         if self.map.kind != 'over':
             self.monsters_act()
+            if getattr(self.map, 'zone', None) is not None and not self.dead:
+                ZN.tick(self)
         elif self.cur == 'over':
             EV.discover(self)
             EVL.sense(self)
@@ -2178,7 +2296,12 @@ class Game:
         MC.on_player_death(self)
         NM.on_player_death(self)
         m = self.map
-        if m.kind == 'wild':
+        if getattr(m, 'zone', None) is not None:
+            if self.encounter is not None or getattr(self, 'zone_fight', False):
+                self.resolve_encounter()
+            ZN.leave(self)
+            key, cx, cy = 'over', self.over_pos[0], self.over_pos[1]
+        elif m.kind == 'wild':
             self.resolve_encounter()
             self.maps.pop('wild', None)
             key, cx, cy = 'over', self.over_pos[0], self.over_pos[1]
@@ -2479,7 +2602,7 @@ class Game:
         beasts = risk * (.4 if fire else 1) * (.6 if near_road else 1.2)
         robbers = risk * (1.7 if fire else .8) * (1.4 if near_road else .7)
         thief = risk * .5 * (.2 if guard else 1)
-        if self.cur != 'over':
+        if self.cur not in ('over', ZN.KEY):
             beasts = robbers = 0
         r = random.random()
         rested = self.rest_here(quiet=True)
@@ -2493,13 +2616,13 @@ class Game:
             pack = [k for k in pack if k in HU.BEASTS] or ['wolf'] * random.randint(2, 3)
             self.msg('Something circles your camp in the dark. Eyes, teeth. You are up in an instant!' if not guard else
                      f'{guard.name} shakes you awake: "Beasts! On your feet!"', 'bad')
-            if self.cur == 'over':
+            if self.cur in ('over', ZN.KEY):
                 self.start_encounter(None, self.maps['over'].tile(ox, oy), danger + 1, pack, 0)
         elif r < beasts + robbers:
             pack = ['bandit'] + [random.choice(['bandit', 'brigand']) for _ in range(random.randint(1, 2 + danger // 3))]
             self.msg('Shapes step out of the night around your fire: robbers, blades drawn!' if fire else
                      'Footsteps on the road, then voices: robbers have stumbled on your camp!', 'bad')
-            if self.cur == 'over':
+            if self.cur in ('over', ZN.KEY):
                 self.start_encounter(None, self.maps['over'].tile(ox, oy), danger + 1, pack, 0)
         elif r < beasts + robbers + thief:
             loss = p.gold * random.randint(15, 40) // 100
@@ -2548,7 +2671,7 @@ class Game:
     def travel_iter(self, kind, ref):
         """Walk to a place you have been ('s' settlement, 'site', 'd' dungeon), along the roads. One step per yield;
         time, hunger and weather pass as you walk, and anything worth your attention stops you."""
-        if self.map.kind == 'town':
+        if self.map.kind == 'town' or getattr(self.map, 'zone', None) is not None:
             self.leave_to_over()
         if self.cur != 'over':
             self.msg('You can only travel across the open land.')
@@ -2693,6 +2816,11 @@ class Game:
         role = npc.role
         m = self.map
         hid = getattr(m, 'hid', None)
+        if getattr(npc, 'wd', None) is not None:
+            wd = ZN.wanderer_of(self, npc)
+            if wd:
+                self.meet_wanderer(wd)
+            return
         if role == 'castellan':
             self.request = ('castellan', hid)
             return
@@ -2942,6 +3070,8 @@ class Game:
             w = self.world
             return bool(w.settlement_at(p.x, p.y) or w.hold_at(p.x, p.y) or ST.site_at(w, p.x, p.y)
                         or m.tile(p.x, p.y) == ENTR or EV.poi_at(self, p.x, p.y))
+        if getattr(m, 'zone', None) is not None:
+            return (p.x, p.y) in m.marks
         return m.tile(p.x, p.y) in (DOWN, UP)
 
     def act_here(self):
@@ -3070,7 +3200,7 @@ def save_game(game):
     game.last_save = game.turn
     try:
         with open(save_path() + '.tmp', 'wb') as f:
-            pickle.dump(game, f)
+            f.write(SAVE_MAGIC + zlib.compress(pickle.dumps(game, protocol=pickle.HIGHEST_PROTOCOL), 6))
         os.replace(save_path() + '.tmp', save_path())
     except OSError:
         pass
@@ -3079,7 +3209,8 @@ def save_game(game):
 def load_game():
     try:
         with open(save_path(), 'rb') as f:
-            g = pickle.load(f)
+            raw = f.read()
+        g = pickle.loads(zlib.decompress(raw[len(SAVE_MAGIC):]) if raw.startswith(SAVE_MAGIC) else raw)
         if getattr(g, 'version', 0) == SAVE_VERSION and not g.dead:
             g.events, g.request = [], None
             g.hook()

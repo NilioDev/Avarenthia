@@ -328,6 +328,10 @@ def at(game, x, y):
         return p.name, (255, 246, 220), [f"You. A {RACES[p.race]['name'].lower()} with no past, level {p.lvl}."]
     if m.kind == 'over':
         return over(game, x, y)
+    if getattr(m, 'zone', None) is not None and (x, y) in m.marks:
+        from . import zones as ZN
+        cx, cy = ZN.cell_of(m, x, y)
+        return over(game, cx, cy)
     if game.visible(x, y):
         mon = m.mon_at(x, y)
         if mon and not getattr(mon, 'lurk', False):

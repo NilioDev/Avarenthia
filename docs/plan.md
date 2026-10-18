@@ -15,7 +15,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway, the Frozen Stair; the Drifting Isles, the Starwater, the Thunder Anvil and eleven more wonders, each a site with its own saved map; trolls turn to stone in the sun |
 | **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
 | **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
-| **Approved: walking the land (zones)** | Every world cell can be entered as its own stretch of land; walk off the edge into the next one. The world map stays for travel; towns, sites and holds keep their own maps. Not built yet |
+| **Built: walking the land (zones)** | `>` in open country goes down into the zone of that world cell; walk off the edge into the next one, `<` goes back up. Ambushes are fought there; towns, sites and holds keep their own maps and are entered from the middle of their zone. The save is packed |
 | **Approved: herds, hunting and the crafts** | Herds that stay off the map until you are close, hunting on its own small map, skinning, cooking from what you find (64 dishes, learned by trying or hearing), tanning and leatherworking. Not built yet |
 | **Approved: realms, lords and wars** | An emperor, kings, barons and lesser houses with seats on the map; wars that start and end; dwarves, elves and orcs (the Gorvash) each with their own engine; sea raiders, barbarians, desert riders, ice raiders, pass clans, wreckers, canyon riders, mist folk, island voyagers, the church, the Border Watch, mercenaries, peasant revolts, a pretender, witch circles; a realms layer on the world map with organic borders. Not built yet |
 | **Built: keeping it clear** | Journal tabs, map layers, IN SIGHT, the status line, the look legend, the company screen, round globes, tips. Every new round follows *The UI rule* below |
@@ -132,6 +132,21 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
   drifting spray, flowing water on the site maps. Now and then a star falls on an ordinary night (the Starfall's
   machinery). Trolls in daylight turn to stone. Not built: the northern lights stay weather (what they give is not
   settled); the "shown but not decided" list stays open.
+- **Walking the land: zones** (`zones.py`). Every world cell is a zone of 80x51 tiles, made from (seed, global x, y)
+  with numpy: the cell and its neighbours blended centre to centre and roughened (trees, rocks, slopes, pools; the
+  ground from the biome: sand, snowfields, grit, bare rock, bog), so nothing seams at an edge. Rivers and roads run
+  from the cell's middle to a hashed point on the shared edge; every river stretch has a ford, roads get bridges, a
+  river starts at a spring. Towns (with fields round them), keeps, sites, dungeon mouths (in a hill), places found in
+  the wild and crossroads shrines stand in the middle of their zone; hidden glades and unfound places stay hidden.
+  The 3x3 zones around you are one map (`maps['zone']`, kind `wild`); crossing into the next cell moves the window.
+  A zone you leave keeps only what changed (`game.zones`: tiles, items, what you have seen as packed bits); an
+  untouched one is made again. Ambushes from the world map (and camp attacks, job and legend fights) are fought in
+  the zone of their cell; foes carry `enc`, cross into the next zone with none beside you and they stay behind.
+  Hostile bands that walk into your cell fall on you there; caravans, travellers, patrols and rivals stand in their
+  zone and talk when bumped. Leaving a town, site or hold by its edge, or climbing out of a dungeon, puts you in the
+  zone on that side. Snow, ice and autumn leaves are drawn over a zone from its world cell, never baked in. The save
+  is packed with zlib (seed 7: about 0.38 MB). Not built: the settlement maps' blending strip along their edges, and
+  a drifting isle's shadow on the zones under it.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
 
@@ -518,7 +533,7 @@ Luxury (only by trying, or a rare book; they sell well in cities):
 
 ---
 
-## Walking the land: zones (approved, not built)
+## Walking the land: zones (built 18 October 2026; the spec)
 
 Approved on 17 October 2026 in the thread on seamless walking ("option B", the Caves of Qud model). The Dutch
 proposal with the measurements, a sketch script and pictures are in the project files under `naadloos/`

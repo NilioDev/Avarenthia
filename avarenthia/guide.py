@@ -60,6 +60,12 @@ def in_view(g):
     for it in m.items:
         if g.visible(it.x, it.y):
             things.setdefault(it.display_name(), (it.glyph(), it.color()))
+    if getattr(m, 'zone', None) is not None:
+        from . import zones as ZN
+        for (x, y), got in m.marks.items():
+            lk = ZN.mark_look(g, *got) if g.visible(x, y) else None
+            if lk:
+                things.setdefault(ZN.mark_name(g, *got), (lk[0], lk[1]))
     return creatures, land, [([(ch, col)], nm) for nm, (ch, col) in things.items()]
 
 
@@ -94,6 +100,7 @@ TIPS = {
     'dungeon': 'Tip: x explores by itself until something turns up.',
     'night': 'Tip: R rests. Out in the open you make camp: a fire keeps beasts off but draws robbers.',
     'many': 'Tip: o lets you look around; it shows what every sign in view means.',
+    'land': 'Tip: > in open country takes you down into the land itself; walk on across its edges, and < brings you back up.',
 }
 
 
@@ -115,7 +122,7 @@ def check(g):
     if g.dead:
         return
     foes = g.visible_hostiles()
-    moments = [('foe', bool(foes)), ('many', len(foes) >= 3), ('over', m.kind == 'over'), ('job', bool(MS.active(g))),
+    moments = [('foe', bool(foes)), ('many', len(foes) >= 3), ('over', m.kind == 'over'), ('land', m.kind == 'over' and g.turn > 600), ('job', bool(MS.active(g))),
                ('merc', bool(MC.party(g))), ('dungeon', m.kind == 'dungeon'),
                ('night', m.kind in ('over', 'wild') and TW.is_night(g))]
     for key, now in moments:

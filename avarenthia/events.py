@@ -428,7 +428,7 @@ def rob_peddler(game, it):
         game.msg('The peddler drops the lead rope and runs, the pack on his back. His sellsword draws steel.', 'bad')
     else:
         game.msg('"Thief!" The peddler pulls a knife and shouts for his sellsword.', 'bad')
-    game.msg('Defeat them, or walk off the edge of the map to escape.')
+    game.msg(game.escape_hint())
 
 
 def e_pilgrims(game):

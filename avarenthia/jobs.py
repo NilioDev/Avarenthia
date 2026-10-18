@@ -931,7 +931,7 @@ def fight(game, m, keys, lvl, elite=0, intro=None, then=None, terrain=None):
     t = terrain if terrain is not None else om.tile(p.x, p.y)
     game.start_encounter(None, t, lvl, keys, elite, intro='')
     game.job_fight = (m.id, then or m.kind)
-    wild = game.maps.get('wild')
+    wild = game.fight_map()
     leader = m.data.get('leader')
     if wild and leader:
         boss = next((o for o in wild.mons if not o.is_npc), None)
@@ -939,7 +939,7 @@ def fight(game, m, keys, lvl, elite=0, intro=None, then=None, terrain=None):
             boss.name, boss.fg = leader, D.UNIQUE_FG
     if intro:
         game.msg(intro, 'bad')
-    game.msg('Defeat them, or walk off the edge of the map to escape.')
+    game.msg(game.escape_hint())
     return True
 
 
@@ -1692,7 +1692,7 @@ def r_defend(game, choice, ctx):
         return
     d = m.data
     fight(game, m, d['keys'], d['lvl'], 1, f'{cap(d["who"])} charge, and the villagers charge with you!', 'defend', terrain=D.GRASS)
-    wild = game.maps.get('wild')
+    wild = game.fight_map()
     if wild:
         from .worldgen import free_around
         from . import mercs as MC

@@ -530,7 +530,7 @@ def meet(game, n, surprise=None):
         fresh = getattr(n, 'sign_day', -9) >= game.day - 1
         surprise = 'you' if fresh and random.random() < .5 else 'it' if n.habit == 'ambusher' or n.knows_you else None
     game.start_encounter(None, over.tile(p.x, p.y), n.lvl, keys, 0, intro='')
-    m = game.maps['wild']
+    m = game.fight_map()
     boss = next((o for o in m.mons if o.k == n.k and not o.is_npc), None)
     if not boss:
         return
@@ -548,7 +548,7 @@ def meet(game, n, surprise=None):
         game.msg(f'{n.Full} attacks!' if n.seen else f"{n.what()[0].upper() + n.what()[1:]} attacks!", 'bad')
     if n.knows_you:
         game.msg(f'{n.Full} knows you. {n.he().capitalize()} roars your name across the field: "{p.name.upper()}!"', 'bad')
-    game.msg('Defeat them, or walk off the edge of the map to escape.')
+    game.msg(game.escape_hint())
     from . import jobs as JB
     JB.on_named_meet(game, n)
 
