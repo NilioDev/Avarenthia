@@ -200,6 +200,12 @@ Approved so far:
   a strong power costs 15%. A failure loses the found piece; one failure in four also wears your own piece to broken or
   curses it. The chance shows before you confirm.
 - **Master tests at 25 and 40:** one job from a master somewhere in the world before the skill goes on.
+- **Perks up to 50** (19 October): every skill gets master perks at 30, 40 and 50 (Fishing 30: ice fishing through a
+  hole in winter; Mining 30: you see a vein through one wall; the crafts at 30: mend on the road with a kit, at 40 two
+  chosen powers and Unmake, at 50 masterwork more often and Unmake at full value). The full list is in
+  `/mnt/project-files/lifeskills/content.md`.
+- **Gear for your hirelings:** crafted gear can be handed to hirelings (weapon, armour, helm, shield), and you mend
+  theirs with your craft: the thrifty way to fit out a company.
 - **No grinding in one place** (19 October): the rank of a vein, herb, fish or beast follows the danger of the land
   (the danger layer) and the depth of a mine or dungeon, never one spot; each step has three or four options in
   different lands (Fishing 35: Great Sturgeon in broad rivers, Swordfish at deep sea, Ice Char in northern lakes, Deep
