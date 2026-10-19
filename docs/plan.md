@@ -194,6 +194,15 @@ Approved so far:
   and bedroll; barding for your beast; a quiver once arrows exist). Tailoring is the weather (cloth pieces, each warm
   or cool: Quilted Armor, Robe, Cap, Hood, Sash, Wraps, Soft Shoes; bandages, rope, a fishing net). New cloth bases
   come in three grades like the rest. Lists in `/mnt/project-files/lifeskills/content.md`.
+- **Alchemy without fixed recipes** (19 October), like cooking: every herb has two properties; pick two or three herbs
+  at `[P]` and what they share becomes the draught; three sharing one property make it stronger; nothing shared, a
+  ruined brew. Strength = the herbs' tier and your rank. A shared Venom, Flame or Silver makes a blade oil (a short
+  buff), a shared Sleep a flask to throw. You learn a herb's first property by tasting it, its second at Foraging 15
+  when you pick it, both from a brew that works; unknown ones show as `?`. 17 properties (Heal, Mana, Stamina, Regen,
+  Cure, Staunch, Ward Fire, Ward Cold, Ward Poison, Sight, Calm, Swift, Strength, Sleep, Venom, Flame, Silver) and 49
+  herbs, most of them real (Nettle, Valerian, Arnica, Comfrey, Mandrake, Myrrh...), cooking herbs among them, spread
+  so that almost every property grows in every tier. Top: Starmoss (doubles a brew; alone, the Starlight Elixir: +5
+  life for good, once per hero). The list: `/mnt/project-files/lifeskills/content.md`.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
 - **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
