@@ -18,6 +18,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the handbook** | `?` opens The Adventurer's Handbook instead of the old help: contents on the left, the page on the right, opened at the page that fits where you are; lists built from the data |
 | **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
 | **Built: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft is martial (and Charge is a true weapon strike); a third orb on the panel, LIFE, STAMINA and MANA always in sight |
+| **Built: quick wins (19 Oct)** | Spell effects part 1 (bolts, bursts, drain, heals, lightning; full/short/off), burning, poison and frost shown on creatures, Wild Shape in the beast's colours; chimney smoke, sparks at the anvil, rain empties the streets |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 
 ## Built
@@ -223,6 +224,19 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   radius 3 instead of 4 (the effects rule allows no more than 3); Mark of Doom (was Mark of Death) moved to shadow.
 - **Loading screen** (`ui.IntroScreen`). The world is made in the background after character creation; the
   opening text from the temple shows meanwhile, with a bar naming each step. Enter begins once the world is ready.
+- **Quick wins: spell effects part 1 and a livelier town** (19 October 2026; `anim.py`, `game.fx`). From the
+  approved spell-effects plan: the shared toolkit (`bolt` with a fading tail, arrows pointing the way they fly;
+  `burst` opening out `*` `+` `·`, with a frame of light drawn in first for radius 2 and up; `drain`, red motes
+  flying back after the blow; `rise`, crosses of light off whoever is healed; `zap`, a white zigzag fading to the
+  school's colour, hopping foe to foe), used by bolts, splashes, areas, chain and storm, curses, heals and wards, and
+  by monsters' and hirelings' arrows and spells and monster novas. Never longer than ~0.45 s with the impact, a key
+  skips it, the game never waits. Main menu: Spell effects full / short (twice as fast) / off (the old one-frame
+  flash), kept in `settings.txt` beside the save. Lasting colour on a creature: burning flickers orange, poisoned
+  pulses green, frozen stands on pale blue, weakened is dimmed; your `@` too for burning and poison. Wild Shape keeps
+  your `@` in the beast's colours (bear orange-brown on dark brown, wolf white on slate). From round 6: smoke from
+  one chimney per wooden house (most hearths lit, all in winter, from dawn to midnight, the day's wind leaning every
+  plume one way) and sparks at the anvil by day; rain, snow, hail, sleet and sandstorms (not a drizzle) send
+  townsfolk whose place is outdoors home or to the inn (guards and the lamplighter stay out). No save change.
 
 ## Ferries in villages (built 18 October 2026; the spec)
 

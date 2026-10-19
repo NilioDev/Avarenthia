@@ -668,6 +668,11 @@ def _hit(game, mon, sk, r, ranged=False):
         dealt = before - max(0, mon.hp)
         if sk.drain:
             game.heal(round(dealt * sk.drain))
+            if dealt > 0:
+                p = game.player
+                path = game.cells_between((mon.x, mon.y), (p.x, p.y))[:-1]
+                from . import anim as AN            # after the blow lands, your life flows back
+                game.fx('drain', cells=path, col=(220, 60, 70), delay=AN.bolt_time(len(path) + 1))
     else:
         dead = False
     if not dead:
@@ -765,7 +770,7 @@ def x_adjacent(game, sk, r):
     if not t:
         game.msg('No enemies next to you.')
         return False
-    game.flash(ring_cells(p.x, p.y, 1), sk.color, sk.glyph, .16)
+    _burst(game, sk, p.x, p.y, 1, hollow=True)
     for o in t:
         _hit(game, o, sk, r)
     return True
@@ -780,7 +785,7 @@ def x_around(game, sk, r):
     cells = []
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(p.x, p.y, rr)
-    game.flash(cells, sk.color, sk.glyph, .22)
+    _burst(game, sk, p.x, p.y, sk.radius, hollow=True)
     lay(game, sk, r, cells)
     if not t:
         game.msg('No undead in range.' if sk.only_undead else 'No enemies in range.')
@@ -803,14 +808,16 @@ def x_bolt(game, sk, r, ranged=False):
         return False
     p = game.player
     p.last_target = t.id
-    game.flash(game.path_to(t)[:-1], sk.color, sk.glyph, .17)
     tx, ty = t.x, t.y
+    late = _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
     _hit(game, t, sk, r, ranged)
+    if not ranged and not sk.splash:
+        _burst(game, sk, tx, ty, 0, late)
     if sk.splash:
         cells = []
         for rr in range(1, sk.splash + 1):
             cells += ring_cells(tx, ty, rr)
-        game.flash(cells, sk.color, '*', .22)
+        _burst(game, sk, tx, ty, sk.splash, late)
         lay(game, sk, r, [(tx, ty)] + cells)
         for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.splash and (o.x, o.y) != (tx, ty)]:
             _hit(game, o, sk, r, ranged)
@@ -828,7 +835,7 @@ def x_volley(game, sk, r):
         game.msg('No targets in sight.')
         return False
     for o in t:
-        game.flash(game.path_to(o)[:-1], sk.color, sk.glyph, .17)
+        _fly(game, sk, game.path_to(o), (p.x, p.y), True)
         _hit(game, o, sk, r, True)
     return True
 
@@ -846,7 +853,7 @@ def x_pierce(game, sk, r):
         if not m.inb(x, y) or game.opaque(x, y):
             break
         cells.append((x, y))
-    game.flash(cells, sk.color, sk.glyph, .18)
+    _fly(game, sk, cells, (p.x, p.y), True)
     for x, y in cells:
         o = m.mon_at(x, y)
         if o and not o.is_npc:
@@ -862,9 +869,11 @@ def x_chain(game, sk, r):
     hit = set()
     frm = (game.player.x, game.player.y)
     jumps = 1 + sk.jumps + r // 25
+    late = 0.0
     while t and jumps > 0:
         jumps -= 1
-        game.flash(game.cells_between(frm, (t.x, t.y)), sk.color, sk.glyph, .2)
+        game.fx('zap', cells=game.cells_between(frm, (t.x, t.y)), col=sk.color, delay=late)
+        late = min(.2, late + .05)                      # it hops from one to the next
         hit.add(t.id)
         frm = (t.x, t.y)
         wet = SM.wet(game, t)
@@ -883,8 +892,9 @@ def x_storm(game, sk, r):
         game.msg('No targets in sight.')
         return False
     random.shuffle(t)
-    for o in t[:sk.jumps]:
-        game.flash([(o.x, o.y - 1), (o.x, o.y)], sk.color, sk.glyph, .25)
+    for k, o in enumerate(t[:sk.jumps]):
+        game.fx('zap', cells=[(o.x, o.y - 3), (o.x, o.y - 2), (o.x, o.y - 1), (o.x, o.y)], col=sk.color,
+                delay=min(.16, k * .04))                # struck from above
         _hit(game, o, sk, r)
     game.shake()
     return True
@@ -899,7 +909,7 @@ def x_target_area(game, sk, r):
     cells = [(tx, ty)]
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(tx, ty, rr)
-    game.flash(cells, sk.color, '*', .26)
+    _burst(game, sk, tx, ty, sk.radius)
     for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.radius]:
         _hit(game, o, sk, r)
     lay(game, sk, r, cells)
@@ -911,7 +921,7 @@ def x_curse(game, sk, r):
     if not t:
         game.miss_target('No target in sight.')
         return False
-    game.flash([(t.x, t.y)], sk.color, '*', .22)
+    game.fx('burst', x=t.x, y=t.y, r=0, col=sk.color, signs='*∙')
     apply_fx(game, t, sk, r)
     game.player.last_target = t.id
     game.msg(f'{sk.name} takes hold of {t.the()}.', 'info')
@@ -969,9 +979,25 @@ def x_self(game, sk, r):
             k2, b2, br2, t2 = sk.buff2
             p.buffs = [x for x in p.buffs if x[0] != k2] + [[k2, round(b2 + br2 * r), t2, sk.name]]
         did = True
-    game.flash(ring_cells(p.x, p.y, 1), sk.color, sk.glyph, .2)
+    if sk.heal:
+        game.fx('rise', x=p.x, y=p.y, col=sk.color)
+    else:
+        _burst(game, sk, p.x, p.y, 1, hollow=True)          # a ward closing round you
     game.msg(f'You use {sk.name}.', 'good')
     return did or sk.cure
+
+
+def _fly(game, sk, cells, src, ranged=False):
+    """A bolt or an arrow flying along cells; returns how long it takes, so the impact can wait for it."""
+    from . import anim as AN
+    if not cells:
+        return 0.0
+    game.fx('bolt', cells=cells, src=src, col=sk.color, ch='-' if ranged else sk.glyph)
+    return AN.bolt_time(len(cells))
+
+
+def _burst(game, sk, x, y, r, delay=0.0, hollow=False):
+    game.fx('burst', x=x, y=y, r=r, col=sk.color, delay=delay, hollow=hollow, gather=r >= 2 and not hollow)
 
 
 def ring_cells(x, y, r):
@@ -1049,7 +1075,7 @@ def x_burst(game, sk, r):
     cells = [(tx, ty)]
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(tx, ty, rr)
-    game.flash(cells, sk.color, '*', .26)
+    _burst(game, sk, tx, ty, sk.radius)
     game.msg('The corpse swells, and bursts.', 'good')
     for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.radius]:
         _hit(game, o, sk, r)

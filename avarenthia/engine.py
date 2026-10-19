@@ -4,6 +4,7 @@ import pickle
 import random
 import zlib
 
+from . import anim as AN
 from . import data as D
 from . import economy as ECO
 from . import fov
@@ -297,6 +298,10 @@ class Game:
 
     def flash(self, cells, col, ch='*', dur=.18):
         self.events.append(('flash', list(cells), col, ch, dur))
+
+    def fx(self, kind, **kw):
+        """A small moving picture over the map (see anim.fx_cells): a bolt, a burst, a drain, rising light, a zap."""
+        self.events.append(('fx', kind, kw))
 
     def shake(self):
         self.events.append(('shake',))
@@ -2035,7 +2040,10 @@ class Game:
         path = self.line_clear(mon.x, mon.y, p.x, p.y)
         if not path:
             return False
-        self.flash(path[:-1], (255, 122, 60) if spell else (216, 208, 176), '*' if spell else '-', .2)
+        col = (255, 122, 60) if spell else (216, 208, 176)
+        self.fx('bolt', cells=path, src=(mon.x, mon.y), col=col, ch='*' if spell else '-')
+        if spell:
+            self.fx('burst', x=p.x, y=p.y, r=0, col=col, delay=AN.bolt_time(len(path)))
         name = mon.the()[0].upper() + mon.the()[1:]
         if spell or random.random() < self.mon_hit_chance(mon, df):
             self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else mon.tpl.get('shot', 'arrow')} hits you.", 'bad')
@@ -2106,7 +2114,7 @@ class Game:
                 self.msg(d.get('summon_msg', '{name} squeals. A rat scurries out of the dark!').format(name=BH.The(mon)), 'bad')
                 return
         if d['nova'] and dist <= 2 and random.random() < .22:
-            self.flash(ring(mon.x, mon.y, 2), d.get('nova_col', (159, 216, 255)), '*', .26)
+            self.fx('burst', x=mon.x, y=mon.y, r=2, col=d.get('nova_col', (159, 216, 255)), hollow=True)
             self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=BH.The(mon)), 'bad')
             self.hurt(random.randint(*mon.dmg) * .8, mon.name, d['elem'] or 'cold')
             return
@@ -2508,7 +2516,7 @@ class Game:
         p = self.player
         p.last_target = t.id
         p.strained = self.turn
-        self.flash(self.path_to(t)[:-1], (216, 208, 176), '-', .15)
+        self.fx('bolt', cells=self.path_to(t), src=(p.x, p.y), col=(216, 208, 176), ch='-')
         if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + t.df), .25, .95):
             self.num(t.x, t.y, 'miss', C_MISS)
             t.awake = True
@@ -3286,6 +3294,34 @@ def save_path():
         # standalone executable: keep the save next to the .exe, not in the temp unpack folder
         return os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'savegame.dat')
     return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'savegame.dat')
+
+
+def settings_path():
+    return os.path.join(os.path.dirname(save_path()), 'settings.txt')
+
+
+def load_settings():
+    """The few choices that belong to the player, not to the world: key=value lines next to the save."""
+    out = {}
+    try:
+        with open(settings_path(), encoding='utf-8') as f:
+            for ln in f:
+                if '=' in ln:
+                    k, v = ln.split('=', 1)
+                    out[k.strip()] = v.strip()
+    except OSError:
+        pass
+    return out
+
+
+def save_settings(**kw):
+    st = load_settings()
+    st.update({k: str(v) for k, v in kw.items()})
+    try:
+        with open(settings_path(), 'w', encoding='utf-8') as f:
+            f.writelines(f'{k}={v}\n' for k, v in sorted(st.items()))
+    except OSError:
+        pass
 
 
 def save_game(game):
