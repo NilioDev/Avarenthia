@@ -16,6 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
+| **Being worked out: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring. The content for ranks 25-50 is still being discussed |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -168,6 +169,33 @@ weapon has one rule you notice in a fight. Everything comes in the three grades.
 - **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
 
 ---
+
+## Life skills: slow, and worth it (approved in part, not built)
+Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md`.
+Approved so far:
+- **Slow, like an MMO, without grinding.** Work far below your rank teaches nothing, close below it little, at or above
+  it most; the colour of a name in the craft list shows which (grey, green, yellow, orange). The first time you make
+  or catch something counts double. Steeper curve: `20 + 4r + 0.35r²` (rank 10 in about an hour, 25 in 12-15 hours of
+  play, 50 in 60+ hours: one skill per hero).
+- **The same rule for the disciplines** (weapons and schools): foes far below you teach little. Their pace stays
+  (rank 100 in about 30 hours of play); a life skill is the long road beside the fighting.
+- **Herbalism joins Foraging** (its perks move along). **New: Smithing** (an anvil; ore becomes bars; mend your own
+  metal gear for ore and time; weapons and metal armour) **and Tailoring** (cloth: light, mana and resistance, warm or
+  cool). With Leatherworking every kind of armour is made by someone.
+- **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
+  Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
+- **Crafted gear:** quality (crude, fine, masterwork) and one power the maker chooses from the ordinary ones (more
+  armour, one resistance, some life, lighter, longer wear, warmth); two from rank 40. Special powers (+ranks in a
+  school, leech, life or mana on a kill, crits, all resistances, thorns, less damage, Strength or Dexterity) exist only
+  on found gear, so rares stay what players hunt for.
+- **Unmake** (rank 40 in the craft, at its own bench): one power of an identified found piece moves onto a piece you
+  made; the found piece is destroyed; one moved power per piece, at about two thirds of its value (full at 50). Uniques
+  and sets cannot be unmade. It can always fail: about 40% success at rank 40, 55% at 45, 70% at 50, never above 80%;
+  a strong power costs 15%. A failure loses the found piece; one failure in four also wears your own piece to broken or
+  curses it. The chance shows before you confirm.
+- **Master tests at 25 and 40:** one job from a master somewhere in the world before the skill goes on.
+Still open: the content for ranks 25-50 (materials and places per skill, new cloth pieces), and whether masters in
+the world can also unmake for coin (proposed: no).
 
 ## Round 6: livelier settlements (on hold)
 
