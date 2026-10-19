@@ -14,14 +14,16 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
+| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
 **Left of the big build (paused 18 October 2026 after the magic schools, at Nilio's word):** in this order,
-spell effects, then weapons, then round 6 (Nilio's go for the whole plan covers it). Their specs are below; nothing
-of them is built yet.
+weapons, then classes (approved 19 October 2026; they need the weapon kinds, and they change the skill list), then
+spell effects (so the new skills get theirs too), then round 6 (Nilio's go for the whole plan covers the old three;
+classes wait for his go). Their specs are below; nothing of them is built yet.
 
 ---
 
@@ -37,6 +39,57 @@ Everything new finds its place in what is there; no new screen per system, no ne
 - **A new key** is taught by one tip in `guide.TIPS` the first time it is useful, not by text on the screen.
 
 ---
+
+## Classes, trees and the bar (approved, not built)
+
+Approved by Nilio on 19 October 2026 (thread "klasses en skills"; project files `klassen/`: the full list of names
+and pair rules in `klasses.md`, mockups `fire_tree.png` and `bar_near.png`). Today all fourteen disciplines stay
+open, 72 tome skills and eleven guilds mix freely, and a careful player ends up in one line anyway. Combat itself
+stays as it is.
+
+- **Start blank.** You wake in the temple with no class, only your weapon and its skills. The **first tome you
+  read** wakes a memory and is your **first class** (one warning before you read: "This will wake a memory").
+  From then on you read only tomes of your class; others you sell or keep.
+- **A second class, late.** At **rank 20** in your first class you may read one tome of a second school; it becomes
+  your second class and you learn the **name of your pair** (Fire + Shadow is a Hexblade). Who never takes a
+  second stays **pure** (Pyromancer, Rimecaller, Stormcaller, Cleric, Warlock, Necromancer, Druid, Beastmaster,
+  Warrior, Rogue, Arcanist).
+- **Eleven classes:** the nine schools, plus **Cunning** (Thieves' Guild; stealth, poison, traps; the first blow on
+  one who does not see you comes twice) and **Arcane** (Circle of Magi; Blink, Gate, Slow, Haste, Dispel,
+  Counterspell, runes laid as tiles; the lowest damage; can take away or move what a spell left on the map). Each
+  gets eight tomes like the schools.
+- **One rule per pair** (55) and one **pure rule** per class (11): a fight rule that ties the two school rules
+  together, given with the name (Hexblade: a foe both burning and cursed gives you life back from the burn). The
+  name is also how people and the chronicle speak of you. Full list: `klassen/klasses.md`.
+- **A tree per class:** three branches of six knots, some with 2-3 steps, a strong last knot (☼) at the end of each.
+  A knot opens when the one above it has a point. Only **passives**: the actives still come from tomes, so the bar
+  does not grow. One point per 5 ranks in that school (about 14 at rank 70): never everything. Points are spent
+  only at rest (an inn, your camp); a temple takes them all back for coin. One screen, arrows and Enter, Tab to the
+  other class. Examples: Fire has Pyromancer, Flameblade (your weapon burns: the spellsword's imbue, weaker than the
+  spell, ~1 blow in 3, no mana coming back while it burns) and Kindler; Nature's third branch is **Shapeshifter**
+  (wolf, bear, hawk: in a shape keys 1-2 become the beast's two attacks, your `@` takes its colours).
+- **The bar stays six keys** in three groups under SKILLS, each with a small header: **1-2 your weapon's two skills**
+  (they change with the weapon in hand, stamina), **3-5 three class skills** (chosen at rest as today, a dot in the
+  school's colour), **6 one elite** (gold ☼; only one elite on the bar). The pair's name stands right of SKILLS.
+- **Weapons:** each weapon kind gives two skills (a staff: Push Back and Focus; a bow: Aimed Shot and Volley) and
+  each discipline **one rule that colours your class skills** (staff: spells cost less; sword: a blow takes a turn
+  off your class cooldowns; axe and mace: damaging skills sometimes push; dagger: class skills crit more on a foe
+  beside you; bow: areas placed further; spear: skills on a foe beside you reach 2 tiles; a shield lengthens
+  defensive skills, a grimoire gives mana). Weapon rules never stack with an imbue blow. This replaces "eight tome
+  skills per weapon discipline" in the weapons plan; weapons get no tree.
+- **Guilds stay** (no new ones) and each offers an **elite**; the two-guild techniques become the elites of their
+  pair (Spellblade for a spellsword: the imbue holds while mana lasts, each blow costs some, no other spells
+  meanwhile). An elite may ask for a knot in a tree. The Wardens (bow) and the Still Hand (empty hands) serve a
+  weapon, not a class.
+- **Balance test:** a new headless part where the bot fights the same set of monsters as a pure caster, a pure
+  warrior, a spellsword and weapon plus class, and reports turns and damage taken; they should win about as fast,
+  with a different risk.
+- **The handbook:** a new chapter **"Who you become"** after "Your hero", written so a new player understands it
+  without help: the blank start and the first tome, the second class at rank 20 and the pair's name, pure classes,
+  the tree (points, rest, the temple), the bar's three groups, weapon skills and weapon rules, elites and guilds.
+  "Fighting", "Your hero", "Guilds" and "All the keys" change with it. The build report quotes all of it.
+- **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
+  parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
 
 ## Spell effects (approved, not built)
 
@@ -95,7 +148,7 @@ weapon has one rule you notice in a fight. Everything comes in the three grades.
   long bows, desert riders scimitars, orcs and goblins spears and flails, the Border Watch halberds, necromancers
   scythes.
 - **No wands**: the grimoire is already the magic second hand.
-- **Next:** eight tome skills per weapon discipline (ranks 0/5/12/20/30/42/55/70), then their effects.
+- **Next:** replaced by the classes plan above: two skills per weapon kind and one rule per discipline, then their effects.
 - **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
 
 ---
