@@ -194,7 +194,13 @@ Approved so far:
   a strong power costs 15%. A failure loses the found piece; one failure in four also wears your own piece to broken or
   curses it. The chance shows before you confirm.
 - **Master tests at 25 and 40:** one job from a master somewhere in the world before the skill goes on.
-Still open: the content for ranks 25-50 (materials and places per skill, new cloth pieces), and whether masters in
+- **No grinding in one place** (19 October): the rank of a vein, herb, fish or beast follows the danger of the land
+  (the danger layer) and the depth of a mine or dungeon, never one spot; each step has three or four options in
+  different lands (Fishing 35: Great Sturgeon in broad rivers, Swordfish at deep sea, Ice Char in northern lakes, Deep
+  Eel in underground lakes). The top finds (Moonfish, Star-iron, elven thread, dragon hide) are the crafts' own rares:
+  scarce, one special property, never needed for a rank. Xp without gathering too: orders at your own height in every
+  town, masterwork tries, mending for others.
+Still open: the content per skill worked out this way (materials and places, new cloth pieces), and whether masters in
 the world can also unmake for coin (proposed: no).
 
 ## Round 6: livelier settlements (on hold)
