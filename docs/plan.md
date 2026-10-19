@@ -203,6 +203,12 @@ Approved so far:
   herbs, most of them real (Nettle, Valerian, Arnica, Comfrey, Mandrake, Myrrh...), cooking herbs among them, spread
   so that almost every property grows in every tier. Top: Starmoss (doubles a brew; alone, the Starlight Elixir: +5
   life for good, once per hero). The list: `/mnt/project-files/lifeskills/content.md`.
+- **Brewing, the craft of trade and company** (19 October): ten drinks (Ale, Berry Wine, Mead; Halfling Cider, Dwarf
+  Stout, Gnome Cordial, Elven Wine, Juniper Spirits, Spiced Spirits, Royal Mead), learnt per people by tasting or from
+  an innkeeper. A drink sells best far from where it comes from; from rank 30 a barrel, trade goods for a caravan. "A
+  round for the company" at an inn or a campfire raises the hirelings' morale. A drink of their own people as a gift
+  (the dwarf king, an elven guard, the kobolds) earns better prices, a rumour or a job. Strong spirits as the base of a
+  draught make a tincture that lasts twice as long. Strong drink warms and gives courage; too much spoils your aim.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
 - **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
