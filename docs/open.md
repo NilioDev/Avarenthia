@@ -37,6 +37,10 @@ From the thread "Quick wins uit het plan"; items 1-5 were built, these two were 
 - **Five new weapons without skills first:** scimitar, flail, war hammer, cestus and tiger claws, each with its own
   rule. Medium, needs a `SAVE_VERSION` bump. Probably best left to the weapons round now that it comes first.
 
+## Project Gorgon skills
+Nilio wants to go through the skills on https://wiki.projectgorgon.com/wiki/Skills together and see whether
+anything there suits our game (ideas only, never their text or names). Not looked at yet.
+
 ## Smaller loose ends
 - **Northern lights:** still only weather; their gift (what they do for the player) was never settled.
 - **The player as a ruler:** decided no (17 October 2026), but Nilio said he may come back to it.
