@@ -217,6 +217,16 @@ Approved so far:
   in storms only; its scale: lightning resistance), Abyss Eel (deepest caves; its skin makes leather with poison
   resistance), Elder Sturgeon (the greatest rivers). Top: Golden Carp, Moonfish (starwater at night; doubles a dish),
   the legendary fish. The fishing net (Tailoring) takes small fish from shallow water without a cast.
+- **Mining and Smithing by tier** (19 October): ore veins lie in every deep cave system (cave dungeons, karst
+  sinkholes, the deeper levels of old mines), the tier rising with depth; the dwarves' mines are one place among
+  them (digging there unasked stays a crime), so a bad name with the dwarves never shuts you out. A Iron (no
+  property). B Silver Ore (hills far from the road, caves from level 2; strong against the dead), Bog Iron (cut from
+  a marsh; cheap, wears faster). C Deepiron (caves and mines from level 4; wears slower), Bloodstone (canyons and
+  mesas; some life), Frostvein (high mountains; cold resistance). D Blackiron (dangerous hills, orc country; more
+  armour), Moonsilver (karst caves; lighter), Sunstone (desert; fire resistance). E Adamant (the deepest tunnels of
+  any system; much armour), Wyrmstone (by drakes' lairs; fire and cold resistance). Top: Star-iron (the fallen star
+  only; light and strong, with one special power). Gems as now, from Mining 10. Grade: A-B normal, C-D exceptional,
+  E elite.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
 - **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
