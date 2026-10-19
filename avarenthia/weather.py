@@ -939,6 +939,13 @@ def current(game):
     return region_weather(game, loc[0])
 
 
+def foul(game):
+    """Weather that sends townsfolk indoors: real rain, snow, hail, sleet or a sandstorm (a drizzle will not)."""
+    k = current(game)
+    _n, fam, power = KINDS.get(k, ('', 'clear', 0))
+    return fam in ('hail', 'sleet', 'ice') or (fam in ('rain', 'snow', 'sand') and power >= 2)
+
+
 def starfall(day):
     """The night of the Starfall, once a year: the 12th of Emberwane, when the sky rains stars."""
     from . import calendar as CAL

@@ -1624,7 +1624,34 @@ def _hold_map(game, hd, hostile):
 
 
 # ------------------------------------------------------------------ daily life
-def target_for(game, npc):
+INDOOR = {FLOOR, PLANK, BED, TABLE, D.BARREL, D.ALTAR, D.ANVIL, DOOR, ODOOR, D.HEARTH}
+
+
+def shelter(game, npc):
+    """Where someone waits out the rain: the inn for the thirsty and about half the rest, home for the others."""
+    m = game.map
+    if npc.job != 'drinker' and (npc.id % 2 or npc.job == 'child'):
+        return npc.home_pos
+    spot = getattr(npc, 'rain_pos', None)
+    if spot is None:
+        inns = [b for b in getattr(m, 'buildings', ()) if b['kind'] == 'inn']
+        cells = []
+        for b in inns:
+            x, y, w, h = b['box']
+            cells += [(xx, yy) for yy in range(y + 1, y + h - 1) for xx in range(x + 1, x + w - 1)
+                      if m.inb(xx, yy) and m.tile(xx, yy) in (FLOOR, PLANK)]
+        spot = npc.rain_pos = random.choice(cells) if cells else tuple(npc.home_pos)
+    return spot
+
+
+def target_for(game, npc, foul=False):
+    tgt = _target(game, npc)
+    if foul and npc.job not in ('guard', 'lamplighter') and game.map.inb(*tgt) and game.map.tile(*tgt) not in INDOOR:
+        return shelter(game, npc)                       # rain empties the streets and fills the inn
+    return tgt
+
+
+def _target(game, npc):
     h = hour(game)
     if npc.job == 'guard':
         night = getattr(npc, 'night_watch', False)
@@ -1692,6 +1719,8 @@ def live(game, m):
             m.lamp_on = set()
             for k in range(len(m.lamps)):
                 set_lamp(m, k, want)
+    from . import weather as WX
+    foul = WX.foul(game)
     for npc in m.mons:
         if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
             game.random_step(npc)
@@ -1703,7 +1732,7 @@ def live(game, m):
             if tgt is None:
                 continue
         else:
-            tgt = target_for(game, npc)
+            tgt = target_for(game, npc, foul)
         if (npc.x, npc.y) == tuple(tgt):
             if npc.job not in ('guard',) and random.random() < .15:
                 game.random_step(npc)

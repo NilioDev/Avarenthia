@@ -3893,11 +3893,146 @@ def schools():
     print('schools ok:', len(SK.SKILL_LIST), 'tome skills,', len(techs), 'techniques')
 
 
+def visible():
+    """Spell effects: bolts fly and impacts open out, life flows back, short and skippable, an option full/short/off;
+    burning, frozen and poisoned show on a creature; Wild Shape keeps your @ in the beast's colours; smoke rises from
+    the chimneys and sparks fly at the smith's; rain sends the townsfolk indoors."""
+    from avarenthia import anim as AN, skills as SK, towns as TW, weather as WX, look as LOOK
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    print('== visible')
+    # every effect stays short and draws something
+    kinds = {'bolt': dict(cells=[(i, 0) for i in range(1, 15)], src=(0, 0), col=(255, 120, 60), ch='*'),
+             'burst': dict(x=5, y=5, r=2, col=(255, 120, 60), gather=True),
+             'drain': dict(cells=[(i, 0) for i in range(1, 6)], col=(220, 60, 70)),
+             'rise': dict(x=3, y=3, col=(120, 240, 140)), 'zap': dict(cells=[(1, 1), (2, 2)], col=(255, 240, 120))}
+    for k, kw in kinds.items():
+        life = AN.fx_life(k, kw)
+        assert life <= .42, (k, life)
+        drawn = [AN.fx_cells(k, kw, a / 50) for a in range(int(life * 50))]
+        assert any(drawn), k
+        assert all(0 <= v <= 255 for cells in drawn for c in cells for v in c[3]), k
+    assert AN.fx_life('burst', dict(x=0, y=0, r=2, delay=AN.bolt_time(20))) <= .5
+    arrow = AN.fx_cells('bolt', dict(cells=[(1, 0), (2, 0)], src=(0, 0), ch='-'), 0)
+    assert arrow and arrow[0][2] == '-'
+    assert AN.fx_cells('bolt', dict(cells=[(1, 1), (2, 2)], src=(0, 0), ch='-'), 0)[0][2] == '\\'
+    # a firebolt in a fight: it flies, opens out on the target, and a key skips it
+    app = new_app('soft', seed=3)
+    g, p = app.game, app.game.player
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    far = [c for c in free_around(g, g.map, p.x, p.y, 4) if cheb(c[0], c[1], p.x, p.y) >= 2 and
+           g.line_clear(p.x, p.y, *c)]
+    e = make_monster(g, 'goblin', far[0][0], far[0][1], 3)
+    e.hp = e.maxhp = 999
+    e.awake = True
+    g.map.mons.append(e)
+    g.compute_fov()
+    p.known = ['firebolt', 'drain']
+    p.disc['fire'] = [10, 0]
+    p.disc['shadow'] = [10, 0]
+    for sid in ('firebolt', 'drain'):
+        p.bar[0] = sid
+        p.cooldowns.clear()
+        p.mana = 999
+        p.life = 5
+        assert SK.use(g, 0), sid
+        app.after_action()
+        fx = [ev[2][1] for ev in app.effects if ev[0] == 'fx']
+        assert 'bolt' in fx and 'burst' in fx, (sid, fx)
+        if sid == 'drain':
+            assert 'drain' in fx, fx
+        app.render()
+        check_colours(app)
+        app.key('esc')
+        assert not any(ev[0] == 'fx' for ev in app.effects), 'a key skips the effects'
+        while not isinstance(app.top, ui.GameScreen):
+            app.key('esc')
+    # effects off: the old flash; short: half as long
+    app.fx_mode = 'off'
+    g.fx('bolt', cells=[(p.x + 1, p.y)], col=(255, 0, 0))
+    app.after_action()
+    assert app.effects and app.effects[-1][0] == 'flash'
+    app.fx_mode = 'short'
+    g.fx('burst', x=p.x, y=p.y, r=1, col=(255, 0, 0))
+    app.after_action()
+    e0 = app.effects[-1]
+    life = AN.fx_life('burst', e0[2][2])
+    assert app.fx_alive(e0, e0[1] + life * .4) and not app.fx_alive(e0, e0[1] + life * .6)
+    app.fx_mode = 'full'
+    # the main menu sets it, and it is kept next to the save
+    menu = ui.App(FakeCanvas(ui.W, ui.H))
+    menu.render()
+    menu.key('f')
+    assert menu.fx_mode == 'short' and E.load_settings().get('effects') == 'short'
+    assert ui.App(FakeCanvas(ui.W, ui.H)).fx_mode == 'short'
+    menu.key('f')
+    menu.key('f')
+    assert menu.fx_mode == 'full' and E.load_settings().get('effects') == 'full'
+    # burning flickers, poisoned pulses, frozen stands on ice
+    looks = {AN.status_look((200, 200, 200), (0, 0, 0), k / 7, 3, 3, burn=True)[0] for k in range(10)}
+    assert len(looks) > 3, looks
+    assert AN.status_look((200, 200, 200), (0, 0, 0), 0, 3, 3, frozen=True)[1] == AN.ICE_BG
+    e.effects['burn'] = [4, 3]
+    app.render()
+    assert app.top.moving
+    check_colours(app)
+    # Wild Shape: your @ in the bear's colours
+    p.buffs.append(['dmg', 30, 10, 'Bear shape'])
+    app.effects.clear()
+    app.render()
+    ox, oy = app.top.origin
+    i = (p.y - oy) * app.cv.w + (p.x - ox)
+    assert app.cv.ch[i] == '@' and tuple(app.cv.fg[i]) == AN.SHAPES['bear'][0], (app.cv.ch[i], app.cv.fg[i])
+    p.buffs = [b for b in p.buffs if b[3] != 'Bear shape']
+    # a village: smoke from the chimneys, sparks at the anvil by day, and rain empties the street
+    sid = next(s.id for s in g.world.settlements if s.kind in ('village', 'town') and not getattr(s, 'folk', None))
+    to_over(g, sid)
+    g.enter_town(sid)
+    m = g.map
+    assert AN.chimneys(m), 'no chimneys'
+    cx, cy = AN.chimneys(m)[0]
+    puffs = AN.smoke(cx, cy, 1.0, 1, True, False)
+    assert puffs and all(y < cy for _x, y, _c, _col in puffs)
+    anvils = [i for i, t in enumerate(m.t) if t == D.ANVIL]
+    if anvils:
+        ai = anvils[0]
+        ax, ay = ai % m.w, ai // m.w
+        assert AN.cell(m, ai, ax, ay, LOOK.get(m, ai), 1.0, True, 0) is None
+        sparks = {AN.cell(m, ai, ax, ay, LOOK.get(m, ai), k / 9, False, 0)[0] for k in range(60)}
+        assert len(sparks) > 1, sparks
+    g.turn = (g.turn // D.DAY_LEN + 1) * D.DAY_LEN + D.DAY_LEN // 2
+    walkers = [n for n in m.mons if n.is_npc and hasattr(n, 'work_pos') and n.job not in ('guard', 'lamplighter')
+               and m.tile(*TW.target_for(g, n)) not in TW.INDOOR]
+    assert walkers, 'nobody works outdoors'
+    old = WX.current
+    WX.current = lambda game: 'rain'
+    try:
+        assert WX.foul(g)
+        for n in walkers:
+            assert m.tile(*TW.target_for(g, n, True)) in TW.INDOOR | {D.GRASS, D.PATH} or \
+                tuple(TW.target_for(g, n, True)) == tuple(n.home_pos), n.name
+        assert any(m.tile(*TW.target_for(g, n, True)) in TW.INDOOR for n in walkers)
+        for _ in range(3):
+            g.end_turn(1)
+        app.screens = [ui.GameScreen(app)]
+        app.render()
+        check_colours(app)
+    finally:
+        WX.current = old
+    WX.current = lambda game: 'drizzle'
+    try:
+        assert not WX.foul(g)
+    finally:
+        WX.current = old
+    print('visible ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

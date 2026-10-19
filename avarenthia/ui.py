@@ -75,6 +75,9 @@ class App:
         self.shake_until = 0
         self.hover = None
         self.reduced_motion = False
+        self.fx_mode = E.load_settings().get('effects', 'full')     # spell effects: full, short or off
+        if self.fx_mode not in AN.FX_MODES:
+            self.fx_mode = 'full'
         self.auto = None           # a running step-by-step action (auto-explore, travel)
         self.auto_delay = .06
         self.auto_label = ''
@@ -137,8 +140,15 @@ class App:
         if self.auto:
             self.stop_auto()           # any key interrupts auto-explore or travel
             return
+        self.effects = [e for e in self.effects if e[0] != 'fx']      # a key skips what is still flying
         self.top.on_key(tok, shift)
         self.after_action()
+
+    def fx_speed(self):
+        return 2.0 if self.fx_mode == 'short' else 1.0
+
+    def fx_alive(self, e, t):
+        return (t - e[1]) * self.fx_speed() < AN.fx_life(e[2][1], e[2][2])
 
     def start_auto(self, gen, delay, label):
         self.auto, self.auto_delay, self.auto_label = gen, delay, label
@@ -183,6 +193,13 @@ class App:
             elif ev[0] == 'speech':
                 self.effects = [e for e in self.effects if e[0] != 'speech']
                 self.effects.append(('speech', now, ev))
+            elif ev[0] == 'fx':
+                if self.fx_mode == 'off':           # as it was: one short flash
+                    fb = AN.fx_fallback(ev[1], ev[2])
+                    if fb:
+                        self.effects.append(('flash', now, ('flash', fb[0], fb[1], fb[2], .18)))
+                else:
+                    self.effects.append(('fx', now, ev))
             else:
                 self.effects.append((ev[0], now, ev))
         g.events.clear()
@@ -243,8 +260,9 @@ class App:
                 cv.dim(.35)
             s.render(TallCanvas(cv) if s.tall else cv)
         t = time.monotonic()
-        self.effects = [e for e in self.effects if t - e[1] < (e[2][4] if e[0] == 'flash' else
-                                                               2 + len(e[2][3]) / 25 if e[0] == 'speech' else .8)]
+        self.effects = [e for e in self.effects if (self.fx_alive(e, t) if e[0] == 'fx' else
+                                                    t - e[1] < (e[2][4] if e[0] == 'flash' else
+                                                                2 + len(e[2][3]) / 25 if e[0] == 'speech' else .8))]
         self.hit_times = {k: v for k, v in self.hit_times.items() if t - v < .15}
 
 
@@ -334,7 +352,7 @@ class MainMenu(Screen):
         if self.saved:
             p = self.saved.player
             opts.append(('c', f"Continue as {p.name}, level {p.lvl}", FG))
-        opts += [('n', 'New game', FG), ('esc', 'Quit', DIM)]
+        opts += [('n', 'New game', FG), ('f', f'Spell effects: {self.app.fx_mode}', DIM), ('esc', 'Quit', DIM)]
         return opts
 
     def on_key(self, tok, shift):
@@ -354,6 +372,10 @@ class MainMenu(Screen):
             self.app.start_game(g)
         elif tok == 'n':
             self.app.replace(NameScreen(self.app))
+        elif tok == 'f':
+            app = self.app
+            app.fx_mode = AN.FX_MODES[(AN.FX_MODES.index(app.fx_mode) + 1) % len(AN.FX_MODES)]
+            E.save_settings(effects=app.fx_mode)
         elif tok == 'esc':
             self.app.quit()
 
@@ -772,12 +794,19 @@ class GameScreen(Screen):
                                 fg = (159, 216, 255)
                             if getattr(o, 'faded', False):
                                 fg = scale(fg, .45)
+                            fx = o.effects
+                            if fx or o.frozen:
+                                fg, bg, mv = AN.status_look(fg, bg, t, mx, my, 'burn' in fx,
+                                                            'poison' in fx or 'plague' in fx,
+                                                            o.frozen and o.hold > 0, 'weaken' in fx)
+                                self.moving = self.moving or mv
                             if o.id == tgt_id:
                                 bg = (150, 44, 30)          # your target
                             if t - app.hit_times.get(o.id, -9) < .13:
                                 fg, bg = (255, 255, 255), (120, 30, 20)
                     if mx == p.x and my == p.y:
-                        ch, fg = '@', ((184, 240, 138) if p.poison else (255, 246, 220))
+                        fg, bg, mv = AN.player_look(p, bg, t)
+                        ch, self.moving = '@', self.moving or mv
                     if m.kind == 'over':     # the edge of sight fades out softly
                         d = max(abs(mx - p.x), abs(my - p.y))
                         k = 1 - .45 * max(0.0, min(1.0, (d - (sight - 2)) / 2))
@@ -817,6 +846,17 @@ class GameScreen(Screen):
                         cv.put(vx, vy, '☼', (255, int(190 * f), 70), (int(90 * f), 30, 8))
                         self.moving = True
             self.draw_overworld_extras(cv, ox, oy)
+        if m.kind == 'town' and not getattr(m, 'underground', False):       # smoke from the chimneys
+            h = TW.hour(g)
+            if not night or h >= 18:
+                winter = CAL.season(g.day) == 'winter'
+                for cx, cy in AN.chimneys(m):
+                    if not (0 <= cx - ox < MAP_W and 0 <= cy - oy < MAP_H) or not m.seen[cy * m.w + cx]:
+                        continue
+                    for x, y, ch, col in AN.smoke(cx, cy, t, day, winter, night):
+                        if m.inb(x, y) and m.seen[y * m.w + x]:     # over the roof: seen from the street
+                            self._put_map(cv, x, y, ch, col)
+                            self.moving = True
         wk = self.weather
         if wk in WX.NEEDS_CANVAS:
             shelter = None
@@ -835,6 +875,10 @@ class GameScreen(Screen):
                 for x, y in cells:
                     if g.visible(x, y):
                         self._put_map(cv, x, y, ch, col)
+            elif kind == 'fx':
+                for x, y, ch, col, bgc in AN.fx_cells(ev[1], ev[2], age * app.fx_speed()):
+                    if g.visible(x, y):
+                        self._put_map(cv, x, y, ch, col, bgc)
             elif kind == 'speech':
                 _, x, y, txt = ev
                 lines = wrap_text(txt, 30)[:4]             # a bubble of a few short lines, never cut off
@@ -1044,11 +1088,11 @@ class GameScreen(Screen):
     def _tint(self, cv, vx, vy, bg):
         cv.put_bg(vx, vy, bg)
 
-    def _put_map(self, cv, x, y, ch, col):
+    def _put_map(self, cv, x, y, ch, col, bg=None):
         ox, oy = self.origin
         vx, vy = x - ox, y - oy
         if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
-            cv.put(vx, vy, ch, col)
+            cv.put(vx, vy, ch, col, bg)
 
     # ---------------------------------------------------------- log
     def draw_log(self, cv):

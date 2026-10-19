@@ -109,6 +109,13 @@ def ch_fighting(g):
         ('h', 'IN SIGHT'),
         ('p', 'The panel lists every enemy you can see, with a bar for its life and what it is doing: closing in, '
               'fleeing, stunned, unaware of you.'),
+        ('h', 'Spells you can see'),
+        ('p', 'A bolt flies to its foe and bursts where it strikes; lightning leaps from one foe to the next; life you '
+              'drain flows back to you in red motes. Arrows and the spells of monsters fly the same way, so you see '
+              'what is coming. Any key skips an effect: the game never waits for one. On the main menu, Spell effects '
+              'can be full, short or off.'),
+        ('p', 'On a foe, burning flickers orange, poison pulses green, the frozen stand on pale blue ice and the '
+              'weakened look dim.'),
         ('h', 'Running away'),
         ('p', 'Wolves are fast; bandits are not. Walk off the edge of the field to get away, or onto a road: the '
               'patrols are there.'),
@@ -163,6 +170,7 @@ def ch_hero(g):
                'Nature: roots that hold and brambles that cut grow on the ground. A quarter stronger in forest and '
                'grass, a quarter weaker in the desert, on ice and under the ground.',
                'Beastcraft: almost everything goes through your beast; Tame is a tome of its own.',
+               'In the shape of a beast you stay the sign {@|255,246,220}, in the colours of a bear or a wolf.',
                'Warcraft: shouts and stances, with any weapon in hand.']),
         ('p', 'What a spell leaves on the ground is named when you look with [o], and a foe standing in it says so '
               'under IN SIGHT.'),
@@ -215,6 +223,8 @@ def ch_towns(g):
                ('Castellan', 'in strongholds only: war jobs'),
                ('Factor', "of the Merchants' Guild: prices, and trade work"),
                ('Captain', 'of the watch: where the trouble is, and bounties')]),
+        ('p', 'Smoke rises from the chimneys of the houses where a fire is lit, and by day sparks fly at the '
+              "outfitter's anvil."),
         ('h', 'Signs over people'),
         ('s', [([('!', SIGN_COL['!'])], 'has work for you'),
                ([('?', SIGN_COL['?'])], 'is waiting for a job you can hand in')]),
@@ -354,7 +364,8 @@ def ch_weather(g):
                'Cold and scorching heat make you hungry sooner.',
                'Fire magic sputters in the wet and burns hotter in the heat; storm magic loves a storm.',
                'In a thunderstorm, open land is no place to be: lightning strikes.',
-               'Under a roof you stay dry.']),
+               'Under a roof you stay dry.',
+               'Rain and snow send the townsfolk indoors: the streets empty and the inn fills.']),
         ('h', 'Omens'),
         ('p', 'Falling ash, a sickly miasma, smoke on the wind: a great evil is near.'),
         ('h', 'The year'),

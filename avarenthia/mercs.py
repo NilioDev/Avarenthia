@@ -511,7 +511,8 @@ def mon_turn(game, mon, df):
     if (t['ranged'] or t['caster']) and 2 <= d <= 7 and random.random() < .55:
         path = game.line_clear(mon.x, mon.y, b.x, b.y)
         if path:
-            game.flash(path[:-1], (255, 122, 60) if t['caster'] else (216, 208, 176), '*' if t['caster'] else '-', .2)
+            game.fx('bolt', cells=path, src=(mon.x, mon.y), col=(255, 122, 60) if t['caster'] else (216, 208, 176),
+                    ch='*' if t['caster'] else '-')
             if t['caster'] or random.random() < game.mon_hit_chance(mon, b.df):
                 hurt(game, mc, random.randint(*mon.dmg) * .85, mon)
             else:
@@ -812,7 +813,7 @@ def act(game, b):
                 path = shoots_clear(game, b, tgt)
                 if path:
                     col = (255, 130, 60) if mc.kind == 'mage' else (240, 240, 180) if mc.kind == 'healer' else (216, 208, 176)
-                    game.flash(path[:-1], col, '*' if mc.tpl.get('caster') else '-', .15)
+                    game.fx('bolt', cells=path, src=(b.x, b.y), col=col, ch='*' if mc.tpl.get('caster') else '-')
                     strike(game, mc, b, tgt, s, True)
                     return
             if mc.order != 'hold':

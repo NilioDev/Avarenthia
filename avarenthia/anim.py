@@ -10,7 +10,7 @@ from .look import _h
 
 WATERS = (D.WATER, D.SHALLOW, D.RIVER)
 MOVING = {D.FIREPIT, D.MOLTEN, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP,
-          D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM}
+          D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM, D.ANVIL}
 RISE_EVERY = 25           # about one water cell in this many along a shore has fish rising, a new set each day
 
 
@@ -94,6 +94,13 @@ def cell(m, i, x, y, look, t, night, day):
     if tt in (D.HALLOWED, D.SPIRITTOTEM):                   # a soft light that breathes
         k = .5 + .5 * math.sin(t * 1.6 + (x + y) * .4)
         return ch, mix(fg, (255, 255, 255), k * .3), scale(bg, .85 + .25 * k)
+    if tt == D.ANVIL:                                       # the smith at work: now and then a shower of sparks
+        if night:
+            return None
+        g = _bump(_phase(t, x, y, .45, 33), .1)
+        if g > 0:
+            return ('*' if g > .5 else '∙'), mix(fg, (255, 226, 120), g), mix(bg, (150, 70, 20), g * .7)
+        return ch, fg, bg
     if tt == D.FIREPIT:
         f = flame(t, x, y)
         return ch, mix(scale(fg, f), (255, 220, 120), max(0.0, f - .9) * 3), scale(bg, .8 + .3 * (f - .7))
@@ -152,3 +159,210 @@ def beacon(m, x, y, look, t):
 def camp_glow(t, x, y):
     """The fires of a hostile camp seen from the world map at night: a dull red that breathes."""
     return mix((40, 34, 26), (120, 36, 14), .55 + .3 * flame(t * .4, x, y) - .25)
+
+
+# ------------------------------------------------------------------ spell effects
+# A small set of moving pictures that every school shares: bolts that fly with a fading tail, impacts that open out,
+# life flowing back, rising light, lightning that zigzags. Never longer than about .4 s; a key skips them and the game
+# never waits for one. game.fx(kind, **kw) queues one; the GameScreen draws it over the map.
+FX_MODES = ('full', 'short', 'off')
+STEP = .02                # a bolt flies one cell in this long
+BOLT_MAX = .12
+BURST_FRAME = .05
+
+
+def _line_char(dx, dy):
+    """The sign of a flying arrow or a stroke of lightning, by its direction."""
+    if dx == 0:
+        return '|'
+    if dy == 0:
+        return '-'
+    return '\\' if (dx > 0) == (dy > 0) else '/'
+
+
+def bolt_time(n):
+    return min(BOLT_MAX, STEP * max(1, n))
+
+
+def fx_life(kind, kw):
+    """How long (delay included) an effect of this kind stays on the screen."""
+    d = kw.get('delay', 0.0)
+    if kind == 'bolt':
+        return d + bolt_time(len(kw['cells'])) + .06
+    if kind == 'burst':
+        return d + BURST_FRAME * (kw.get('r', 1) + 3 + (1 if kw.get('gather') else 0))
+    if kind == 'zap':
+        return d + .24
+    return d + kw.get('dur', .28 if kind == 'drain' else .4)
+
+
+def fx_fallback(kind, kw):
+    """With effects off: the plain flash of old, (cells, colour, sign), or None."""
+    col = kw.get('col', (255, 255, 255))
+    if kind in ('bolt', 'zap'):
+        return kw['cells'], col, kw.get('ch', '*')
+    if kind == 'burst':
+        x, y, r = kw['x'], kw['y'], kw.get('r', 1)
+        return ([(x + dx, y + dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1)
+                 if not (kw.get('hollow') and dx == dy == 0)], col, kw.get('ch', '*'))
+    return None
+
+
+def _fade(col, k):
+    """A dimmer shade, never so dark that it reads as a black mark on lit ground."""
+    return scale(col, .45 + .55 * max(0.0, min(1.0, k)))
+
+
+def fx_cells(kind, kw, age):
+    """The cells an effect lights at this age: [(x, y, sign, colour, background or None)]."""
+    age -= kw.get('delay', 0.0)
+    if age < 0:
+        return []
+    col = kw.get('col', (255, 255, 255))
+    out = []
+    if kind == 'bolt':
+        cells = kw['cells']
+        if not cells:
+            return out
+        n = len(cells)
+        head = int(age / bolt_time(n) * n)
+        ch = kw.get('ch', '*')
+        if ch in '-|/\\':                       # arrows and stones point the way they fly
+            sx, sy = kw.get('src', cells[0])
+            ex, ey = cells[-1]
+            ch = _line_char((ex > sx) - (ex < sx), (ey > sy) - (ey < sy))
+        for k in range(4):                      # the head and a tail of three, fading
+            i = head - k
+            if 0 <= i < n:
+                out.append((*cells[i], ch if k == 0 else '·' if k == 1 else '∙',
+                            mix(col, (255, 255, 240), .35) if k == 0 else _fade(col, 1 - k * .28), None))
+        return out
+    if kind == 'burst':
+        x, y, r = kw['x'], kw['y'], kw.get('r', 1)
+        f = int(age / BURST_FRAME)
+        if kw.get('gather'):                    # a big spell draws the light in for a frame first
+            if f == 0:
+                rr = r + 1
+                return [(x + dx, y + dy, '·', _fade(col, .55), None) for dy in range(-rr, rr + 1)
+                        for dx in range(-rr, rr + 1) if max(abs(dx), abs(dy)) == rr]
+            f -= 1
+        signs = kw.get('signs', '*+·')
+        for dy in range(-r, r + 1):
+            for dx in range(-r, r + 1):
+                d = max(abs(dx), abs(dy))
+                if kw.get('hollow') and d == 0:
+                    continue
+                s = f - d
+                if 0 <= s < len(signs):
+                    hot = mix(col, (255, 250, 220), .5) if s == 0 else _fade(col, 1 - s * .3)
+                    out.append((x + dx, y + dy, signs[s], hot, None))
+        return out
+    if kind == 'drain':                         # motes of life flying from the foe back to you
+        cells = kw['cells']
+        n = len(cells)
+        if not n:
+            return out
+        dur = kw.get('dur', .28)
+        for j in range(3):
+            k = (age - j * .06) / max(.01, dur - .12)
+            if 0 <= k < 1:
+                i = min(n - 1, int(k * n))
+                out.append((*cells[i], '∙' if j else '•', _fade(col, 1 - j * .25), None))
+        return out
+    if kind == 'rise':                          # small crosses of light rising off whoever is healed
+        x, y = kw['x'], kw['y']
+        dur = kw.get('dur', .4)
+        for j, dx in enumerate((0, -1, 1)):
+            k = (age - j * .07) / (dur - .14)
+            if 0 <= k < 1:
+                out.append((x + dx, y - 1 - int(k * 2), '+', _fade(col, 1 - k * .7), None))
+        return out
+    if kind == 'zap':                           # a white zigzag that fades to yellow
+        cells = kw['cells']
+        k = age / .24
+        if k >= 1:
+            return out
+        c = mix((255, 255, 255), col, k)
+        for i, (cx, cy) in enumerate(cells):
+            out.append((cx, cy, '/' if i % 2 == 0 else '\\', c, None))
+        return out
+    return out
+
+
+# ------------------------------------------------------------------ how a creature looks under a spell
+BURN_COL, POISON_COL, ICE_BG = (255, 150, 50), (130, 230, 110), (54, 86, 112)
+SHAPES = {'bear': ((214, 140, 76), (62, 38, 22)), 'wolf': ((236, 236, 240), (66, 76, 90))}
+
+
+def status_look(fg, bg, t, x, y, burn=False, poison=False, frozen=False, weak=False):
+    """fg, bg and whether it moves: burning flickers orange, frozen stands on pale blue, poisoned pulses green,
+    weakened is dimmed."""
+    moving = False
+    if frozen:
+        fg, bg = (214, 236, 255), ICE_BG
+    if weak:
+        fg = scale(fg, .62)
+    if poison:
+        k = .5 + .5 * math.sin(t * 4.2 + x)
+        fg, moving = mix(fg, POISON_COL, .35 + .45 * k), True
+    if burn:
+        f = flame(t * 1.4, x, y)
+        fg, moving = mix(fg, BURN_COL, .35 + (f - .7) * 2.2), True
+    return fg, bg, moving
+
+
+def shape_of(p):
+    """The beast you have become, if any ('bear', 'wolf'), from your buffs."""
+    for b in p.buffs:
+        if b[0] == 'dmg' and str(b[3]).endswith(' shape'):
+            return b[3][:-6].lower()
+    return None
+
+
+def player_look(p, bg, t):
+    """Your @: in a beast's shape it takes the beast's colours, and shows burning and poison like any creature."""
+    fg = (255, 246, 220)
+    sh = shape_of(p)
+    if sh:
+        fg, bg = SHAPES.get(sh, ((200, 170, 120), bg))
+    return status_look(fg, bg, t, p.x, p.y, burn=bool(p.burn), poison=bool(p.poison))
+
+
+# ------------------------------------------------------------------ smoke from the chimneys
+_CHIMNEYS = {}
+SMOKE = (204, 200, 190)
+
+
+def chimneys(m):
+    """One chimney on the roof wall of each wooden house (a top wall with planks under it), worked out once."""
+    key = (m.key, m.w, m.h)
+    if key in _CHIMNEYS:
+        return _CHIMNEYS[key]
+    out = []
+    t, w = m.t, m.w
+    for y in range(1, m.h - 1):
+        run = []
+        for x in range(m.w + 1):
+            ok = x < m.w and t[y * w + x] == D.WALL and t[(y + 1) * w + x] == D.PLANK and \
+                D.TILES[t[(y - 1) * w + x]].walk
+            if ok:
+                run.append(x)
+                continue
+            if len(run) >= 4:
+                out.append((run[0] + 1 + _h(run[0], y, 5) % (len(run) - 2), y))
+            run = []
+    _CHIMNEYS[key] = out
+    return out
+
+
+def smoke(cx, cy, t, day, winter, late):
+    """The puffs rising from one chimney now: [(x, y, sign, colour)]; most hearths are lit, all of them in winter."""
+    if not winter and _h(cx, cy, day) % 10 >= 8:
+        return []
+    drift = 1 if _h(day, 3, 11) % 2 else -1          # the day's wind leans every plume the same way
+    out = []
+    for j in range(4):
+        k = (t * .3 + j / 4 + _h(cx, cy, 9) / 65536) % 1.0
+        col = scale(SMOKE, (1 - .65 * k) * (.55 if late else 1))
+        out.append((cx + round(k * k * 2 * drift), cy - 1 - int(k * 4), '°' if k < .3 else 'o' if k < .6 else '·', col))
+    return out

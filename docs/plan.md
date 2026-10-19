@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
-| **Approved: spell effects** | Bolts that fly, impacts that open out, life flowing back, burning, frozen and poisoned shown on the creature, living tiles; each school its own hand; small areas (3x3, big spells 5x5); Wild Shape keeps your `@` in the beast's colours; short and skippable. Not built yet |
+| **Approved: spell effects** | Part 1 built 19 October 2026 (the shared toolkit, status colours, Wild Shape colours, the option; see `docs/built.md`). Left: each school its own hand, the weapon skills' effects |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Being worked out: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring. The content for ranks 25-50 is still being discussed |
@@ -108,7 +108,13 @@ stays as it is.
 - **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
   parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
 
-## Spell effects (approved, not built)
+## Spell effects (approved; part 1 built)
+
+**Built 19 October 2026 as a quick win** (see `docs/built.md`): the toolkit (bolts with a tail, bursts, drain,
+rising crosses, the zigzag), status colours on creatures, Wild Shape's colours, monsters' arrows and spells, the
+option full/short/off. **Left:** each school its own hand (Meteor's shadow and slanting fall, the corpse that greys
+and rises, Morrak's Bargain pulling your own life out first, rings and waves), the one white frame of a great
+lightning stroke, and the weapon skills' effects. The spec below is the whole plan.
 
 Approved by Nilio on 17 October 2026 after two rounds of animated mockups (project files `magie/effecten/`, 17 GIFs,
 made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's effect in `magie/effecten.md` and
@@ -210,9 +216,9 @@ What exists: a day rhythm (work and home), day and night watch, drinkers, childr
 doors shut at night, dogs, cats and livestock, job barks, hints, news through people.
 
 ### Everywhere
-1. **Work you can see.** Sparks at the smith, smoke from the baker's chimney, a woodpile that grows; fields change
-   with the season (bare, green, gold, stubble).
-2. **Weather in town.** Rain empties the streets and fills the inn; bare fields in winter.
+1. **Work you can see.** (Sparks at the anvil and chimney smoke built 19 October 2026.) A woodpile that grows;
+   fields change with the season (bare, green, gold, stubble).
+2. **Weather in town.** (Rain emptying the streets and filling the inn built 19 October 2026.) Bare fields in winter.
 3. **Market day and rest day.** One market day a week (extra stalls, travellers, better selling prices); on the rest
    day the temple is full and the shops are shut (`calendar.weekday()` is still unused).
 4. **The town reacts to the world.** A raid nearby means more guards, fearful talk and shutters; a war won, a feast.
