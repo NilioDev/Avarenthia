@@ -221,8 +221,12 @@ Approved so far:
   - **The den goes with the beast:** when it dies its den is gone; a new beast brings a new den. So the number of
     dens never grows past the number of named beasts (the cap that is there now: about 9, rising to 18).
   - **Legendary beasts** keep a place of their own: the deepest level of a dungeon, a dragon's nest, or old ruins.
+  - **Catching one alive** (a job kind: a baron wants the beast alive): below a quarter of its life, throw a sleeping
+    draught (Alchemy); it sleeps a few turns; bump it with a rope to bind it; men with a cart come for it. If it wakes
+    first it is furious. More coin, no parts. No zoo to build: the baron keeps it in a cage in his seat's yard
+    (one cage tile per beast you brought), so you see your catches when you visit.
 Still open: the content per skill worked out this way (materials and places, new cloth pieces), whether masters in
-the world can also unmake for coin (proposed: no), and catching a beast alive (a job kind; how it plays is not settled).
+the world can also unmake for coin (proposed: no).
 
 ## Round 6: livelier settlements (on hold)
 
