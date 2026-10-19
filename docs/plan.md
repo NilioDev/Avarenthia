@@ -50,7 +50,7 @@ stays as it is.
 - **Start blank.** You wake in the temple with no class, only your weapon and its skills. The **first tome you
   read** wakes a memory and is your **first class** (one warning before you read: "This will wake a memory").
   From then on you read only tomes of your class; others you sell or keep.
-- **A second class, late.** At **rank 20** in your first class you may read one tome of a second school; it becomes
+- **A second class, late.** At **rank 20** (settled) in your first class you may read one tome of a second school; it becomes
   your second class and you learn the **name of your pair** (Fire + Shadow is a Hexblade). Who never takes a
   second stays **pure** (Pyromancer, Rimecaller, Stormcaller, Cleric, Warlock, Necromancer, Druid, Beastmaster,
   Warrior, Rogue, Arcanist).
@@ -77,10 +77,21 @@ stays as it is.
   beside you; bow: areas placed further; spear: skills on a foe beside you reach 2 tiles; a shield lengthens
   defensive skills, a grimoire gives mana). Weapon rules never stack with an imbue blow. This replaces "eight tome
   skills per weapon discipline" in the weapons plan; weapons get no tree.
-- **Guilds stay** (no new ones) and each offers an **elite**; the two-guild techniques become the elites of their
-  pair (Spellblade for a spellsword: the imbue holds while mana lasts, each blow costs some, no other spells
-  meanwhile). An elite may ask for a knot in a tree. The Wardens (bow) and the Still Hand (empty hands) serve a
-  weapon, not a class.
+- **Guilds stay** (no new ones). Their techniques (three per guild at guild rank 1, 2, 4, plus eight for those who
+  serve two guilds) no longer mix freely on the bar (settled 19 October 2026):
+  - **Guild rank 4 is the guild's elite** (Inferno, Last Stand, Dawnbreak, Corpse Burst, Wind Step...); the
+    two-guild techniques are elites too, only for who serves both (Spellblade for a spellsword: the imbue holds
+    while mana lasts, each blow costs some, no other spells meanwhile). One elite on key 6. An elite may ask for a
+    knot in a tree.
+  - **Guild rank 1 and 2 become ordinary skills of their school** for keys 3-5, usable only when that school is one
+    of your classes (Mage Armor is Frost).
+  - **The weapon guilds** (Wardens: the bow; Still Hand: empty hands) teach weapon skills that may replace one of
+    that weapon's two.
+  - Anyone may join any guild and do its jobs and rise; a master with nothing for your classes says so.
+  - Garrote and Smoke Bomb move to the Cunning school; Wild Shape moves to the Nature tree and the Green Moot's elite
+    becomes a stronger shape (Elder Bear).
+- **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
+  gets only its pure rule, no extra elite.
 - **Balance test:** a new headless part where the bot fights the same set of monsters as a pure caster, a pure
   warrior, a spellsword and weapon plus class, and reports turns and damage taken; they should win about as fast,
   with a different risk.
