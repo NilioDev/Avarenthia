@@ -92,6 +92,11 @@ stays as it is.
     becomes a stronger shape (Elder Bear).
 - **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
   gets only its pure rule, no extra elite.
+- **Worked out** (approved 19 October 2026, numbers to be tuned by the balance test): the eight tomes of Cunning and
+  Arcane, the Thieves' two new techniques (Cheap Shot, Blinding Powder), one rule per weapon family (unarmed: every
+  third blow gives some mana or stamina; staves: spells 15% cheaper) and two skills for each of the 26 weapon kinds
+  (the second at discipline rank 10; Burning Arrow goes), and the knots of all eleven trees (each school's "blade"
+  branch opens with its imbue): project files `klassen/uitwerking.md`.
 - **Balance test:** a new headless part where the bot fights the same set of monsters as a pure caster, a pure
   warrior, a spellsword and weapon plus class, and reports turns and damage taken; they should win about as fast,
   with a different risk.
