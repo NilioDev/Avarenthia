@@ -16,7 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: spell effects** | Part 1 built 19 October 2026 (the shared toolkit, status colours, Wild Shape colours, the option; see `docs/built.md`). Left: each school its own hand, the weapon skills' effects |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
-| **Being worked out: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). The content for ranks 25-50 is still being discussed |
+| **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -236,6 +236,12 @@ Approved so far:
   spider queen; much mana), Emberthread (fire beetles in volcanic land; strong fire resistance). Top: Fey Silk (light,
   one special power), never tied to one people: gathered at night by fairy rings and wisp marshes (wonders, several
   per world), from a legendary spider's den, or as an elven gift after a job.
+- **Hunting, Skinning and Leatherworking by tier** (19 October; the game is all there already). A hare, grouse, deer,
+  goat, sheep, wild boar (plain leather). B elk, reindeer, ibex, gazelle (sturdy leather), wolf (warm fur), snake
+  (poison resistance). C aurochs, wild horse (sturdy), bear, winter wolf (warm), panther (lighter), crocodile (more
+  armour). D cave bear, snow ape (very warm), sabretooth (lighter), mammoth, rhino (wears slower, much armour). E
+  drake (fire resistance), frost drake (cold), swamp drake (poison). Top: the parts of named beasts and of dragons. A
+  herd above your tier is "too wary for you yet": you cannot get close.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
 - **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
@@ -285,8 +291,7 @@ Approved so far:
     draught (Alchemy); it sleeps a few turns; bump it with a rope to bind it; men with a cart come for it. If it wakes
     first it is furious. More coin, no parts. No zoo to build: the baron keeps it in a cage in his seat's yard
     (one cage tile per beast you brought), so you see your catches when you visit.
-Still open: the content per skill worked out this way (materials and places, new cloth pieces), whether masters in
-the world can also unmake for coin (proposed: no).
+Still open: whether masters in the world can also unmake for coin (proposed: no).
 
 ## Round 6: livelier settlements (on hold)
 
