@@ -190,10 +190,16 @@ Approved so far:
   cool). With Leatherworking every kind of armour is made by someone.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
-- **Crafted gear:** quality (crude, fine, masterwork) and one power the maker chooses from the ordinary ones (more
-  armour, one resistance, some life, lighter, longer wear, warmth); two from rank 40. Special powers (+ranks in a
-  school, leech, life or mana on a kill, crits, all resistances, thorns, less damage, Strength or Dexterity) exist only
-  on found gear, so rares stay what players hunt for.
+- **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
+  property) plus one beast part of the maker's choice, which gives the power; two parts from rank 40.
+- **Every beast gives parts, from the first wolf on** (Monster Hunter's way, 19 October): fangs (to hit), claws
+  (damage), horn and tusks (armour), antlers (stamina), feathers (lighter), chitin (poison resistance), scales (fire or
+  cold resistance), ivory (life). The same part from a stronger beast gives more (wolf fangs +5, winter wolf +10,
+  sabretooth +15), so better gear means hunting stronger beasts; old parts are sold. Big beasts (bear, aurochs,
+  mammoth, drake) can have a part broken off too. Below the beast's tier in Skinning, parts tear more often.
+- **Special powers** (+ranks in a school, leech, life or mana on a kill, crits, all resistances, thorns, less damage,
+  Strength or Dexterity) exist only on found gear and on the parts of named beasts, so rares stay what players hunt
+  for.
 - **Unmake** (rank 40 in the craft, at its own bench): one power of an identified found piece moves onto a piece you
   made; the found piece is destroyed; one moved power per piece, at about two thirds of its value (full at 50). Uniques
   and sets cannot be unmade. It can always fail: about 40% success at rank 40, 55% at 45, 70% at 50, never above 80%;
