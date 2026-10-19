@@ -16,7 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: spell effects** | Part 1 built 19 October 2026 (the shared toolkit, status colours, Wild Shape colours, the option; see `docs/built.md`). Left: each school its own hand, the weapon skills' effects |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
-| **Being worked out: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring. The content for ranks 25-50 is still being discussed |
+| **Being worked out: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). The content for ranks 25-50 is still being discussed |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Parked** | The bard (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -206,8 +206,23 @@ Approved so far:
   Eel in underground lakes). The top finds (Moonfish, Star-iron, elven thread, dragon hide) are the crafts' own rares:
   scarce, one special property, never needed for a rank. Xp without gathering too: orders at your own height in every
   town, masterwork tries, mending for others.
-Still open: the content per skill worked out this way (materials and places, new cloth pieces), and whether masters in
-the world can also unmake for coin (proposed: no).
+- **Hunting the named beasts, Monster Hunter's way** (19 October; builds on `named.py`):
+  - **Parts:** beside its trophy a named beast gives one or two materials (pelt, horn, scale, venom gland) that carry
+    one of its traits (Frost-touched: cold resistance; Venomous: poison resistance or a venom oil; Stone Skin: more
+    armour; Swift: lighter). A piece made of them bears the beast's name ("Old Greyback's Hide Armor"): the crafts'
+    rares. No set bonuses (they would clash with the class trees).
+  - **Breaking a part:** a critical hit while it is below half its life breaks off a horn or tail: one more material.
+  - **Skinning counts:** taking the parts off whole needs rank 15 (notable), 30 (notorious), 45 (legendary).
+  - **A den of its own:** every named beast gets a den when it is made, near its home, of the land's kind: a hollow
+    tree or thorn thicket in a wood, a cave in the hills, a mud wallow in a marsh, a ledge high in the mountains. A
+    real den, not a dungeon: one small map with bones, the leavings of its prey, now and then a shed scale. One sign on
+    the world map, shown only once you have found it; `>` goes in. Out of its den it roams the world and the play maps
+    as now; beaten, it flees there, leaving a blood trail.
+  - **The den goes with the beast:** when it dies its den is gone; a new beast brings a new den. So the number of
+    dens never grows past the number of named beasts (the cap that is there now: about 9, rising to 18).
+  - **Legendary beasts** keep a place of their own: the deepest level of a dungeon, a dragon's nest, or old ruins.
+Still open: the content per skill worked out this way (materials and places, new cloth pieces), whether masters in
+the world can also unmake for coin (proposed: no), and catching a beast alive (a job kind; how it plays is not settled).
 
 ## Round 6: livelier settlements (on hold)
 
