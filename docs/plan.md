@@ -188,6 +188,12 @@ Approved so far:
 - **Herbalism joins Foraging** (its perks move along). **New: Smithing** (an anvil; ore becomes bars; mend your own
   metal gear for ore and time; weapons and metal armour) **and Tailoring** (cloth: light, mana and resistance, warm or
   cool). With Leatherworking every kind of armour is made by someone.
+- **Each craft its own field, beyond armour** (19 October): Smithing is the fight (metal armour, every metal weapon,
+  tools: pick, skinning knife, lockpicks, fish hooks; honing a blade at the anvil, a short buff). Leatherworking is the
+  road (leather armour; marsh, mountain, snow and sand boots that make travel over that land quicker; waterskin, tent
+  and bedroll; barding for your beast; a quiver once arrows exist). Tailoring is the weather (cloth pieces, each warm
+  or cool: Quilted Armor, Robe, Cap, Hood, Sash, Wraps, Soft Shoes; bandages, rope, a fishing net). New cloth bases
+  come in three grades like the rest. Lists in `/mnt/project-files/lifeskills/content.md`.
 - **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
   Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
 - **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
