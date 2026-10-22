@@ -345,7 +345,19 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Middle, 100 x 60:** the temple, the abbey, the fort, and the levels below them.
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
-- Still to settle (in `docs/open.md`, "Dungeons"): the tower, which grows upward and may have a dungeon below; the editor's controls.
+- **Towers (approved 22 October)**: slender and high. Mockups `T_tower.png` and `T_towers_peoples.png`.
+  - **Floors.** Every floor is the same small footprint, about 15 across, and has 3 to 6 storeys. A floor may be split into rooms. Each floor has its own use: a guard room, a store, the keeper's room. There is no room for hordes, only for a few strong foes, and the stair is the choke point.
+  - **Stairs.** A stair or ladder comes out at the same spot it left from below. The next one up lies elsewhere on that floor; in a stone tower it is a quarter turn further along the wall, like a spiral stair.
+  - **Below.** A cellar or dungeon may lie underneath, reached through a hatch.
+  - **The top is a lookout.** Standing there marks the land around on the world map, the way the great falls' cairn does. The radius grows with the tower's height: about 10 for a low tower and 14 for a high one, with 4 more on a hill. Fog or rain halves it. At night you see only lights: villages, campfires and ships. In a manned tower, a watch at the top sees you coming from afar and raises the alarm sooner.
+  - **Each people builds its own tower:**
+    - **Human:** grey stone, round, with rooms behind doors. On top, battlements and a brazier.
+    - **Elf:** white stone in thin lines, built round a living trunk that the stair winds about. The top is open to the stars, with a crown of leaves.
+    - **Dwarf:** hewn blocks, square with cut corners, and runes in the wall; a forge and a store. On top, a bolt thrower and a beacon.
+    - **Orc:** rough logs, square, with ladders instead of stairs, and skulls. On top, a hide roof and a war drum.
+    - **Goblin:** crooked, of scrap and planks, with holes in the floor that drop you to the floor below. On top, a crow's nest with a gong.
+    - **Halflings and gnomes** build no towers.
+- Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Round 6: livelier settlements (on hold)
 

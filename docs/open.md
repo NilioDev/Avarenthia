@@ -47,8 +47,6 @@ at yet.
 
 ## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
 The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.
-- **The tower.** It needs a plan of its own because it grows upward: several floors reached by stairs, each floor
-  small. It may have a dungeon underneath. To work out together.
 - **The editor's controls**, for a separate thread later. What we know so far:
   - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint.
   - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
