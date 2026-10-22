@@ -615,8 +615,10 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   Wooden planks stay for drawbridges, harbour jetties (a few long ones, boats moored along them) and small streams in villages.
 - **How a bridge is laid** (Nilio): first a quay street runs along both banks inside the walls. Then the bridges are
   laid, straight from quay to quay: one below the market and one where each ring road crosses (two or three in all).
-  Only then come the streets: a great way bends onto a bridge close by; any other way ends at the quay, which leads
-  on to the bridge, so no road stops at the water. Every gate has a drawbridge of planks over the moat.
+  Only then comes the street plan, made round the bridges: a great way or ring road that crosses leaves its curve a
+  little before the river, runs straight over the bridge in line with it and takes up its course on the far side (a
+  straight piece in a ring is fine: ASCII has only 8 directions). Any other way ends at the quay, which leads on to
+  the bridge, so no road stops at the water. Every gate has a drawbridge of planks over the moat.
 - **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
   lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
 - **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
