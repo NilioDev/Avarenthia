@@ -47,6 +47,12 @@ at yet.
 
 ## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
 The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.
+- **The fixed plan of each kind of place**, to work out with a mockup per kind when it is built: the temple, the abbey
+  or monastery, the fort, the manor, the barrow, an ordinary goblin hole and the goblin village. The direction is in
+  plan.md (an abbey always has a cloister, a refectory and cells; the goblin village is built like a settlement); the
+  exact layout of each is still open.
+- **The list of theme rooms and pieces** for K5 and the fixed plans: which special rooms exist, per kind of place and
+  per part (entrance, arrival, middle, bottom). Nilio can also draw his own in the editor.
 - **The editor's controls**, for a separate thread later. What we know so far:
   - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint.
   - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
