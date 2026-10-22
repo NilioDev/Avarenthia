@@ -624,6 +624,11 @@ class GameScreen(Screen):
         room = MAP_W - 4 - (len(right[0]) + len(right[1]) + 2 if right else 11) - 10
         cv.text(x, MAP_H, name[:room], FG, BG)
         x += min(len(name), room)
+        day = TW.day_kind(g) if m.kind == 'town' else None
+        if day:                                         # a human town's market day or rest day
+            lab = '· market day ' if day == 'market' else '· rest day '
+            cv.text(x, MAP_H, lab, GOLD if day == 'market' else DIM, BG)
+            x += len(lab)
         if m.kind in ('over', 'wild') and not getattr(m, 'underground', False):
             wx, wy = g.world_pos()
             n = danger_blocks(g.world.danger_at(wx, wy))
@@ -2085,7 +2090,7 @@ class ShopScreen(Modal):
                 bg = (52, 40, 28) if sel else PANEL
                 cv.fill(lx, yy, 30, 1, ' ', FG, bg)
                 cv.text(lx, yy, LETTERS[i] if active else ' ', GOLD, bg)
-                price = max(1, round(it.value() * self.mult)) if pane == 0 else max(1, it.value() // 4)
+                price = max(1, round(it.value() * self.mult)) if pane == 0 else g.sell_value(it)
                 cv.text(lx + 2, yy, it.display_name(), it.color(), bg, maxw=22)
                 cv.text_right(lx + 29, yy, fmt(price, True), GOLD if (pane == 1 or g.player.gold >= price) else BAD, bg)
             if not rows:
@@ -3413,7 +3418,7 @@ class MarketScreen(Modal):
             cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark == '!' else DIM, bg)
             cv.text(x + 4, yy, D.GOODS[gk]['name'], FG, bg)
             cv.text(x + 22, yy, fmt(ECO.buy_price(s, gk), True), FG, bg)
-            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk), True), FG, bg)
+            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk, ECO.fair_day(g, s)), True), FG, bg)
             sw = _stock_word(s, gk)
             cv.text(x + 36, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
             have = p.cargo.get(gk, 0)

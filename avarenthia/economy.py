@@ -86,9 +86,15 @@ def buy_price(s, g):
     return max(1, round(price(s, g) * 1.08 * (1 - _discount(s)) * race_factor(s)))
 
 
-def sell_price(s, g):
+def sell_price(s, g, fair=False):
+    """What a town pays for one; on its market day (fair) a tenth more."""
     b = buy_price(s, g)
-    return max(1, min(b - 1, round(price(s, g) * .92 * (1 + _discount(s)) / race_factor(s))))
+    return max(1, min(b - 1, round(price(s, g) * .92 * (1.1 if fair else 1) * (1 + _discount(s)) / race_factor(s))))
+
+
+def fair_day(game, s):
+    from . import towns as TW
+    return game.here is s and TW.day_kind(game, s) == 'market'
 
 
 def cargo_capacity(p):
@@ -135,7 +141,7 @@ def sell(game, s, g, n=1):
     for _ in range(n):
         if p.cargo.get(g, 0) <= 0:
             break
-        pr = sell_price(s, g)
+        pr = sell_price(s, g, fair_day(game, s))
         p.gold += pr
         got += pr
         s.market[g][0] += 1

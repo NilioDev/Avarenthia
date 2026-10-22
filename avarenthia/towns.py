@@ -1651,8 +1651,63 @@ def target_for(game, npc, foul=False):
     return tgt
 
 
+MARKET_DAY, REST_DAY = 'Starsday', 'Restday'
+
+
+def day_kind(game, s=None):
+    """'market' or 'rest' in a human town on its market day or its rest day; otherwise None."""
+    from . import calendar as CAL
+    s = game.here if s is None else s
+    if s is None or getattr(s, 'race', 'human') != 'human':
+        return None
+    wd = CAL.weekday(game.day)
+    return 'market' if wd == MARKET_DAY else 'rest' if wd == REST_DAY else None
+
+
+def shut(game):
+    """Shops and stalls stay shut on the rest day (the inn and the temple stay open)."""
+    return day_kind(game) == 'rest' and DAY_START <= hour(game) < DAY_END
+
+
+def fair_spot(game, npc):
+    """Where someone stands on market day: somewhere in the open near a trader's stall."""
+    m = game.map
+    spot = getattr(npc, 'fair_pos', None)
+    if spot is None:
+        traders = [o for o in m.mons if o.is_npc and o.role == 'market' and m.tile(o.x, o.y) not in INDOOR]
+        cells = [(t.x + dx, t.y + dy) for t in traders for dy in range(-4, 5) for dx in range(-5, 6)
+                 if m.inb(t.x + dx, t.y + dy) and D.TILES[m.tile(t.x + dx, t.y + dy)].walk
+                 and m.tile(t.x + dx, t.y + dy) not in INDOOR]
+        spot = npc.fair_pos = random.choice(cells) if cells else False
+    return spot or None
+
+
+def pew_spot(game, npc):
+    """Where someone sits in the temple on the rest day."""
+    m = game.map
+    spot = getattr(npc, 'pew_pos', None)
+    if spot is None:
+        cells = []
+        for b in getattr(m, 'buildings', ()):
+            if b['kind'] == 'temple':
+                x, y, w, h = b['box']
+                cells += [(xx, yy) for yy in range(y + 1, y + h - 1) for xx in range(x + 1, x + w - 1)
+                          if m.inb(xx, yy) and m.tile(xx, yy) in (FLOOR, PLANK)]
+        spot = npc.pew_pos = random.choice(cells) if cells else False
+    return spot or None
+
+
 def _target(game, npc):
     h = hour(game)
+    if npc.job not in ('guard', 'lamplighter', 'fisher'):
+        kind = day_kind(game)
+        spot = None
+        if kind == 'rest' and 8 <= h < 12:
+            spot = pew_spot(game, npc)                  # the rest day: the temple is full in the morning
+        elif kind == 'market' and 8 <= h < 17 and npc.id % 3 and npc.job != 'drinker':
+            spot = fair_spot(game, npc)                 # market day: the square fills up
+        if spot:
+            return spot
     if npc.job == 'guard':
         night = getattr(npc, 'night_watch', False)
         on = (h >= 21 or h < 5) if night else (5 <= h < 21)
@@ -1721,6 +1776,11 @@ def live(game, m):
                 set_lamp(m, k, want)
     from . import weather as WX
     foul = WX.foul(game)
+    day = day_kind(game)
+    if day and hour(game) == 8 and getattr(m, 'bell_day', None) != game.day:
+        m.bell_day = game.day
+        game.msg('The temple bell rings for the rest day. The shops stay shut today.' if day == 'rest' else
+                 'It is market day: the square fills up, and the traders pay a little more.')
     for npc in m.mons:
         if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
             game.random_step(npc)

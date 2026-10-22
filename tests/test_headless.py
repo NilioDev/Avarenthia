@@ -4078,11 +4078,78 @@ def visible():
     print('visible ok')
 
 
+def market_days():
+    """Starsday is market day in human towns: the square fills and selling pays a little more; Restday the temple
+    bell rings, the townsfolk go to the temple, and shops, stalls and stables are shut."""
+    from avarenthia import towns as TW, economy as ECO, calendar as CAL
+    print('== market_days')
+    app = new_app('soft', seed=5)
+    g, p = app.game, app.game.player
+    st = next(s for s in g.world.settlements if s.race == 'human' and s.kind in ('village', 'town', 'city')
+              and 'temple' in s.services and not getattr(s, 'folk', None))
+    to_over(g, st.id)
+    g.enter_town(st.id)
+    m = g.map
+    base = g.day + 7
+    day_of = {CAL.weekday(d): d for d in range(base, base + 7)}
+    assert set(day_of) == set(CAL.WEEKDAYS)
+    def at(day, h):
+        g.turn = (day - 1) * D.DAY_LEN + D.DAY_LEN * h // 24
+    # a plain day: nothing special
+    at(day_of['Windsday'], 10)
+    assert TW.day_kind(g) is None and not TW.shut(g)
+    gk = D.GOOD_ORDER[0]
+    plain = ECO.sell_price(st, gk, ECO.fair_day(g, st))
+    ware = next(it for wares in g.shops.values() for it in wares if it.value() >= 40)
+    plain_gear = g.sell_value(ware)
+    # market day: better prices, people on the square, the line under the map says so
+    at(day_of['Starsday'], 10)
+    assert TW.day_kind(g) == 'market' and ECO.fair_day(g, st)
+    assert ECO.sell_price(st, gk, True) >= plain and ECO.sell_price(st, gk, True) < ECO.buy_price(st, gk)
+    assert g.sell_value(ware) > plain_gear
+    folk = [n for n in m.mons if n.is_npc and hasattr(n, 'work_pos') and n.job not in ('guard', 'lamplighter', 'fisher', 'drinker')]
+    traders = [o for o in m.mons if o.is_npc and o.role == 'market' and m.tile(o.x, o.y) not in TW.INDOOR]
+    assert traders, 'no stall on the square'
+    at_fair = [n for n in folk if n.id % 3 and tuple(TW.target_for(g, n)) == tuple(TW.fair_spot(g, n))]
+    assert at_fair, 'nobody goes to market'
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    assert 'market day' in app.cv.dump(), 'the line under the map'
+    check_colours(app)
+    # rest day: the bell, the temple full, the shops shut
+    at(day_of['Restday'], 9)
+    assert TW.day_kind(g) == 'rest' and TW.shut(g)
+    pews = [n for n in folk if TW.pew_spot(g, n)]
+    assert pews, 'no room in the temple'
+    for n in pews:
+        assert m.tile(*TW.target_for(g, n)) in TW.INDOOR
+    keeper = next(o for o in m.mons if o.is_npc and o.role in ('shop', 'market'))
+    g.request = None
+    g.talk(keeper)
+    assert g.request is None, 'a shop open on the rest day'
+    inn = next((o for o in m.mons if o.is_npc and o.role == 'inn'), None)
+    if inn:
+        g.talk(inn)
+        assert g.request and g.request[0] == 'inn', 'the inn shuts on the rest day'
+        g.request = None
+    at(day_of['Restday'], 8)
+    m.bell_day = None
+    TW.live(g, m)
+    assert m.bell_day == g.day
+    app.render()
+    assert 'rest day' in app.cv.dump()
+    check_colours(app)
+    # outside human towns the week passes unmarked
+    to_over(g, st.id)
+    assert TW.day_kind(g) is None
+    print('market_days ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

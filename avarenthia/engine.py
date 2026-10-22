@@ -1635,10 +1635,14 @@ class Game:
         p.mounts.append(key)
         self.msg(f"You buy a {mt['name'].lower()}. Your cargo space is now {ECO.cargo_capacity(p)}.", 'gold')
 
+    def sell_value(self, it):
+        """What an outfitter pays: a quarter of the worth, a little more on market day."""
+        return max(1, it.value() * 3 // 10 if TW.day_kind(self) == 'market' else it.value() // 4)
+
     def sell(self, it):
         if self.is_equipped(it) or it.k == 'quest':
             return
-        v = max(1, it.value() // 4)
+        v = self.sell_value(it)
         name = it.display_name() if it.n == 1 else (D.POTIONS[it.t]['name'] if it.k == 'potion' else 'Scroll of Town Portal')
         self.remove_one(it)
         self.player.gold += v
@@ -2909,6 +2913,10 @@ class Game:
             return
         if role == 'castellan':
             self.request = ('castellan', hid)
+            return
+        if role in ('shop', 'market', 'stables') and hid is None and TW.shut(self):
+            self.say(npc, random.choice(['Shut for the rest day. Come back tomorrow.', 'Not today, friend. It is the rest day.',
+                                         'The rest day. Go and hear the priest, and come back tomorrow.']))
             return
         if role == 'shop':
             self.request = ('shop', f'h{hid}' if hid is not None else (here.id if here else 0))

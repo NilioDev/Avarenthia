@@ -249,6 +249,14 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   going up stone by stone, dust `·` behind Charge, the leaps and Sic 'Em); Pyre's fire leaps `^` to each neighbour;
   Morrak's Bargain sends your life out red and then all falls in, purple; `sky` (Call the Storm: the map washes
   white for one frame, ~0.07 s, before the strikes; not with effects off). All stay within ~0.45 s. No save change.
+- **Market day and rest day** (22 October 2026; `towns.day_kind`, round 6 item 3). Only in human towns. Your first
+  day is now a Moonsday, so the week runs Moonsday to Restday. Starsday is market day: from 8 to 17 two in three
+  townsfolk stand in the open near a trader's stall, goods sell for a tenth more (still under the buying price) and
+  outfitters pay 30% of an item's worth instead of 25%. Restday: the bell rings at 8, the townsfolk sit in the temple
+  from 8 to 12, and outfitters, traders and stablemasters are shut by day (the inn and the temple stay open). The
+  line under the map shows "· market day" or "· rest day"; a message at 8 says which. Rain still sends people
+  indoors. No save change.
+
 ## Ferries in villages (built 18 October 2026; the spec)
 
 Niels, 17 October 2026: a village river is not always crossed by a bridge; it depends on how broad and wild the

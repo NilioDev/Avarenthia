@@ -228,6 +228,12 @@ def ch_towns(g):
                ('Captain', 'of the watch: where the trouble is, and bounties')]),
         ('p', 'Smoke rises from the chimneys of the houses where a fire is lit, and by day sparks fly at the '
               "outfitter's anvil."),
+        ('h', 'The week'),
+        ('p', 'A week has seven days, from Moonsday to Restday. In human towns Starsday is market day: the square '
+              'fills with people, and traders and outfitters pay a little more for what you sell. Restday is the rest '
+              'day: the temple bell rings, the townsfolk sit in the temple in the morning, and the shops, stalls and '
+              'stables stay shut all day. The inn and the temple stay open. The line under the map says when it is '
+              'market day or rest day.'),
         ('h', 'Signs over people'),
         ('s', [([('!', SIGN_COL['!'])], 'has work for you'),
                ([('?', SIGN_COL['?'])], 'is waiting for a job you can hand in')]),

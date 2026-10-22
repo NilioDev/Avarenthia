@@ -13,7 +13,7 @@ def _split(day):
     n = START + day - 1
     y, r = divmod(n, DAYS_IN_MONTH * 12)
     mo, d = divmod(r, DAYS_IN_MONTH)
-    return YEAR + y, mo, d + 1, n % 7
+    return YEAR + y, mo, d + 1, (day - 1) % 7      # your first day is a Moonsday
 
 
 def ordinal(n):

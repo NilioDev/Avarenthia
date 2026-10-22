@@ -16,10 +16,8 @@ the **weapon skills' effects** (a swing arc, arrows that fly, blood on Sever Art
 proposal with GIFs is in the project files, `magie/wapeneffecten/voorstel.md`; it is built with the weapon skills.
 
 ## Quick wins not taken
-From the thread "Quick wins uit het plan"; items 1-5 were built, these two were not:
-- **Market day and rest day** (round 6, item 3): one market day a week with extra stalls and better prices; on the
-  rest day the temple is full and the shops are shut. Small to medium; `calendar.weekday()` is still unused. Build
-  it early on its own, or wait for round 6?
+From the thread "Quick wins uit het plan"; items 1-5 were built, and market day and rest day on 22 October 2026.
+Still not taken:
 - **Five new weapons without skills first:** scimitar, flail, war hammer, cestus and tiger claws, each with its own
   rule. Medium, needs a `SAVE_VERSION` bump. Probably best left to the weapons round now that it comes first.
 

@@ -415,14 +415,14 @@ doors shut at night, dogs, cats and livestock, job barks, hints, news through pe
 1. **Work you can see.** (Sparks at the anvil and chimney smoke built 19 October 2026.) A woodpile that grows;
    fields change with the season (bare, green, gold, stubble).
 2. **Weather in town.** (Rain emptying the streets and filling the inn built 19 October 2026.) Bare fields in winter.
-3. **Market day and rest day.** One market day a week (extra stalls, travellers, better selling prices); on the rest
-   day the temple is full and the shops are shut (`calendar.weekday()` is still unused).
+3. **Market day and rest day.** Built 22 October 2026 (see `docs/built.md`). Left for round 6: travellers and extra
+   stalls on market day.
 4. **The town reacts to the world.** A raid nearby means more guards, fearful talk and shutters; a war won, a feast.
 5. **Small happenings to bump into.** An inn brawl, a runaway pig, a funeral procession, a pickpocket. Small, no
    menu, a little reward.
 
 ### Each people in its own rhythm
-- **Humans**: the temple bell and market day.
+- **Humans**: the temple bell and market day (built 22 October 2026).
 - **Half-orcs and goblins in human cities**: a slum quarter where they live as second-class citizens (beggars,
   night trade), and shanty camps in the wild.
 - **Halflings**: many meals a day, so always walking home or to the inn; lanterns in the hedges in the evening;
