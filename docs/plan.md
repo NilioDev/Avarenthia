@@ -21,6 +21,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). Not built yet |
 | **Approved: debug menu and a test build** | Every CI build makes two downloads: the normal game for players and "Avarenthia (test)" with the debug menu (F12) and the dungeon editor. Snapshots, a bug-report key, teleport, god mode and more. Not built yet |
 | **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
+| **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -175,6 +176,23 @@ deeper. What you know of a creature kind grows each time you kill or skin one. T
 line (`l`) and on its bestiary page: first its weakness and resistances, then what it carries, then its weak spot
 (a better chance of a critical hit against that kind). Reading about a creature in a library may give the first step.
 Saved per hero: bump `SAVE_VERSION`; the handbook says it in a sentence or two.
+
+## The northern lights' gift (approved 22 October 2026, not built)
+Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they
+give four things, only while they are in the sky:
+- **What only the light shows:** some old rune stones and marks of the old ways (`hidden.py`) are plain rock by day.
+  Under the lights they glow and point the way to a hidden place.
+- **Magic in the air:** Frost and Storm spells cost less mana under the lights.
+- **The barrow spirits:** at a barrow in the north a spirit rises under the lights. Talk to it once: it gives a
+  random job that leads somewhere (an old grave, a lost sword, a deed undone). Do not dig into or rob its barrow:
+  the dead wake, their glow turns brighter and restless, and they attack.
+- **The light-feast:** northern villages celebrate the first night of the lights: news, cheaper beds, a blessing at
+  their shrine.
+- **The glow (look):** a spirit is a pale `G` that flickers half there, with a wan blue-green glow on the tiles round
+  it and a faint wisp below; angry, the glow grows brighter and restless. The same glow goes on other ghostly
+  creatures (ghost, wraith and their kin), and fiends (the Rift's) get a faint red fire glow. Mockup: project files
+  `noorderlicht/spirit.gif` (`mockup_spirit.py`).
+- **Handbook:** a few sentences in the world chapter on the northern lights and the barrow spirits.
 
 ## Spell effects (approved; parts 1 and 2 built)
 
