@@ -538,7 +538,14 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Below the rift:** 3 to 5 levels of black basalt, faintly warm, ash underfoot (large, 120 x 70; the bottom may be 150 x 90). A river of fire runs through each level, with a bridge of chains over it. Vents of brimstone puff choking smoke every few turns. There are fields of bones where the dead rise, cages hung on chains with the taken (a rescue), and a hall of black iron where a fiend lord keeps court.
   - **At the bottom stands the burning gate,** the anchor of the rift. Break it and the rift closes; the land heals slowly.
   - **Rules:** the heat lets you rest nowhere there; fire resistance and frost matter; the fire gives the light, so you carry none.
-  - **Monsters:** the fiend family already in the game (imp, hellhound, hollow spawn, hungering shade), a few new ones with names of our own (no names from RPG publishers), and a fiend lord as the boss, who drops only his own gear.
+  - **Monsters:** the fiend family already in the game (imp, hellhound, hollow spawn, hungering shade), and these new ones (approved 22 October), each with one clear trick:
+    - **Cinderling:** a small glowing ember thing that comes in swarms, the horde of the Deep; it dies into burning ground, so do not fight in its ashes.
+    - **Chain Warden:** keeps the bridges; it throws a hooked chain and drags you to it, past the fire if it can.
+    - **Ashwalker:** a dead one from the bone fields wrapped in ash; hit it and a cloud of ash puffs up that blinds for a moment.
+    - **Brimstone Toad:** sits by the vents and spits sulphur that chokes: it costs stamina.
+    - **Slag Brute:** big, slow and glowing hot: whoever hits it up close is burnt; frost makes it brittle, and then every blow does double.
+    - **Gaoler:** keeps the cages; when it sees you it runs for the gong to wake the level.
+    - **The Lord of Cinders,** the boss: each rift has one, with its own name from a list. While the burning gate stands it heals from it; put out the fire bowls round the gate first. At half strength it calls its hellhounds. It drops only its own gear.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)

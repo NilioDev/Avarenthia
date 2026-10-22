@@ -26,9 +26,6 @@ their own copy of the game (own screen, menus, handbook, settings), not a remote
 - Old code left as it is for now: about 30 things that belong to the player live on the game (where you are: `cur`, `over_pos`; the log, jobs,
   bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
 
-## Rift monsters
-A few new fiends for the Ashen Deep (plan.md, "The Rift and the Ashen Deep"), with names of our own, and the fiend lord who is its boss. Still to name and describe.
-
 ## Dungeon editor controls (parked, not urgent)
 Parked on 22 October 2026, for a separate thread later. What we know so far:
 - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
