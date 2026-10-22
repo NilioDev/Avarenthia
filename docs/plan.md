@@ -334,7 +334,13 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Doors and theme rooms.** About 60% of doorways get a door; the rest stay open arches. Rooms behind a single entrance are kept for theme rooms.
   - **A mood per level**, the way of DCSS and ToME: mixed, halls and passages, or close-packed.
   - **A check after making.** A door may sit only in a straight wall, and there are no double walls; for this the inner corner of an L or T, or the corner where a narrow way meets a wall, does not count. A bad door is removed. The mockups always show 0 bad doors and 0 double walls.
-Still to settle: which world-map places get this, the list of plans per kind, upper floors and cellars per kind, sizes, the editor's controls.
+- **Settled 22 October.**
+  - **Which places start outside:** the temple, abbey or monastery, tower, fort, manor and barrow. Caves, dens, nests and mines start straight underground.
+  - **Which maker:** classic dungeons and ruins use the K5 maker, with theme rooms set into them. The other kinds get a fixed plan of their own; an abbey, for example, always has a cloister, a refectory and cells.
+  - **Goblin places come in two kinds.** The big delve with a market hall, a forge, family halls and the chief's hall is a goblin village and gets built like a settlement. An ordinary goblin hole gets its own, smaller plan in the same spirit.
+  - **Below a temple or a fort** lie 3 to 5 levels of crypt or dungeon; the number varies.
+  - **Stairs** may come out anywhere on the next level.
+- Still to settle (in `docs/open.md`, "Dungeons"): the tower, which grows upward with a dungeon below; the sizes of the levels; the editor's controls.
 
 ## Round 6: livelier settlements (on hold)
 

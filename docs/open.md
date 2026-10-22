@@ -45,6 +45,25 @@ open: which epics there are (one or two per class), what each teacher asks first
 Nilio wants to look into multiplayer later: whether it can work in this game at all, and in what form. Not looked
 at yet.
 
+## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
+The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.
+- **The tower.** It needs a plan of its own because it grows upward: several floors reached by stairs, each floor
+  small. It may have a dungeon underneath. To work out together.
+- **Sizes.** The mockups use 120 x 70. Still to decide:
+  - whether every kind gets the same size, or a manor or a barrow gets a smaller map than a great dungeon;
+  - how the map view shows a level bigger than the screen (it shows 80 x 51 now), which ties in with Nilio's wish for
+    bigger play maps.
+  Nilio wants to talk this through ("even over sparren").
+- **The editor's controls**, for a separate thread later. What we know so far:
+  - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint.
+  - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
+  - **Tools:** cell, line, rectangle, fill, copy and paste, undo and redo, change colour, zoom.
+  - **Layers:** ground, things, creatures and triggers. Events in the trigger layer are picked from lists (when, if, then).
+  - **Making and testing:** New → kind of place → part; Try puts the hero into the drawing at once; Save puts the file
+    in "My pieces".
+  - **Getting it into the game:** Nilio hands the file over and it goes into the repo; CI packs and seals it.
+  - **Still to design:** the shortcut keys, how the palette looks, and where the layers and the Try button sit.
+
 ## Smaller loose ends
 - **Northern lights:** still only weather; their gift (what they do for the player) was never settled.
 - **The player as a ruler:** decided no (17 October 2026), but Nilio said he may come back to it.
