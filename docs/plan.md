@@ -507,6 +507,17 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Kobold, the Hoard Burrow:** the hoardmaster sleeps on his coin; side holes for gems, a mirror, a polishing bench; the deep hoard.
   - **Gnoll, the Great Tent:** the packlord's great tent of hides in a thorn ring, his seat of bones, his share of the kill, hyenas at the door; the den below.
   - **Lizardfolk, the Sun House:** the elder's house on stilts with a window to the sun, an egg of the line, a fish pen; the mud cellar.
+- **Barrows (approved 22 October)**: a small place, 80 x 50: the grave of someone great. Each people has its own, under its own name. Narrow and low: fights in passages, not hordes. The bier is the telling thing: take from it and the dead wake (an event). Sometimes an older grave lies below. Mockup `BP_barrows_peoples.png` (style sketch).
+  - **Human, the Barrow:** a mound in a ring of standing stones, its stone door half sunk; inside a long passage lined with stones, an antechamber of grave goods, side rooms of bone niches, the hill king on his bier.
+  - **Elf, the Root Tomb:** under a dead great tree the elves lie in cradles of root; a sapling grows from the eldest's breast; starlight lamps.
+  - **Dwarf, the Sealed Vault:** behind a sealed door of runes, a hall of stone kings with rune traps, treasure rooms, the lord in his armour.
+  - **Halfling, the Resting Hill:** a family tomb in a small hill behind a round door, flowers laid every year; quiet, seldom anything worse than a grieving ghost.
+  - **Gnome, the Crystal Crypt:** the dead sealed in crystal round the great inventor, the book of their works, clever traps on the way in.
+  - **Orc, the Bone Cairn:** a warlord under a cairn of piled stones, his slain wargs and weapons round him, skull poles on the way in.
+  - **Goblin, the Trapped Tomb:** a zigzag way with a trap at every turn, to a boss buried with what he stole; a false tomb and a real one.
+  - **Kobold, the Hoard Tomb:** the old hoardmaster buried in his coin; take some and the loose floor gives way into the old shaft.
+  - **Gnoll, the Bone Hill:** a hill of the bones of every kill heaped over a great packlord; the bone-callers wake what lies below.
+  - **Lizardfolk, the Drowned Tomb:** stone coffins sunk in a sacred pool round an island with a stone egg; wade or dive; the drowned halls below.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
