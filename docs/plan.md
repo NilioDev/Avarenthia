@@ -472,6 +472,18 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Gnoll:** a camp on the plain in a hedge of thorn bush, a ring of bone poles round an altar of skulls, a moon stone; hide tents, a feeding pit, a hyena pen. Below: the burrows, down to the bone pit of the bone-caller.
     - **Lizardfolk:** a stepped mound in the swamp, stairs on four sides, the egg altar on top.
   - **Friendly or not** by standing, as with towers: how far in you may walk depends on your name with that people.
+- **Abbeys (approved 22 October)**: a middle place, 100 x 60, on its own land: a place apart where the devout live, learn and keep lore. Each people has its own, under its own name, with levels up (<) and down (>). Mockup `AP_abbeys_peoples.png` (style sketch).
+  - **Human, the Abbey:** a church on the north side, a cloister walk round a garth with a well, a chapter house, refectory, kitchen and infirmary. Up: the dormitory and the scriptorium with books (ties to the libraries of `history.py`). Down: the wine cellar and the bone house.
+  - **Elf, the Starhaven:** a ring of great trees round a star garden of white stone; sleeping halls in the crowns; a still pool that mirrors the stars; an archive of song-scrolls in a hollow trunk.
+  - **Dwarf, the Rune Hall:** a hall of rune stones where the lore is carved, a forge chapel, a brewery, the brothers' cells; store halls and the deep archive below.
+  - **Halfling, the Harvest House:** a round hall with the long table, a bakery and a brewhouse, vegetable gardens, an orchard and beehives inside a hedge; pantry cellars below.
+  - **Gnome, the Lantern House:** round rooms under the roots, lit by crystals: a star dome with a lens, a library, an alchemy room, sleeping nooks; the deep workshop below.
+  - **Orc, the Spirit Lodge:** where shamans train the young: a sweat lodge, the young warriors' hut, a ring of trial stones round the spirit pole, drums; the spirit cave below.
+  - **Goblin, the Scroll Warren:** a cave of stolen books and scrolls in heaps round a junk idol, a map room, an ink pit, reading nooks; the vault of secrets below.
+  - **Kobold, the Gleam House:** a mirror hall and a sorting hall where coins, gems and metal are sorted and polished; the deep hoard below.
+  - **Gnoll, the Bone Kraal:** where bone-callers learn: the howl rock with its moon stone, the bone-caller's hut, hide racks, a bone heap, a carrion pit; the bone tunnels below.
+  - **Lizardfolk, the Hatchery:** reed huts on stilts joined by walkways round the sacred eggs in warm mud; the priests' hut and the sun stone; the drowned halls below.
+  - **Friendly or not** by standing, as with temples and towers.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
