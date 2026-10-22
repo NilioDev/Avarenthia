@@ -313,7 +313,7 @@ Still open: whether masters in the world can also unmake for coin (proposed: no)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).
 - **Built places start outside.** A place that stands on the land (temple, abbey or monastery, tower, fort, manor, and other buildings on the world map) starts on its own play map with land around it, matching the world-map terrain: you walk in from the edge, through a gate or a door. An upper floor (a tower, a bell loft) and cellars or a crypt are their own levels, reached by stairs. Caves, dens, nests and mines still start straight underground. Mockup C.
 - **Each kind its own plan.** A temple has a nave with pews and pillars, a transept, chapels and an altar; an abbey a cloister round a garden, a refectory and cells; a tomb a procession hall and burial galleries. You can tell from the map what the place is. Mockups A and C.
-- **Bigger and roomier**, for fights with hirelings and spells: levels of about 120 x 70, halls two or three wide. Ties in with Nilio's later wish for bigger play maps (the map view now shows 80 x 51).
+- **Bigger and roomier**, for fights with hirelings and spells: levels up to 120 x 70 (sizes per kind below), halls two or three wide. Ties in with Nilio's later wish for bigger play maps (the map view now shows 80 x 51).
 - **Built walls are thin joined lines** (as town houses already draw them), one wall between neighbouring rooms, never a double one; caves keep their raw rock.
 - **Mixed levels** when a job or the story asks: a built tomb that breaks into a cave (mockup B). Caves may be bigger too, with several great halls.
 - **One telling thing per room** (a pool, a row of statues, an altar, a sarcophagus), always a tile used with one key or a bump.
@@ -340,7 +340,12 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Goblin places come in two kinds.** The big delve with a market hall, a forge, family halls and the chief's hall is a goblin village and gets built like a settlement. An ordinary goblin hole gets its own, smaller plan in the same spirit.
   - **Below a temple or a fort** lie 3 to 5 levels of crypt or dungeon; the number varies.
   - **Stairs** may come out anywhere on the next level.
-- Still to settle (in `docs/open.md`, "Dungeons"): the tower, which grows upward with a dungeon below; the sizes of the levels; the editor's controls.
+  - **Sizes, in three steps.** The map view already follows the hero on maps bigger than the screen. Sizes can be tuned later.
+    - **Small, one screen, 80 x 50:** the manor, the barrow, an ordinary goblin hole and a beast's den.
+    - **Middle, 100 x 60:** the temple, the abbey, the fort, and the levels below them.
+    - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
+    - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
+- Still to settle (in `docs/open.md`, "Dungeons"): the tower, which grows upward and may have a dungeon below; the editor's controls.
 
 ## Round 6: livelier settlements (on hold)
 

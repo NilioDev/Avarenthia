@@ -49,11 +49,6 @@ at yet.
 The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.
 - **The tower.** It needs a plan of its own because it grows upward: several floors reached by stairs, each floor
   small. It may have a dungeon underneath. To work out together.
-- **Sizes.** The mockups use 120 x 70. Still to decide:
-  - whether every kind gets the same size, or a manor or a barrow gets a smaller map than a great dungeon;
-  - how the map view shows a level bigger than the screen (it shows 80 x 51 now), which ties in with Nilio's wish for
-    bigger play maps.
-  Nilio wants to talk this through ("even over sparren").
 - **The editor's controls**, for a separate thread later. What we know so far:
   - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint.
   - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
