@@ -822,7 +822,10 @@ def x_bolt(game, sk, r, ranged=False):
         cells = []
         for rr in range(1, sk.splash + 1):
             cells += ring_cells(tx, ty, rr)
-        _burst(game, sk, tx, ty, sk.splash, late, gather=sk.id != 'meteor')
+        if sk.id == 'meteor':                       # the crater, and brown dust that hangs a little longer
+            game.fx('burst', x=tx, y=ty, r=sk.splash, col=sk.color, delay=late, dust=True)
+        else:
+            _burst(game, sk, tx, ty, sk.splash, late)
         lay(game, sk, r, [(tx, ty)] + cells)
         for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.splash and (o.x, o.y) != (tx, ty)]:
             _hit(game, o, sk, r, ranged)
@@ -1021,8 +1024,8 @@ def _ring(game, sk, x, y, r):
     """What opens out round you: the school's wave where it has one, else a burst closing round you."""
     from . import anim as AN
     if sk.id == 'morraks_bargain':                  # your own life goes out first, red; then all in sight falls in
-        game.fx('wave', x=x, y=y, r=r, col=BARGAIN_RED, sign='•')
-        game.fx('wave', x=x, y=y, r=r, col=sk.color, sign='*', inward=True, delay=AN.WAVE_FRAME * 3)
+        game.fx('wave', x=x, y=y, r=r, col=BARGAIN_RED, sign='•', dur=.14)
+        game.fx('wave', x=x, y=y, r=r, col=(170, 90, 220), sign='*', delay=.12)
     elif sk.id in WAVES:
         game.fx('wave', x=x, y=y, r=r, col=sk.color, sign=WAVES[sk.id])
     else:

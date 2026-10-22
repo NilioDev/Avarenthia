@@ -3918,16 +3918,24 @@ def visible():
     assert AN.fx_life('burst', dict(x=0, y=0, r=2, delay=AN.bolt_time(20))) <= .5
     # each school's hand: a howl bends round as ( ), Meteor's shadow comes before its slanting fall, the dead grey
     # and rise, Morrak's Bargain goes out red before it falls in, and the sky's white frame is brief
-    howl = AN.fx_cells('wave', kinds['wave'], .01)
+    howl = AN.fx_cells('wave', kinds['wave'], .05)
     assert {c[2] for c in howl} >= {'(', ')'} and all(cheb(c[0], c[1], 5, 5) == 1 for c in howl), howl
+    # areas look round but hit the square: the front reaches the sides before the corners, and every cell of the
+    # square lights; a faint cloud beyond the sides only rounds it off
+    area = dict(x=10, y=10, r=2, col=(255, 120, 60))
+    early = {c[:2] for c in AN.fx_cells('burst', area, .065)}
+    assert (12, 10) in early and (12, 12) not in early, early
+    lit = set()
+    for a in range(30):
+        lit |= {c[:2] for c in AN.fx_cells('burst', area, a / 60)}
+    assert {(10 + dx, 10 + dy) for dx in range(-2, 3) for dy in range(-2, 3)} <= lit
+    assert any(cheb(x, y, 10, 10) == 3 for x, y in lit) and (13, 13) not in lit, 'a round cloud beyond the sides'
     first = AN.fx_cells('meteor', kinds['meteor'], .01)
     assert first and all(c[2] == '░' for c in first), first
     late = AN.fx_cells('meteor', kinds['meteor'], AN.METEOR_SHADOW + .02)
     assert any(c[2] == '*' and c[0] < 8 and c[1] < 8 for c in late), late
     assert AN.fx_cells('raise', kinds['raise'], .01)[0][2] == '%' and AN.fx_cells('raise', kinds['raise'], .3)[0][2] == 'z'
-    inward = dict(x=0, y=0, r=3, inward=True)
-    assert cheb(*AN.fx_cells('wave', inward, .01)[0][:2], 0, 0) == 3
-    assert AN.fx_life('wave', dict(r=3, delay=AN.WAVE_FRAME * 3)) <= .45
+    assert AN.fx_life('wave', dict(r=3, delay=.12)) <= .48 and AN.fx_life('burst', dict(r=2, delay=.18, dust=True)) <= .5
     assert AN.fx_life('sky', {}) < .1 and AN.sky_on({}, .01) and not AN.sky_on({}, .2)
     arrow = AN.fx_cells('bolt', dict(cells=[(1, 0), (2, 0)], src=(0, 0), ch='-'), 0)
     assert arrow and arrow[0][2] == '-'

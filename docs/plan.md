@@ -157,8 +157,9 @@ made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's ef
   effects full, short or off.
 - **In the code:** a small queue of effect frames in `anim.py`, drawn over the map in the existing draw loop and its
   timer (`GameScreen.moving`); `flash()` becomes a one-frame effect, so all that flashes today keeps working.
-- **Still open:** effects for the weapon skills (a swing arc, arrows that fly, blood on Sever Artery, a `*` on a
-  critical), to be worked out with the weapon skills.
+- **Weapon skills' effects** (proposal with GIFs in `magie/wapeneffecten/`; built with the weapon skills): steel and
+  dust, no school colour; a swing arc only on skills and critical hits (an ordinary bump stays the short flash);
+  blood on Sever Artery and claws, and a bleeding foe leaves a red trail `,` for a few turns (Nilio, 22 October).
 
 ## Weapons: more kinds, few disciplines (approved, not built)
 

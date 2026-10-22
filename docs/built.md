@@ -19,7 +19,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
 | **Built: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft is martial (and Charge is a true weapon strike); a third orb on the panel, LIFE, STAMINA and MANA always in sight |
 | **Built: quick wins (19 Oct)** | Spell effects part 1 (bolts, bursts, drain, heals, lightning; full/short/off), burning, poison and frost shown on creatures, Wild Shape in the beast's colours; chimney smoke, sparks at the anvil, rain empties the streets |
-| **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm |
+| **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm; areas hit the square but open out round, with a harmless cloud beyond the sides |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 
 ## Built
@@ -248,7 +248,12 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Golem, whose other corpses crawl to the first as `%`); `trail` (cells one after another: Ice Wall and Bone Prison
   going up stone by stone, dust `·` behind Charge, the leaps and Sic 'Em); Pyre's fire leaps `^` to each neighbour;
   Morrak's Bargain sends your life out red and then all falls in, purple; `sky` (Call the Storm: the map washes
-  white for one frame, ~0.07 s, before the strikes; not with effects off). All stay within ~0.45 s. No save change.
+  white for one frame, ~0.07 s, before the strikes; not with effects off). Areas of radius 1 and more look round (Nilio's
+  wish the same day, purely the look: what is hit stays the square, as far every way): `anim._round` runs a front
+  of signs out by real distance, the ground glows `░` behind it and dims, the corners are drawn softer, and a faint
+  cloud `░ ·` beyond the sides rounds it off and harms nobody (Meteor's is brown dust); a howl, a gust and a war
+  cry keep only their front. Morrak's Bargain: a short red wave, then the purple one. All stay within ~0.5 s.
+  No save change.
 - **Market day and rest day** (22 October 2026; `towns.day_kind`, round 6 item 3). Only in human towns. Your first
   day is now a Moonsday, so the week runs Moonsday to Restday. Starsday is market day: from 8 to 17 two in three
   townsfolk stand in the open near a trader's stall, goods sell for a tenth more (still under the buying price) and
