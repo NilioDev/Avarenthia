@@ -34,15 +34,17 @@ The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files 
   exact layout of each is still open.
 - **The list of theme rooms and pieces** for K5 and the fixed plans: which special rooms exist, per kind of place and
   per part (entrance, arrival, middle, bottom). Nilio can also draw his own in the editor.
-- **The editor's controls**, for a separate thread later. What we know so far:
-  - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
-  - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
-  - **Tools:** cell, line, rectangle, fill, copy and paste, undo and redo, change colour, zoom.
-  - **Layers:** ground, things, creatures and triggers. Events in the trigger layer are picked from lists (when, if, then).
-  - **Making and testing:** New → kind of place → part; Try puts the hero into the drawing at once; Save puts the file
-    in "My pieces".
-  - **Getting it into the game:** Nilio hands the file over and it goes into the repo; CI packs and seals it.
-  - **Still to design:** the shortcut keys, how the palette looks, and where the layers and the Try button sit.
+
+## Dungeon editor controls (parked, not urgent)
+Parked on 22 October 2026, for a separate thread later. What we know so far:
+- **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
+- **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
+- **Tools:** cell, line, rectangle, fill, copy and paste, undo and redo, change colour, zoom.
+- **Layers:** ground, things, creatures and triggers. Events in the trigger layer are picked from lists (when, if, then).
+- **Making and testing:** New → kind of place → part; Try puts the hero into the drawing at once; Save puts the file
+  in "My pieces".
+- **Getting it into the game:** Nilio hands the file over and it goes into the repo; CI packs and seals it.
+- **Still to design:** the shortcut keys, how the palette looks, and where the layers and the Try button sit.
 
 ## Smaller loose ends
 - **Northern lights:** still only weather; their gift (what they do for the player) was never settled.
