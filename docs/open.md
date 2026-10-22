@@ -38,11 +38,12 @@ Parked on 22 October 2026, for a separate thread later. What we know so far:
 - **Still to design:** the shortcut keys, how the palette looks, and where the layers and the Try button sit.
 
 ## Smaller loose ends
-- **Northern lights:** still only weather; their gift (what they do for the player) was never settled.
-- **The player as a ruler:** decided no (17 October 2026), but Nilio said he may come back to it.
+- **Northern lights:** still only weather; their gift (what they do for the player) is being worked out with Nilio
+  (22 October 2026, ideas first).
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
-- **The bard** stays parked (`docs/parked.md`), and so do the werewolf's and the vampire's curse.
-- **Small bug, not fixed:** the help line in `ui.py` lists only 5 of the life skills.
+- **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.
 
-Settled, no longer open: the visible weather border between regions (thread "Seizoenen in de wereld"; Nilio said
-it is not needed) and the class system (approved 19 October 2026, "we kunnen later nog sleutelen").
+Settled, no longer open: the player as a ruler (stays no; taken off this list 22 October 2026), the menu line
+that listed only 5 life skills (fixed 22 October 2026), the visible weather border between regions (thread
+"Seizoenen in de wereld"; Nilio said it is not needed) and the class system (approved 19 October 2026, "we kunnen
+later nog sleutelen").

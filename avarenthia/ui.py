@@ -4414,7 +4414,8 @@ class MenuScreen(Modal):
     Each item also shows its own shortcut key, for those who like them."""
     GROUPS = [
         ('Hero', [('i', 'Inventory', 'what you carry and wear'), ('c', 'Character', 'who you are, attributes and numbers'),
-                  ('C', 'Life skills', 'fishing, foraging, herbalism, alchemy, brewing'),
+                  ('C', 'Life skills', 'fishing, foraging, herbalism, alchemy, brewing, mining, hunting, skinning, cooking, '
+                                                  'leatherworking'),
                   ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
                   ('v', 'Bestiary', 'the creatures you have met')]),
         ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'jobs, the road, standing, lore and every sign, the log'),

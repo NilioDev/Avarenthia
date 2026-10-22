@@ -261,6 +261,8 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   from 8 to 12, and outfitters, traders and stablemasters are shut by day (the inn and the temple stay open). The
   line under the map shows "· market day" or "· rest day"; a message at 8 says which. Rain still sends people
   indoors. No save change.
+- **Fix, 22 October 2026:** the menu line for Life skills (`C`) named only 5 of the 10; it now names all, and
+  `text_fits` checks that every life skill is in it.
 
 ## Ferries in villages (built 18 October 2026; the spec)
 

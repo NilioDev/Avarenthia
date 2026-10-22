@@ -1483,6 +1483,10 @@ def text_fits():
     for _g, items in ui.MenuScreen.GROUPS:          # the handbook knows every key of the menu
         for k, _n, _d in items:
             assert k in ('quit', 'travel') or f'[{k}]' in listed, k
+    from avarenthia import lifeskills as LS
+    life = next(d for _g, items in ui.MenuScreen.GROUPS for k, _n, d in items if k == 'C')
+    for sk in LS.LIFE.values():                     # the menu names every life skill
+        assert sk['name'].lower() in life, sk['name']
     for pg in range(len(ui.CharacterScreen.PAGES)):
         look(ui.CharacterScreen(app, page=pg))
     look(ui.MenuScreen(app))
