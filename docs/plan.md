@@ -14,7 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
-| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or an epic from a hidden teacher). Not built yet |
+| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or one of 22 epics from hidden teachers, two per class). Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
@@ -95,13 +95,63 @@ stays as it is.
   - Anyone may join any guild and do its jobs and rise; a master with nothing for your classes says so.
   - Garrote and Smoke Bomb move to the Cunning school; Wild Shape moves to the Nature tree and the Green Moot's elite
     becomes a stronger shape (Elder Bear).
-- **Epic skills from hidden teachers** (approved 22 October 2026, from going through Project Gorgon's skills): a
-  tier above the elites, in the same slot. Key 6 holds one elite or one epic, never both. No guild teaches an epic:
-  a hidden teacher does (a hermit, an old hunter, a witch, a retired master), and you hear of them only through a
-  rumour (`news.py`), never as a sign on the map before you have heard. Each epic has several teachers spread over
-  the world, so no single place or people locks it away. A teacher asks for a deed first (a job of their own) and
-  only teaches a hero far along (class rank about 40). Which epics there are, one or two per class: still open
-  (`docs/open.md`).
+- **Epic skills from hidden teachers** (approved 22 October 2026, from going through Project Gorgon's skills; the
+  epics themselves settled the same day in thread "Epic skills", project files `klassen/epics/`: `voorstel.md`,
+  mockups `epics.gif`). A tier above the elites, in the same slot: key 6 holds one elite or one epic, never both,
+  so an epic costs you your elite. An epic is drawn in gold with its own sign ♦ (the elite keeps ☼).
+  - **Two epics per class (22).** A teacher teaches the two epics of their class; you pick one and may swap at a
+    later visit. With two classes you may learn from the teachers of both.
+  - **Price:** an epic works **once per rest** (an inn, your camp), no mana or stamina on top; Phoenix once per day.
+  - **Teachers:** a hermit, an old hunter, a witch, a retired master. **Two per class, 22 a world**, each in another
+    part of the world and never both with the same people. You hear of them only through a rumour (`news.py`: an
+    innkeeper, a traveller, a book), never as a sign on the map before you have heard, and only of the teachers of
+    your classes, from class rank about 35; they teach at class rank about 40. When a teacher dies (war, plunder)
+    the other remains; if both are dead, a pupil turns up elsewhere after a season, so no one is ever locked out.
+  - **A deed first,** a job of their own in the jobs tab. Fire: an ash hermit in a burnt valley, bring a glowing
+    ember from the heart of a fire mountain or fire wonder. Frost: a rime witch at a mountain pass, live through a
+    winter night outside her hut without fire. Storm: a hermit on a lightning-split peak, ring the old bell on the
+    top in a thunderstorm. Restoration: an old saint at a crossroads shrine, lay five restless dead to rest. Shadow:
+    a witch (`powers.py`), steal a relic from a church. Necromancy: an old gravedigger, half dead himself, bring a
+    crown or sword out of a barrow where a wight lies. Nature: an old druid at a wonder, plant a seed at another
+    wonder and come back when it comes up (a season). Beastcraft: an old hunter, track and kill the beast of a
+    rumour and bring its hide. Warcraft: an old champion of one of the realms' wars, win a duel against him (no
+    hireling, no drink). Arcane: a magus in exile in a tower, bring a lost page from a library (`history.py`).
+    Cunning: an old master thief "retired", steal something unseen from a baron's seat (`seats.py`).
+  - **The epics:**
+    - Fire: **Sunfall** (a small sun hangs a turn over a spot and falls, r2; the ground burns 3 turns) and
+      **Phoenix** (while it is ready on key 6, a death blow burns you up instead: you rise with 20% life, foes
+      within r2 catch fire, and you carry **4 flames** that never go out by themselves; each flame burns you a
+      little each turn; each turn standing in water and each Health or Rejuvenation Potion takes one flame off,
+      in any mix; who does nothing burns to death; shown as "Burning 3" with your states).
+    - Frost: **Long Winter** (the ground r3 round you freezes for 10 turns: who stands in it slows, who is slowed
+      freezes) and **Glass Heart** (one foe frozen 6 turns; a blow on it shatters it, heavy damage r1).
+    - Storm: **Skyfather's Spear** (one stroke from the sky along a line of 10 tiles; wet foes stunned) and **Eye
+      of the Tempest** (8 turns: arrows miss you, a spark leaps each turn to every foe within r3).
+    - Restoration: **Miracle** (you and your company wholly healed, every ailment gone) and **Return** (your fallen
+      hireling or beast gets up, if it fell in the last 20 turns).
+    - Shadow: **The Unmaking** (costs life; a foe under 30% dies at once, otherwise loses half of what it has, a
+      boss a quarter) and **Eclipse** (6 turns every foe in sight sees only 1 tile; you are unseen).
+    - Necromancy: **Lich Form** (10 turns undead: spells cost no life, no poison or cold, your touch steals life;
+      your `@` turns pale) and **Barrow King** (a barrow king rises from the ground, no corpse needed, and follows
+      you until you rest).
+    - Nature: **Wrath of the Wild** (everything within r3 grows shut: roots and thorns hold every foe, the land
+      stays green) and **Oak Shape** (a fourth shape: a walking oak, slow, much life, keys 1-2 Slam and Root).
+    - Beastcraft: **Call of the Old Ones** (a great beast of this land comes for 20 turns: cave bear, dire wolf,
+      great eagle) and **One Blood** (10 turns your beast cannot die and you share its life).
+    - Warcraft: **Earthshaker** (strike the ground: r2 stunned and knocked down, armoured foes too) and
+      **Unstoppable** (8 turns no push, stun or slow; every kill fills your stamina).
+    - Arcane: **Time Stop** (3 turns only you move: foes stand still, arrows hang in the air, the world goes grey;
+      you cannot harm anyone in it, only walk, drink, heal or buff yourself, lay runes and traps: a way out and a
+      way to get ready, not a killing key) and **Unweave** (everything magic within r3 is gone: buffs on foes,
+      spell tiles, called creatures).
+    - Cunning: **Death Mark** (unseen, your next blow kills an ordinary foe outright; a boss takes it four times)
+      and **Shadow Dance** (5 turns every blow counts as an unseen first strike).
+  - **Effects:** the same hand as the spells (star front, ░ glow, radius at most 3, at most ~0.4 s). Three looks
+    only epics have: **a line** across the land (Skyfather's Spear, white then yellow), **drawn inwards** onto one
+    foe (The Unmaking: your life out in red, then dark motes close in) and **the world grey** (Time Stop: only you
+    keep your colour). Six are drawn in `klassen/epics/epics.gif`; the rest follow the same hand.
+  - **The handbook:** a few sentences in "Who you become": what an epic is, that it takes key 6 from the elite, how
+    you find a teacher, once per rest; Phoenix's flames in "Fighting".
 - **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
   gets only its pure rule, no extra elite.
 - **Worked out** (approved 19 October 2026, numbers to be tuned by the balance test): the eight tomes of Cunning and

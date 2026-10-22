@@ -14,10 +14,6 @@ each), then round 6. Each starts only on Nilio's "ga".
 From the thread "Quick wins uit het plan"; items 1-5 were built, and market day and rest day on 22 October 2026.
 None left: the five new weapons were worked out on 22 October 2026 and go into the weapons round (`plan.md`).
 
-## Epic skills
-Approved 22 October 2026 (`plan.md`, classes): epics from hidden teachers, a tier above the elites on key 6. Still
-open: which epics there are (one or two per class), what each teacher asks first, and how many teachers per world.
-
 ## Multiplayer (parked, not urgent)
 Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
 their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
