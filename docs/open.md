@@ -26,15 +26,6 @@ their own copy of the game (own screen, menus, handbook, settings), not a remote
 - Old code left as it is for now: about 30 things that belong to the player live on the game (where you are: `cur`, `over_pos`; the log, jobs,
   bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
 
-## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
-The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.
-- **The fixed plan of each kind of place**, to work out with a mockup per kind when it is built: the temple, the abbey
-  or monastery, the fort, the manor, the barrow, an ordinary goblin hole and the goblin village. The direction is in
-  plan.md (an abbey always has a cloister, a refectory and cells; the goblin village is built like a settlement); the
-  exact layout of each is still open.
-- **The list of theme rooms and pieces** for K5 and the fixed plans: which special rooms exist, per kind of place and
-  per part (entrance, arrival, middle, bottom). Nilio can also draw his own in the editor.
-
 ## Dungeon editor controls (parked, not urgent)
 Parked on 22 October 2026, for a separate thread later. What we know so far:
 - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
