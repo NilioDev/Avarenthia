@@ -613,8 +613,10 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   deck (Ponte Vecchio, old London Bridge); one has statues along its parapets and a gate tower at each end (Charles
   Bridge); the rest stand on broad piers with lamps. Canal bridges are short, with a parapet and a lamp at each end.
   Wooden planks stay for drawbridges, harbour jetties (a few long ones, boats moored along them) and small streams in villages.
-- **How a bridge is laid** (Nilio): the bridge comes first, straight across the river at its narrowest from bank to
-  bank; then the road bends onto it at both ends. Every gate has a drawbridge of planks over the moat.
+- **How a bridge is laid** (Nilio): first a quay street runs along both banks inside the walls. Then the bridges are
+  laid, straight from quay to quay: one below the market and one where each ring road crosses (two or three in all).
+  Only then come the streets: a great way bends onto a bridge close by; any other way ends at the quay, which leads
+  on to the bridge, so no road stops at the water. Every gate has a drawbridge of planks over the moat.
 - **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
   lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
 - **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
