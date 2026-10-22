@@ -179,6 +179,24 @@ weapon has one rule you notice in a fight. Everything comes in the three grades.
 | Bows and Crossbows | short bow, long bow, war bow, **light crossbow**, **heavy crossbow**, **sling** | crossbows shoot and load in turn ("loaded" shows), go through armour, need little Dexterity; a sling is cheap and its stones lie everywhere (halflings) |
 
 26 weapon kinds (78 weapons), six weapon disciplines. A mage with a staff no longer trains axe fighting.
+- **The five new melee weapons in detail** (approved 22 October 2026; names, numbers and looks in project files
+  `magie/vijf-wapens.md`; their two skills each are in the classes plan):
+  - **Scimitar** (Swords; one hand, may go in the second hand; Scimitar, Shamshir, Talwar): cut in passing: if you
+    stepped last turn, your first blow does +50% ("You cut in passing."). Needs little Strength.
+  - **Flail** (Axes and Maces; one hand; Flail, Knout, Scourge): a shield, Shield Wall or formation does not help
+    against it, both ways (an orc's flail goes over your Block too). Price: -10 to hit.
+  - **War hammer** (Axes and Maces; one hand; War Hammer, Battle Hammer, Rune Hammer): new monster tag `armoured`
+    (dwarf clans, knights and skeleton warriors in mail, golems, beetles, crabs) takes 25% less from weapons; a war
+    hammer ignores that and does +25% on top. An enemy hammer wears your armour faster. Half-Sword, Crush, Iron Fist,
+    Sunder and Armour Breaker use the same tag.
+  - **Cestus** (Unarmed; worn in the gloves slot; Cestus, Spiked Cestus, Ironbound Cestus): with the weapon hand
+    empty you fight unarmed with its damage and a little armour, so the second hand stays free (a grimoire fits).
+    A critical hit stuns for 1 turn.
+  - **Tiger claws** (Unarmed; gloves slot; Tiger Claws, Bagh Nakh, Wyrm Claws): one blow in four starts bleeding,
+    stacking to 3. No blood, no bleeding: skeletons, golems, oozes and ghosts.
+  - Carried by desert riders (scimitars), orcs and goblins (flails), dwarves (hammers); the Still Hand sells cestus
+    and claws, gnoll pack leaders carry claws. Looks: a short arc on a cut in passing, a grey `]` flash when a flail
+    passes a shield, a grey spark `*` when a hammer hits an armoured foe, stun stars on a cestus crit, blood on claws.
 - **Shields** get no discipline: shield skills go into Warcraft (martial, stamina), beside the Iron Company's Shield
   Wall: Shield Bash (push one tile, short stun) and Block (the first blow of a turn is caught). Without a shield in
   hand they do not work.
