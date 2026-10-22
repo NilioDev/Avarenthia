@@ -22,6 +22,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: debug menu and a test build** | Every CI build makes two downloads: the normal game for players and "Avarenthia (test)" with the debug menu (F12) and the dungeon editor. Snapshots, a bug-report key, teleport, god mode and more. Not built yet |
 | **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
 | **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
+| **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -582,6 +583,52 @@ A tool for testing, not part of the game. Details: project files `debug/voorstel
   (pirates, a raid, a rival), set standing, add a hireling; sight off, a creature's AI state on look, coordinates and
   turn in the status line; pick the seed and skip the character making.
 - **Not in the handbook**: it is a tool, not a rule of the game. The F12 screen shows its own keys.
+
+## Cities that grew (approved 22 October 2026, not built)
+
+Approved in the thread on grown cities: "dit ziet er goed uit", the American grid "werkt niet in een RPG-wereld".
+The Dutch proposal, the mockups and the mockup generators (they use the real tiles and `look.py`) are in the project
+files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`, `mockup_volken.py`).
+
+**Human cities and the metropolis** replace the grid of `towns.gen_city`. The map grows in the order a town grew:
+- **The heart** fits who rules the place: a cathedral (cross plan, towers, churchyard) on the great market; a
+  king's or baron's burgh with its own moat, the market at its gate; an emperor's capital gets a walled palace,
+  court behind court on one axis with the throne hall in the middle (the only straight thing in the city).
+- **Main streets** wind from the market to the gates, one gate where each road of the world map comes in. Only the
+  great ways run from the market to a gate; every other street starts at its gate or square and joins the first
+  street it meets (no bundles of streets side by side).
+- **Old walls** that are long gone are ring streets round the old core (the metropolis has two).
+- **Lanes** branch off the streets and wander until they meet another street; some end blind. Dense in the old core,
+  wider apart towards the wall.
+- **Squares** where quarters grew round a well, a parish church or a small market.
+- **Houses** stand in rows: each is a rectangle with its front and door on a street, sharing side walls with its
+  neighbours; deep and narrow in the core, lower with bigger gardens further out. What is left behind them is yard,
+  garden and alley. Every house stays inside the wall (checked in code).
+- **The wall** with square towers and a moat; a gate with a tower each side; a lane runs along its inside.
+- **A river** from the world map runs through with quays and stone bridges.
+- **Guild halls** of the eleven guilds stand on the great market or a main street; the secret ones in an ordinary
+  house down a lane. Inns by the gates, barracks by the wall, temples on squares, each on a plot of its size.
+- **Townsfolk, the watch, lamplighters and the rest** (`people_city`) move into the new map; a metropolis has more.
+- **Sizes:** metropolis 360x220 (now 196x110), city 240x140 (now 150x80). The screen shows 80x51.
+- **Canal towns:** a flat harbour city lies as a half moon against the water: the Dam (the square where the river was
+  dammed) with town hall and great church, the harbour arm up to it, three canal rings with a quay and trees on each
+  side, radial streets with bridges, narrow deep canal houses in rows, gardens inside the blocks, bastions on the
+  land side, a quay with piers and boats on the water side, meadows with ditches outside.
+- **Crafts guilds** (Later) would each get their own street (smiths, tanners by the water), as in real old towns.
+- Villages, hamlets and towns keep their own maker.
+
+**The other peoples** each build their own way (mockups shown 22 October 2026, Nilio said "doe maar"):
+- **Dwarf cities:** built to a plan, the only straight city: the gate of the hold carved in the mountain face, below
+  it terraces in rounded half rings like the rows of a theatre, a ledge and a street on each, rows of alike stone
+  houses, the Great Stair on the axis with four lesser stairs, the forge square half way down (the great forge hall,
+  the smiths' guild hall, the founder in stone), the cart line on the lowest terrace, a wall with square towers.
+- **Halfling towns:** a hedge ring, no wall; paths that ramble; hills with homes dug into their south faces (round
+  door, round windows); little houses with vegetable gardens; the green with the party tree and lanterns, the
+  Keepsake Hall and the inn at its side; orchards and a pond.
+- **Orc towns:** a palisade with sharpened stakes before it and watch platforms at the gates; the chief's longhouse
+  in the middle with the fighting pit before it and totems round it; round huts of hide and timber in rings along
+  mud paths, door to the path; fire pits, drying racks, middens, pens, the smith's open forge.
+- The city under the Elder Tree, gnome hamlets, dwarf holds and villages, and the hostile camps stay as they are.
 
 ## Round 6: livelier settlements (on hold)
 
