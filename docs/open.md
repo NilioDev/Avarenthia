@@ -50,8 +50,6 @@ at yet.
 - **The player as a ruler:** decided no (17 October 2026), but Nilio said he may come back to it.
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **The bard** stays parked (`docs/parked.md`), and so do the werewolf's and the vampire's curse.
-- **The tongues of the hostile peoples** (from Project Gorgon's skills, `gorgon/voorstel.md` in the project files):
-  understand their warnings, parley once, overhear a raid that becomes a job. Not discussed yet.
 - **Small bug, not fixed:** the help line in `ui.py` lists only 5 of the life skills.
 
 Settled, no longer open: the visible weather border between regions (thread "Seizoenen in de wereld"; Nilio said
