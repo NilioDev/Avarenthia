@@ -770,7 +770,7 @@ def x_adjacent(game, sk, r):
     if not t:
         game.msg('No enemies next to you.')
         return False
-    _burst(game, sk, p.x, p.y, 1, hollow=True)
+    _ring(game, sk, p.x, p.y, 1)
     for o in t:
         _hit(game, o, sk, r)
     return True
@@ -785,7 +785,7 @@ def x_around(game, sk, r):
     cells = []
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(p.x, p.y, rr)
-    _burst(game, sk, p.x, p.y, sk.radius, hollow=True)
+    _ring(game, sk, p.x, p.y, sk.radius)
     lay(game, sk, r, cells)
     if not t:
         game.msg('No undead in range.' if sk.only_undead else 'No enemies in range.')
@@ -809,7 +809,12 @@ def x_bolt(game, sk, r, ranged=False):
     p = game.player
     p.last_target = t.id
     tx, ty = t.x, t.y
-    late = _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
+    if sk.id == 'meteor':                           # its shadow first, then it falls in at a slant
+        from . import anim as AN
+        game.fx('meteor', x=tx, y=ty, col=sk.color)
+        late = AN.METEOR_SHADOW + AN.METEOR_FALL
+    else:
+        late = _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
     _hit(game, t, sk, r, ranged)
     if not ranged and not sk.splash:
         _burst(game, sk, tx, ty, 0, late)
@@ -817,7 +822,7 @@ def x_bolt(game, sk, r, ranged=False):
         cells = []
         for rr in range(1, sk.splash + 1):
             cells += ring_cells(tx, ty, rr)
-        _burst(game, sk, tx, ty, sk.splash, late)
+        _burst(game, sk, tx, ty, sk.splash, late, gather=sk.id != 'meteor')
         lay(game, sk, r, [(tx, ty)] + cells)
         for o in [o for o in game.visible_hostiles() if cheb(o.x, o.y, tx, ty) <= sk.splash and (o.x, o.y) != (tx, ty)]:
             _hit(game, o, sk, r, ranged)
@@ -892,9 +897,11 @@ def x_storm(game, sk, r):
         game.msg('No targets in sight.')
         return False
     random.shuffle(t)
+    from . import anim as AN
+    game.fx('sky')                                      # one white frame of the sky, then it strikes
     for k, o in enumerate(t[:sk.jumps]):
         game.fx('zap', cells=[(o.x, o.y - 3), (o.x, o.y - 2), (o.x, o.y - 1), (o.x, o.y)], col=sk.color,
-                delay=min(.16, k * .04))                # struck from above
+                delay=AN.SKY_TIME + min(.12, k * .04))  # struck from above
         _hit(game, o, sk, r)
     game.shake()
     return True
@@ -928,6 +935,9 @@ def x_curse(game, sk, r):
     return True
 
 
+_DUST = (176, 156, 120)
+
+
 def x_leap(game, sk, r):
     p, m = game.player, game.map
     t = game.nearest_target(sk.range, False)
@@ -940,7 +950,7 @@ def x_leap(game, sk, r):
             game.msg('There is no room to land.')
             return False
         dst = min(spots, key=lambda c: cheb(c[0], c[1], p.x, p.y))
-        game.flash(game.cells_between((p.x, p.y), dst), sk.color, sk.glyph, .18)
+        game.fx('trail', cells=[(p.x, p.y)] + game.cells_between((p.x, p.y), dst)[:-1], col=_DUST, ch='·')
         p.x, p.y = dst
         game.compute_fov()
     p.last_target = t.id
@@ -996,8 +1006,33 @@ def _fly(game, sk, cells, src, ranged=False):
     return AN.bolt_time(len(cells))
 
 
-def _burst(game, sk, x, y, r, delay=0.0, hollow=False):
-    game.fx('burst', x=x, y=y, r=r, col=sk.color, delay=delay, hollow=hollow, gather=r >= 2 and not hollow)
+def _burst(game, sk, x, y, r, delay=0.0, hollow=False, gather=True):
+    game.fx('burst', x=x, y=y, r=r, col=sk.color, delay=delay, hollow=hollow, gather=gather and r >= 2 and not hollow)
+
+
+# the schools' own hands for what spreads out from you: a ring of ice, a wave of !, a howl bending round as ( )
+WAVES = {'nova': '*', 'flame_ring': '^', 'inferno': '^', 'turn_undead': 'o', 'dawnbreak': 'o', 'hallowed_ground': 'o',
+         'dread': '∙', 'withering': '∙', 'soul_harvest': '*', 'feral_howl': 'sound', 'alpha_roar': 'sound',
+         'warcry': '!', 'thunderclap': '!', 'wrath_of_oak': '♣', 'entangle': '"'}
+BARGAIN_RED = (210, 40, 50)
+
+
+def _ring(game, sk, x, y, r):
+    """What opens out round you: the school's wave where it has one, else a burst closing round you."""
+    from . import anim as AN
+    if sk.id == 'morraks_bargain':                  # your own life goes out first, red; then all in sight falls in
+        game.fx('wave', x=x, y=y, r=r, col=BARGAIN_RED, sign='•')
+        game.fx('wave', x=x, y=y, r=r, col=sk.color, sign='*', inward=True, delay=AN.WAVE_FRAME * 3)
+    elif sk.id in WAVES:
+        game.fx('wave', x=x, y=y, r=r, col=sk.color, sign=WAVES[sk.id])
+    else:
+        _burst(game, sk, x, y, r, hollow=True)
+
+
+def _rise_dead(game, cells, ch, col, delay=0.0):
+    """Corpses that grey and get up, one a moment after the other."""
+    for k, (x, y) in enumerate(cells):
+        game.fx('raise', x=x, y=y, ch=ch, col=col, from_col=(180, 60, 50), delay=delay + min(.1, k * .03))
 
 
 def ring_cells(x, y, r):
@@ -1031,7 +1066,10 @@ def x_summon(game, sk, r):
         if sk.summon[0] == 'war_dog':
             o.hp = o.maxhp = round(o.maxhp * 1.4)
             o.fg = (200, 170, 120)
-    game.flash(spots[:n], sk.color, sk.glyph, .25)
+    if sk.corpses:
+        _rise_dead(game, spots[:n], o.ch, o.fg)
+    else:
+        game.flash(spots[:n], sk.color, sk.glyph, .25)
     game.msg({'skeleton': 'Bones knit together out of the ground and stand up for you.',
               'wolf': 'A howl answers from the dark, and wolves come loping to your side.' if n > 1 else
                       'A wolf answers your call and falls in at your side.',
@@ -1057,7 +1095,7 @@ def x_raise(game, sk, r):
     k, x, y, lvl = spot[:4]
     o = MC.thrall(game, k, x, y, 20 + r // 2, 'Risen ' + _D.MONSTERS[k]['name'], lvl)
     o.fg = (190, 200, 170)
-    game.flash([(x, y)], sk.color, sk.glyph, .3)
+    _rise_dead(game, [(x, y)], o.ch, o.fg)
     game.msg(f'You speak the word, and the {_D.MONSTERS[k]["name"].lower()} gets up again. It is yours, for a while.', 'good')
     return True
 
@@ -1153,7 +1191,7 @@ def x_wall(game, sk, r):
     if not placed:
         game.msg('There is no room for a wall there.')
         return False
-    game.flash(placed, sk.color, '█', .25)
+    game.fx('trail', cells=placed, col=sk.color, ch='█', build=True)
     game.msg('Ice cracks up out of the ground and stands, a wall.', 'good')
     return True
 
@@ -1166,7 +1204,7 @@ def x_gust(game, sk, r):
     cells = []
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(p.x, p.y, rr)
-    game.flash(cells, sk.color, sk.glyph, .2)
+    game.fx('wave', x=p.x, y=p.y, r=sk.radius, col=sk.color, sign='~')
     if not t:
         game.msg('No enemies in range.')
         return True
@@ -1239,9 +1277,10 @@ def x_pyre(game, sk, r):
     cells = [(tx, ty)]
     for rr in range(1, sk.radius + 1):
         cells += ring_cells(tx, ty, rr)
-    game.flash(cells, sk.color, '*', .26)
+    game.fx('burst', x=tx, y=ty, r=0, col=sk.color)
     _hit(game, t, sk, r)
     for o in [o for o in game.visible_hostiles() if o is not t and cheb(o.x, o.y, tx, ty) <= sk.radius]:
+        game.fx('bolt', cells=game.cells_between((tx, ty), (o.x, o.y)), src=(tx, ty), col=sk.color, ch='^', delay=.06)
         o.effects['burn'] = [max(fire[0], 4), fire[1]]
         o.awake = True
         game.num(o.x, o.y, '*', sk.color)
@@ -1280,7 +1319,7 @@ def x_prison(game, sk, r):
     placed = [c for c in ring_cells(t.x, t.y, 1) if SM.place(game, m, c[0], c[1], _D.BONEWALL, turns)]
     t.hold = max(t.hold, turns - 1)
     t.awake = True
-    game.flash(placed + [(t.x, t.y)], sk.color, '#', .26)
+    game.fx('trail', cells=placed, col=sk.color, ch='#', build=True)
     game.msg(f'Bones burst up out of the ground and lock around {t.the()}.', 'good')
     return True
 
@@ -1299,7 +1338,7 @@ def x_army(game, sk, r):
         m.slain.remove(c)
         o = MC.thrall(game, k, c[1], c[2], t + r // 2, 'Risen Skeleton')
         o.fg = (230, 226, 210)
-    game.flash([(c[1], c[2]) for c in cs], sk.color, 'z', .3)
+    _rise_dead(game, [(c[1], c[2]) for c in cs], 'z', (230, 226, 210))
     game.msg('You call, and the dead around you answer. They stand up, all of them.', 'good')
     return True
 
@@ -1338,7 +1377,7 @@ def x_sic(game, sk, r):
             game.msg(f'{mc.name} cannot get at it.')
             return False
         dst = min(spots, key=lambda c: cheb(c[0], c[1], b.x, b.y))
-        game.flash(game.cells_between((b.x, b.y), dst), sk.color, '!', .18)
+        game.fx('trail', cells=[(b.x, b.y)] + game.cells_between((b.x, b.y), dst)[:-1], col=_DUST, ch='·')
         b.x, b.y = dst
     MC.strike(game, mc, b, t, MC.stats(game, mc))
     if t in m.mons:
@@ -1391,7 +1430,14 @@ def x_golem(game, sk, r):
     o.ch, o.fg = 'Z', (230, 226, 200)
     o.hp = o.maxhp = round(o.maxhp * (3 + r / 40))
     o.dmg = (round(o.dmg[0] * 1.5), round(o.dmg[1] * 1.5))
-    game.flash([(c[1], c[2]) for c in cs[:sk.corpses]], sk.color, 'Z', .3)
+    from . import anim as AN                        # the other bones crawl to the first, and it stands up
+    late = 0.0
+    for c in cs[1:sk.corpses]:
+        path = game.cells_between((c[1], c[2]), (x, y))[:-1]
+        if path:
+            game.fx('bolt', cells=[(c[1], c[2])] + path, src=(c[1], c[2]), col=(180, 170, 150), ch='%')
+            late = max(late, AN.bolt_time(len(path) + 1))
+    _rise_dead(game, [(x, y)], 'Z', o.fg, late)
     game.msg('The bones of the dead crawl together and stand up as one great shape.', 'good')
     return True
 

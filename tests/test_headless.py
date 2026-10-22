@@ -3905,7 +3905,10 @@ def visible():
     kinds = {'bolt': dict(cells=[(i, 0) for i in range(1, 15)], src=(0, 0), col=(255, 120, 60), ch='*'),
              'burst': dict(x=5, y=5, r=2, col=(255, 120, 60), gather=True),
              'drain': dict(cells=[(i, 0) for i in range(1, 6)], col=(220, 60, 70)),
-             'rise': dict(x=3, y=3, col=(120, 240, 140)), 'zap': dict(cells=[(1, 1), (2, 2)], col=(255, 240, 120))}
+             'rise': dict(x=3, y=3, col=(120, 240, 140)), 'zap': dict(cells=[(1, 1), (2, 2)], col=(255, 240, 120)),
+             'wave': dict(x=5, y=5, r=3, col=(160, 200, 255), sign='sound'),
+             'meteor': dict(x=8, y=8, col=(255, 120, 60)), 'raise': dict(x=2, y=2, ch='z', col=(190, 200, 170)),
+             'trail': dict(cells=[(i, 1) for i in range(5)], col=(160, 200, 255), ch='█', build=True)}
     for k, kw in kinds.items():
         life = AN.fx_life(k, kw)
         assert life <= .42, (k, life)
@@ -3913,6 +3916,19 @@ def visible():
         assert any(drawn), k
         assert all(0 <= v <= 255 for cells in drawn for c in cells for v in c[3]), k
     assert AN.fx_life('burst', dict(x=0, y=0, r=2, delay=AN.bolt_time(20))) <= .5
+    # each school's hand: a howl bends round as ( ), Meteor's shadow comes before its slanting fall, the dead grey
+    # and rise, Morrak's Bargain goes out red before it falls in, and the sky's white frame is brief
+    howl = AN.fx_cells('wave', kinds['wave'], .01)
+    assert {c[2] for c in howl} >= {'(', ')'} and all(cheb(c[0], c[1], 5, 5) == 1 for c in howl), howl
+    first = AN.fx_cells('meteor', kinds['meteor'], .01)
+    assert first and all(c[2] == '░' for c in first), first
+    late = AN.fx_cells('meteor', kinds['meteor'], AN.METEOR_SHADOW + .02)
+    assert any(c[2] == '*' and c[0] < 8 and c[1] < 8 for c in late), late
+    assert AN.fx_cells('raise', kinds['raise'], .01)[0][2] == '%' and AN.fx_cells('raise', kinds['raise'], .3)[0][2] == 'z'
+    inward = dict(x=0, y=0, r=3, inward=True)
+    assert cheb(*AN.fx_cells('wave', inward, .01)[0][:2], 0, 0) == 3
+    assert AN.fx_life('wave', dict(r=3, delay=AN.WAVE_FRAME * 3)) <= .45
+    assert AN.fx_life('sky', {}) < .1 and AN.sky_on({}, .01) and not AN.sky_on({}, .2)
     arrow = AN.fx_cells('bolt', dict(cells=[(1, 0), (2, 0)], src=(0, 0), ch='-'), 0)
     assert arrow and arrow[0][2] == '-'
     assert AN.fx_cells('bolt', dict(cells=[(1, 1), (2, 2)], src=(0, 0), ch='-'), 0)[0][2] == '\\'
@@ -3948,6 +3964,40 @@ def visible():
         assert not any(ev[0] == 'fx' for ev in app.effects), 'a key skips the effects'
         while not isinstance(app.top, ui.GameScreen):
             app.key('esc')
+    # Meteor, Frost Nova, Call the Storm (the sky goes white for one frame), Raise Skeleton from a corpse
+    p.disc['frost'] = [40, 0]
+    p.disc['storm'] = [40, 0]
+    p.disc['necromancy'] = [40, 0]
+    p.disc['fire'] = [60, 0]
+    wants = {'meteor': 'meteor', 'nova': 'wave', 'storm_call': 'sky', 'raise_skeleton': 'raise', 'morraks_bargain': 'wave'}
+    p.disc['shadow'] = [60, 0]
+    for sid, want in wants.items():
+        if sid == 'raise_skeleton':
+            spot = next(c for c in free_around(g, g.map, p.x, p.y, 2) if c not in ((p.x, p.y), (e.x, e.y)) and
+                        g.visible(*c) and not g.occupied(g.map, *c))
+            g.map.__dict__.setdefault('slain', []).append(('goblin', spot[0], spot[1], 3))
+        app.effects.clear()
+        p.bar[0] = sid
+        p.cooldowns.clear()
+        p.mana = p.stamina = 999
+        p.life = 500
+        e.hp = 999
+        assert SK.use(g, 0), sid
+        app.after_action()
+        fx = [ev[2][1] for ev in app.effects if ev[0] == 'fx']
+        assert want in fx, (sid, fx)
+        if sid == 'storm_call':
+            lit = [ev for ev in app.effects if ev[0] == 'fx' and ev[2][1] == 'sky']
+            assert lit and AN.sky_on(lit[0][2][2], 0)
+            sky = FakeCanvas(4, 2)
+            sky.lighten(2, 2, .55)
+            assert sky.bg[0] != (0, 0, 0) and sky.bg[3] == (0, 0, 0)
+        app.render()
+        check_colours(app)
+        app.key('esc')
+        while not isinstance(app.top, ui.GameScreen):
+            app.key('esc')
+    g.map.mons = [o for o in g.map.mons if not getattr(o, 'thrall', 0)]
     # effects off: the old flash; short: half as long
     app.fx_mode = 'off'
     g.fx('bolt', cells=[(p.x + 1, p.y)], col=(255, 0, 0))

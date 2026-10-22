@@ -111,8 +111,11 @@ def ch_fighting(g):
               'fleeing, stunned, unaware of you.'),
         ('h', 'Spells you can see'),
         ('p', 'A bolt flies to its foe and bursts where it strikes; lightning leaps from one foe to the next; life you '
-              'drain flows back to you in red motes. Arrows and the spells of monsters fly the same way, so you see '
-              'what is coming. Any key skips an effect: the game never waits for one. On the main menu, Spell effects '
+              'drain flows back to you in red motes. Each school has its own hand: frost goes out from you in a ring '
+              'of ice, a war cry in a wave of !, a howl bends out round you; a Meteor throws its shadow on the ground '
+              'before it falls; a corpse you raise greys before it gets up; Morrak takes your own life out in red '
+              'before all in sight falls in; and when you call the storm, the sky goes white for a moment. Arrows and '
+              'the spells of monsters fly the same way, so you see what is coming. Any key skips an effect: the game never waits for one. On the main menu, Spell effects '
               'can be full, short or off.'),
         ('p', 'On a foe, burning flickers orange, poison pulses green, the frozen stand on pale blue ice and the '
               'weakened look dim.'),

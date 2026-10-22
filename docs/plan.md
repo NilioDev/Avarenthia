@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
-| **Approved: spell effects** | Part 1 built 19 October 2026 (the shared toolkit, status colours, Wild Shape colours, the option; see `docs/built.md`). Left: each school its own hand, the weapon skills' effects |
+| **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or an epic from a hidden teacher). Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
@@ -125,13 +125,14 @@ line (`l`) and on its bestiary page: first its weakness and resistances, then wh
 (a better chance of a critical hit against that kind). Reading about a creature in a library may give the first step.
 Saved per hero: bump `SAVE_VERSION`; the handbook says it in a sentence or two.
 
-## Spell effects (approved; part 1 built)
+## Spell effects (approved; parts 1 and 2 built)
 
-**Built 19 October 2026 as a quick win** (see `docs/built.md`): the toolkit (bolts with a tail, bursts, drain,
-rising crosses, the zigzag), status colours on creatures, Wild Shape's colours, monsters' arrows and spells, the
-option full/short/off. **Left:** each school its own hand (Meteor's shadow and slanting fall, the corpse that greys
-and rises, Morrak's Bargain pulling your own life out first, rings and waves), the one white frame of a great
-lightning stroke, and the weapon skills' effects. The spec below is the whole plan.
+**Part 1 built 19 October 2026 as a quick win, part 2 on 22 October** (see `docs/built.md`): the toolkit (bolts with
+a tail, bursts, drain, rising crosses, the zigzag), status colours on creatures, Wild Shape's colours, monsters'
+arrows and spells, the option full/short/off; each school its own hand (rings and waves, Meteor's shadow and slanting
+fall, the corpse that greys and rises, Morrak's Bargain, walls one stone at a time) and the one white frame of Call
+the Storm. **Left:** only the weapon skills' effects, built with the weapon skills (proposal in the project files,
+`magie/wapeneffecten/voorstel.md`). The spec below is the whole plan.
 
 Approved by Nilio on 17 October 2026 after two rounds of animated mockups (project files `magie/effecten/`, 17 GIFs,
 made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's effect in `magie/effecten.md` and

@@ -165,10 +165,17 @@ def camp_glow(t, x, y):
 # A small set of moving pictures that every school shares: bolts that fly with a fading tail, impacts that open out,
 # life flowing back, rising light, lightning that zigzags. Never longer than about .4 s; a key skips them and the game
 # never waits for one. game.fx(kind, **kw) queues one; the GameScreen draws it over the map.
+# Each school has its own hand on top: rings and waves, Meteor's shadow and slanting fall, the dead that grey and
+# rise, walls that go up one stone at a time, and one white frame of the sky for a great lightning stroke.
 FX_MODES = ('full', 'short', 'off')
 STEP = .02                # a bolt flies one cell in this long
 BOLT_MAX = .12
 BURST_FRAME = .05
+WAVE_FRAME = .06          # a wave moves out one ring in this long
+SKY_TIME = .07            # the white frame of a great lightning stroke
+METEOR_SHADOW, METEOR_FALL = .08, .1
+RAISE_TIME = .36
+TRAIL_STEP = .03
 
 
 def _line_char(dx, dy):
@@ -193,6 +200,16 @@ def fx_life(kind, kw):
         return d + BURST_FRAME * (kw.get('r', 1) + 3 + (1 if kw.get('gather') else 0))
     if kind == 'zap':
         return d + .24
+    if kind == 'wave':
+        return d + WAVE_FRAME * (kw.get('r', 1) + 1)
+    if kind == 'sky':
+        return d + SKY_TIME
+    if kind == 'meteor':
+        return d + METEOR_SHADOW + METEOR_FALL
+    if kind == 'raise':
+        return d + RAISE_TIME
+    if kind == 'trail':
+        return d + TRAIL_STEP * len(kw['cells']) + kw.get('linger', .14)
     return d + kw.get('dur', .28 if kind == 'drain' else .4)
 
 
@@ -201,11 +218,35 @@ def fx_fallback(kind, kw):
     col = kw.get('col', (255, 255, 255))
     if kind in ('bolt', 'zap'):
         return kw['cells'], col, kw.get('ch', '*')
-    if kind == 'burst':
+    if kind in ('burst', 'wave'):
         x, y, r = kw['x'], kw['y'], kw.get('r', 1)
         return ([(x + dx, y + dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1)
-                 if not (kw.get('hollow') and dx == dy == 0)], col, kw.get('ch', '*'))
-    return None
+                 if not ((kw.get('hollow') or kind == 'wave') and dx == dy == 0)], col, kw.get('ch', '*'))
+    if kind == 'trail':
+        return kw['cells'], col, kw.get('ch', '*')
+    if kind == 'raise':
+        return [(kw['x'], kw['y'])], col, kw.get('ch', 'z')
+    return None                 # the sky's white frame and Meteor's shadow have no flash of old
+
+
+def _wave_sign(sign, dx, dy):
+    """The sign of a wave at this offset: a sound wave bends round as ( ), wind runs as ~, the rest keep theirs."""
+    if sign == 'sound':
+        if abs(dx) >= abs(dy):
+            return '(' if dx < 0 else ')'
+        return '-'
+    return sign
+
+
+def slant(x, y, n=4):
+    """Where a Meteor falls from: a slanting line down onto (x, y) from the upper left, ending on it."""
+    return [(x - k, y - k) for k in range(n, -1, -1)]
+
+
+def sky_on(kw, age):
+    """Whether the sky's white frame is lit at this age."""
+    a = age - kw.get('delay', 0.0)
+    return 0 <= a < SKY_TIME
 
 
 def _fade(col, k):
@@ -285,6 +326,60 @@ def fx_cells(kind, kw, age):
         c = mix((255, 255, 255), col, k)
         for i, (cx, cy) in enumerate(cells):
             out.append((cx, cy, '/' if i % 2 == 0 else '\\', c, None))
+        return out
+    if kind == 'wave':                          # a ring running out from (x, y), or in towards it
+        x, y, r = kw['x'], kw['y'], kw.get('r', 1)
+        f = int(age / WAVE_FRAME)
+        sign = kw.get('sign', '*')
+        for back, k in ((0, 1.0), (1, .45)):    # the front, and a fainter ring behind it
+            d = f + 1 - back
+            if kw.get('inward'):
+                d = r - f + back
+            if not 1 <= d <= r:
+                continue
+            for dy in range(-d, d + 1):
+                for dx in range(-d, d + 1):
+                    if max(abs(dx), abs(dy)) == d:
+                        c = mix(col, (255, 250, 230), .4) if back == 0 else _fade(col, k)
+                        out.append((x + dx, y + dy, _wave_sign(sign, dx, dy) if back == 0 else '·', c, None))
+        return out
+    if kind == 'meteor':                        # its shadow on the ground first, then it falls in at a slant
+        x, y, r = kw['x'], kw['y'], kw.get('r', 1)
+        shade = (52, 46, 44)
+        k = min(1.0, age / METEOR_SHADOW)
+        for dy in range(-1, 2):
+            for dx in range(-1, 2):
+                if dx == dy == 0 or k > .5:
+                    out.append((x + dx, y + dy, '░', shade if dx == dy == 0 else mix(shade, (24, 22, 20), .4), None))
+        fall = age - METEOR_SHADOW
+        if fall >= 0:
+            cells = slant(x, y)
+            head = min(len(cells) - 1, int(fall / METEOR_FALL * len(cells)))
+            for j in range(3):
+                i = head - j
+                if 0 <= i < len(cells):
+                    out.append((*cells[i], '*' if j == 0 else '·',
+                                mix(col, (255, 250, 220), .5) if j == 0 else _fade(col, 1 - j * .3), None))
+        return out
+    if kind == 'raise':                         # a corpse greys, then gets up as what it now is
+        x, y = kw['x'], kw['y']
+        k = age / RAISE_TIME
+        if k >= 1:
+            return out
+        corpse, grave = kw.get('from_col', (150, 60, 50)), (150, 170, 140)
+        if k < .55:
+            return [(x, y, '%', mix(corpse, grave, k / .55), None)]
+        return [(x, y, kw.get('ch', 'z'), mix((235, 245, 225), col, (k - .55) / .45), None)]
+    if kind == 'trail':                         # one cell after another: a wall going up, dust behind a run
+        cells = kw['cells']
+        ch = kw.get('ch', '*')
+        linger = kw.get('linger', .14)
+        for i, c in enumerate(cells):
+            a = age - i * TRAIL_STEP
+            if 0 <= a < linger:
+                q = a / linger
+                out.append((*c, ch, mix((255, 255, 245), col, min(1.0, q * 2.5)) if kw.get('build') else
+                            _fade(col, 1 - q), None))
         return out
     return out
 

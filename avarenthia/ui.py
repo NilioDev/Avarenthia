@@ -875,6 +875,9 @@ class GameScreen(Screen):
                 for x, y in cells:
                     if g.visible(x, y):
                         self._put_map(cv, x, y, ch, col)
+            elif kind == 'fx' and ev[1] == 'sky':          # one white frame for a great lightning stroke
+                if not app.reduced_motion and hasattr(cv, 'lighten') and AN.sky_on(ev[2], age * app.fx_speed()):
+                    cv.lighten(MAP_W, MAP_H, .55)
             elif kind == 'fx':
                 for x, y, ch, col, bgc in AN.fx_cells(ev[1], ev[2], age * app.fx_speed()):
                     if g.visible(x, y):

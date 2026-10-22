@@ -158,6 +158,12 @@ class TcodCanvas(Canvas):
         c = self.con
         return chr(c.ch[x, y]), tuple(int(v) for v in c.fg[x, y]), tuple(int(v) for v in c.bg[x, y])
 
+    def lighten(self, w, h, k):
+        """The top left w x h cells washed towards white by k (the sky's frame for a great lightning stroke)."""
+        for a in (self.con.fg, self.con.bg):
+            part = a[:w, :h]
+            part[...] = (part + (255 - part.astype('int32')) * k).astype(a.dtype)
+
 
 from .glyphs import CHARS as _GLYPHS  # noqa: E402
 
@@ -201,6 +207,13 @@ class FakeCanvas(Canvas):
     def get(self, x, y):
         i = y * self.w + x
         return self.ch[i], tuple(self.fg[i]), tuple(self.bg[i])
+
+    def lighten(self, w, h, k):
+        for y in range(min(h, self.h)):
+            for x in range(min(w, self.w)):
+                i = y * self.w + x
+                self.fg[i] = mix(self.fg[i], (255, 255, 255), k)
+                self.bg[i] = mix(self.bg[i], (255, 255, 255), k)
 
     def dump(self):
         return '\n'.join(''.join(self.ch[y * self.w:(y + 1) * self.w]) for y in range(self.h))

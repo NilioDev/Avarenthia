@@ -19,6 +19,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the chronicle** | A second book like the handbook: what your hero knows of this world, each fact marked heard, read or seen; rumours can prove false; books, stones and records lead to places on the map. Libraries with scribes, the dwarves' Grudge Book, the elves' loremaster; a made history of the last two hundred years. Opens with Enter on the journal's Lore tab |
 | **Built: stamina for martial skills** | Weapon and martial skills cost stamina, spells cost mana; Warcraft is martial (and Charge is a true weapon strike); a third orb on the panel, LIFE, STAMINA and MANA always in sight |
 | **Built: quick wins (19 Oct)** | Spell effects part 1 (bolts, bursts, drain, heals, lightning; full/short/off), burning, poison and frost shown on creatures, Wild Shape in the beast's colours; chimney smoke, sparks at the anvil, rain empties the streets |
+| **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 
 ## Built
@@ -237,7 +238,17 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   one chimney per wooden house (most hearths lit, all in winter, from dawn to midnight, the day's wind leaning every
   plume one way) and sparks at the anvil by day; rain, snow, hail, sleet and sandstorms (not a drizzle) send
   townsfolk whose place is outdoors home or to the inn (guards and the lamplighter stay out). No save change.
-
+- **Spell effects part 2: each school its own hand** (22 October 2026; `anim.py`, `skills._ring`, `_rise_dead`).
+  New effect kinds: `wave` (a ring running out from a point, or in towards it, with a fainter ring behind; the sign
+  from the school: Frost Nova `*`, Ring of Fire and Inferno `^`, Turn Undead, Dawnbreak and Hallowed Ground `o`,
+  Dread and Withering `∙`, War Cry and Thunderclap `!`, Wrath of the Oak `♣`, Entangle `"`, Feral Howl, Alpha Roar
+  and a monster's wail a sound wave bending round as `( )`, Gust wind `~`); `meteor` (a shadow `░` on the ground,
+  then it falls in at a slant from the upper left, then the crater burst, no gathering frame); `raise` (the corpse
+  `%` greys, then stands up as its own sign: Raise Skeleton, Raise Dead, Army of the Dead one after another, and Bone
+  Golem, whose other corpses crawl to the first as `%`); `trail` (cells one after another: Ice Wall and Bone Prison
+  going up stone by stone, dust `·` behind Charge, the leaps and Sic 'Em); Pyre's fire leaps `^` to each neighbour;
+  Morrak's Bargain sends your life out red and then all falls in, purple; `sky` (Call the Storm: the map washes
+  white for one frame, ~0.07 s, before the strikes; not with effects off). All stay within ~0.45 s. No save change.
 ## Ferries in villages (built 18 October 2026; the spec)
 
 Niels, 17 October 2026: a village river is not always crossed by a bridge; it depends on how broad and wild the

@@ -783,7 +783,7 @@ def _release(game, mon, aim, df):
         game.wear(None, 1.0)
         return True
     if kind == 'wail':
-        game.flash([(mon.x + dx, mon.y + dy) for dx in range(-3, 4) for dy in range(-3, 4)], (220, 230, 255), '≈', .35)
+        game.fx('wave', x=mon.x, y=mon.y, r=3, col=(220, 230, 255), sign='sound')     # a wail bends out round it
         if cheb(p.x, p.y, mon.x, mon.y) <= 7 and game.visible(mon.x, mon.y):
             give(game, 'afraid', 6, f'{name} wails. The cry goes through you, and your courage drains away. (Afraid)')
         else:

@@ -11,11 +11,9 @@ effects, then round 6. Each starts only on Nilio's "ga".
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
 
 ## Spell effects: what is left
-Part 1 is built (toolkit, status colours, Wild Shape colours, monsters' arrows and spells, the full/short/off
-option). Still to do, not to decide: each school its own hand (Meteor's shadow and slanting fall, the corpse that
-greys and rises, Morrak's Bargain pulling your own life out first, rings and waves) and the one white frame of a
-great lightning stroke. Still to work out: the **weapon skills' effects** (a swing arc, arrows that fly, blood on
-Sever Artery, a `*` on a critical), together with the weapon skills.
+Parts 1 and 2 are built (22 October 2026: each school its own hand and the storm's white frame). Still to decide:
+the **weapon skills' effects** (a swing arc, arrows that fly, blood on Sever Artery, a `*` on a critical). A
+proposal with GIFs is in the project files, `magie/wapeneffecten/voorstel.md`; it is built with the weapon skills.
 
 ## Quick wins not taken
 From the thread "Quick wins uit het plan"; items 1-5 were built, these two were not:
