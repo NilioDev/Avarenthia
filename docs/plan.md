@@ -612,6 +612,10 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   deck (Ponte Vecchio, old London Bridge); one has statues along its parapets and a gate tower at each end (Charles
   Bridge); the rest stand on broad piers with lamps. Canal bridges are short, with a parapet and a lamp at each end.
   Wooden planks stay for drawbridges and for small streams in villages.
+- **Every way leads on** (Nilio): the road over a bridge runs on into the town at both ends until it meets a street;
+  lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
+- **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
+  lamplighters at dusk; hearth glow from the houses; the lanes stay dark.
 - **Guild halls** of the eleven guilds stand on the great market or a main street; the secret ones in an ordinary
   house down a lane. Inns by the gates, barracks by the wall, temples on squares, each on a plot of its size.
 - **Townsfolk, the watch, lamplighters and the rest** (`people_city`) move into the new map; a metropolis has more.
