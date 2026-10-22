@@ -609,12 +609,12 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
 - **Bridges** were few and mattered (Nilio, 22 October 2026: "meer dan een stel houten planken"): only the great
   ways and the ring roads cross the river (a metropolis has two or three bridges), and only where they truly cross
   from bank to bank, never where a street runs along the water; other streets end at the quay. Each is a stone deck with a parapet each side and piers with
-  cutwaters in the stream, and has its own kind: the market bridge carries shops and houses on both sides of the
-  deck (Ponte Vecchio, old London Bridge); one has statues along its parapets and a gate tower at each end (Charles
-  Bridge); the rest stand on broad piers with lamps. Canal bridges are short, with a parapet and a lamp at each end.
+  cutwaters in the stream, and has its own kind: the market bridge has statues along its parapets (Charles
+  Bridge); the rest stand on broad piers with lamps. No bridges with houses on them: they do not read on the map. Canal bridges are short, with a parapet and a lamp at each end.
   Wooden planks stay for drawbridges, harbour jetties (a few long ones, boats moored along them) and small streams in villages.
 - **How a bridge is laid** (Nilio): first a quay street runs along both banks inside the walls. Then the bridges are
   laid, straight from quay to quay: one below the market and one where each ring road crosses (two or three in all).
+  A bridge lies at 90 or 45 degrees to the river, the way its road runs (ASCII has only 8 directions).
   Only then comes the street plan, made round the bridges: a great way or ring road that crosses leaves its curve a
   little before the river, runs straight over the bridge in line with it and takes up its course on the far side (a
   straight piece in a ring is fine: ASCII has only 8 directions). Any other way ends at the quay, which leads on to
