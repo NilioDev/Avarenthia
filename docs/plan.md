@@ -605,7 +605,13 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   neighbours; deep and narrow in the core, lower with bigger gardens further out. What is left behind them is yard,
   garden and alley. Every house stays inside the wall (checked in code).
 - **The wall** with square towers and a moat; a gate with a tower each side; a lane runs along its inside.
-- **A river** from the world map runs through with quays and stone bridges.
+- **A river** from the world map runs through with quays. A metropolis lies on a broad river.
+- **Bridges** were few and mattered (Nilio, 22 October 2026: "meer dan een stel houten planken"): only the great
+  ways cross the river, other streets end at the quay. Each is a stone deck with a parapet each side and piers with
+  cutwaters in the stream, and has its own kind: the market bridge carries shops and houses on both sides of the
+  deck (Ponte Vecchio, old London Bridge); one has statues along its parapets and a gate tower at each end (Charles
+  Bridge); the rest stand on broad piers with lamps. Canal bridges are short, with a parapet and a lamp at each end.
+  Wooden planks stay for drawbridges and for small streams in villages.
 - **Guild halls** of the eleven guilds stand on the great market or a main street; the secret ones in an ordinary
   house down a lane. Inns by the gates, barracks by the wall, temples on squares, each on a plot of its size.
 - **Townsfolk, the watch, lamplighters and the rest** (`people_city`) move into the new map; a metropolis has more.
