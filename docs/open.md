@@ -5,16 +5,10 @@ name he can use ("open.md", "open: debug menu"). When a point is settled, write 
 (or `built.md`) and delete it here.
 
 ## Build order
-What `plan.md` says now: weapons, then classes (in three parts, a pause after each), then the rest of the spell
-effects, then round 6. Each starts only on Nilio's "ga".
+What `plan.md` says now: weapons (with the weapon skills' effects), then classes (in three parts, a pause after
+each), then round 6. Each starts only on Nilio's "ga".
 - **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
-
-## Spell effects: what is left
-Parts 1 and 2 are built (22 October 2026: each school its own hand and the storm's white frame). Still to decide:
-the **weapon skills' effects** (a swing arc, arrows that fly, blood on Sever Artery, a `*` on a critical). A
-proposal with GIFs is in the project files, `magie/wapeneffecten/voorstel.md`; it is built with the weapon skills.
-Settled 22 October: the swing arc only on skills and criticals; blood both as a splash and a short red trail.
 
 ## Quick wins not taken
 From the thread "Quick wins uit het plan"; items 1-5 were built, and market day and rest day on 22 October 2026.

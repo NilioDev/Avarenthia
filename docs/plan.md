@@ -25,8 +25,9 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Later** | Crafts guilds, leadership, a house of your own |
 
 **Left of the big build (paused 18 October 2026 after the magic schools, at Nilio's word):** in this order,
-weapons, then classes (approved 19 October 2026; they need the weapon kinds, and they change the skill list), then
-spell effects (so the new skills get theirs too), then round 6 (Nilio's go for the whole plan covers the old three;
+weapons with their skills' effects (spell effects parts 1 and 2 are built), then classes (approved 19 October 2026;
+they need the weapon kinds, and they change the skill list; new skills get their effects as they are built), then
+round 6 (Nilio's go for the whole plan covers the old three;
 classes wait for his go). Their specs are below; nothing of them is built yet.
 
 ---
