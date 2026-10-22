@@ -41,8 +41,8 @@ From the thread "Quick wins uit het plan"; items 1-5 were built, these two were 
 Approved 22 October 2026 (`plan.md`, classes): epics from hidden teachers, a tier above the elites on key 6. Still
 open: which epics there are (one or two per class), what each teacher asks first, and how many teachers per world.
 
-## Multiplayer
-Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
+## Multiplayer (parked, not urgent)
+Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
 their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
 - Shape: the host owns the world (monsters, jobs, shop stock, the clock are decided only there). A joining player
   makes the same world from the seed, so the big map never goes over the line; after that the host sends only what
@@ -54,7 +54,7 @@ their own copy of the game (own screen, menus, handbook, settings), not a remote
 - Cost: preparation (several players in one world, screens apart from the rules) 3 to 4 big rounds, the network 2
   more. Bigger than the class build. Advice: after classes and life skills.
 - Rule from now on (in CLAUDE.md): what belongs to the player lives on the player.
-- About 30 things that belong to the player now live on the game (where you are: `cur`, `over_pos`; the log, jobs,
+- Old code left as it is for now: about 30 things that belong to the player live on the game (where you are: `cur`, `over_pos`; the log, jobs,
   bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
 
 ## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
