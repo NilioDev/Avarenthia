@@ -10,13 +10,6 @@ effects, then round 6. Each starts only on Nilio's "ga".
 - **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
 
-## Debug menu
-Proposal in project files `debug/voorstel.md` (a `--debug` flag and F12, its own `debug.sav`, snapshots, a
-bug-report key that writes screenshot, seed, place, log and save). Nothing built. Two questions:
-- Only with `--debug`, or also in the built executables, for example with a `debug.txt` next to the .exe?
-- Keep it out of the handbook (it is not a rule of the game)? Proposed: yes.
-(Thread "Debugmenu voor testen".)
-
 ## Spell effects: what is left
 Part 1 is built (toolkit, status colours, Wild Shape colours, monsters' arrows and spells, the full/short/off
 option). Still to do, not to decide: each school its own hand (Meteor's shadow and slanting fall, the corpse that
@@ -61,7 +54,7 @@ The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files 
 - **The list of theme rooms and pieces** for K5 and the fixed plans: which special rooms exist, per kind of place and
   per part (entrance, arrival, middle, bottom). Nilio can also draw his own in the editor.
 - **The editor's controls**, for a separate thread later. What we know so far:
-  - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint.
+  - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
   - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
   - **Tools:** cell, line, rectangle, fill, copy and paste, undo and redo, change colour, zoom.
   - **Layers:** ground, things, creatures and triggers. Events in the trigger layer are picked from lists (when, if, then).
