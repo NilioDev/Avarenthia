@@ -496,6 +496,17 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Gnoll, the War Boma:** two rings of thorn, lookout platforms on poles, the packlord's bones, hyenas inside; the dug den below.
   - **Lizardfolk, the Stilt Bastion:** a reed fort on stilts in deep water, reached by one plank walkway they pull in when warned; the flooded cellars below.
   - **Who holds it:** its own people (access by standing), or it is taken, abandoned or a ruin.
+- **Manors (approved 22 October)**: a small place, 80 x 50: the house of someone who matters. Each people has its own, under its own name. Letters and ledgers in it can point to a job; the one telling thing says who lives there. Mockup `MP_manors_peoples.png` (style sketch); the human one is mockup D.
+  - **Human, the Manor:** the great hall with the portrait over the hearth, kitchen and store with a back door to the well and the kitchen garden, a chapel, a dining room, a garden wall and a lane to the road. Up: bedrooms and the study. Down: the wine cellar, sometimes with a secret way out.
+  - **Elf, the Bower:** a house grown round four trunks, rooms of living wood joined by bridges (the hall of songs, the study, the bedroom), a moon garden on the ground; the root cellar.
+  - **Dwarf, the Clan House:** behind a carved door, the hearth hall with the ancestor wall, a brew room, the treasury, sleeping rooms; the clan vault below.
+  - **Halfling, the Hill Hall:** a big home dug into a green hill behind a round door: the parlour, pantries full of jars, a study, bedrooms, flower gardens; the deep pantry.
+  - **Gnome, the Cap House:** a house in a giant mushroom with a stair up its stem: a workshop, a study, a potion room, a bedroom; the root workshop.
+  - **Orc, the Longhouse:** the chief's long hall, fires down the middle, sleeping benches along the walls, the chief's seat at the end, a skull pole at the door, a warg yard; the store pit.
+  - **Goblin, the Counting House:** a trader-boss's house in the rock: the counting room with ledgers, a locked strongroom, a store of stolen goods; the smugglers' tunnel.
+  - **Kobold, the Hoard Burrow:** the hoardmaster sleeps on his coin; side holes for gems, a mirror, a polishing bench; the deep hoard.
+  - **Gnoll, the Great Tent:** the packlord's great tent of hides in a thorn ring, his seat of bones, his share of the kill, hyenas at the door; the den below.
+  - **Lizardfolk, the Sun House:** the elder's house on stilts with a window to the sun, an egg of the line, a fish pen; the mud cellar.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
