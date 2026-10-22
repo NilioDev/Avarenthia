@@ -42,8 +42,20 @@ Approved 22 October 2026 (`plan.md`, classes): epics from hidden teachers, a tie
 open: which epics there are (one or two per class), what each teacher asks first, and how many teachers per world.
 
 ## Multiplayer
-Nilio wants to look into multiplayer later: whether it can work in this game at all, and in what form. Not looked
-at yet.
+Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
+their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
+- Shape: the host owns the world (monsters, jobs, shop stock, the clock are decided only there). A joining player
+  makes the same world from the seed, so the big map never goes over the line; after that the host sends only what
+  changes, and the player's game sends actions ("walk east", "buy sword"). No separate server; over the internet
+  through something like Tailscale. Not lockstep (every copy reckoning everything itself): one difference in the
+  dice and the worlds drift apart.
+- Rules still to settle: the clock waits for every player; world-map travel, resting and sleeping together; shops
+  and choice windows must not freeze the others; death, sharing loot, jobs for two, the one save (kept by the host).
+- Cost: preparation (several players in one world, screens apart from the rules) 3 to 4 big rounds, the network 2
+  more. Bigger than the class build. Advice: after classes and life skills.
+- Rule from now on (in CLAUDE.md): what belongs to the player lives on the player.
+- About 30 things that belong to the player now live on the game (where you are: `cur`, `over_pos`; the log, jobs,
+  bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
 
 ## Dungeons (from the thread "Dungeons zoals ze nu zijn", 22 October 2026)
 The design so far is in `docs/plan.md`, "Dungeons on their own land"; the files are in `/mnt/project-files/dungeons/`.

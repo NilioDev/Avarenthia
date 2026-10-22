@@ -57,6 +57,10 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
 - Buffs: `p.buffs = [[kind, value, turns, label]]`. Money in copper (100c = 1s, 100s = 1g).
 - Bump `SAVE_VERSION` in engine.py whenever saved data changes shape.
 
+## Multiplayer later (Nilio, 22 Oct 2026)
+Real multiplayer may come (see "Multiplayer" in `docs/open.md`). So: whatever belongs to the player (gear, money,
+jobs, what they know, what they were told, where they are) lives on the player, never loose on the game or world.
+
 ## Tests and CI
 - `python tests/test_headless.py` (no tcod needed). Parts: `TEST_ONLY=part1,part2`, seed: `TEST_SEED=n`.
   Run seeds one after another (they share a save file). A full seed takes ~23 minutes (`smoke` ~9 of them);
