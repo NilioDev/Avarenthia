@@ -10,11 +10,6 @@ effects, then round 6. Each starts only on Nilio's "ga".
 - **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
 
-## Life skills: masters who unmake for coin
-Masters at rank 40 can Unmake a found power onto their own crafted gear, with a chance to fail. Open: may masters
-in the world (NPCs) do this for the player for coin? Proposed: no, so the rares stay what players hunt and the
-craft stays the player's own. (Thread "Life skills sparren".)
-
 ## Debug menu
 Proposal in project files `debug/voorstel.md` (a `--debug` flag and F12, its own `debug.sav`, snapshots, a
 bug-report key that writes screenshot, seed, place, log and save). Nothing built. Two questions:

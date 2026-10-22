@@ -307,7 +307,14 @@ Approved so far:
     draught (Alchemy); it sleeps a few turns; bump it with a rope to bind it; men with a cart come for it. If it wakes
     first it is furious. More coin, no parts. No zoo to build: the baron keeps it in a cage in his seat's yard
     (one cage tile per beast you brought), so you see your catches when you visit.
-Still open: whether masters in the world can also unmake for coin (proposed: no).
+- **The great masters** (22 October): one master per craft in the whole world (a smith, a leatherworker, a
+  tailor), far from the roads. They unmake for a hero who lacks the craft, but only after a real quest: first find
+  them (no marker; rumours, a book in a library, an old craftsman who knew them), then their test in three parts:
+  bring a top find of their craft (Star-iron, the parts of a named beast or a dragon, Fey Silk), bring the part of a
+  notorious or legendary named beast, and win back what they lost (an old forge, a workshop or a hall overrun by
+  whatever lives there now). After that they work for you: one Unmake per visit, for a high price (gold, not silver),
+  at a 50% chance (less than a master player at rank 50), with the same bad failure. Your own craft stays the better
+  road.
 
 ## Dungeons on their own land (approved 22 October 2026; the design is still being worked out)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).
