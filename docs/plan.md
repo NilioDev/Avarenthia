@@ -620,7 +620,9 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   Only then comes the street plan, made round the bridges: a great way or ring road that crosses leaves its curve a
   little before the river, runs straight over the bridge in line with it and takes up its course on the far side (a
   straight piece in a ring is fine: ASCII has only 8 directions). Any other way ends at the quay, which leads on to
-  the bridge, so no road stops at the water. Every gate has a drawbridge of planks over the moat.
+  the bridge, so no road stops at the water. Every gate has a drawbridge of heavy planks over the moat, laid the
+  same way: straight or at 45 degrees, in line with the road that leaves the gate, from the gateway to the far bank
+  where the road outside takes it up, with a tower on the wall at each side of the gateway.
 - **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
   lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
 - **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
@@ -648,6 +650,18 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   in the middle with the fighting pit before it and totems round it; round huts of hide and timber in rings along
   mud paths, door to the path; fire pits, drying racks, middens, pens, the smith's open forge.
 - The city under the Elder Tree, gnome hamlets, dwarf holds and villages, and the hostile camps stay as they are.
+
+**Bridges in the open world, in each people's style** (Nilio, 22 October 2026): the same rules hold outside the
+towns. Where a road crosses a river on a land map, the bridge is laid first, straight or at 45 degrees, and the road
+runs over it in line. Who built it shows:
+- **Humans:** stone arches with a flagstone deck and thin parapets; on lesser roads a timber trestle bridge; now
+  and then an old stone bridge with a span fallen in (a ford nearby).
+- **Dwarves:** dark granite, massive square piers, a low solid parapet, a brazier at each end; they also span chasms.
+- **Elves:** a bridge grown of living roots and branches, leafy rails, glowmoss lanterns.
+- **Halflings:** small humpbacked stone bridges over brooks, flower boxes on the parapets.
+- **Gnomes:** a copper bascule bridge that lifts with a whirr of gears when a boat comes.
+- **Orcs, goblins and other tribes:** logs lashed with rope, stakes at the ends; rope bridges over ravines.
+- **Lizardfolk:** reed walkways on stilts across the swamp.
 
 ## Round 6: livelier settlements (on hold)
 
