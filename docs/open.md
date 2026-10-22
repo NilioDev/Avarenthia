@@ -10,10 +10,6 @@ each), then round 6. Each starts only on Nilio's "ga".
 - **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
 
-## Quick wins not taken
-From the thread "Quick wins uit het plan"; items 1-5 were built, and market day and rest day on 22 October 2026.
-None left: the five new weapons were worked out on 22 October 2026 and go into the weapons round (`plan.md`).
-
 ## Multiplayer (parked, not urgent)
 Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
 their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
