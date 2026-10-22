@@ -361,6 +361,12 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - Whether you may climb up depends on your standing with that people or its lord. With good standing, the keeper lets you up to the lookout.
     - Otherwise the guard on the stair turns you away, and forcing your way up is a crime.
     - The towers of the hostile peoples you fight your way up.
+  - **Fallen towers and ruins.** Mockup `T_tower_ruins.png`.
+    - **Half fallen:** one side came down. Its stones lie in a heap round the foot of the tower, and a few fell in through the roof. Higher up, half of each floor is gone, and you stand at a broken edge.
+    - **What you see below** is always the real level underneath, faded in the haze: through a gap or over an edge you see the ground floor with its rubble.
+    - **A true ruin:** only a stump of wall stands, with ivy on it, and rubble and grass inside. The stair ends at a last broken ledge, and the cellar hatch still leads down.
+    - **Who lives there:** no people keeps a fallen tower, but bandits, a nesting beast or something in the cellar may.
+    - **Edges and falls:** stepping off an edge first asks, with a warning of how far down it is; you never fall by one careless key. A monster that knocks you back can throw you over the edge, though. A fall hurts by the number of floors, and you land at the same spot on the level below.
   - **Each people builds its own tower:**
     - **Human:** grey stone, round, with rooms behind doors. On top, battlements and a brazier.
     - **Elf:** white stone in thin lines, built round a living trunk that the stair winds about. The top is open to the stars, with a crown of leaves.
