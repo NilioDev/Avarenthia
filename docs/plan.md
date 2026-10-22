@@ -484,6 +484,18 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Gnoll, the Bone Kraal:** where bone-callers learn: the howl rock with its moon stone, the bone-caller's hut, hide racks, a bone heap, a carrion pit; the bone tunnels below.
   - **Lizardfolk, the Hatchery:** reed huts on stilts joined by walkways round the sacred eggs in warm mud; the priests' hut and the sun stone; the drowned halls below.
   - **Friendly or not** by standing, as with temples and towers.
+- **Forts (approved 22 October)**: a middle place, 100 x 60 (a border fort large), built to hold ground. Each people has its own, under its own name; its way in is its one telling thing. Below lie 3 to 5 levels of cells, stores or older dungeon. Mockup `FP_forts_peoples.png` (style sketch). Only the goblin hole and the goblin village get no version per people; they are goblin kinds already.
+  - **Human, the Keep:** a moat and a drawbridge, a gatehouse with a portcullis that drops on alarm, four corner towers (tower rules; shoot over the wall from the wall walk), a yard with a well, barracks, stable, armoury and the lord's keep. Below: the dungeon, a place for rescue jobs.
+  - **Elf, the Thornwatch:** a ring of thorn grown as a wall, a gate of woven living branches, guard trees with archers' platforms, the captain's stone; root cellars below.
+  - **Dwarf, the Gatehold:** a wall across a gorge with the gate in the rock, murder holes over the road, bolt throwers in the cliff, barracks and a forge; the battlements up, the halls down.
+  - **Halfling, the Hedge Post:** a small watch house in a thick hedge, a bell to raise the hamlets, a lookout loft; the root cellar.
+  - **Gnome, the Hidden Hill:** a hill that looks empty through an illusion crystal; peep holes all round, traps on every way in; the deep burrows below.
+  - **Orc, the Stockade:** a palisade behind a ditch of stakes, gate towers, the warlord's seat, sleeping rows, a weapon heap, a warg pen; the pits below.
+  - **Goblin, the Scrap Fort:** a ring of scrap, carts and planks, a gong tower, catapults of junk, spiked pits at the gate; tunnels below.
+  - **Kobold, the Trap Gate:** one long tunnel in, trapped every few steps, spy holes from side tunnels, a ceiling ready to drop; the warrens below.
+  - **Gnoll, the War Boma:** two rings of thorn, lookout platforms on poles, the packlord's bones, hyenas inside; the dug den below.
+  - **Lizardfolk, the Stilt Bastion:** a reed fort on stilts in deep water, reached by one plank walkway they pull in when warned; the flooded cellars below.
+  - **Who holds it:** its own people (access by standing), or it is taken, abandoned or a ruin.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
