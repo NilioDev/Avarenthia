@@ -345,7 +345,7 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Middle, 100 x 60:** the temple, the abbey, the fort, and the levels below them.
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
-- **Towers (approved 22 October)**: slender and high. Mockups `T_tower.png` and `T_towers_peoples.png`.
+- **Towers (approved 22 October)**: slender and high. Mockups `T_tower.png`, `T_towers_peoples.png` and `T_towers_peoples2.png`.
   - **Floors.** Every floor is the same small footprint, about 15 across, and has 3 to 6 storeys. A floor may be split into rooms. Each floor has its own use: a guard room, a store, the keeper's room. There is no room for hordes, only for a few strong foes, and the stair is the choke point.
   - **Stairs.** A stair or ladder comes out at the same spot it left from below. The next one up lies elsewhere on that floor; in a stone tower it is a quarter turn further along the wall, like a spiral stair.
   - **Below.** A cellar or dungeon may lie underneath, reached through a hatch.
@@ -356,6 +356,9 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Dwarf:** hewn blocks, square with cut corners, and runes in the wall; a forge and a store. On top, a bolt thrower and a beacon.
     - **Orc:** rough logs, square, with ladders instead of stairs, and skulls. On top, a hide roof and a war drum.
     - **Goblin:** crooked, of scrap and planks, with holes in the floor that drop you to the floor below. On top, a crow's nest with a gong.
+    - **Kobold:** a narrow spire of piled stone with shiny bits set in the walls, ladders, and a hoard room. On top, a polished shield that flashes a warning.
+    - **Gnoll:** poles and hides lashed together, taken down when the pack moves on, with bones lying about. On top, an open platform and a bone horn.
+    - **Lizardfolk:** woven reeds on stilts over the swamp, with an egg nest. On top, a smoke fire that signals over the reeds.
     - **Halflings and gnomes** build no towers.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
