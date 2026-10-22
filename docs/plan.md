@@ -456,6 +456,22 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Gnoll:** poles and hides lashed together, taken down when the pack moves on, with bones lying about. On top, an open platform and a bone horn.
     - **Lizardfolk:** woven reeds on stilts over the swamp, with an egg nest. On top, a smoke fire that signals over the reeds.
     - **Halflings and gnomes** build no towers.
+- **Temples (approved 22 October)**: a middle place, 100 x 60, on its own land. Mockups `C_temple_on_its_land.png`, `TF_1`-`TF_4` (every level of a human temple), `TP_temples_peoples.png` (style sketch) and `TP_full_elf.png`, `TP_full_orc.png`, `TP_full_gnoll.png` (true size).
+  - **Below every temple** lies its own deep place, 3 to 5 levels: older and rougher the deeper you go.
+  - **The bell tower is a chance.** Not every human temple has one; when it does, it follows the tower rules and its top is a lookout.
+  - **The ancient bottom is a chance too, and hidden.** Some temples were built over something older (a cave, a ring of standing stones, what guards it). The way in is walled up or under a loose flagstone; a job or a rumour leads you to it, in the spirit of the old ways (`hidden.py`).
+  - **Each people its own temple:**
+    - **Human:** a nave with pews and pillars, a transept with chapels, the altar; maybe a bell tower. Below: the priests' crypt, then old catacombs.
+    - **Elf:** no walls and no roof: glades in the old wood, the living trees as walls, linked by paths of white stone. The great glade holds the moonwell; round it the hall of songs, the healers' grove, the grove of the fallen; the eldest tree has a stair up to a lookout in its crown. Below: the root halls.
+    - **Dwarf:** the hall of the forefathers cut in the rock, ancestors in stone, a forge altar. Below: the tombs of the forefathers.
+    - **Halfling:** a round hearth chapel with a harvest altar, a garden inside a hedge.
+    - **Gnome:** a hollow under the roots, a ring of glowing mushrooms round a crystal.
+    - **Orc:** a palisade ring open to the sky, the ring of blood with the skull pole and blood pit in the middle; the warchief's long hall, the shaman's hut, a trophy hut, a cage of captives, a warg pen. Below: the cave of the war god, cells at the top, a blood altar at the bottom.
+    - **Goblin:** a cave nook with an idol made of junk and heaps of offerings.
+    - **Kobold:** a shrine to shine: a hoard of coins, a polished mirror, candles.
+    - **Gnoll:** a camp on the plain in a hedge of thorn bush, a ring of bone poles round an altar of skulls, a moon stone; hide tents, a feeding pit, a hyena pen. Below: the burrows, down to the bone pit of the bone-caller.
+    - **Lizardfolk:** a stepped mound in the swamp, stairs on four sides, the egg altar on top.
+  - **Friendly or not** by standing, as with towers: how far in you may walk depends on your name with that people.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
