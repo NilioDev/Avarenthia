@@ -350,6 +350,17 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Stairs.** A stair or ladder comes out at the same spot it left from below. The next one up lies elsewhere on that floor; in a stone tower it is a quarter turn further along the wall, like a spiral stair.
   - **Below.** A cellar or dungeon may lie underneath, reached through a hatch.
   - **The top is a lookout.** Standing there marks the land around on the world map, the way the great falls' cairn does. The radius grows with the tower's height: about 10 for a low tower and 14 for a high one, with 4 more on a hill. Fog or rain halves it. At night you see only lights: villages, campfires and ships. In a manned tower, a watch at the top sees you coming from afar and raises the alarm sooner.
+  - **Up high you see it.** Mockup `T_tower_height.png`.
+    - Round the top platform, the ground map below is drawn faded in a blue-grey haze; the higher the tower, the paler.
+    - The tower casts its shadow across the land.
+    - Birds (v) wheel below you, and now and then a wisp of cloud (░) drifts past, using the small animations.
+    - Lower floors show the same through an arrow slit when you stand next to one.
+    - A message line: "The wind tugs at your cloak. The land lies small below."
+    - The land shown is the real map below, so it matches where you walk out again.
+  - **Not every tower is hostile.** Human, elf and dwarf towers are manned by their own people.
+    - Whether you may climb up depends on your standing with that people or its lord. With good standing, the keeper lets you up to the lookout.
+    - Otherwise the guard on the stair turns you away, and forcing your way up is a crime.
+    - The towers of the hostile peoples you fight your way up.
   - **Each people builds its own tower:**
     - **Human:** grey stone, round, with rooms behind doors. On top, battlements and a brazier.
     - **Elf:** white stone in thin lines, built round a living trunk that the stair winds about. The top is open to the stars, with a crown of leaves.
