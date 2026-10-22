@@ -366,7 +366,7 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **What you see below** is always the real level underneath, faded in the haze: through a gap or over an edge you see the ground floor with its rubble.
     - **A true ruin:** only a stump of wall stands, with ivy on it, and rubble and grass inside. The stair ends at a last broken ledge, and the cellar hatch still leads down.
     - **Who lives there:** no people keeps a fallen tower, but bandits, a nesting beast or something in the cellar may.
-    - **Edges and falls:** stepping off an edge first asks, with a warning of how far down it is; you never fall by one careless key. A monster that knocks you back can throw you over the edge, though, and the same works the other way: a shove or a knockback of yours sends a foe over the edge and down. A fall hurts by the number of floors, and you land at the same spot on the level below.
+    - **Edges and falls** (the same for a hole in a floor, as in a goblin tower): stepping off first asks, with a warning of how far down it is; you never fall by one careless key. A monster that knocks you back can throw you over the edge, though, and the same works the other way: a shove or a knockback of yours sends a foe over the edge and down. A fall hurts by the number of floors, and you land at the same spot on the level below.
   - **Each people builds its own tower:**
     - **Human:** grey stone, round, with rooms behind doors. On top, battlements and a brazier.
     - **Elf:** white stone in thin lines, built round a living trunk that the stair winds about. The top is open to the stars, with a crown of leaves.
