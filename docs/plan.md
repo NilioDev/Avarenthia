@@ -14,11 +14,12 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Part 1 built 19 October 2026 (the shared toolkit, status colours, Wild Shape colours, the option; see `docs/built.md`). Left: each school its own hand, the weapon skills' effects |
-| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild. Not built yet |
+| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or an epic from a hidden teacher). Not built yet |
 | **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
-| **Parked** | The bard (docs/parked.md) |
+| **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
+| **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
 **Left of the big build (paused 18 October 2026 after the magic schools, at Nilio's word):** in this order,
@@ -91,6 +92,13 @@ stays as it is.
   - Anyone may join any guild and do its jobs and rise; a master with nothing for your classes says so.
   - Garrote and Smoke Bomb move to the Cunning school; Wild Shape moves to the Nature tree and the Green Moot's elite
     becomes a stronger shape (Elder Bear).
+- **Epic skills from hidden teachers** (approved 22 October 2026, from going through Project Gorgon's skills): a
+  tier above the elites, in the same slot. Key 6 holds one elite or one epic, never both. No guild teaches an epic:
+  a hidden teacher does (a hermit, an old hunter, a witch, a retired master), and you hear of them only through a
+  rumour (`news.py`), never as a sign on the map before you have heard. Each epic has several teachers spread over
+  the world, so no single place or people locks it away. A teacher asks for a deed first (a job of their own) and
+  only teaches a hero far along (class rank about 40). Which epics there are, one or two per class: still open
+  (`docs/open.md`).
 - **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
   gets only its pure rule, no extra elite.
 - **Worked out** (approved 19 October 2026, numbers to be tuned by the balance test): the eight tomes of Cunning and
@@ -107,6 +115,13 @@ stays as it is.
   "Fighting", "Your hero", "Guilds" and "All the keys" change with it. The build report quotes all of it.
 - **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
   parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
+
+## The bestiary grows (approved, not built)
+Approved 22 October 2026 (from going through Project Gorgon's skills). No new skill: the bestiary that exists gets
+deeper. What you know of a creature kind grows each time you kill or skin one. Three steps, each shown in the look
+line (`l`) and on its bestiary page: first its weakness and resistances, then what it carries, then its weak spot
+(a better chance of a critical hit against that kind). Reading about a creature in a library may give the first step.
+Saved per hero: bump `SAVE_VERSION`; the handbook says it in a sentence or two.
 
 ## Spell effects (approved; part 1 built)
 

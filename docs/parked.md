@@ -7,3 +7,9 @@ The jobs that were parked here went back into docs/plan.md as round 4 on 16 Octo
 ### The bard (round 4 of the old plan)
 | **The Lark's Company** (Skell) | bard | new: Song | Inspire (you and your hireling fight better), Dirge (enemies near are weaker), Discord (one enemy confused); no taunt | great inns of the cities; perform for coin, hear more news from further, better prices | none |
 - Two-guild technique: Lark's + Thieves: Silver Tongue (deceive, distract).
+
+### The werewolf's and the vampire's curse (parked 22 October 2026)
+From going through Project Gorgon's skills. A curse that befalls you instead of a skill you choose: bitten, you
+change at full moon by night (`nature.moon`), the folk flee and the Watch attacks; the temple can lift it early, or
+you learn to steer it. Nilio has thought about both himself and wants them much later, when the game stands more.
+Details: project files `gorgon/voorstel.md`.

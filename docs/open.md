@@ -37,9 +37,9 @@ From the thread "Quick wins uit het plan"; items 1-5 were built, these two were 
 - **Five new weapons without skills first:** scimitar, flail, war hammer, cestus and tiger claws, each with its own
   rule. Medium, needs a `SAVE_VERSION` bump. Probably best left to the weapons round now that it comes first.
 
-## Project Gorgon skills
-Nilio wants to go through the skills on https://wiki.projectgorgon.com/wiki/Skills together and see whether
-anything there suits our game (ideas only, never their text or names). Not looked at yet.
+## Epic skills
+Approved 22 October 2026 (`plan.md`, classes): epics from hidden teachers, a tier above the elites on key 6. Still
+open: which epics there are (one or two per class), what each teacher asks first, and how many teachers per world.
 
 ## Multiplayer
 Nilio wants to look into multiplayer later: whether it can work in this game at all, and in what form. Not looked
@@ -49,7 +49,9 @@ at yet.
 - **Northern lights:** still only weather; their gift (what they do for the player) was never settled.
 - **The player as a ruler:** decided no (17 October 2026), but Nilio said he may come back to it.
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
-- **The bard** stays parked (`docs/parked.md`).
+- **The bard** stays parked (`docs/parked.md`), and so do the werewolf's and the vampire's curse.
+- **The tongues of the hostile peoples** (from Project Gorgon's skills, `gorgon/voorstel.md` in the project files):
+  understand their warnings, parley once, overhear a raid that becomes a job. Not discussed yet.
 - **Small bug, not fixed:** the help line in `ui.py` lists only 5 of the life skills.
 
 Settled, no longer open: the visible weather border between regions (thread "Seizoenen in de wereld"; Nilio said
