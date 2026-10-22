@@ -607,12 +607,13 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
 - **The wall** with square towers and a moat; a gate with a tower each side; a lane runs along its inside.
 - **A river** from the world map runs through with quays. A metropolis lies on a broad river.
 - **Bridges** were few and mattered (Nilio, 22 October 2026: "meer dan een stel houten planken"): only the great
-  ways cross the river, other streets end at the quay. Each is a stone deck with a parapet each side and piers with
+  ways and the ring roads cross the river (a metropolis has two or three bridges), and only where they truly cross
+  from bank to bank, never where a street runs along the water; other streets end at the quay. Each is a stone deck with a parapet each side and piers with
   cutwaters in the stream, and has its own kind: the market bridge carries shops and houses on both sides of the
   deck (Ponte Vecchio, old London Bridge); one has statues along its parapets and a gate tower at each end (Charles
   Bridge); the rest stand on broad piers with lamps. Canal bridges are short, with a parapet and a lamp at each end.
-  Wooden planks stay for drawbridges and for small streams in villages.
-- **Every way leads on** (Nilio): the road over a bridge runs on into the town at both ends until it meets a street;
+  Wooden planks stay for drawbridges, harbour jetties (a few long ones, boats moored along them) and small streams in villages.
+- **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
   lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
 - **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
   lamplighters at dusk; hearth glow from the houses; the lanes stay dark.
