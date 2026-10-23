@@ -727,10 +727,24 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
 - **Hidden dungeons** hang under such ruins: no rumour names them, no map shows them, no job asks for them. You find
   the way in only on the spot (a stone you read with the Varnish letters, a well that draws air, a floor that sounds
   hollow, a lever behind a statue). Its own boss and a treasure room, kept modest; unique to each world.
+- **The Varnish get a face of their own** (approved 23 October; not a copy of Rome): iron, stars and measuring. Their
+  black iron is star-iron (as in a Starfall crater): it never rusts and still shines in every ruin. They built to the
+  stars (a city lies round a round sky well) and measured everything in leagues; league stones count down towards a
+  ruin. They buried their dead standing, bound to the stone. This fits what `lore.py` and the stones already say (the
+  Sky-Seat, the winds and the dead bound, the Hollow King, the northern wall of nine legions, the sealed vaults).
+- **Archaeology, a new life skill** (approved 23 October): dig spots on old places, a tile you see once you have the eye
+  for it; the higher your rank, the more spots you see and the less you break; learnt only at places of your own height.
+  It gives three things: (1) fragments of lore for the chronicle, belonging to five old riddles that grow as small
+  chapters in The Old Days with their gaps named (how the Sky-Seat fell, who the Hollow King was, where the orcs came
+  from, what lies in the vaults, why the dead were bound); a riddle made whole is a lead to a unique hidden place, and
+  libraries, stones and rumours stay other ways to that knowledge; (2) pieces of star-iron and old things that a smith
+  mends, a mended piece carrying an old power (Smithing's found powers), so finds stay rare and the smith's work counts;
+  (3) a modest income: collectors and city libraries buy finds and old coins. Its place in the life skills order is
+  still open.
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
-- Still to settle (in `docs/open.md`, "Points of interest"): which more Varnish remains (proposals C2-C13 in `poi/ideeen.md`).
+- Still to settle (in `docs/open.md`, "Points of interest"): which Varnish places (proposal v2, part C of `poi/ideeen.md`).
 
 ## Round 6: livelier settlements (on hold)
 
