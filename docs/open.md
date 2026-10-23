@@ -45,6 +45,11 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Gate bridges over the moat look cramped, above all at 45 degrees on a slanting moat.
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
+## Points of interest
+- Which more Varnish remains join the overgrown cities: aqueduct, the Long Wall, legion camp, amphitheatre, bathhouse,
+  villa with a mosaic, colossus, triumphal arch, necropolis road, sunken harbour, observatory, old coins (project files
+  `poi/ideeen.md`, part C).
+
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.

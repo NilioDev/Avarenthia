@@ -23,6 +23,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
 | **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
+| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -694,6 +695,42 @@ The checker for the mockups is `steden/controle.py` in the project files. The ru
   moves along the wall; if there is no good place, that way has no gate.
 - A bridge crosses the water, it never runs along it: at least 40 degrees off the way the water flows.
 - How a crossing is made: the bridge first, then the straight road over it, then the joins to the street plan.
+
+## Old places on the land (approved 23 October 2026, not built)
+
+More points of interest, so the world looks old and lived in. Approved in the thread on points of interest: "we gaan
+eerst A doen, alle ideeen klinken goed". Details and the full list (also the newer places, part B): project files
+`poi/ideeen.md`. Each place is one world cell with its own play map (as the wonders and oases), and what matters is a
+tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
+`living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
+- **Born from the history.** Each old place comes from an event `history.py` already writes: the battle of 120 years
+  ago lies somewhere as an old battlefield, a plague left a deserted village. The chronicle says why it lies there, a
+  library book can point to it, and the place proves or disproves what you heard.
+- **Old battlefield:** grassy mounds, rusted spear points, a cairn for the fallen. Digging a mound gives rust mostly,
+  very rarely an old weapon with a name from the chronicle. On the battle's day the dead walk the field at night.
+- **Deserted village:** left after a plague, a war or a dragon. Roofless houses, a well, an overgrown field, a burnt
+  chapel; now and then bandits, a hermit or a ghost live there. A plundered village of today that never recovers can
+  become one after a year.
+- **Broken bridge** of the old Empire: piers in the river, the deck gone, a ford beside it. Part of the old ways.
+- **Memorials:** a stone with names (reading it adds a chronicle fact), a fallen statue of an old king with its head
+  beside it, a gallows hill at a crossroads where the Watch hangs its sentences.
+- **Old quarry:** half-cut blocks, a giant statue never finished; sometimes flooded (swim, fish). Stone, now and then a fossil.
+- **Shipwreck:** a hull on the beach or a reef, reached at low tide; searched once, and often the wreckers came first.
+- **Hermitage:** a hermit's hut on a rock or in a wood. The hidden teachers of the epic skills live in such places.
+- **Leper colony:** a hamlet outside a city with a bell; temple jobs bring food there.
+- **Marks of the peoples:** small signs of whose land it was: dwarf boundary stones with runes, elven moonstones along
+  a path, orc skull poles, kobold scratches pointing at something shiny. Read or follow; never a key resource.
+- **Varnish ruins in the wild** (Nilio's addition): old Varnish cities, overgrown by forest, half under the sand in a
+  desert, sunk in a marsh, frozen in the tundra. They have no name and no sign on the world map beforehand; you find
+  them only by walking the land (the zones), and what you saw goes on your map. A city spans several zones: columns
+  between the trees, a forum full of bushes, a gate without a wall, stones with Varnish letters that say its name.
+- **Hidden dungeons** hang under such ruins: no rumour names them, no map shows them, no job asks for them. You find
+  the way in only on the spot (a stone you read with the Varnish letters, a well that draws air, a floor that sounds
+  hollow, a lever behind a statue). Its own boss and a treasure room, kept modest; unique to each world.
+- **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
+  salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
+  prospectors' camp after a Starfall, a lord's hunting lodge.
+- Still to settle (in `docs/open.md`, "Points of interest"): which more Varnish remains (proposals C2-C13 in `poi/ideeen.md`).
 
 ## Round 6: livelier settlements (on hold)
 
