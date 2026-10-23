@@ -46,7 +46,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
 ## Points of interest
-- Feast days after real ones, with our own names (project files `poi/feestdagen.md`): Ruin Night, the Masking, the Lean Month, Greening Day, Blossom Eve, Last Sheaf, the Naming, Lantern Walk, Wanderer's Eve, Hearthnight and more, plus feasts of the realms and the other peoples: which ones.
+- Feast days after real ones, with our own names (project files `poi/feestdagen.md`): Ruin Night, the Masking, the Lean Month, Greening Day, Blossom Eve, Last Sheaf, the Naming, Lantern Walk, Wanderer's Eve, Hearthnight; from the rest of the world First-Footing, the Ship Burning, the Leaping, Colour Day, Wetting Day, the Thirst Month, Lantern River, Moonwatch, Marigold Days, Eight Lamps, Kite and Thunder, Sun Rope, the Rising, Walpurgis Hill; plus feasts of the realms and the other peoples. Each feast only in its own region, people or faith (Nilio): which ones.
 
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
