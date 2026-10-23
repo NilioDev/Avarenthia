@@ -757,7 +757,8 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   sometimes a lead to a hidden place or a piece of a riddle. The book is then a thing in your pack and its story in the
   chronicle; keep it or sell it once, well, to a library. About 12-15 books, each world picks some six, the pages lie
   where they fit. No new key. Stories and titles: project files `poi/varnish-boeken.md` (Letters from the Ninth, The
-  Wind in the Jar, and seven more to write).
+  Wind in the Jar, Twelve, and more to write). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
+  for her bound son; a dealer in the dead; a banned play); the stories may cross (a soldier in one is in another).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
