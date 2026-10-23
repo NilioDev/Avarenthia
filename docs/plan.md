@@ -761,6 +761,16 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   they fit. Stories cross between books, each still whole on its own. No new key. Stories and titles: project files `poi/varnish-boeken.md` (all 27 with their hidden
   pages and what they add to the chronicle or the map). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
   for her bound son; a dealer in the dead; a banned play); the stories may cross (a soldier in one is in another).
+- **The five riddles written** (23 October; project files `poi/raadsels.md`): eight fragments each, some false (a red
+  "Not so" later); a riddle is whole with about six; then the chronicle writes the answer and points to a unique hidden
+  place (the Anchor, the Hollow Throne, the Pits of the East, the Last Vault, the Standing Hall). All five whole give a last
+  paragraph, The Ruin, as it was. The answer, never told outright: the mages made the Hollow King of star-iron, every
+  bound wind and the bound dead; they made the first orcs of the uncounted to feed the work; the last star they pulled
+  down was the Ruin; the vaults hold the names and what they could not destroy.
+- **Where it goes in the build order** (proposal, put in the plan 23 October; Nilio settles the order with the
+  coordinator): part A with the Varnish places, the lore and the books after "Dungeons on their own land" (the hidden
+  dungeons need the new maker); archaeology with the life skills; part B, the places of the peoples, the more and the
+  seasonal places after part A; the feast days with round 6 (they show in the towns).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.

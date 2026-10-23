@@ -74,3 +74,8 @@ Each line: **what** - what to check - what the debug menu should offer.
   date; set or clear your crime record for the year; set your god.
 - **The Masking** - a mask hides who you are (also when wanted). **The Naming** - a ghost's name lays it down. **Thirst
   Month** - oases must take you in. Debug: give a mask; spawn a named ghost; set wanted.
+
+### The five riddles
+- Each riddle in the chronicle with its gaps named; whole at about six of eight fragments; false ones get "Not so" later;
+  the answer and the lead to its hidden place; all five give The Ruin, as it was. Debug: give fragments of a riddle one by
+  one; make a riddle whole; teleport to its hidden place.

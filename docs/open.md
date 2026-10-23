@@ -9,10 +9,6 @@ What `plan.md` says now: weapons (with the weapon skills' effects), then classes
 each), then round 6. Each starts only on Nilio's "ga".
 - **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
   place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
-- **Where do the old places go?** "Old places on the land" (approved 23 October: part A, the Varnish, archaeology,
-  the lore and books, part B, the places of the peoples, seasonal places, feast days) has no place in the order yet.
-  Proposed: part A with the Varnish and the books after "Dungeons on their own land" (the hidden dungeons need the new
-  maker), archaeology with the life skills, the feast days with round 6 (they show in the towns).
 
 ## Multiplayer (parked, not urgent)
 Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
