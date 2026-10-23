@@ -803,7 +803,8 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   Oath Day, the Day of the Fallen, the Fair of Skell) and the peoples (the Tapping and Founders' Quench of the dwarves,
   Starsong, the Long Table, First Frost, Night of Tusks, Swap Day, the Shine, the Hatching).
   - **Wanderer's Eve for the player:** on the night of 5 Longnight, in a heartland town with a temple or shrine of Skell,
-    sleep indoors. In the morning the message line says what was in your boot, from your year since the last one: honest
+    bump the hearth of the inn (or the tavern, or the temple's sleeping hall) and choose "Set your boot by the hearth"
+    (EV.ask; without boots it is a sock); then sleep there that night. Other boots already stand by the hearth those days. In the morning the message line says what was in your boot, from your year since the last one: honest
     (no crime) a small thing, an apple, a few copper, or a rhyme that is a rumour of a place you did not know; devoted to
     Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
     Who does it, the game never says.
