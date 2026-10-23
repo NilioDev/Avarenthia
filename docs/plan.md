@@ -750,6 +750,14 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   find; a whole work sells once and well to a city library, and its last line may point to a hidden place. Dry humour
   is welcome. The empire was not kind: the dirty side (slaves, "the uncounted", the dead bound for debt, conquest)
   shows too, with what people thought of it, for and against, from many mouths (Nilio: "de menselijke kant"). The texts: project files `poi/varnish-lore.md` (more may come).
+- **Books bound from fragments** (approved 23 October): a book is a set of 5-8 fragments spread over the world
+  (letters, sherds, diary pages), each readable on its own. From the second one the chronicle sees they belong together
+  ("2 of 6", the gaps named, never where). With a whole set, a scribe in a city library binds it in order (talk, one
+  option, a few silver and an hour) and finds what only the whole shows: a hidden last page with the end of the story,
+  sometimes a lead to a hidden place or a piece of a riddle. The book is then a thing in your pack and its story in the
+  chronicle; keep it or sell it once, well, to a library. About 12-15 books, each world picks some six, the pages lie
+  where they fit. No new key. Stories and titles: project files `poi/varnish-boeken.md` (Letters from the Ninth, The
+  Wind in the Jar, and seven more to write).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
