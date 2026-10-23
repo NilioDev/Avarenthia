@@ -198,6 +198,7 @@ class DebugScreen(Modal):
                             ('x', 'One level up', self.do(lambda: DBG.level_up(g(), 1))),
                             ('X', 'Five levels up', self.do(lambda: DBG.level_up(g(), 5))),
                             ('n', 'Skill ranks...', self.rank_page),
+                            ('p', 'Rested here: spend tree points', self.do(lambda: DBG.rested(g()))),
                             ('i', 'Give an item...', self.item_page),
                             ('y', 'Identify all you carry', self.do(lambda: g().identify_all()))]),
             ('THE REST', [('j', 'Jobs...', self.job_page),

@@ -2086,7 +2086,7 @@ class SkillsScreen(Modal):
         cv.wrap(x + 54, y + 20, 47, rule or 'Empty hands.', FG, PANEL, 2)
         cv.wrap(x + 54, y + 23, 47, 'Class skills are learned from tomes of your own schools; an elite from a guild '
                 'master. Harder tomes need a higher rank, which grows as you use them.', DIM, PANEL, 4)
-        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 3-6: put it on that key · Del: clear · Esc: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 3-6: put it on that key · Del: clear · Tab: your tree · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         from . import classes as CL
@@ -2095,6 +2095,8 @@ class SkillsScreen(Modal):
         known = self.known()
         if tok == 'esc':
             self.app.pop()
+        elif tok == 'tab':
+            self.app.push(TreeScreen(self.app))
         elif tok in ('up', 'np8'):
             self.sel = max(0, self.sel - 1)
         elif tok in ('down', 'np2'):
@@ -2124,6 +2126,114 @@ class SkillsScreen(Modal):
             CL.tidy(g)
         elif tok in ('delete', 'backspace') and g.map.kind == 'town' and self.slot not in CL.WEAPON:
             p.bar[self.slot] = None
+
+
+class TreeScreen(Modal):
+    """The trees of your classes: three branches of six knots each. Points are spent where you rested."""
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.cls, self.b, self.i = 0, 0, 0
+
+    def line(self):
+        from . import classes as CL
+        c = CL.classes(self.game)
+        return c[min(self.cls, len(c) - 1)] if c else None
+
+    def render(self, cv):
+        from . import classes as CL
+        from . import trees as TT
+        g = self.game
+        x, y = self.box(cv, 108, 30, ' Your classes ')
+        line = self.line()
+        if not line or line not in TT.TREES:
+            cv.wrap(x + 3, y + 3, 100, 'You have no class yet. The first tome of a school you read wakes it, and with it '
+                    'its tree.', DIM, PANEL)
+            cv.text_center(W // 2, y + 29, ' Esc: close ', DIM, PANEL)
+            return
+        col = SK.DISC_COLOR.get(line, FG)
+        xx = x + 3
+        for k, ln in enumerate(CL.classes(g)):
+            on = ln == line
+            c = SK.DISC_COLOR.get(ln, FG)
+            lab = f' {SK.DISCIPLINES[ln]["name"]} '
+            cv.text(xx, y + 1, lab, (20, 16, 12) if on else c, c if on else (34, 28, 22))
+            xx += len(lab) + 1
+        name = CL.title(g)
+        if name:
+            cv.text(xx + 2, y + 1, name, GOLD, PANEL)
+        rank = g.player.disc[line][0]
+        cv.text_right(x + 105, y + 1, f'{SK.DISCIPLINES[line]["name"]} rank {rank}   {TT.earned(g, line)} points   '
+                      f'{TT.free(g, line)} to spend', FG, PANEL)
+        cv.text(x + 3, y + 2, 'You rested here: you can spend points.' if TT.can_rest_spend(g) else
+                'Points are spent where you rest: an inn\'s bed or your camp.', GOOD if TT.can_rest_spend(g) else DIM, PANEL)
+        cw = 34
+        for b, (bname, what, knots) in enumerate(TT.TREES[line]):
+            bx = x + 4 + b * (cw + 1)
+            spent = sum(TT.pts(g, k[0]) for k in knots)
+            cv.text(bx, y + 4, bname.upper(), col if spent else FG, PANEL)
+            cv.text(bx, y + 5, what, DIM, PANEL)
+            cv.text_right(bx + cw - 3, y + 4, f'{spent} spent', DIM, PANEL)
+            for i, k in enumerate(knots):
+                yy = y + 7 + i * 2
+                have = TT.pts(g, k[0])
+                prev_ok = i == 0 or TT.pts(g, knots[i - 1][0]) > 0
+                on = (b, i) == (self.b, self.i)
+                bg = (52, 40, 28) if on else PANEL
+                if on:
+                    cv.fill(bx - 1, yy, cw - 2, 1, ' ', FG, bg)
+                cap = i == 5
+                glyph = ('☼' if cap else '■') if have else ('☼' if cap else '□')
+                cv.put(bx, yy, glyph, col if have else (GOLD if prev_ok else LINE), bg)
+                cv.text(bx + 2, yy, k[1], FG if (have or prev_ok) else DIM, bg)
+                pips = ''.join('•' if n < have else '·' for n in range(k[2]))
+                cv.text_right(bx + cw - 3, yy, pips, col if have else DIM, bg)
+                if i < 5:
+                    cv.put(bx, yy + 1, '│', col if TT.pts(g, knots[i + 1][0]) else LINE, PANEL)
+        k = TT.TREES[line][self.b][2][self.i]
+        have = TT.pts(g, k[0])
+        yy = y + 19
+        for i in range(x + 1, x + 107):
+            cv.put(i, yy, '─', LINE, PANEL)
+        cv.text(x + 3, yy + 1, k[1], col, PANEL)
+        cv.text(x + 4 + len(k[1]), yy + 1, f'{have} of {k[2]}', DIM, PANEL)
+        n = cv.wrap(x + 3, yy + 2, 72, TT.text(k, have), FG, PANEL, 3)
+        if 0 < have < k[2]:
+            n += cv.wrap(x + 3, yy + 2 + n, 72, 'Next point: ' + TT.text(k, have + 1), GOLD, PANEL, 2)
+        why = TT.opens(g, k[0])
+        if why and have < k[2]:
+            n += cv.wrap(x + 3, yy + 2 + n, 72, why, DIM, PANEL, 2)
+        knots = TT.TREES[line][self.b][2]
+        nxt = f'Leads to {knots[self.i + 1][1]}.' if self.i < 5 else 'The last knot of its branch.'
+        cv.wrap(x + 3, yy + 2 + n, 72, nxt, DIM, PANEL, 1)
+        cv.text(x + 78, yy + 1, 'Unlearning', DIM, PANEL)
+        cv.wrap(x + 78, yy + 2, 27, f'A temple takes all points back for {fmt(TT.RESPEC)} a point.', DIM, PANEL, 3)
+        cv.text_center(W // 2, y + 29, ' arrows: choose · Enter: spend a point · Tab: other class · Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        from . import classes as CL
+        from . import trees as TT
+        g = self.game
+        if tok == 'esc':
+            self.app.pop()
+        elif tok == 'tab':
+            self.cls = (self.cls + 1) % max(1, len(CL.classes(g)))
+        elif tok in ('left', 'np4'):
+            self.b = (self.b - 1) % 3
+        elif tok in ('right', 'np6'):
+            self.b = (self.b + 1) % 3
+        elif tok in ('up', 'np8'):
+            self.i = max(0, self.i - 1)
+        elif tok in ('down', 'np2'):
+            self.i = min(5, self.i + 1)
+        elif tok in ('enter', 'np_enter') and self.line() in TT.TREES:
+            k = TT.TREES[self.line()][self.b][2][self.i]
+            why = TT.spend(g, k[0])
+            g.log_mark = len(g.log)
+            if why:
+                g.msg(why, 'bad')
+            else:
+                g.msg(f'{k[1]}: {TT.text(k, TT.pts(g, k[0]))}', 'gold')
 
 
 class ShopScreen(Modal):
@@ -4371,7 +4481,7 @@ class TempleScreen(Modal):
         s = g.stats()
         GD = self.GD
         gd = GD.GODS[self.god]
-        x, y = self.box(cv, 72, 24, f' {self.name} ')
+        x, y = self.box(cv, 72, 27, f' {self.name} ')
         cv.text(x + 3, y + 1, f"A temple of {gd['name']}, {gd['title']}", gd['fg'], PANEL)
         cv.text(x + 3, y + 2, f"{gd['domain'].capitalize()}.", DIM, PANEL, maxw=66)
         cv.text(x + 3, y + 3, f"Pleased by {gd['likes']}.", DIM, PANEL, maxw=66)
@@ -4394,17 +4504,21 @@ class TempleScreen(Modal):
         if mc:
             fee = MC.raise_fee(g, mc)
             rows.append(('g', f'Raise {mc.name} from the dead', fmt(fee), p.gold >= fee and not no))
+        from . import trees as TT
+        tc = TT.unlearn_cost(g)
+        if tc:
+            rows.append(('h', 'Take back my tree points', fmt(tc), p.gold >= tc and not no))
         for i, (k, a, b, ok) in enumerate(rows):
             yy = y + 8 + i * 2
             cv.text(x + 3, yy, k, GOLD if ok else DIM, PANEL)
             cv.text(x + 5, yy, a, FG if ok else DIM, PANEL)
             cv.text_right(x + 68, yy, b, GOLD if ok else DIM, PANEL)
         if g.here is not None and not no:
-            cv.text(x + 3, y + 21, 'w', GOLD, PANEL)
-            cv.text(x + 5, y + 21, 'Ask if the temple has work for you', FG, PANEL)
-        cv.text(x + 3, y + 22, f'Your purse: {fmt(p.gold)}', DIM, PANEL)
-        cv.text_right(x + 68, y + 22, GD.standing(g), GD.GODS[mine]['fg'] if mine else DIM, PANEL)
-        cv.text_center(W // 2, y + 23, ' letter: choose · Esc: leave ', DIM, PANEL)
+            cv.text(x + 3, y + 24, 'w', GOLD, PANEL)
+            cv.text(x + 5, y + 24, 'Ask if the temple has work for you', FG, PANEL)
+        cv.text(x + 3, y + 25, f'Your purse: {fmt(p.gold)}', DIM, PANEL)
+        cv.text_right(x + 68, y + 25, GD.standing(g), GD.GODS[mine]['fg'] if mine else DIM, PANEL)
+        cv.text_center(W // 2, y + 26, ' letter: choose · Esc: leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         g = self.game
@@ -4414,7 +4528,7 @@ class TempleScreen(Modal):
         if tok == 'esc':
             self.app.pop()
             return
-        if self.refused and tok in 'abcdefgw':
+        if self.refused and tok in 'abcdefghw':
             self.said = '"You heard me. Out."'
             return
         if tok == 'w' and g.here is not None:
@@ -4456,6 +4570,12 @@ class TempleScreen(Modal):
                     self.said = f'"Rise." Breath shudders back into {mc.name}.'
                 else:
                     self.said = f'"The prayers for the dead are long, and the candles are dear. {fmt(MC.raise_fee(g))}."'
+        elif tok == 'h':
+            from . import trees as TT
+            if TT.unlearn_cost(g) and TT.unlearn(g):
+                self.said = '"Let it go, all of it. Begin again." You feel lighter, and emptier.'
+            elif TT.unlearn_cost(g):
+                self.said = f'"Forgetting is a long rite, child. {fmt(TT.unlearn_cost(g))}."'
         elif tok == 'e':
             if GD.offering(g, 100):
                 self.said = ('"Bless you." The coins ring in the offering bowl.' if getattr(p, 'god', None) == self.god

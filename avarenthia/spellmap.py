@@ -104,7 +104,7 @@ def tick(game):
             o = m.mon_at(*xy)
             if o is not None and not o.is_npc:
                 on_tile(game, o, tile, power)
-            if tile == D.BURNING and xy == (p.x, p.y):
+            if tile == D.BURNING and xy == (p.x, p.y) and not _walk_in_fire(game):
                 game.msg('You stand in fire!', 'bad')
                 game.hurt(max(2, power), 'burning ground', 'fire')
                 if game.dead:
@@ -118,6 +118,11 @@ def tick(game):
             if fd[1] <= 0:
                 clear(m, xy)
     tempest(game)
+
+
+def _walk_in_fire(game):
+    from . import trees as TT
+    return TT.walk_in_fire(game)
 
 
 def on_tile(game, o, tile, power):
@@ -263,6 +268,8 @@ def use_corpses(game, n, r=7):
         return None
     for c in cs[:n]:
         game.map.slain.remove(c)
+    from . import trees as TT
+    TT.marrow(game, n)
     return cs[:n]
 
 

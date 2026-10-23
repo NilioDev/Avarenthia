@@ -332,6 +332,13 @@ def level_up(game, n=1):
     game.msg(f'Debug: level {p.lvl}.', 'info')
 
 
+def rested(game):
+    """As if you had slept here: tree points may be spent until you move."""
+    from . import trees as TT
+    TT.rested(game)
+    game.msg('Debug: you count as rested here.', 'info')
+
+
 def skill_lines():
     """Every rank you can set: the disciplines and the life skills, as (key, name, kind)."""
     from . import skills as SK

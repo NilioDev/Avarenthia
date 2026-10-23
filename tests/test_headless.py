@@ -4143,7 +4143,7 @@ def classes():
     from avarenthia.entities import make_monster, make_gear
     from avarenthia.worldgen import free_around
     print('== classes')
-    assert len(CL.PAIRS) == 55 and CL.pair_name('nature', 'beastcraft') == 'Wildkin' and len(WS.KIT) == 29
+    assert len(CL.PAIRS) == 55 and CL.pair_name('nature', 'beastcraft') == 'Wildkin' and len(WS.KIT) == 29 + len(WS.SHAPE_KITS)
     assert all(a in SK.SKILLS and b in SK.SKILLS for a, b in WS.KIT.values())
     assert not any(SK.DISCIPLINES[s.line]['kind'] == 'weapon' for s in SK.SKILL_LIST), 'no weapon tomes any more'
     assert 'fire_arrow' not in SK.SKILLS, 'Burning Arrow goes'
@@ -4168,7 +4168,7 @@ def classes():
         return out
     # every weapon kind: both skills work, the second only from rank 10
     used = 0
-    for fam, (a, b) in WS.KIT.items():
+    for fam, (a, b) in [kv for kv in WS.KIT.items() if kv[0] not in WS.SHAPE_KITS]:
         p.eq, p.inv = {}, []
         if fam != 'fists':
             it = make_gear(g, fam, 'normal', 5)
@@ -4242,6 +4242,134 @@ def classes():
     app.render()
     app.key('esc')
     print('classes ok:', used, 'weapon skills used,', len(set(fx)), 'kinds of effect')
+
+
+def trees():
+    """Classes part 2: a tree per class, three branches of six; a point per five ranks, spent only where you rested,
+    in order down a branch; each school's blade branch opens with its imbue; Nature's shapes put teeth and claws on
+    keys 1-2; a temple takes the points back for coin; every knot of every tree in a fight without an error."""
+    from avarenthia import skills as SK, classes as CL, trees as TT, weaponskills as WS, anim as AN
+    from avarenthia.entities import make_monster, make_gear
+    from avarenthia.worldgen import free_around
+    print('== trees')
+    assert len(TT.KNOTS) == 9 * 18 and len(TT.IMBUES) == 8
+    app = new_app('soft', seed=9)
+    g, p = app.game, app.game.player
+    p.lvl, p.str, p.dex, p.vit, p.ene = 30, 150, 150, 300, 150
+    p.classes = ['fire', 'nature']
+    p.disc['fire'][0], p.disc['nature'][0] = 40, 30
+    assert TT.earned(g, 'fire') == 8 and TT.free(g, 'nature') == 6
+    assert TT.spend(g, 'kindled_mind'), 'only where you rested'
+    TT.rested(g)
+    assert TT.spend(g, 'quick_spark'), 'in order down a branch'
+    for kid in ('kindled_mind', 'kindled_mind', 'kindled_mind', 'quick_spark', 'thrifty_flame', 'thrifty_flame',
+                'flameblade', 'heart_of_fire'):
+        why = TT.spend(g, kid)
+        if kid == 'heart_of_fire':
+            assert why, 'Heart of Fire waits for the knots above it'
+        else:
+            assert why is None, (kid, why)
+    assert TT.spend(g, 'kindled_mind') and TT.free(g, 'fire') == 1
+    fb, fball = TT.tuned(g, SK.SKILLS['firebolt']), TT.tuned(g, SK.SKILLS['fireball'])
+    assert abs(fb.tmul - 1.15) < 1e-9 and fball.cost < SK.SKILLS['fireball'].cost
+    assert TT.tuned(g, SK.SKILLS['searing_brand']).cd == SK.SKILLS['searing_brand'].cd - 1
+    # the screen: arrows and Enter spend a point
+    app.screens = [ui.GameScreen(app), ui.TreeScreen(app)]
+    app.render()
+    assert 'PYROMANCER' in app.cv.dump() and 'Kindled Mind' in app.cv.dump()
+    app.key('right')
+    app.key('down')
+    app.key('enter')
+    assert TT.pts(g, 'hot_steel') == 1
+    app.key('tab')
+    app.render()
+    assert 'SHAPESHIFTER' in app.cv.dump()
+    app.key('esc')
+    # Flameblade: a fire spell sets your weapon burning; while it burns no mana comes back
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    m = g.map
+
+    def foes(n=3, k='goblin'):
+        m.mons = [o for o in m.mons if o.is_npc]
+        out = []
+        for c in [c for c in free_around(g, m, p.x, p.y, 2) if c != (p.x, p.y) and not g.occupied(m, *c)][:n]:
+            o = make_monster(g, k, *c, 4)
+            o.hp = o.maxhp = 2000
+            o.awake = True
+            m.mons.append(o)
+            out.append(o)
+        g.compute_fov()
+        return out
+    sw = make_gear(g, 'longsword', 'normal', 5)
+    p.inv = []
+    g.add_to_inv(sw)
+    p.eq = {'weapon': sw.id}
+    p.known = ['firebolt']
+    p.bar = [None, None, 'firebolt', None, None, None]
+    o = foes(1)[0]
+    p.mana, p.cooldowns = 999, {}
+    p.fire_free = True
+    assert SK.cost_of(g, SK.SKILLS['firebolt']) > 0, 'Heart of Fire has no point yet'
+    assert SK.use(g, 2) and TT.imbue(g) == ('flameblade', 'burn') and TT.mana_held(g)
+    burned = 0
+    for _ in range(30):
+        o.effects.pop('burn', None)
+        g.melee(o)
+        burned += 'burn' in o.effects
+    assert burned, 'about one blow in three sets the foe alight'
+    # the shapes: a knot teaches Wolf Shape; as a wolf keys 1-2 bite and lunge, keys 3-6 rest until Untamed
+    TT.rested(g)
+    t = TT.tree(g)
+    t['nature'] = {'wolf_shape': 1}
+    p.known = []
+    t['nature'] = {}
+    TT.rested(g)
+    assert TT.spend(g, 'wolf_shape') is None and 'wolf_shape' in p.known
+    p.bar = [None, None, 'firebolt', 'wolf_shape', None, None]
+    p.cooldowns = {}
+    p.stamina = 999
+    assert SK.use(g, 3) and AN.shape_of(p) == 'wolf' and CL.slot_skill(g, 0) == 'bite' and CL.slot_skill(g, 1) == 'wolf_lunge'
+    foes(2)
+    assert SK.use(g, 0), g.log[-1:]
+    assert not SK.use(g, 2), 'keys 3-6 rest in a shape'
+    t['nature'].update({k[0]: k[2] for k in TT.TREES['nature'][2][2]})
+    assert SK.use(g, 2) or p.cooldowns.get('firebolt') is not None
+    # the temple takes it all back, and the shapes a knot taught go with it
+    cost = TT.unlearn_cost(g)
+    p.gold = cost
+    assert cost and TT.unlearn(g) and not TT.tree(g) and 'wolf_shape' not in p.known and p.gold == 0
+    # every knot of every tree, full, in a fight: casting each of the school's skills and striking with the weapon
+    blows = 0
+    for line, brs in TT.TREES.items():
+        p.classes = [line]
+        p.tree = {line: {k[0]: k[2] for _n, _w, ks in brs for k in ks}}
+        p.disc[line][0] = 70
+        p.known = [s.id for s in SK.SKILL_LIST if s.line == line] + [k[4] for _n, _w, ks in brs for k in ks if k[3] == 'teach']
+        g.clamp_vitals()
+        for sid in p.known:
+            sk = SK.SKILLS[sid]
+            if sk.mode in ('tame', 'rite', 'tomb') or sk.need_beast:
+                continue
+            foes(3, 'skeleton' if line == 'restoration' else 'goblin')
+            p.bar[2] = sid
+            p.mana = p.stamina = 9999
+            p.life = g.stats()['max_life']
+            p.cooldowns = {}
+            p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]
+            SK.use(g, 2)
+            for o in [o for o in m.mons if not o.is_npc][:1]:
+                for _ in range(6):
+                    if o in m.mons:
+                        g.melee(o)
+                        blows += 1
+            g.end_turn(1)
+            if g.dead:
+                break
+        assert not g.dead, line
+        p.life = g.stats()['max_life']
+        g.hurt(5, 'a test', 'lightning')
+    app.render()
+    print('trees ok:', len(TT.KNOTS), 'knots,', blows, 'blows struck with full trees')
 
 
 def visible():
@@ -4678,7 +4806,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

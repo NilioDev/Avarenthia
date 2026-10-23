@@ -205,6 +205,7 @@ def ch_hero(g):
 
 def ch_who(g):
     from . import classes as CL
+    from . import trees as TT
     from . import weaponskills as WS
     pure = [f'{CL.school(k) if k in SK.DISCIPLINES else k.title()}: {n}' for k, n in CL.PURE.items()
             if k in CL.CLASS_LINES]
@@ -223,6 +224,21 @@ def ch_who(g):
               'your own, a Paladin, a Lich or a Wildkin among fifty-five. There is no third. Who never takes a second '
               'stays pure:'),
         ('l', pure),
+        ('h', 'Your tree'),
+        ('p', f'Each class has a tree of three branches, six knots in each. Every {TT.EVERY} ranks in a school give '
+              'you one point for its tree. A knot opens once the one above it has a point; some take two or three, '
+              'and the last of each branch, the sign {☼|255,214,90}, is the strongest. They change how your skills '
+              'work, and never add one to your bar, but for the shapes of Nature. You cannot have everything.'),
+        ('p', 'Points are spent only where you rested, an inn\'s bed or your camp, before you walk on: open the skills '
+              'with [z], then [Tab]. A temple takes all your points back, for coin, and you may spend them anew.'),
+        ('p', 'Every school of magic has one branch for your weapon. Its first knot is the imbue: cast a spell of '
+              'the school, and your weapon carries it for ten turns, about one blow in three: Flameblade burns, '
+              'Rimeblade slows, Stormblade throws sparks, Dawnblade heals you, Duskblade steals life, Graveblade raises '
+              'the slain, Thornblade roots, and with Hunter\'s Call your beast leaps in. While it lasts, no mana comes '
+              'back.'),
+        ('p', 'The Shapeshifter branch of Nature teaches Wolf Shape, Bear Shape and Hawk Shape. In a beast\'s shape '
+              '[1] and [2] are its teeth and claws, and [3] to [6] rest unless you are Untamed; the key of the shape '
+              'lets it go.'),
         ('h', 'The bar'),
         ('p', 'Six keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take up '
               'another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [5] are three skills '
@@ -281,7 +297,7 @@ def ch_towns(g):
         ('r', [('Innkeeper', 'a bed for the night, a meal, jobs, and gossip'),
                ('Trader', 'buys and sells goods; prices differ from town to town'),
                ('Outfitter', 'weapons and armour; names magic items and mends worn gear'),
-               ('Temple', 'heals, lifts curses, raises the fallen, for a fee'),
+               ('Temple', 'heals, lifts curses, raises the fallen, takes back tree points, for a fee'),
                ('Stablemaster', 'mules and carts, to carry more'),
                ('Castellan', 'in strongholds only: war jobs'),
                ('Factor', "of the Merchants' Guild: prices, and trade work"),

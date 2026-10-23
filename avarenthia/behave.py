@@ -128,6 +128,9 @@ def give(game, k, turns, text=None):
     if k in HELPLESS and (st.get('steady', 0) > 0 or any(st.get(h, 0) > 0 for h in HELPLESS)):
         return False
     if k in HELPLESS:
+        from . import trees as TT
+        if TT.no_stun(game):                         # Bulwark: a shield in hand keeps you on your feet
+            return False
         turns = min(turns, 2)
     if k == 'diseased' and any(b[0] == 'hale' for b in game.player.buffs) and random.random() < .5:
         return False                                 # wild garlic bread and fever tea: hale and hearty

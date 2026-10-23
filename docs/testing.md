@@ -11,6 +11,8 @@ Each line: **what** - what to check - what the debug menu should offer.
   tome of any school (Give item).
 - **Second class** - at rank 20 a tome of another school asks; the pair name shows beside SKILLS. Debug: set the
   rank of your class to 20 (Ranks), give a tome of another school.
+- **Trees** - points per 5 ranks, spending only where you rested, every knot, the imbues, the shapes, the temple
+  taking points back. Debug: set the school's rank (Ranks), "Rested here", give coin.
 - **Weapon skills** - every weapon kind's two skills on keys 1-2, the second at rank 10, with their effects. Debug:
   give the weapon, set its discipline to 10.
 

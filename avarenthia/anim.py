@@ -493,7 +493,8 @@ def _swing(kw, age):
 
 # ------------------------------------------------------------------ how a creature looks under a spell
 BURN_COL, POISON_COL, ICE_BG = (255, 150, 50), (130, 230, 110), (54, 86, 112)
-SHAPES = {'bear': ((214, 140, 76), (62, 38, 22)), 'wolf': ((236, 236, 240), (66, 76, 90))}
+SHAPES = {'bear': ((214, 140, 76), (62, 38, 22)), 'wolf': ((236, 236, 240), (66, 76, 90)),
+          'hawk': ((230, 200, 140), (48, 58, 80))}
 
 
 def status_look(fg, bg, t, x, y, burn=False, poison=False, frozen=False, weak=False):

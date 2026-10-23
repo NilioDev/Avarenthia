@@ -232,6 +232,8 @@ def beast_stats(game, mc, lvl):
         s['max_hp'] = round(s['max_hp'] * .75)
     if mc.hungry:
         s['dmg'] = (max(1, round(s['dmg'][0] * .85)), max(1, round(s['dmg'][1] * .85)))
+    from . import trees as TT
+    TT.beast_stats(game, s)
     return s
 
 
@@ -725,6 +727,9 @@ def strike(game, mc, b, mon, s, ranged=False):
     wear(game, mc, 'weapon', .15)
     add_threat(mon, mc.who, dmg * (1.6 if mc.kind == 'defender' else 1))
     mon.awake = True
+    if mc.kind == 'beast':
+        from . import trees as TT
+        TT.beast_struck(game, mon)
     if mon.hp - dmg <= 0:
         game.msg(f'{mc.name} kills {mon.the()}.', 'good')
         mon.hp = 0
@@ -925,6 +930,8 @@ def thrall(game, k, x, y, turns, name=None, lvl=None):
     o.ally, o.awake, o.thrall, o.thrall_k = True, True, turns, k
     game.map.mons.append(o)
     game.__dict__.setdefault('thralls', []).append(o)
+    from . import trees as TT
+    TT.thrall_made(game, o)
     return o
 
 

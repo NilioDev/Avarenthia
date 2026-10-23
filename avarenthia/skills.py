@@ -301,10 +301,15 @@ STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None]
 
 def pool(sk):
     """What a skill costs: 'stamina' for the weapon skills and Warcraft, 'mana' for spells."""
+    if sk.weapon_skill:
+        return 'stamina'
     return 'stamina' if DISCIPLINES[sk.line]['kind'] in ('weapon', 'martial') else 'mana'
 
 
 def cost_of(game, sk):
+    from . import trees as TT
+    if TT.free_cast(game, sk):
+        return 0
     gnome = getattr(game.player, 'race', '') == 'gnome' and pool(sk) == 'mana'
     c = sk.cost * (.85 if gnome else 1)
     if pool(sk) == 'mana':
@@ -608,7 +613,16 @@ def use(game, slot):
             game.msg('That skill slot is empty. Skills are learned from tomes; choose them in a town with Z.' if p.known else
                      'You know no skills yet. Skill tomes are found on monsters, in ruins and with traders.')
         return 0
+    from . import trees as TT
     sk = SKILLS[sid]
+    if slot not in CL.WEAPON and TT.shape_keys_locked(game):
+        if sk.mode == 'shape':                      # the shape's own key lets it go
+            p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]
+            game.msg('You let the beast go and stand up as yourself again.', 'good')
+            return 1
+        game.msg('In the shape of a beast you have only your teeth and claws: keys 1 and 2.')
+        return 0
+    sk = TT.tuned(game, sk)
     m = game.map
     if p.cooldowns.get(sid, 0) > 0:
         game.msg(f'{sk.name} is recharging ({p.cooldowns[sid]} turns).')
@@ -663,12 +677,14 @@ def use(game, slot):
     if pool(sk) == 'mana':
         p.buffs = [b for b in p.buffs if b[0] != 'focus']   # Focus is spent on one spell
     price = sk.life_cost + (round(p.life * sk.life_frac) if sk.life_frac else 0)
+    if price and TT.free_life(game):
+        price = 0
     if price:
         p.life = max(1, p.life - price)
         game.num(p.x, p.y, f'-{price}', (200, 40, 60))
         game.msg(f'{sk.name} takes its price in life.' if sk.line != 'shadow' else 'Morrak takes his price in life.', 'bad')
     if sk.heal and sk.mode not in ('self',):
-        game.heal(round(sk.heal[0] + sk.heal[1] * r), show=True)
+        game.heal(round((sk.heal[0] + sk.heal[1] * r) * TT.heal_mult(game)), show=True)
     if sk.fury:
         from . import mercs as MC
         bst = MC.with_you(game, 'beast')
@@ -681,6 +697,7 @@ def use(game, slot):
     if kind == 'mana' or sk.both:
         p.mana -= cost
     p.cooldowns[sid] = sk.cd
+    TT.on_cast(game, sk)
     gain(game, sk.line, 3)
     if getattr(sk, 'quick', False):                 # half a turn: every second one costs none
         p.quick = not getattr(p, 'quick', False)
@@ -749,12 +766,16 @@ def _hit(game, mon, sk, r, ranged=False):
             from . import spellmap as SM
             if SM.wet(game, mon):
                 dmg *= 1.25                                                # water carries the arc
+        from . import trees as TT
+        dmg *= TT.spell_mult(game, sk, mon)
         before = mon.hp
         dead = game.damage_mon(mon, dmg, crit, col=sk.color, elem=LINE_ELEM.get(sk.line))
         game._area = False
         dealt = before - max(0, mon.hp)
         if sk.drain:
-            game.heal(round(dealt * sk.drain))
+            got = round(dealt * sk.drain * TT.drain_mult(game, mon))
+            game.heal(got)
+            TT.stolen(game, got)
             if dealt > 0:
                 p = game.player
                 path = game.cells_between((mon.x, mon.y), (p.x, p.y))[:-1]
@@ -766,6 +787,9 @@ def _hit(game, mon, sk, r, ranged=False):
         apply_fx(game, mon, sk, r)
         if not sk.weapon_skill and sk.dtype != 'none':
             WS.class_hit(game, mon, sk)
+        if not sk.weapon_skill:
+            from . import trees as TT
+            TT.after_spell_hit(game, mon, sk)
     return dead
 
 
@@ -868,7 +892,7 @@ def x_bash(game, sk, r):
         game.wear('shield', .3)
         game.flash([(t.x, t.y)], (200, 200, 205), ']', .14)
         from . import weaponskills as WS
-        WS.push(game, t, 1)
+        WS.push(game, t, 1 + getattr(sk, 'push_more', 0))
     _hit(game, t, sk, r)                            # Push Back pushes after its blow (sk.push)
     return True
 
@@ -932,6 +956,8 @@ def x_bolt(game, sk, r, ranged=False):
             _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
         if _hit(game, t, sk, r, ranged):
             break
+    from . import trees as TT
+    TT.second_shard(game, sk, t, r)
     if not ranged and not sk.splash:
         _burst(game, sk, tx, ty, 0, late)
     if sk.splash:
@@ -1081,10 +1107,11 @@ def x_self(game, sk, r):
     p = game.player
     did = False
     if sk.heal:
-        amt = round((sk.heal[0] + sk.heal[1] * r) * (_nat(game) if sk.line == 'nature' else 1))
+        from . import trees as TT
+        amt = round((sk.heal[0] + sk.heal[1] * r) * (_nat(game) if sk.line == 'nature' else 1) * TT.heal_mult(game))
         game.heal(amt, show=True)
         did = True
-        if sk.party:
+        if sk.party or TT.has(game, 'shared_light'):
             from . import mercs as MC
             for mc in MC.party(game):
                 mx = MC.stats(game, mc)['max_hp']
@@ -1174,6 +1201,8 @@ def x_summon(game, sk, r):
             return False
         for c in cs[:n]:
             m.slain.remove(c)
+        from . import trees as TT
+        TT.marrow(game, len(cs[:n]))
         spots = [(c[1], c[2]) for c in cs[:n]]
     else:
         spots = [c for c in free_around(game, m, p.x, p.y, 2) if c != (p.x, p.y)]
@@ -1213,6 +1242,8 @@ def x_raise(game, sk, r):
         game.msg('There is no fallen enemy near you to raise.')
         return False
     m.slain.remove(spot)
+    from . import trees as TT
+    TT.marrow(game, 1)
     k, x, y, lvl = spot[:4]
     o = MC.thrall(game, k, x, y, 20 + r // 2, 'Risen ' + _D.MONSTERS[k]['name'], lvl)
     o.fg = (190, 200, 170)
@@ -1230,6 +1261,8 @@ def x_burst(game, sk, r):
         return False
     c = slain[0]
     m.slain.remove(c)
+    from . import trees as TT
+    TT.marrow(game, 1)
     tx, ty = c[1], c[2]
     cells = [(tx, ty)]
     for rr in range(1, sk.radius + 1):
@@ -1256,7 +1289,8 @@ def x_tame(game, sk, r):
                  'That one will never be tamed.')
         return False
     o = min(beasts, key=lambda o: o.hp / max(1, o.maxhp))
-    chance = .15 + r / 120 + (1 - o.hp / max(1, o.maxhp)) * .5
+    from . import trees as TT
+    chance = .15 + r / 120 + (1 - o.hp / max(1, o.maxhp)) * .5 + TT.tame_bonus(game)
     game.flash([(o.x, o.y)], sk.color, sk.glyph, .3)
     if random.random() >= chance:
         o.awake = True
@@ -1285,7 +1319,8 @@ def x_shape(game, sk, r):
     p.buffs += [['dmg', dp + r // 4, t, f'{nm.capitalize()} shape'], ['dr', dr_, t, f'{nm.capitalize()} shape']]
     game.flash(ring_cells(p.x, p.y, 1), sk.color, sk.glyph, .25)
     game.msg({'bear': 'Your body thickens and your hands turn to claws: you are a bear.',
-              'wolf': 'You drop to all fours, grey and lean: you are a wolf, and you hunt.'}.get(nm, f'You become a {nm}.'), 'good')
+              'wolf': 'You drop to all fours, grey and lean: you are a wolf, and you hunt.',
+              'hawk': 'Feathers, wind, and the ground falls away: you are a hawk, and you see far.'}.get(nm, f'You become a {nm}.'), 'good')
     return True
 
 
@@ -1308,7 +1343,7 @@ def x_wall(game, sk, r):
     px_, py_ = -sy, sx                                 # across the way
     n = 3 + (1 if r >= 30 else 0) + (1 if r >= 60 else 0)
     cells = [(cx + px_ * k, cy + py_ * k) for k in range(-(n // 2), n - n // 2)]
-    placed = [c for c in cells if SM.place(game, m, c[0], c[1], _D.ICEWALL, 14 + r // 5)]
+    placed = [c for c in cells if SM.place(game, m, c[0], c[1], _D.ICEWALL, round((14 + r // 5) * getattr(sk, 'tdur', 1)))]
     if not placed:
         game.msg('There is no room for a wall there.')
         return False
@@ -1329,7 +1364,7 @@ def x_gust(game, sk, r):
     if not t:
         game.msg('No enemies in range.')
         return True
-    push = 2 + (1 if r >= 40 else 0)
+    push = 2 + (1 if r >= 40 else 0) + getattr(sk, 'push_more', 0)
     for o in t:
         sx, sy = _dir((p.x, p.y), (o.x, o.y))
         for _ in range(push):
@@ -1436,7 +1471,7 @@ def x_prison(game, sk, r):
     if not t:
         game.miss_target('No target in sight.')
         return False
-    turns = 5 + r // 15
+    turns = round((5 + r // 15) * getattr(sk, 'tdur', 1))
     placed = [c for c in ring_cells(t.x, t.y, 1) if SM.place(game, m, c[0], c[1], _D.BONEWALL, turns)]
     t.hold = max(t.hold, turns - 1)
     t.awake = True
@@ -1452,9 +1487,16 @@ def x_army(game, sk, r):
     m = game.map
     k, n, t = sk.summon
     cs = [c for c in SM.corpses(game, sk.radius) if not game.occupied(m, c[1], c[2])][:n + r // 25]
+    from . import trees as TT
+    if not cs and TT.has(game, 'army_unbound'):        # out of bare ground
+        p = game.player
+        cs = [('skeleton', x, y, p.lvl) for x, y in free_around(game, m, p.x, p.y, 2) if (x, y) != (p.x, p.y)
+              and not game.occupied(m, x, y)][:3]
+        m.__dict__.setdefault('slain', []).extend(cs)
     if not cs:
         game.msg('There is no corpse near you.')
         return False
+    TT.marrow(game, len(cs))
     for c in cs:
         m.slain.remove(c)
         o = MC.thrall(game, k, c[1], c[2], t + r // 2, 'Risen Skeleton')

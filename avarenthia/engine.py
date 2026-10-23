@@ -55,6 +55,7 @@ from . import weapons as WP
 from . import bestiary as BE
 from . import weaponskills as WS
 from . import classes as CL
+from . import trees as TT
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -63,7 +64,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 34
+SAVE_VERSION = 35
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -420,12 +421,13 @@ class Game:
         buff_dmg -= BH.dmg_malus(self)
         buff_dmg += GU.unarmoured(self)
         GD.apply(self, s)
+        TT.stats(self, s)
         s['dr'] = min(60, s['dr'] + gear_dr)
         if getattr(p, 'race', '') == 'dwarf':
             s['res_poison'] += 20                    # dwarves shrug off venom
         for r in ('res_fire', 'res_cold', 'res_light', 'res_poison'):
             s[r] = min(D.RES_CAP, s[r] + s['res_all'])
-        s['max_life'] = int(20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life'])
+        s['max_life'] = int((20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life']) * TT.life_mult(self))
         if s.get('frail'):
             s['max_life'] = max(5, round(s['max_life'] * (1 - s['frail'] / 100)))
         if getattr(p, 'toll', 0):                    # what Morrak has taken
@@ -1527,6 +1529,7 @@ class Game:
         p.life, p.mana, p.stamina, p.poison = s['max_life'], s['max_mana'], s['max_stamina'], None
         self.end_turn(D.DAY_LEN // 3, True)
         p.buffs = [b for b in p.buffs if b[0] != 'regen'] + [['regen', 2, D.DAY_LEN, 'Well rested']]
+        TT.rested(self)
         self.msg((line or 'A bowl of stew, a mug of ale, a straw bed. You wake rested and full.') + ' (Well rested)', 'good')
 
     def eat_best(self):
@@ -1764,7 +1767,8 @@ class Game:
         p = self.player
         if weapon:
             self.wear('weapon', .2)
-            dmg *= WP.armour_mult(self, mon, weapon, ranged, sunder)
+            dmg *= WP.armour_mult(self, mon, weapon, ranged, sunder) * TT.weapon_mult(self, mon)
+            mon.you_hit = self.turn
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
         if getattr(mon, 'lurk', False):          # struck where it hid: it shows itself
@@ -1800,8 +1804,14 @@ class Game:
                 p.life = min(s['max_life'], p.life + max(1, round(dmg * s['leech'] / 100)))
         if mon.hp <= 0:
             self.kill(mon)
+            if weapon:
+                TT.on_weapon_hit(self, mon, True)
             return True
         BH.struck(self, mon, dmg)
+        if TT.finish(self, mon):
+            return True
+        if weapon:
+            TT.on_weapon_hit(self, mon, False)
         return False
 
     def melee(self, mon):
@@ -1849,6 +1859,7 @@ class Game:
         s = self.stats()
         if elem in D.ELEMENT_RES:
             dmg *= 1 - s[D.ELEMENT_RES[elem]] / 100
+        dmg = TT.hurt(self, dmg, elem)
         dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
         dmg = SM.guard(self, dmg)
         if dmg <= 0:
@@ -1859,7 +1870,7 @@ class Game:
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
         if big:
             self.shake()
-        if p.life <= 0 and not SM.martyr(self):
+        if p.life <= 0 and not SM.martyr(self) and not TT.last_stand(self):
             self.die(src)
             return
         if p.life < s['max_life'] * .3 and not self.low_warned:
@@ -1879,6 +1890,7 @@ class Game:
             sl.append((mon.k, mon.x, mon.y, mon.lvl))
             del sl[:-12]
         GD.on_kill(self, mon)
+        TT.on_kill(self, mon)
         if 'plague' in mon.effects:                    # the plague leaps to those beside it
             for o in [o for o in m.mons if not o.is_npc and cheb(o.x, o.y, mon.x, mon.y) <= 1]:
                 o.effects['poison'] = [6, mon.effects['plague'][1]]
@@ -2067,6 +2079,7 @@ class Game:
             dmg = round(random.randint(*mon.dmg) * BH.attack_mult(self, mon))
             if 'weaken' in mon.effects:
                 dmg = round(dmg * .7)
+            dmg = round(dmg * TT.softer(self, mon))
             if 'Vampiric' in mon.mods:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 2))
             if mon.tpl['leech']:
@@ -2334,6 +2347,7 @@ class Game:
                 for b in ended:
                     self.msg(f'{b[3]} wears off.')
             BH.tick(self)
+            TT.tick(self)
             s = self.stats()
             HU.tick(self, WX.food_factor(self))
             if self.dead:
@@ -2343,9 +2357,9 @@ class Game:
             if s['regen'] and p.life < s['max_life']:
                 p.life = min(s['max_life'], p.life + s['regen'])
             if p.stamina < s['max_stamina'] and self.turn - p.strained > 1 and p.food >= HU.FAINT \
-                    and (self.turn % 2 == 0 or not self.heavy_armour()):
-                p.stamina = min(s['max_stamina'], p.stamina + 1 + s['max_stamina'] // 20)    # breath comes back quickly
-            if self.turn % 2 == 0 and p.mana < s['max_mana']:
+                    and (self.turn % 2 == 0 or not self.heavy_armour() or TT.heavy_ok(self)):
+                p.stamina = min(s['max_stamina'], p.stamina + (1 + s['max_stamina'] // 20) * TT.stamina_mult(self))    # breath comes back quickly
+            if self.turn % 2 == 0 and p.mana < s['max_mana'] and not TT.mana_held(self):
                 p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40 +
                              sum(b[1] for b in p.buffs if b[0] == 'mregen'))
             if p.poison:
@@ -2769,6 +2783,7 @@ class Game:
             beasts = robbers = 0
         r = random.random()
         rested = self.rest_here(quiet=True)
+        TT.rested(self)
         if night:
             self.end_turn(max(0, D.DAY_LEN // 3 - rested), True)
         if self.dead or self.cur not in ('over', 'wild'):

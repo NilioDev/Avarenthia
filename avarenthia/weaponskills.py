@@ -75,6 +75,19 @@ WEAPON_SKILL_LIST = [
     S('xbow_brace', 'Brace', 'archery', 0, 2, 6, 'reload', color=ARROW, glyph='-'),
     S('stunning_stone', 'Stunning Stone', 'archery', 0, 3, 5, 'shot', pct=90, pct_r=1, fx={'stun': 1}, color=DUST, glyph='∙'),
     S('skipping_stone', 'Skipping Stone', 'archery', 0, 4, 5, 'skip', pct=100, pct_r=1.2, color=DUST, glyph='∙'),
+    # the shapes of beasts (the Shapeshifter branch of the Nature tree): teeth and claws instead of a weapon
+    S('bite', 'Bite', 'nature', 0, 3, 3, 'melee', dtype='weapon', pct=120, pct_r=1.5, fx={'bleed': (2, .2, 4)}, color=BLOOD),
+    S('wolf_lunge', 'Lunge', 'nature', 0, 4, 5, 'leap', dtype='weapon', pct=130, pct_r=1.5, range=3, color=STEEL),
+    S('maul', 'Maul', 'nature', 0, 4, 4, 'melee', dtype='weapon', pct=160, pct_r=2, color=STEEL),
+    S('roar', 'Roar', 'nature', 0, 5, 12, 'around', dtype='none', radius=2, fx={'fear': 3}, color=(214, 140, 76), glyph='!'),
+    S('talons', 'Talons', 'nature', 0, 2, 3, 'melee', dtype='weapon', pct=60, pct_r=1, hits=2, color=STEEL),
+    S('dive', 'Dive', 'nature', 0, 4, 6, 'leap', dtype='weapon', pct=110, pct_r=1.5, range=5, color=(220, 230, 255)),
+]
+# skills a knot of a tree teaches: on keys 3-5 like any class skill, never found as a tome
+TREE_SKILL_LIST = [
+    S('wolf_shape', 'Wolf Shape', 'nature', 0, 8, 40, 'shape', shape=('wolf', 30, 5, 25), color=SK.BEAST, glyph='C'),
+    S('bear_shape', 'Bear Shape', 'nature', 0, 9, 45, 'shape', shape=('bear', 15, 30, 25), color=SK.BEAST, glyph='q'),
+    S('hawk_shape', 'Hawk Shape', 'nature', 0, 6, 40, 'shape', shape=('hawk', -20, 0, 30), color=(220, 230, 255), glyph='v'),
 ]
 # the two skills of each weapon kind; 'fists' is empty hands
 KIT = {
@@ -88,16 +101,24 @@ KIT = {
     'dagger': ('quick_stab', 'assassinate'), 'throwknives': ('fan', 'pin'), 'shortbow': ('quick_shot', 'crippling'),
     'longbow': ('aimed', 'volley'), 'warbow': ('pierce', 'heavy_draw'), 'lightxbow': ('snap_shot', 'bolt_through'),
     'heavyxbow': ('bolt_through', 'xbow_brace'), 'sling': ('stunning_stone', 'skipping_stone'),
+    'wolf': ('bite', 'wolf_lunge'), 'bear': ('maul', 'roar'), 'hawk': ('talons', 'dive'),
 }
+SHAPE_KITS = ('wolf', 'bear', 'hawk')
 RANGED_MODES = ('shot', 'pierce', 'area_shot', 'fan', 'snap', 'skip')
 for _s in WEAPON_SKILL_LIST:
     _s.weapon_skill = True
     _s.unlock = 0
-WSKILLS = {s.id: s for s in WEAPON_SKILL_LIST}
+for _s in TREE_SKILL_LIST:
+    _s.unlock, _s.tree_skill = 0, True
+WSKILLS = {s.id: s for s in WEAPON_SKILL_LIST + TREE_SKILL_LIST}
 
 
 def kit(game):
     """The family whose two skills you have now: your weapon's, or your fists' (a cestus or claws on them)."""
+    from . import anim as AN
+    sh = AN.shape_of(game.player)
+    if sh in SHAPE_KITS:                            # in a beast's shape: its teeth and claws
+        return sh
     fam = WP.wielded(game)
     if fam:
         return fam
@@ -112,7 +133,7 @@ def skills_now(game):
         return None, None
     line = WSKILLS[k[0]].line
     r = game.player.disc.get(line, [0, 0])[0]
-    return k[0], (k[1] if r >= SECOND else None)
+    return k[0], (k[1] if r >= SECOND or kit(game) in SHAPE_KITS else None)
 
 
 def second_locked(game):

@@ -118,6 +118,7 @@ TIPS = {
     'library': 'Tip: what a scribe reads to you goes into your chronicle: e, the Lore tab, then Enter.',
     'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',
     'class': 'Tip: Z in a town chooses the skills on keys 3 to 6; keys 1 and 2 come with the weapon in your hand.',
+    'tree': 'Tip: you have a tree point to spend. Z, then Tab, while you are still where you rested.',
 }
 
 
