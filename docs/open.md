@@ -46,7 +46,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
 ## Points of interest
-- Places of today's peoples and powers in the wild (44 proposals in project files `poi/volken.md`): which ones.
+- More places, proposals 45-64 in project files `poi/volken.md` (the land itself, people who live apart, where peoples meet, small secrets): which ones.
 
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
