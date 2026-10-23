@@ -16,6 +16,7 @@ from . import calendar as CAL
 from . import data as D
 from . import gods as GODS
 from . import races as RC
+from . import skills as SK
 
 KEY_RE = r'(\[[^\]]+\]|\{[^}]+\})'
 
@@ -102,8 +103,9 @@ def ch_fighting(g):
         ('k', '[Tab]', 'the next enemy in sight; [Shift+Tab] the one before.'),
         ('k', '[Esc]', 'let go of your target.'),
         ('h', 'Skills and potions'),
-        ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. Weapon skills and '
-                       'Warcraft cost stamina, spells mana. You start with none: skills come from tomes, the sign {≡}.'),
+        ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. [1] and [2] come with the '
+                       'weapon in your hand, [3] to [6] are the ones you chose. Weapon skills and Warcraft cost '
+                       'stamina, spells mana.'),
         ('k', '[q] [w]', 'drink a health or a mana potion. It takes a turn.'),
         ('k', '[f]', 'shoot with a bow, crossbow or sling at your target, throw a knife or your spear, or strike a foe two '
                      'tiles away with a spear or a staff.'),
@@ -157,14 +159,14 @@ def ch_hero(g):
               'the pace in chain or plate, and not at all while you are starving. A fighter who also casts must '
               'choose where the points go.'),
         ('h', 'Skills'),
-        ('p', 'You start with none. Learn them from tomes, the sign {≡}, found on monsters, in ruins and at standing '
-              'stones, or bought from peddlers and city outfitters. Disciplines grow as you use them, and decide which '
-              'tomes you can understand. You carry six skills on your bar; change them in a town with [z].'),
+        ('p', 'Skills come from three places: the weapon in your hand, the tomes of your classes, and the guild masters. '
+              'Tomes, the sign {≡}, are found on monsters, in ruins and at standing stones, or bought from peddlers '
+              'and city outfitters. Disciplines grow as you use them, and decide which tomes you can understand. '
+              'Who you become tells how classes and the bar work.'),
         ('p', 'Six weapon disciplines: Unarmed, Swordsmanship, Axes and Maces, Spears and Staves, Daggers, Bows and '
               'Crossbows. The weapon in your main hand decides which one grows.'),
-        ('p', 'A weapon discipline has five tome skills, opening at ranks 0, 8, 20, 35 and 55; Spears and Staves has '
-              'none yet. Each school of magic, '
-              'and Warcraft, has eight, at ranks 0, 5, 12, 20, 30, 42, 55 and 70. Six places for so many: choose.'),
+        ('p', 'Each school of magic, and Warcraft, has eight tomes, at ranks 0, 5, 12, 20, 30, 42, 55 and 70. Three '
+              'keys for so many: choose.'),
         ('h', 'The schools'),
         ('p', 'Each school has a rule of its own, and most of them show on the map.'),
         ('l', ['Fire: the hardest blows on one foe. The burning take more fire, and fire leaves burning ground; in '
@@ -198,6 +200,37 @@ def ch_hero(g):
                'Skinning: [Enter] on a carcass, with a knife or a dagger.',
                'Cooking: walk into a fire or a hearth.',
                'Leatherworking: at a workbench, and tanning with oak bark.']),
+    ]
+
+
+def ch_who(g):
+    from . import classes as CL
+    from . import weaponskills as WS
+    pure = [f'{CL.school(k) if k in SK.DISCIPLINES else k.title()}: {n}' for k, n in CL.PURE.items()
+            if k in CL.CLASS_LINES]
+    rules = [f'{n}: {WS.RULE[k]}' for k, n in (('unarmed', 'Fists, cestus and claws'), ('swords', 'Swords'),
+             ('axes', 'Axes, maces and hammers'), ('staves', 'Staves'), ('spears', 'Spears'),
+             ('daggers', 'Daggers'), ('archery', 'Bows, crossbows and slings'), ('shield', 'A shield'),
+             ('grimoire', 'A grimoire'))]
+    return [
+        ('h', 'A blank start'),
+        ('p', 'You begin as nobody in particular: a weapon, your fists and what you can learn. The first tome of a '
+              'school you read wakes a memory, and that school becomes your class. It asks you first. From then on '
+              'only tomes of your class speak to you; any other tome you may sell or keep.'),
+        ('h', 'A second class'),
+        ('p', f'At rank {CL.SECOND_AT} in your class, one tome of another school may open to you. It asks you first, '
+              'for it is for good: that school becomes your second class, and the two together give you a name of '
+              'your own, a Paladin, a Lich or a Wildkin among fifty-five. There is no third. Who never takes a second '
+              'stays pure:'),
+        ('l', pure),
+        ('h', 'The bar'),
+        ('p', 'Six keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take up '
+              'another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [5] are three skills '
+              'of your classes. [6] is your elite, the sign {☼|255,214,90}: one technique a guild master taught you. '
+              'Choose them in a town with [z]. The panel shows the three groups, with your name beside SKILLS.'),
+        ('h', 'What your weapon adds'),
+        ('p', 'Every kind of weapon also changes how your class skills work:'),
+        ('l', rules),
     ]
 
 
@@ -544,7 +577,8 @@ def ch_guilds(g):
               'crafts take anyone. Each guild has five ranks, earned with its own jobs. Members buy cheaper from the '
               'quartermaster, sleep in the hall for little or nothing, have their gear mended cheaper, and are paid '
               'better the higher they rise. Only a guild master teaches the advanced techniques, and only to those '
-              'who have earned them.'),
+              'who have earned them. A technique goes on [6] as your elite; one of your own schools may also go on '
+              '[3] to [5].'),
         ('p', 'Who serves two guilds may learn a technique of both. One that mixes weapon and spell costs stamina and '
               'mana alike; the Hollow Coven\'s techniques cost life as well.'),
         ('p', 'Standing with a guild fades slowly if you do nothing for it, but never below your rank.'),
@@ -660,7 +694,7 @@ def ch_chronicle(g):
               'books lie in the deepest dungeons: read one from your bag, and it may name a place you did not know.'),
         ('h', 'Libraries'),
         ('p', 'Every city has a library, with shelves of books and a scribe. Walk into the scribe and choose: The old '
-              'days, The realms, A lord or house, This city, or the Varnish letters. A subject costs a few silver and '
+              'days, The realms, A lord or house, This city, Beasts you have met, or the Varnish letters. A subject costs a few silver and '
               'a few hours, the letters a day; members of the Circle of Magi read for free. A library is true but '
               'slow: its own realm it knows well, far realms late. It also buys the old books you find.'),
         ('p', 'The dwarves keep their Grudge Book, and under the Elder Tree a loremaster sings of the old days.'),
@@ -695,7 +729,7 @@ BASIC_KEYS = [
     ('[Enter] [Space]', 'do the obvious thing here'),
     ('[Esc]', 'let go of the target; else the menu'),
     ('[Tab] [Shift+Tab]', 'next, previous target'),
-    ('[1-6]', 'use a skill'),
+    ('[1-6]', 'use a skill: 1 and 2 your weapon, 3 to 6 your choice'),
     ('[q] [w]', 'health potion, mana potion'),
     ('[>] [<]', 'go in, down or into the land; climb up'),
 ]
@@ -720,7 +754,7 @@ def ch_keys(g):
 
 CHAPTERS = [
     ('First steps', ch_first_steps), ('Moving and looking', ch_moving), ('Fighting', ch_fighting),
-    ('Your hero', ch_hero), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
+    ('Your hero', ch_hero), ('Who you become', ch_who), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
     ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
     ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms),

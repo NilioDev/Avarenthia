@@ -93,42 +93,17 @@ class Skill:
         self.both = kw.get('both', False)            # costs stamina and mana alike (martial and magic mixed)
         self.passive = kw.get('passive', False)      # a way of doing things, not a skill for the bar
         self.guild = False
+        self.weapon_skill = False                    # set in weaponskills.py: keys 1-2, from the weapon in hand
+        for k_, v_ in kw.items():                    # the weapon skills' own words: sunder, quick, width, push...
+            if not hasattr(self, k_):
+                setattr(self, k_, v_)
 
 
 S = Skill
 LEAF, BONE, BEAST = (120, 200, 90), (210, 210, 180), (200, 150, 90)
 FIRE, ICE, STORM, HOLY, DARK, STEEL, ARROW, WAR = (255, 122, 44), (159, 216, 255), (242, 240, 122), (150, 255, 170), (176, 110, 255), (255, 106, 74), (216, 208, 176), (242, 196, 67)
 SKILL_LIST = [
-    # unarmed
-    S('haymaker', 'Haymaker', 'unarmed', 0, 3, 4, 'melee', pct=170, pct_r=3, fx={'stun': 1}),
-    S('flurry', 'Flurry of Blows', 'unarmed', 1, 4, 5, 'melee', pct=55, pct_r=1.5, hits=3),
-    S('throat_punch', 'Throat Punch', 'unarmed', 2, 5, 8, 'melee', pct=120, fx={'stun': 3}),
-    S('iron_fist', 'Iron Fist', 'unarmed', 3, 7, 10, 'melee', pct=260, pct_r=3, crit=True),
-    S('whirlwind_kick', 'Whirlwind Kick', 'unarmed', 4, 9, 9, 'adjacent', pct=180, pct_r=2.5, fx={'stun': 1}),
-    # swords
-    S('power_strike', 'Power Strike', 'swords', 0, 3, 4, 'melee', pct=150, pct_r=2),
-    S('sever', 'Sever Artery', 'swords', 1, 4, 6, 'melee', pct=100, fx={'bleed': (3, .2, 6)}),
-    S('whirl', 'Whirling Blade', 'swords', 2, 6, 7, 'adjacent', pct=110, pct_r=1.5),
-    S('hamstring', 'Hamstring', 'swords', 3, 5, 9, 'melee', pct=120, fx={'stun': 2}),
-    S('execution', "Executioner's Strike", 'swords', 4, 8, 12, 'melee', pct=280, pct_r=3, execute=2),
-    # axes and maces
-    S('heavy_blow', 'Heavy Blow', 'axes', 0, 3, 5, 'melee', pct=165, pct_r=2),
-    S('cleave', 'Cleave', 'axes', 1, 5, 5, 'adjacent', pct=120, pct_r=1.5),
-    S('skull_crack', 'Skull Crack', 'axes', 2, 6, 10, 'melee', pct=140, fx={'stun': 3}),
-    S('rend', 'Rending Chop', 'axes', 3, 6, 8, 'melee', pct=150, fx={'vuln': 6}),
-    S('earthshaker', 'Earthshaker', 'axes', 4, 10, 14, 'around', pct=190, pct_r=2, radius=2, fx={'stun': 2}),
-    # daggers
-    S('quick_stab', 'Quick Stab', 'daggers', 0, 2, 2, 'melee', pct=70, pct_r=1, hits=2),
-    S('envenom', 'Poisoned Blade', 'daggers', 1, 4, 6, 'melee', pct=100, fx={'poison': (3, .25, 8)}),
-    S('shadowstep', 'Shadow Step', 'daggers', 2, 6, 10, 'leap', pct=180, range=6, crit=True, color=DARK, glyph='%'),
-    S('fan', 'Fan of Knives', 'daggers', 3, 7, 8, 'around', pct=90, radius=2, color=ARROW, glyph='x'),
-    S('assassinate', 'Assassinate', 'daggers', 4, 9, 15, 'melee', pct=320, pct_r=3, crit=True, execute=1.5),
-    # archery
-    S('aimed', 'Aimed Shot', 'archery', 0, 3, 3, 'shot', pct=145, pct_r=2, color=ARROW, glyph='-'),
-    S('crippling', 'Crippling Shot', 'archery', 1, 4, 6, 'shot', pct=100, fx={'stun': 1, 'bleed': (2, .2, 5)}, color=ARROW, glyph='-'),
-    S('fire_arrow', 'Burning Arrow', 'archery', 2, 5, 5, 'shot', pct=120, fx={'burn': (4, .3, 5)}, color=FIRE, glyph='-'),
-    S('volley', 'Volley', 'archery', 3, 8, 10, 'volley', pct=80, pct_r=1.2, radius=7, color=ARROW, glyph='-'),
-    S('pierce', 'Piercing Arrow', 'archery', 4, 8, 9, 'pierce', pct=220, pct_r=2.5, color=ARROW, glyph='='),
+    # the weapon skills come with the weapon in hand (weaponskills.py), not from tomes
     # fire: the strongest against one; burning enemies take more fire, and fire leaves burning ground
     S('firebolt', 'Firebolt', 'fire', 0, 4, 1, 'bolt', lo=5, hi=9, r=.45, fx={'ignite': (.2, 3, .25, 4)}, color=FIRE),
     S('immolate', 'Immolate', 'fire', 1, 5, 6, 'curse', fx={'burn': (4, .35, 6)}, color=FIRE),
@@ -331,7 +306,12 @@ def pool(sk):
 
 def cost_of(game, sk):
     gnome = getattr(game.player, 'race', '') == 'gnome' and pool(sk) == 'mana'
-    return max(1, round(sk.cost * (.85 if gnome else 1)))
+    c = sk.cost * (.85 if gnome else 1)
+    if pool(sk) == 'mana':
+        from . import weaponskills as WS
+        c *= WS.mana_mult(game)                     # a staff: spells cost less
+        c *= 1 - sum(b[1] for b in game.player.buffs if b[0] == 'focus') / 100
+    return max(1, round(c))
 
 
 def can_pay(game, sk):
@@ -379,9 +359,9 @@ def describe(sk, r):
     elif m == 'adjacent':
         parts.append(f'Hit every adjacent enemy for {dmg}.')
     elif m == 'around':
-        parts.append(f"Affect every enemy within {sk.radius} tiles{(' for ' + dmg) if dmg else ''}.")
+        parts.append(f"Affect every enemy within {sk.radius} tile{'s' if sk.radius > 1 else ''}{(' for ' + dmg) if dmg else ''}.")
     elif m in ('bolt', 'shot'):
-        parts.append(f"{'Shoot' if m == 'shot' else 'Hurl a bolt at'} the nearest enemy for {dmg}." + (f' Splashes {sk.splash} tile{"s" if sk.splash > 1 else ""} around the target.' if sk.splash else ''))
+        parts.append(f"{'Shoot' if m == 'shot' else 'Hurl a bolt at'} the nearest enemy{' twice' if m == 'shot' and sk.hits == 2 else ''} for {dmg}." + (f' Splashes {sk.splash} tile{"s" if sk.splash > 1 else ""} around the target.' if sk.splash else ''))
     elif m == 'volley':
         parts.append(f'Shoot every visible enemy within {sk.radius} tiles for {dmg}.')
     elif m == 'pierce':
@@ -452,10 +432,46 @@ def describe(sk, r):
     elif m == 'passive':
         parts.append('You may keep two tamed beasts instead of one. Nothing to put on the bar.')
     elif m == 'bash':
-        parts.append(f'Drive your shield into the enemy beside you for {sk.pct + round(sk.pct_r * r)}% weapon damage and push it '
-                     'back a tile.')
+        parts.append(f'Drive your shield into the enemy beside you for {dmg} and push it back a tile.' if sk.need_shield
+                     else f'Strike the enemy beside you for {dmg} and drive it back {getattr(sk, "push", 1)} tiles.')
+    elif m == 'arc':
+        far = getattr(sk, 'reach', 1) > 1
+        parts.append(f"Sweep {'the' if not far else 'two tiles out over the'} {sk.width} tiles in front of you for {dmg}."
+                     + (' Every foe struck gives you some life.' if getattr(sk, 'leech', 0) else ''))
+    elif m == 'dervish':
+        parts.append(f'Spin through up to two enemies beside you for {dmg}; it counts as a step for a scimitar.')
+    elif m == 'hook':
+        parts.append(f'Hook an enemy two tiles away, pull it a tile towards you and strike for {dmg}.')
+    elif m == 'throw':
+        parts.append(f'Throw your spear at an enemy up to {sk.range} tiles away for a hard blow. It lies where it fell.')
+    elif m == 'fan':
+        parts.append(f'Throw three knives at up to three enemies for {dmg} each.')
+    elif m == 'area_shot':
+        parts.append(f'Arrows rain on your target and every enemy beside it for {dmg}.')
+    elif m == 'snap':
+        parts.append(f'Shoot the nearest enemy for {dmg}, then step back from it.')
+    elif m == 'skip':
+        parts.append(f'A stone strikes the nearest enemy for {dmg} and skips on to a second within three tiles.')
+    elif m == 'focus':
+        parts.append('A turn of stillness: some mana comes back, and your next spell costs a third less.')
+    elif m == 'reload':
+        parts.append('Brace and wind your crossbow at once.')
     if sk.need_shield:
         parts.append('Needs a shield in your other hand.')
+    if getattr(sk, 'sunder', False):
+        parts.append('Goes through heavy armour.')
+    if getattr(sk, 'armoured', 0) > 1:
+        parts.append(f'x{sk.armoured:g} against the armoured.')
+    if getattr(sk, 'unseen', 0) > 1:
+        parts.append(f'x{sk.unseen:g} on a foe that has not seen you.')
+    if getattr(sk, 'unblockable', False):
+        parts.append('No shield or guard stops it.')
+    if getattr(sk, 'rune', False):
+        parts.append('The runes add a little damage of your first school.')
+    if getattr(sk, 'quick', False):
+        parts.append('Half a turn: every second one costs none.')
+    if getattr(sk, 'push', 0) and m != 'bash':
+        parts.append(f"Drives the foe back {sk.push} tile{'s' if sk.push > 1 else ''}.")
     if sk.field:
         parts.append({_D.BURNING: 'Leaves burning ground.', _D.ROOTS: 'Leaves grasping roots that hold who stands in them.',
                       _D.BRAMBLE: 'Leaves brambles that make who walks through them bleed.',
@@ -470,7 +486,10 @@ def describe(sk, r):
                       'dmg': f'+{v}% damage', 'ward': f'A ward takes the next {v} damage', 'bond': f'Your beast takes {min(50, v)}% '
                       'of the blows you take', 'unbroken': f'Every blow you take gives you {v} stamina',
                       'martyr': 'A blow that would kill you leaves you on one life, once,',
-                      'block': 'Your shield catches the first blow each turn, all of it; a flail swings over it,'}[k]
+                      'block': 'Your shield catches the first blow each turn, all of it; a flail swings over it,',
+                      'feint': 'Your next blow goes past a shield or a guard;', 'riposte': 'The first blow at you is '
+                      'turned aside and answered with a strike,', 'keepback': 'Who comes up beside you meets your point '
+                      'first,'}[k]
                      + f' for {t} turns.')
     if sk.buff2 and sk.buff2[0] == 'chill':
         parts.append('Who strikes you in melee is slowed.')
@@ -490,6 +509,10 @@ def describe(sk, r):
     if 'swarm' in fx:
         b, br, t = fx['swarm']
         parts.append(f'A swarm stings it for {round(b + br * r)} a turn over {t} turns.')
+    if 'silence' in fx:
+        parts.append(f"It cannot cast for {fx['silence']} turns.")
+    if 'sunder' in fx:
+        parts.append(f"Breaks its guard for {fx['sunder']} turns: armour stops nothing, and blows bite deeper.")
     if 'slow' in fx:
         parts.append(f"Slows for {fx['slow']} turns.")
     if 'fear' in fx:
@@ -561,9 +584,10 @@ def learn(game, sid):
         return False
     p.known.append(sid)
     game.msg(f'You study the tome and learn {sk.name}!', 'gold')
-    if None in p.bar:
-        p.bar[p.bar.index(None)] = sid
-        game.msg(f'{sk.name} is now on your skill bar.', 'info')
+    from . import classes as CL
+    i = CL.place(game, sid)
+    if i is not None:
+        game.msg(f'{sk.name} is now on key {i + 1}.', 'info')
     else:
         game.msg('Change your skills in a town or stronghold (Z).', 'info')
     return True
@@ -572,10 +596,17 @@ def learn(game, sid):
 # ------------------------------------------------------------------ using
 def use(game, slot):
     p = game.player
-    sid = p.bar[slot] if slot < len(p.bar) else None
+    from . import classes as CL
+    from . import weaponskills as WS
+    sid = CL.slot_skill(game, slot)
     if not sid:
-        game.msg('That skill slot is empty. Skills are learned from tomes; choose them in a town with Z.' if p.known else
-                 'You know no skills yet. Skill tomes are found on monsters, in ruins and with traders.')
+        if slot in CL.WEAPON:
+            locked = WS.second_locked(game)
+            game.msg(f'{SKILLS[locked].name} comes to you at {DISCIPLINES[SKILLS[locked].line]["name"]} {WS.SECOND}.'
+                     if locked else 'Your weapon has no skill here.')
+        else:
+            game.msg('That skill slot is empty. Skills are learned from tomes; choose them in a town with Z.' if p.known else
+                     'You know no skills yet. Skill tomes are found on monsters, in ruins and with traders.')
         return 0
     sk = SKILLS[sid]
     m = game.map
@@ -594,8 +625,12 @@ def use(game, slot):
         game.msg(f"Not enough {'stamina and mana' if sk.both else kind} for {sk.name} ({cost} needed).", 'bad')
         return 0
     d = DISCIPLINES[sk.line]
-    if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
+    if d['kind'] == 'weapon' and not sk.weapon_skill and weapon_line(game) != sk.line:
         game.msg(f"{sk.name} needs {d['weapon']} in your hands.", 'bad')
+        return 0
+    from . import weapons as WP
+    if sk.weapon_skill and sk.mode in WS.RANGED_MODES and WP.unloaded(game):
+        game.msg('Wind your crossbow first: [f].', 'bad')
         return 0
     if sk.need_shield:
         from . import weapons as WP
@@ -617,8 +652,16 @@ def use(game, slot):
             game.msg(f"{sk.name} needs {'a corpse' if sk.corpses == 1 else f'{sk.corpses} corpses'} near you.", 'bad')
             return 0
     r = rank(game, sk.line)
-    if not EXEC[sk.mode](game, sk, r):
-        return 0
+    game._skill = sk
+    try:
+        if not EXEC[sk.mode](game, sk, r):
+            return 0
+    finally:
+        game._skill = None
+    if sk.weapon_skill and sk.mode in WS.RANGED_MODES and WP.wielded(game) in WP.CROSSBOWS:
+        WP.main_hand(game).unloaded = True
+    if pool(sk) == 'mana':
+        p.buffs = [b for b in p.buffs if b[0] != 'focus']   # Focus is spent on one spell
     price = sk.life_cost + (round(p.life * sk.life_frac) if sk.life_frac else 0)
     if price:
         p.life = max(1, p.life - price)
@@ -639,6 +682,10 @@ def use(game, slot):
         p.mana -= cost
     p.cooldowns[sid] = sk.cd
     gain(game, sk.line, 3)
+    if getattr(sk, 'quick', False):                 # half a turn: every second one costs none
+        p.quick = not getattr(p, 'quick', False)
+        if not p.quick:
+            return 0
     return 1
 
 
@@ -664,12 +711,31 @@ def _hit(game, mon, sk, r, ranged=False):
     """Apply one hit of this skill to a monster. Returns True if it died."""
     if mon.hp <= 0 or mon not in game.map.mons:
         return True
+    from . import weapons as WP
+    from . import weaponskills as WS
+    crit = sk.crit or (not sk.weapon_skill and random.random() < WS.class_crit(game, mon) / 100)
     if sk.dtype == 'weapon':
         pct = sk.pct + sk.pct_r * r
         if sk.execute > 1 and mon.hp < mon.maxhp * .3:
             pct *= sk.execute
-        dead = game.weapon_strike(mon, pct, force_crit=sk.crit, ranged=ranged)
-        dealt = 0
+        if getattr(sk, 'armoured', 0) and WP.armoured(mon):
+            pct *= sk.armoured
+        if getattr(sk, 'unseen', 0) and not mon.awake:
+            pct *= sk.unseen
+        game._unblockable = getattr(sk, 'unblockable', False) or any(b[0] == 'feint' for b in game.player.buffs)
+        before = mon.hp
+        try:
+            dead = game.weapon_strike(mon, pct, force_crit=crit, ranged=ranged, sunder=getattr(sk, 'sunder', False))
+        finally:
+            game._unblockable = False
+        game.player.buffs = [b for b in game.player.buffs if b[0] != 'feint']
+        if sk.weapon_skill and sk.mode in ('melee', 'leap', 'hook', 'bash', 'dervish') and not dead:
+            WS.swing(game, [(mon.x, mon.y)])
+        if getattr(sk, 'rune', False) and not dead:
+            dead = WS.rune_extra(game, mon)
+        if getattr(sk, 'push', 0) and not dead:
+            WS.push(game, mon, sk.push)
+        dealt = before - max(0, mon.hp)
     elif sk.dtype == 'spell':
         dmg = _spell_dmg(game, sk, r)
         game._area = sk.mode in ('around', 'chain', 'storm', 'target_area', 'volley')
@@ -684,7 +750,7 @@ def _hit(game, mon, sk, r, ranged=False):
             if SM.wet(game, mon):
                 dmg *= 1.25                                                # water carries the arc
         before = mon.hp
-        dead = game.damage_mon(mon, dmg, col=sk.color, elem=LINE_ELEM.get(sk.line))
+        dead = game.damage_mon(mon, dmg, crit, col=sk.color, elem=LINE_ELEM.get(sk.line))
         game._area = False
         dealt = before - max(0, mon.hp)
         if sk.drain:
@@ -698,6 +764,8 @@ def _hit(game, mon, sk, r, ranged=False):
         dead = False
     if not dead:
         apply_fx(game, mon, sk, r)
+        if not sk.weapon_skill and sk.dtype != 'none':
+            WS.class_hit(game, mon, sk)
     return dead
 
 
@@ -715,6 +783,8 @@ def apply_fx(game, mon, sk, r):
         if k in fx:
             b, br, t = fx[k]
             mon.effects[k] = [t, max(1, round(b + br * r))]
+            if k == 'bleed':
+                game.fx('blood', x=mon.x, y=mon.y, src=(game.player.x, game.player.y))
     if 'ignite' in fx and random.random() < fx['ignite'][0]:
         _c, b, br, t = fx['ignite']
         mon.effects['burn'] = [t, max(1, round(b + br * r))]
@@ -722,7 +792,7 @@ def apply_fx(game, mon, sk, r):
         b, br, t = fx['swarm']
         v = max(1, round((b + br * r) * (_nat(game) if sk.line == 'nature' else 1)))
         mon.effects['swarm'] = [t, v]
-    for k in ('weaken', 'vuln', 'slow', 'fear'):
+    for k in ('weaken', 'vuln', 'slow', 'fear', 'silence', 'sunder'):
         if k in fx:
             mon.effects[k] = [fx[k], 0]
     if 'plague' in fx:
@@ -778,7 +848,8 @@ def x_melee(game, sk, r):
         game.msg('No enemy within reach.')
         return False
     game.player.last_target = t.id
-    game.flash([(t.x, t.y)], sk.color, '/', .14)
+    if not sk.weapon_skill:
+        game.flash([(t.x, t.y)], sk.color, '/', .14)
     for _ in range(sk.hits):
         if _hit(game, t, sk, r):
             break
@@ -793,13 +864,12 @@ def x_bash(game, sk, r):
         game.msg('No enemy within reach.')
         return False
     p.last_target = t.id
-    game.wear('shield', .3)
-    sx, sy = _dir((p.x, p.y), (t.x, t.y))
-    nx, ny = t.x + sx, t.y + sy
-    if m.inb(nx, ny) and _D.TILES[m.tile(nx, ny)].walk and not game.occupied(m, nx, ny) and not t.tpl.get('boss'):
-        t.x, t.y = nx, ny
-    game.flash([(t.x, t.y)], sk.color, '(', .14)
-    _hit(game, t, sk, r)
+    if sk.need_shield:                              # Shield Bash: a grey ] on the foe, and it goes back a tile
+        game.wear('shield', .3)
+        game.flash([(t.x, t.y)], (200, 200, 205), ']', .14)
+        from . import weaponskills as WS
+        WS.push(game, t, 1)
+    _hit(game, t, sk, r)                            # Push Back pushes after its blow (sk.push)
     return True
 
 
@@ -809,7 +879,10 @@ def x_adjacent(game, sk, r):
     if not t:
         game.msg('No enemies next to you.')
         return False
-    _ring(game, sk, p.x, p.y, 1)
+    if getattr(sk, 'spin', False):
+        game.fx('spin', x=p.x, y=p.y, col=sk.color)
+    else:
+        _ring(game, sk, p.x, p.y, 1)
     for o in t:
         _hit(game, o, sk, r)
     return True
@@ -854,7 +927,11 @@ def x_bolt(game, sk, r, ranged=False):
         late = AN.METEOR_SHADOW + AN.METEOR_FALL
     else:
         late = _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
-    _hit(game, t, sk, r, ranged)
+    for k in range(sk.hits if ranged else 1):       # Quick Shot: a second arrow after the first
+        if k and t in game.map.mons:
+            _fly(game, sk, game.path_to(t), (p.x, p.y), ranged)
+        if _hit(game, t, sk, r, ranged):
+            break
     if not ranged and not sk.splash:
         _burst(game, sk, tx, ty, 0, late)
     if sk.splash:
@@ -1026,6 +1103,8 @@ def x_self(game, sk, r):
         v = round(b + br * r)
         if k == 'dr':
             v = min(60, v)
+        from . import weaponskills as WS
+        t = WS.buff_turns(game, sk, t)               # a shield lengthens what guards you
         p.buffs = [x for x in p.buffs if x[0] != k] + [[k, v, t, sk.name]]
         if sk.buff2:
             k2, b2, br2, t2 = sk.buff2
@@ -1494,3 +1573,7 @@ EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 
         'leap': x_leap, 'self': x_self, 'wall': x_wall, 'gust': x_gust, 'ball': x_ball, 'tempest': x_tempest,
         'tomb': x_tomb, 'pyre': x_pyre, 'mist': x_mist, 'prison': x_prison, 'army': x_army, 'awaken': x_awaken, 'sic': x_sic,
         'spirit': x_spirit, 'totem': x_totem, 'golem': x_golem, 'passive': x_passive, 'bash': x_bash}
+
+
+from . import weaponskills as _WS  # noqa: E402  (the weapon skills, keys 1-2)
+SKILLS.update(_WS.WSKILLS)

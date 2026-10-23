@@ -22,6 +22,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm; areas hit the square but open out round, with a harmless cloud beyond the sides |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
+| **Built: classes part 1 (23 Oct)** | A blank start, the first and second class, 55 pair names; the bar is 2 weapon skills, 3 class skills, 1 elite; two skills for every weapon kind, each family with a rule for class skills |
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 
 ## Built
@@ -288,6 +289,16 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   that one. The bestiary lives on the player (`p.bestiary`: first seen, slain, skinned); steps at 3, 10 and 25:
   weakness and resistances, what it carries, a weak spot (+10% critical chance); a library scribe teaches step one.
   Spears and Staves has no tome skills yet: its two skills per weapon kind come with classes part 1. Test `weapons`.
+
+- **Classes part 1: the blank start, the classes and the bar** (23 October 2026; `classes.py`, `weaponskills.py`).
+  You start blank; the first class tome you read asks, then wakes your class (`p.classes`); at rank 20 one tome of
+  another school may become the second class and names the pair (55 names, pure names for one class). Only tomes of
+  your classes can be read. The weapon tome skills are gone (Burning Arrow too): every weapon kind (29 kits, fists
+  included) brings two skills on keys 1-2, the second from discipline rank 10, with their swing, spin, crit and
+  blood effects (`anim.py`). Keys 3-5 class skills, 6 one elite (any guild technique for now). Each weapon family's
+  rule on class skills (`weaponskills.RULE`: swords cool down, axes push, staves 15% cheaper spells, spears reach 2,
+  daggers crit beside you, bows place areas further, shields last longer, unarmed every 3rd blow returns
+  stamina/mana). Handbook chapter "Who you become". Tip `class`. SAVE_VERSION 34. Test `classes`.
 
 ## Weapons: more kinds, few disciplines (built 23 October 2026; the spec)
 

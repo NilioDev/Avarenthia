@@ -119,20 +119,22 @@ def fist_damage(game, wr):
 def armour_mult(game, mon, weapon, ranged=False, sunder=False):
     """Heavy armour takes a quarter off a weapon's blow; a war hammer goes through and does more, a crossbow bolt or a
     skill made to break armour goes straight through."""
+    if weapon and 'sunder' in mon.effects and not armoured(mon):
+        return 1.15                                 # its guard broken: blows bite deeper
     if not weapon or not armoured(mon):
         return 1.0
     fam = wielded(game)
     if fam == 'warhammer' and not ranged:
         game.flash([(mon.x, mon.y)], C_SPARK, '*', .15)
         return 1.25
-    if sunder or (ranged and fam in CROSSBOWS):
+    if sunder or (ranged and fam in CROSSBOWS) or 'sunder' in mon.effects:
         return 1.0
     return .75
 
 
 def over_shield(game):
-    """A flail goes over a shield, a shield wall or a formation."""
-    return wielded(game) == 'flail'
+    """A flail goes over a shield, a shield wall or a formation; so does a feint or Over the Shield."""
+    return wielded(game) == 'flail' or getattr(game, '_unblockable', False)
 
 
 def mon_over_block(mon):

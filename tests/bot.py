@@ -31,19 +31,21 @@ def manage(g):
     while p.stat_pts > 0:
         g.add_stat('vit' if p.stat_pts % 2 else 'str')
     # the bot reads every tome it finds, and pretends it found the skills its disciplines allow
-    for it in [i for i in p.inv if i.k == 'tome']:
+    # a Pyromancer, and a Sunpriest once Fire reaches rank 20
+    p.classes = ['fire', 'restoration'] if p.disc['fire'][0] >= 20 else ['fire']
+    for it in [i for i in p.inv if i.k == 'tome' and SK.SKILLS[i.t].line in p.classes]:
         g.read_tome(it)
     for sk in SK.SKILL_LIST:
-        if sk.line in ('swords', 'fire', 'restoration', 'warcraft') and p.disc[sk.line][0] >= sk.unlock and sk.id not in p.known \
+        if sk.line in p.classes and p.disc[sk.line][0] >= sk.unlock and sk.id not in p.known \
                 and (sk.unlock == 0 or p.lvl >= 4):
             p.known.append(sk.id)
     for it in p.inv:
         if it.k == 'gear' and not it.identified and not it.cursed:
             it.ided = True
     # keep the strongest known sword, fire and restoration skills on the bar
-    want = [k for k in p.known if SK.SKILLS[k].line in ('swords', 'fire', 'restoration', 'warcraft')]
+    want = [k for k in p.known if SK.SKILLS[k].line in p.classes and not SK.SKILLS[k].guild]
     want.sort(key=lambda k: -SK.SKILLS[k].unlock)
-    p.bar = (want + [None] * 6)[:6]
+    p.bar = [None, None] + (want + [None] * 3)[:3] + [None]
     for it in p.inv:
         if it.k != 'gear' or it.req > p.lvl:
             continue
@@ -116,7 +118,9 @@ def turn(g):
     if hs:
         adj = [o for o in hs if WG.cheb(o.x, o.y, p.x, p.y) <= 1]
         from avarenthia import skills as SK
-        for i, sid in enumerate(p.bar):
+        from avarenthia import classes as CL
+        for i in range(6):
+            sid = CL.slot_skill(g, i)
             if not sid:
                 continue
             k = SK.SKILLS[sid]

@@ -5,6 +5,15 @@ build" in `plan.md`) for each new thing, so he does not have to play for weeks t
 is still to settle. When a round is built, its lines stay here as long as they are useful for testing.
 Each line: **what** - what to check - what the debug menu should offer.
 
+## Classes (part 1 built 23 October 2026)
+
+- **First class** - read a class tome while blank: the question, the name, the tip, the chronicle line. Debug: give a
+  tome of any school (Give item).
+- **Second class** - at rank 20 a tome of another school asks; the pair name shows beside SKILLS. Debug: set the
+  rank of your class to 20 (Ranks), give a tome of another school.
+- **Weapon skills** - every weapon kind's two skills on keys 1-2, the second at rank 10, with their effects. Debug:
+  give the weapon, set its discipline to 10.
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

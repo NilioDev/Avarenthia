@@ -1217,24 +1217,39 @@ class GameScreen(Screen):
                 cv.text_right(x + PW - 1, row, word[:6], BAD if mc.fleeing else DIM, PANEL)
             else:
                 cv.text_right(x + PW - 1, row, 'fallen', BAD, PANEL)
+        from . import classes as CL
+        from . import weaponskills as WS
         cv.text(x, 18, 'SKILLS', DIM, PANEL)
+        name = CL.title(g)
+        if name:
+            cv.text(x + 7, 18, name, GOLD, PANEL, maxw=PW - 16)
         from . import hunger as HU
         hs = HU.state(getattr(p, 'food', 500))
         if hs:
             cv.text_right(x + PW - 1, 18, hs, GOOD if hs == 'Satiated' else GOLD if hs == 'Hungry' else BAD, PANEL)
-        else:
-            cv.text_right(x + PW - 1, 18, 'Z: change', scale(DIM, .8), PANEL)
-        for i, sid in enumerate(p.bar):
-            y = 20 + i * 2
+        # three groups: the weapon's two skills, three class skills, one elite
+        rows = ((19, 'weapon', None), (20, None, 0), (21, None, 1), (22, 'class', None), (23, None, 2), (24, None, 3),
+                (25, None, 4), (26, 'elite', None), (27, None, 5))
+        for y, head, i in rows:
+            if head:
+                cv.text(x + 2, y, head, scale(DIM, .7), PANEL)
+                continue
+            sid = CL.slot_skill(g, i)
             cv.text(x, y, str(i + 1), GOLD, PANEL)
             if not sid:
-                cv.text(x + 2, y, '-', scale(DIM, .6), PANEL)
+                locked = WS.second_locked(g) if i == 1 else None
+                cv.text(x + 2, y, f'{SK.SKILLS[locked].name}, rank {WS.SECOND}' if locked else '-', scale(DIM, .6), PANEL,
+                        maxw=PW - 3)
                 continue
             sk = SK.SKILLS[sid]
             cd = p.cooldowns.get(sid, 0)
             ok = SK.can_pay(g, sk) and not cd
             stam = SK.pool(sk) == 'stamina'
-            cv.text(x + 2, y, sk.name, FG if ok else DIM, PANEL, maxw=PW - 8)
+            if i in CL.ELITE:
+                cv.put(x + 2, y, '☼', GOLD, PANEL)
+            elif i in CL.CLASS:
+                cv.put(x + 2, y, '•', SK.DISC_COLOR.get(sk.line, FG), PANEL)
+            cv.text(x + 2 + (0 if i in CL.WEAPON else 2), y, sk.name, FG if ok else DIM, PANEL, maxw=PW - 9)
             cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f"{SK.cost_of(g, sk)}{'st' if stam else 'mp'}",
                           BAD if cd else ((scale(STAMINA, 1.3) if stam else INFO) if ok else DIM), PANEL)
         hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
@@ -1924,11 +1939,19 @@ class CharacterScreen(Modal):
             cv.text(x + 3, yy, d['name'], FG if r else DIM, PANEL)
             cv.text_right(x + 24, yy, str(r), GOLD if r else DIM, PANEL)
             self.bar(cv, x + 27, yy, 16, prog / SK.need_for(r), INFO)
+            if d['kind'] == 'weapon':                    # weapon skills come with the weapon; the second at rank 10
+                from . import weaponskills as WS
+                cv.text(x + 45, yy, 'weapon skills', DIM, PANEL)
+                cv.text(x + 59, yy, 'both open' if r >= WS.SECOND else f'second at {WS.SECOND}', scale(DIM, .8), PANEL)
+                continue
+            mine = line in getattr(p, 'classes', [])
             nxt = next((k for k in SK.by_line(line) if k.unlock > r), None)
             n = len(SK.by_line(line))
             known = sum(1 for k in SK.by_line(line) if k.id in p.known)
-            cv.text(x + 45, yy, f'{known}/{n} skills', DIM, PANEL)
+            cv.text(x + 45, yy, f'{known}/{n} skills', DIM if mine else scale(DIM, .6), PANEL)
             cv.text(x + 57, yy, f'next {nxt.unlock}' if nxt else 'all open', scale(DIM, .8), PANEL)
+            if mine:                                     # your schools stand out in their own colour
+                cv.text(x + 3, yy, d['name'], SK.DISC_COLOR.get(line, GOLD), PANEL)
 
     def page_guilds(self, cv, x, y):
         from . import guilds as GU
@@ -1990,64 +2013,83 @@ class CharacterScreen(Modal):
 
 
 class SkillsScreen(Modal):
-    """Choose which six skills to carry. Only possible in a town or stronghold."""
+    """Choose the skills on keys 3 to 6 (keys 1 and 2 come with your weapon). Only in a town or stronghold."""
 
     def __init__(self, app):
         super().__init__(app)
         self.sel = 0
-        self.slot = 0
+        self.slot = 2
 
     def known(self):
         p = self.game.player
-        return [SK.SKILLS[k] for k in p.known]
+        return [SK.SKILLS[k] for k in p.known if k in SK.SKILLS and not SK.SKILLS[k].weapon_skill]
 
     def render(self, cv):
+        from . import classes as CL
+        from . import weaponskills as WS
         g = self.game
         p = g.player
         x, y = self.box(cv, 104, 30, 'Skills')
         in_town = g.map.kind == 'town'
-        cv.text(x + 2, y + 1, 'Your bar' + ('' if in_town else ' · change it in a town or stronghold'),
-                DIM if in_town else BAD, PANEL)
-        for i, sid in enumerate(p.bar):
-            yy = y + 2 + i
+        name = CL.title(g)
+        cv.text(x + 2, y + 1, (name + ' · ' if name else '') + ('Your bar' if in_town else 'change it in a town or stronghold'),
+                DIM if in_town else BAD, PANEL, maxw=48)
+        heads = {0: 'weapon', 2: 'class', 5: 'elite'}
+        yy = y + 2
+        for i in range(6):
+            if i in heads:
+                cv.text(x + 2, yy, heads[i], scale(DIM, .7), PANEL)
+                yy += 1
+            sid = CL.slot_skill(g, i)
             sel = i == self.slot
             bg = (52, 40, 28) if sel else PANEL
             cv.fill(x + 2, yy, 48, 1, ' ', FG, bg)
             cv.text(x + 2, yy, str(i + 1), GOLD, bg)
-            cv.text(x + 4, yy, SK.SKILLS[sid].name if sid else '- empty -', FG if sid else DIM, bg)
+            locked = WS.second_locked(g) if i == 1 and not sid else None
+            label = SK.SKILLS[sid].name if sid else (f'{SK.SKILLS[locked].name}: at rank {WS.SECOND}' if locked else '- empty -')
+            cv.text(x + 4, yy, label, FG if sid else DIM, bg, maxw=30)
             if sid:
                 cv.text_right(x + 49, yy, SK.DISCIPLINES[SK.SKILLS[sid].line]['name'], DIM, bg)
+            yy += 1
         known = self.known()
         self.sel = max(0, min(self.sel, len(known) - 1))
-        cv.text(x + 2, y + 9, f'KNOWN SKILLS ({len(known)}/{len(SK.SKILL_LIST)})', DIM, PANEL)
-        for i, sk in enumerate(known[:19]):
-            yy = y + 10 + i
+        top = y + 13
+        cv.text(x + 2, top - 1, f'KNOWN SKILLS ({len(known)})', DIM, PANEL)
+        for i, sk in enumerate(known[:15]):
+            yy = top + i
             sel = i == self.sel
             bg = (52, 40, 28) if sel else PANEL
             cv.fill(x + 2, yy, 48, 1, ' ', FG, bg)
             cv.text(x + 2, yy, LETTERS[i], GOLD, bg)
             on_bar = sk.id in p.bar
-            cv.text(x + 4, yy, sk.name, GOOD if on_bar else FG, bg)
+            fits = CL.fits(g, sk, 5) is None or any(CL.fits(g, sk, k) is None for k in CL.CLASS)
+            cv.text(x + 4, yy, sk.name, GOOD if on_bar else FG if fits else DIM, bg, maxw=30)
             cv.text_right(x + 49, yy, SK.DISCIPLINES[sk.line]['name'], DIM, bg)
         for yy in range(y + 1, y + 29):
             cv.put(x + 52, yy, '│', LINE, PANEL)
-        if known:
-            sk = known[self.sel]
+        sk = known[self.sel] if known else None
+        if self.slot in CL.WEAPON:
+            sid = CL.slot_skill(g, self.slot) or WS.second_locked(g)
+            sk = SK.SKILLS[sid] if sid else None
+        if sk:
             r = p.disc[sk.line][0]
             cv.text(x + 54, y + 2, sk.name, GOLD, PANEL)
             cv.text(x + 54, y + 3, f"{SK.DISCIPLINES[sk.line]['name']} {r} · {sk.cost} {SK.pool(sk)} · recharge {sk.cd} turns", DIM, PANEL, maxw=48)
-            n = cv.wrap(x + 54, y + 5, 47, SK.describe(sk, r), FG, PANEL, 10)
-            d = SK.DISCIPLINES[sk.line]
-            if d['kind'] == 'weapon':
-                cv.wrap(x + 54, y + 6 + n, 47, f"Needs {d['weapon']} in your hands.", DIM, PANEL, 2)
+            n = cv.wrap(x + 54, y + 5, 47, SK.describe(sk, r), FG, PANEL, 9)
+            why = CL.fits(g, sk, self.slot) if not sk.weapon_skill else None
+            if why:
+                cv.wrap(x + 54, y + 6 + n, 47, why, BAD, PANEL, 3)
         if not known:
-            cv.wrap(x + 4, y + 10, 46, 'You know no skills yet. Fight with your weapon for now.', DIM, PANEL)
-        cv.wrap(x + 54, y + 20, 47, 'New skills are learned from tomes: found on monsters, deep in ruins, at standing stones, '
-                'and now and then sold by peddlers and city outfitters. Harder tomes need a higher discipline, '
-                'which grows as you use it.', DIM, PANEL, 6)
-        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 1-6: put it in that slot · Del: clear slot · Esc: close ', DIM, PANEL)
+            cv.wrap(x + 4, top, 46, 'You know no skills yet. Fight with your weapon for now: keys 1 and 2.', DIM, PANEL)
+        rule = WS.RULE.get(WS.family_rule(g))
+        cv.text(x + 54, y + 19, 'YOUR WEAPON', DIM, PANEL)
+        cv.wrap(x + 54, y + 20, 47, rule or 'Empty hands.', FG, PANEL, 2)
+        cv.wrap(x + 54, y + 23, 47, 'Class skills are learned from tomes of your own schools; an elite from a guild '
+                'master. Harder tomes need a higher rank, which grows as you use them.', DIM, PANEL, 4)
+        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 3-6: put it on that key · Del: clear · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
+        from . import classes as CL
         g = self.game
         p = g.player
         known = self.known()
@@ -2062,15 +2104,25 @@ class SkillsScreen(Modal):
         elif tok in ('1', '2', '3', '4', '5', '6'):
             i = int(tok) - 1
             self.slot = i
+            if i in CL.WEAPON:
+                return
             if g.map.kind != 'town':
                 g.log_mark = len(g.log)
                 g.msg('You can only change your skills in a town or stronghold.', 'bad')
                 return
-            sid = known[self.sel].id if known else None
-            if sid in p.bar:
-                p.bar[p.bar.index(sid)] = p.bar[i]
-            p.bar[i] = sid
-        elif tok in ('delete', 'backspace') and g.map.kind == 'town':
+            if not known:
+                return
+            sk = known[self.sel]
+            why = CL.fits(g, sk, i)
+            if why:
+                g.log_mark = len(g.log)
+                g.msg(why, 'bad')
+                return
+            if sk.id in p.bar:
+                p.bar[p.bar.index(sk.id)] = p.bar[i]
+            p.bar[i] = sk.id
+            CL.tidy(g)
+        elif tok in ('delete', 'backspace') and g.map.kind == 'town' and self.slot not in CL.WEAPON:
             p.bar[self.slot] = None
 
 

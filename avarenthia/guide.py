@@ -117,6 +117,7 @@ TIPS = {
     'realmjob': 'Tip: a lord remembers the work you do. Enough of it, with a good name in the empire, and you may swear fealty.',
     'library': 'Tip: what a scribe reads to you goes into your chronicle: e, the Lore tab, then Enter.',
     'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',
+    'class': 'Tip: Z in a town chooses the skills on keys 3 to 6; keys 1 and 2 come with the weapon in your hand.',
 }
 
 

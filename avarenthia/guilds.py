@@ -456,8 +456,8 @@ def resolve(game, choice, ctx):
             return
         p.gold -= price * 100
         p.known.append(sid)
-        if None in p.bar[:BAR_SIZE]:
-            p.bar[p.bar.index(None)] = sid
+        from . import classes as CL
+        CL.place(game, sid)
         if key == 'coven':
             p.toll = getattr(p, 'toll', 0) + 5
             game.clamp_vitals()

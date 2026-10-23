@@ -175,6 +175,10 @@ WAVE_FRAME = .06          # kept for timing a second wave after a first
 ROUND_STEP = .03          # an area opens out by real distance: one tile further in this long (it looks round)
 FRONT = .04               # each sign of the front (* + ·) shows this long, then the ground glows ░ and dims
 ROUND_DUR = .22
+SWING_TICK, SWING_LIT = .045, .12     # a weapon's swing arc: one sign after another, each lit a moment
+SPIN_TICK = .03
+CRIT_TIME, BLOOD_TIME = .26, .3
+STEEL_DIM, GOLD_CRIT, BLOOD_RED = (150, 152, 160), (255, 214, 90), (200, 30, 30)
 CLOUD_DUR = .22           # the faint cloud beyond the square's sides: only a look, it harms nobody
 DUST = (150, 140, 130)
 NO_GLOW = ('sound', '~', '!')     # a howl, a gust, a war cry: only the front, no glow, no cloud
@@ -218,6 +222,14 @@ def fx_life(kind, kw):
         return d + RAISE_TIME
     if kind == 'trail':
         return d + TRAIL_STEP * len(kw['cells']) + kw.get('linger', .14)
+    if kind == 'swing':
+        return d + SWING_TICK * (5 if kw.get('wide') else 3) + SWING_LIT
+    if kind == 'spin':
+        return d + SPIN_TICK * 8 + SWING_LIT
+    if kind == 'crit':
+        return d + CRIT_TIME
+    if kind == 'blood':
+        return d + BLOOD_TIME
     return d + kw.get('dur', .28 if kind == 'drain' else .4)
 
 
@@ -421,6 +433,61 @@ def fx_cells(kind, kw, age):
                 out.append((*c, ch, mix((255, 255, 245), col, min(1.0, q * 2.5)) if kw.get('build') else
                             _fade(col, 1 - q), None))
         return out
+    if kind == 'swing':                         # \ | / along the side of the foe, white fading to steel
+        return _swing(kw, age)
+    if kind == 'spin':                          # the blade once round you
+        x, y = kw['x'], kw['y']
+        for i, (dx, dy) in enumerate(((1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))):
+            a = age - i * SPIN_TICK
+            if 0 <= a < SWING_LIT:
+                out.append((x + dx, y + dy, _line_char(dx, dy), mix((255, 255, 250), STEEL_DIM, a / SWING_LIT), None))
+        return out
+    if kind == 'crit':                          # a white star that turns gold and fades
+        k = age / CRIT_TIME
+        if k < 1:
+            out.append((kw['x'], kw['y'], '*', mix((255, 255, 255), GOLD_CRIT, min(1.0, k * 2)) if k < .6
+                        else _fade(GOLD_CRIT, 1 - (k - .6) / .4), None))
+        return out
+    if kind == 'blood':                         # a red * on the cut, then drops fly back and darken
+        x, y = kw['x'], kw['y']
+        sx, sy = kw.get('src', (x - 1, y))
+        dx, dy = (x > sx) - (x < sx), (y > sy) - (y < sy)
+        k = age / BLOOD_TIME
+        if k >= 1:
+            return out
+        if k < .3:
+            out.append((x, y, '*', BLOOD_RED, None))
+        for j, (ox, oy) in enumerate(((dx, dy), (dx - dy, dy + dx), (dx + dy, dy - dx))):
+            ox, oy = max(-1, min(1, ox)), max(-1, min(1, oy))
+            n = 1 + int(k * 1.8)                    # one tile out, then two
+            if (ox or oy) and k > .1:
+                out.append((x + ox * n, y + oy * n, ',' if j == 0 else '·', _fade(BLOOD_RED, 1 - k), None))
+        return out
+    return out
+
+
+def _swing(kw, age):
+    """The cells of a swing arc: the foe's tile and its neighbours on your side, swept in turn."""
+    out = []
+    sx, sy = kw.get('src', (0, 0))
+    seen = set()
+    for tx, ty in kw.get('cells', ()):
+        dx, dy = (tx > sx) - (tx < sx), (ty > sy) - (ty < sy)
+        dirs = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
+        if (dx, dy) not in dirs:
+            continue
+        i = dirs.index((dx, dy))
+        half = 2 if kw.get('wide') else 1
+        far = max(abs(tx - sx), abs(ty - sy))
+        for n, k in enumerate(range(-half, half + 1)):
+            ex, ey = dirs[(i + k) % 8]
+            c = (sx + ex * far, sy + ey * far)
+            if c in seen:
+                continue
+            seen.add(c)
+            a = age - n * SWING_TICK
+            if 0 <= a < SWING_LIT:
+                out.append((c[0], c[1], _line_char(ex, ey), mix((255, 255, 250), STEEL_DIM, a / SWING_LIT), None))
     return out
 
 

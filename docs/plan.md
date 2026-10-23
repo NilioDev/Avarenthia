@@ -32,6 +32,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 0. **Debug menu and test build** (M). Built 23 October 2026 (see `docs/built.md`).
 1. **Weapons** with the bestiary that grows (L). Built 23 October 2026 (see `docs/built.md`).
 2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
+   Built 23 October 2026 (see `docs/built.md`); the spec below stays until part 3.
 3. **Classes part 2** (L): the trees. 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
    elites, the balance test. A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
 5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms.

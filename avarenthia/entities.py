@@ -676,7 +676,8 @@ def make_tome(game, lvl, line=None):
     top = min(4, max(0, lvl // 4))
     cands = [s for s in SKILL_LIST if s.step <= top and (line is None or s.line == line)]
     known = set(game.player.known)
-    wts = [(4 if s.id not in known else 1) * (3 if s.unlock == 0 else 1) for s in cands]
+    mine = getattr(game.player, 'classes', [])
+    wts = [(4 if s.id not in known else 1) * (3 if s.unlock == 0 else 1) * (3 if s.line in mine else 1) for s in cands]
     sk = random.choices(cands, wts)[0]
     it = Item(game.new_id(), 'tome', sk.id)
     it.name = f'Tome of {sk.name}'

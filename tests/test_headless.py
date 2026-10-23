@@ -424,13 +424,29 @@ def items_skills_curse():
     app = new_app('soft', 555)
     g = app.game
     p = g.player
-    assert p.known == [] and not any(p.bar), (p.known, p.bar)
+    from avarenthia import classes as CL, events as EV
+    assert p.known == [] and not any(p.bar) and not CL.classes(g), (p.known, p.bar)
+    assert CL.slot_skill(g, 0) == 'haymaker' and CL.slot_skill(g, 1) is None, 'blank: only your fists\' skill'
     assert sorted(i.base for i in p.inv if i.k == 'gear') == ['quilted']
-    # tomes
+    # tomes: the first wakes a memory and is your class
     t0 = make_tome(g, 0)
     g.add_to_inv(t0)
-    assert g.read_tome(t0) == 1 and t0.t in p.known and t0.t in p.bar
-    hard = next(s for s in SK.SKILL_LIST if s.unlock == SK.UNLOCKS[3])
+    assert g.read_tome(t0) == 0 and g.pending, 'one warning first'
+    EV.RESOLVERS['wake_class'](g, 'yes', {'item': t0.id})
+    g.pending = None
+    line = SK.SKILLS[t0.t].line
+    assert CL.classes(g) == [line] and CL.title(g) == CL.PURE[line] and t0.t in p.known and t0.t in p.bar[2:5]
+    other = next(s for s in SK.SKILL_LIST if s.line not in (line, 'warcraft') and s.unlock == 0)
+    ot = E.Item(g.new_id(), 'tome', other.id)
+    g.add_to_inv(ot)
+    assert g.read_tome(ot) == 0 and other.id not in p.known and not g.pending, 'not your school'
+    p.disc[line][0] = CL.SECOND_AT
+    assert g.read_tome(ot) == 0 and g.pending, 'at rank 20 a second school may open'
+    EV.RESOLVERS['second_class'](g, 'yes', {'item': ot.id})
+    g.pending = None
+    assert CL.title(g) == CL.pair_name(line, other.line) and other.id in p.known
+    p.disc[line][0] = 0
+    hard = next(s for s in SK.SKILL_LIST if s.unlock == SK.TOME[5] and s.line == line)
     it = E.Item(g.new_id(), 'tome', hard.id)
     g.add_to_inv(it)
     assert g.read_tome(it) == 0 and hard.id not in p.known
@@ -1845,11 +1861,11 @@ def new_guilds():
     bear.awake, bear.hp = True, 1
     g.map.mons.append(bear)
     g.compute_fov()
-    p.bar[0] = 'tame'
+    p.bar[5] = 'tame'
     for _ in range(30):
         p.cooldowns.clear()
         p.mana = 99
-        SK.use(g, 0)
+        SK.use(g, 5)
         if MC.get(g, 'beast'):
             break
     bst = MC.get(g, 'beast')
@@ -1895,10 +1911,10 @@ def new_guilds():
             g.map.mons.append(e)
         g.compute_fov()
         prep_skill(g, sid)
-        p.bar[0] = sid
+        p.bar[5] = sid
         p.cooldowns.clear()
         p.mana, p.stamina, p.life = 999, 999, max(p.life, 200)
-        assert SK.use(g, 0), sid
+        assert SK.use(g, 5), sid
         assert SK.describe(SK.SKILLS[sid], 20), sid
         for _ in range(3):
             g.end_turn(1)
@@ -3705,18 +3721,17 @@ def stamina():
                 if D.TILES[g.map.tile(*c)].walk and not g.map.mon_at(*c))
     p.x, p.y = spot
     g.compute_fov()
-    p.known = ['power_strike', 'firebolt', 'charge']
-    p.bar = ['power_strike', 'firebolt', 'charge', None, None, None]
+    p.known = ['firebolt', 'charge']
+    p.classes = ['warcraft', 'fire']
+    p.bar = [None, None, 'firebolt', 'charge', None, None]
     p.disc['warcraft'] = [60, 0]
-    w = g.eq_item('weapon')
     st0, mp0 = p.stamina, p.mana
     from avarenthia.skills import use
-    if SK.weapon_line(g) == 'swords':
-        assert use(g, 0) and p.stamina == st0 - 3 and p.mana == mp0, (p.stamina, p.mana)
+    assert use(g, 0) and p.stamina == st0 - SK.SKILLS['haymaker'].cost and p.mana == mp0, (p.stamina, p.mana)
     st1 = p.stamina
     p.cooldowns.clear()
     before = wolf.hp
-    assert use(g, 2), 'Charge works with any weapon'
+    assert use(g, 3), 'Charge works with any weapon'
     assert p.stamina == st1 - 9 and before - wolf.hp > 3, ('Charge hits like a weapon now', before - wolf.hp)
     p.stamina = 0
     p.strained = g.turn
@@ -3783,7 +3798,7 @@ def schools():
     print('== schools')
     for line, d in SK.DISCIPLINES.items():
         tomes = SK.by_line(line)
-        want = 0 if line == 'spears' else 5 if d['kind'] == 'weapon' else 8      # spears get theirs with the classes
+        want = 0 if d['kind'] == 'weapon' else 8      # weapon skills come with the weapon now (weaponskills.py)
         assert len(tomes) == want, (line, len(tomes))
         if d['kind'] != 'weapon':
             assert [s.unlock for s in tomes] == list(SK.TOME), (line, [s.unlock for s in tomes])
@@ -3824,13 +3839,13 @@ def schools():
             g.map.mons.append(e)
         g.compute_fov()
         prep_skill(g, sid)
-        p.bar[0] = sid
+        p.bar[5] = sid
         ok = False
         for _ in range(40 if sid == 'tame' else 1):
             p.cooldowns.clear()
             p.mana = p.stamina = 999
             p.life = max(p.life, 400)
-            ok = SK.use(g, 0)
+            ok = SK.use(g, 5)
             if sid != 'tame' or MC.beasts(g):
                 break
         assert ok, sid
@@ -4060,9 +4075,9 @@ def weapons():
     arena()
     p.known = list(dict.fromkeys(p.known + ['block', 'shield_bash']))
     gob = foe('goblin', *cells[0])
-    p.bar[0] = 'block'
+    p.bar[5] = 'block'
     p.stamina = 999
-    assert SK.use(g, 0) and any(b_[0] == 'block' for b_ in p.buffs)
+    assert SK.use(g, 5) and any(b_[0] == 'block' for b_ in p.buffs)
     life = p.life
     gob.wield = None
     g.mon_attack(gob, 0)
@@ -4070,13 +4085,13 @@ def weapons():
     p.blocked = -1
     gob.wield = 'flail'
     assert not WP.blocked(g, gob), 'the flail swings over the shield'
-    p.bar[1] = 'shield_bash'
+    p.bar[4] = 'shield_bash'
     p.cooldowns = {}
     at = (gob.x, gob.y)
-    assert SK.use(g, 1) and ((gob.x, gob.y) != at or gob not in m.mons or not D.TILES[m.tile(2 * gob.x - p.x, 2 * gob.y - p.y)].walk)
+    assert SK.use(g, 4) and ((gob.x, gob.y) != at or gob not in m.mons or not D.TILES[m.tile(2 * gob.x - p.x, 2 * gob.y - p.y)].walk)
     p.eq.pop('shield', None)
     p.cooldowns = {}
-    assert not SK.use(g, 1), 'no shield, no Shield Bash'
+    assert not SK.use(g, 4), 'no shield, no Shield Bash'
     # monsters carry one weapon of their kind, and drop only that one
     for _ in range(20):
         dr = make_monster(g, 'dune_rider', p.x, p.y, 5)
@@ -4118,6 +4133,115 @@ def weapons():
     g2 = E.load_game()
     assert g2.bestiary['wolf'][1] == 30 and g2.player.bestiary is g2.bestiary
     print('weapons ok:', len(fams), 'weapon kinds,', len(p.bestiary), 'creatures known')
+
+
+def classes():
+    """Classes part 1: a blank start with only your weapon's skills; the first tome wakes your class, a second school
+    at rank 20 gives the pair's name; keys 1-2 come with the weapon (two skills for each of the 29 kinds, the second at
+    rank 10), 3-5 class skills, 6 one elite; each weapon family's rule; the swing arc, blood and the critical star."""
+    from avarenthia import skills as SK, classes as CL, weaponskills as WS, weapons as WP
+    from avarenthia.entities import make_monster, make_gear
+    from avarenthia.worldgen import free_around
+    print('== classes')
+    assert len(CL.PAIRS) == 55 and CL.pair_name('nature', 'beastcraft') == 'Wildkin' and len(WS.KIT) == 29
+    assert all(a in SK.SKILLS and b in SK.SKILLS for a, b in WS.KIT.values())
+    assert not any(SK.DISCIPLINES[s.line]['kind'] == 'weapon' for s in SK.SKILL_LIST), 'no weapon tomes any more'
+    assert 'fire_arrow' not in SK.SKILLS, 'Burning Arrow goes'
+    app = new_app('soft', seed=9)
+    g, p = app.game, app.game.player
+    p.lvl, p.str, p.dex, p.vit, p.ene = 30, 150, 150, 300, 150
+    assert CL.slot_skill(g, 0) == 'haymaker' and not CL.title(g)
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    m = g.map
+    fx = []
+
+    def foes(n=4, k='goblin'):
+        m.mons = [o for o in m.mons if o.is_npc]
+        out = []
+        for c in [c for c in free_around(g, m, p.x, p.y, 2) if c != (p.x, p.y) and not g.occupied(m, *c)][:n]:
+            o = make_monster(g, k, *c, 4)
+            o.hp = o.maxhp = 900
+            o.awake = True
+            m.mons.append(o)
+            out.append(o)
+        g.compute_fov()
+        return out
+    # every weapon kind: both skills work, the second only from rank 10
+    used = 0
+    for fam, (a, b) in WS.KIT.items():
+        p.eq, p.inv = {}, []
+        if fam != 'fists':
+            it = make_gear(g, fam, 'normal', 5)
+            g.add_to_inv(it)
+            p.eq['gloves' if D.BASES[fam]['slot'] == 'gloves' else 'weapon'] = it.id
+        line = SK.SKILLS[a].line
+        p.disc[line][0] = 0
+        assert CL.slot_skill(g, 0) == a and CL.slot_skill(g, 1) is None and WS.second_locked(g) == b, fam
+        p.disc[line][0] = WS.SECOND
+        assert CL.slot_skill(g, 1) == b, fam
+        for i in (0, 1):
+            foes()
+            p.stamina = p.mana = 999
+            p.cooldowns, p.quick = {}, False
+            if WP.main_hand(g) is not None:
+                WP.main_hand(g).unloaded = False
+            g.events = []
+            assert SK.use(g, i), (fam, i, CL.slot_skill(g, i), g.log[-1:])
+            fx += [e[1] for e in g.events if e[0] == 'fx']
+            used += 1
+            sp = next((it for it in m.items if getattr(it, 'thrown', False)), None)
+            if sp:                                  # a thrown spear back in hand
+                sp.x, sp.y = p.x, p.y
+                g.auto_pickup()
+        app.render()
+    assert 'swing' in fx and 'spin' in fx and 'blood' in fx, set(fx)
+    # a crossbow skill unloads it; Brace winds it
+    p.inv = []
+    xb = make_gear(g, 'heavyxbow', 'normal', 5)
+    g.add_to_inv(xb)
+    p.eq = {'weapon': xb.id}
+    foes()
+    p.cooldowns = {}
+    assert SK.use(g, 0) and WP.unloaded(g) and not SK.use(g, 0) and SK.use(g, 1) and not WP.unloaded(g)
+    # keys 3-6: class skills only of your schools, one elite
+    p.classes = ['fire']
+    p.known = ['firebolt', 'mend', 'shield_wall', 'inferno']
+    assert CL.fits(g, SK.SKILLS['firebolt'], 2) is None and CL.fits(g, SK.SKILLS['mend'], 2)
+    assert CL.fits(g, SK.SKILLS['inferno'], 5) is None and CL.fits(g, SK.SKILLS['firebolt'], 5)
+    assert CL.fits(g, SK.SKILLS['shield_wall'], 3) and CL.fits(g, SK.SKILLS['haymaker'], 2)
+    # the family rules: a staff makes spells cheaper, a sword's blow takes a turn off class recharges,
+    # every third unarmed blow gives breath back
+    st = make_gear(g, 'staff', 'normal', 5)
+    g.add_to_inv(st)
+    p.eq = {'weapon': st.id}
+    assert SK.cost_of(g, SK.SKILLS['inferno']) < SK.SKILLS['inferno'].cost
+    sw = make_gear(g, 'longsword', 'normal', 5)
+    g.add_to_inv(sw)
+    p.eq = {'weapon': sw.id}
+    o = foes(1)[0]
+    p.cooldowns = {'firebolt': 5, 'lunge': 5}
+    for _ in range(10):
+        g.melee(o)
+    assert p.cooldowns.get('firebolt', 0) < 5 and p.cooldowns.get('lunge') == 5, (p.cooldowns, o.hp, g.log[-3:])
+    p.eq = {}
+    p.stamina, p.blows = 0, 0
+    for _ in range(12):
+        g.melee(o)
+    assert p.stamina > 0 or p.mana > 0
+    # the screens: the panel shows the three groups and your name, the skills screen keys 3-6
+    p.classes = ['fire', 'shadow']
+    p.bar = [None, None, 'firebolt', None, None, 'inferno']
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    dump = app.cv.dump()
+    assert 'Hexblade' in dump and 'weapon' in dump and 'elite' in dump and 'Firebolt' in dump
+    app.screens = [ui.GameScreen(app), ui.SkillsScreen(app)]
+    app.render()
+    assert 'YOUR WEAPON' in app.cv.dump()
+    app.key('1')
+    app.render()
+    app.key('esc')
+    print('classes ok:', used, 'weapon skills used,', len(set(fx)), 'kinds of effect')
 
 
 def visible():
@@ -4183,11 +4307,11 @@ def visible():
     p.disc['fire'] = [10, 0]
     p.disc['shadow'] = [10, 0]
     for sid in ('firebolt', 'drain'):
-        p.bar[0] = sid
+        p.bar[5] = sid
         p.cooldowns.clear()
         p.mana = 999
         p.life = 5
-        assert SK.use(g, 0), sid
+        assert SK.use(g, 5), sid
         app.after_action()
         fx = [ev[2][1] for ev in app.effects if ev[0] == 'fx']
         assert 'bolt' in fx and 'burst' in fx, (sid, fx)
@@ -4212,12 +4336,12 @@ def visible():
                         g.visible(*c) and not g.occupied(g.map, *c))
             g.map.__dict__.setdefault('slain', []).append(('goblin', spot[0], spot[1], 3))
         app.effects.clear()
-        p.bar[0] = sid
+        p.bar[5] = sid
         p.cooldowns.clear()
         p.mana = p.stamina = 999
         p.life = 500
         e.hp = 999
-        assert SK.use(g, 0), sid
+        assert SK.use(g, 5), sid
         app.after_action()
         fx = [ev[2][1] for ev in app.effects if ev[0] == 'fx']
         assert want in fx, (sid, fx)
@@ -4554,7 +4678,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

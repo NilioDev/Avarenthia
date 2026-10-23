@@ -53,6 +53,8 @@ from . import history as HI
 from . import spellmap as SM
 from . import weapons as WP
 from . import bestiary as BE
+from . import weaponskills as WS
+from . import classes as CL
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -60,7 +62,8 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 33
+CL.register()
+SAVE_VERSION = 34
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1534,10 +1537,8 @@ class Game:
         return FG.forage(self)
 
     def read_tome(self, it):
-        if SK.learn(self, it.t):
-            self.remove_one(it)
-            return 1
-        return 0
+        """Your class's tome, a first one that wakes a memory, or a second school (classes.py)."""
+        return CL.read(self, it)
 
     def identify_all(self, dry=False):
         its = [it for it in self.player.inv if it.k == 'gear' and not it.identified]
@@ -1791,6 +1792,8 @@ class Game:
         self.num(mon.x, mon.y, f'{dmg}!' if crit else str(dmg), C_CRIT if crit else col, crit)
         if crit:
             self.shake()
+            if weapon:
+                self.fx('crit', x=mon.x, y=mon.y)       # a white star on the foe that turns gold
         if weapon:
             s = self.stats()
             if s['leech'] > 0:
@@ -1818,16 +1821,26 @@ class Game:
         if s['line'] and not s['ranged']:
             SK.gain(self, s['line'], 1)
         k = WP.on_melee(self, mon, s)
-        if not self.damage_mon(mon, random.randint(*s['dmg']) * k + self.weapon_extra(mon, s), crit, weapon=True):
-            self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
+        p = self.player
+        if crit:
+            WS.swing(self, [(mon.x, mon.y)])            # the swing arc: only on skills and critical hits
+        self._unblockable = any(b[0] == 'feint' for b in p.buffs)
+        p.buffs = [b for b in p.buffs if b[0] != 'feint']
+        try:
+            if not self.damage_mon(mon, random.randint(*s['dmg']) * k + self.weapon_extra(mon, s), crit, weapon=True):
+                self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
+        finally:
+            self._unblockable = False
         WP.after_melee(self, mon, s, crit, True)
+        if mon in self.map.mons:
+            WS.on_blow(self, mon, s)
 
-    def weapon_strike(self, mon, pct, force_crit=False, ranged=False):
+    def weapon_strike(self, mon, pct, force_crit=False, ranged=False, sunder=False):
         self.player.strained = self.turn            # no breath gets back while you swing
         s = self.stats()
         crit = force_crit or random.random() < self.crit_vs(mon, s) / 100
         return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True,
-                               ranged=ranged)
+                               ranged=ranged, sunder=sunder)
 
     def hurt(self, dmg, src, elem=None):
         if DBG.ON and DBG.god_tick(self):
@@ -2048,7 +2061,7 @@ class Game:
         p = self.player
         if MC.intercept(self, mon):
             return
-        if WP.blocked(self, mon):
+        if WP.blocked(self, mon) or WS.riposte(self, mon):
             return
         if random.random() < self.mon_hit_chance(mon, df):
             dmg = round(random.randint(*mon.dmg) * BH.attack_mult(self, mon))
@@ -2181,7 +2194,8 @@ class Game:
                 if random.random() < self.mon_hit_chance(mon, df):
                     self.hurt(random.randint(*mon.dmg) * 1.4, mon.name)
                 return
-        if (d['ranged'] or d['caster']) and seen and 2 <= dist <= 7 and random.random() < (.45 if d['caster'] else .6):
+        if (d['ranged'] or d['caster']) and seen and 2 <= dist <= 7 and random.random() < (.45 if d['caster'] else .6) \
+                and not (d['caster'] and 'silence' in mon.effects):
             if self.mon_shoot(mon, d['caster'], df):
                 return
         if d['erratic'] and random.random() < .5:
@@ -2301,6 +2315,7 @@ class Game:
                 acts -= 1
                 self.mon_turn(mon, df)
             SM.after_move(self, mon, ox_, oy_)
+            WS.keep_back(self, mon, ox_, oy_)
 
     def end_turn(self, cost, quiet=False):
         p = self.player
