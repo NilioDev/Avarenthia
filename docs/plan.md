@@ -29,9 +29,9 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 
 **The build order** (settled with Nilio 23 October 2026, thread "Bouwvolgorde plan.md"; the Dutch proposal with the
 reasons: project files `bouw/volgorde.md`). 23 rounds in 7 blocks. Sizes: S like market day, M like spell effects
-part 2, L like herds and hunting, XL like the magic schools. A pause after a round means Nilio plays the branch's CI
-build and sends feedback; the full test run and the merge to `main` come at the end of each block. Each block
-starts only on Nilio's "ga".
+part 2, L like herds and hunting, XL like the magic schools. No play builds in between (Nilio, 23 October 2026): he plays only when all 7 blocks are built, so the
+"pauses" below are only clean points to stop at when his usage limit runs low. The full test run and the merge to
+`main` come at the end of each block; CI keeps testing every push. Each block starts on Nilio's "ga".
 0. **Debug menu and test build** (M). First, because it makes testing every later round cheaper. Pause, merge.
 1. **Weapons** with the bestiary that grows (L): the same monster data and one `SAVE_VERSION` bump.
 2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
