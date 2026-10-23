@@ -748,7 +748,8 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   finds, on stones, in city library books, now and then as a rumour; the chronicle gets a chapter The Varnish with
   headings. A few longer works (the Song of the Nine Walls, the Book of Leagues) lie in pieces across the world, one per
   find; a whole work sells once and well to a city library, and its last line may point to a hidden place. Dry humour
-  is welcome. The texts: project files `poi/varnish-lore.md` (more may come).
+  is welcome. The empire was not kind: the dirty side (slaves, "the uncounted", the dead bound for debt, conquest)
+  shows too, with what people thought of it, for and against, from many mouths (Nilio: "de menselijke kant"). The texts: project files `poi/varnish-lore.md` (more may come).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
