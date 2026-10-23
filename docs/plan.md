@@ -763,7 +763,13 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
-- Still to settle (in `docs/open.md`, "Points of interest"): which Varnish places (proposal v2, part C of `poi/ideeen.md`).
+- **The Varnish places** (all approved 23 October; part C of `poi/ideeen.md`): the overgrown city round a sky well
+  with a sunken Sky Court; the Northern Wall of the nine legions with its tower ruins; the wind tower that howls in a
+  storm; the road of the bound dead (break a seal and the dead one rises); the star-iron forge by an old crater; the Gate
+  of Leagues whose star map points to other gates; the sluice hall (open a sluice and a flooded hall runs dry); the fallen
+  sky of black stones and glassy sand; the star house with an iron star floor under the dust; and as small extras a
+  sunken harbour and old coins.
+- Still to settle (in `docs/open.md`, "Points of interest"): the places of today's peoples and powers (`poi/volken.md`).
 
 ## Round 6: livelier settlements (on hold)
 

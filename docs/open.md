@@ -46,10 +46,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
 ## Points of interest
-- Which Varnish places join the overgrown cities (proposal v2, project files `poi/ideeen.md` part C): the Northern Wall,
-  wind tower, road of the bound dead, star-iron forge, Gate of Leagues, sluice hall, the fallen sky, star house; small
-  extras a sunken harbour and old coins. The Roman-looking v1 ideas are dropped.
-- More lore for the Varnish: the five riddles need their fragments written.
+- Places of today's peoples and powers in the wild (44 proposals in project files `poi/volken.md`): which ones.
 
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
