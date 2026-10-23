@@ -27,11 +27,37 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
-**Left of the big build (paused 18 October 2026 after the magic schools, at Nilio's word):** in this order,
-weapons with their skills' effects (spell effects parts 1 and 2 are built), then classes (approved 19 October 2026;
-they need the weapon kinds, and they change the skill list; new skills get their effects as they are built), then
-round 6 (Nilio's go for the whole plan covers the old three;
-classes wait for his go). Their specs are below; nothing of them is built yet.
+**The build order** (settled with Nilio 23 October 2026, thread "Bouwvolgorde plan.md"; the Dutch proposal with the
+reasons: project files `bouw/volgorde.md`). 23 rounds in 7 blocks. Sizes: S like market day, M like spell effects
+part 2, L like herds and hunting, XL like the magic schools. A pause after a round means Nilio plays the branch's CI
+build and sends feedback; the full test run and the merge to `main` come at the end of each block. Each block
+starts only on Nilio's "ga".
+0. **Debug menu and test build** (M). First, because it makes testing every later round cheaper. Pause, merge.
+1. **Weapons** with the bestiary that grows (L): the same monster data and one `SAVE_VERSION` bump.
+2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
+3. **Classes part 2** (L): the trees. 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
+   elites, the balance test. A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
+5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms.
+6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows.
+7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans.
+8. **The northern lights' gift** (M): needs the barrows. Its light-feast moves to the feast days (round 20).
+9. **The Rift and the Ashen Deep** (L). 10. **The editor** (L; its controls are still to talk about, may come later).
+   A pause after 5, 7 and 9; merge after 9 (the editor apart).
+11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
+12. **The Varnish** (XL): their cities and places, the hidden dungeons (need K5), the lore, the books, the riddles.
+13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. Pause after 12,
+    merge after 13.
+14. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
+    alchemy, brewing (ore lies by depth in the new caves). 15. **Part 2** (XL): beast parts, crafted powers, Unmake,
+    master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters.
+16. **Archaeology** (M): needs the old places and Smithing. Pause after 14 and 15, merge after 16.
+17. **Cities that grew, part 1** (XL): human cities, the metropolis, canal and fortress towns, test `city_rules`. The
+    bridges are not yet perfect (open.md, "City streets and bridges"); that does not hold this round up.
+18. **Part 2** (L): dwarf, halfling and orc towns, bridges on the open land. 19. **Round 6** (L): it lives in the new
+    city maps. 20. **Feast days** (L), with the light-feast. Pause after 17 and 19, merge after 20.
+21. **Old places part B and the 44 places of the peoples and powers** (XL). 22. **Places 45-64 and the seasonal
+    places** (L). Merge after 22.
+After that: the great evils (open.md), then Multiplayer (parked).
 
 ---
 
@@ -768,10 +794,7 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   bound wind and the bound dead; they made the first orcs of the uncounted to feed the work; the last star they pulled
   down was the Ruin; the vaults hold the names and what they could not destroy. The great evils (`evils.py`) are of after the
   Varnish and stay out of these riddles (Nilio).
-- **Where it goes in the build order** (proposal, put in the plan 23 October; Nilio settles the order with the
-  coordinator): part A with the Varnish places, the lore and the books after "Dungeons on their own land" (the hidden
-  dungeons need the new maker); archaeology with the life skills; part B, the places of the peoples, the more and the
-  seasonal places after part A; the feast days with round 6 (they show in the towns).
+- **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 16, 20, 21, 22).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.

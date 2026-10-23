@@ -4,12 +4,6 @@ Questions and choices that wait for Nilio, gathered 19 October 2026 so nothing i
 name he can use ("open.md", "open: debug menu"). When a point is settled, write the decision into `plan.md`
 (or `built.md`) and delete it here.
 
-## Build order
-What `plan.md` says now: weapons (with the weapon skills' effects), then classes (in three parts, a pause after
-each), then round 6. Each starts only on Nilio's "ga".
-- **Where do life skills go?** Their content is complete and approved (`plan.md`, "Life skills"), but they have no
-  place in the order yet. Proposed: after the classes, because Smithing needs the new weapon kinds.
-
 ## Multiplayer (parked, not urgent)
 Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
 their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
@@ -56,7 +50,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.
 
-Settled, no longer open: the northern lights' gift (in `plan.md` since 22 October 2026), the player as a ruler
+Settled, no longer open: the build order (in `plan.md` since 23 October 2026), the northern lights' gift (in `plan.md` since 22 October 2026), the player as a ruler
 (stays no; taken off this list 22 October 2026), the menu line that listed only 5 life skills (fixed 22 October
 2026), the visible weather border between regions (thread "Seizoenen in de wereld"; Nilio said it is not needed) and
 the class system (approved 19 October 2026, "we kunnen later nog sleutelen").
