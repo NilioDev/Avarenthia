@@ -12,9 +12,9 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 
 | Status | What |
 |---|---|
-| **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
+| **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
-| **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or one of 22 epics from hidden teachers, two per class). Not built yet |
+| **Approved: the epics** | 22 epic skills from hidden teachers, two per class, on key 6 instead of the elite (classes part 4, round 13). The rest of the classes is built |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). Not built yet |
@@ -32,9 +32,9 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 0. **Debug menu and test build** (M). Built 23 October 2026 (see `docs/built.md`).
 1. **Weapons** with the bestiary that grows (L). Built 23 October 2026 (see `docs/built.md`).
 2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
-   Built 23 October 2026 (see `docs/built.md`); the spec below stays until part 3.
+   Built 23 October 2026 (see `docs/built.md`).
 3. **Classes part 2** (L): the trees. Built 23 October 2026 (see `docs/built.md`). 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
-   elites, the balance test. A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
+   elites, the balance test. Built 23 October 2026 (see `docs/built.md`). A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
 5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms.
 6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows.
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans.
@@ -72,56 +72,10 @@ Everything new finds its place in what is there; no new screen per system, no ne
 
 ---
 
-## Classes, trees and the bar (approved, not built)
+## Classes part 4: the epics (approved, not built; round 13)
 
-Approved by Nilio on 19 October 2026 (thread "klasses en skills"; project files `klassen/`: the full list of names
-and pair rules in `klasses.md`, mockups `fire_tree.png` and `bar_near.png`). Today all fourteen disciplines stay
-open, 72 tome skills and eleven guilds mix freely, and a careful player ends up in one line anyway. Combat itself
-stays as it is.
+The rest of the classes spec is built (see `docs/built.md`, "Classes, trees and the bar").
 
-- **Start blank.** You wake in the temple with no class, only your weapon and its skills. The **first tome you
-  read** wakes a memory and is your **first class** (one warning before you read: "This will wake a memory").
-  From then on you read only tomes of your class; others you sell or keep.
-- **A second class, late.** At **rank 20** (settled) in your first class you may read one tome of a second school; it becomes
-  your second class and you learn the **name of your pair** (Fire + Shadow is a Hexblade). Who never takes a
-  second stays **pure** (Pyromancer, Rimecaller, Stormcaller, Cleric, Warlock, Necromancer, Druid, Beastmaster,
-  Warrior, Rogue, Arcanist).
-- **Eleven classes:** the nine schools, plus **Cunning** (Thieves' Guild; stealth, poison, traps; the first blow on
-  one who does not see you comes twice) and **Arcane** (Circle of Magi; Blink, Gate, Slow, Haste, Dispel,
-  Counterspell, runes laid as tiles; the lowest damage; can take away or move what a spell left on the map). Each
-  gets eight tomes like the schools.
-- **One rule per pair** (55) and one **pure rule** per class (11): a fight rule that ties the two school rules
-  together, given with the name (Hexblade: a foe both burning and cursed gives you life back from the burn). The
-  name is also how people and the chronicle speak of you. Full list: `klassen/klasses.md`.
-- **A tree per class:** three branches of six knots, some with 2-3 steps, a strong last knot (☼) at the end of each.
-  A knot opens when the one above it has a point. Only **passives**: the actives still come from tomes, so the bar
-  does not grow. One point per 5 ranks in that school (about 14 at rank 70): never everything. Points are spent
-  only at rest (an inn, your camp); a temple takes them all back for coin. One screen, arrows and Enter, Tab to the
-  other class. Examples: Fire has Pyromancer, Flameblade (your weapon burns: the spellsword's imbue, weaker than the
-  spell, ~1 blow in 3, no mana coming back while it burns) and Kindler; Nature's third branch is **Shapeshifter**
-  (wolf, bear, hawk: in a shape keys 1-2 become the beast's two attacks, your `@` takes its colours).
-- **The bar stays six keys** in three groups under SKILLS, each with a small header: **1-2 your weapon's two skills**
-  (they change with the weapon in hand, stamina), **3-5 three class skills** (chosen at rest as today, a dot in the
-  school's colour), **6 one elite** (gold ☼; only one elite on the bar). The pair's name stands right of SKILLS.
-- **Weapons:** each weapon kind gives two skills (a staff: Push Back and Focus; a bow: Aimed Shot and Volley) and
-  each discipline **one rule that colours your class skills** (staff: spells cost less; sword: a blow takes a turn
-  off your class cooldowns; axe and mace: damaging skills sometimes push; dagger: class skills crit more on a foe
-  beside you; bow: areas placed further; spear: skills on a foe beside you reach 2 tiles; a shield lengthens
-  defensive skills, a grimoire gives mana). Weapon rules never stack with an imbue blow. This replaces "eight tome
-  skills per weapon discipline" in the weapons plan; weapons get no tree.
-- **Guilds stay** (no new ones). Their techniques (three per guild at guild rank 1, 2, 4, plus eight for those who
-  serve two guilds) no longer mix freely on the bar (settled 19 October 2026):
-  - **Guild rank 4 is the guild's elite** (Inferno, Last Stand, Dawnbreak, Corpse Burst, Wind Step...); the
-    two-guild techniques are elites too, only for who serves both (Spellblade for a spellsword: the imbue holds
-    while mana lasts, each blow costs some, no other spells meanwhile). One elite on key 6. An elite may ask for a
-    knot in a tree.
-  - **Guild rank 1 and 2 become ordinary skills of their school** for keys 3-5, usable only when that school is one
-    of your classes (Mage Armor is Frost).
-  - **The weapon guilds** (Wardens: the bow; Still Hand: empty hands) teach weapon skills that may replace one of
-    that weapon's two.
-  - Anyone may join any guild and do its jobs and rise; a master with nothing for your classes says so.
-  - Garrote and Smoke Bomb move to the Cunning school; Wild Shape moves to the Nature tree and the Green Moot's elite
-    becomes a stronger shape (Elder Bear).
 - **Epic skills from hidden teachers** (approved 22 October 2026, from going through Project Gorgon's skills; the
   epics themselves settled the same day in thread "Epic skills", project files `klassen/epics/`: `voorstel.md`,
   mockups `epics.gif`). A tier above the elites, in the same slot: key 6 holds one elite or one epic, never both,
@@ -179,22 +133,6 @@ stays as it is.
     keep your colour). Six are drawn in `klassen/epics/epics.gif`; the rest follow the same hand.
   - **The handbook:** a few sentences in "Who you become": what an epic is, that it takes key 6 from the elite, how
     you find a teacher, once per rest; Phoenix's flames in "Fighting".
-- **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
-  gets only its pure rule, no extra elite.
-- **Worked out** (approved 19 October 2026, numbers to be tuned by the balance test): the eight tomes of Cunning and
-  Arcane, the Thieves' two new techniques (Cheap Shot, Blinding Powder), one rule per weapon family (unarmed: every
-  third blow gives some mana or stamina; staves: spells 15% cheaper) and two skills for each of the 26 weapon kinds
-  (the second at discipline rank 10; Burning Arrow goes), and the knots of all eleven trees (each school's "blade"
-  branch opens with its imbue): project files `klassen/uitwerking.md`.
-- **Balance test:** a new headless part where the bot fights the same set of monsters as a pure caster, a pure
-  warrior, a spellsword and weapon plus class, and reports turns and damage taken; they should win about as fast,
-  with a different risk.
-- **The handbook:** a new chapter **"Who you become"** after "Your hero", written so a new player understands it
-  without help: the blank start and the first tome, the second class at rank 20 and the pair's name, pure classes,
-  the tree (points, rest, the temple), the bar's three groups, weapon skills and weapon rules, elites and guilds.
-  "Fighting", "Your hero", "Guilds" and "All the keys" change with it. The build report quotes all of it.
-- **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
-  parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
 
 ## The northern lights' gift (approved 22 October 2026, not built)
 Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they

@@ -16,9 +16,10 @@ from .worldgen import cheb, free_around
 
 WATERS = {D.WATER, D.SHALLOW, D.RIVER}
 WALLS = {D.ICEWALL, D.BONEWALL, D.SPIRITTOTEM}
-SPELL_TILES = {D.BURNING, D.ICEWALL, D.SPELLICE, D.ROOTS, D.BRAMBLE, D.BONEWALL, D.HALLOWED, D.SPIRITTOTEM, D.BALL, D.DRIFT}
+SPELL_TILES = {D.BURNING, D.ICEWALL, D.SPELLICE, D.ROOTS, D.BRAMBLE, D.BONEWALL, D.HALLOWED, D.SPIRITTOTEM, D.BALL, D.DRIFT,
+               D.SNARE, D.CALTROPS, D.RUNE, D.GATE, D.SMOKE}
 TURNS = {D.BURNING: 6, D.ICEWALL: 18, D.SPELLICE: 30, D.ROOTS: 8, D.BRAMBLE: 14, D.BONEWALL: 6, D.HALLOWED: 20,
-         D.SPIRITTOTEM: 20, D.BALL: 8, D.DRIFT: 12}
+         D.SPIRITTOTEM: 20, D.BALL: 8, D.DRIFT: 12, D.SNARE: 60, D.CALTROPS: 14, D.RUNE: 80, D.GATE: 20, D.SMOKE: 6}
 KEEP_OFF = set()                 # stairs, doors and bridges keep their own tile (filled at the bottom)
 
 
@@ -126,15 +127,22 @@ def _walk_in_fire(game):
 
 
 def on_tile(game, o, tile, power):
-    if tile == D.BURNING:
+    if tile == D.SMOKE:
+        from . import arts as ART
+        ART.on_tile(game, o, tile)
+    elif tile == D.BURNING:
         if 'burn' not in o.effects and game.mon_res(o, 'fire') < 75:
             o.effects['burn'] = [3, max(2, power)]
     elif tile == D.ROOTS:
         if o.hold <= 0 and not o.tpl.get('fly') and random.random() < .7:
             o.hold = 1
+        from . import trees as TT
+        TT.thorns_on(game, o, tile)
     elif tile == D.BRAMBLE:
         if 'bleed' not in o.effects and o.tpl.get('family') not in ('undead', 'construct', 'ooze', 'plant'):
             o.effects['bleed'] = [3, max(1, power)]
+        from . import trees as TT
+        TT.thorns_on(game, o, tile)
     elif tile == D.DRIFT:
         o.effects['slow'] = [2, 0]
     elif tile == D.HALLOWED and undead(o):
@@ -150,9 +158,14 @@ def undead(o):
 
 
 def after_move(game, mon, ox, oy):
-    """The undead cannot set foot on hallowed ground: one that stepped onto it is thrown back."""
+    """The undead cannot set foot on hallowed ground: one that stepped onto it is thrown back. Snares, caltrops
+    and runes do their work on who steps onto them (arts.py)."""
     m = game.map
     if (mon.x, mon.y) == (ox, oy) or not getattr(m, 'fields', None) or mon not in m.mons:
+        return
+    from . import arts as ART
+    ART.mon_moved(game, mon)
+    if mon not in m.mons:
         return
     if m.tile(mon.x, mon.y) == D.HALLOWED and m.tile(ox, oy) != D.HALLOWED and undead(mon):
         mon.x, mon.y = ox, oy
@@ -229,18 +242,23 @@ BARE = {'desert', 'dune_crest', 'salt_edge', 'badlands', 'glacier', 'ice_shelf',
 def nature_factor(game):
     """Nature is a quarter stronger in forest and grass, a quarter weaker in desert, on ice and under the ground."""
     m = game.map
+    from . import trees as TT
+    floor = 1.0 if TT.has(game, 'druid') else .75   # a Druid is never weaker
     if m.kind == 'dungeon' or getattr(m, 'underground', False):
-        return .75
+        return floor
     from .cooking import here_biome
     b = here_biome(game)
-    return 1.25 if b in GREEN else .75 if b in BARE else 1.0
+    return 1.25 if b in GREEN else floor if b in BARE else 1.0
 
 
 def wet(game, o):
     """Water conducts: an enemy in water, or out in the rain, takes the arc harder."""
     m = game.map
-    if under(m, o.x, o.y) in WATERS or m.tile(o.x, o.y) in (D.SWAMP, D.SPELLICE):
+    if under(m, o.x, o.y) in WATERS or m.tile(o.x, o.y) in (D.SWAMP, D.SPELLICE) or 'soaked' in getattr(o, 'effects', {}):
         return True
+    from . import trees as TT
+    if TT.has(game, 'winterstorm') and getattr(o, 'frozen', False) and getattr(o, 'hold', 0) > 0:
+        return True                                 # a Winterstorm's ice carries the arc like water
     if m.kind == 'dungeon' or getattr(m, 'underground', False):
         return False
     from . import weather as WX

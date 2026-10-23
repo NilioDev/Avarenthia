@@ -224,6 +224,18 @@ def ch_who(g):
               'your own, a Paladin, a Lich or a Wildkin among fifty-five. There is no third. Who never takes a second '
               'stays pure:'),
         ('l', pure),
+        ('p', 'Every name, pure or of two, has a rule of its own: a Pyromancer\'s fire burns longer, a Paladin\'s '
+              'War Cry heals the company. The page of your tree shows yours.'),
+        ('h', 'Cunning and Arcane'),
+        ('p', 'Two classes owe nothing to gods or the land. Cunning is the craft of the dark and the knife: Sneak, '
+              'Envenom, Garrote, Smoke Bomb, Shadowstep and Vanish, snares, the sign {^|200,170,120}, and caltrops, '
+              'the sign {÷|180,180,180}. Smoke, the sign {▒|154,154,154}, hides what stands in it. A foe that does not '
+              'see you coming, asleep, blinded or unaware, takes your first blow twice over; a Rogue\'s, three '
+              'times. Who sneaks is seen far less often.'),
+        ('p', 'Arcane is the old learned magic: Arcane Bolt, Blink, Slow, Dispel, Counterspell and Stop Time, runes, '
+              'the sign {Φ|190,150,255}, that wait on the ground for a foe, and gates, the sign {Ω|120,160,255}: step '
+              'into one and come out of the other. Dispel takes a spell off the ground or the magic off a foe; '
+              'Counterspell lets the next spell cast at you come to nothing.'),
         ('h', 'Your tree'),
         ('p', f'Each class has a tree of three branches, six knots in each. Every {TT.EVERY} ranks in a school give '
               'you one point for its tree. A knot opens once the one above it has a point; some take two or three, '
@@ -243,7 +255,8 @@ def ch_who(g):
         ('p', 'Six keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take up '
               'another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [5] are three skills '
               'of your classes. [6] is your elite, the sign {☼|255,214,90}: one technique a guild master taught you. '
-              'Choose them in a town with [z]. The panel shows the three groups, with your name beside SKILLS.'),
+              'A technique of a weapon guild that fits the weapon in your hand may take the place of [1] or [2] '
+              'instead. Choose them in a town with [z]. The panel shows the three groups, with your name beside SKILLS.'),
         ('h', 'What your weapon adds'),
         ('p', 'Every kind of weapon also changes how your class skills work:'),
         ('l', rules),
@@ -594,7 +607,8 @@ def ch_guilds(g):
               'quartermaster, sleep in the hall for little or nothing, have their gear mended cheaper, and are paid '
               'better the higher they rise. Only a guild master teaches the advanced techniques, and only to those '
               'who have earned them. A technique goes on [6] as your elite; one of your own schools may also go on '
-              '[3] to [5].'),
+              '[3] to [5], and one of a weapon guild on [1] or [2] while you hold its weapon. Below the highest ranks, '
+              'a master will not teach a technique of a school that is not yours: you could never use it.'),
         ('p', 'Who serves two guilds may learn a technique of both. One that mixes weapon and spell costs stamina and '
               'mana alike; the Hollow Coven\'s techniques cost life as well.'),
         ('p', 'Standing with a guild fades slowly if you do nothing for it, but never below your rank.'),

@@ -33,11 +33,13 @@ DISCIPLINES = {
     'nature': dict(name='Nature', kind='magic'),
     'necromancy': dict(name='Necromancy', kind='magic'),
     'beastcraft': dict(name='Beastcraft', kind='magic'),
+    'cunning': dict(name='Cunning', kind='martial'),
+    'arcane': dict(name='Arcane Magic', kind='magic'),
 }
 DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (210, 170, 120), 'spears': (200, 190, 150), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
               'fire': (255, 122, 44), 'frost': (159, 216, 255), 'storm': (242, 240, 122), 'restoration': (150, 255, 170),
               'shadow': (176, 110, 255), 'warcraft': (242, 196, 67), 'nature': (120, 200, 90), 'necromancy': (190, 200, 170),
-              'beastcraft': (200, 150, 90)}
+              'beastcraft': (200, 150, 90), 'cunning': (150, 150, 170), 'arcane': (190, 150, 255)}
 DISC_ORDER = list(DISCIPLINES)
 WEAPON_LINE = {'dagger': 'daggers', 'shortsword': 'swords', 'longsword': 'swords', 'bastard': 'swords', 'runeblade': 'swords',
                'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'spears', 'warstaff': 'spears',
@@ -101,6 +103,7 @@ class Skill:
 
 S = Skill
 LEAF, BONE, BEAST = (120, 200, 90), (210, 210, 180), (200, 150, 90)
+SNEAK, ARC = (150, 150, 170), (190, 150, 255)
 FIRE, ICE, STORM, HOLY, DARK, STEEL, ARROW, WAR = (255, 122, 44), (159, 216, 255), (242, 240, 122), (150, 255, 170), (176, 110, 255), (255, 106, 74), (216, 208, 176), (242, 196, 67)
 SKILL_LIST = [
     # the weapon skills come with the weapon in hand (weaponskills.py), not from tomes
@@ -196,6 +199,24 @@ SKILL_LIST = [
     S('rally', 'Rally', 'warcraft', 5, 10, 35, 'self', heal=(15, 1.0), buff=('dmg', 15, .3, 12), party=True, fury=12, color=WAR, glyph='!'),
     S('charge', 'Charge', 'warcraft', 6, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
     S('unbroken', 'Unbroken', 'warcraft', 7, 10, 45, 'self', buff=('unbroken', 3, .05, 15), color=WAR, glyph='#'),
+    # cunning: stealth, poison and traps; the first blow on one who does not see you lands twice (arts.py)
+    S('sneak', 'Sneak', 'cunning', 0, 3, 12, 'self', buff=('sneak', 1, 0, 60), color=SNEAK, glyph='∙'),
+    S('envenom', 'Envenom', 'cunning', 1, 4, 20, 'self', buff=('envenom', 4, .3, 10), color=(143, 220, 90), glyph='!'),
+    S('set_snare', 'Set Snare', 'cunning', 2, 4, 8, 'snare', color=(200, 170, 120), glyph='^'),
+    S('caltrops', 'Caltrops', 'cunning', 3, 5, 12, 'caltrops', range=5, radius=1, color=(180, 180, 180), glyph='÷'),
+    S('garrote', 'Garrote', 'cunning', 4, 5, 7, 'melee', pct=150, crit=True, fx={'bleed': (4, .3, 6), 'silence': 3}, color=(200, 40, 40)),
+    S('smoke_bomb', 'Smoke Bomb', 'cunning', 5, 6, 14, 'smoke', radius=1, color=(150, 150, 150), glyph='▒'),
+    S('shadowstep', 'Shadowstep', 'cunning', 6, 6, 10, 'shadowstep', range=4, color=(120, 110, 160), glyph='∙'),
+    S('vanish', 'Vanish', 'cunning', 7, 8, 40, 'vanish', color=(120, 110, 160), glyph='∙'),
+    # arcane: runes, space and time; the lowest damage of all, and it unpicks other spells
+    S('arcane_bolt', 'Arcane Bolt', 'arcane', 0, 3, 1, 'bolt', lo=3, hi=6, r=.3, color=ARC),
+    S('blink', 'Blink', 'arcane', 1, 5, 8, 'blink', range=4, color=ARC, glyph='∙'),
+    S('slow', 'Slow', 'arcane', 2, 5, 8, 'curse', fx={'slow': 5}, color=ARC),
+    S('rune_of_warding', 'Rune of Warding', 'arcane', 3, 6, 6, 'rune', color=ARC, glyph='Φ'),
+    S('dispel', 'Dispel', 'arcane', 4, 6, 6, 'dispel', range=6, color=ARC),
+    S('counterspell', 'Counterspell', 'arcane', 5, 7, 20, 'self', buff=('counter', 1, 0, 5), color=ARC, glyph='○'),
+    S('gate', 'Gate', 'arcane', 6, 10, 20, 'gate', color=(120, 160, 255), glyph='Ω'),
+    S('stop_time', 'Stop Time', 'arcane', 7, 18, 40, 'around', dtype='none', radius=8, fx={'stun': 3}, color=(210, 210, 230), glyph='∙'),
 ]
 # techniques taught only by guild masters (see guilds.py); they never turn up in tomes
 TECHNIQUES = [
@@ -224,10 +245,10 @@ TECHNIQUES = [
       flavor='Wardens of the Wild'),
     S('thornbind', 'Thornbind', 'archery', 4, 9, 12, 'shot', pct=200, pct_r=2.5, fx={'stun': 4, 'bleed': (4, .3, 6)}, color=(112, 200, 90),
       glyph='-', flavor='Wardens of the Wild'),
-    S('garrote', 'Garrote', 'daggers', 1, 5, 7, 'melee', pct=150, crit=True, fx={'bleed': (4, .3, 6), 'stun': 1},
+    S('cheap_shot', 'Cheap Shot', 'cunning', 1, 3, 6, 'melee', pct=80, fx={'stun': 2}, need_unseen=True, color=STEEL,
       flavor="Thieves' Guild"),
-    S('smoke_bomb', 'Smoke Bomb', 'daggers', 2, 6, 14, 'around', dtype='none', radius=2, fx={'stun': 3}, color=(150, 150, 150), glyph='░',
-      flavor="Thieves' Guild"),
+    S('blinding_powder', 'Blinding Powder', 'cunning', 2, 4, 12, 'curse', range=3, fx={'blind': 4}, color=(230, 230, 200),
+      glyph='∙', flavor="Thieves' Guild"),
     S('deaths_kiss', "Death's Kiss", 'daggers', 4, 10, 16, 'melee', pct=380, pct_r=3, crit=True, execute=2.5, flavor="Thieves' Guild"),
     S('hellfire', 'Hellfire', 'shadow', 1, 7, 3, 'bolt', lo=10, hi=18, r=.6, drain=.25, splash=1, color=(220, 60, 120),
       flavor='Hollow Coven'),
@@ -249,6 +270,8 @@ TECHNIQUES = [
       flavor='The Green Moot'),
     S('spirit_totem', 'Spirit Totem', 'nature', 2, 10, 30, 'totem', heal=(3, .1), color=(140, 230, 160), glyph='¶', flavor='The Green Moot'),
     S('wild_shape', 'Wild Shape', 'nature', 4, 12, 50, 'shape', shape=('bear', 35, 25, 25), color=BEAST, glyph='q',
+      flavor='The Green Moot'),
+    S('elder_bear', 'Elder Bear', 'nature', 4, 14, 50, 'shape', shape=('bear', 55, 35, 30), color=(230, 160, 90), glyph='q',
       flavor='The Green Moot'),
     # the Hallowed Chapter
     S('mass_mend', 'Mass Mend', 'restoration', 1, 8, 8, 'self', heal=(16, 1.1), party=True, color=HOLY, glyph='+',
@@ -310,6 +333,10 @@ def cost_of(game, sk):
     from . import trees as TT
     if TT.free_cast(game, sk):
         return 0
+    if sk.id == 'blink' and TT.has(game, 'astral_step') and game.player.life < game.stats()['max_life'] / 2:
+        return 0
+    if pool(sk) == 'mana' and any(b[0] == 'blinkcheap' for b in game.player.buffs):
+        return max(1, round(sk.cost / 2))           # Blink Strike: the next spell after a Blink
     gnome = getattr(game.player, 'race', '') == 'gnome' and pool(sk) == 'mana'
     c = sk.cost * (.85 if gnome else 1)
     if pool(sk) == 'mana':
@@ -665,7 +692,16 @@ def use(game, slot):
         if not SM.use_corpses(game, sk.corpses):
             game.msg(f"{sk.name} needs {'a corpse' if sk.corpses == 1 else f'{sk.corpses} corpses'} near you.", 'bad')
             return 0
+    if getattr(sk, 'need_unseen', False):
+        from . import arts as ART
+        t = _melee_target(game)
+        if t and not ART.unaware(game, t):
+            game.msg(f'{sk.name} only works on one who does not see you coming.', 'bad')
+            return 0
     r = rank(game, sk.line)
+    if sk.mode != 'self':
+        from . import arts as ART
+        ART.broke_cover(game)
     game._skill = sk
     try:
         if not EXEC[sk.mode](game, sk, r):
@@ -675,7 +711,7 @@ def use(game, slot):
     if sk.weapon_skill and sk.mode in WS.RANGED_MODES and WP.wielded(game) in WP.CROSSBOWS:
         WP.main_hand(game).unloaded = True
     if pool(sk) == 'mana':
-        p.buffs = [b for b in p.buffs if b[0] != 'focus']   # Focus is spent on one spell
+        p.buffs = [b for b in p.buffs if b[0] not in ('focus', 'blinkcheap') or (b[0] == 'blinkcheap' and sk.id == 'blink')]
     price = sk.life_cost + (round(p.life * sk.life_frac) if sk.life_frac else 0)
     if price and TT.free_life(game):
         price = 0
@@ -753,6 +789,8 @@ def _hit(game, mon, sk, r, ranged=False):
         if getattr(sk, 'push', 0) and not dead:
             WS.push(game, mon, sk.push)
         dealt = before - max(0, mon.hp)
+        from . import trees as TT
+        TT.reaver(game, sk, dealt)
     elif sk.dtype == 'spell':
         dmg = _spell_dmg(game, sk, r)
         game._area = sk.mode in ('around', 'chain', 'storm', 'target_area', 'volley')
@@ -816,7 +854,7 @@ def apply_fx(game, mon, sk, r):
         b, br, t = fx['swarm']
         v = max(1, round((b + br * r) * (_nat(game) if sk.line == 'nature' else 1)))
         mon.effects['swarm'] = [t, v]
-    for k in ('weaken', 'vuln', 'slow', 'fear', 'silence', 'sunder'):
+    for k in ('weaken', 'vuln', 'slow', 'fear', 'silence', 'sunder', 'blind', 'soaked'):
         if k in fx:
             mon.effects[k] = [fx[k], 0]
     if 'plague' in fx:
@@ -1026,7 +1064,8 @@ def x_chain(game, sk, r):
         late = min(.2, late + .05)                      # it hops from one to the next
         hit.add(t.id)
         frm = (t.x, t.y)
-        wet = SM.wet(game, t)
+        from . import trees as TT
+        wet = SM.wet(game, t) or TT.conducts(game, t)
         if wet:
             jumps += 1                                  # water carries it on, and further
         _hit(game, t, sk, r)
@@ -1110,6 +1149,7 @@ def x_self(game, sk, r):
         from . import trees as TT
         amt = round((sk.heal[0] + sk.heal[1] * r) * (_nat(game) if sk.line == 'nature' else 1) * TT.heal_mult(game))
         game.heal(amt, show=True)
+        TT.on_self_heal(game, sk, r)
         did = True
         if sk.party or TT.has(game, 'shared_light'):
             from . import mercs as MC
@@ -1619,3 +1659,4 @@ EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 
 
 from . import weaponskills as _WS  # noqa: E402  (the weapon skills, keys 1-2)
 SKILLS.update(_WS.WSKILLS)
+from . import arts as _ART  # noqa: E402,F401  (Cunning and Arcane register their ways)

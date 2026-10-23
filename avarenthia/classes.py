@@ -9,7 +9,8 @@ elite (for now any guild technique; guild elites are settled in classes part 3).
 from . import skills as SK
 
 SECOND_AT = 20
-CLASS_LINES = ('fire', 'frost', 'storm', 'restoration', 'shadow', 'necromancy', 'nature', 'beastcraft', 'warcraft')
+CLASS_LINES = ('fire', 'frost', 'storm', 'restoration', 'shadow', 'necromancy', 'nature', 'beastcraft', 'warcraft',
+               'cunning', 'arcane')
 PURE = {'fire': 'Pyromancer', 'frost': 'Rimecaller', 'storm': 'Stormcaller', 'restoration': 'Cleric', 'shadow': 'Warlock',
         'necromancy': 'Necromancer', 'nature': 'Druid', 'beastcraft': 'Beastmaster', 'warcraft': 'Warrior',
         'arcane': 'Arcanist', 'cunning': 'Rogue'}
@@ -48,6 +49,11 @@ def title(game):
     if len(c) == 2:
         return PAIRS.get(frozenset(c))
     return PURE.get(c[0]) if c else None
+
+
+def rule_name(game):
+    """Whose rule you fight by: your pair's, or your pure class's while you have one."""
+    return title(game)
 
 
 def pair_name(a, b):
@@ -149,20 +155,48 @@ def slot_skill(game, i):
     return p.bar[i] if i < len(p.bar) else None
 
 
+def _elites():
+    from . import guilds as GU
+    out = {sid for rows in GU.TEACH.values() for sid, rk, *_ in rows if rk >= 4}
+    return out | {v[0] for v in GU.COMBOS.values()}
+
+
 def is_elite(sk):
-    return bool(sk.guild)
+    """An elite: a guild's rank-4 technique, or one for those who serve two guilds. The others of rank 1 and 2 are
+    ordinary skills of their school (or, from the weapon guilds, a weapon skill)."""
+    return sk.guild and sk.id in _elites()
+
+
+def weapon_guild(sk):
+    """A technique of the Wardens or the Still Hand that may take the place of one of its weapon's two skills."""
+    return sk.guild and not is_elite(sk) and SK.DISCIPLINES[sk.line]['kind'] == 'weapon'
+
+
+def of_no_use(game, sid):
+    """A guild master's word when a technique is of no use to you, or None."""
+    sk = SK.SKILLS[sid]
+    if is_elite(sk) or weapon_guild(sk) or sk.line in classes(game):
+        return None
+    return (f'"{sk.name} is of {school(sk.line)}, and that is not one of your schools. I could teach it, and you '
+            f'could never use it. Keep your coin."')
 
 
 def fits(game, sk, i):
     """Whether this skill may go on key i+1. Returns None if it fits, else why not."""
     if i in WEAPON:
+        if weapon_guild(sk):
+            from . import weaponskills as WS
+            k = WS.KIT.get(WS.kit(game))
+            if k and WS.WSKILLS[k[0]].line == sk.line:
+                return None
+            return f'{sk.name} needs {SK.DISCIPLINES[sk.line]["weapon"]} in your hands.'
         return 'Keys 1 and 2 are your weapon\'s own two skills: take up another weapon to change them.'
-    if getattr(sk, 'weapon_skill', False):
-        return 'A weapon skill comes with its weapon, on keys 1 and 2.'
+    if getattr(sk, 'weapon_skill', False) or weapon_guild(sk):
+        return 'A weapon skill goes on keys 1 and 2.'
     if i in ELITE:
-        return None if is_elite(sk) else 'Key 6 is for one elite: a technique a guild master taught you.'
-    if is_elite(sk) and sk.line not in classes(game):
-        return f'{sk.name} is not of your schools: it can only go on key 6.'
+        return None if is_elite(sk) else 'Key 6 is for one elite: a guild\'s highest technique.'
+    if is_elite(sk):
+        return f'{sk.name} is an elite: it can only go on key 6.'
     if sk.line not in classes(game):
         return f'{sk.name} is not of your schools.'
     return None

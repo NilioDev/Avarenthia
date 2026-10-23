@@ -88,6 +88,8 @@ TREE_SKILL_LIST = [
     S('wolf_shape', 'Wolf Shape', 'nature', 0, 8, 40, 'shape', shape=('wolf', 30, 5, 25), color=SK.BEAST, glyph='C'),
     S('bear_shape', 'Bear Shape', 'nature', 0, 9, 45, 'shape', shape=('bear', 15, 30, 25), color=SK.BEAST, glyph='q'),
     S('hawk_shape', 'Hawk Shape', 'nature', 0, 6, 40, 'shape', shape=('hawk', -20, 0, 30), color=(220, 230, 255), glyph='v'),
+    S('rune_of_snaring', 'Rune of Snaring', 'arcane', 0, 6, 8, 'rune', snaring=True, color=SK.ARC, glyph='Φ'),
+    S('haste', 'Haste', 'arcane', 0, 10, 40, 'self', buff=('haste', 1, 0, 5), color=(230, 230, 160), glyph='»'),
 ]
 # the two skills of each weapon kind; 'fists' is empty hands
 KIT = {
@@ -132,8 +134,14 @@ def skills_now(game):
     if not k:
         return None, None
     line = WSKILLS[k[0]].line
-    r = game.player.disc.get(line, [0, 0])[0]
-    return k[0], (k[1] if r >= SECOND or kit(game) in SHAPE_KITS else None)
+    p = game.player
+    r = p.disc.get(line, [0, 0])[0]
+    a, b = k[0], (k[1] if r >= SECOND or kit(game) in SHAPE_KITS else None)
+    swap = getattr(p, 'wswap', {}).get(line, {})       # a weapon guild's technique in place of one of the two
+    if kit(game) not in SHAPE_KITS:
+        a = swap.get(0, a) if swap.get(0) in p.known else a
+        b = swap.get(1, b) if swap.get(1) in p.known and b is not None else b
+    return a, b
 
 
 def second_locked(game):

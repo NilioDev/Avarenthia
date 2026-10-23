@@ -313,6 +313,17 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   (`weaponskills.TREE_SKILL_LIST`); in a shape keys 1-2 are its attacks, 3-6 rest unless Untamed. Knots of the
   proposal that needed systems we lack were made simpler (listed in the round's report,
   /mnt/project-files/bouw/ronde3-bomen.md). Debug: "Rested here". Tip `tree`. SAVE_VERSION 35. Test `trees`.
+- **Classes part 3: the rules, Cunning and Arcane, the elites** (23 October 2026; `arts.py` the two new schools'
+  arts, `trees.RULES`). Cunning (martial, stamina) and Arcane (magic, mana) with 8 tomes each (Garrote and Smoke Bomb
+  moved in; the Thieves now teach Cheap Shot and Blinding Powder) and their trees (Stealth, Poison, Traps; Runes,
+  Space, Time). New ground tiles: snare ^, caltrops ÷, rune Φ, gate Ω, smoke ▒ (spell tiles, `arts.mon_moved`).
+  Cunning's rule: the first blow on a foe that does not see you lands twice (Rogue three times); sneaking is seen
+  far less. All 66 rules (11 pure, 55 pairs) are data (`trees.RULES`: text + effects, read as knots by `trees.mine`),
+  shown on the tree page. Elites: guild techniques of rank 4+ and the two-guild combos go on key 6; a lesser
+  technique of your own school on 3-5; a weapon guild's on key 1 or 2 while you hold its weapon (`p.wswap`); a master
+  will not teach a lesser technique of a school that is not yours. SAVE_VERSION 36. Tests `pairs` (every rule in a
+  fight) and `balance` (Pyromancer, Warrior, Firebrand, Reaver must win; the pure Rogue is reported: with a dagger
+  it loses open fights against awake groups, see the round's report /mnt/project-files/bouw/ronde4-klassen3.md).
 
 ## Weapons: more kinds, few disciplines (built 23 October 2026; the spec)
 
@@ -363,6 +374,74 @@ weapon has one rule you notice in a fight. Everything comes in the three grades.
 - **No wands**: the grimoire is already the magic second hand.
 - **Next:** replaced by the classes plan above: two skills per weapon kind and one rule per discipline, then their effects.
 - **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
+
+
+## Classes, trees and the bar (built 23 October 2026; the spec)
+
+Approved by Nilio on 19 October 2026 (thread "klasses en skills"; project files `klassen/`: the full list of names
+and pair rules in `klasses.md`, mockups `fire_tree.png` and `bar_near.png`). Today all fourteen disciplines stay
+open, 72 tome skills and eleven guilds mix freely, and a careful player ends up in one line anyway. Combat itself
+stays as it is.
+
+- **Start blank.** You wake in the temple with no class, only your weapon and its skills. The **first tome you
+  read** wakes a memory and is your **first class** (one warning before you read: "This will wake a memory").
+  From then on you read only tomes of your class; others you sell or keep.
+- **A second class, late.** At **rank 20** (settled) in your first class you may read one tome of a second school; it becomes
+  your second class and you learn the **name of your pair** (Fire + Shadow is a Hexblade). Who never takes a
+  second stays **pure** (Pyromancer, Rimecaller, Stormcaller, Cleric, Warlock, Necromancer, Druid, Beastmaster,
+  Warrior, Rogue, Arcanist).
+- **Eleven classes:** the nine schools, plus **Cunning** (Thieves' Guild; stealth, poison, traps; the first blow on
+  one who does not see you comes twice) and **Arcane** (Circle of Magi; Blink, Gate, Slow, Haste, Dispel,
+  Counterspell, runes laid as tiles; the lowest damage; can take away or move what a spell left on the map). Each
+  gets eight tomes like the schools.
+- **One rule per pair** (55) and one **pure rule** per class (11): a fight rule that ties the two school rules
+  together, given with the name (Hexblade: a foe both burning and cursed gives you life back from the burn). The
+  name is also how people and the chronicle speak of you. Full list: `klassen/klasses.md`.
+- **A tree per class:** three branches of six knots, some with 2-3 steps, a strong last knot (☼) at the end of each.
+  A knot opens when the one above it has a point. Only **passives**: the actives still come from tomes, so the bar
+  does not grow. One point per 5 ranks in that school (about 14 at rank 70): never everything. Points are spent
+  only at rest (an inn, your camp); a temple takes them all back for coin. One screen, arrows and Enter, Tab to the
+  other class. Examples: Fire has Pyromancer, Flameblade (your weapon burns: the spellsword's imbue, weaker than the
+  spell, ~1 blow in 3, no mana coming back while it burns) and Kindler; Nature's third branch is **Shapeshifter**
+  (wolf, bear, hawk: in a shape keys 1-2 become the beast's two attacks, your `@` takes its colours).
+- **The bar stays six keys** in three groups under SKILLS, each with a small header: **1-2 your weapon's two skills**
+  (they change with the weapon in hand, stamina), **3-5 three class skills** (chosen at rest as today, a dot in the
+  school's colour), **6 one elite** (gold ☼; only one elite on the bar). The pair's name stands right of SKILLS.
+- **Weapons:** each weapon kind gives two skills (a staff: Push Back and Focus; a bow: Aimed Shot and Volley) and
+  each discipline **one rule that colours your class skills** (staff: spells cost less; sword: a blow takes a turn
+  off your class cooldowns; axe and mace: damaging skills sometimes push; dagger: class skills crit more on a foe
+  beside you; bow: areas placed further; spear: skills on a foe beside you reach 2 tiles; a shield lengthens
+  defensive skills, a grimoire gives mana). Weapon rules never stack with an imbue blow. This replaces "eight tome
+  skills per weapon discipline" in the weapons plan; weapons get no tree.
+- **Guilds stay** (no new ones). Their techniques (three per guild at guild rank 1, 2, 4, plus eight for those who
+  serve two guilds) no longer mix freely on the bar (settled 19 October 2026):
+  - **Guild rank 4 is the guild's elite** (Inferno, Last Stand, Dawnbreak, Corpse Burst, Wind Step...); the
+    two-guild techniques are elites too, only for who serves both (Spellblade for a spellsword: the imbue holds
+    while mana lasts, each blow costs some, no other spells meanwhile). One elite on key 6. An elite may ask for a
+    knot in a tree.
+  - **Guild rank 1 and 2 become ordinary skills of their school** for keys 3-5, usable only when that school is one
+    of your classes (Mage Armor is Frost).
+  - **The weapon guilds** (Wardens: the bow; Still Hand: empty hands) teach weapon skills that may replace one of
+    that weapon's two.
+  - Anyone may join any guild and do its jobs and rise; a master with nothing for your classes says so.
+  - Garrote and Smoke Bomb move to the Cunning school; Wild Shape moves to the Nature tree and the Green Moot's elite
+    becomes a stronger shape (Elder Bear).
+- **Pure is deeper, a pair is wider:** growing by use, one school reaches ranks 55 and 70 sooner; so a pure class
+  gets only its pure rule, no extra elite.
+- **Worked out** (approved 19 October 2026, numbers to be tuned by the balance test): the eight tomes of Cunning and
+  Arcane, the Thieves' two new techniques (Cheap Shot, Blinding Powder), one rule per weapon family (unarmed: every
+  third blow gives some mana or stamina; staves: spells 15% cheaper) and two skills for each of the 26 weapon kinds
+  (the second at discipline rank 10; Burning Arrow goes), and the knots of all eleven trees (each school's "blade"
+  branch opens with its imbue): project files `klassen/uitwerking.md`.
+- **Balance test:** a new headless part where the bot fights the same set of monsters as a pure caster, a pure
+  warrior, a spellsword and weapon plus class, and reports turns and damage taken; they should win about as fast,
+  with a different risk.
+- **The handbook:** a new chapter **"Who you become"** after "Your hero", written so a new player understands it
+  without help: the blank start and the first tome, the second class at rank 20 and the pair's name, pure classes,
+  the tree (points, rest, the temple), the bar's three groups, weapon skills and weapon rules, elites and guilds.
+  "Fighting", "Your hero", "Guilds" and "All the keys" change with it. The build report quotes all of it.
+- **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
+  parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
 
 ## The bestiary grows (built 23 October 2026; the spec)
 Approved 22 October 2026 (from going through Project Gorgon's skills). No new skill: the bestiary that exists gets

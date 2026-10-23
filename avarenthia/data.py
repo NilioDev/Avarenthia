@@ -152,6 +152,11 @@ TILES = [
     Tile('¶', '#a0f0b0', False, False, 'spirit totem', bg='#16301e'),
     Tile('¤', '#fffbb0', True, False, 'ball lightning', bg='#4a4a10'),
     Tile('.', '#f2f6fa', True, False, 'snowdrift', cost=14),
+    Tile('^', '#c8aa78', True, False, 'snare'),
+    Tile('÷', '#b4b4b4', True, False, 'caltrops'),
+    Tile('Φ', '#be96ff', True, False, 'rune', bg='#241a34'),
+    Tile('Ω', '#78a0ff', True, False, 'gate', bg='#141e3a'),
+    Tile('▒', '#9a9a9a', True, True, 'smoke', bg='#2a2a2a'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -160,6 +165,7 @@ STELE, RAFT, ROPE = 75, 76, 77
 HEARTH, FRAME, BENCH = range(107, 110)      # cooking at the inn, a hide stretched to scrape, the leatherworker's bench
 SHELVES, HIGHSEAT = 110, 111                # a library's books, the lord's high seat in his hall
 (BURNING, ICEWALL, SPELLICE, ROOTS, BRAMBLE, BONEWALL, HALLOWED, SPIRITTOTEM, BALL, DRIFT) = range(112, 122)
+SNARE, CALTROPS, RUNE, GATE, SMOKE = range(122, 127)      # the tiles of Cunning and Arcane (arts.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

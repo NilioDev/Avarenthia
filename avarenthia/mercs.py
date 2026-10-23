@@ -721,6 +721,9 @@ def strike(game, mc, b, mon, s, ranged=False):
         mon.awake = True
         return
     dmg = random.randint(*s['dmg'])
+    if mc.kind == 'beast':
+        from . import trees as TT
+        dmg = round(dmg * TT.beast_mult(game, mon))
     crit = random.random() < .06
     if crit:
         dmg = round(dmg * 1.6)
@@ -729,7 +732,7 @@ def strike(game, mc, b, mon, s, ranged=False):
     mon.awake = True
     if mc.kind == 'beast':
         from . import trees as TT
-        TT.beast_struck(game, mon)
+        TT.beast_struck(game, mon, mc, dmg)
     if mon.hp - dmg <= 0:
         game.msg(f'{mc.name} kills {mon.the()}.', 'good')
         mon.hp = 0
@@ -958,6 +961,8 @@ def thrall_act(game, b):
             dmg = random.randint(*b.dmg)
             add_threat(t, 'p', dmg * .5)
             t.awake = True
+            from . import trees as TT
+            TT.thrall_hit(game, t)
             if t.hp - dmg <= 0:
                 game.msg(f'{b.name} kills {t.the()}.', 'good')
                 t.hp = 0

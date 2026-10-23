@@ -521,6 +521,14 @@ def set_standing(game, f, value):
     game.msg(f"Debug: {D.FACTIONS[f]['short']} standing {value}.", 'info')
 
 
+def set_guild(game, key, rank):
+    """Join a guild at a rank (0-4), past its rivals and its secrecy."""
+    from . import guilds as GU
+    st = GU.state(game)[key]
+    st.update(joined=True, found=True, left=False, rep=GU.RANK_REP[rank], last=game.day)
+    game.msg(f"Debug: {GU.GUILDS[key]['short']}, {GU.rank_name(game, key)}.", 'info')
+
+
 def add_hireling(game, kind):
     import random
     from . import mercs as MC

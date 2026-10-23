@@ -204,6 +204,7 @@ class DebugScreen(Modal):
             ('THE REST', [('j', 'Jobs...', self.job_page),
                           ('e', 'Force an event...', self.event_page),
                           ('f', 'Standing...', self.standing_page),
+                          ('q', 'Guild rank...', self.guild_page),
                           ('l', 'Add a hireling...', self.hireling_page)]),
         ]
         return MenuPage(self, 'Debug', [left, right])
@@ -337,6 +338,16 @@ class DebugScreen(Modal):
                 (k, str(v), lambda v=v: (DBG.set_standing(self.game, f, v), 'back')[1]) for k, v in vals])]])
         return ListPage(self, 'Standing', rows, pick)
 
+    def guild_page(self):
+        from . import guilds as GU
+        rows = [('guild', f"{GU.GUILDS[k]['name']} (now {GU.rank_name(self.game, k)})", k) for k in GU.ORDER]
+
+        def pick(k):
+            return MenuPage(self, GU.GUILDS[k]['name'], [[('JOIN AT THE RANK', [
+                (str(r + 1), n, lambda r=r: (DBG.set_guild(self.game, k, r), 'back')[1])
+                for r, n in enumerate(GU.GUILDS[k]['ranks'])])]])
+        return ListPage(self, 'Guild rank', rows, pick)
+
     def hireling_page(self):
         from . import mercs as MC
         rows = [('hireling', v['name'], k) for k, v in MC.KINDS.items() if k != 'beast']
@@ -379,7 +390,7 @@ class DebugScreen(Modal):
 
     def refresh(self, page):
         """A list whose numbers changed (ranks, standing) is made again on the way back."""
-        for make in (self.rank_page, self.standing_page, self.job_page):
+        for make in (self.rank_page, self.standing_page, self.guild_page, self.job_page):
             if page.title == make().title:
                 return make()
         return page

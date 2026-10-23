@@ -86,9 +86,9 @@ TEACH = {
     'iron': [('shield_bash', 1, 'warcraft', 3, 30), ('block', 1, 'warcraft', 5, 40), ('shield_wall', 1, 'warcraft', 6, 50), ('battle_drill', 2, 'warcraft', 14, 130), ('last_stand', 4, 'warcraft', 26, 380)],
     'dawn': [('smite', 1, 'restoration', 6, 60), ('holy_shield', 2, 'restoration', 14, 140), ('dawnbreak', 4, 'restoration', 28, 420)],
     'wardens': [('hunters_mark', 1, 'archery', 6, 50), ('rain_of_arrows', 2, 'archery', 16, 150), ('thornbind', 4, 'archery', 26, 360)],
-    'thieves': [('garrote', 1, 'daggers', 6, 60), ('smoke_bomb', 2, 'daggers', 14, 150), ('deaths_kiss', 4, 'daggers', 28, 450)],
+    'thieves': [('cheap_shot', 1, 'cunning', 6, 60), ('blinding_powder', 2, 'cunning', 14, 150), ('deaths_kiss', 4, 'daggers', 28, 450)],
     'coven': [('hellfire', 1, 'shadow', 8, 80), ('pact_of_blood', 2, 'shadow', 16, 160), ('morraks_hand', 4, 'shadow', 30, 500)],
-    'moot': [('entangle', 1, 'nature', 6, 60), ('spirit_totem', 2, 'nature', 14, 150), ('wild_shape', 4, 'nature', 26, 400)],
+    'moot': [('entangle', 1, 'nature', 6, 60), ('spirit_totem', 2, 'nature', 14, 150), ('elder_bear', 4, 'nature', 26, 400)],
     'chapter': [('mass_mend', 1, 'restoration', 6, 60), ('hallowed_ground', 2, 'restoration', 14, 160),
                 ('rite_of_return', 4, 'restoration', 26, 420)],
     'ossuary': [('raise_dead', 1, 'necromancy', 6, 80), ('bone_golem', 2, 'necromancy', 14, 150),
@@ -447,6 +447,11 @@ def resolve(game, choice, ctx):
             if rank(game, other) < rk:
                 game.msg(f'You must also be a {GUILDS[other]["ranks"][rk].lower()} of {GUILDS[other]["short"]}.', 'bad')
                 return
+        from . import classes as CL
+        why = CL.of_no_use(game, sid)
+        if why:
+            game.msg(why, 'info')
+            return
         if line and p.disc[line][0] < dr:
             from .skills import DISCIPLINES
             game.msg(f'You need {DISCIPLINES[line]["name"]} {dr} for that.', 'bad')

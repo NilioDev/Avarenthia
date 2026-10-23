@@ -4252,7 +4252,7 @@ def trees():
     from avarenthia.entities import make_monster, make_gear
     from avarenthia.worldgen import free_around
     print('== trees')
-    assert len(TT.KNOTS) == 9 * 18 and len(TT.IMBUES) == 8
+    assert len([k for k in TT.KNOTS.values() if k[1] >= 0]) == 11 * 18 and len(TT.IMBUES) == 8
     app = new_app('soft', seed=9)
     g, p = app.game, app.game.player
     p.lvl, p.str, p.dex, p.vit, p.ene = 30, 150, 150, 300, 150
@@ -4369,7 +4369,228 @@ def trees():
         p.life = g.stats()['max_life']
         g.hurt(5, 'a test', 'lightning')
     app.render()
-    print('trees ok:', len(TT.KNOTS), 'knots,', blows, 'blows struck with full trees')
+    print('trees ok:', len([k for k in TT.KNOTS.values() if k[1] >= 0]), 'knots,', blows, 'blows struck with full trees')
+
+
+def pairs():
+    """Classes part 3: Cunning (the first blow on the unaware lands twice; sneak, snares, smoke, vanish) and Arcane
+    (blink, runes, dispel, counterspell, gate, haste, stop time); a rule for each pure class and each of the 55 pairs;
+    a guild's rank-4 technique is its elite, rank 1-2 an ordinary skill of its school, the weapon guilds' a weapon
+    skill; every rule in a fight without an error."""
+    from avarenthia import skills as SK, classes as CL, trees as TT, arts as ART, spellmap as SM, guilds as GU
+    from avarenthia.entities import make_monster, make_gear
+    from avarenthia.worldgen import free_around
+    print('== pairs')
+    assert len(TT.RULES) == 66 and set(TT.RULES) == set(CL.PURE.values()) | set(CL.PAIRS.values())
+    assert len([s for s in SK.SKILL_LIST if s.line == 'cunning']) == 8 == len([s for s in SK.SKILL_LIST if s.line == 'arcane'])
+    assert CL.is_elite(SK.SKILLS['inferno']) and CL.is_elite(SK.SKILLS['spellblade'])
+    assert not CL.is_elite(SK.SKILLS['mage_armor']) and CL.weapon_guild(SK.SKILLS['hunters_mark'])
+    assert 'elder_bear' in [t[0] for t in GU.TEACH['moot']] and 'garrote' not in [t[0] for t in GU.TEACH['thieves']]
+    app = new_app('soft', seed=9)
+    g, p = app.game, app.game.player
+    p.lvl, p.str, p.dex, p.vit, p.ene = 30, 150, 150, 300, 150
+    p.classes = ['frost']
+    assert CL.fits(g, SK.SKILLS['mage_armor'], 2) is None and CL.fits(g, SK.SKILLS['mage_armor'], 5)
+    assert CL.of_no_use(g, 'smite') and not CL.of_no_use(g, 'inferno')
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    m = g.map
+
+    def foes(n=3, k='goblin', awake=True, hp=2000):
+        m.mons = [o for o in m.mons if o.is_npc]
+        m.fields = {}
+        out = []
+        for c in [c for c in free_around(g, m, p.x, p.y, 2) if c != (p.x, p.y) and not g.occupied(m, *c)][:n]:
+            o = make_monster(g, k, *c, 4)
+            o.hp = o.maxhp = hp
+            o.awake = awake
+            o.mods = []
+            m.mons.append(o)
+            out.append(o)
+        g.compute_fov()
+        return out
+    # Cunning: an unaware foe takes the first blow twice; a pure Rogue three times
+    sw = make_gear(g, 'longsword', 'normal', 5)
+    p.inv = []
+    g.add_to_inv(sw)
+    p.eq = {'weapon': sw.id}
+    p.classes = ['cunning', 'fire']
+    o = foes(1, awake=False)[0]
+    assert ART.first_blow(g, o) == 2 and ART.first_blow(g, o) == 1, 'only the first blow'
+    p.classes = ['cunning']
+    o = foes(1, awake=False)[0]
+    assert ART.first_blow(g, o) == 3
+    # Sneak: foes are slow to notice; a snare holds who steps in; smoke and Vanish lose them
+    p.known = [s.id for s in SK.SKILL_LIST if s.line == 'cunning']
+    p.disc['cunning'][0] = 70
+    p.stamina = p.mana = 999
+    p.bar = [None, None, 'sneak', 'set_snare', 'vanish', None]
+    o = foes(1)[0]
+    p.cooldowns = {}
+    assert SK.use(g, 2) and ART.notice(g, o) < .65
+    assert SK.use(g, 3)
+    sn = next(xy for xy, fd in m.fields.items() if fd[0] == D.SNARE)
+    ox, oy = o.x, o.y
+    o.x, o.y = sn
+    SM.after_move(g, o, ox, oy)
+    assert o.hold >= 3 and sn not in m.fields
+    assert SK.use(g, 4) and not o.awake and ART.buff(g, 'ambush')
+    # Arcane: Blink away, Dispel the magic off a foe, Counterspell a spell, a Gate, Haste, Stop Time
+    p.classes = ['arcane']
+    p.known = [s.id for s in SK.SKILL_LIST if s.line == 'arcane'] + ['haste']
+    p.disc['arcane'][0] = 70
+    p.bar = [None, None, 'blink', 'dispel', 'counterspell', None]
+    o = foes(1)[0]
+    o.mods = ['Fire Enchanted', 'Fast']
+    start = (p.x, p.y)
+    p.cooldowns, p.mana = {}, 999
+    assert SK.use(g, 2) and (p.x, p.y) != start
+    assert SK.use(g, 3) and not o.mods
+    assert SK.use(g, 4) and ART.counter(g, o) and not ART.buff(g, 'counter')
+    p.bar[2] = 'gate'
+    a = (p.x, p.y)
+    p.cooldowns = {}
+    assert SK.use(g, 2)
+    step = next(c for c in free_around(g, m, p.x, p.y, 3) if 2 <= cheb(c[0], c[1], *a) <= 3 and not g.occupied(m, *c))
+    p.x, p.y = step
+    p.cooldowns = {}
+    assert SK.use(g, 2) and len(m.gates) == 2
+    p.x, p.y = next(c for c in free_around(g, m, *step, 1) if c != step and c != a and not g.occupied(m, *c))
+    ART.through_gate(g)
+    p.x, p.y = step
+    ART.through_gate(g)
+    assert (p.x, p.y) == a, 'stepping onto one gate brings you out of the other'
+    p.bar[2] = 'haste'
+    p.cooldowns = {}
+    assert SK.use(g, 2)
+    t0 = g.turn
+    g.end_turn(1)
+    g.end_turn(1)
+    assert g.turn == t0 + 1, 'Haste: two things in one turn'
+    p.buffs = [b for b in p.buffs if b[0] != 'haste']
+    os_ = foes(3)
+    p.bar[2] = 'stop_time'
+    p.cooldowns = {}
+    assert SK.use(g, 2) and all(o.hold >= 3 for o in os_)
+    # every rule: the classes of that name, the school's skills used, blows struck, a beast's bite, a turn
+    from avarenthia import mercs as MC
+    names = {}
+    for line in CL.PURE:
+        names[CL.PURE[line]] = [line]
+    for pr, nm in CL.PAIRS.items():
+        names[nm] = sorted(pr)
+    done = 0
+    for nm, cl in names.items():
+        p.classes = list(cl)
+        p.tree = {}
+        assert CL.rule_name(g) == nm and TT.RULE_KNOTS[nm]
+        for line in cl:
+            p.disc[line][0] = 40
+        p.known = [s.id for s in SK.SKILL_LIST if s.line in cl and s.tier <= 5]
+        g.clamp_vitals()
+        for sid in p.known:
+            sk = SK.SKILLS[sid]
+            if sk.mode in ('tame', 'rite', 'tomb', 'gate') or sk.need_beast:
+                continue
+            foes(2, 'skeleton' if 'restoration' in cl else 'goblin', awake=random.random() < .5)
+            p.bar[2] = sid
+            p.mana = p.stamina = 9999
+            p.life = g.stats()['max_life']
+            p.cooldowns, p.buffs = {}, []
+            SK.use(g, 2)
+            for o in [o for o in m.mons if not o.is_npc][:1]:
+                for _ in range(3):
+                    if o in m.mons:
+                        g.melee(o)
+            g.end_turn(1)
+            assert not g.dead, (nm, sid)
+        done += 1
+    app.render()
+    print('pairs ok:', done, 'rules in a fight')
+
+
+def balance():
+    """The balance test: the same foes, four ways to fight them: a pure caster, a pure warrior, a spellsword and a
+    weapon with a class. They should all win, about as fast, with a different risk."""
+    from avarenthia import skills as SK, classes as CL
+    from avarenthia.entities import make_monster, make_gear
+    from avarenthia.worldgen import free_around
+    print('== balance')
+    builds = {'Pyromancer': (['fire'], None, ['firebolt', 'fireball', 'searing_brand', 'immolate'], (40, 60, 120, 120)),
+              'Warrior': (['warcraft'], 'greatsword', ['rage', 'warcry', 'charge', 'second_wind'], (120, 60, 120, 40)),
+              'Firebrand': (['fire', 'warcraft'], 'longsword', ['firebolt', 'rage', 'warcry', 'fireball'], (90, 60, 120, 70)),
+              'Reaver': (['shadow', 'warcraft'], 'waraxe', ['drain', 'rage', 'warcry', 'weakness'], (100, 60, 120, 60)),
+              'Rogue': (['cunning'], 'dagger', ['envenom', 'garrote', 'shadowstep', 'sneak'], (60, 120, 120, 40))}
+    told = ('Rogue',)                   # reported, not held to the others: it wins by not being seen
+    out = {}
+    for name, (cl, weapon, bar, (st, dx, vi, en)) in builds.items():
+        app = new_app('soft', seed=11)
+        g, p = app.game, app.game.player
+        p.lvl, p.str, p.dex, p.vit, p.ene = 18, st, dx, vi, en
+        p.classes = cl
+        for line in cl:
+            p.disc[line][0] = 35
+        p.known = list(bar)
+        p.bar = [None, None] + bar[:3] + [None]
+        p.inv, p.eq = [], {}
+        if weapon:
+            it = make_gear(g, weapon, 'normal', 10)
+            g.add_to_inv(it)
+            p.eq = {'weapon': it.id}
+            p.disc[SK.WEAPON_LINE[weapon]][0] = 30
+        g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+        m = g.map
+        s = g.stats()
+        p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
+        taken, turns, won = 0, 0, 0
+        for wave in range(4):
+            m.mons = [o for o in m.mons if o.is_npc]
+            for c in [c for c in free_around(g, m, p.x, p.y, 4) if cheb(c[0], c[1], p.x, p.y) >= 3
+                      and not g.occupied(m, *c)][:3]:
+                o = make_monster(g, random.choice(['goblin', 'orc', 'skeleton']), *c, 12)
+                o.awake = wave % 2 == 0
+                m.mons.append(o)
+            g.compute_fov()
+            for _ in range(120):
+                foes = g.visible_hostiles()
+                if not foes or g.dead:
+                    break
+                life = p.life
+                used = 0
+                for i in (2, 3, 4, 0, 1):
+                    sid = CL.slot_skill(g, i)
+                    sk = SK.SKILLS[sid] if sid else None
+                    if sk and sk.buff and any(b[0] == sk.buff[0] for b in p.buffs):
+                        continue                    # it is on you already
+                    if sid == 'sneak' and any(o.awake for o in foes):
+                        continue
+                    if sid and not p.cooldowns.get(sid) and SK.can_pay(g, SK.SKILLS[sid]):
+                        used = SK.use(g, i)
+                        if used:
+                            break
+                if not used:
+                    t = min(foes, key=lambda o: cheb(o.x, o.y, p.x, p.y))
+                    if cheb(t.x, t.y, p.x, p.y) <= 1:
+                        g.melee(t)
+                    else:
+                        dx_, dy_ = (t.x > p.x) - (t.x < p.x), (t.y > p.y) - (t.y < p.y)
+                        if not g.try_move(dx_, dy_):
+                            g.melee(t) if cheb(t.x, t.y, p.x, p.y) <= 1 else None
+                    g.end_turn(1)
+                else:
+                    g.end_turn(used)
+                taken += max(0, life - p.life)
+                turns += 1
+            if not g.dead and not g.visible_hostiles():
+                won += 1
+            if g.dead:
+                break
+        out[name] = (won, turns, taken)
+        print(f'  {name}: {won} of 4 waves won in {turns} turns, {taken} damage taken')
+    held = {k: v for k, v in out.items() if k not in told}
+    assert all(w >= 3 for w, _t, _d in held.values()), out
+    ts = [t for _w, t, _d in held.values()]
+    assert max(ts) <= 3 * max(1, min(ts)), out
+    print('balance ok')
 
 
 def visible():
@@ -4806,7 +5027,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

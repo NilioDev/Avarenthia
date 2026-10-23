@@ -56,6 +56,7 @@ from . import bestiary as BE
 from . import weaponskills as WS
 from . import classes as CL
 from . import trees as TT
+from . import arts as ART
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -64,7 +65,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 35
+SAVE_VERSION = 36
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1767,8 +1768,9 @@ class Game:
         p = self.player
         if weapon:
             self.wear('weapon', .2)
-            dmg *= WP.armour_mult(self, mon, weapon, ranged, sunder) * TT.weapon_mult(self, mon)
+            dmg *= WP.armour_mult(self, mon, weapon, ranged, sunder) * TT.weapon_mult(self, mon) * ART.first_blow(self, mon)
             mon.you_hit = self.turn
+            ART.broke_cover(self)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
         if getattr(mon, 'lurk', False):          # struck where it hid: it shows itself
@@ -1812,6 +1814,7 @@ class Game:
             return True
         if weapon:
             TT.on_weapon_hit(self, mon, False)
+            ART.envenom_hit(self, mon)
         return False
 
     def melee(self, mon):
@@ -2075,6 +2078,9 @@ class Game:
             return
         if WP.blocked(self, mon) or WS.riposte(self, mon):
             return
+        if 'blind' in mon.effects and random.random() < .75:
+            self.num(p.x, p.y, 'miss', C_MISS)
+            return
         if random.random() < self.mon_hit_chance(mon, df):
             dmg = round(random.randint(*mon.dmg) * BH.attack_mult(self, mon))
             if 'weaken' in mon.effects:
@@ -2097,6 +2103,7 @@ class Game:
             th = self.stats()['thorns']
             self.wear(None, .3 * WP.wear_mult(mon))
             self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
+            TT.struck_by(self, mon)
             if not self.dead:
                 SM.chill(self, mon)
             if not self.dead and mon in self.map.mons:
@@ -2120,6 +2127,8 @@ class Game:
         if spell:
             self.fx('burst', x=p.x, y=p.y, r=0, col=col, delay=AN.bolt_time(len(path)))
         name = mon.the()[0].upper() + mon.the()[1:]
+        if spell and ART.counter(self, mon):
+            return True
         if spell or random.random() < self.mon_hit_chance(mon, df):
             self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else mon.tpl.get('shot', 'arrow')} hits you.", 'bad')
             self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8) * BH.attack_mult(self, mon), mon.the(),
@@ -2288,11 +2297,14 @@ class Game:
                                'swarm': (210, 200, 100)}[k]
                         mon.hp -= v
                         self.num(mon.x, mon.y, str(v), col)
+                        TT.dot(self, mon, k, v)
                         if k == 'bleed':
                             WP.blood_trail(self, m, mon.x, mon.y)       # a red trail where it goes
                         if mon.hp <= 0:
                             self.kill(mon)
                             break
+                    if TT.keeps(self, mon, k):
+                        continue
                     if t <= 1:
                         del mon.effects[k]
                     else:
@@ -2309,7 +2321,7 @@ class Game:
                 if still:
                     continue
                 if still is None:
-                    if self.visible(mon.x, mon.y) and random.random() < .65:
+                    if self.visible(mon.x, mon.y) and random.random() < ART.notice(self, mon):
                         mon.awake = True
                         self.wake_pack(mon)
                         AI.on_wake(self, mon)
@@ -2332,6 +2344,8 @@ class Game:
 
     def end_turn(self, cost, quiet=False):
         p = self.player
+        if cost == 1 and ART.haste_skip(self):
+            return                                      # Haste: this one took no time
         for _ in range(cost):
             self.turn += 1
             if p.cooldowns:
@@ -2348,6 +2362,7 @@ class Game:
                     self.msg(f'{b[3]} wears off.')
             BH.tick(self)
             TT.tick(self)
+            ART.through_gate(self)
             s = self.stats()
             HU.tick(self, WX.food_factor(self))
             if self.dead:
@@ -2358,10 +2373,12 @@ class Game:
                 p.life = min(s['max_life'], p.life + s['regen'])
             if p.stamina < s['max_stamina'] and self.turn - p.strained > 1 and p.food >= HU.FAINT \
                     and (self.turn % 2 == 0 or not self.heavy_armour() or TT.heavy_ok(self)):
-                p.stamina = min(s['max_stamina'], p.stamina + (1 + s['max_stamina'] // 20) * TT.stamina_mult(self))    # breath comes back quickly
+                p.stamina = min(s['max_stamina'], p.stamina + (1 + s['max_stamina'] // 20) * TT.stamina_mult(self) + TT.stamina_plus(self))    # breath comes back quickly
             if self.turn % 2 == 0 and p.mana < s['max_mana'] and not TT.mana_held(self):
                 p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40 +
                              sum(b[1] for b in p.buffs if b[0] == 'mregen'))
+            if p.poison and TT.poison_free(self):
+                p.poison = None
             if p.poison:
                 p.life -= p.poison[1]
                 if not quiet:
@@ -2713,6 +2730,7 @@ class Game:
             self.msg('You spot enemies!', 'bad')
 
     def run(self, dx, dy):
+        ART.broke_cover(self)
         key, n = self.cur, 0
         while n < 40 and not self.dead and self.cur == key:
             used = self.try_move(dx, dy)

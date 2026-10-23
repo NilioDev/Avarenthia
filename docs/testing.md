@@ -5,7 +5,7 @@ build" in `plan.md`) for each new thing, so he does not have to play for weeks t
 is still to settle. When a round is built, its lines stay here as long as they are useful for testing.
 Each line: **what** - what to check - what the debug menu should offer.
 
-## Classes (part 1 built 23 October 2026)
+## Classes (built 23 October 2026)
 
 - **First class** - read a class tome while blank: the question, the name, the tip, the chronicle line. Debug: give a
   tome of any school (Give item).
@@ -15,6 +15,12 @@ Each line: **what** - what to check - what the debug menu should offer.
   taking points back. Debug: set the school's rank (Ranks), "Rested here", give coin.
 - **Weapon skills** - every weapon kind's two skills on keys 1-2, the second at rank 10, with their effects. Debug:
   give the weapon, set its discipline to 10.
+- **Cunning and Arcane** - their 8 tomes each, the tiles they lay (snare, caltrops, rune, gate, smoke), the first
+  blow on a foe that does not see you, sneaking. Debug: give their tomes, set the rank (Ranks), spawn a sleeping foe.
+- **Pair and pure rules** - each of the 66 names' rule, shown on the tree page. Debug: give two tomes, rank 20.
+- **Elites and weapon-guild skills** - a guild master's techniques on key 6, a lesser one of your school on 3-5, a
+  weapon guild's on 1 or 2 with its weapon in hand; a master refusing a technique you could not use. Debug: Guild
+  rank (q), Coin.
 
 ## Old places on the land (approved 23 October 2026)
 

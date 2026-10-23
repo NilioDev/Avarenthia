@@ -51,10 +51,10 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `realms.py` the empire, kings, barons, houses and wars; `powers.py` the other powers (grudges, the wood, the Gorvash,
   raiders, church, Watch, companies, revolts, pretender, witches); `seats.py` their places' maps; `realmjobs.py` the
   'realm' jobs; `history.py` the made history and the libraries;
-  `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
+  `arts.py` the arts of Cunning and Arcane (first blow, snares, runes, gates, dispel); `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what
   you know of each creature kind (on the player); `classes.py` who you become (classes, pair names, the bar); `weaponskills.py` keys 1-2 per weapon kind and the
-  family rules; `trees.py` the class trees (knots as data, `tuned` + hooks); `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build
+  family rules; `trees.py` the class trees (knots as data, `tuned` + hooks) and the 66 rules (`RULES`); `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build
   and `--debug` only; not in the handbook); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
 - World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.

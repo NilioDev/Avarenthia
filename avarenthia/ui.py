@@ -2106,7 +2106,7 @@ class SkillsScreen(Modal):
         elif tok in ('1', '2', '3', '4', '5', '6'):
             i = int(tok) - 1
             self.slot = i
-            if i in CL.WEAPON:
+            if i in CL.WEAPON and not (known and CL.weapon_guild(known[self.sel])):
                 return
             if g.map.kind != 'town':
                 g.log_mark = len(g.log)
@@ -2119,6 +2119,9 @@ class SkillsScreen(Modal):
             if why:
                 g.log_mark = len(g.log)
                 g.msg(why, 'bad')
+                return
+            if i in CL.WEAPON:                      # a weapon guild's technique in place of one of the weapon's two
+                p.__dict__.setdefault('wswap', {}).setdefault(sk.line, {})[i] = sk.id
                 return
             if sk.id in p.bar:
                 p.bar[p.bar.index(sk.id)] = p.bar[i]
@@ -2167,6 +2170,7 @@ class TreeScreen(Modal):
                       f'{TT.free(g, line)} to spend', FG, PANEL)
         cv.text(x + 3, y + 2, 'You rested here: you can spend points.' if TT.can_rest_spend(g) else
                 'Points are spent where you rest: an inn\'s bed or your camp.', GOOD if TT.can_rest_spend(g) else DIM, PANEL)
+        cv.text_right(x + 105, y + 2, f'A temple takes points back: {fmt(TT.RESPEC)} each.', DIM, PANEL)
         cw = 34
         for b, (bname, what, knots) in enumerate(TT.TREES[line]):
             bx = x + 4 + b * (cw + 1)
@@ -2206,8 +2210,9 @@ class TreeScreen(Modal):
         knots = TT.TREES[line][self.b][2]
         nxt = f'Leads to {knots[self.i + 1][1]}.' if self.i < 5 else 'The last knot of its branch.'
         cv.wrap(x + 3, yy + 2 + n, 72, nxt, DIM, PANEL, 1)
-        cv.text(x + 78, yy + 1, 'Unlearning', DIM, PANEL)
-        cv.wrap(x + 78, yy + 2, 27, f'A temple takes all points back for {fmt(TT.RESPEC)} a point.', DIM, PANEL, 3)
+        if name and name in TT.RULES:
+            cv.text(x + 78, yy + 1, f'The rule of the {name}', GOLD, PANEL)
+            cv.wrap(x + 78, yy + 2, 27, TT.RULES[name][0], FG, PANEL, 8)
         cv.text_center(W // 2, y + 29, ' arrows: choose · Enter: spend a point · Tab: other class · Esc: close ', DIM, PANEL)
 
     def on_key(self, tok, shift):
