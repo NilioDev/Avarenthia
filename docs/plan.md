@@ -755,9 +755,10 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   ("2 of 6", the gaps named, never where). With a whole set, a scribe in a city library binds it in order (talk, one
   option, a few silver and an hour) and finds what only the whole shows: a hidden last page with the end of the story,
   sometimes a lead to a hidden place or a piece of a riddle. The book is then a thing in your pack and its story in the
-  chronicle; keep it or sell it once, well, to a library. About 12-15 books, each world picks some six, the pages lie
-  where they fit. No new key. Stories and titles: project files `poi/varnish-boeken.md` (Letters from the Ninth, The
-  Wind in the Jar, Twelve, and more to write). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
+  chronicle; keep it or sell it once, well, to a library. 27 books written out (more may come); each world picks about eight at random, at least one from each
+  thread (Tam and his mother, the winds, the fall, the uncounted, the bound dead, the emperors), and the pages lie where
+  they fit. Stories cross between books, each still whole on its own. No new key. Stories and titles: project files `poi/varnish-boeken.md` (all 27 with their hidden
+  pages and what they add to the chronicle or the map). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
   for her bound son; a dealer in the dead; a banned play); the stories may cross (a soldier in one is in another).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
