@@ -439,7 +439,7 @@ def talk(game, npc):
         return (lab, key if p.gold >= c else None)
     if role == 'scribe':
         opts = [opt('The old days', 'old', PRICE), opt('The realms', 'realms', PRICE), opt('A lord or house', 'lords', PRICE),
-                opt('This city', 'city', PRICE)]
+                opt('This city', 'city', PRICE), opt('Beasts you have met', 'beasts', PRICE)]
         if not game.__dict__.get('varnish_letters'):
             opts.append(opt('Varnish letters', 'letters', LETTERS_PRICE))
         books = [it for it in p.inv if it.k == 'oldbook']
@@ -497,6 +497,16 @@ def r_library(game, choice, ctx):
                where=where, key='varnish_letters', title='The Varnish letters')
         return
     game.end_turn(HOUR * 3, True)
+    if choice == 'beasts':
+        from . import bestiary as BE
+        names = BE.study(game)
+        if names:
+            game.say(npc, f'"{", ".join(names)}: we have pages on all of them." You read what the hunters of old wrote down.')
+            game.msg('You know their weakness and resistances now. (V)', 'gold')
+        else:
+            game.say(npc, '"There is nothing here you do not know already. Go and meet some new creatures."')
+            p.gold += cost
+        return
     got = {'old': read_old, 'realms': read_realms, 'lords': read_lords, 'city': read_city, 'grudges': read_grudges}[choice](
         game, npc, who, where)
     if got:

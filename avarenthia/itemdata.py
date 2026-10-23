@@ -35,12 +35,25 @@ FAMILIES = {
     'waraxe': ('weapon', ('War Axe', 'Bearded Axe', 'Berserker Axe'), 7, (5, 14), 110, (1, 0), {}),
     'bastard': ('weapon', ('Bastard Sword', 'Espadon', 'Champion Sword'), 10, (7, 17), 170, (1.1, .3), {}),
     'runeblade': ('weapon', ('Rune Blade', 'Elder Blade', 'Phase Blade'), 13, (9, 22), 250, (.9, .7), dict(hit=15)),
+    'scimitar': ('weapon', ('Scimitar', 'Shamshir', 'Talwar'), 3, (3, 8), 50, (.6, .6), {}),
+    'flail': ('weapon', ('Flail', 'Knout', 'Scourge'), 6, (3, 12), 90, (1.1, 0), {}),
+    'warhammer': ('weapon', ('War Hammer', 'Battle Hammer', 'Rune Hammer'), 9, (6, 13), 140, (1.3, 0), {}),
+    'spear': ('weapon', ('Spear', 'War Spear', 'Varnish Pilum'), 2, (2, 8), 30, (.7, .3), dict(reach=True)),
+    'throwknives': ('weapon', ('Throwing Knives', 'Balanced Knives', 'Wind Knives'), 2, (2, 6), 30, (0, .8),
+                    dict(ranged=True)),
+    'sling': ('weapon', ('Sling', 'Braided Sling', 'Giant Sling'), 1, (1, 5), 8, (0, .4), dict(ranged=True)),
     # two-handed weapons: the off-hand stays empty
-    'staff': ('weapon', ('Gnarled Staff', 'Rune Staff', 'Elder Staff'), 1, (2, 5), 15, (.5, 0), dict(mana=10, two=True)),
-    'warstaff': ('weapon', ('War Staff', 'Battle Staff', 'Archon Staff'), 7, (4, 11), 120, (.6, 0), dict(mana=25, two=True)),
+    'staff': ('weapon', ('Gnarled Staff', 'Rune Staff', 'Elder Staff'), 1, (2, 5), 15, (.5, 0), dict(mana=10, two=True, reach=True)),
+    'warstaff': ('weapon', ('War Staff', 'Battle Staff', 'Archon Staff'), 7, (4, 11), 120, (.6, 0), dict(mana=25, two=True, reach=True)),
     'greatsword': ('weapon', ('Greatsword', 'Flamberge', 'Colossus Blade'), 6, (6, 16), 120, (1.3, .3), dict(two=True)),
     'greataxe': ('weapon', ('Great Axe', 'Executioner Axe', 'Doom Axe'), 9, (8, 22), 160, (1.4, 0), dict(two=True)),
     'maul': ('weapon', ('Maul', 'Great Maul', 'Thunder Maul'), 12, (10, 26), 210, (1.6, 0), dict(two=True)),
+    'halberd': ('weapon', ('Halberd', 'Poleaxe', 'Great Glaive'), 8, (6, 18), 140, (1.2, .2), dict(two=True, reach=True)),
+    'scythe': ('weapon', ('War Scythe', 'Grim Scythe', 'Reaper'), 6, (4, 14), 100, (1, .3), dict(two=True, reach=True)),
+    'lightxbow': ('weapon', ('Light Crossbow', 'Hunting Crossbow', 'Rune Crossbow'), 3, (4, 10), 60, (.5, .2),
+                  dict(ranged=True, two=True)),
+    'heavyxbow': ('weapon', ('Heavy Crossbow', 'Arbalest', 'Siege Arbalest'), 9, (8, 20), 160, (.9, .3),
+                  dict(ranged=True, two=True)),
     'shortbow': ('weapon', ('Short Bow', 'Edge Bow', 'Spider Bow'), 1, (2, 6), 25, (0, 1), dict(ranged=True, two=True)),
     'longbow': ('weapon', ('Long Bow', 'Rune Bow', 'Shadow Bow'), 5, (4, 11), 80, (.3, 1), dict(ranged=True, two=True)),
     'warbow': ('weapon', ('War Bow', 'Gothic Bow', 'Ward Bow'), 10, (7, 17), 170, (.4, 1.1), dict(ranged=True, two=True)),
@@ -66,6 +79,9 @@ FAMILIES = {
     'gloves': ('gloves', ('Leather Gloves', 'Demonhide Gloves', 'Bramble Mitts'), 1, (1, 3), 10, (0, 0), {}),
     'hgloves': ('gloves', ('Heavy Gloves', 'Sharkskin Gloves', 'Vampirebone Gloves'), 4, (2, 4), 25, (.3, 0), {}),
     'gauntlets': ('gloves', ('Gauntlets', 'War Gauntlets', 'Ogre Gauntlets'), 10, (4, 7), 70, (.8, 0), {}),
+    # fist weapons: worn on the hands, they strike while the weapon hand is empty (Unarmed)
+    'cestus': ('gloves', ('Cestus', 'Spiked Cestus', 'Ironbound Cestus'), 2, (1, 2), 30, (.8, 0), dict(fist=(2, 6))),
+    'claws': ('gloves', ('Tiger Claws', 'Bagh Nakh', 'Wyrm Claws'), 4, (1, 2), 45, (0, .8), dict(fist=(2, 7))),
     'sash': ('belt', ('Sash', 'Demonhide Sash', 'Spiderweb Sash'), 1, (1, 2), 10, (0, 0), {}),
     'belt': ('belt', ('Belt', 'Mesh Belt', 'Mithril Coil'), 5, (3, 5), 35, (.4, 0), {}),
     'platedbelt': ('belt', ('Plated Belt', 'War Belt', 'Colossus Girdle'), 10, (5, 8), 80, (.8, 0), {}),
@@ -86,6 +102,8 @@ for _k, (_slot, _names, _lvl, _stat, _val, (_ws, _wd), _ex) in FAMILIES.items():
             lo, hi = round(_stat[0] * GRADE_MULT[_g]), round(_stat[1] * GRADE_MULT[_g])
             b['dmg' if _slot == 'weapon' else 'arm'] = (lo, hi)
         for _ek, _ev in _ex.items():
+            if isinstance(_ev, tuple):
+                _ev = tuple(round(v * GRADE_MULT[_g]) for v in _ev)
             b[_ek] = round(_ev * GRADE_MULT[_g]) if isinstance(_ev, (int, float)) and not isinstance(_ev, bool) else _ev
         BASES[key] = b
         FAMILY_OF[key] = _k
@@ -170,7 +188,7 @@ AFFIXES = [
 # +1 to a discipline: the prefix is named after the discipline
 SKILL_PREFIX = {'fire': "Kindler's", 'frost': "Rimewright's", 'storm': "Stormcaller's", 'restoration': "Healer's",
                 'shadow': "Shade's", 'warcraft': "Warlord's", 'swords': "Blademaster's", 'axes': "Axeman's",
-                'daggers': "Cutthroat's", 'archery': "Fletcher's", 'unarmed': "Brawler's"}
+                'daggers': "Cutthroat's", 'archery': "Fletcher's", 'unarmed': "Brawler's", 'spears': "Pikeman's"}
 
 AFFTXT = {
     'dmg_flat': '+{} damage', 'ed': '+{}% enhanced damage', 'edef': '+{}% enhanced defense',
@@ -188,7 +206,8 @@ for _l in SKILL_PREFIX:
     AFFTXT['skill_' + _l] = '+{} to %s (3 ranks each)' % {'fire': 'Fire Magic', 'frost': 'Frost Magic', 'storm': 'Storm Magic',
                                            'restoration': 'Restoration', 'shadow': 'Shadow Magic', 'warcraft': 'Warcraft',
                                            'swords': 'Swordsmanship', 'axes': 'Axes and Maces', 'daggers': 'Daggers',
-                                           'archery': 'Archery', 'unarmed': 'Unarmed'}[_l]
+                                           'archery': 'Bows and Crossbows', 'unarmed': 'Unarmed',
+                                           'spears': 'Spears and Staves'}[_l]
 
 RES_CAP = 75
 RESISTS = [('res_fire', 'Fire', (255, 122, 44)), ('res_cold', 'Cold', (159, 216, 255)),
@@ -310,3 +329,14 @@ UNDEAD |= _UND
 
 from .creatures import GEAR as _NEW_GEAR
 GEAR_USERS.update(_NEW_GEAR)
+# the weapons that came later, with those who use them (only those who use gear drop gear)
+for _k, _add, _drop in (
+        ('dune_rider', ['scimitar'], ['shortsword']), ('canyon_rider', ['scimitar'], []),
+        ('orc', ['flail', 'spear'], []), ('goblin', ['spear'], []), ('gob_boss', ['flail'], []),
+        ('orc_chief', ['flail'], []), ('orc_spear', ['spear'], ['dagger']), ('hob_legionary', ['spear'], []),
+        ('clansman', ['warhammer'], []), ('grey_dwarf', ['warhammer'], []), ('pass_clansman', ['warhammer'], []),
+        ('thunderer', ['heavyxbow', 'lightxbow'], ['longbow']), ('crossbow', ['lightxbow', 'heavyxbow'], ['longbow', 'shortbow']),
+        ('kob_slinger', ['sling'], []), ('pass_slinger', ['sling'], []), ('shade_elf', ['longbow'], ['shortbow']),
+        ('watch_soldier', ['halberd'], []), ('cultist', ['scythe'], []), ('gnoll_packlord', ['claws'], [])):
+    if _k in GEAR_USERS:
+        GEAR_USERS[_k] = [f for f in GEAR_USERS[_k] if f not in _drop] + [f for f in _add if f not in GEAR_USERS[_k]]

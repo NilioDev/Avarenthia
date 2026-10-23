@@ -18,6 +18,7 @@ charmed    you cannot bring yourself to strike the one who charmed you"""
 import random
 
 from . import data as D
+from . import weapons as WP
 from .worldgen import cheb, free_around
 
 STATUS = {
@@ -158,7 +159,7 @@ def cure(game, kinds=('diseased', 'cursed', 'confused', 'blinded', 'afraid', 'sl
 
 def shown(game):
     """Your states as (label, colour) for the panel."""
-    return [(STATUS[k][0], STATUS[k][1]) for k, t in status(game).items() if t > 0 and k in STATUS]
+    return [(STATUS[k][0], STATUS[k][1]) for k, t in status(game).items() if t > 0 and k in STATUS] + WP.shown(game)
 
 
 def tick(game):
@@ -346,9 +347,13 @@ def incoming(game, mon, dmg, weapon, elem):
             dmg *= 2
         elif weapon:
             dmg *= .5
-    if beh(mon, 'formation') and ally_near(game, mon):
+    guarded = (beh(mon, 'formation') and ally_near(game, mon)) or getattr(mon, 'shield', 0) > 0
+    over = guarded and weapon and WP.over_shield(game)        # a flail's head swings over the shield
+    if over:
+        game.flash([(mon.x, mon.y)], WP.C_SPARK, ']', .15)
+    elif beh(mon, 'formation') and ally_near(game, mon):
         dmg *= .8
-    if getattr(mon, 'shield', 0) > 0:
+    if getattr(mon, 'shield', 0) > 0 and not over:
         mon.shield -= 1
         game.msg(f'{The(mon)} turns the blow aside.', 'info')
         dmg *= .25

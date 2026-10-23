@@ -15,11 +15,9 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Everything up to the magic schools: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
 | **Approved: classes** | Two classes instead of a free mix: you start blank, the first tome you read wakes your first class, a second comes late (rank 20); 11 classes (the nine schools, Cunning, Arcane), a name and one rule for each pair (55) or a pure rule; a small tree of passives per class (3 branches of 6); the bar becomes 2 weapon skills, 3 class skills, 1 elite from a guild (or one of 22 epics from hidden teachers, two per class). Not built yet |
-| **Approved: weapons** | 26 weapon kinds in six disciplines (new: Spears and Staves with reach; flail, war hammer, scimitar, crossbows, sling, throwing knives, cestus, claws); shield skills in Warcraft; two weapons at once. Not built yet |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). Not built yet |
-| **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
 | **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
@@ -32,7 +30,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 "pauses" below are only clean points to stop at when his usage limit runs low. The full test run and the merge to
 `main` come at the end of each block; CI keeps testing every push. Each block starts on Nilio's "ga".
 0. **Debug menu and test build** (M). Built 23 October 2026 (see `docs/built.md`).
-1. **Weapons** with the bestiary that grows (L): the same monster data and one `SAVE_VERSION` bump.
+1. **Weapons** with the bestiary that grows (L). Built 23 October 2026 (see `docs/built.md`).
 2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
 3. **Classes part 2** (L): the trees. 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
    elites, the balance test. A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
@@ -197,13 +195,6 @@ stays as it is.
 - **Save data** changes (classes, tree points, new skills): bump `SAVE_VERSION`. Too big for one round: build in
   parts (classes and the bar, then trees, then the pair rules, Cunning and Arcane).
 
-## The bestiary grows (approved, not built)
-Approved 22 October 2026 (from going through Project Gorgon's skills). No new skill: the bestiary that exists gets
-deeper. What you know of a creature kind grows each time you kill or skin one. Three steps, each shown in the look
-line (`l`) and on its bestiary page: first its weakness and resistances, then what it carries, then its weak spot
-(a better chance of a critical hit against that kind). Reading about a creature in a library may give the first step.
-Saved per hero: bump `SAVE_VERSION`; the handbook says it in a sentence or two.
-
 ## The northern lights' gift (approved 22 October 2026, not built)
 Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they
 give four things, only while they are in the sky:
@@ -256,56 +247,6 @@ made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's ef
 - **Weapon skills' effects** (proposal with GIFs in `magie/wapeneffecten/`; built with the weapon skills): steel and
   dust, no school colour; a swing arc only on skills and critical hits (an ordinary bump stays the short flash);
   blood on Sever Artery and claws, and a bleeding foe leaves a red trail `,` for a few turns (Nilio, 22 October).
-
-## Weapons: more kinds, few disciplines (approved, not built)
-
-Approved by Nilio on 17 October 2026 (project files `magie/wapens.md`). Today: 16 weapon kinds in three grades
-(48 weapons), four disciplines and Unarmed; shields exist (buckler, round, kite, tower; the grimoire also takes that
-hand) but have no skills. New weapons join the discipline they fit; only **Spears and Staves** is new. Each new
-weapon has one rule you notice in a fight. Everything comes in the three grades.
-
-| Discipline | Weapons (new in bold) | The new ones' rule |
-|---|---|---|
-| Unarmed | empty hands, **cestus**, **tiger claws** | cestus hits harder and still counts as unarmed (monks); claws bleed |
-| Swordsmanship | short sword, long sword, bastard sword, rune blade, greatsword, **scimitar** | quick and light (desert riders) |
-| Axes and Maces | club, mace, war axe, great axe, maul, **flail**, **war hammer** | a shield does not stop a flail; a war hammer is strong against heavy armour (dwarves) |
-| **Spears and Staves** | staff and war staff (moved here), **spear**, **halberd**, **scythe** | **reach**: strike an enemy 2 tiles away in a straight line, also past a friend; a spear can be thrown; a scythe hits the arc in front of you |
-| Daggers | dagger, **throwing knives** | thrown with the bow's key, picked up again |
-| Bows and Crossbows | short bow, long bow, war bow, **light crossbow**, **heavy crossbow**, **sling** | crossbows shoot and load in turn ("loaded" shows), go through armour, need little Dexterity; a sling is cheap and its stones lie everywhere (halflings) |
-
-26 weapon kinds (78 weapons), six weapon disciplines. A mage with a staff no longer trains axe fighting.
-- **The five new melee weapons in detail** (approved 22 October 2026; names, numbers and looks in project files
-  `magie/vijf-wapens.md`; their two skills each are in the classes plan):
-  - **Scimitar** (Swords; one hand, may go in the second hand; Scimitar, Shamshir, Talwar): cut in passing: if you
-    stepped last turn, your first blow does +50% ("You cut in passing."). Needs little Strength.
-  - **Flail** (Axes and Maces; one hand; Flail, Knout, Scourge): a shield, Shield Wall or formation does not help
-    against it, both ways (an orc's flail goes over your Block too). Price: -10 to hit.
-  - **War hammer** (Axes and Maces; one hand; War Hammer, Battle Hammer, Rune Hammer): new monster tag `armoured`
-    (dwarf clans, knights and skeleton warriors in mail, golems, beetles, crabs) takes 25% less from weapons; a war
-    hammer ignores that and does +25% on top. An enemy hammer wears your armour faster. Half-Sword, Crush, Iron Fist,
-    Sunder and Armour Breaker use the same tag.
-  - **Cestus** (Unarmed; worn in the gloves slot; Cestus, Spiked Cestus, Ironbound Cestus): with the weapon hand
-    empty you fight unarmed with its damage and a little armour, so the second hand stays free (a grimoire fits).
-    A critical hit stuns for 1 turn.
-  - **Tiger claws** (Unarmed; gloves slot; Tiger Claws, Bagh Nakh, Wyrm Claws): one blow in four starts bleeding,
-    stacking to 3. No blood, no bleeding: skeletons, golems, oozes and ghosts.
-  - Carried by desert riders (scimitars), orcs and goblins (flails), dwarves (hammers); the Still Hand sells cestus
-    and claws, gnoll pack leaders carry claws. Looks: a short arc on a cut in passing, a grey `]` flash when a flail
-    passes a shield, a grey spark `*` when a hammer hits an armoured foe, stun stars on a cestus crit, blood on claws.
-- **Shields** get no discipline: shield skills go into Warcraft (martial, stamina), beside the Iron Company's Shield
-  Wall: Shield Bash (push one tile, short stun) and Block (the first blow of a turn is caught). Without a shield in
-  hand they do not work.
-- **Two weapons.** A light one-handed weapon (dagger, short sword, scimitar, club) can go in the second hand, the
-  shield slot. One bump is two blows: the main hand as usual, the second for about half. The price: no shield, no
-  block, no shield skills. Skills use the main hand, which decides the discipline that grows. Affixes of both count;
-  mind the balance when building (the second hand counting half). On screen two short swings; the character screen
-  shows the weapon as "off hand".
-- **Who carries what** (only those who use gear drop gear): dwarves hammers and crossbows, halflings slings, elves
-  long bows, desert riders scimitars, orcs and goblins spears and flails, the Border Watch halberds, necromancers
-  scythes.
-- **No wands**: the grimoire is already the magic second hand.
-- **Next:** replaced by the classes plan above: two skills per weapon kind and one rule per discipline, then their effects.
-- **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
 
 ---
 

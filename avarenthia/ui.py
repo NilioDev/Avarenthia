@@ -24,6 +24,8 @@ from . import weather as WX
 from . import world as WO
 from . import missions as MS
 from . import skills as SK
+from . import weapons as WP
+from . import bestiary as BE
 from . import towns as TW
 from . import war as WAR
 from .canvas import scale, mix, wrap_text, TallCanvas
@@ -685,6 +687,7 @@ class GameScreen(Screen):
         lmap = DR.light_map(m) if lighting else None
         torchlit = m.kind == 'dungeon' or getattr(m, 'underground', False)
         deco = getattr(m, 'deco', None)
+        trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
         night = TW.is_night(g)
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
@@ -742,7 +745,9 @@ class GameScreen(Screen):
                     if v:                           # the marked land breathes, slowly
                         k = .9 + .1 * math.sin(t * .8 + (mx + my) * .12)
                         fg, bg, self.moving = scale(fg, k), scale(bg, k), True
-                if deco and deco[i]:
+                if trail and (mx, my) in trail and v:
+                    ch, fg = ',', (170, 30, 30)
+                elif deco and deco[i]:
                     ch, fg, bg = DR.deco_look(m, i, (ch, fg, bg))
                 elif v and m.t[i] in AN.MOVING:
                     look = AN.cell(m, i, mx, my, (ch, fg, bg), t, night, day)
@@ -1692,7 +1697,10 @@ class InventoryScreen(Modal):
                 cv.fill(x + 2, yy, 54, 1, ' ', FG, bg)
                 cv.text(x + 4, yy, f'{D.SLOTNAME[key]:<8}', DIM, bg)
                 if it:
-                    cv.text(x + 13, yy, it.display_name(), it.color(), bg, maxw=41)
+                    note = WP.hand_note(g, it) if key == 'weapon' else ''
+                    cv.text(x + 13, yy, it.display_name(), it.color(), bg, maxw=41 - (len(note) + 1 if note else 0))
+                    if note:
+                        cv.text_right(x + 54, yy, note, DIM, bg)
                 elif key == 'shield' and g.two_handed(g.eq_item('weapon')):
                     cv.text(x + 13, yy, '(both hands on your weapon)', DIM, bg)
                 else:
@@ -3147,14 +3155,15 @@ class BestiaryScreen(Modal):
             cv.put(x + 36, yy, '│', LINE, PANEL)
         k = keys[self.sel]
         d = D.MONSTERS[k]
-        seen, kills = g.bestiary[k]
+        e = g.bestiary[k]
+        seen, kills, skins = e[0], e[1], (e[2] if len(e) > 2 else 0)
         r = g.lore(k)
+        step = BE.step(g, k)
         rx, w = x + 38, 59
         cv.text(rx, y + 2, d['ch'], d['fg'], PANEL)
         cv.text(rx + 2, y + 2, d['name'], d['fg'], PANEL)
         cv.text_right(rx + w - 1, y + 2, f'{E.LORE_RANKS[r][1]}', GOLD, PANEL)
-        nxt = E.LORE_RANKS[r + 1][0] if r + 1 < len(E.LORE_RANKS) else None
-        cv.text(rx, y + 3, f'First seen on day {seen} · {kills} slain' + (f' · next rank at {nxt}' if nxt else ' · mastered'), DIM, PANEL)
+        cv.text(rx, y + 3, f'First seen on day {seen} · {kills} slain' + (f' · {skins} skinned' if skins else ''), DIM, PANEL)
         lore = D.LORE.get(k, ('A creature of the vale.', 'Unknown.', 'No advice yet.'))
         does = D.DOES.get(k)
         traits = [t for t, on in (('fast', d['fast']), ('slow', d['slow']), ('ranged', d['ranged']),
@@ -3171,47 +3180,29 @@ class BestiaryScreen(Modal):
             yy += 1
             yy += cv.wrap(rx, yy, w, text, col, PANEL, rows) + 1
 
+        def still(n, what):
+            nonlocal yy
+            yy += cv.wrap(rx, yy, w, f'Slay or skin {n} to learn {what}.', DIM, PANEL, 2) + 1
+
         yy = y + 5
         yy += cv.wrap(rx, yy, w, lore[0], FG, PANEL, 3) + 1
-        if does:
-            # the three layers: how they look, what they do (3 slain), their weakness and home (10 slain)
-            if r >= 1:
-                section('WHAT THEY DO', does + (f" ({', '.join(traits)}.)" if traits else ''), FG, 4)
-            else:
-                cv.text(rx, yy, 'Slay 3 to learn what they do.', DIM, PANEL)
-                yy += 2
-            if r >= 2:
-                section('WEAKNESS', lore[2], GOOD, 2)
-                section('HOME', lore[1], FG, 2)
-                yy += cv.wrap(rx, yy, w, f"Health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}"
-                              + (f" · from danger level {d['min_l']}" if d.get('min_l') else ''), DIM, PANEL, 2)
-            elif r == 1:
-                cv.text(rx, yy, 'Slay 10 to learn their weakness and where they live.', DIM, PANEL)
-                yy += 2
+        # the three steps: weakness and resistances (3), what it carries (10), its weak spot (25)
+        if step >= 1:
+            section('WHAT THEY DO', (does or 'Nothing out of the ordinary.') + (f" ({', '.join(traits)}.)" if traits else ''), FG, 3)
+            res = BE.resists(k)
+            section('WEAKNESS', lore[2] + (f' It {res}.' if res else ''), GOOD, 3)
+            yy += cv.wrap(rx, yy, w, f"Home: {lore[1]} Health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}.",
+                          DIM, PANEL, 2) + 1
         else:
-            if r >= 1:
-                section('HABITAT', lore[1], FG, 2)
-                cv.text(rx, yy, 'TRAITS', DIM, PANEL)
-                yy += cv.wrap(rx + 8, yy, w - 8, ', '.join(traits) or 'none to speak of', FG, PANEL, 3) + 1
-            else:
-                cv.text(rx, yy, 'Slay 3 to learn where they live and how they fight.', DIM, PANEL)
-                yy += 2
-            if r >= 2:
-                cv.text(rx, yy, 'STRENGTH', DIM, PANEL)
-                yy += cv.wrap(rx + 10, yy, w - 10, f"health {word(d['hp'])} · damage {word(d['dmg'])} · armor {word(d['df'])}",
-                              FG, PANEL, 3)
-                if d.get('min_l'):
-                    cv.text(rx + 10, yy, f"found from danger level {d['min_l']} and up", FG, PANEL, maxw=w - 10)
-                    yy += 1
-                yy += 1
-            elif r == 1:
-                cv.text(rx, yy, 'Slay 10 to judge their strength.', DIM, PANEL)
-                yy += 2
-            if r >= 3:
-                section("HUNTER'S TIP", lore[2], GOOD, 2)
-            elif r == 2:
-                cv.text(rx, yy, "Slay 25 to learn a hunter's secret.", DIM, PANEL)
-                yy += 2
+            still(BE.STEPS[0][0], 'their weakness and resistances')
+        if step >= 2:
+            section('WHAT THEY CARRY', BE.carries(k)[0].upper() + BE.carries(k)[1:] + '.', FG, 2)
+        elif step == 1:
+            still(BE.STEPS[1][0], 'what they carry')
+        if step >= 3:
+            section('WEAK SPOT', BE.weak_spot(k), GOOD, 2)
+        elif step == 2:
+            still(BE.STEPS[2][0], 'their weak spot')
         cv.text(rx, y + 24, 'YOUR KNOWLEDGE', DIM, PANEL)
         cv.text(rx, y + 25, f'+{3 * r}% damage against them · they hit you {2 * r}% less often', GOLD if r else DIM, PANEL)
         cv.text_center(W // 2, y + 27, ' Up/Down: browse · Esc: close ', DIM, PANEL)

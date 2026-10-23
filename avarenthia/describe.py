@@ -161,14 +161,14 @@ def monster(game, mon):
         lines.append(mon.look)
         if rank >= 1 and D.DOES.get(mon.k):
             lines.append(D.DOES[mon.k])
-        if rank >= 2 and lore:
-            lines.append(lore[2])
     elif lore and known:
         lines.append(lore[0])
     elif d.get('boss'):
         lines.append('A creature of legend. Be very careful.')
     else:
         lines.append(f"A {d['name'].lower()}.")
+    from . import bestiary as BE
+    lines += BE.look_lines(game, mon.k)             # what you know: weakness, what it carries, its weak spot
     tags = []
     if mon.elite == 1:
         tags.append('a champion: tougher than its kin')

@@ -105,7 +105,8 @@ def ch_fighting(g):
         ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. Weapon skills and '
                        'Warcraft cost stamina, spells mana. You start with none: skills come from tomes, the sign {≡}.'),
         ('k', '[q] [w]', 'drink a health or a mana potion. It takes a turn.'),
-        ('k', '[f]', 'shoot with a bow at your target.'),
+        ('k', '[f]', 'shoot with a bow, crossbow or sling at your target, throw a knife or your spear, or strike a foe two '
+                     'tiles away with a spear or a staff.'),
         ('h', 'IN SIGHT'),
         ('p', 'The panel lists every enemy you can see, with a bar for its life and what it is doing: closing in, '
               'fleeing, stunned, unaware of you.'),
@@ -129,8 +130,10 @@ def ch_fighting(g):
               'Your gear can give you resistance to each, up to 75%.'),
         ('h', 'Night'),
         ('p', 'Night brings the dead and bigger packs.'),
-        ('n', 'Every kill teaches you about its kind. Know a kind well and you hit it harder, and it hits you less '
-              'often. The bestiary [v] shows what you know.'),
+        ('n', 'Every kind you kill or skin teaches you about it, in three steps: its weakness and resistances, then what '
+              'it carries, then its weak spot, where your blows strike home more often. A library scribe can read you '
+              'the first step for beasts you have met. Know a kind well and you hit it harder, and it hits you less '
+              'often. The look line and the bestiary [v] show what you know.'),
     ]
 
 
@@ -157,7 +160,10 @@ def ch_hero(g):
         ('p', 'You start with none. Learn them from tomes, the sign {≡}, found on monsters, in ruins and at standing '
               'stones, or bought from peddlers and city outfitters. Disciplines grow as you use them, and decide which '
               'tomes you can understand. You carry six skills on your bar; change them in a town with [z].'),
-        ('p', 'A weapon discipline has five tome skills, opening at ranks 0, 8, 20, 35 and 55. Each school of magic, '
+        ('p', 'Six weapon disciplines: Unarmed, Swordsmanship, Axes and Maces, Spears and Staves, Daggers, Bows and '
+              'Crossbows. The weapon in your main hand decides which one grows.'),
+        ('p', 'A weapon discipline has five tome skills, opening at ranks 0, 8, 20, 35 and 55; Spears and Staves has '
+              'none yet. Each school of magic, '
               'and Warcraft, has eight, at ranks 0, 5, 12, 20, 30, 42, 55 and 70. Six places for so many: choose.'),
         ('h', 'The schools'),
         ('p', 'Each school has a rule of its own, and most of them show on the map.'),
@@ -176,7 +182,8 @@ def ch_hero(g):
                'grass, a quarter weaker in the desert, on ice and under the ground.',
                'Beastcraft: almost everything goes through your beast; Tame is a tome of its own.',
                'In the shape of a beast you stay the sign {@|255,246,220}, in the colours of a bear or a wolf.',
-               'Warcraft: shouts and stances, with any weapon in hand.']),
+               'Warcraft: shouts and stances, with any weapon in hand. The Iron Company teaches Shield Bash, which drives '
+               'a foe back a tile, and Block, which catches the first blow of each turn; both need a shield.']),
         ('p', 'What a spell leaves on the ground is named when you look with [o], and a foe standing in it says so '
               'under IN SIGHT.'),
         ('h', 'Life skills'),
@@ -200,6 +207,24 @@ def ch_gear(g):
         ('h', 'Slots and grades'),
         ('p', 'Ten slots. Normal, exceptional and elite grades; some gear needs Strength or Dexterity. A two-handed '
               'weapon takes the off-hand as well.'),
+        ('h', 'Weapon kinds'),
+        ('l', ['Spears, halberds, scythes and staves reach two tiles in a straight line, past a friend too. A spear '
+               'can be thrown; it lies where it fell until you walk over it again. A scythe sweeps the tiles on either '
+               'side of your blow.',
+               'A scimitar cuts in passing: the first blow after a step does half again as much.',
+               'A flail swings over a shield, a shield wall or a formation, but it is hard to aim.',
+               'Heavy armour and hard shells take a quarter off a blow. A war hammer goes through and does a quarter '
+               'more; a crossbow bolt goes through as well. An enemy hammer wears your armour fast.',
+               'A crossbow shoots, then must be wound again: press [f] once more. The panel says loaded or unloaded.',
+               'Throwing knives are thrown with [f]; walk over them to put them back in the set.',
+               'A sling is cheap and its stones lie everywhere.',
+               'A cestus or tiger claws go on your hands: with your weapon hand empty you fight unarmed with their '
+               'damage. A cestus stuns on a critical hit; claws make a foe bleed, up to three times over. What has no '
+               'blood does not bleed.']),
+        ('h', 'Two weapons'),
+        ('p', 'A light weapon, a dagger, short sword, scimitar or club, goes in the off-hand beside a one-handed '
+              'weapon. One blow is then two: the second hand strikes for half, and its powers count for half. The '
+              'price is the shield: no block and no shield skills.'),
         ('h', 'Rarity'),
         ('rar', rar),
         ('p', 'Magic is rare in Avarenthia, and the better it is the rarer. Uniques roll within a range; sets of 2 to 4 '

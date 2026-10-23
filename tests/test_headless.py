@@ -3765,6 +3765,12 @@ def prep_skill(g, sid):
     if sk.mode == 'pyre':
         for o in g.visible_hostiles():
             o.effects['burn'] = [4, 3]
+    if sk.need_shield and not g.eq_item('shield'):
+        from avarenthia.entities import make_gear
+        sh = make_gear(g, 'buckler', 'normal', 1)
+        g.add_to_inv(sh)
+        p.eq.pop('weapon', None) if g.two_handed(g.eq_item('weapon')) else None
+        p.eq['shield'] = sh.id
 
 
 def schools():
@@ -3777,7 +3783,7 @@ def schools():
     print('== schools')
     for line, d in SK.DISCIPLINES.items():
         tomes = SK.by_line(line)
-        want = 5 if d['kind'] == 'weapon' else 8
+        want = 0 if line == 'spears' else 5 if d['kind'] == 'weapon' else 8      # spears get theirs with the classes
         assert len(tomes) == want, (line, len(tomes))
         if d['kind'] != 'weapon':
             assert [s.unlock for s in tomes] == list(SK.TOME), (line, [s.unlock for s in tomes])
@@ -3895,6 +3901,223 @@ def schools():
     assert w2.name in dump or MC.get(g, 'beast2').name in dump, 'the second beast has its card'
     app.screens = [ui.GameScreen(app)]
     print('schools ok:', len(SK.SKILL_LIST), 'tome skills,', len(techs), 'techniques')
+
+
+def weapons():
+    """The weapons round: twelve new kinds, each with its own rule (reach, the thrown spear, knives, crossbows that load,
+    the scimitar's cut, the flail over a shield, the hammer through armour, fists in a cestus or claws), two weapons at
+    once, Shield Bash and Block, monsters with one weapon of their own; and the bestiary in three steps."""
+    from avarenthia import weapons as WP, bestiary as BE, skills as SK, hunting as HT, describe as DS
+    from avarenthia.entities import make_monster, make_gear
+    from avarenthia.worldgen import free_around
+    print('== weapons')
+    for f in ('scimitar', 'flail', 'warhammer', 'spear', 'halberd', 'scythe', 'throwknives', 'lightxbow', 'heavyxbow',
+              'sling', 'cestus', 'claws'):
+        assert len(D.grades(f)) == 3 and all(b in D.BASES for b in D.grades(f)), f
+    fams = {b['family'] for b in D.BASES.values() if b['slot'] == 'weapon'}
+    assert len(fams) == 26 and all(f in SK.WEAPON_LINE for f in fams), (len(fams), [f for f in fams if f not in SK.WEAPON_LINE])
+    assert SK.WEAPON_LINE['staff_x'] == 'spears' and SK.WEAPON_LINE['sling'] == 'archery'
+    assert D.BASES['cestus_e']['fist'][1] > D.BASES['cestus']['fist'][1]
+    app = new_app('soft', seed=6)
+    g, p = app.game, app.game.player
+    p.lvl, p.str, p.dex, p.vit = 30, 200, 200, 300
+    g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+    m = g.map
+
+    def arena():
+        m.mons = []
+        m.items = [it for it in m.items if abs(it.x - p.x) > 6 or abs(it.y - p.y) > 6]
+        p.buffs, p.cooldowns = [], {}
+        p.life = g.stats()['max_life']
+
+    def line_spot(n, need=None):
+        """A free tile n steps from you in a straight line, with open floor between."""
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            cells = [(p.x + dx * k, p.y + dy * k) for k in range(1, n + 1)]
+            if all(m.inb(*c) and D.TILES[m.tile(*c)].walk and not g.occupied(m, *c) for c in cells):
+                return cells, (dx, dy)
+        return None, None
+
+    def foe(k, x, y, hp=500):
+        o = make_monster(g, k, x, y, 5)
+        o.hp = o.maxhp = hp
+        o.awake = True
+        m.mons.append(o)
+        return o
+
+    def wield(base, slot='weapon'):
+        it = make_gear(g, base, 'normal', 5)
+        g.add_to_inv(it)
+        p.eq[slot] = it.id
+        return it
+    # find a straight corridor of five free tiles
+    for _ in range(400):
+        cells, d = line_spot(5)
+        if cells:
+            break
+        spots = [c for c in free_around(g, m, p.x, p.y, 8) if not g.occupied(m, *c)]
+        p.x, p.y = random.choice(spots)
+    assert cells, 'no room to fight'
+    g.compute_fov()
+    # reach: a spear strikes a goblin two tiles away, and past a friend
+    arena()
+    p.eq = {}
+    sp = wield('spear')
+    gob = foe('goblin', *cells[1])
+    g.compute_fov()
+    assert WP.reach_target(g, gob) and g.fire() == 1 and gob.hp < 500, 'the spear reaches'
+    pal = make_monster(g, 'villager', *cells[0], 3) if 'villager' in D.MONSTERS else None
+    if pal is not None:
+        pal.is_npc = True
+        m.mons.append(pal)
+        hp = gob.hp
+        g.try_move(*d)
+        assert gob.hp < hp and (p.x, p.y) != cells[0], 'a spear strikes past a friend'
+        m.mons.remove(pal)
+    # the spear thrown: it lies where it fell until you pick it up again
+    arena()
+    gob = foe('goblin', *cells[3])
+    g.compute_fov()
+    assert g.fire() == 1 and not g.eq_item('weapon') and any(it is sp for it in m.items), 'the spear is thrown'
+    sp.x, sp.y = p.x, p.y
+    g.auto_pickup()
+    assert g.eq_item('weapon') is sp, 'the spear is back in your hand'
+    # a crossbow shoots, then must be wound again; the panel says so
+    arena()
+    xb = wield('lightxbow')
+    gob = foe('goblin', *cells[3])
+    g.compute_fov()
+    assert g.fire() == 1 and WP.unloaded(g) and ('unloaded', (200, 120, 90)) in WP.shown(g)
+    hp = gob.hp
+    assert g.fire() == 1 and not WP.unloaded(g) and gob.hp == hp, 'the second press winds it'
+    assert WP.shot_df(g, 40) == 20
+    # throwing knives: one fewer in the set, one on the ground, back again when picked up
+    arena()
+    kn = wield('throwknives')
+    gob = foe('goblin', *cells[3])
+    g.compute_fov()
+    assert g.fire() == 1 and kn.ammo == WP.KNIVES_MAX - 1
+    knife = next(it for it in m.items if it.k == 'ammo')
+    knife.x, knife.y = p.x, p.y
+    g.auto_pickup()
+    assert kn.ammo == WP.KNIVES_MAX and knife not in m.items and 'knife' in knife.display_name().lower()
+    # the scimitar's cut in passing
+    arena()
+    wield('scimitar')
+    gob = foe('goblin', *cells[0])
+    s = g.stats()
+    p.stepped = g.turn - 1
+    assert WP.on_melee(g, gob, s) == 1.5 and WP.on_melee(g, gob, s) == 1.0, 'only the first blow after a step'
+    # a flail swings over a shield, at a price in aim
+    arena()
+    wield('mace')
+    ar = g.stats()['ar']
+    wield('flail')
+    assert g.stats()['ar'] == ar - 10
+    gob = foe('goblin', *cells[0])
+    gob.shield = 3
+    hp = gob.hp
+    g.damage_mon(gob, 40, weapon=True)
+    assert hp - gob.hp == 40 and gob.shield == 3, 'the flail went over the shield'
+    wield('mace')
+    g.damage_mon(gob, 40, weapon=True)
+    assert gob.shield == 2
+    # a war hammer goes through armour
+    arena()
+    sk_ = foe('skel_warrior' if 'skel_warrior' in D.MONSTERS else 'skeleton', *cells[0])
+    assert WP.armoured(sk_)
+    wield('longsword')
+    assert WP.armour_mult(g, sk_, True) == .75
+    wield('warhammer')
+    assert WP.armour_mult(g, sk_, True) == 1.25 and WP.armour_mult(g, gob, True) == 1.0
+    # fists: a cestus or claws while the weapon hand is empty; claws draw blood, three times at most, not from bones
+    arena()
+    p.eq = {}
+    bare = g.stats()['dmg']
+    ce = wield('cestus_e', 'gloves')
+    assert WP.fist(g) is ce and g.stats()['dmg'][1] > bare[1] and g.stats()['line'] == 'unarmed'
+    gob = foe('goblin', *cells[0])
+    for _ in range(4):
+        WP.bleed(g, gob, 2)
+    assert gob.bleeds == 3 and gob.effects['bleed'][1] == 6
+    WP.bleed(g, sk_, 2)
+    assert 'bleed' not in sk_.effects, 'no blood, no bleeding'
+    g.end_turn(1)
+    assert WP.blood_at(g, m), 'a bleeding goblin leaves a trail'
+    # two weapons: a light one beside a one-handed one goes in the second hand, and strikes too
+    arena()
+    p.eq = {}
+    da = make_gear(g, 'dagger', 'normal', 5)
+    ss = make_gear(g, 'shortsword', 'normal', 5)
+    g.add_to_inv(da)
+    g.add_to_inv(ss)
+    assert g.equip(da) and g.equip(ss) and p.eq.get('shield') == ss.id and p.eq.get('weapon') == da.id
+    assert g.stats().get('off') and WP.off_hand(g) is ss
+    bs = make_gear(g, 'buckler', 'normal', 5)
+    g.add_to_inv(bs)
+    assert g.equip(bs) and not WP.off_hand(g) and WP.has_shield(g)
+    # Block and Shield Bash: a shield in hand catches the first blow of a turn; a flail goes over it
+    arena()
+    p.known = list(dict.fromkeys(p.known + ['block', 'shield_bash']))
+    gob = foe('goblin', *cells[0])
+    p.bar[0] = 'block'
+    p.stamina = 999
+    assert SK.use(g, 0) and any(b_[0] == 'block' for b_ in p.buffs)
+    life = p.life
+    gob.wield = None
+    g.mon_attack(gob, 0)
+    assert p.life == life and p.blocked == g.turn, 'caught on the shield'
+    p.blocked = -1
+    gob.wield = 'flail'
+    assert not WP.blocked(g, gob), 'the flail swings over the shield'
+    p.bar[1] = 'shield_bash'
+    p.cooldowns = {}
+    at = (gob.x, gob.y)
+    assert SK.use(g, 1) and ((gob.x, gob.y) != at or gob not in m.mons or not D.TILES[m.tile(2 * gob.x - p.x, 2 * gob.y - p.y)].walk)
+    p.eq.pop('shield', None)
+    p.cooldowns = {}
+    assert not SK.use(g, 1), 'no shield, no Shield Bash'
+    # monsters carry one weapon of their kind, and drop only that one
+    for _ in range(20):
+        dr = make_monster(g, 'dune_rider', p.x, p.y, 5)
+        assert dr.wield in D.GEAR_USERS['dune_rider'] and dr.wield == 'scimitar'
+        assert 'shortsword' not in WP.drop_families(dr, D.GEAR_USERS['dune_rider'])
+    assert 'heavyxbow' in D.GEAR_USERS['thunderer'] and 'sling' in D.GEAR_USERS['kob_slinger']
+    # the bestiary: kills and skins teach a kind in three steps; the last gives a weak spot
+    arena()
+    p.bestiary.pop('wolf', None)
+    w_ = foe('wolf', *cells[0], hp=1)
+    g.kill(w_)
+    assert BE.step(g, 'wolf') == 0 and DS.monster(g, foe('wolf', *cells[1]))[2]
+    for _ in range(2):
+        BE.on_skin(g, 'wolf')
+    assert BE.step(g, 'wolf') == 1 and BE.look_lines(g, 'wolf'), p.bestiary['wolf']
+    p.bestiary['wolf'][1] = 30
+    assert BE.step(g, 'wolf') == 3 and BE.crit_bonus(g, m.mons[-1]) == BE.WEAK_CRIT
+    assert g.crit_vs(m.mons[-1], g.stats()) == g.stats()['crit'] + BE.WEAK_CRIT
+    lines = BE.look_lines(g, 'wolf')
+    assert len(lines) == 3 and 'critical' in lines[2], lines
+    if 'red_deer' in HT.SKINS:
+        assert 'deer hide' in BE.carries('red_deer').lower()
+    assert 'scimitar' in BE.carries('dune_rider').lower()
+    for e in p.bestiary.values():
+        e[1] = max(e[1], 3)
+    p.bestiary['rat'] = [1, 0]
+    assert BE.study(g) == ['Giant Rat'] and BE.step(g, 'rat') == 1, 'a library teaches the first step'
+    app.screens = [ui.GameScreen(app), ui.BestiaryScreen(app)]
+    for _ in range(len(p.bestiary)):
+        app.render()
+        app.key('down')
+    app.screens = [ui.GameScreen(app), ui.InventoryScreen(app)]
+    wield('heavyxbow')
+    app.render()
+    assert 'loaded' in app.cv.dump()
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    E.save_game(g)
+    g2 = E.load_game()
+    assert g2.bestiary['wolf'][1] == 30 and g2.player.bestiary is g2.bestiary
+    print('weapons ok:', len(fams), 'weapon kinds,', len(p.bestiary), 'creatures known')
 
 
 def visible():
@@ -4331,7 +4554,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

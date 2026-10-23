@@ -6,7 +6,7 @@ from . import data as D
 
 # kinds kept by their own module: display(game, it), lines(game, it), value(game, it), glyph(it), color(it)
 CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'hunting', 'carcass': 'hunting',
-         'leather': 'hunting'}
+         'leather': 'hunting', 'ammo': 'weapons'}
 
 
 def _craft(it):
@@ -348,7 +348,7 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant', 'dish', 'part', 'leather') or \
+        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant', 'dish', 'part', 'leather', 'ammo') or \
             (self.k == 'tool' and self.t == 'kit')
 
 
@@ -412,6 +412,7 @@ class Player:
         self.str, self.dex, self.vit, self.ene = st['str'], st['dex'], st['vit'], st['ene']
         self.stat_pts = 0
         self.disc = {k: [0, 0] for k in DISC_ORDER}      # rank, progress
+        self.bestiary = {}               # creature kind -> [first seen, slain, skinned] (bestiary.py)
         self.known = []                  # skills are learned from tomes found in the world
         self.bar = [None] * BAR_SIZE
         self.cooldowns = {}
@@ -494,7 +495,7 @@ def _skill_line(it):
     if it.slot == 'shield' and not it.arm:
         return random.choice(['fire', 'frost', 'storm', 'shadow', 'restoration'])
     if it.slot == 'gloves':
-        return random.choice(['swords', 'axes', 'daggers', 'archery', 'unarmed'])
+        return random.choice(['swords', 'axes', 'spears', 'daggers', 'archery', 'unarmed'])
     return random.choice(list(D.SKILL_PREFIX))
 
 
@@ -715,6 +716,8 @@ def make_monster(game, k, x, y, lvl, elite=0):
     m.df = df
     m.hit_r = 5 + lvl * 5
     m.xp = xp
+    from .weapons import pick_wield
+    m.wield = pick_wield(k)                 # the one weapon it fights with, and may drop
     from .behave import on_spawn
     on_spawn(game, m)
     return m

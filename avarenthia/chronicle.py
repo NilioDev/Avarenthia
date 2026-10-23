@@ -299,10 +299,11 @@ def blocks(game, i):
     ch = CHAPTERS[i]
     if ch == 'Creatures':
         rows = []
-        for k, (day, kills) in sorted(game.bestiary.items(), key=lambda kv: D.MONSTERS[kv[0]]['name']):
-            from .engine import LORE_RANKS, lore_rank
+        for k, e in sorted(game.bestiary.items(), key=lambda kv: D.MONSTERS[kv[0]]['name']):
+            from .engine import LORE_RANKS
+            kills = e[1]
             mon = D.MONSTERS[k]
-            rows.append(([(mon['ch'], D.hexrgb(mon['fg']))], f"{mon['name']}: {LORE_RANKS[lore_rank(kills)][1]}, "
+            rows.append(([(mon['ch'], D.hexrgb(mon['fg']))], f"{mon['name']}: {LORE_RANKS[game.lore(k)][1]}, "
                                                               f"{kills} slain"))
         out = [('p', 'Every kind you have met. [Enter] opens the bestiary, with all you learnt of them.')]
         return out + ([('s', rows)] if rows else [('p', 'You have met no creature yet.')])

@@ -557,6 +557,8 @@ def skin(game, it):
     meat, cuts, hide, worth, parts, fur, size = SKINS[it.t]
     name = D.MONSTERS[it.t]['name'].lower()
     m.items.remove(it)
+    from . import bestiary as BE
+    BE.on_skin(game, it.t)                      # a skinner learns the beast
     got = []
     if not has_knife(game):
         if meat:

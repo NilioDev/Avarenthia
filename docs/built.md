@@ -22,6 +22,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm; areas hit the square but open out round, with a harmless cloud beyond the sides |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
+| **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 
 ## Built
 
@@ -275,6 +276,75 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   fail), events (ships, pirates, raiders, rivals, a warband), standing, a hireling, sight off, a creature's state on
   look, and where you are, the turn and the seed in the line under the map. The main menu gets a quick start. A
   debug run saves to `debug.sav`. Not in the handbook. Not built of the proposal: the bot playing from inside the game.
+
+- **Weapons and the bestiary** (23 October 2026; `weapons.py` the weapons' own rules, `bestiary.py` what you know of
+  each kind). Scimitar, flail, war hammer, spear, halberd, scythe, throwing knives, light and heavy crossbow, sling
+  (weapons) and cestus and tiger claws (gloves), each in three grades; the staff moved to the new Spears and Staves;
+  Archery is now Bows and Crossbows. Reach two tiles in a straight line, also past a friend (bump the friend); [f]
+  throws a spear or a knife, shoots, winds a crossbow, or strikes with reach. Monster tag `armoured`
+  (`weapons.ARMOURED` and constructs): weapons do 25% less, a hammer 25% more, a bolt goes through. Two weapons: a
+  light one goes in the off-hand beside a one-handed weapon, half damage, its affixes count half. Shield Bash and
+  Block are Iron Company techniques (Warcraft, need a shield). Monsters carry one weapon (`mon.wield`) and drop only
+  that one. The bestiary lives on the player (`p.bestiary`: first seen, slain, skinned); steps at 3, 10 and 25:
+  weakness and resistances, what it carries, a weak spot (+10% critical chance); a library scribe teaches step one.
+  Spears and Staves has no tome skills yet: its two skills per weapon kind come with classes part 1. Test `weapons`.
+
+## Weapons: more kinds, few disciplines (built 23 October 2026; the spec)
+
+Approved by Nilio on 17 October 2026 (project files `magie/wapens.md`). Today: 16 weapon kinds in three grades
+(48 weapons), four disciplines and Unarmed; shields exist (buckler, round, kite, tower; the grimoire also takes that
+hand) but have no skills. New weapons join the discipline they fit; only **Spears and Staves** is new. Each new
+weapon has one rule you notice in a fight. Everything comes in the three grades.
+
+| Discipline | Weapons (new in bold) | The new ones' rule |
+|---|---|---|
+| Unarmed | empty hands, **cestus**, **tiger claws** | cestus hits harder and still counts as unarmed (monks); claws bleed |
+| Swordsmanship | short sword, long sword, bastard sword, rune blade, greatsword, **scimitar** | quick and light (desert riders) |
+| Axes and Maces | club, mace, war axe, great axe, maul, **flail**, **war hammer** | a shield does not stop a flail; a war hammer is strong against heavy armour (dwarves) |
+| **Spears and Staves** | staff and war staff (moved here), **spear**, **halberd**, **scythe** | **reach**: strike an enemy 2 tiles away in a straight line, also past a friend; a spear can be thrown; a scythe hits the arc in front of you |
+| Daggers | dagger, **throwing knives** | thrown with the bow's key, picked up again |
+| Bows and Crossbows | short bow, long bow, war bow, **light crossbow**, **heavy crossbow**, **sling** | crossbows shoot and load in turn ("loaded" shows), go through armour, need little Dexterity; a sling is cheap and its stones lie everywhere (halflings) |
+
+26 weapon kinds (78 weapons), six weapon disciplines. A mage with a staff no longer trains axe fighting.
+- **The five new melee weapons in detail** (approved 22 October 2026; names, numbers and looks in project files
+  `magie/vijf-wapens.md`; their two skills each are in the classes plan):
+  - **Scimitar** (Swords; one hand, may go in the second hand; Scimitar, Shamshir, Talwar): cut in passing: if you
+    stepped last turn, your first blow does +50% ("You cut in passing."). Needs little Strength.
+  - **Flail** (Axes and Maces; one hand; Flail, Knout, Scourge): a shield, Shield Wall or formation does not help
+    against it, both ways (an orc's flail goes over your Block too). Price: -10 to hit.
+  - **War hammer** (Axes and Maces; one hand; War Hammer, Battle Hammer, Rune Hammer): new monster tag `armoured`
+    (dwarf clans, knights and skeleton warriors in mail, golems, beetles, crabs) takes 25% less from weapons; a war
+    hammer ignores that and does +25% on top. An enemy hammer wears your armour faster. Half-Sword, Crush, Iron Fist,
+    Sunder and Armour Breaker use the same tag.
+  - **Cestus** (Unarmed; worn in the gloves slot; Cestus, Spiked Cestus, Ironbound Cestus): with the weapon hand
+    empty you fight unarmed with its damage and a little armour, so the second hand stays free (a grimoire fits).
+    A critical hit stuns for 1 turn.
+  - **Tiger claws** (Unarmed; gloves slot; Tiger Claws, Bagh Nakh, Wyrm Claws): one blow in four starts bleeding,
+    stacking to 3. No blood, no bleeding: skeletons, golems, oozes and ghosts.
+  - Carried by desert riders (scimitars), orcs and goblins (flails), dwarves (hammers); the Still Hand sells cestus
+    and claws, gnoll pack leaders carry claws. Looks: a short arc on a cut in passing, a grey `]` flash when a flail
+    passes a shield, a grey spark `*` when a hammer hits an armoured foe, stun stars on a cestus crit, blood on claws.
+- **Shields** get no discipline: shield skills go into Warcraft (martial, stamina), beside the Iron Company's Shield
+  Wall: Shield Bash (push one tile, short stun) and Block (the first blow of a turn is caught). Without a shield in
+  hand they do not work.
+- **Two weapons.** A light one-handed weapon (dagger, short sword, scimitar, club) can go in the second hand, the
+  shield slot. One bump is two blows: the main hand as usual, the second for about half. The price: no shield, no
+  block, no shield skills. Skills use the main hand, which decides the discipline that grows. Affixes of both count;
+  mind the balance when building (the second hand counting half). On screen two short swings; the character screen
+  shows the weapon as "off hand".
+- **Who carries what** (only those who use gear drop gear): dwarves hammers and crossbows, halflings slings, elves
+  long bows, desert riders scimitars, orcs and goblins spears and flails, the Border Watch halberds, necromancers
+  scythes.
+- **No wands**: the grimoire is already the magic second hand.
+- **Next:** replaced by the classes plan above: two skills per weapon kind and one rule per discipline, then their effects.
+- **Save data** changes (new bases, off-hand weapon): bump `SAVE_VERSION`.
+
+## The bestiary grows (built 23 October 2026; the spec)
+Approved 22 October 2026 (from going through Project Gorgon's skills). No new skill: the bestiary that exists gets
+deeper. What you know of a creature kind grows each time you kill or skin one. Three steps, each shown in the look
+line (`l`) and on its bestiary page: first its weakness and resistances, then what it carries, then its weak spot
+(a better chance of a critical hit against that kind). Reading about a creature in a library may give the first step.
+Saved per hero: bump `SAVE_VERSION`; the handbook says it in a sentence or two.
 
 ## Debug menu and a test build (built 23 October 2026; the spec)
 

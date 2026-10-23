@@ -51,6 +51,8 @@ from . import powers as _PW  # noqa: F401  (the other powers register their choi
 from . import realmjobs as _RJ  # noqa: F401
 from . import history as HI
 from . import spellmap as SM
+from . import weapons as WP
+from . import bestiary as BE
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -58,7 +60,7 @@ from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WE
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
-SAVE_VERSION = 32
+SAVE_VERSION = 33
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -171,7 +173,6 @@ class Game:
         self.dist = None
         self.pending = None     # an open choice (travel events, places, travellers)
         self.encounter_poi = None
-        self.bestiary = {}      # monster key -> [seen, kills]
 
         self.corpses = []
         self.turn = D.DAY_LEN * 7 // 24      # the story starts at seven in the morning
@@ -371,8 +372,11 @@ class Game:
                 continue
             if getattr(it, 'set_key', None) and it.identified:
                 sets[it.set_key] = sets.get(it.set_key, 0) + 1
+            half = slot == 'shield' and it.slot == 'weapon'      # a second weapon's powers count half
             if it.identified:
                 for st, v in it.aff:
+                    if half and isinstance(v, int):
+                        v = v // 2
                     if st == 'dr':
                         gear_dr += v
                     elif st != 'edef':
@@ -430,7 +434,7 @@ class Game:
             w = None
         line = SK.WEAPON_LINE.get(w.base) if w else 'unarmed'
         wr = (p.disc[line][0] + s.get('skill_' + line, 0)) if line in p.disc else 0
-        bd = w.dmg if w else (1 + wr // 6, 3 + wr // 3)      # fists harden with practice
+        bd = w.dmg if w else WP.fist_damage(self, wr)      # fists harden with practice; a cestus or claws hit harder
         dexy = line in ('daggers', 'archery')
         mul = 1 + (s['dex'] if dexy else s['str']) / 100 + s['ed'] / 100 + wr * .015 + buff_dmg / 100
         if getattr(p, 'race', '') == 'orc' and not (w and D.BASES[w.base].get('ranged')):
@@ -440,6 +444,7 @@ class Game:
         s['def'] = s['armor'] + s['dex'] // 2
         s['line'] = line
         s['ranged'] = bool(w and D.BASES[w.base].get('ranged'))
+        WP.stats(self, s, mul)
         return s
 
     def heavy_armour(self):
@@ -963,6 +968,9 @@ class Game:
                 if wd:
                     return self.meet_wanderer(wd)
             if mon.is_npc:
+                past = WP.reach_past(self, dx, dy)
+                if past:                                  # a spear or staff strikes past a friend
+                    return WP.strike_reach(self, past)
                 if mon.role in ('escort', 'merc_ally', 'thrall') or (not mon.stay and mon.role in ('villager', 'guard', 'dog', 'livestock') and random.random() < .5):
                     mon.x, mon.y, p.x, p.y = p.x, p.y, nx, ny
                     return 1
@@ -1038,6 +1046,7 @@ class Game:
             return 0
         ox, oy = p.x, p.y
         p.x, p.y = nx, ny
+        p.stepped = self.turn                   # a scimitar cuts in passing after a step
         if m.kind == 'over':
             esc = MS.escort_wanderer(self)
             if esc:
@@ -1206,6 +1215,10 @@ class Game:
                 p.mana = min(s['max_mana'], p.mana + round(s['max_mana'] * .1))
                 self.num(p.x, p.y, f'+{h}', C_HEAL)
                 self.msg('The health orb restores you.', 'good')
+            elif (it.k == 'gear' and getattr(it, 'thrown', False)) or it.k == 'ammo':
+                if not WP.pick_up(self, it):          # your spear back in hand, your knives back in the set
+                    self.msg('Your bag is full.', 'bad')
+                    continue
             elif it.dropped or it.k == 'carcass' or (it.k == 'gear' and it.rar == 'normal' and not it.name.startswith('Your')):
                 continue
             else:
@@ -1239,6 +1252,12 @@ class Game:
             self.msg('There is nothing here.')
             return 0
         for it in its:
+            if (it.k == 'gear' and getattr(it, 'thrown', False)) or it.k == 'ammo':
+                if not WP.pick_up(self, it):
+                    self.msg('Your bag is full.', 'bad')
+                    break
+                m.items.remove(it)
+                continue
             if not self.add_to_inv(it):
                 self.msg('Your bag is full.', 'bad')
                 break
@@ -1416,6 +1435,8 @@ class Game:
                 if k not in eq or eq[k] == it.id:
                     return k
             return 'ring1'
+        if it.slot == 'weapon':
+            return WP.off_hand_slot(self, it)
         return it.slot
 
     def two_handed(self, it):
@@ -1738,10 +1759,11 @@ class Game:
         self.msg('You mend what you can with the repair kit. It will do, for now.', 'good')
         return 10
 
-    def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False, elem=None):
+    def damage_mon(self, mon, dmg, crit=False, col=C_DMG, weapon=False, elem=None, ranged=False, sunder=False):
         p = self.player
         if weapon:
             self.wear('weapon', .2)
+            dmg *= WP.armour_mult(self, mon, weapon, ranged, sunder)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
         if getattr(mon, 'lurk', False):          # struck where it hid: it shows itself
@@ -1790,18 +1812,22 @@ class Game:
             self.msg(f'You miss {mon.the()}.')
             mon.awake = True
             self.wake_pack(mon)
+            WP.after_melee(self, mon, s, False, False)
             return
-        crit = random.random() < s['crit'] / 100
+        crit = random.random() < self.crit_vs(mon, s) / 100
         if s['line'] and not s['ranged']:
             SK.gain(self, s['line'], 1)
-        if not self.damage_mon(mon, random.randint(*s['dmg']) + self.weapon_extra(mon, s), crit, weapon=True):
+        k = WP.on_melee(self, mon, s)
+        if not self.damage_mon(mon, random.randint(*s['dmg']) * k + self.weapon_extra(mon, s), crit, weapon=True):
             self.msg(f"You {'critically ' if crit else ''}hit {mon.the()}.")
+        WP.after_melee(self, mon, s, crit, True)
 
     def weapon_strike(self, mon, pct, force_crit=False, ranged=False):
         self.player.strained = self.turn            # no breath gets back while you swing
         s = self.stats()
-        crit = force_crit or random.random() < s['crit'] / 100
-        return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True)
+        crit = force_crit or random.random() < self.crit_vs(mon, s) / 100
+        return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True,
+                               ranged=ranged)
 
     def hurt(self, dmg, src, elem=None):
         if DBG.ON and DBG.god_tick(self):
@@ -1851,10 +1877,12 @@ class Game:
             add_blood(m, mon.x, mon.y, 2 if (mon.elite or mon.is_boss) else random.randint(0, 1))
         if not mon.is_npc:
             e = self.bestiary.setdefault(mon.k, [self.day, 0])
-            before = lore_rank(e[1])
+            before, step = lore_rank(BE.points(e)), BE.step(self, mon.k)
             e[1] += 1
-            if lore_rank(e[1]) > before:
-                self.msg(f"Your knowledge of the {D.MONSTERS[mon.k]['name'].lower()} grows: {LORE_RANKS[lore_rank(e[1])][1]}. (V)", 'gold')
+            if BE.step(self, mon.k) > step:
+                BE.note(self, mon.k, step)
+            elif lore_rank(BE.points(e)) > before:
+                self.msg(f"Your knowledge of the {D.MONSTERS[mon.k]['name'].lower()} grows: {LORE_RANKS[lore_rank(BE.points(e))][1]}. (V)", 'gold')
         special = mon.elite or mon.is_boss or mon.tpl.get('chief')
         great = mon.is_boss or mon.elite == 2 or mon.tpl.get('chief')
         end = 'is broken.' if BH.beh(mon, 'still') else 'is slain!' if great else 'dies.'
@@ -1951,7 +1979,7 @@ class Game:
                 self.spill(m, mon.x, mon.y, it)
                 self.announce(it)
         for j in range(n):
-            it = random_gear(self, lvl, boost, uses, mon.k)
+            it = random_gear(self, lvl, boost, WP.drop_families(mon, uses), mon.k)
             if boost > 3 and j == 0 and not u and it.rar == 'normal':     # a boss without a treasure of its own has one thing worth having
                 up = make_gear(self, it.base, 'magic', lvl)
                 it.rar, it.aff, it.name, it.ided = up.rar, up.aff, up.name, False
@@ -2005,11 +2033,22 @@ class Game:
 
     def lore(self, k):
         e = self.bestiary.get(k)
-        return lore_rank(e[1]) if e else 0
+        return lore_rank(BE.points(e)) if e else 0
+
+    @property
+    def bestiary(self):
+        """What you know of each kind of creature (on the player): key -> [first seen, slain, skinned]."""
+        return self.player.bestiary
+
+    def crit_vs(self, mon, s):
+        """Your chance of a critical hit against this one, in percent: more where you know its weak spot."""
+        return s['crit'] + BE.crit_bonus(self, mon)
 
     def mon_attack(self, mon, df):
         p = self.player
         if MC.intercept(self, mon):
+            return
+        if WP.blocked(self, mon):
             return
         if random.random() < self.mon_hit_chance(mon, df):
             dmg = round(random.randint(*mon.dmg) * BH.attack_mult(self, mon))
@@ -2030,7 +2069,7 @@ class Game:
                     p.poison = [max(1, turns), max(1, round(mon.lvl / 2))]
                     self.msg('Venom burns in your veins!', 'bad')
             th = self.stats()['thorns']
-            self.wear(None, .3)
+            self.wear(None, .3 * WP.wear_mult(mon))
             self.hurt(dmg, mon.the(), elem if elem != 'poison' else None)
             if not self.dead:
                 SM.chill(self, mon)
@@ -2222,6 +2261,8 @@ class Game:
                                'swarm': (210, 200, 100)}[k]
                         mon.hp -= v
                         self.num(mon.x, mon.y, str(v), col)
+                        if k == 'bleed':
+                            WP.blood_trail(self, m, mon.x, mon.y)       # a red trail where it goes
                         if mon.hp <= 0:
                             self.kill(mon)
                             break
@@ -2513,30 +2554,41 @@ class Game:
         return SK.use(self, n)
 
     def fire(self):
-        """Basic bow shot at the nearest enemy in sight."""
+        """The fire key: a shot with a bow, crossbow or sling, a throwing knife, a spear thrown, a reach weapon's
+        blow two tiles away."""
         s = self.stats()
-        if not s['ranged']:
-            self.msg('You need a bow equipped to shoot. Walk into enemies to fight in melee.')
+        fam = s.get('fam')
+        if not s['ranged'] and fam not in WP.REACH:
+            self.msg('You need a bow, crossbow, sling or throwing knives to shoot. Walk into enemies to fight in melee.')
             return 0
         if self.map.kind in ('over', 'town'):
             self.msg('There is nothing to shoot here.')
             return 0
-        t = self.nearest_target(8, True)
+        spent = WP.fire(self)
+        if spent is not None:
+            return spent
+        t = self.nearest_target(6 if fam == 'spear' else 8, True)
         if not t:
             self.miss_target('No target in sight.')
             return 0
         p = self.player
         p.last_target = t.id
         p.strained = self.turn
-        self.fx('bolt', cells=self.path_to(t), src=(p.x, p.y), col=(216, 208, 176), ch='-')
-        if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + t.df), .25, .95):
+        if fam == 'spear':
+            SK.gain(self, 'spears', 1)
+            return WP.throw_spear(self, t, s)
+        ch = '*' if fam == 'sling' else '-'
+        self.fx('bolt', cells=self.path_to(t), src=(p.x, p.y), col=(216, 208, 176), ch=ch)
+        if random.random() >= clamp(.95 * s['ar'] / (s['ar'] + WP.shot_df(self, t.df)), .25, .95):
             self.num(t.x, t.y, 'miss', C_MISS)
             t.awake = True
             self.wake_pack(t)
+            WP.after_shot(self, t, False)
             return 1
-        crit = random.random() < s['crit'] / 100
-        self.damage_mon(t, random.randint(*s['dmg']) + self.weapon_extra(t, s), crit, weapon=True)
-        SK.gain(self, 'archery', 1)
+        crit = random.random() < self.crit_vs(t, s) / 100
+        WP.after_shot(self, t, True)
+        self.damage_mon(t, random.randint(*s['dmg']) + self.weapon_extra(t, s), crit, weapon=True, ranged=True)
+        SK.gain(self, s['line'], 1)
         return 1
 
     def path_to(self, mon):

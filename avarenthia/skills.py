@@ -20,9 +20,10 @@ TOME = (0, 5, 12, 20, 30, 42, 55, 70)        # the schools of magic and Warcraft
 DISCIPLINES = {
     'unarmed': dict(name='Unarmed', kind='weapon', weapon='empty hands'),
     'swords': dict(name='Swordsmanship', kind='weapon', weapon='a sword'),
-    'axes': dict(name='Axes and Maces', kind='weapon', weapon='an axe, mace, club or staff'),
-    'daggers': dict(name='Daggers', kind='weapon', weapon='a dagger'),
-    'archery': dict(name='Archery', kind='weapon', weapon='a bow'),
+    'axes': dict(name='Axes and Maces', kind='weapon', weapon='an axe, mace, club, flail or war hammer'),
+    'spears': dict(name='Spears and Staves', kind='weapon', weapon='a spear, halberd, scythe or staff'),
+    'daggers': dict(name='Daggers', kind='weapon', weapon='a dagger or throwing knives'),
+    'archery': dict(name='Bows and Crossbows', kind='weapon', weapon='a bow, crossbow or sling'),
     'fire': dict(name='Fire Magic', kind='magic'),
     'frost': dict(name='Frost Magic', kind='magic'),
     'storm': dict(name='Storm Magic', kind='magic'),
@@ -33,15 +34,18 @@ DISCIPLINES = {
     'necromancy': dict(name='Necromancy', kind='magic'),
     'beastcraft': dict(name='Beastcraft', kind='magic'),
 }
-DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (210, 170, 120), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
+DISC_COLOR = {'unarmed': (230, 200, 170), 'swords': (220, 220, 230), 'axes': (210, 170, 120), 'spears': (200, 190, 150), 'daggers': (170, 200, 140), 'archery': (216, 208, 176),
               'fire': (255, 122, 44), 'frost': (159, 216, 255), 'storm': (242, 240, 122), 'restoration': (150, 255, 170),
               'shadow': (176, 110, 255), 'warcraft': (242, 196, 67), 'nature': (120, 200, 90), 'necromancy': (190, 200, 170),
               'beastcraft': (200, 150, 90)}
 DISC_ORDER = list(DISCIPLINES)
 WEAPON_LINE = {'dagger': 'daggers', 'shortsword': 'swords', 'longsword': 'swords', 'bastard': 'swords', 'runeblade': 'swords',
-               'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'axes', 'warstaff': 'axes',
+               'club': 'axes', 'mace': 'axes', 'waraxe': 'axes', 'staff': 'spears', 'warstaff': 'spears',
                'shortbow': 'archery', 'longbow': 'archery', 'warbow': 'archery',
-               'greatsword': 'swords', 'greataxe': 'axes', 'maul': 'axes'}
+               'greatsword': 'swords', 'greataxe': 'axes', 'maul': 'axes',
+               'scimitar': 'swords', 'flail': 'axes', 'warhammer': 'axes', 'spear': 'spears', 'halberd': 'spears',
+               'scythe': 'spears', 'throwknives': 'daggers', 'lightxbow': 'archery', 'heavyxbow': 'archery',
+               'sling': 'archery'}
 from . import data as _D  # noqa: E402
 for _k, _b in _D.BASES.items():          # exceptional and elite grades fight like their family
     if _b.get('family') in WEAPON_LINE:
@@ -82,6 +86,7 @@ class Skill:
         self.field = kw.get('field')                 # (tile, turns): what it leaves on the ground (spellmap.py)
         self.corpses = kw.get('corpses', 0)          # corpses near you it uses up
         self.need_beast = kw.get('need_beast', False)
+        self.need_shield = kw.get('need_shield', False)  # works only with a shield in your other hand
         self.bonus_burning = kw.get('bonus_burning', 1)
         self.only_undead = kw.get('only_undead', False)
         self.life_frac = kw.get('life_frac', 0)      # paid in a share of the life you have
@@ -225,6 +230,10 @@ TECHNIQUES = [
     S('inferno', 'Inferno', 'fire', 4, 18, 14, 'around', lo=16, hi=26, r=.8, radius=2, fx={'burn': (5, .4, 6)}, field=(_D.BURNING, 6), color=FIRE,
       flavor='Circle of Magi'),
     S('shield_wall', 'Shield Wall', 'warcraft', 1, 6, 25, 'self', buff=('def', 40, 1.5, 15), color=WAR, glyph='#',
+      flavor='Iron Company'),
+    S('shield_bash', 'Shield Bash', 'warcraft', 0, 4, 6, 'bash', pct=60, pct_r=1, fx={'stun': 1}, need_shield=True,
+      color=WAR, glyph='(', flavor='Iron Company'),
+    S('block', 'Block', 'warcraft', 1, 5, 14, 'self', buff=('block', 1, 0, 6), need_shield=True, color=WAR, glyph='(',
       flavor='Iron Company'),
     S('battle_drill', 'Battle Drill', 'warcraft', 2, 8, 22, 'self', buff=('dmg', 30, .6, 14), color=WAR, glyph='!', flavor='Iron Company'),
     S('last_stand', 'Last Stand', 'warcraft', 4, 12, 40, 'self', heal=(40, 2), buff=('dr', 35, .3, 8), cure=True, color=WAR, glyph='+',
@@ -442,6 +451,11 @@ def describe(sk, r):
         parts.append('Three corpses become one Bone Golem, which stays with you until it falls.')
     elif m == 'passive':
         parts.append('You may keep two tamed beasts instead of one. Nothing to put on the bar.')
+    elif m == 'bash':
+        parts.append(f'Drive your shield into the enemy beside you for {sk.pct + round(sk.pct_r * r)}% weapon damage and push it '
+                     'back a tile.')
+    if sk.need_shield:
+        parts.append('Needs a shield in your other hand.')
     if sk.field:
         parts.append({_D.BURNING: 'Leaves burning ground.', _D.ROOTS: 'Leaves grasping roots that hold who stands in them.',
                       _D.BRAMBLE: 'Leaves brambles that make who walks through them bleed.',
@@ -455,7 +469,9 @@ def describe(sk, r):
         parts.append({'def': f'+{v} defense', 'regen': f'+{v} life per turn', 'dr': f'{min(60, v)}% less damage taken',
                       'dmg': f'+{v}% damage', 'ward': f'A ward takes the next {v} damage', 'bond': f'Your beast takes {min(50, v)}% '
                       'of the blows you take', 'unbroken': f'Every blow you take gives you {v} stamina',
-                      'martyr': 'A blow that would kill you leaves you on one life, once,'}[k] + f' for {t} turns.')
+                      'martyr': 'A blow that would kill you leaves you on one life, once,',
+                      'block': 'Your shield catches the first blow each turn, all of it; a flail swings over it,'}[k]
+                     + f' for {t} turns.')
     if sk.buff2 and sk.buff2[0] == 'chill':
         parts.append('Who strikes you in melee is slowed.')
     fx = sk.fx
@@ -581,6 +597,11 @@ def use(game, slot):
     if d['kind'] == 'weapon' and weapon_line(game) != sk.line:
         game.msg(f"{sk.name} needs {d['weapon']} in your hands.", 'bad')
         return 0
+    if sk.need_shield:
+        from . import weapons as WP
+        if not WP.has_shield(game):
+            game.msg(f'{sk.name} needs a shield in your other hand.', 'bad')
+            return 0
     if sk.life_cost and p.life <= sk.life_cost + 1:
         game.msg(f'{sk.name} would take more life than you have.', 'bad')
         return 0
@@ -761,6 +782,24 @@ def x_melee(game, sk, r):
     for _ in range(sk.hits):
         if _hit(game, t, sk, r):
             break
+    return True
+
+
+def x_bash(game, sk, r):
+    """Shield Bash: your shield drives the foe back a tile and stuns it."""
+    p, m = game.player, game.map
+    t = _melee_target(game)
+    if not t:
+        game.msg('No enemy within reach.')
+        return False
+    p.last_target = t.id
+    game.wear('shield', .3)
+    sx, sy = _dir((p.x, p.y), (t.x, t.y))
+    nx, ny = t.x + sx, t.y + sy
+    if m.inb(nx, ny) and _D.TILES[m.tile(nx, ny)].walk and not game.occupied(m, nx, ny) and not t.tpl.get('boss'):
+        t.x, t.y = nx, ny
+    game.flash([(t.x, t.y)], sk.color, '(', .14)
+    _hit(game, t, sk, r)
     return True
 
 
@@ -1454,4 +1493,4 @@ EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 
         'pierce': x_pierce, 'chain': x_chain, 'storm': x_storm, 'target_area': x_target_area, 'curse': x_curse,
         'leap': x_leap, 'self': x_self, 'wall': x_wall, 'gust': x_gust, 'ball': x_ball, 'tempest': x_tempest,
         'tomb': x_tomb, 'pyre': x_pyre, 'mist': x_mist, 'prison': x_prison, 'army': x_army, 'awaken': x_awaken, 'sic': x_sic,
-        'spirit': x_spirit, 'totem': x_totem, 'golem': x_golem, 'passive': x_passive}
+        'spirit': x_spirit, 'totem': x_totem, 'golem': x_golem, 'passive': x_passive, 'bash': x_bash}

@@ -83,7 +83,7 @@ ORDER = list(GUILDS)
 # the advanced techniques: (skill id, guild rank needed, discipline, discipline rank needed, price in silver)
 TEACH = {
     'magi': [('mage_armor', 1, 'frost', 8, 60), ('arcane_barrage', 2, 'storm', 15, 140), ('inferno', 4, 'fire', 28, 400)],
-    'iron': [('shield_wall', 1, 'warcraft', 6, 50), ('battle_drill', 2, 'warcraft', 14, 130), ('last_stand', 4, 'warcraft', 26, 380)],
+    'iron': [('shield_bash', 1, 'warcraft', 3, 30), ('block', 1, 'warcraft', 5, 40), ('shield_wall', 1, 'warcraft', 6, 50), ('battle_drill', 2, 'warcraft', 14, 130), ('last_stand', 4, 'warcraft', 26, 380)],
     'dawn': [('smite', 1, 'restoration', 6, 60), ('holy_shield', 2, 'restoration', 14, 140), ('dawnbreak', 4, 'restoration', 28, 420)],
     'wardens': [('hunters_mark', 1, 'archery', 6, 50), ('rain_of_arrows', 2, 'archery', 16, 150), ('thornbind', 4, 'archery', 26, 360)],
     'thieves': [('garrote', 1, 'daggers', 6, 60), ('smoke_bomb', 2, 'daggers', 14, 150), ('deaths_kiss', 4, 'daggers', 28, 450)],
@@ -385,6 +385,10 @@ def quarter_stock(game, key):
     for _ in range(6 + r):
         rar = 'rare' if random.random() < .06 * r else 'magic' if random.random() < .45 + .08 * r else 'normal'
         out.append(make_gear(game, random.choice(ks), rar, lvl))
+    if key == 'stillhand':                  # the monks' own weapons: a cestus and tiger claws
+        for fam in ('cestus', 'claws'):
+            fits = [b for b in D.grades(fam) if D.BASES[b]['lvl'] <= lvl + 2] or [fam]
+            out.insert(0, make_gear(game, fits[-1], 'normal', lvl))
     return out
 
 
