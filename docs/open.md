@@ -37,6 +37,14 @@ Parked on 22 October 2026, for a separate thread later. What we know so far:
 - **Getting it into the game:** Nilio hands the file over and it goes into the repo; CI packs and seals it.
 - **Still to design:** the shortcut keys, how the palette looks, and where the layers and the Try button sit.
 
+## City streets and bridges (parked, later)
+Parked on 23 October 2026: "nog steeds niet lekker, lossen we later op". What we have stays as it is (plan.md,
+"Cities that grew" and its City rules; mockups and the checker `steden/controle.py` in the project files; all 30
+test maps keep the rules). Still not right to Nilio's eye:
+- Where a way meets a bridge it does not yet flow: the street plan bends onto the bridge rather than growing from it.
+- Gate bridges over the moat look cramped, above all at 45 degrees on a slanting moat.
+- Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
+
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.
