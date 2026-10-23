@@ -604,8 +604,12 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
 - **Houses** stand in rows: each is a rectangle with its front and door on a street, sharing side walls with its
   neighbours; deep and narrow in the core, lower with bigger gardens further out. What is left behind them is yard,
   garden and alley. Every house stays inside the wall (checked in code).
-- **The wall** with square towers and a moat; a gate with a tower each side; a lane runs along its inside.
-- **A river** from the world map runs through with quays. A metropolis lies on a broad river.
+- **The wall** with square towers and a broad moat; a gate with a tower each side; a lane runs along its inside.
+- **A river** from the world map runs through, tamed as the Amstel was: long straight reaches joined by turns of
+  45 degrees, one width all through the town, a stone quay wall along both banks (drawn thin and pale on the land
+  side, like the bridge parapets) and a quay street behind it. A metropolis lies on a broad river.
+- **Nothing is built over the water:** a great building (church, town hall, guild hall) only stands where its whole
+  plot is dry land.
 - **Bridges** were few and mattered (Nilio, 22 October 2026: "meer dan een stel houten planken"): only the great
   ways and the ring roads cross the river (a metropolis has two or three bridges), and only where they truly cross
   from bank to bank, never where a street runs along the water; other streets end at the quay. Each is a stone deck with a parapet each side and piers with
@@ -613,16 +617,17 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   Bridge); the rest stand on broad piers with lamps. No bridges with houses on them: they do not read on the map. A
   stone bridge has its own look, never the double line of a wall: a deck of grey flagstones, and thin pale parapets
   standing in the water, drawn as half blocks (▐ ▌ ▀ ▄, quarter blocks on a slant) on the side of the deck. Canal bridges are short, with a parapet and a lamp at each end.
-  Wooden planks stay for drawbridges, harbour jetties (a few long ones, boats moored along them) and small streams in villages.
+  Wooden planks stay only for small streams in villages; drawbridges and harbour piers are stone too.
 - **How a bridge is laid** (Nilio): first a quay street runs along both banks inside the walls. Then the bridges are
   laid, straight from quay to quay: one below the market and one where each ring road crosses (two or three in all).
   A bridge lies at 90 or 45 degrees to the river, the way its road runs (ASCII has only 8 directions).
   Only then comes the street plan, made round the bridges: a great way or ring road that crosses leaves its curve a
   little before the river, runs straight over the bridge in line with it and takes up its course on the far side (a
   straight piece in a ring is fine: ASCII has only 8 directions). Any other way ends at the quay, which leads on to
-  the bridge, so no road stops at the water. Every gate has a drawbridge of heavy planks over the moat, laid the
-  same way: straight or at 45 degrees, in line with the road that leaves the gate, from the gateway to the far bank
-  where the road outside takes it up, with a tower on the wall at each side of the gateway.
+  the bridge, so no road stops at the water. Every gate has a stone bridge over the moat, like the other bridges (wood looks
+  untidy on the map): straight or at 45 degrees, in line with the road that leaves the gate, from the gateway to the
+  far bank where the road outside takes it up, with a tower on the wall at each side of the gateway. The moat is
+  broad (about 5), so the whole bridge with its parapets fits over it.
 - **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
   lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
 - **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
@@ -631,10 +636,21 @@ files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`,
   house down a lane. Inns by the gates, barracks by the wall, temples on squares, each on a plot of its size.
 - **Townsfolk, the watch, lamplighters and the rest** (`people_city`) move into the new map; a metropolis has more.
 - **Sizes:** metropolis 360x220 (now 196x110), city 240x140 (now 150x80). The screen shows 80x51.
-- **Canal towns:** a flat harbour city lies as a half moon against the water: the Dam (the square where the river was
-  dammed) with town hall and great church, the harbour arm up to it, three canal rings with a quay and trees on each
-  side, radial streets with bridges, narrow deep canal houses in rows, gardens inside the blocks, bastions on the
-  land side, a quay with piers and boats on the water side, meadows with ditches outside.
+- **Canal towns** (after old Amsterdam and Haarlem, Nilio 23 October 2026): no grid, but far more ordered than
+  other towns, and plainly a harbour. Half rings of canals round the Dam, every reach straight and every turn
+  45 degrees (a horseshoe: long sides, slanting corners, a long bottom). Three canals about 20 apart, so each block
+  holds two rows of narrow deep canal houses with gardens between. A stone quay wall along all water, a quay street
+  with trees on both sides of every canal. The Dam (the square where the river was dammed) with the town hall,
+  the Damrak harbour arm up to it, two old town canals beside it; the great church in the old town on dry land.
+  The river comes in tamed (straight reaches, one turn) and ends at the Dam. Great ways run from the Dam straight
+  out across the rings, square to every canal, with a stone canal bridge (lamp at each end) at each crossing; a
+  few long cross streets do the same; short cross streets join quay to quay inside a block. The harbour front: a
+  quay wall and quay street along the water, warehouses on it, stone piers into the harbour with ships moored
+  along them, ships at anchor further out. The land side has a bastioned wall and a broad moat; meadows with
+  ditches outside. Mockups `grachten*.png`.
+- **Fortress towns** (after Zutphen): a town in a border land or under a warlike ruler gets a bastioned wall:
+  pointed bastions at its corners and along long sides, their faces at 45 degrees, behind a broad moat, a stone
+  bridge at each gate.
 - **Crafts guilds** (Later) would each get their own street (smiths, tanners by the water), as in real old towns.
 - Villages, hamlets and towns keep their own maker.
 
