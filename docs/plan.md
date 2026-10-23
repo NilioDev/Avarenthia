@@ -785,7 +785,13 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   apart (a hedge wizard's tower, a charcoal family, a ferryman with a boat, a beekeeper's hill, a shepherd's bothy, an
   exiles' hamlet); where peoples meet (an old peace stone, a graveyard of all peoples, a trade bridge half human half
   dwarf, an orc farmstead); small secrets (a buried cache, a lovers' tree, a hidden still, the wrong milestone).
-- Still to settle (in `docs/open.md`, "Points of interest"): the seasonal places, proposals 65-86 in `poi/volken.md`.
+- **Seasonal places** (65-86 approved 23 October; `poi/volken.md`): spring (a salmon leap with bears, a flood lake with
+  a family on a roof, a lambing fold, bird cliffs, a blossom orchard); summer (what the drought shows in a sunken lake,
+  a tournament field, a harvest camp, a travelling fair that moves on); autumn (a rutting ground, a mushroom wood, a
+  goose marsh, vineyard slopes, a pannage wood); winter (a frost fair on the river, an ice road over a lake, the
+  herders' winter camp, a wolf winter, a snowed-in inn on a pass); old feasts that still work (on the longest night the
+  standing dead turn to the Sky-Seat, on one spring day all wind towers whistle, Thessa's harvest stone).
+- Still to settle (in `docs/open.md`, "Points of interest"): feast days (`poi/feestdagen.md`).
 
 ## Round 6: livelier settlements (on hold)
 

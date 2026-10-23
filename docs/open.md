@@ -46,7 +46,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
 ## Points of interest
-- Seasonal places, proposals 65-86 in project files `poi/volken.md` (spring, summer, autumn, winter, old feasts): which ones.
+- Feast days after real ones, with our own names (project files `poi/feestdagen.md`): Ruin Night, the Masking, the Lean Month, Greening Day, Blossom Eve, Last Sheaf, the Naming, Lantern Walk, Wanderer's Eve, Hearthnight and more, plus feasts of the realms and the other peoples: which ones.
 
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
