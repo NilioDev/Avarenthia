@@ -780,7 +780,12 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   halflings (a hedge gate, a party field, pipeweed fields); gnomes (a bee garden, a lookout stump with a bell); orcs and
   the tribes (a duel ring, a warlord's cairn, a goblin midden, a rope bridge, a kobold lure, a gnoll bone yard,
   lizardfolk egg mounds); and for all (a shrine of a people long gone from there, a wayside market once a month).
-- Still to settle (in `docs/open.md`, "Points of interest"): proposals 45-64 in `poi/volken.md`.
+- **More places** (45-64 approved 23 October; `poi/volken.md`): the land itself (a dragon's scorch, a lightning tree,
+  a sunken boat in a clear lake, an old human mine, an avalanche field, flood lines on a village wall); people who live
+  apart (a hedge wizard's tower, a charcoal family, a ferryman with a boat, a beekeeper's hill, a shepherd's bothy, an
+  exiles' hamlet); where peoples meet (an old peace stone, a graveyard of all peoples, a trade bridge half human half
+  dwarf, an orc farmstead); small secrets (a buried cache, a lovers' tree, a hidden still, the wrong milestone).
+- Still to settle (in `docs/open.md`, "Points of interest"): the seasonal places, proposals 65-86 in `poi/volken.md`.
 
 ## Round 6: livelier settlements (on hold)
 
