@@ -741,6 +741,14 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   mends, a mended piece carrying an old power (Smithing's found powers), so finds stay rare and the smith's work counts;
   (3) a modest income: collectors and city libraries buy finds and old coins. Its place in the life skills order is
   still open.
+- **The Varnish' own lore** (approved 23 October, "de toon is goed, mag alle kanten op gaan"): loose fragments of the
+  empire itself, not about today's world: its gods (today's gods are their worn-down remains: Skell was Eskelion,
+  Measurer of Roads), emperors, mages, daily life, food, feasts, trades, soldiers, law, love, songs, books and plays,
+  and its last days. They count years "from the Founding" (FF); the empire lasted 1400 years. Found as archaeology
+  finds, on stones, in city library books, now and then as a rumour; the chronicle gets a chapter The Varnish with
+  headings. A few longer works (the Song of the Nine Walls, the Book of Leagues) lie in pieces across the world, one per
+  find; a whole work sells once and well to a city library, and its last line may point to a hidden place. Dry humour
+  is welcome. The texts: project files `poi/varnish-lore.md` (more may come).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
