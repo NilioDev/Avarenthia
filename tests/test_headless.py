@@ -4455,6 +4455,9 @@ def pairs():
     start = (p.x, p.y)
     p.cooldowns, p.mana = {}, 999
     assert SK.use(g, 2) and (p.x, p.y) != start
+    if cheb(o.x, o.y, p.x, p.y) > 6:                  # Blink may take you out of Dispel's reach
+        o.x, o.y = free_around(g, m, p.x, p.y, 2)[0]
+        g.compute_fov()
     assert SK.use(g, 3) and not o.mods
     assert SK.use(g, 4) and ART.counter(g, o) and not ART.buff(g, 'counter')
     p.bar[2] = 'gate'
