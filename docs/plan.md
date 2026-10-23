@@ -791,7 +791,22 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   goose marsh, vineyard slopes, a pannage wood); winter (a frost fair on the river, an ice road over a lake, the
   herders' winter camp, a wolf winter, a snowed-in inn on a pass); old feasts that still work (on the longest night the
   standing dead turn to the Sky-Seat, on one spring day all wind towers whistle, Thessa's harvest stone).
-- Still to settle (in `docs/open.md`, "Points of interest"): feast days (`poi/feestdagen.md`).
+- **Feast days** (approved 23 October, "klinkt goed"; `poi/feestdagen.md`), after real feasts from all over the world
+  with names of our own. Not everywhere (Nilio): each feast belongs to a region, a people or a faith and is kept only
+  there; Ruin Night (new year, the anniversary of the Ruin: lights out at midnight) and Hearthnight (the longest night)
+  are kept by all humans. The name stands with the date; each feast shows in the town or on the land, gives one or two
+  things to do with a key or a bump, and moves prices fairly. The handbook gets a table in its chapter on the year.
+  The heartland and the west: the Masking (carnival: a Fool King, masks that hide who you are), the Lean Month, Greening
+  Day, Blossom Eve, Last Sheaf, the Naming (speak a ghost's name and it lies down), Lantern Walk, Wanderer's Eve. The
+  rest of the world: First-Footing, the Ship Burning, the Leaping, Colour Day, Wetting Day, the Thirst Month, Lantern
+  River, Moonwatch, Marigold Days, Eight Lamps, Kite and Thunder, Sun Rope, the Rising, Walpurgis Hill. The realms (the
+  Oath Day, the Day of the Fallen, the Fair of Skell) and the peoples (the Tapping and Founders' Quench of the dwarves,
+  Starsong, the Long Table, First Frost, Night of Tusks, Swap Day, the Shine, the Hatching).
+  - **Wanderer's Eve for the player:** on the night of 5 Longnight, in a heartland town with a temple or shrine of Skell,
+    sleep indoors. In the morning the message line says what was in your boot, from your year since the last one: honest
+    (no crime) a small thing, an apple, a few copper, or a rhyme that is a rumour of a place you did not know; devoted to
+    Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
+    Who does it, the game never says.
 
 ## Round 6: livelier settlements (on hold)
 
