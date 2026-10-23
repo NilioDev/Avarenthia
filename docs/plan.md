@@ -766,7 +766,8 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   place (the Anchor, the Hollow Throne, the Pits of the East, the Last Vault, the Standing Hall). All five whole give a last
   paragraph, The Ruin, as it was. The answer, never told outright: the mages made the Hollow King of star-iron, every
   bound wind and the bound dead; they made the first orcs of the uncounted to feed the work; the last star they pulled
-  down was the Ruin; the vaults hold the names and what they could not destroy.
+  down was the Ruin; the vaults hold the names and what they could not destroy. The great evils (`evils.py`) are of after the
+  Varnish and stay out of these riddles (Nilio).
 - **Where it goes in the build order** (proposal, put in the plan 23 October; Nilio settles the order with the
   coordinator): part A with the Varnish places, the lore and the books after "Dungeons on their own land" (the hidden
   dungeons need the new maker); archaeology with the life skills; part B, the places of the peoples, the more and the
