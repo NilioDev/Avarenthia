@@ -679,6 +679,18 @@ runs over it in line. Who built it shows:
 - **Orcs, goblins and other tribes:** logs lashed with rope, stakes at the ends; rope bridges over ravines.
 - **Lizardfolk:** reed walkways on stilts across the swamp.
 
+**City rules, checked by machine** (Nilio, 23 October 2026: "iedere keer komen we hier op terug"). Every rule Nilio
+sets for towns becomes a check in code, run on many seeds before a mockup is shown, and in the build the same checks
+become a test part `city_rules` (every kind of town, several seeds). A map that breaks a rule is a bug, not taste.
+The checker for the mockups is `steden/controle.py` in the project files. The rules so far:
+- A way that crosses the river has a bridge; a way with no bridge ends at the quay on both sides.
+- No two streets run side by side with a thin strip between: the strip is paved into a little square.
+- A paved square lies round every church and cathedral.
+- Every bridge, straight or at 45 degrees, has a straight way in line with it at both ends (5 cells; 3 at a canal).
+- Nothing is built over water: no house, hall or church on a river or canal.
+- Every street inside the walls joins the rest; no loose pieces.
+- No gate opens next to the river; every gate has a stone bridge over the moat.
+
 ## Round 6: livelier settlements (on hold)
 
 Approved on 16 October 2026 for the next round after round 5; on hold until Nilio says go (17 October 2026). Everything must show as a tile or work with a bump.
