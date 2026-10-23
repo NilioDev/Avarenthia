@@ -45,6 +45,9 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Gate bridges over the moat look cramped, above all at 45 degrees on a slanting moat.
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
+## Testing the new things
+- How to make the lines in `docs/testing.md` easy to test (Nilio, 23 October: "kijken we later hoe we dat makkelijk kunnen doen").
+
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.

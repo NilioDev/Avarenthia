@@ -570,7 +570,8 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
 
 ## Debug menu and a test build (approved 22 October 2026, not built)
 
-A tool for testing, not part of the game. Details: project files `debug/voorstel.md`.
+A tool for testing, not part of the game. Details: project files `debug/voorstel.md`. What each new thing needs to be
+testable is listed in `docs/testing.md`.
 - **Two downloads from every CI build.** The normal game for players, with no debug menu and no editor; and
   "Avarenthia (test)", with the debug menu switched on and the dungeon editor beside it, so Nilio can play it and share
   it with other testers. From the source, `--debug` turns the menu on as well. The normal download has no way to turn it on.

@@ -4,6 +4,8 @@ ASCII open-world RPG in Python + python-tcod by Nilio (GitHub NilioDev, repo Nil
 The plan for the next rounds of work is in `docs/plan.md`; read it before building. What is already built is in
 `docs/built.md` (summaries and the specs of built rounds): read only the section a round touches, never the whole file.
 Questions still to discuss with Nilio are in `docs/open.md`; when he says "open.md" or names one of its headings, read it.
+What each new thing needs to be testable in the test build (debug menu) is in `docs/testing.md`: when a new proposal is
+approved, add its lines there in the same commit (Nilio, 23 Oct 2026).
 
 ## Keeping plan.md short (Nilio, 18 Oct 2026)
 `docs/plan.md` holds only what is still to build. When a round is built, move its spec section and its At a glance
