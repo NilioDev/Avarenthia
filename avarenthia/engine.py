@@ -5,6 +5,7 @@ import random
 import zlib
 
 from . import anim as AN
+from . import debug as DBG
 from . import data as D
 from . import economy as ECO
 from . import fov
@@ -497,6 +498,9 @@ class Game:
             self.vis = bytearray(1 if (near[i] or (far[i] and lm[i][0] > amb[0] + .18)) else 0 for i in range(len(far)))
         else:
             self.vis = fov.compute(m, p.x, p.y, r)
+        if DBG.ON and DBG.has(self, 'sight'):          # the debug menu's sight off: the whole map in view
+            self.vis = bytearray(b'\x01' * (m.w * m.h))
+            m.seen[:] = self.vis
         MC.sync(self)
         if m.kind not in ('over', 'town'):
             for o in m.mons:
@@ -1800,6 +1804,8 @@ class Game:
         return self.damage_mon(mon, random.randint(*s['dmg']) * pct / 100 + self.weapon_extra(mon, s), crit, weapon=True)
 
     def hurt(self, dmg, src, elem=None):
+        if DBG.ON and DBG.god_tick(self):
+            return
         p = self.player
         s = self.stats()
         if elem in D.ELEMENT_RES:
@@ -2347,11 +2353,13 @@ class Game:
             self.msg('You cannot move...', 'bad')
             self.end_turn(1, quiet)
             return
+        if DBG.ON:
+            DBG.god_tick(self)
         if self.turn - self.last_save > 40 and self.request is None:
             self.request = ('save',)
 
     def die(self, cause):
-        if self.dead:
+        if self.dead or (DBG.ON and DBG.god_tick(self)):
             return
         p = self.player
         if not p.hardcore:
@@ -3296,12 +3304,15 @@ class Game:
 
 
 # ---------------------------------------------------------------- saving
+DBG_SAVE = 'debug.sav'       # a debug run keeps the one real save clean
+
+
 def save_path():
     import sys
     if getattr(sys, 'frozen', False):
         # standalone executable: keep the save next to the .exe, not in the temp unpack folder
-        return os.path.join(os.path.dirname(os.path.abspath(sys.executable)), 'savegame.dat')
-    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'savegame.dat')
+        return os.path.join(os.path.dirname(os.path.abspath(sys.executable)), DBG_SAVE if DBG.ON else 'savegame.dat')
+    return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), DBG_SAVE if DBG.ON else 'savegame.dat')
 
 
 def settings_path():

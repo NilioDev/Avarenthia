@@ -6,6 +6,7 @@ import time
 
 from . import spellmap as SMAP
 from . import anim as AN
+from . import debug as DBG
 from . import nature as NT
 from . import zones as ZN
 from . import seasons as SE
@@ -81,6 +82,7 @@ class App:
         self.auto = None           # a running step-by-step action (auto-explore, travel)
         self.auto_delay = .06
         self.auto_label = ''
+        self.shot = None           # debug: a picture of the next frame goes here (main.py saves it)
 
     # ---------------------------------------------------------- plumbing
     @property
@@ -140,6 +142,13 @@ class App:
         if self.auto:
             self.stop_auto()           # any key interrupts auto-explore or travel
             return
+        if DBG.ON:
+            DBG.record_key(tok)
+            if tok == 'f12' and self.game and not self.game.dead and isinstance(self.screens[0], GameScreen):
+                from . import debug_ui as DU
+                if not isinstance(self.top, DU.DebugScreen):
+                    self.push(DU.DebugScreen(self))
+                    return
         self.effects = [e for e in self.effects if e[0] != 'fx']      # a key skips what is still flying
         self.top.on_key(tok, shift)
         self.after_action()
@@ -352,7 +361,10 @@ class MainMenu(Screen):
         if self.saved:
             p = self.saved.player
             opts.append(('c', f"Continue as {p.name}, level {p.lvl}", FG))
-        opts += [('n', 'New game', FG), ('f', f'Spell effects: {self.app.fx_mode}', DIM), ('esc', 'Quit', DIM)]
+        opts += [('n', 'New game', FG)]
+        if DBG.ON:
+            opts.append(('d', 'Quick start (debug): a random hero, then the seed', INFO))
+        opts += [('f', f'Spell effects: {self.app.fx_mode}', DIM), ('esc', 'Quit', DIM)]
         return opts
 
     def on_key(self, tok, shift):
@@ -372,6 +384,11 @@ class MainMenu(Screen):
             self.app.start_game(g)
         elif tok == 'n':
             self.app.replace(NameScreen(self.app))
+        elif tok == 'd' and DBG.ON:
+            from . import races as RC
+            race = random.choice(RC.RACE_ORDER)
+            gender = random.choice(RC.GENDERS)
+            self.app.replace(OptionsScreen(self.app, RC.random_name(race, gender), race, gender, seed_first=True))
         elif tok == 'f':
             app = self.app
             app.fx_mode = AN.FX_MODES[(AN.FX_MODES.index(app.fx_mode) + 1) % len(AN.FX_MODES)]
@@ -458,13 +475,13 @@ class NameScreen(Screen):
 
 class OptionsScreen(Screen):
     tall = True
-    def __init__(self, app, name, race='human', gender='other'):
+    def __init__(self, app, name, race='human', gender='other', seed_first=False):
         super().__init__(app)
         self.name = name
         self.race, self.gender = race, gender
         self.hardcore = False
         self.seed = ''
-        self.sel = 0
+        self.sel = 1 if seed_first else 0
 
     def render(self, cv):
         cv.text_center(W // 2, 4, f'A new life for {self.name}', GOLD)
@@ -621,7 +638,8 @@ class GameScreen(Screen):
             return
         x = 2
         name = f' {g.loc_name()} '
-        room = MAP_W - 4 - (len(right[0]) + len(right[1]) + 2 if right else 11) - 10
+        room = MAP_W - 4 - (len(DBG.status_bits(g)) if DBG.has(g, 'coords') else
+                            len(right[0]) + len(right[1]) + 2 if right else 11) - 10
         cv.text(x, MAP_H, name[:room], FG, BG)
         x += min(len(name), room)
         day = TW.day_kind(g) if m.kind == 'town' else None
@@ -635,7 +653,9 @@ class GameScreen(Screen):
             cv.text(x, MAP_H, '· ', DIM, BG)
             cv.text(x + 2, MAP_H, '■' * n, (GOOD, GOOD, GOLD, BAD, BAD)[n - 1], BG)
             cv.text(x + 2 + n, MAP_H, '□' * (5 - n) + ' ', LINE, BG)
-        if right:
+        if DBG.has(g, 'coords'):
+            cv.text_right(MAP_W - 2, MAP_H, DBG.status_bits(g), INFO, BG)
+        elif right:
             cv.text_right(MAP_W - 2, MAP_H, right[1], INFO, BG)
             cv.text_right(MAP_W - 2 - len(right[1]), MAP_H, right[0], GOLD, BG)
         else:
@@ -2992,6 +3012,7 @@ class LookScreen(Modal):
         if 0 <= vx < MAP_W and 0 <= vy < MAP_H:
             cv.put_bg(vx, vy, (150, 120, 30))
         title, col, lines = DS.at(g, self.x, self.y)
+        lines = lines + DBG.ai_lines(g, self.x, self.y)
         cv.fill(0, LOG_Y, MAP_W, H - LOG_Y, ' ', FG, (24, 20, 16))
         cv.text(1, LOG_Y, title, col, (24, 20, 16), maxw=MAP_W - 2)
         yy = LOG_Y + 1

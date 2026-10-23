@@ -9,6 +9,7 @@ import time
 import tcod
 
 from avarenthia import glyphs
+from avarenthia import debug as DBG
 from avarenthia.canvas import TcodCanvas
 from avarenthia.ui import App, W, H
 
@@ -30,7 +31,7 @@ def _ks(name):
 NAMED = {}
 for _name, _tok in [('UP', 'up'), ('DOWN', 'down'), ('LEFT', 'left'), ('RIGHT', 'right'),
                     ('HOME', 'home'), ('END', 'end'), ('PAGEUP', 'pageup'), ('PAGEDOWN', 'pagedown'),
-                    ('KP_ENTER', 'np_enter'), ('KP_PERIOD', '.'), ('F1', 'f1'), ('F2', 'f2'), ('F11', 'f11'), ('DELETE', 'delete'),
+                    ('KP_ENTER', 'np_enter'), ('KP_PERIOD', '.'), ('F1', 'f1'), ('F2', 'f2'), ('F11', 'f11'), ('F12', 'f12'), ('DELETE', 'delete'),
                     ('RETURN', 'enter'), ('ESCAPE', 'esc'), ('BACKSPACE', 'backspace'), ('TAB', 'tab'), ('SPACE', 'space')]:
     _v = _ks(_name)
     if _v is not None:
@@ -124,6 +125,8 @@ def window_scale():
 
 
 def main():
+    # the debug menu (F12): only in the test build, or from the source with --debug
+    DBG.turn_on(sys.argv[1:], here=HERE, frozen=getattr(sys, 'frozen', False))
     tileset = load_tileset()
     console = tcod.console.Console(W, H, order='F')
     app = App(TcodCanvas(console))
@@ -132,11 +135,17 @@ def main():
     k = window_scale()
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
     with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
-                          tileset=tileset, title='Avarenthia', vsync=True, sdl_window_flags=flags) as ctx:
+                          tileset=tileset, title='Avarenthia (test)' if DBG.ON else 'Avarenthia', vsync=True, sdl_window_flags=flags) as ctx:
         last_tick = 0.0
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)
+            if app.shot:                   # a debug bug report asked for a picture of this frame
+                try:
+                    ctx.save_screenshot(app.shot)
+                except Exception:
+                    pass
+                app.shot = None
             timeout = app.frame_delay()
             if app.auto:
                 timeout = max(.005, app.auto_delay - (time.monotonic() - last_tick))

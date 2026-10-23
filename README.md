@@ -461,7 +461,16 @@ An executable has to be built on the operating system it will run on.
 - **Windows:** double-click `build_windows.bat`; after a few minutes `dist\Avarenthia.exe` is ready.
 - **macOS / Linux:** `bash build.sh`, then `dist/Avarenthia` is ready.
 - **Through GitHub:** the workflow in `.github/workflows/build.yml` builds Windows, macOS and Linux versions on every
-  push. Download them under *Actions*, at the latest run, under *Artifacts*.
+  push. Download them under *Actions*, at the latest run, under *Artifacts*. Each push makes two builds: the game
+  (`Avarenthia-...`) and the test build for testers (`Avarenthia (test)-...`).
+
+### The test build
+
+The test build has a debug menu on F12: snapshots, a bug report, teleport, time and weather, spawning, god mode,
+items, ranks, jobs, events and more. A debug run keeps its own save, `debug.sav`, so a real hero is never touched.
+From the source, `python main.py --debug` (or `AVARENTHIA_DEBUG=1`) turns the menu on as well. A bug report
+(F12, then `r`) writes a folder under `bug-reports/` next to the save with the seed, the place, the turn, the last
+log lines and keys, the screen and the save; send that folder along with the bug.
 
 Windows SmartScreen may warn because the file is not signed; choose *More info* and *Run anyway*.
 

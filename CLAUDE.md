@@ -52,7 +52,8 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   raiders, church, Watch, companies, revolts, pretender, witches); `seats.py` their places' maps; `realmjobs.py` the
   'realm' jobs; `history.py` the made history and the libraries;
   `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
-  `guide.py` the look legend, Signs and first-time tips; `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
+  `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build
+  and `--debug` only; not in the handbook); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
 - World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.

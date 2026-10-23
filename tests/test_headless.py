@@ -4157,11 +4157,181 @@ def market_days():
     print('market_days ok')
 
 
+def debug_menu():
+    """The debug menu (F12) of the test build: off for players, on with --debug; snapshots, a bug report, the world,
+    the player and the rest, each a letter in its own overlay."""
+    from avarenthia import debug as DBG, debug_ui as DU, weather as WX, missions as MS
+    print('== debug_menu')
+    tmp = tempfile.mkdtemp()
+    assert DBG.turn_on(['--debug'], environ={}) and not DBG.turn_on([], environ={})
+    assert DBG.turn_on([], environ={'AVARENTHIA_DEBUG': '1'})
+    assert not DBG.turn_on(['--debug'], environ={'AVARENTHIA_DEBUG': '1'}, here=tmp, frozen=True)   # players: no way in
+    open(os.path.join(tmp, 'TESTBUILD'), 'w').close()
+    assert DBG.turn_on([], environ={}, here=tmp, frozen=True)                                     # the test build
+    app = new_app('soft', seed=4)
+    g, p = app.game, app.game.player
+    DBG.ON = False
+    app.key('f12')
+    assert isinstance(app.top, ui.GameScreen), 'F12 does nothing in the players\' game'
+    DBG.ON = True
+    try:
+        def menu(*keys):
+            app.key('f12')
+            assert isinstance(app.top, DU.DebugScreen), app.top
+            for k in keys:
+                app.key(k)
+                app.render()
+
+        def typed(text):
+            for ch in text.lower():
+                app.key('space' if ch == ' ' else ch)
+            app.render()
+
+        def close():
+            while isinstance(app.top, DU.DebugScreen):
+                app.key('esc')
+            assert isinstance(app.top, ui.GameScreen)
+        menu()
+        app.render()
+        close()
+        # the line under the map shows where you are, the turn and the seed
+        app.render()
+        assert f'seed {g.seed}' in app.cv.dump()
+        # the whole map
+        menu('m')
+        close()
+        assert all(g.maps['over'].seen)
+        # a snapshot in slot 1
+        menu('a', '1')
+        assert os.path.exists(DBG.snap_path(1)) and DBG.snap_info(1)
+        close()
+        saved_turn = g.turn
+        # god mode: no harm
+        menu('g')
+        close()
+        g.hurt(99999, 'a test')
+        assert not g.dead and p.life == g.stats()['max_life'], p.life
+        menu('g')
+        close()
+        p.life = 3
+        menu('h')
+        close()
+        assert p.life == g.stats()['max_life']
+        # coin and levels
+        gold = p.gold
+        menu('c', 'b')
+        close()
+        assert p.gold == gold + 10 * 100 * 100
+        lvl = p.lvl
+        menu('x')
+        close()
+        assert p.lvl == lvl + 1
+        # an item by name, and one of a better grade
+        n = len(p.inv)
+        menu('i')
+        typed('long sword')
+        app.key('enter')
+        app.key('tab')
+        app.key('enter')
+        close()
+        assert len(p.inv) == n + 2 and p.inv[-1].rar == 'magic', [(i.name, getattr(i, 'rar', '')) for i in p.inv]
+        # a skill rank
+        menu('n')
+        typed('fire')
+        app.key('enter')
+        assert isinstance(app.top.pages[-1], DU.AskPage)
+        typed('42')
+        app.key('enter')
+        close()
+        assert p.disc['fire'][0] == 42
+        # teleport into a town far away
+        st = max(g.world.settlements, key=lambda s: cheb(s.x, s.y, *g.world_pos()) if s.kind == 'town' else -1)
+        menu('t')
+        typed(st.name)
+        page = app.top.pages[-1]
+        page.sel = [r[2] for r in page.shown()].index(('s', st.id))
+        app.key('enter')
+        assert isinstance(app.top, ui.GameScreen) and g.here is st, g.loc_name()
+        # the weather, and time
+        menu('w')
+        typed('thunder')
+        app.key('enter')
+        assert WX.current(g) == 'storm', WX.current(g)
+        day = g.day
+        menu('d', 'e')
+        close()
+        assert g.day == day + 90
+        # spawn a creature, look at what it thinks, kill all in sight
+        menu('s')
+        typed('giant rat')
+        app.key('enter')
+        rat = next(o for o in g.map.mons if o.k == 'rat')
+        menu('o')
+        close()
+        app.key('o')
+        lk = app.top
+        lk.x, lk.y = rat.x, rat.y
+        app.render()
+        assert '[debug] rat' in app.cv.dump()
+        app.key('esc')
+        menu('k')
+        assert not any(o.k == 'rat' for o in g.map.mons)
+        # sight off
+        menu('v')
+        close()
+        assert all(g.vis)
+        menu('v')
+        close()
+        # jobs: make one, then finish it
+        jobs = len(MS.active(g))
+        menu('j')
+        typed('courier')
+        app.key('enter')
+        assert len(MS.active(g)) == jobs + 1
+        close()
+        menu('j')
+        app.key('enter')
+        app.key('a')
+        assert len(MS.active(g)) == jobs
+        # an event, a standing, a hireling
+        ships = sum(1 for w in g.world.wanderers if getattr(w, 'pirate', False))
+        menu('e')
+        typed('pirate')
+        app.key('enter')
+        assert sum(1 for w in g.world.wanderers if getattr(w, 'pirate', False)) in (ships, ships + 1)
+        f = next(iter(D.FACTIONS))
+        menu('f')
+        app.key('enter')
+        app.key('a')
+        close()
+        assert p.rep[f] == -100
+        menu('l')
+        app.key('enter')
+        assert g.merc is not None and g.merc.state == 'alive', g.merc
+        # the bug report: a folder with all it takes
+        menu('r')
+        typed('the rat bit me')
+        app.key('enter')
+        reports = os.path.join(os.path.dirname(E.save_path()), 'bug-reports')
+        last = os.path.join(reports, sorted(os.listdir(reports))[-1])
+        for fn in ('report.txt', 'log.txt', 'keys.txt', 'screen.txt', 'save.dat'):
+            assert os.path.exists(os.path.join(last, fn)), fn
+        assert 'the rat bit me' in open(os.path.join(last, 'report.txt'), encoding='utf-8').read()
+        assert 'Debug' not in open(os.path.join(last, 'screen.txt'), encoding='utf-8').read().split('\n')[0]
+        assert app.shot and app.shot.endswith('screen.png')
+        # back to the snapshot
+        menu('b', '1')
+        assert app.game is not g and app.game.turn == saved_turn and isinstance(app.top, ui.GameScreen)
+        app.render()
+    finally:
+        DBG.ON = False
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

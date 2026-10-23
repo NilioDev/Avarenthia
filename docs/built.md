@@ -21,6 +21,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: quick wins (19 Oct)** | Spell effects part 1 (bolts, bursts, drain, heals, lightning; full/short/off), burning, poison and frost shown on creatures, Wild Shape in the beast's colours; chimney smoke, sparks at the anvil, rain empties the streets |
 | **Built: spell effects part 2 (22 Oct)** | Each school its own hand: rings and waves (ice, `!`, a howl as `( )`, wind `~`, gold), Meteor's shadow and slanting fall, the dead grey and rise, Morrak's Bargain red then purple, walls one stone at a time, fire leaping in Pyre; one white frame of the sky for Call the Storm; areas hit the square but open out round, with a harmless cloud beyond the sides |
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
+| **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 
 ## Built
 
@@ -263,6 +264,35 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   indoors. No save change.
 - **Fix, 22 October 2026:** the menu line for Life skills (`C`) named only 5 of the 10; it now names all, and
   `text_fits` checks that every life skill is in it.
+- **Debug menu and a test build** (23 October 2026; `debug.py` the rules, `debug_ui.py` the screens; test part
+  `debug_menu`). CI builds the game and "Avarenthia (test)" (a `TESTBUILD` file packed in turns the menu on; the
+  players' build has no way in); from the source `--debug` or `AVARENTHIA_DEBUG=1`. F12 opens an overlay: three
+  snapshot slots, a bug report (a folder under `bug-reports/` with what you wrote, the seed, the place, the turn,
+  the last 200 log lines and keys, the screen as text and picture, and the save), the whole map, teleport by kind or
+  name (towns, dungeons, sites, holds, places, wonders, named beasts, great evils), time on (hours to a season, or
+  to a month), the weather, spawn by name, kill all in sight, god mode, full health, coin, levels, skill ranks
+  (weapons, schools, life skills), any item by name and grade, identify all, jobs (make one of a kind, finish or
+  fail), events (ships, pirates, raiders, rivals, a warband), standing, a hireling, sight off, a creature's state on
+  look, and where you are, the turn and the seed in the line under the map. The main menu gets a quick start. A
+  debug run saves to `debug.sav`. Not in the handbook. Not built of the proposal: the bot playing from inside the game.
+
+## Debug menu and a test build (built 23 October 2026; the spec)
+
+A tool for testing, not part of the game. Details: project files `debug/voorstel.md`. What each new thing needs to be
+testable is listed in `docs/testing.md`.
+- **Two downloads from every CI build.** The normal game for players, with no debug menu and no editor; and
+  "Avarenthia (test)", with the debug menu switched on and the dungeon editor beside it, so Nilio can play it and share
+  it with other testers. From the source, `--debug` turns the menu on as well. The normal download has no way to turn it on.
+- **F12 opens it**, an overlay in the game's own look (letters to pick, Esc back). A debug run saves to its own
+  `debug.sav`, so the one real save stays clean.
+- **What is in it**, in this order of building: (1) three snapshot slots to save and load a moment again and again,
+  and a bug-report key that writes a folder with a screenshot, the seed, the place, the turn, the last 200 log lines,
+  the last keys pressed and the save; (2) the world: show the whole map, teleport to any place by kind or name, days or
+  season ahead, choose the weather, spawn a creature by name, kill all in sight; the player: god mode, full health,
+  coin, XP, skill ranks, give any item by name, identify all; (3) the rest: finish or make jobs, force events
+  (pirates, a raid, a rival), set standing, add a hireling; sight off, a creature's AI state on look, coordinates and
+  turn in the status line; pick the seed and skip the character making.
+- **Not in the handbook**: it is a tool, not a rule of the game. The F12 screen shows its own keys.
 
 ## Ferries in villages (built 18 October 2026; the spec)
 

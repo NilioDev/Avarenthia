@@ -1,4 +1,5 @@
-# Builds standalone executables for Windows, macOS and Linux on every push.
+# Builds standalone executables for Windows, macOS and Linux on every push, twice: the game for players, and
+# "Avarenthia (test)" with the debug menu (F12) switched on, for testers.
 # Download them from the run's "Artifacts" section on the Actions tab.
 name: Build executables
 
@@ -15,12 +16,15 @@ jobs:
           - os: windows-latest
             sep: ';'
             file: dist/Avarenthia.exe
+            test: dist/AvarenthiaTest.exe
           - os: macos-latest
             sep: ':'
             file: dist/Avarenthia
+            test: dist/AvarenthiaTest
           - os: ubuntu-latest
             sep: ':'
             file: dist/Avarenthia
+            test: dist/AvarenthiaTest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -37,3 +41,12 @@ jobs:
         with:
           name: Avarenthia-${{ matrix.os }}
           path: ${{ matrix.file }}
+      - name: Build the test build
+        shell: bash
+        run: |
+          echo "The test build: the debug menu (F12) is on." > TESTBUILD
+          pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." main.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Avarenthia (test)-${{ matrix.os }}
+          path: ${{ matrix.test }}

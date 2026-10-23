@@ -19,7 +19,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). Not built yet |
-| **Approved: debug menu and a test build** | Every CI build makes two downloads: the normal game for players and "Avarenthia (test)" with the debug menu (F12) and the dungeon editor. Snapshots, a bug-report key, teleport, god mode and more. Not built yet |
 | **Approved: the bestiary grows** | What you know of a creature kind grows by killing and skinning it; the look line and its bestiary page show more in three steps. No new skill. Not built yet |
 | **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
@@ -32,7 +31,7 @@ reasons: project files `bouw/volgorde.md`). 23 rounds in 7 blocks. Sizes: S like
 part 2, L like herds and hunting, XL like the magic schools. No play builds in between (Nilio, 23 October 2026): he plays only when all 7 blocks are built, so the
 "pauses" below are only clean points to stop at when his usage limit runs low. The full test run and the merge to
 `main` come at the end of each block; CI keeps testing every push. Each block starts on Nilio's "ga".
-0. **Debug menu and test build** (M). First, because it makes testing every later round cheaper. Pause, merge.
+0. **Debug menu and test build** (M). Built 23 October 2026 (see `docs/built.md`).
 1. **Weapons** with the bestiary that grows (L): the same monster data and one `SAVE_VERSION` bump.
 2. **Classes part 1** (XL): blank start, the classes, the bar, two skills per weapon kind with their effects.
 3. **Classes part 2** (L): the trees. 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
@@ -445,7 +444,7 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
 - **A mood line**: the first time you step into a room, the messages say what it is ("The nave. Rotten pews face a cracked altar.").
 - **Underground kinds get their own plan too** (`ondergronds.md`): whoever made the place decides its shape (water, beasts, ants, goblins, dwarves, people); rooms by use (a goblin delve has a market hall, forge, family halls, cells, the chief's hall); tunnels at least 3 wide, main ones 4, well connected with a loop; inhabitants placed where they belong, fewer than now; two ways down where it fits. Goblins are a clever people: their delve is cut into the back wall of their ravine, not a cave. Cells have bars only as their front, between stone walls. Bridges no longer use ═ (the built wall). Mockups E2 and F.
 - **Hand-drawn pieces ("vaults", the way of Dungeon Crawl Stone Soup, `dcss.md`)**: small ASCII maps in data files with substitutions for variety, tagged by kind of place and by part (entrance, arrival, middle, bottom); the plan of a kind is laid out first and its rooms filled with fitting pieces. A piece may have a trigger with a message line (bars drop, the dead rise). Nilio can also draw unique places that appear once per world.
-- **An editor for Nilio** (and others he explains it to), modelled on REXPaint: mouse and keyboard (the one place the mouse is welcome), the real tileset and joined walls, tools for a cell, line, rectangle, fill, copy and paste, undo and redo, colours to change, layers (ground, things, creatures, triggers), zoom; it knows the game's tiles, so a wall stays a wall; saves to the pieces file; a key to play-test the piece at once. It is a tool, not part of the game: it is not in the players' download, only in the test build (see "Debug menu and a test build") and from the source with a flag. The game loads only the pieces that come with the build: CI packs them into one file with a checksum and the game ignores a changed pack. (A determined player can always change a local single-player game; this only keeps casual meddling out.)
+- **An editor for Nilio** (and others he explains it to), modelled on REXPaint: mouse and keyboard (the one place the mouse is welcome), the real tileset and joined walls, tools for a cell, line, rectangle, fill, copy and paste, undo and redo, colours to change, layers (ground, things, creatures, triggers), zoom; it knows the game's tiles, so a wall stays a wall; saves to the pieces file; a key to play-test the piece at once. It is a tool, not part of the game: it is not in the players' download, only in the test build (see "Debug menu and a test build" in `docs/built.md`) and from the source with a flag. The game loads only the pieces that come with the build: CI packs them into one file with a checksum and the game ignores a changed pack. (A determined player can always change a local single-player game; this only keeps casual meddling out.)
 - **Events in pieces**: simple when → if → then rules, picked from lists in the editor's trigger layer (no typing, no real script language). When: step on, open, take, kill, enter a room, night falls. If: day or night, a job or item, people or standing, a chance. Then: a message line, a choice (EV.ask), a door or bars open or shut, creatures appear or wake, something caves in or floods, a job moves on.
 - **How Nilio works with it**: the editor is its own program ("Avarenthia Editor", own icon, not in the players' download). New → kind of place → part; draw with the mouse; events from lists; Try puts your hero in the drawing at once; Save puts the file in "My pieces". He hands the file to Claude ("voeg toe"), it goes into the repo, CI packs and seals it, and the next build has it.
 - **The random maker for classic dungeons (K5, approved 22 October)**: the way of Brogue, in our style. The theme rooms come from the pieces; the rest stays random. Mockups `K5_ways_seed1-4`, script `mockups/mockup_brogue_v5.py`, notes `brogue.md` and `inspiratie.md`.
@@ -593,24 +592,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Gaoler:** keeps the cages; when it sees you it runs for the gong to wake the level.
     - **The Lord of Cinders,** the boss: each rift has one, with its own name from a list. While the burning gate stands it heals from it; put out the fire bowls round the gate first. At half strength it calls its hellhounds. It drops only its own gear.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
-
-## Debug menu and a test build (approved 22 October 2026, not built)
-
-A tool for testing, not part of the game. Details: project files `debug/voorstel.md`. What each new thing needs to be
-testable is listed in `docs/testing.md`.
-- **Two downloads from every CI build.** The normal game for players, with no debug menu and no editor; and
-  "Avarenthia (test)", with the debug menu switched on and the dungeon editor beside it, so Nilio can play it and share
-  it with other testers. From the source, `--debug` turns the menu on as well. The normal download has no way to turn it on.
-- **F12 opens it**, an overlay in the game's own look (letters to pick, Esc back). A debug run saves to its own
-  `debug.sav`, so the one real save stays clean.
-- **What is in it**, in this order of building: (1) three snapshot slots to save and load a moment again and again,
-  and a bug-report key that writes a folder with a screenshot, the seed, the place, the turn, the last 200 log lines,
-  the last keys pressed and the save; (2) the world: show the whole map, teleport to any place by kind or name, days or
-  season ahead, choose the weather, spawn a creature by name, kill all in sight; the player: god mode, full health,
-  coin, XP, skill ranks, give any item by name, identify all; (3) the rest: finish or make jobs, force events
-  (pirates, a raid, a rival), set standing, add a hireling; sight off, a creature's AI state on look, coordinates and
-  turn in the status line; pick the seed and skip the character making.
-- **Not in the handbook**: it is a tool, not a rule of the game. The F12 screen shows its own keys.
 
 ## Cities that grew (approved 22 October 2026, not built)
 

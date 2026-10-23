@@ -7,3 +7,8 @@ dist/
 *.spec
 savegame.dat
 settings.txt
+debug.sav
+debug.sav.tmp
+debug_snap*
+bug-reports/
+TESTBUILD
