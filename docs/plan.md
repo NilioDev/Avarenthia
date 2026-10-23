@@ -689,7 +689,11 @@ The checker for the mockups is `steden/controle.py` in the project files. The ru
 - Every bridge, straight or at 45 degrees, has a straight way in line with it at both ends (5 cells; 3 at a canal).
 - Nothing is built over water: no house, hall or church on a river or canal.
 - Every street inside the walls joins the rest; no loose pieces.
-- No gate opens next to the river; every gate has a stone bridge over the moat.
+- No gate opens next to the river; every gate has a stone bridge over the moat and a straight road out of 12
+  cells in line with it, then the old road joins its end. Where the land runs out at the map's edge, the gate
+  moves along the wall; if there is no good place, that way has no gate.
+- A bridge crosses the water, it never runs along it: at least 40 degrees off the way the water flows.
+- How a crossing is made: the bridge first, then the straight road over it, then the joins to the street plan.
 
 ## Round 6: livelier settlements (on hold)
 
