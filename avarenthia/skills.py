@@ -377,6 +377,9 @@ def need_for(r):
 
 
 # ------------------------------------------------------------------ descriptions
+RUNES_AT_ONCE = 2                 # arts.RUNES
+
+
 def describe(sk, r):
     parts = []
     if sk.dtype == 'weapon':
@@ -409,6 +412,27 @@ def describe(sk, r):
                      + (f' for {dmg}.' if dmg else '.'))
     elif m == 'curse':
         parts.append('Afflict the nearest visible enemy.')
+    elif m == 'snare':
+        parts.append('Lay a snare on the way to the nearest enemy. Who steps into it is held for 3 turns.')
+    elif m == 'caltrops':
+        parts.append(f'Scatter caltrops round an enemy up to {sk.range} tiles away. Who walks on them is slowed and '
+                     f'bleeds {2 + r // 20} a turn.')
+    elif m == 'smoke':
+        parts.append(f"A cloud of smoke round you, {sk.radius} tile{'s' if sk.radius > 1 else ''} each way, that no eye sees through.")
+    elif m == 'shadowstep':
+        parts.append(f'Step behind an enemy up to {sk.range} tiles away; your next blow is unseen.')
+    elif m == 'vanish':
+        parts.append('Foes that see you lose you, and you move unseen for a while; your next blow is unseen.')
+    elif m == 'blink':
+        parts.append(f'Blink to a free tile up to {sk.range} tiles away that you can see, away from your foes.')
+    elif m == 'rune':
+        parts.append(f'Trace a rune on the way to the nearest enemy. Who steps on it is thrown back and held; '
+                     f'{RUNES_AT_ONCE} lie at most.')
+    elif m == 'dispel':
+        parts.append(f'Take the magic off an enemy up to {sk.range} tiles away, or a spell off the ground.')
+    elif m == 'gate':
+        parts.append('Open a gate where you stand; cast it again for its twin. Step onto one to come out of the '
+                     'other, with your company.')
     elif m == 'summon':
         k, n, t = sk.summon
         one, many = {'skeleton': ('a skeleton', 'skeletons'), 'wolf': ('a wolf', 'wolves'),
@@ -521,7 +545,10 @@ def describe(sk, r):
                       'block': 'Your shield catches the first blow each turn, all of it; a flail swings over it,',
                       'feint': 'Your next blow goes past a shield or a guard;', 'riposte': 'The first blow at you is '
                       'turned aside and answered with a strike,', 'keepback': 'Who comes up beside you meets your point '
-                      'first,'}[k]
+                      'first,', 'sneak': 'You move unseen: foes notice you far less often,',
+                      'envenom': f'Each blow of your weapon poisons the foe, {v} a turn,',
+                      'counter': 'The next spell cast at you comes to nothing,',
+                      'haste': 'You act twice in each of their turns,'}[k]
                      + f' for {t} turns.')
     if sk.buff2 and sk.buff2[0] == 'chill':
         parts.append('Who strikes you in melee is slowed.')

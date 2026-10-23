@@ -714,7 +714,11 @@ def start_and_survival():
     g.equip(shield)
     assert g.eq_item('shield') is shield
     tome = next(i for i in p.inv if i.k == 'tome')
-    assert g.read_tome(tome) == 1
+    assert g.read_tome(tome) == 0 and g.pending, 'the first tome asks'
+    from avarenthia import events as EV
+    EV.RESOLVERS['wake_class'](g, 'yes', {'item': tome.id})
+    g.pending = None
+    assert tome.t in p.known
     # hunger
     p.food = 130
     g.end_turn(20, True)
@@ -1849,6 +1853,7 @@ def new_guilds():
         st[k]['rep'] = 600
     for line in ('beastcraft', 'unarmed', 'nature', 'necromancy', 'restoration'):
         p.disc[line] = [30, 0]
+    p.classes = ['beastcraft']                     # a master teaches a lesser technique only of your own school
     for sid, *_ in GU.TEACH['hound'] + GU.TEACH['stillhand']:
         GU.resolve(g, 'learn:' + sid, dict(guild='hound' if sid in [t[0] for t in GU.TEACH['hound']] else 'stillhand'))
         assert sid in p.known, sid
@@ -1914,6 +1919,7 @@ def new_guilds():
         p.bar[5] = sid
         p.cooldowns.clear()
         p.mana, p.stamina, p.life = 999, 999, max(p.life, 200)
+        p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]    # Elder Bear's shape lets go
         assert SK.use(g, 5), sid
         assert SK.describe(SK.SKILLS[sid], 20), sid
         for _ in range(3):
@@ -3836,11 +3842,16 @@ def schools():
             e.awake = True
             if sid == 'tame':
                 e.hp = 1
+            if sid == 'dispel':
+                e.mods = list(e.mods) + ['Fast']   # something to take away
+            if getattr(sk, 'need_unseen', False):
+                e.awake = False                    # Cheap Shot: only on one who does not see you
             g.map.mons.append(e)
         g.compute_fov()
         prep_skill(g, sid)
         p.bar[5] = sid
         ok = False
+        p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]    # Elder Bear's shape lets go
         for _ in range(40 if sid == 'tame' else 1):
             p.cooldowns.clear()
             p.mana = p.stamina = 999
