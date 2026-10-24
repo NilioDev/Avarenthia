@@ -477,6 +477,31 @@ def ch_land(g):
               'portcullis; look for the postern. Lizardfolk pull in their plank walkway and you wade, the kobolds\' '
               'way in is trapped every few steps, the gnomes\' hill hides its door, and the elves\' gate of woven '
               'branches opens only for their friends.'),
+        ('h', 'Old places'),
+        ('p', 'The land remembers its history. What the records tell of, you can walk up to.'),
+        ('s', [([('×', (176, 132, 104))], 'old battlefield: grassy mounds over the dead, and a cairn that names the '
+                                          'battle and its day. Dig a mound for rust, an old coin, now and then a blade '
+                                          'that kept. On the night of the battle, the dead walk their field.'),
+               ([('⌂', (146, 140, 130))], 'deserted village, emptied by plague, war or a dragon. Bandits, a hermit or '
+                                          'a ghost may live there now.'),
+               ([('╧', (168, 160, 144))], 'broken bridge of the old Empire: piers in the river, a ford beside it. '
+                                          'From it you can make out where an old way ran on.'),
+               ([('┴', (204, 198, 180))], 'stone of names by the road, for the fallen of a battle.'),
+               ([('ß', (176, 172, 160))], 'a fallen statue of the first emperor, its head in the grass.'),
+               ([('Γ', (160, 118, 82))], 'gallows hill where roads meet. The Watch nails up who it hanged, and who '
+                                         'it wants.'),
+               ([('□', (186, 176, 156))], 'old quarry: half-cut blocks, a giant never finished. Split a block, '
+                                          'and once in a while a stone shell is inside.'),
+               ([('▬', (170, 128, 88))], 'shipwreck: walk out to it at low tide and search the sea chest, once. '
+                                         'Often the wreckers came first.'),
+               ([('╓', (196, 180, 140))], 'hermitage: a hermit who knows the country tells you of a place now '
+                                          'and then.'),
+               ([('±', (190, 196, 156))], 'leper colony outside a city. Leave food at the gate; the temple sends '
+                                          'bread there, and pays who carries it.')]),
+        ('p', 'Small marks show whose land it was. Dwarves set boundary stones, the sign {┬|214,176,110}, round their '
+              'holds. Moonstones, the sign {·|214,226,255}, each show the next, on toward a hidden elven place. Orcs '
+              'hang skull poles, the sign {ⁿ|220,210,186}, near their camps, and kobold scratches, the sign '
+              '{«|204,182,110}, point at a hoard of shiny things, the sign {*|236,210,120}. Walk onto them.'),
         ('h', 'Falls and springs'),
         ('s', [([('≡', (236, 248, 255))], 'falls: a waterfall, a cascade or great falls. Fish bite better in the pool, '
                                           'a hollow may hide behind the falling water, and from the cairn on top of a '

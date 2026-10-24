@@ -846,7 +846,7 @@ def flavour(game, key, m):
 def can_accept(game, m):
     from .economy import free_cargo
     p = game.player
-    if m.kind in ('smuggle', 'pilgrim') and free_cargo(p) < 1:
+    if m.kind in ('smuggle', 'pilgrim', 'alms') and free_cargo(p) < 1:
         game.msg('You need 1 free cargo space for this job.', 'bad')
         return False
     if m.kind == 'relic' and game.world.dungeons[m.data['dungeon']].relic is not None:
@@ -880,6 +880,8 @@ def on_accept(game, s, m):
         p.parcels.append(dict(mid=m.id, name=cap(d['contraband']), w=1))
     elif m.kind == 'pilgrim':
         p.parcels.append(dict(mid=m.id, name=f'an offering for {w.pois[d["poi"]].name}', w=1))
+    elif m.kind == 'alms':
+        p.parcels.append(dict(mid=m.id, name=f'the temple\'s bread for {w.sites[d["site"]].name}', w=1))
     elif m.kind == 'relic':
         dg = w.dungeons[d['dungeon']]
         dg.relic = m.id

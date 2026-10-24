@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
-| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
+| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026); the Varnish places and the rest are not |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -42,6 +42,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
    the build order (Nilio, 24 October 2026: "pas voor veel later"); it waits in `docs/open.md`, "Dungeon editor".
    A pause after 5, 7 and 9; merge after 9.
 11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
+    Built 24 October 2026 (see `docs/built.md`).
 12. **The Varnish** (XL): their cities and places, the hidden dungeons (need K5), the lore, the books, the riddles.
 13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. Pause after 12,
     merge after 13.
@@ -439,23 +440,8 @@ eerst A doen, alle ideeen klinken goed". Details and the full list (also the new
 `poi/ideeen.md`. Each place is one world cell with its own play map (as the wonders and oases), and what matters is a
 tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
 `living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
-- **Born from the history.** Each old place comes from an event `history.py` already writes: the battle of 120 years
-  ago lies somewhere as an old battlefield, a plague left a deserted village. The chronicle says why it lies there, a
-  library book can point to it, and the place proves or disproves what you heard.
-- **Old battlefield:** grassy mounds, rusted spear points, a cairn for the fallen. Digging a mound gives rust mostly,
-  very rarely an old weapon with a name from the chronicle. On the battle's day the dead walk the field at night.
-- **Deserted village:** left after a plague, a war or a dragon. Roofless houses, a well, an overgrown field, a burnt
-  chapel; now and then bandits, a hermit or a ghost live there. A plundered village of today that never recovers can
-  become one after a year.
-- **Broken bridge** of the old Empire: piers in the river, the deck gone, a ford beside it. Part of the old ways.
-- **Memorials:** a stone with names (reading it adds a chronicle fact), a fallen statue of an old king with its head
-  beside it, a gallows hill at a crossroads where the Watch hangs its sentences.
-- **Old quarry:** half-cut blocks, a giant statue never finished; sometimes flooded (swim, fish). Stone, now and then a fossil.
-- **Shipwreck:** a hull on the beach or a reef, reached at low tide; searched once, and often the wreckers came first.
-- **Hermitage:** a hermit's hut on a rock or in a wood. The hidden teachers of the epic skills live in such places.
-- **Leper colony:** a hamlet outside a city with a bell; temple jobs bring food there.
-- **Marks of the peoples:** small signs of whose land it was: dwarf boundary stones with runes, elven moonstones along
-  a path, orc skull poles, kobold scratches pointing at something shiny. Read or follow; never a key resource.
+- Part A's old places (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages,
+  leper colonies, the peoples' marks) are built (24 October 2026; spec in `docs/built.md`). Still to build here:
 - **Varnish ruins in the wild** (Nilio's addition): old Varnish cities, overgrown by forest, half under the sand in a
   desert, sunk in a marsh, frozen in the tundra. They have no name and no sign on the world map beforehand; you find
   them only by walking the land (the zones), and what you saw goes on your map. A city spans several zones: columns

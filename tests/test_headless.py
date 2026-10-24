@@ -5894,11 +5894,183 @@ def rift():
     print('rift ok:', dg.depth, 'levels, lord', r['lord'], '; under a dungeon:', bool(deep))
 
 
+def old_places():
+    """Old places from the history: battlefields beside their villages, deserted villages with an event of their own,
+    broken bridges, memorials, gallows, quarries, wrecks, hermitages, leper colonies; each map can be walked to every
+    telling thing, and each answers a bump; the dead walk on the battle's night; the temple's bread for the lepers;
+    the peoples' marks on the world map; a record names the place."""
+    from avarenthia import oldplaces as OP, history as HI, debug as DBG, missions as MS, nature as NT, events as EV
+    from avarenthia import chronicle as CH
+    from avarenthia.entities import Item
+    from collections import Counter, deque
+    import pickle
+    print('== old places')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    om = g.maps['over']
+    old = [s for s in w.sites if OP.is_old(s)]
+    kinds = Counter(s.kind for s in old)
+    for k in ('oldfield', 'deserted', 'namestone', 'gallows', 'hermitage'):
+        assert kinds[k], (k, kinds)
+    assert len({s.name for s in old}) == len(old)
+    H = HI.events(w)
+    assert all(e['id'] == i for i, e in enumerate(H))
+    assert all(H[i - 1]['year'] <= H[i]['year'] for i in range(1, len(H)))
+    for s in old:
+        assert om.inb(s.x, s.y) and D.TILES[om.tile(s.x, s.y)].walk, s.name
+        e = OP.event_of(g, s)
+        if s.kind in ('oldfield', 'deserted'):
+            assert e and e.get('lead') == ('site', s.id) or s.kind == 'oldfield', s.name
+        if s.kind == 'oldfield':
+            assert e.get('field') and 1 <= e['doy'] <= 360
+        if s.kind == 'deserted':
+            assert e['kind'] == 'deserted' and e['village'] == s.name
+
+    def reach(m, start):
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    c = (x + dx, y + dy)
+                    if c not in seen and m.inb(*c) and (D.TILES[m.tile(*c)].walk or m.tile(*c) == D.DOOR):
+                        seen.add(c)
+                        q.append(c)
+        return seen
+    to_over(g, 0)
+    keep_turn = g.turn
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * 12 / 24)      # noon
+    lo = next(t for t in range(g.turn, g.turn + D.DAY_LEN) if (setattr(g, 'turn', t) or NT.low_tide(g)))
+    bumped = Counter()
+    for s in old:
+        to_over(g, 0)
+        g.turn = lo
+        g.enter_site(s.id)
+        m = g.map
+        assert m.old == s.kind and g.cur == s.map_key
+        app.render()
+        got = reach(m, (p.x, p.y))
+        cells = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t in OP.BUMP]
+        assert cells or s.kind == 'hermitage', s.name
+        for x, y in cells:
+            assert any((x + a, y + b) in got for a in (-1, 0, 1) for b in (-1, 0, 1)), (s.name, D.TILES[m.tile(x, y)].name)
+        for x, y in cells:
+            t = m.tile(x, y)
+            if bumped[(s.kind, t)] >= 2:
+                continue
+            bumped[(s.kind, t)] += 1
+            assert OP.bump(g, x, y) is not None, (s.name, D.TILES[t].name)
+            g.request = None
+            g.pending = None
+        for o in [o for o in m.mons if getattr(o, 'role', None) in ('oldplace', 'leper')]:
+            g.talk(o)
+            app.render()
+            g.request = None
+            g.pending = None
+        pickle.dumps(m)
+    assert bumped[('oldfield', D.MOUND)] and bumped[('oldfield', D.CAIRN)]
+    assert any(f['key'] == f'old:{s.id}' for f in CH.facts(g)
+               for s in old if s.kind == 'oldfield')
+    # the wreck: the sea covers the sand at high tide, and the chest is searched only once
+    wr = next((s for s in old if s.kind == 'wreck'), None)
+    if wr:
+        to_over(g, 0)
+        g.enter_site(wr.id)
+        m = g.map
+        i = m.t.index(D.WETSAND)
+        hi = next(t for t in range(lo, lo + D.DAY_LEN) if (setattr(g, 'turn', t) or not NT.low_tide(g)))
+        g.turn = hi
+        assert OP.blocked(g, i % m.w, i // m.w)
+        g.turn = lo
+        assert OP.blocked(g, i % m.w, i // m.w) is None
+        j = m.t.index(D.SEACHEST)
+        assert wr.searched and OP.bump(g, j % m.w, j // m.w) == 0
+    # the battle's night: the dead get up out of the grass; the blade in a mound
+    fld = next(s for s in old if s.kind == 'oldfield')
+    e = OP.event_of(g, fld)
+    to_over(g, 0)
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * 23 / 24)
+    assert OP.night(g)
+    was_on, DBG.ON = DBG.ON, True
+    DBG.flags(g).add('oldnight')
+    assert DBG.has(g, 'oldnight')
+    g.enter_site(fld.id)
+    m = g.map
+    dead = [o for o in m.mons if o.k in ('skeleton', 'skel_warrior', 'wight')]
+    assert len(dead) >= 4 and any(o.k == 'wight' for o in dead), len(dead)
+    m.mons = [o for o in m.mons if o not in dead]
+    DBG.toggle(g, 'oldnight')
+    if not DBG.has(g, 'oldfind'):
+        DBG.toggle(g, 'oldfind')
+    fld.blade_found = False
+    m.set(5, 5, D.MOUND)
+    n = len(p.inv)
+    OP.dig(g, fld, e, 5, 5)
+    assert m.tile(5, 5) == D.DUGMOUND and fld.blade_found and len(p.inv) == n + 1
+    assert e['title'][4:] in p.inv[-1].name and p.inv[-1].rar == 'magic', p.inv[-1].name
+    DBG.toggle(g, 'oldfind')
+    DBG.ON = was_on
+    # a ghost in an empty village at night
+    dv = next(s for s in old if s.kind == 'deserted')
+    dv.who = 'ghost'
+    to_over(g, 0)
+    g.enter_site(dv.id)
+    assert any(o.k == 'ghost' for o in g.map.mons)
+    g.turn = keep_turn
+    # the temple's bread for the lepers
+    col = next((s for s in old if s.kind == 'colony'), None)
+    if col:
+        city = w.settlements[col.city]
+        assert 'temple' in city.services
+        mi = OP.make_alms(g, city)
+        assert mi and mi.kind == 'alms' and mi.data['site'] == col.id
+        city.board.append(mi)
+        assert MS.accept(g, city, mi)
+        assert any(pc['mid'] == mi.id for pc in p.parcels)
+        to_over(g, 0)
+        g.enter_site(col.id)
+        assert mi.state == 'turnin' and not any(pc['mid'] == mi.id for pc in p.parcels)
+        bro = next(o for o in g.map.mons if getattr(o, 'role', None) == 'oldplace')
+        p.inv.append(Item(g.new_id(), 'food', 'bread'))
+        g.talk(bro)
+        assert g.pending and g.pending['key'] == 'oldplace'
+        n = sum(i.n for i in p.inv if i.k == 'food')
+        EV.resolve(g, 'alms')
+        assert sum(i.n for i in p.inv if i.k == 'food') == n - 1
+    # the marks of the peoples
+    marks = [q for q in w.pois if q.kind in OP.POI_LOOK]
+    assert any(q.kind == 'moonstone' for q in marks) and any(q.kind == 'dwarfstone' for q in marks)
+    to_over(g, 0)
+    for q in marks:
+        assert q.secret and q.name
+        assert EV.on_poi(g, q) is None and g.request and g.request[0] == 'dialog', q.kind
+        g.request = None
+        if q.kind == 'moonstone' and getattr(q, 'next', None) is not None:
+            assert w.pois[q.next].found
+        if q.kind == 'scratch':
+            assert w.pois[q.cache].found
+        if q.kind == 'cache':
+            gold = p.gold
+            EV.on_poi(g, q)
+            assert p.gold == gold
+            g.request = None
+    app.render()
+    # a record names the deserted village
+    e = OP.event_of(g, dv)
+    om.seen[dv.y * om.w + dv.x] = 0
+    HI.lead(g, e)
+    assert om.seen[dv.y * om.w + dv.x]
+    pickle.dumps(g)
+    print('old places ok:', dict(kinds), len(marks), 'marks')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

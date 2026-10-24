@@ -253,6 +253,9 @@ def over(game, x, y):
         from . import nature as NT
         if NT.is_nature(site):
             return site.name, site.glyph[1], [NT.DESC[site.kind]]
+        from . import oldplaces as OP
+        if OP.is_old(site):
+            return site.name, site.glyph[1], [OP.DESC[site.kind]]
         from . import seats as SEATS
         if SEATS.is_seat(site):
             return site.name, site.glyph[1], [SEATS.describe(game, site)]

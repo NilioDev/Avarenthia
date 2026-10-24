@@ -16,7 +16,8 @@ KEYS = deque(maxlen=200)        # the last keys pressed, for a bug report
 SLOTS = 3
 FLAGS = ('god', 'sight', 'ai', 'coords')
 FLAG_NAME = {'god': 'God mode', 'sight': 'Sight off', 'ai': 'AI state on look', 'coords': 'Coordinates in the status line',
-             'aurora': 'Northern lights in the sky'}
+             'aurora': 'Northern lights in the sky', 'oldfind': 'Old fields give up their blade',
+             'oldnight': 'The dead walk old fields every night'}
 
 
 def turn_on(argv=(), environ=None, here=None, frozen=False):

@@ -87,19 +87,22 @@ Each line: **what** - what to check - what the debug menu should offer.
 
 ## Old places on the land (approved 23 October 2026)
 
-### Part A: the old, lived-in world
-- **Old battlefield** - born from a history event; the chronicle names it; digging a mound gives rust, very rarely a named
-  weapon; the dead walk on the battle's day at night. Debug: teleport to it; set the date to its day; force a find.
-- **Deserted village** - the cause from history; who lives there now (bandits, hermit, ghost); a plundered village turns into
-  one after a year. Debug: teleport; force a plundered village to fall empty now.
-- **Broken bridge** - piers, the ford beside it, part of the old ways. Debug: teleport.
+### Part A: the old, lived-in world (built 24 October 2026)
+- **Old battlefield** - born from a history event; the cairn names it; digging a mound gives rust, very rarely a named
+  weapon; the dead walk on the battle's day at night. Debug: Teleport (kind oldfield); Time, to night; W: the dead walk
+  every night; B: the next mound gives the blade.
+- **Deserted village** - the cause from history; who lives there now (bandits, hermit, ghost by night). Debug: Teleport.
+- **Broken bridge** - piers, the ford beside it, the pier shows the old way. Debug: Teleport.
 - **Memorials** - the stone with names adds a chronicle fact; the fallen statue; the gallows hill with the Watch's sentences.
-  Debug: teleport by kind.
-- **Old quarry** - half-cut blocks, unfinished statue, flooded ones (swim, fish), stone, a fossil now and then. Debug: teleport.
-- **Shipwreck** - only at low tide; searched once; the wreckers may have been first. Debug: teleport; set the tide.
-- **Hermitage** - the hermit, and the hidden teachers of the epic skills living there. Debug: teleport; reveal all teachers.
-- **Leper colony** - the bell, the temple jobs. Debug: teleport; make the job.
-- **Marks of the peoples** - boundary stones, moonstones, skull poles, kobold scratches; read or follow. Debug: teleport by kind.
+  Debug: Teleport by kind.
+- **Old quarry** - half-cut blocks, unfinished statue, flooded ones, a fossil now and then. Debug: Teleport.
+- **Shipwreck** - only at low tide; searched once; the wreckers may have been first. Debug: Teleport; Time to move the tide.
+- **Hermitage** - the hermit's hint once a week. Debug: Teleport.
+- **Leper colony** - the bell, food at the gate, the temple job "Alms for the lepers". Debug: Teleport; Jobs to make the job.
+- **Marks of the peoples** - boundary stones, moonstones, skull poles, kobold scratches and their hoard. Debug: Teleport
+  (poi kinds).
+
+### Part A still to build
 - **Varnish ruins in the wild** - never on the map before you walk there; found by walking the zones; they match the land
   (forest, sand, marsh, ice). Debug: list them; teleport; reveal on the map.
 - **Hidden dungeons** - no rumour, map or job names them; the way in only on the spot (stone with the letters, well, hollow

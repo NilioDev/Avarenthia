@@ -13,6 +13,7 @@ from . import skills as SK
 from . import missions as MS
 from . import ferries as _FY  # noqa: F401  (the village ferries register their choice)
 from . import nature as NT
+from . import oldplaces as OP
 from . import zones as ZN
 from . import wanderers as WA
 from . import war as WAR
@@ -73,7 +74,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 41
+SAVE_VERSION = 42
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -855,6 +856,8 @@ class Game:
         LN.on_enter(self, site, m)
         if NT.is_nature(site):
             NT.on_enter(self, site, m)
+        if OP.is_old(site):
+            OP.on_enter(self, site, m)
         if PL.is_place(site):
             PL.on_enter(self, site, m)
         self.compute_fov()
@@ -1048,6 +1051,14 @@ class Game:
             if why:
                 self.msg(why, 'info')
                 return 0
+        if getattr(m, 'old', None):
+            why = OP.blocked(self, nx, ny)
+            if why:
+                self.msg(why, 'info')
+                return 0
+            spent = OP.bump(self, nx, ny)
+            if spent is not None:
+                return spent
         if getattr(m, 'bar', None) and (nx, ny) in m.bar:
             spent = PL.barred(self, nx, ny)
             if spent is not None:
@@ -1168,6 +1179,8 @@ class Game:
             PL.loose_step(self)
         if getattr(m, 'nature', None):
             NT.on_step(self)
+        if getattr(m, 'old', None):
+            OP.on_step(self)
         if zone and ZN.after_move(self):
             return 1
         self.auto_pickup()
@@ -3130,6 +3143,13 @@ class Game:
                 self.meet_wanderer(wd)
             return
         if RL.talk(self, npc):
+            return
+        if role == 'oldplace':
+            OP.talk(self, npc)
+            return
+        if role == 'leper':
+            self.say(npc, random.choice(['Keep back, friend. For your own sake.', 'Bless you for stopping. Most do not.',
+                                         'Bread, if you have it. Leave it at the gate.']))
             return
         if role == 'castellan':
             self.request = ('castellan', hid)

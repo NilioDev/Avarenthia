@@ -390,6 +390,8 @@ def gen_world(game):
         progress(.8, 'Crowning the kings')
         from . import realms as RL
         RL.generate(game, m, world)
+        from . import oldplaces as OP
+        OP.place(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways

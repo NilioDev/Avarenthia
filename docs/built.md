@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
 | **Built: the Rift and the Ashen Deep (24 Oct)** | A rift opens now and then as a world event (or under a deep dungeon's bottom), the land round it burns to ash, fiends raid at night; three to five levels of basalt, fire, chains, vents, bone fields and cages; seven new creatures; the Lord of Cinders before the burning gate; break it and the rift closes |
 | **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast comes with the feast days |
 | **Built: abbeys, forts, manors and the underground kinds (24 Oct)** | Every people's abbey, fort and manor on its own land with floors above and cellars below; forts held, taken, empty or ruined, with their own ways in; caves, nests, dens and crypts shaped by whoever made them; the goblin hole and the goblin village |
@@ -368,6 +369,24 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **Old places from the history** (24 October 2026; `oldplaces.py`). Placed after the history is made
+  (`OP.place` after `RL.generate`). Ten site kinds, each one world cell with a small play map (`m.old` = kind) and
+  telling tiles you bump (new tiles 176-187: mound, dug mound, spear point, half-cut block, ship's timbers, sea chest,
+  wet sand, pier, gallows, stone head, stone of names, bell on a post): old battlefield × beside a battle's village
+  (`e['doy']` its day; mounds give rust 60%, an old coin 12%, once per field 4% a magic blade named for the battle;
+  the cairn names battle and date, a chronicle fact; on that day at night skeletons, skeleton warriors and a wight
+  rise); deserted village ⌂ with a history event of its own (kind 'deserted': plague, war or dragon; bandits, a
+  hermit, a ghost by night or nobody); broken bridge ╧ by a river (the pier shows the nearest old way); stone of
+  names ┴; the fallen emperor ß (from the 'empire' event); gallows hill Γ at road crossings near towns (shows your
+  wanted notice); old quarry □ (40% flooded; a block holds a fossil 18%); shipwreck ▬ (wet sand only at low tide; the
+  chest once, 55% the wreckers came first); hermitage ╓ (the hermit tells a history hint once a week); leper colony
+  ± outside human cities (food at the gate, a blessing; the temple job 'alms' carries bread there). Marks as secret
+  POIs: dwarf boundary stones ┬, moonstone lines · toward glades and the elder city (each reveals the next), orc skull
+  poles ⁿ (reveal the camp), kobold scratches « that reveal their hoard * (coin and a trinket, once). A library
+  record of a deserted village or battle marks the place (`history.lead` takes ('site', id)). Curios rust, old coin,
+  trinket. Debug flags B (the blade in the next mound) and W (the dead walk every night). Test `old_places`.
+  SAVE_VERSION 42. Not as asked: a plundered village of today does not yet fall empty after a year; the hermitages'
+  epic teachers come with round 13; a flooded quarry has no fishing of its own yet (the water is ordinary water).
 - **The Rift and the Ashen Deep** (24 October 2026; `rift.py`). A world event (`world.rift`): from day 40 a 10% chance
   a month when no rift is open (again a year after one closed and healed). It tears open on the land (a glowing `>`
   on the world map, `D.ENTR`) or, three times in ten, under the bottom of a dungeon four or more levels deep (a crack
@@ -415,6 +434,26 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## Old places from the history (built 24 October 2026; the spec)
+Part A of "Old places on the land" (approved 23 October 2026; the rest of that section stays in `docs/plan.md`).
+- **Born from the history.** Each old place comes from an event `history.py` already writes: the battle of 120 years
+  ago lies somewhere as an old battlefield, a plague left a deserted village. The chronicle says why it lies there, a
+  library book can point to it, and the place proves or disproves what you heard.
+- **Old battlefield:** grassy mounds, rusted spear points, a cairn for the fallen. Digging a mound gives rust mostly,
+  very rarely an old weapon with a name from the chronicle. On the battle's day the dead walk the field at night.
+- **Deserted village:** left after a plague, a war or a dragon. Roofless houses, a well, an overgrown field, a burnt
+  chapel; now and then bandits, a hermit or a ghost live there. A plundered village of today that never recovers can
+  become one after a year.
+- **Broken bridge** of the old Empire: piers in the river, the deck gone, a ford beside it. Part of the old ways.
+- **Memorials:** a stone with names (reading it adds a chronicle fact), a fallen statue of an old king with its head
+  beside it, a gallows hill at a crossroads where the Watch hangs its sentences.
+- **Old quarry:** half-cut blocks, a giant statue never finished; sometimes flooded (swim, fish). Stone, now and then a fossil.
+- **Shipwreck:** a hull on the beach or a reef, reached at low tide; searched once, and often the wreckers came first.
+- **Hermitage:** a hermit's hut on a rock or in a wood. The hidden teachers of the epic skills live in such places.
+- **Leper colony:** a hamlet outside a city with a bell; temple jobs bring food there.
+- **Marks of the peoples:** small signs of whose land it was: dwarf boundary stones with runes, elven moonstones along
+  a path, orc skull poles, kobold scratches pointing at something shiny. Read or follow; never a key resource.
 
 ## The Rift and the Ashen Deep (built 24 October 2026; the spec)
 a hell-like place. Mockups `H_ashen_deep.png` and `H2_ashen_deep_river.png` (the river running through).

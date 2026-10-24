@@ -210,6 +210,19 @@ TILES = [
     Tile('o', '#7a706a', False, False, 'cold fire bowl', bg='#1a1614'),
     Tile('.', '#5a5a66', True, False, 'black iron floor', bg='#121216'),
     Tile('╪', '#8a8a96', False, False, 'broken gate', bg='#1a1616'),
+    # old places on the land (oldplaces.py)
+    Tile('∩', '#8aa060', False, False, 'grassy mound', bg='#1e2a14'),
+    Tile('∩', '#7a6a50', False, False, 'dug mound', bg='#241c12'),
+    Tile('/', '#a0603a', True, False, 'rusted spear point'),
+    Tile('■', '#b0aa9c', False, False, 'half-cut block'),
+    Tile('#', '#8a6440', False, True, "ship's timbers", bg='#20160c'),
+    Tile('▄', '#c08a50', False, False, 'sea chest'),
+    Tile('.', '#9a9278', True, False, 'wet sand', bg='#1a1c18'),
+    Tile('█', '#8a8a86', False, False, 'old bridge pier', bg='#202022'),
+    Tile('Γ', '#9a7048', False, False, 'gallows'),
+    Tile('o', '#b0aca0', False, False, 'stone head'),
+    Tile('┴', '#d0ccbc', False, False, 'stone of names'),
+    Tile('Ω', '#c8b070', False, False, 'bell on a post'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -226,6 +239,8 @@ CRUST, LAVA = 127, 128                      # a river of fire and the cooled cru
  REEDS, WHITE) = range(147, 164)            # places on their own land: temples, towers, barrows
 HIVE, LENS, WOVEN = range(164, 167)        # abbeys, forts and manors (halls.py)
 ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = range(167, 176)   # the Ashen Deep (rift.py)
+(MOUND, DUGMOUND, SPEARS, BLOCK, HULL, SEACHEST, WETSAND, PIER, GALLOWS, HEAD, NAMESTONE,
+ LEPERBELL) = range(176, 188)               # old places on the land (oldplaces.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

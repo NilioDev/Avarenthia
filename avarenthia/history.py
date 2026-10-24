@@ -310,6 +310,14 @@ def lead(game, e):
                 game.msg(f'The record names {d.name}, and where it lies. You mark it on your map.', 'info')
             CH.add(game, 'Places', f'{d.name}: once the seat of a house, now a ruin.', 'read', 'the records', place=(d.x, d.y),
                    key=f'lead:hist:{e["id"]}', quiet=True)
+    elif k == 'site':
+        st = game.world.sites[ref]
+        om = game.maps['over']
+        if not om.seen[st.y * om.w + st.x]:
+            game.reveal_place(st.x, st.y)
+            game.msg(f'The record names {st.name}, and where it lies. You mark it on your map.', 'info')
+        CH.add(game, 'Places', f'{st.name}: {e["title"].replace("The ", "the ", 1)} happened here, in {e["year"]} AR.', 'read',
+               'the records', place=(st.x, st.y), key=f'lead:hist:{e["id"]}', quiet=True)
 
 
 def field_at(game, x, y):

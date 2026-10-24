@@ -17,6 +17,8 @@ from .tribes import LOOK as _CAMP_LOOK  # noqa: E402
 SITE_LOOK.update(_CAMP_LOOK)
 from .nature import LOOK as _NATURE_LOOK  # noqa: E402
 SITE_LOOK.update(_NATURE_LOOK)
+from .oldplaces import LOOK as _OLD_LOOK  # noqa: E402
+SITE_LOOK.update(_OLD_LOOK)
 from . import seats as _SEATS  # noqa: E402
 SITE_LOOK.update(_SEATS.LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
@@ -195,6 +197,9 @@ def gen_site_map(game, site):
     from . import nature as NT
     if NT.is_nature(site):
         return NT.site_map(game, site)
+    from . import oldplaces as OP
+    if OP.is_old(site):
+        return OP.site_map(game, site)
     if _SEATS.is_seat(site):
         return _SEATS.gen_map(game, site)
     from . import places as PL
