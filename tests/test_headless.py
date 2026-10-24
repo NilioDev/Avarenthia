@@ -4008,7 +4008,13 @@ def weapons():
     sp = wield('spear')
     gob = foe('goblin', *cells[1])
     g.compute_fov()
-    assert WP.reach_target(g, gob) and g.fire() == 1 and gob.hp < 500, 'the spear reaches'
+    assert WP.reach_target(g, gob) and g.fire() == 1, 'the spear reaches'
+    for _ in range(6):                             # a blow may miss
+        if gob.hp < 500:
+            break
+        gob.x, gob.y = cells[1]
+        g.fire()
+    assert gob.hp < 500, 'the spear reaches and strikes'
     pal = make_monster(g, 'villager', *cells[0], 3) if 'villager' in D.MONSTERS else None
     if pal is not None:
         pal.is_npc = True
