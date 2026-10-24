@@ -408,7 +408,9 @@ def _rescue(game, s):
     camp = TR.near_camp(game, s, 'warcamp', 55)
     if camp and random.random() < .5 and not taken(game, 'camp', camp.id):
         lvl = TR.level(game, camp)
-        return mission(game, s, 'rescue', f'Rescue {name} from {camp.name}',
+        short = camp.name.replace('Camp of the ', 'the ').replace(' Camp', '').replace('The ', 'the ', 1)   # a board line holds 42 letters
+        title = f'Rescue {name} from {camp.name}'
+        return mission(game, s, 'rescue', title if len(title) <= 42 else f'Rescue {name} from {short}',
                        f'Orcs took {name}, {who}, on the road and dragged {him(his)} off to {camp.name}, their war camp to '
                        f'the {_dir(s, camp.x, camp.y)}. They keep captives in a cage until they sell them. Break the cage, '
                        f'or buy {him(his)} out if they will deal with you.', 40 + lvl * 5, (8, 12), game.day + 14,
