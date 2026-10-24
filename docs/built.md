@@ -322,8 +322,10 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   shown on the tree page. Elites: guild techniques of rank 4+ and the two-guild combos go on key 6; a lesser
   technique of your own school on 3-5; a weapon guild's on key 1 or 2 while you hold its weapon (`p.wswap`); a master
   will not teach a lesser technique of a school that is not yours. SAVE_VERSION 36. Tests `pairs` (every rule in a
-  fight) and `balance` (Pyromancer, Warrior, Firebrand, Reaver must win; the pure Rogue is reported: with a dagger
-  it loses open fights against awake groups, see the round's report /mnt/project-files/bouw/ronde4-klassen3.md).
+  fight) and `balance`: Pyromancer, Warrior, Firebrand, Reaver and Rogue, each in the gear such a one wears, four
+  waves on three worlds, each must win 11 of 12. Tuned so (24 October 2026, Nilio: the Rogue stands level with the
+  rest): dagger 2-7 (was 1-5), Envenom 10 + 0.6 a rank for 20 turns, Shadowstep back in 6 turns, Iron Skin 30% +
+  0.4 a rank for 12 turns. Over eight worlds: Pyromancer, Firebrand, Reaver 32 of 32, Rogue 31, Warrior 30.
 
 ## Weapons: more kinds, few disciplines (built 23 October 2026; the spec)
 

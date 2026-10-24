@@ -27,7 +27,7 @@ GRADE_VAL = (1, 3, 8)
 # the first key is the normal grade; '<key>_x' is exceptional and '<key>_e' elite
 FAMILIES = {
     # one-handed weapons
-    'dagger': ('weapon', ('Dagger', 'Rondel', 'Fang Dagger'), 1, (1, 5), 12, (0, 1), dict(hit=10)),
+    'dagger': ('weapon', ('Dagger', 'Rondel', 'Fang Dagger'), 1, (2, 7), 12, (0, 1), dict(hit=10)),
     'shortsword': ('weapon', ('Short Sword', 'Falchion', 'Varnish Gladius'), 1, (2, 6), 20, (.8, .4), {}),
     'club': ('weapon', ('Club', 'Cudgel', 'Truncheon'), 1, (1, 8), 15, (.8, 0), {}),
     'longsword': ('weapon', ('Long Sword', 'War Sword', 'Rune Sword'), 4, (3, 10), 60, (.9, .5), {}),

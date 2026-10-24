@@ -4523,86 +4523,96 @@ def pairs():
 
 
 def balance():
-    """The balance test: the same foes, four ways to fight them: a pure caster, a pure warrior, a spellsword and a
-    weapon with a class. They should all win, about as fast, with a different risk."""
+    """The balance test: the same foes, five ways to fight them: a pure caster, a pure warrior, two who mix weapon and
+    class, and a pure rogue. Each wears what such a one wears. On three worlds they should all win, about as fast,
+    with a different risk."""
     from avarenthia import skills as SK, classes as CL
     from avarenthia.entities import make_monster, make_gear
-    from avarenthia.worldgen import free_around
+    from avarenthia.worldgen import free_around, bfs
     print('== balance')
-    builds = {'Pyromancer': (['fire'], None, ['firebolt', 'fireball', 'searing_brand', 'immolate'], (40, 60, 120, 120)),
-              'Warrior': (['warcraft'], 'greatsword', ['rage', 'warcry', 'charge', 'second_wind'], (120, 60, 120, 40)),
-              'Firebrand': (['fire', 'warcraft'], 'longsword', ['firebolt', 'rage', 'warcry', 'fireball'], (90, 60, 120, 70)),
-              'Reaver': (['shadow', 'warcraft'], 'waraxe', ['drain', 'rage', 'warcry', 'weakness'], (100, 60, 120, 60)),
-              'Rogue': (['cunning'], 'dagger', ['envenom', 'garrote', 'shadowstep', 'sneak'], (60, 120, 120, 40))}
-    told = ('Rogue',)                   # reported, not held to the others: it wins by not being seen
+    builds = {'Pyromancer': (['fire'], None, ['quilted', 'cap'], ['firebolt', 'fireball', 'searing_brand'], (40, 60, 120, 120)),
+              'Warrior': (['warcraft'], 'greatsword', ['chainmail', 'fullhelm'], ['rage', 'charge', 'iron_skin'], (120, 60, 120, 40)),
+              'Firebrand': (['fire', 'warcraft'], 'longsword', ['chainmail', 'skullcap', 'roundshield'], ['firebolt', 'rage', 'warcry'],
+                            (90, 60, 120, 70)),
+              'Reaver': (['shadow', 'warcraft'], 'waraxe', ['chainmail', 'skullcap', 'roundshield'], ['drain', 'rage', 'warcry'],
+                         (100, 60, 120, 60)),
+              'Rogue': (['cunning'], 'dagger', ['leather', 'cap'], ['envenom', 'garrote', 'shadowstep'], (60, 120, 120, 40))}
     out = {}
-    for name, (cl, weapon, bar, (st, dx, vi, en)) in builds.items():
-        app = new_app('soft', seed=11)
-        g, p = app.game, app.game.player
-        p.lvl, p.str, p.dex, p.vit, p.ene = 18, st, dx, vi, en
-        p.classes = cl
-        for line in cl:
-            p.disc[line][0] = 35
-        p.known = list(bar)
-        p.bar = [None, None] + bar[:3] + [None]
-        p.inv, p.eq = [], {}
-        if weapon:
-            it = make_gear(g, weapon, 'normal', 10)
-            g.add_to_inv(it)
-            p.eq = {'weapon': it.id}
-            p.disc[SK.WEAPON_LINE[weapon]][0] = 30
-        g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
-        m = g.map
-        s = g.stats()
-        p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
-        taken, turns, won = 0, 0, 0
-        for wave in range(4):
-            m.mons = [o for o in m.mons if o.is_npc]
-            for c in [c for c in free_around(g, m, p.x, p.y, 4) if cheb(c[0], c[1], p.x, p.y) >= 3
-                      and not g.occupied(m, *c)][:3]:
-                o = make_monster(g, random.choice(['goblin', 'orc', 'skeleton']), *c, 12)
-                o.awake = wave % 2 == 0
-                m.mons.append(o)
-            g.compute_fov()
-            for _ in range(120):
-                foes = g.visible_hostiles()
-                if not foes or g.dead:
-                    break
-                life = p.life
-                used = 0
-                for i in (2, 3, 4, 0, 1):
-                    sid = CL.slot_skill(g, i)
-                    sk = SK.SKILLS[sid] if sid else None
-                    if sk and sk.buff and any(b[0] == sk.buff[0] for b in p.buffs):
-                        continue                    # it is on you already
-                    if sid == 'sneak' and any(o.awake for o in foes):
-                        continue
-                    if sid and not p.cooldowns.get(sid) and SK.can_pay(g, SK.SKILLS[sid]):
-                        used = SK.use(g, i)
-                        if used:
-                            break
-                if not used:
-                    t = min(foes, key=lambda o: cheb(o.x, o.y, p.x, p.y))
-                    if cheb(t.x, t.y, p.x, p.y) <= 1:
-                        g.melee(t)
+    for name, (cl, weapon, wear, bar, (st, dx, vi, en)) in builds.items():
+        won, turns, taken = 0, 0, 0
+        for world in (11, 12, 13):
+            app = new_app('soft', seed=world)
+            random.seed(world * 7)
+            g, p = app.game, app.game.player
+            p.lvl, p.str, p.dex, p.vit, p.ene = 18, st, dx, vi, en
+            p.classes = cl
+            for line in cl:
+                p.disc[line][0] = 35
+            p.known = list(bar)
+            p.bar = [None, None] + bar + [None]
+            p.inv, p.eq = [], {}
+            for base in ([weapon] if weapon else []) + wear:
+                it = make_gear(g, base, 'normal', 10)
+                g.add_to_inv(it)
+                p.eq[D.BASES[base]['slot']] = it.id
+            if weapon:
+                p.disc[SK.WEAPON_LINE[weapon]][0] = 30
+            g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
+            m = g.map
+            s = g.stats()
+            p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
+            for wave in range(4):
+                m.mons = [o for o in m.mons if o.is_npc]
+                wave_foes = []
+                near = bfs(m, p.x, p.y, lambda k: D.TILES[k].walk, 5)    # where one can walk to, not behind a wall
+                for c in [c for c in free_around(g, m, p.x, p.y, 4) if cheb(c[0], c[1], p.x, p.y) >= 3
+                          and 0 <= near[c[1] * m.w + c[0]] <= 5 and g.visible(*c) and not g.occupied(m, *c)][:3]:
+                    o = make_monster(g, random.choice(['goblin', 'orc', 'skeleton']), *c, 12)
+                    o.awake = wave % 2 == 0
+                    m.mons.append(o)
+                    wave_foes.append(o)
+                g.compute_fov()
+                for _ in range(120):
+                    foes = [o for o in wave_foes if o in m.mons and not getattr(o, 'fleeing', False)]
+                    if not foes or g.dead:     # smoke hides them but does not count: they must fall or flee
+                        break
+                    life = p.life
+                    used = 0
+                    for i in (2, 3, 4, 0, 1):
+                        sid = CL.slot_skill(g, i)
+                        sk = SK.SKILLS[sid] if sid else None
+                        if sk and sk.buff and any(b[0] == sk.buff[0] for b in p.buffs):
+                            continue                    # it is on you already
+                        if sid and not p.cooldowns.get(sid) and SK.can_pay(g, SK.SKILLS[sid]):
+                            used = SK.use(g, i)
+                            if used:
+                                break
+                    if not used:
+                        t = min(foes, key=lambda o: cheb(o.x, o.y, p.x, p.y))
+                        if cheb(t.x, t.y, p.x, p.y) <= 1:
+                            g.melee(t)
+                        else:
+                            dx_, dy_ = (t.x > p.x) - (t.x < p.x), (t.y > p.y) - (t.y < p.y)
+                            if not g.try_move(dx_, dy_):        # round the wall, by the shortest way
+                                dist = bfs(m, t.x, t.y, lambda k: D.TILES[k].walk, 30)
+                                step = [(ax, ay) for ax in (-1, 0, 1) for ay in (-1, 0, 1) if m.inb(p.x + ax, p.y + ay)
+                                        and dist[(p.y + ay) * m.w + p.x + ax] >= 0]
+                                if step:
+                                    ax, ay = min(step, key=lambda d: dist[(p.y + d[1]) * m.w + p.x + d[0]])
+                                    g.try_move(ax, ay)
+                        g.end_turn(1)
                     else:
-                        dx_, dy_ = (t.x > p.x) - (t.x < p.x), (t.y > p.y) - (t.y < p.y)
-                        if not g.try_move(dx_, dy_):
-                            g.melee(t) if cheb(t.x, t.y, p.x, p.y) <= 1 else None
-                    g.end_turn(1)
-                else:
-                    g.end_turn(used)
-                taken += max(0, life - p.life)
-                turns += 1
-            if not g.dead and not g.visible_hostiles():
-                won += 1
-            if g.dead:
-                break
+                        g.end_turn(used)
+                    taken += max(0, life - p.life)
+                    turns += 1
+                if not g.dead and not any(o in m.mons and not getattr(o, 'fleeing', False) for o in wave_foes):
+                    won += 1
+                if g.dead:
+                    break
         out[name] = (won, turns, taken)
-        print(f'  {name}: {won} of 4 waves won in {turns} turns, {taken} damage taken')
-    held = {k: v for k, v in out.items() if k not in told}
-    assert all(w >= 3 for w, _t, _d in held.values()), out
-    ts = [t for _w, t, _d in held.values()]
+        print(f'  {name}: {won} of 12 waves won in {turns} turns, {taken} damage taken')
+    assert all(w >= 11 for w, _t, _d in out.values()), out
+    ts = [t for _w, t, _d in out.values()]
     assert max(ts) <= 3 * max(1, min(ts)), out
     print('balance ok')
 
