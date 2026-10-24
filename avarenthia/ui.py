@@ -29,6 +29,7 @@ from . import weapons as WP
 from . import bestiary as BE
 from . import towns as TW
 from . import war as WAR
+from . import aurora as AUR
 from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
@@ -718,6 +719,9 @@ class GameScreen(Screen):
         glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
                  and not getattr(o, 'lurk', False)]
         birds = {(x, y): (ch, col) for x, y, ch, col in TOW.sky(m, t, night)} if sky else None
+        aura, wisps = AUR.auras(g, m, t)            # the wan glow of the ghostly, the faint fire of fiends
+        if aura:
+            self.moving = True
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -811,6 +815,12 @@ class GameScreen(Screen):
                             self.moving = True
                     if traps and (mx, my) in traps:
                         ch, fg = '^', (220, 190, 110)
+                    if aura and (mx, my) in aura:
+                        ac, ak = aura[(mx, my)]
+                        fg, bg = mix(fg, ac, ak * .6), mix(bg, ac, ak * .55)
+                        if (mx, my) in wisps and (mx, my) not in mons and (mx, my) not in items:
+                            wsign, wcol, wpow = wisps[(mx, my)]
+                            ch, fg = wsign, mix(bg, wcol, wpow)
                     o = mons.get((mx, my))
                     if o and getattr(o, 'lurk', False) and o.tpl.get('disguise'):
                         ch, fg = o.tpl['disguise'][0], D.hexrgb(o.tpl['disguise'][1])     # a chest, a statue, a stone
@@ -819,6 +829,8 @@ class GameScreen(Screen):
                         o = None                    # something waits there, unseen
                     if o:
                         ch, fg = o.ch, o.fg
+                        if aura and AUR.aura_of(o):
+                            fg = AUR.flicker(o, bg, t)
                         if o.is_npc:
                             mark = MS.quest_mark(g, o)
                             if mark:
@@ -1077,6 +1089,12 @@ class GameScreen(Screen):
             vx, vy = poi.x - ox, poi.y - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (poi.x, poi.y) != (p.x, p.y):
                 ch, col = poi.glyph
+                if poi.kind == 'runestone':
+                    col, rbg = AUR.rune_look(g, time.monotonic(), poi.x, poi.y)
+                    if rbg:
+                        cv.put(vx, vy, ch, col, rbg)
+                        self.moving = True
+                        continue
                 if poi.ready_day >= 10 ** 9 or g.day < poi.ready_day:
                     col = scale(col, .5)
                 elif not g.visible(poi.x, poi.y):

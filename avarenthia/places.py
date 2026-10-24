@@ -192,7 +192,7 @@ def place(game, m, world, reach_set):
             return [(s.x, s.y) for s in world.settlements if getattr(s, 'race', '') == 'halfling']
         return [(s.x, s.y) for s in world.settlements if getattr(s, 'race', 'human') == 'human']
 
-    def spot(pe, near=(4, 16), anywhere=False):
+    def spot(pe, near=(4, 16), anywhere=False, pred=None):
         ok_land = LAND[pe]
         ans = anchors(pe)
         cells = []
@@ -213,6 +213,8 @@ def place(game, m, world, reach_set):
             if world.road_dist[y * m.w + x] < (1 if pe not in HOSTILE else 3):
                 continue
             if any(cheb(x, y, a, b) < 5 for a, b in taken):
+                continue
+            if pred and not pred(x, y):
                 continue
             return x, y
         return None
@@ -272,6 +274,13 @@ def place(game, m, world, reach_set):
                 xy = spot(pe, (5, 20)) or spot(pe, (4, 40), anywhere=True)
                 if xy:
                     add(kind, pe, xy)
+    # the old kings of the north: barrows in the cold lands, where the spirits rise under the northern lights (aurora.py)
+    from . import aurora as AU
+    north = lambda x, y: AU.northern(world, x, y)                       # noqa: E731
+    for _ in range(scaled(2) - sum(1 for q in world.sites if q.kind == 'barrow' and north(q.x, q.y))):
+        xy = spot('human', (6, 40), pred=north) or spot('human', (6, 40), anywhere=True, pred=north)
+        if xy:
+            add('barrow', 'human', xy)
 
 
 def setup(game, world, site):
@@ -515,6 +524,9 @@ def on_enter(game, site, m):
         game.msg(f'A warden stands at the door. Your name is not good with the {PLURAL[pe]}.', 'bad')
     elif site.kind == 'temple' and t < 0:
         game.msg(f'This is a holy place of the {PLURAL[pe]}, and they do not suffer strangers in it.', 'bad')
+    elif site.kind == 'barrow':
+        from . import aurora as AU
+        AU.on_barrow(game)
 
 
 def stale(game, site, m):
@@ -570,6 +582,10 @@ def stairs(game, t, d):
             game.enter_dungeon(did, 1, 'down')
             return 1
         if t == DOWN and d != 'up' and getattr(site, 'below', None):
+            if site.kind == 'barrow':
+                from . import aurora as AU
+                if AU.guard_down(game, site):
+                    return 0
             game.enter_dungeon(site.below, 1, 'up')
             return 1
         return None

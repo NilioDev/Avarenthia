@@ -707,6 +707,9 @@ def quest_mark(game, npc):
         return None
     if role == 'herbalist':
         return '!' if not p.recipes else None
+    if role == 'barrow_spirit':
+        from . import aurora as AU
+        return '!' if getattr(npc, 'site', None) not in AU.heard(game) else None
     if role == 'inn':
         sid = getattr(game.map, 'sid', None)
         if sid is None:

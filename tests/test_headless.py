@@ -5599,11 +5599,137 @@ def halls():
     print('halls ok:', sum(kinds.values()), 'abbeys, forts and manors;', len(DV.KINDS), 'underground kinds')
 
 
+def aurora():
+    """The northern lights' gift: rune stones that only the lights show, cheaper Frost and Storm, the barrow spirits
+    with their errands and their wrath when the barrow is dug into, and the glow of the ghostly."""
+    from avarenthia import aurora as AU, hidden as HP, places as PL, missions as MS, jobs as JB, skills as SK
+    from avarenthia import debug as DBG, weather as WX, events as EV
+    import pickle
+    print('== the northern lights')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    om = g.maps['over']
+    stones = [q for q in w.pois if q.kind == 'runestone']
+    assert stones and all(AU.northern(w, q.x, q.y) for q in stones), len(stones)
+    rs = stones[0]
+    to_over(g, 0)
+    p.x, p.y = rs.x - 1, rs.y
+    g.over_pos = (p.x, p.y)
+    g.compute_fov()
+    EV.discover(g)
+    assert not rs.found, 'plain rock by day'
+    keep_on = DBG.ON
+    DBG.ON = True
+    p.dbg = set(getattr(p, 'dbg', set())) | {'aurora'}
+    assert AU.lit(g) and WX.shown(g) == 'aurora'
+    EV.discover(g)
+    assert rs.found, 'the lights show it'
+    EV.on_poi(g, rs)
+    assert w.ways[rs.points].id in HP.known(g) and g.request[0] == 'dialog'
+    app.render()
+    # Frost and Storm cost less under the lights
+    sk = next(k for k in SK.SKILL_LIST if k.line == 'frost' and k.cost >= 8)
+    lit_cost = SK.cost_of(g, sk)
+    p.dbg.discard('aurora')
+    assert SK.cost_of(g, sk) > lit_cost, (SK.cost_of(g, sk), lit_cost)
+    p.dbg.add('aurora')
+    # the barrow spirits
+    north = AU.northern
+    barrows = [q for q in w.sites if q.kind == 'barrow']
+    assert sum(1 for q in barrows if AU.northern(w, q.x, q.y)) >= 2, 'the old kings of the north'
+    AU.northern = lambda world, x, y: True          # every barrow counts as northern here
+
+    def visit(s):
+        to_over(g, 0)
+        p.x, p.y = s.x, s.y
+        g.over_pos = (s.x, s.y)
+        g.enter_site(s.id)
+        g.compute_fov()
+        return g.map
+    try:
+        site = barrows[0]
+        m = visit(site)
+        sp = next(o for o in m.mons if getattr(o, 'spirit', False))
+        assert sp.is_npc and sp.ch == 'G' and MS.quest_mark(g, sp) == '!'
+        p.x, p.y = sp.x, sp.y + 1 if m.inb(sp.x, sp.y + 1) else sp.y - 1
+        g.compute_fov()
+        aura, _w = AU.auras(g, m, 0.0)
+        assert aura, 'the spirit glows'
+        app.render()
+        gold = p.gold
+        g.talk(sp)
+        job = next(x for x in MS.active(g) if x.kind == 'spirit')
+        assert site.id in AU.heard(g) and MS.target_pos(g, job)
+        # every kind of errand can be made, and leads somewhere
+        subs = {}
+        for _ in range(60):
+            x = AU.make_job(g, site)
+            if x:
+                subs.setdefault(x.data['sub'], x)
+        assert {'grave', 'deed'} <= set(subs), subs.keys()
+        gr = subs['grave']
+        gr.state = 'active'
+        g.missions = [x for x in g.missions if x.kind != 'spirit'] + [gr]
+        AU.accept(g, gr)
+        to_over(g, 0)
+        p.x, p.y = gr.data['spot']
+        g.over_pos = (p.x, p.y)
+        JB.step(g)
+        assert gr.state == 'turnin', gr.state
+        assert MS.target_pos(g, gr)[0] == (site.x, site.y)
+        visit(site)
+        assert gr.state == 'done' and p.gold > gold, (gr.state, p.gold, gold)
+        dd = subs['deed']
+        AU.won(g, dd, True)
+        assert dd.state == 'turnin'
+        if 'sword' in subs:
+            sw = subs['sword']
+            AU.accept(g, sw)
+            assert w.dungeons[sw.data['dungeon']].relic == sw.id
+            AU.on_fail(g, sw)
+            assert w.dungeons[sw.data['dungeon']].relic is None
+        # digging in: the spirit asks first, then the dead wake
+        site2 = barrows[1] if len(barrows) > 1 else site
+        m = visit(site2)
+        assert any(getattr(o, 'spirit', False) and o.is_npc for o in m.mons)
+        assert PL.stairs(g, D.DOWN, None) == 0 and g.pending['key'] == 'spirit_dig'
+        ctx = g.pending['ctx']
+        g.pending = None
+        EV.RESOLVERS['spirit_dig'](g, 'go', ctx)
+        assert site2.wrath and g.map.did == site2.below
+        dead = [o for o in g.map.mons if not o.is_npc]
+        assert all(o.awake for o in dead)
+        g.cur = site2.map_key
+        AU.on_barrow(g)
+        foe = next(o for o in g.map.mons if getattr(o, 'spirit', False))
+        assert not foe.is_npc and foe.wrath and foe.k == 'barrow_spirit'
+        g.compute_fov()
+        app.render()
+        AU.on_kill(g, foe)
+        assert site2.spirit_laid
+        # the lights fade, and a calm spirit with them
+        site3 = barrows[2] if len(barrows) > 2 else site
+        m = visit(site3)
+        assert any(getattr(o, 'spirit', False) for o in m.mons)
+        p.dbg.discard('aurora')
+        if not AU.lit(g):
+            AU.on_barrow(g)
+            assert not any(getattr(o, 'spirit', False) and o.is_npc for o in m.mons)
+        pickle.dumps(g)
+    finally:
+        AU.northern = north
+        DBG.ON = keep_on
+        p.dbg.discard('aurora')
+    print('northern lights ok:', len(stones), 'rune stones,', len(barrows), 'barrows, errands', sorted(subs))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

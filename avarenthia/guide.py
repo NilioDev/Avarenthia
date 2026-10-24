@@ -97,7 +97,8 @@ def signs(g):
 
 
 NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war camp', 'stones': 'Standing stones',
-              'wagon': 'Abandoned wagon', 'waystation': 'Waystation', 'milestone': 'Milestone'}
+              'wagon': 'Abandoned wagon', 'waystation': 'Waystation', 'milestone': 'Milestone',
+              'runestone': 'Rune stone'}
 
 
 # ------------------------------------------------------------------ first-time tips

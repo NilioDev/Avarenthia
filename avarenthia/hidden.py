@@ -18,9 +18,10 @@ from .world import scaled
 
 WAY_FG = (112, 132, 100)
 WAY_COST = 8                      # road 6, grass 10, forest 14
-SECRET_KINDS = ('waystation', 'vault', 'graveyard', 'smugglers', 'lostruin', 'milestone')
+SECRET_KINDS = ('waystation', 'vault', 'graveyard', 'smugglers', 'lostruin', 'milestone', 'runestone')
 POI_LOOK = {'waystation': ('Σ', (200, 196, 170)), 'vault': ('Φ', (150, 200, 190)), 'graveyard': ('┼', (170, 170, 180)),
-            'smugglers': ('δ', (190, 150, 110)), 'lostruin': ('Π', (150, 170, 140)), 'milestone': ('╥', (150, 160, 130))}
+            'smugglers': ('δ', (190, 150, 110)), 'lostruin': ('Π', (150, 170, 140)), 'milestone': ('╥', (150, 160, 130)),
+            'runestone': ('╨', (128, 132, 138))}
 VARNISH = ['Aes', 'Varn', 'Ithil', 'Oros', 'Caelum', 'Vess', 'Taur', 'Mor', 'Ennis', 'Halun', 'Serrat', 'Domna']
 VALLEY_NAMES = ['Hollowmere', 'Stillwater Vale', 'Elderhame', 'The Hidden Combe', 'Greystead', 'Lowfold', 'Wythcombe',
                 'Ashdene', 'Tarnholm']
@@ -195,6 +196,25 @@ def generate(game, m, world):
             ms = _make_poi(game, m, world, 'milestone', x, y, rnd)
             ms.way = wy.id
             taken.append((x, y))
+    # ---- rune stones in the cold north: plain rock by day; under the northern lights they glow and point the way
+    from . import weather as WX
+    leads = [wy for wy in world.ways if wy.kind in ('hidden', 'valley')]
+    stones = 0
+    for i in cells if leads else ():
+        if stones >= scaled(3):
+            break
+        x, y = i % w, i // w
+        if not (4 <= x < w - 4 and 4 <= y < m.h - 4) or i in world.way_of or i in getattr(world, 'wonder_cells', ()):
+            continue
+        t = m.tile(x, y)
+        if not D.TILES[t].walk or t in (ROAD, TOWN, CITY, RIVER, D.ENTR) or world.road_dist[i] < 4:
+            continue
+        if WX.climate(world, world.region_of[i]) != 'cold' or any(cheb(x, y, a, b) < 7 for a, b in taken):
+            continue
+        rs = _make_poi(game, m, world, 'runestone', x, y, rnd)
+        rs.points = min(leads, key=lambda wy: cheb(x, y, wy.cells[-1] % w, wy.cells[-1] // w)).id
+        taken.append((x, y))
+        stones += 1
     _glyphs(m, world)
 
 
@@ -219,7 +239,8 @@ def _make_poi(game, m, world, kind, x, y, rnd):
              'graveyard': lambda: rnd.choice(['The Forgotten Graveyard', 'The Field of Nameless Stones', 'The Legion Graves']),
              'smugglers': lambda: rnd.choice(["The Smugglers' Den", "Blackwater Hole", "The Moonrunners' Cave"]),
              'lostruin': lambda: f'{rnd.choice(["Lost", "Fallen", "Overgrown"])} {rnd.choice(["Fort", "Villa", "Temple"])} of {pick()}',
-             'milestone': lambda: 'A Varnish milestone'}
+             'milestone': lambda: 'A Varnish milestone',
+             'runestone': lambda: 'A rune stone'}
     poi = POI(len(world.pois), kind, x, y, names[kind]())
     poi.secret = True
     if kind in ('vault', 'graveyard', 'smugglers', 'lostruin'):
@@ -467,7 +488,25 @@ def make_map_item(game):
 # ------------------------------------------------------------------ the secret places
 def on_poi(game, poi):
     from .events import ask
+    from . import aurora as AU
     w = game.world
+    if poi.kind == 'runestone':
+        from .engine import dir_name
+        if not AU.lit(game):
+            game.request = ('dialog', poi.name, 'A grey standing stone, taller than you, worn smooth by the wind. If '
+                            'anything was ever cut into it, the weather has taken it.')
+            return True
+        wy = w.ways[poi.points]
+        om = game.maps['over']
+        end = wy.cells[-1]
+        text = ('Under the lights the stone is not plain at all. Runes you never saw glow blue-green down its face, and '
+                f'the last of them is an arrow: it points {dir_name(end % om.w - poi.x, end // om.w - poi.y)}, '
+                'to somewhere hidden.')
+        if wy.id not in known(game) or not set(stretch(wy, 0, .3)) <= seen_cells(game):
+            text += ' Where it points, a line of light runs a little way over the snow, then fades: an old way.'
+            discover_way(game, wy.id, 'The rune stone shows you an old way.', stretch(wy, 0, .3))
+        game.request = ('dialog', poi.name, text)
+        return True
     if poi.kind == 'milestone':
         wy = w.ways[poi.way] if getattr(poi, 'way', None) is not None else None
         other = random_unknown(game, (poi.x, poi.y))
@@ -484,6 +523,10 @@ def on_poi(game, poi):
             from .engine import dir_name
             text += (f' Below, half under the moss, a second line points {dir_name(near % om.w - poi.x, near // om.w - poi.y)}: '
                      'another way, somewhere out there.')
+            if AU.lit(game):
+                text += (' Under the lights, letters you could not see before glow along its edge, and you know where '
+                         'that way runs.')
+                discover_way(game, other.id, None, stretch(other, 0, .25))
         game.request = ('dialog', poi.name, text)
         return True
     if poi.kind == 'waystation':

@@ -15,7 +15,8 @@ ON = False                      # set once at start by main.py
 KEYS = deque(maxlen=200)        # the last keys pressed, for a bug report
 SLOTS = 3
 FLAGS = ('god', 'sight', 'ai', 'coords')
-FLAG_NAME = {'god': 'God mode', 'sight': 'Sight off', 'ai': 'AI state on look', 'coords': 'Coordinates in the status line'}
+FLAG_NAME = {'god': 'God mode', 'sight': 'Sight off', 'ai': 'AI state on look', 'coords': 'Coordinates in the status line',
+             'aurora': 'Northern lights in the sky'}
 
 
 def turn_on(argv=(), environ=None, here=None, frozen=False):

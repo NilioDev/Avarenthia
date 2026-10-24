@@ -61,6 +61,17 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **The goblin village** - the carved gate at the end of the ravine, the village, the deep halls, the chief's high
   seat, rousing in sync. Debug: Teleport (ravine).
 
+## The northern lights' gift (built 24 October 2026)
+
+- **Rune stones and milestones** - a rune stone unseen by day, found under the lights, glowing on the map; bumped, its
+  arrow and the first stretch of the way it shows; a milestone's extra line. Debug: "Northern lights in the sky" (N),
+  Teleport near one (cold lands).
+- **Frost and Storm** - a quarter cheaper under the lights. Debug: N, give a Frost tome, Ranks.
+- **Barrow spirits** - the spirit rising and fading with the lights, its mark, its errand (grave, sword, grave
+  robbers) and the hand-in at the barrow; the question at the way down; going down or robbing the bier, the angry
+  dead and the hostile spirit. Debug: N, Teleport to a barrow in the north.
+- **The glow** - blue-green round ghosts and their kin, red round fiends. Debug: N, Spawn a ghost or an imp.
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

@@ -134,13 +134,23 @@ def discover(game):
     The secret places of the old ways you only find by walking right up to them, or along their path."""
     w = game.world
     p = game.player
+    lights = None
     for poi in w.pois:
-        if getattr(poi, 'secret', False) and cheb(poi.x, poi.y, p.x, p.y) > 2:
+        if poi.kind == 'runestone' and not poi.found:
+            if lights is None:
+                from . import aurora as AU
+                lights = AU.lit(game)
+            if not lights:
+                continue                    # plain rock by day: only the northern lights show it
+        elif getattr(poi, 'secret', False) and cheb(poi.x, poi.y, p.x, p.y) > 2:
             continue
         if not poi.found and game.visible(poi.x, poi.y):
             poi.found = True
             xp = 3 + w.danger_at(poi.x, poi.y) * 2
-            game.msg(f'You discover {poi.name}! (+{xp} experience)', 'gold')
+            if poi.kind == 'runestone':
+                game.msg(f'Out in the dark a stone glows blue-green under the northern lights: a rune stone. (+{xp} experience)', 'gold')
+            else:
+                game.msg(f'You discover {poi.name}! (+{xp} experience)', 'gold')
             game.gain_xp(xp)
 
 

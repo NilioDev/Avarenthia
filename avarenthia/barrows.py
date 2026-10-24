@@ -359,6 +359,11 @@ def r_bier(game, choice, ctx):
         return
     m.bier_taken = True
     pe = m.barrow
+    dg = game.world.dungeons.get(m.did)
+    if dg is not None and getattr(dg, 'site', None) is not None:
+        from . import aurora as AU
+        AU.wake(game, game.world.sites[dg.site], 'Far above, out on the mound, a cold light flares: the spirit of the barrow '
+                'knows what you have done.')
     game.spill(m, x, y, Item(game.new_id(), 'gold', 'gold', purse(lvl, 6 if pe in ('kobold', 'dwarf') else 3)))
     game.spill(m, x, y, random_gear(game, lvl + 2, 2.0))
     if pe == 'gnome':
@@ -403,6 +408,8 @@ def _fall_through(game):
 
 
 def on_level(game, m, dg, depth):
+    from . import aurora as AU
+    AU.on_level(game, m, dg)
     if depth == 1 and getattr(m, 'mood_line', None):
         game.msg(m.mood_line, 'info')
     elif depth > 1:

@@ -63,6 +63,7 @@ from . import weaponskills as WS
 from . import classes as CL
 from . import trees as TT
 from . import arts as ART
+from . import aurora as AU
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -71,7 +72,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 39
+SAVE_VERSION = 40
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1148,6 +1149,8 @@ class Game:
             HL.on_step(self)
             if self.dead:
                 return 1
+        if getattr(m, 'place', None) == 'barrow':
+            AU.on_barrow(self)
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
         if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
@@ -2047,6 +2050,7 @@ class Game:
         if mon.tpl.get('boss'):
             EVL.on_kill(self, mon)
         JB.on_kill(self, mon)
+        AU.on_kill(self, mon)
 
     def capture_hold(self, hid):
         h = self.world.holds[hid]
@@ -3281,6 +3285,9 @@ class Game:
         if role == 'livestock':
             self.msg(random.choice([f'{npc.name} chews and ignores you.', f'{npc.name} looks at you with mild suspicion.',
                                     f'{npc.name} shuffles away.']))
+            return
+        if role == 'barrow_spirit':
+            AU.talk(self, npc)
             return
         if role == 'tower':
             self.say(npc, random.choice(['Climb the stairs to the top and you can see half the province.',

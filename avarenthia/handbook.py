@@ -498,6 +498,16 @@ def ch_land(g):
               'you have found: walk on one, hear a rumour, read an old map or buy a chart, or look out from the '
               'top of a tower. They are faster than open land and never patrolled. They lead over passes, to waystations '
               '{Σ}, a safe rest; milestones {╥}; sealed vaults {Φ}; forgotten graveyards; and into hidden valleys {•}.'),
+        ('h', 'The northern lights'),
+        ('p', 'On clear autumn and winter nights the northern lights hang over the cold lands. While they are in the '
+              'sky, the old magic stirs. Some grey stones out on the snow are rune stones {╨|110,235,210}: by day plain '
+              'rock, under the lights they glow and point to a hidden place, and a milestone shows more than it did. '
+              'Frost and Storm spells cost less mana.'),
+        ('p', 'Over the barrows of the north a spirit rises, a pale {G|191,238,232} in a wan blue-green light. Speak to it and it '
+              'asks one thing of you: an old grave set right, a lost sword brought back, a deed paid for. Then go back '
+              'to the barrow. Dig into its barrow under its eyes, or rob the bier, and the dead wake: their light burns '
+              'brighter and restless, and they come for you.'),
+        ('p', 'All ghostly things carry that cold light about them; fiends a faint red glow, like embers.'),
         ('h', 'Their own lands'),
         ('l', ['Halflings keep a green country of hills and hedges.',
                'Elven glades {♠} hide deep in the woods, off the map until you are close enough to see their lanterns. '

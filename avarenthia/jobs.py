@@ -1894,6 +1894,9 @@ def target_pos(game, m):
     if m.kind == 'realm':
         from . import realmjobs as RJ
         return RJ.target_pos(game, m)
+    if m.kind == 'spirit':
+        from . import aurora as AU
+        return AU.target_pos(game, m)
     if m.state == 'turnin' or (m.kind == 'starfall' and any(i.k == 'star' for i in game.player.inv)) or m.kind == 'gather':
         if m.hold is not None:
             h = w.holds[m.hold]
@@ -1995,6 +1998,9 @@ def on_fail(game, m):
     if m.kind == 'realm':
         from . import realmjobs as RJ
         RJ.on_fail(game, m)
+    if m.kind == 'spirit':
+        from . import aurora as AU
+        AU.on_fail(game, m)
     if m.kind == 'relic':
         dg = game.world.dungeons.get(m.data.get('dungeon'))
         if dg is not None and dg.relic == m.id:

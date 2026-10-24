@@ -342,6 +342,8 @@ def cost_of(game, sk):
     if pool(sk) == 'mana':
         from . import weaponskills as WS
         c *= WS.mana_mult(game)                     # a staff: spells cost less
+        from . import aurora as AU
+        c *= AU.mana_mult(game, sk)                 # Frost and Storm under the northern lights
         c *= 1 - sum(b[1] for b in game.player.buffs if b[0] == 'focus') / 100
     return max(1, round(c))
 

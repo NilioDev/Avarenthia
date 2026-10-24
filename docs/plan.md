@@ -18,7 +18,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is not |
-| **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
@@ -38,7 +37,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms. Built 24 October 2026 (see `docs/built.md`).
 6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows. Built 24 October 2026 (see `docs/built.md`).
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans. Built 24 October 2026 (see `docs/built.md`).
-8. **The northern lights' gift** (M): needs the barrows. Its light-feast moves to the feast days (round 20).
+8. **The northern lights' gift** (M): needs the barrows. Built 24 October 2026 (see `docs/built.md`); its light-feast moves to the feast days (round 20).
 9. **The Rift and the Ashen Deep** (L). 10. **The editor** (L; its controls are still to talk about, may come later).
    A pause after 5, 7 and 9; merge after 9 (the editor apart).
 11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
@@ -52,7 +51,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 17. **Cities that grew, part 1** (XL): human cities, the metropolis, canal and fortress towns, test `city_rules`. The
     bridges are not yet perfect (open.md, "City streets and bridges"); that does not hold this round up.
 18. **Part 2** (L): dwarf, halfling and orc towns, bridges on the open land. 19. **Round 6** (L): it lives in the new
-    city maps. 20. **Feast days** (L), with the light-feast. Pause after 17 and 19, merge after 20.
+    city maps. 20. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`). Pause after 17 and 19, merge after 20.
 21. **Old places part B and the 44 places of the peoples and powers** (XL). 22. **Places 45-64 and the seasonal
     places** (L). Merge after 22.
 After that: the great evils (open.md), then Multiplayer (parked).
@@ -133,23 +132,6 @@ The rest of the classes spec is built (see `docs/built.md`, "Classes, trees and 
     keep your colour). Six are drawn in `klassen/epics/epics.gif`; the rest follow the same hand.
   - **The handbook:** a few sentences in "Who you become": what an epic is, that it takes key 6 from the elite, how
     you find a teacher, once per rest; Phoenix's flames in "Fighting".
-
-## The northern lights' gift (approved 22 October 2026, not built)
-Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they
-give four things, only while they are in the sky:
-- **What only the light shows:** some old rune stones and marks of the old ways (`hidden.py`) are plain rock by day.
-  Under the lights they glow and point the way to a hidden place.
-- **Magic in the air:** Frost and Storm spells cost less mana under the lights.
-- **The barrow spirits:** at a barrow in the north a spirit rises under the lights. Talk to it once: it gives a
-  random job that leads somewhere (an old grave, a lost sword, a deed undone). Do not dig into or rob its barrow:
-  the dead wake, their glow turns brighter and restless, and they attack.
-- **The light-feast:** northern villages celebrate the first night of the lights: news, cheaper beds, a blessing at
-  their shrine.
-- **The glow (look):** a spirit is a pale `G` that flickers half there, with a wan blue-green glow on the tiles round
-  it and a faint wisp below; angry, the glow grows brighter and restless. The same glow goes on other ghostly
-  creatures (ghost, wraith and their kin), and fiends (the Rift's) get a faint red fire glow. Mockup: project files
-  `noorderlicht/spirit.gif` (`mockup_spirit.py`).
-- **Handbook:** a few sentences in the world chapter on the northern lights and the barrow spirits.
 
 ## Spell effects (approved; parts 1 and 2 built)
 

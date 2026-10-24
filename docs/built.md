@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast comes with the feast days |
 | **Built: abbeys, forts, manors and the underground kinds (24 Oct)** | Every people's abbey, fort and manor on its own land with floors above and cellars below; forts held, taken, empty or ruined, with their own ways in; caves, nests, dens and crypts shaped by whoever made them; the goblin hole and the goblin village |
 | **Built: the K5 maker (24 Oct)** | Classic dungeons grow from rooms of many shapes; 38 theme rooms drawn as pieces, each with one telling thing; rivers of water and fire underground; rock you can see; a mood line per room |
 | **Built: classes part 2, the trees (23 Oct)** | A tree per class, 3 branches of 6 passive knots, a point per 5 ranks, spent where you rested, a temple takes them back; the imbues; Nature's three shapes |
@@ -362,6 +363,18 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **The northern lights' gift** (24 October 2026; `aurora.py`). While the lights are in the sky (weather 'aurora',
+  or the debug toggle N): rune stones ╨ (a few per world, in the cold lands, `hidden.py`) are found only then, glow
+  on the map and, bumped, point to a hidden way's end and show its first stretch; a milestone shows the other way's
+  first stretch too. Frost and Storm cost a quarter less mana (`skills.cost_of`). At every northern barrow (at least
+  two per world: human barrows are added in the cold lands when too few stand there) a spirit rises as an NPC `G`
+  with a quest mark; talking once gives an errand (`spirit` job: set an old grave right, bring back a lost sword from
+  a dungeon, or kill the grave robbers), handed in back at the barrow, by day or night. Going down while it watches
+  asks first; going down anyway, or taking from a northern bier, wakes the dead (`site.wrath`): every dead below
+  awake and angry, and the spirit rises hostile on later nights until it is killed. Glow: blue-green round ghost,
+  wraith, banshee, shade, wight and the spirit (brighter and restless when angry, a wisp below), red round fiends.
+  Test `aurora`. SAVE_VERSION 40. Not as asked: the light-feast moved to the feast days (round 20, as the build
+  order says).
 - **Places on their own land, part 2** (24 October 2026; `halls.py`, `delves.py`, `gobvillage.py`). Every people
   has an abbey (Θ; the old human monasteries keep their place), a fort (╩) and a manor (Å), each its own plan as
   the spec says, on its own land: 100 x 60 for abbeys and forts, 80 x 50 for manors. Floors above for the human
@@ -380,6 +393,23 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## The northern lights' gift (built 24 October 2026; the spec)
+Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they
+give four things, only while they are in the sky:
+- **What only the light shows:** some old rune stones and marks of the old ways (`hidden.py`) are plain rock by day.
+  Under the lights they glow and point the way to a hidden place.
+- **Magic in the air:** Frost and Storm spells cost less mana under the lights.
+- **The barrow spirits:** at a barrow in the north a spirit rises under the lights. Talk to it once: it gives a
+  random job that leads somewhere (an old grave, a lost sword, a deed undone). Do not dig into or rob its barrow:
+  the dead wake, their glow turns brighter and restless, and they attack.
+- **The light-feast:** northern villages celebrate the first night of the lights: news, cheaper beds, a blessing at
+  their shrine.
+- **The glow (look):** a spirit is a pale `G` that flickers half there, with a wan blue-green glow on the tiles round
+  it and a faint wisp below; angry, the glow grows brighter and restless. The same glow goes on other ghostly
+  creatures (ghost, wraith and their kin), and fiends (the Rift's) get a faint red fire glow. Mockup: project files
+  `noorderlicht/spirit.gif` (`mockup_spirit.py`).
+- **Handbook:** a few sentences in the world chapter on the northern lights and the barrow spirits.
 
 ## The K5 maker (built 24 October 2026; the spec)
 - **The random maker for classic dungeons (K5, approved 22 October)**: the way of Brogue, in our style. The theme rooms come from the pieces; the rest stays random. Mockups `K5_ways_seed1-4`, script `mockups/mockup_brogue_v5.py`, notes `brogue.md` and `inspiratie.md`.

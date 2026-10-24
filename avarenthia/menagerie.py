@@ -78,6 +78,14 @@ NEW = {
                   does='Rules the dead of a barrow. Its touch drains your strength, and the dead fight harder near it.',
                   weak='Fire. Kill it first and the dead around it waver.',
                   home='The burial chambers of barrows.'),
+    'barrow_spirit': dict(ch='G', fg='#bfeee8', name='Barrow Spirit', family='undead', tags='spirit', min_l=6,
+                          hp=1.3, dmg=1.2, df=1.7, xp=2.6, fast=True, gender=None, noun='spirit',
+                          res=dict(cold=90, poison=100, lightning=25),
+                          looks=['A barrow spirit: a pale shape over its mound, half there, half not, a cold light round it.'],
+                          does='Rises over the barrows of the north under the northern lights. Left in peace it speaks; '
+                               'dig into its barrow or rob it and it turns on you, bright and restless.',
+                          weak='Hard to hit, like all the ghostly. Fire, and steady blows.',
+                          home='The barrows of the north, when the lights are in the sky.'),
     'vampire_spawn': dict(ch='V', fg='#c04050', name='Vampire Spawn', family='undead', tags='crypt barrow', min_l=10,
                           hp=1.5, dmg=1.3, df=1.4, xp=2.8, fast=True, leech=True, regen=True, beh='sunblind',
                           gender='mf', noun='vampire spawn', res=dict(cold=50, poison=100),
@@ -511,7 +519,7 @@ BEASTS = {'giant_hawk', 'brown_bear', 'cave_bear', 'boar', 'panther', 'snow_ape'
           'giant_frog', 'constrictor', 'cobra', 'vulture', 'badger', 'rhino', 'giant_crab', 'clawbeak', 'shimmercat',
           'octopus', 'wyvern', 'swamp_drake', 'frost_drake', 'basilisk', 'cockatrice', 'manticore', 'chimera'}
 UNDEAD = {'ghoul', 'ghast', 'skel_warrior', 'skel_mage', 'draugr', 'banshee', 'mummy', 'shade', 'wight', 'vampire_spawn',
-          'ghast_lord'}
+          'ghast_lord', 'barrow_spirit'}
 
 BIOME_ADD = {
     'grass': ['boar', 'vulture', 'cockatrice', 'scarecrow', 'burrowback', 'rhino'],

@@ -971,6 +971,9 @@ def shown(game):
         if omen:
             return omen
     kind = region_weather(game, rid)
+    from . import debug as DBG
+    if DBG.ON and DBG.has(game, 'aurora'):
+        return 'aurora'                        # the debug menu's northern lights: anywhere, at any hour
     if kind == 'clouds' and TW.is_night(game):
         kind = 'clear'                         # no cloud shadows without the sun
     if kind != 'clear':
