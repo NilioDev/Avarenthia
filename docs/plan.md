@@ -17,7 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: the epics** | 22 epic skills from hidden teachers, two per class, on key 6 instead of the elite (classes part 4, round 13). The rest of the classes is built |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
-| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is not |
+| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
@@ -38,8 +38,9 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows. Built 24 October 2026 (see `docs/built.md`).
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans. Built 24 October 2026 (see `docs/built.md`).
 8. **The northern lights' gift** (M): needs the barrows. Built 24 October 2026 (see `docs/built.md`); its light-feast moves to the feast days (round 20).
-9. **The Rift and the Ashen Deep** (L). Built 24 October 2026 (see `docs/built.md`). 10. **The editor** (L; its controls are still to talk about, may come later).
-   A pause after 5, 7 and 9; merge after 9 (the editor apart).
+9. **The Rift and the Ashen Deep** (L). Built 24 October 2026 (see `docs/built.md`). 10. ~~The editor~~: taken out of
+   the build order (Nilio, 24 October 2026: "pas voor veel later"); it waits in `docs/open.md`, "Dungeon editor".
+   A pause after 5, 7 and 9; merge after 9.
 11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
 12. **The Varnish** (XL): their cities and places, the hidden dungeons (need K5), the lore, the books, the riddles.
 13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. Pause after 12,
@@ -305,9 +306,7 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
 - **One telling thing per room** (a pool, a row of statues, an altar, a sarcophagus), always a tile used with one key or a bump.
 - **A mood line**: the first time you step into a room, the messages say what it is ("The nave. Rotten pews face a cracked altar.").
 - **Hand-drawn pieces** (the way of Dungeon Crawl Stone Soup): the format is built (24 October 2026; `pieces/README.txt`, `pieces.py`, see "The K5 maker" in `docs/built.md`). Left for the fixed plans: a kind's plan laid out first and its rooms filled with fitting pieces; unique places once per world.
-- **An editor for Nilio** (and others he explains it to), modelled on REXPaint: mouse and keyboard (the one place the mouse is welcome), the real tileset and joined walls, tools for a cell, line, rectangle, fill, copy and paste, undo and redo, colours to change, layers (ground, things, creatures, triggers), zoom; it knows the game's tiles, so a wall stays a wall; saves to the pieces file; a key to play-test the piece at once. It is a tool, not part of the game: it is not in the players' download, only in the test build (see "Debug menu and a test build" in `docs/built.md`) and from the source with a flag. The game loads only the pieces that come with the build: CI packs them into one file with a checksum and the game ignores a changed pack. (A determined player can always change a local single-player game; this only keeps casual meddling out.)
-- **Events in pieces**: the when / if / then rules are built in the pieces format (24 October 2026); the editor will offer them as lists in its trigger layer.
-- **How Nilio works with it**: the editor is its own program ("Avarenthia Editor", own icon, not in the players' download). New → kind of place → part; draw with the mouse; events from lists; Try puts your hero in the drawing at once; Save puts the file in "My pieces". He hands the file to Claude ("voeg toe"), it goes into the repo, CI packs and seals it, and the next build has it.
+- **Events in pieces**: the when / if / then rules are built in the pieces format (24 October 2026). The editor that would draw pieces waits, much later (`docs/open.md`).
 - **The random maker for classic dungeons (K5)** is built (24 October 2026, see "The K5 maker" in `docs/built.md`); the fixed plans set their theme rooms in their own spots.
 - **Settled 22 October.**
   - **Which places start outside:** the temple, abbey or monastery, tower, fort, manor and barrow. Caves, dens, nests and mines start straight underground.
@@ -321,7 +320,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
-- Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Cities that grew (approved 22 October 2026, not built)
 
@@ -591,6 +589,7 @@ doors shut at night, dogs, cats and livestock, job barks, hints, news through pe
 - **The bard** (the Lark's Company): see docs/parked.md. Not until Nilio says so.
 
 ## Later (not planned yet)
+- The dungeon editor (much later, after all open blocks; Nilio, 24 October 2026): see `docs/open.md`, "Dungeon editor".
 - Crafts guilds: smith and weaponsmith (mend and improve), herbalist, hunter-tanner (hides and trophies).
 - Leadership: more hirelings, a group buff. A house of your own, with taxes.
 - World ideas proposed with round 5 but not chosen: smoke over villages seen from afar, birds flushing from woods

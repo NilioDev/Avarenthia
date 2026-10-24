@@ -20,8 +20,12 @@ their own copy of the game (own screen, menus, handbook, settings), not a remote
 - Old code left as it is for now: about 30 things that belong to the player live on the game (where you are: `cur`, `over_pos`; the log, jobs,
   bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
 
-## Dungeon editor controls (parked, not urgent)
-Parked on 22 October 2026, for a separate thread later. What we know so far:
+## Dungeon editor (parked, much later)
+Out of the build order (Nilio, 24 October 2026: "editor komt nog helemaal niet, dat is pas voor veel later", not in
+any of the open blocks). What was approved on 22 October, kept here until it comes up again:
+- **An editor for Nilio** (and others he explains it to), modelled on REXPaint: mouse and keyboard (the one place the mouse is welcome), the real tileset and joined walls, tools for a cell, line, rectangle, fill, copy and paste, undo and redo, colours to change, layers (ground, things, creatures, triggers), zoom; it knows the game's tiles, so a wall stays a wall; saves to the pieces file; a key to play-test the piece at once. It is a tool, not part of the game: it is not in the players' download, only in the test build (see "Debug menu and a test build" in `docs/built.md`) and from the source with a flag. The game loads only the pieces that come with the build: CI packs them into one file with a checksum and the game ignores a changed pack. (A determined player can always change a local single-player game; this only keeps casual meddling out.)
+- **How Nilio works with it**: the editor is its own program ("Avarenthia Editor", own icon, not in the players' download). New → kind of place → part; draw with the mouse; events from lists; Try puts your hero in the drawing at once; Save puts the file in "My pieces". He hands the file to Claude ("voeg toe"), it goes into the repo, CI packs and seals it, and the next build has it.
+Its controls, as far as they were talked about:
 - **What it is:** its own program, "Avarenthia Editor", modelled on REXPaint; it comes with the test build ("Avarenthia (test)"), not with the players' download.
 - **Mouse and keyboard.** The mouse is welcome here, unlike in the game.
 - **Tools:** cell, line, rectangle, fill, copy and paste, undo and redo, change colour, zoom.
