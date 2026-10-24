@@ -6,6 +6,7 @@ import time
 
 from . import spellmap as SMAP
 from . import anim as AN
+from . import towers as TOW
 from . import debug as DBG
 from . import nature as NT
 from . import zones as ZN
@@ -679,13 +680,14 @@ class GameScreen(Screen):
         for it in m.items:
             items[(it.x, it.y)] = it
         torch = m.kind == 'siege'
-        lighting = m.kind == 'dungeon' or getattr(m, 'underground', False)
+        sky = getattr(m, 'sky', None) is not None         # up a tower: open air all round (towers.py)
+        lighting = (m.kind == 'dungeon' and not sky) or getattr(m, 'underground', False)
         lamps = {}
         if m.kind == 'town' and not lighting and TW.town_ambient(g, m) > 0:
             lighting = True                 # dusk and night in town: the street lamps light the way
             lamps = {xy: k for k, xy in enumerate(getattr(m, 'lamps', ()))}
         lmap = DR.light_map(m) if lighting else None
-        torchlit = m.kind == 'dungeon' or getattr(m, 'underground', False)
+        torchlit = lighting
         deco = getattr(m, 'deco', None)
         trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
         night = TW.is_night(g)
@@ -715,6 +717,7 @@ class GameScreen(Screen):
         # fire beetles and ember spiders light the dark around them
         glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
                  and not getattr(o, 'lurk', False)]
+        birds = {(x, y): (ch, col) for x, y, ch, col in TOW.sky(m, t, night)} if sky else None
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -728,6 +731,11 @@ class GameScreen(Screen):
                 if not v and not m.seen[i]:
                     continue
                 ch, fg, bg = LOOK.get(m, i)
+                if sky and m.t[i] == D.AIR:
+                    ch, fg, bg = TOW.air_look(g, m, i)
+                    if birds and (mx, my) in birds:
+                        ch, fg = birds[(mx, my)]
+                        self.moving = True
                 if season:
                     ch, fg, bg = SE.look(g, m, i, (ch, fg, bg), season, t)
                     if fires and v and i in fires:
@@ -855,7 +863,7 @@ class GameScreen(Screen):
                 elif not lighting:
                     fg = scale(fg, .3)
                     bg = scale(bg, .55)
-                if night and m.kind in ('over', 'town') and not lighting:
+                if night and (m.kind in ('over', 'town') or sky) and not lighting:
                     fg = mix(fg, (40, 50, 110), .35)
                     bg = scale(bg, .7)
                 if inline:
@@ -2368,7 +2376,7 @@ class TravelScreen(Modal):
             if g.has_visited('site', st.id):
                 out.append(('site', st.id, st.name, st.kind, st.x, st.y))
         for d in g.world.dungeons.values():
-            if g.has_visited('d', d.id) and getattr(d, 'town', None) is None:
+            if g.has_visited('d', d.id) and getattr(d, 'town', None) is None and getattr(d, 'site', None) is None:
                 out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
         out.sort(key=lambda r: cheb(r[4], r[5], ox, oy))
         self.origin = (ox, oy)
@@ -4017,7 +4025,7 @@ class WorldMapScreen(Modal):
             if g.has_visited('site', st.id) and st is not site:
                 out.append(('site', st.id, st.name, st.kind, st.x, st.y))
         for d in g.world.dungeons.values():
-            if g.has_visited('d', d.id) and getattr(d, 'town', None) is None:
+            if g.has_visited('d', d.id) and getattr(d, 'town', None) is None and getattr(d, 'site', None) is None:
                 out.append(('d', d.id, d.name, 'dungeon', d.x, d.y))
         out.sort(key=lambda r: cheb(r[4], r[5], ox, oy))
         return [r for r in out if (r[4], r[5]) != (ox, oy)]

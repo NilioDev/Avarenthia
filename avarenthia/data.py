@@ -178,6 +178,24 @@ TILES = [
     Tile('×', '#d8d8d8', True, False, 'web'),
     Tile('∩', '#a8a4b8', False, False, 'old stone arch', bg='#1c1a26'),
     Tile('ƒ', '#7ad08a', False, False, 'alchemy bench', bg='#14261a'),
+    # places on their own land: temples, towers, barrows (places.py, towers.py, temples.py, barrows.py)
+    Tile('■', '#b8b2a6', False, False, 'parapet'),
+    Tile('|', '#9a958c', False, True, 'arrow slit'),
+    Tile('.', '#5f5a52', True, False, 'floor'),                         # a loose flagstone: floor until you know
+    Tile('╤', '#c8a878', False, False, 'bolt thrower'),
+    Tile('♫', '#c89060', False, False, 'war drum', bg='#2a1a0c'),
+    Tile('ⁿ', '#e8e0c8', False, False, 'bone horn'),
+    Tile('Ω', '#e0c060', False, False, 'bell', bg='#2a2010'),
+    Tile('╥', '#a07848', False, False, 'pew'),
+    Tile('○', '#c8c2b4', False, True, 'pillar', bg='#2a2824'),
+    Tile('♦', '#9af0ff', False, False, 'glowing crystal', bg='#10283a'),
+    Tile('¥', '#c0a060', False, False, 'idol of junk', bg='#2a2010'),
+    Tile('≈', '#d03030', False, False, 'blood pit', bg='#3a0806'),
+    Tile('%', '#e8e0cc', False, False, 'heap of bones', bg='#2a2620'),
+    Tile('Π', '#b4b0a4', False, False, 'standing stone', bg='#22201c'),
+    Tile('#', '#6a9a50', False, True, 'ivy on old stone', bg='#1a2614'),
+    Tile('#', '#a8b070', False, True, 'wall of woven reeds', bg='#262a14'),
+    Tile('·', '#e8eae0', True, False, 'white stone path'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -190,6 +208,8 @@ SNARE, CALTROPS, RUNE, GATE, SMOKE = range(122, 127)      # the tiles of Cunning
 CRUST, LAVA = 127, 128                      # a river of fire and the cooled crust over it (underground.py)
 (SECRET, VAULTDOOR, PLINTH, MIRROR, GONG, LEVER, DUMMY, CIRCLE, WARD, BIER, REMAINS, DICE, GEARS, BARS, MAPTABLE, WEB, ARCH,
  ALCHEMY) = range(129, 147)                 # the telling things of the theme rooms (themes.py)
+(PARAPET, SLIT, LOOSE, BOLTS, DRUM, HORN, BELL, PEW, PILLAR, CRYSTAL, IDOL, BLOODPIT, BONES, STONE, IVY,
+ REEDS, WHITE) = range(147, 164)            # places on their own land: temples, towers, barrows
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

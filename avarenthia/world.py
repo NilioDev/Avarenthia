@@ -167,7 +167,7 @@ class World:
 
     def dungeon_at(self, x, y):
         for d in self.dungeons.values():
-            if d.x == x and d.y == y and getattr(d, 'town', None) is None:
+            if d.x == x and d.y == y and getattr(d, 'town', None) is None and getattr(d, 'site', None) is None:
                 return d
         return None
 
@@ -384,6 +384,8 @@ def gen_world(game):
         LANDS.place_sites(game, m, world, reach_set)
         from . import nature as NT
         NT.place(game, m, world, reach_set)
+        from . import places as PL
+        PL.place(game, m, world, reach_set)
         progress(.8, 'Crowning the kings')
         from . import realms as RL
         RL.generate(game, m, world)

@@ -148,7 +148,7 @@ def next_dungeon(game, wd):
     from .world import dijkstra_path
     w, om = game.world, game.maps['over']
     cands = [d for d in w.dungeons.values() if not getattr(d, 'rivals', None) and getattr(d, 'mine', None) is None
-             and not getattr(d, 'hidden', False) and 15 < cheb(d.x, d.y, wd.x, wd.y) < 90
+             and not getattr(d, 'hidden', False) and getattr(d, 'site', None) is None and 15 < cheb(d.x, d.y, wd.x, wd.y) < 90
              and game.max_depth.get(d.id, 0) == 0]
     if not cands:
         return

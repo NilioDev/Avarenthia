@@ -41,6 +41,10 @@ from . import tribes as TR
 from . import deephold as DH
 from . import underground as UG
 from . import themes as TH
+from . import places as PL
+from . import towers as TOW
+from . import temples as TPL
+from . import barrows as BR
 from . import jobs as JB
 from . import lands as LN
 from . import seasons as SE
@@ -67,7 +71,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 37
+SAVE_VERSION = 38
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -522,6 +526,9 @@ class Game:
             lm = DR.light_map(m)
             amb = m.ambient
             self.vis = bytearray(1 if (near[i] or (far[i] and lm[i][0] > amb[0] + .18)) else 0 for i in range(len(far)))
+        elif getattr(m, 'sky', None) is not None:
+            # up a tower: by day you see far over the air; beside an arrow slit, out of it too
+            self.vis = TOW.fov(self, m, BH.sight(self, 9 if TW.is_night(self) else m.radius))
         else:
             self.vis = fov.compute(m, p.x, p.y, r)
         if m.kind == 'dungeon':
@@ -625,15 +632,19 @@ class Game:
         self.cur = key
         p.x = p.y = -5
         made = key not in self.maps
+        rise = getattr(dg, 'rise', False)               # the floors of a tower (towers.py)
+        if key not in self.maps and rise:
+            self.maps[key] = W.gen_dungeon(self, did, depth)
         if key not in self.maps:
             self.maps[key] = W.gen_dungeon(self, did, depth)
             LV.on_dungeon_level(self, dg, self.maps[key], depth)
             if getattr(dg, 'mine', None) is not None:
                 DH.dress_mine(self, self.maps[key], dg, depth)
             from . import chronicle as CH
-            CH.place_stone(self, self.maps[key], dg, depth)
-            CH.maybe_book(self, self.maps[key], dg, depth)
-            if depth == 1 and getattr(dg, 'mine', None) is None:
+            if not rise:
+                CH.place_stone(self, self.maps[key], dg, depth)
+                CH.maybe_book(self, self.maps[key], dg, depth)
+            if depth == 1 and getattr(dg, 'mine', None) is None and getattr(dg, 'site', None) is None:
                 CH.seen_place(self, f'dg:{did}', dg.name, f'You went down into {dg.name}.', (dg.x, dg.y))
             if depth == dg.depth and getattr(dg, 'poi', False):
                 from .entities import make_tome
@@ -659,10 +670,20 @@ class Game:
             self.max_depth[did] = depth
         NM.on_enter_level(self, m)
         JB.on_level(self, did, depth)
-        self.msg(f"{m.name if getattr(dg, 'mine', None) is not None else dg.name}, level {depth}.", 'info')
+        if rise:
+            self.msg(f'{m.name}: {floor_name(depth, dg.depth)}.', 'info')
+        else:
+            self.msg(f"{m.name if getattr(dg, 'mine', None) is not None else dg.name}, level {depth}.", 'info')
         DH.on_level(self, m, made)
         lair = next((e for e in self.world.evils if e.did == did and not e.known), None)
-        if first and depth == dg.depth:
+        site = self.world.sites[dg.site] if getattr(dg, 'site', None) is not None else None
+        if rise:
+            TOW.on_level(self, m, dg)
+        elif getattr(m, 'barrow', None) or (site and site.kind == 'barrow'):
+            BR.on_level(self, m, dg, depth)
+        elif site and site.kind == 'temple':
+            TPL.on_level(self, m, dg, depth)
+        elif first and depth == dg.depth:
             self.msg('An evil presence fills the air. This is the deepest level.', 'bad')
         self.compute_fov()
         self.request = ('save',)
@@ -813,6 +834,11 @@ class Game:
             self.over_pos = (p.x, p.y)
         if TR.is_camp(site) and TR.stale(self, site):
             self.maps.pop(site.map_key, None)          # the camp has calmed down and rebuilt what you broke
+        if PL.is_place(site) and site.map_key in self.maps and PL.stale(self, site, self.maps[site.map_key]):
+            self.maps.pop(site.map_key, None)          # friends now, or foes: they meet you differently
+            fl = getattr(site, 'floors', None)
+            for k in [k for k in self.maps if fl and k.startswith(f'{fl}:')]:
+                del self.maps[k]
         if site.map_key not in self.maps:
             self.maps[site.map_key] = ST.gen_site_map(self, site)
         self.cur = site.map_key
@@ -825,6 +851,8 @@ class Game:
         LN.on_enter(self, site, m)
         if NT.is_nature(site):
             NT.on_enter(self, site, m)
+        if PL.is_place(site):
+            PL.on_enter(self, site, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -1016,6 +1044,10 @@ class Game:
             if why:
                 self.msg(why, 'info')
                 return 0
+        if getattr(m, 'bar', None) and (nx, ny) in m.bar:
+            spent = PL.barred(self, nx, ny)
+            if spent is not None:
+                return spent
         if t == DOOR:
             m.set(nx, ny, ODOOR)
             return 1
@@ -1023,6 +1055,16 @@ class Game:
             self.msg('The door is too small for you. Only a gnome could get through it.')
             return 0
         if not D.TILES[t].walk:
+            if t == D.AIR and getattr(m, 'sky', None) is not None:
+                return TOW.edge(self, nx, ny)
+            if getattr(m, 'barrow', None):
+                spent = BR.bump(self, nx, ny)
+                if spent is not None:
+                    return spent
+            if getattr(m, 'place', None) or getattr(m, 'sky', None) is not None:
+                spent = PL.bump(self, nx, ny)
+                if spent is not None:
+                    return spent
             if getattr(m, 'things', None) is not None:
                 spent = TH.bump(self, nx, ny)
                 if spent is not None:
@@ -1095,6 +1137,8 @@ class Game:
             DH.on_step(self)
         if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
             TH.on_step(self)
+        if m.kind == 'dungeon' and m.t[ny * m.w + nx] == D.LOOSE:
+            PL.loose_step(self)
         if getattr(m, 'nature', None):
             NT.on_step(self)
         if zone and ZN.after_move(self):
@@ -1348,15 +1392,15 @@ class Game:
                 return 1
             self.msg('There is nothing to enter here.')
             return 0
+        got = PL.stairs(self, t, d) if t in (UP, DOWN) else None
+        if got is not None:
+            return got
         if t in (UP, DOWN) and getattr(m, 'tree', None) is not None and d != ('down' if t == UP else 'up'):
             FK.climb(self, t == UP)
             return 1
         if t == DOWN and d != 'up':
             self.enter_dungeon(m.did, m.depth + 1, 'up')
             return 1
-        if t == UP and getattr(m, 'site', None) is not None:
-            ST.climb_tower(self)
-            return 5
         if t == UP and d != 'down':
             dg = self.world.dungeons.get(m.did)
             if m.depth == 1 and getattr(dg, 'town', None) is not None:
@@ -2546,7 +2590,8 @@ class Game:
         here = self.world.settlements[self.home] if self.home is not None else None
         ox, oy = self.over_pos if self.cur != 'over' else (p.x, p.y)
         temples = [st for st in self.world.settlements if 'temple' in st.services] + \
-            [st for st in getattr(self.world, 'sites', []) if st.kind in ('temple', 'monastery')]
+            [st for st in getattr(self.world, 'sites', []) if st.kind in ('temple', 'monastery')
+             and PL.people_of(st) not in PL.HOSTILE]
         dest = min(temples, key=lambda st: cheb(st.x, st.y, ox, oy)) if temples else here
         s = self.stats()
         p.life, p.mana, p.stamina = max(1, s['max_life'] // 2), s['max_mana'] // 2, s['max_stamina'] // 2
@@ -3432,7 +3477,18 @@ class Game:
             f = D.FACTIONS[s.faction]['short']
             return (f"There is a {kind} called {s.name} to the {dir_name(s.x - ox, s.y - oy)}, "
                     f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land.")
+        if r < .45:
+            line = PL.rumour(self)
+            if line:
+                return line
         return LORE.hint(self)
+
+
+def floor_name(depth, top):
+    """A tower's floors: the first floor, the second floor ... and the top."""
+    if depth == top:
+        return 'the top'
+    return f"the {('first', 'second', 'third', 'fourth', 'fifth', 'sixth')[min(depth, 6) - 1]} floor"
 
 
 # ---------------------------------------------------------------- saving

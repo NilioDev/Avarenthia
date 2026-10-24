@@ -33,6 +33,20 @@ Each line: **what** - what to check - what the debug menu should offer.
   question, the burn, shoving a foe in; the crossings. Debug: "a river of water" or "a river of fire" (z).
 - **Rock you can see, mood lines of plain rooms, sizes** - walk any classic dungeon. Debug: Teleport to a dungeon.
 
+## Places on their own land, part 1 (built 24 October 2026)
+
+- **Temples of every people** - the walk in, the warden who stops a stranger, pushing past (a crime), the altar, each
+  people's telling things (bell, gong, moonwell, idol, blood pit...), the deep place below. Debug: Teleport (temple
+  and its people); Standing (f) to be a friend or a stranger.
+- **The older bottom** - the tale, the loose flagstone on the last level, the ring of stones and the Old Warden.
+  Debug: "Hear the tale of an older place" (T), then Teleport to a temple marked "older below".
+- **Towers** - every people's floors, the stair a quarter turn on, the haze and shadow below, a slit on lower floors,
+  the lookout on top by day and by night, in fog. Debug: Teleport (tower and its people), Time, Weather.
+- **Fallen towers, edges and falls** - half fallen and ruin, the question at an edge, a fall by floors, a foe thrown
+  over by a shove. Debug: Teleport (tower, half or ruin); Spawn a creature beside an edge.
+- **Barrows** - each people's barrow, its twist (false tomb, hidden door, the kobolds' floor, the pool), the bier and
+  its king. Debug: Teleport (barrow and its people).
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

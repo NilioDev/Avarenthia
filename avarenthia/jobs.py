@@ -511,7 +511,8 @@ def _bigone(game, s):
 def _deep(game, s):
     w = game.world
     ds = [d for d in w.dungeons.values() if d.depth >= 2 and d.id != 'den' and game.max_depth.get(d.id, 0) < d.depth
-          and cheb(d.x, d.y, s.x, s.y) <= 80 and getattr(d, 'town', None) is None and not taken(game, 'did', d.id)]
+          and cheb(d.x, d.y, s.x, s.y) <= 80 and getattr(d, 'town', None) is None and not getattr(d, 'rise', False)
+          and not taken(game, 'did', d.id)]
     if not ds:
         return None
     d = random.choice(ds)

@@ -62,6 +62,18 @@ def to_over(g, sid=0):
     g.compute_fov()
 
 
+def climb(g, site):
+    """Enter a tower and take every stair up to the top; returns the floors climbed."""
+    g.enter_site(site.id)
+    k = 0
+    while D.UP in g.map.t:
+        i = g.map.t.index(D.UP)
+        g.player.x, g.player.y = i % g.map.w, i // g.map.w
+        g.use_stairs('up')
+        k += 1
+    return k
+
+
 def smoke(games=9, steps=1200):
     for gi in range(games):
         app = new_app('hard' if gi % 2 else 'soft')
@@ -795,13 +807,10 @@ def countryside():
     app.after_action()
     app.key('esc')
     assert 'healing' in p.recipes
-    tower = next(st for st in g.world.sites if st.kind == 'watchtower')
-    g.enter_site(tower.id)
-    i = g.map.t.index(D.UP)
-    p.x, p.y = i % g.map.w, i // g.map.w
+    tower = next(st for st in g.world.sites if st.kind == 'tower' and st.people == 'human' and getattr(st, 'state', 'whole') == 'whole')
     om = g.maps['over']
     before = sum(om.seen)
-    g.use_stairs('up')
+    assert climb(g, tower) >= 2
     assert sum(om.seen) > before
     # forage in the woods until something is found, taste it
     g.leave_to_over()
@@ -1130,11 +1139,11 @@ def ways_and_wares():
     i = next(iter(om.main_road))
     assert LK.get(om, i)[0] in '═║╔╗╚╝╠╣╦╩╬╪╫', LK.get(om, i)
     # a watchtower: a circle, and mountains block the view
-    tw = next(q for q in w.sites if q.kind == 'watchtower')
-    g.enter_site(tw.id)
+    tw = next(q for q in w.sites if q.kind == 'tower' and q.people == 'human' and getattr(q, 'state', 'whole') == 'whole')
     before = sum(om.seen)
-    ST2.climb_tower(g)
-    assert 0 < sum(om.seen) - before <= 3.3 * 10 * 10 + 30
+    climb(g, tw)
+    r = 10 + round((tw.storeys - 3) * 4 / 3) + 4
+    assert 0 < sum(om.seen) - before <= 3.3 * r * r + 30
     g.request = None
     # Tab picks targets, Esc lets go, then opens the menu
     app.screens = [ui.GameScreen(app)]
@@ -5239,11 +5248,181 @@ def k5():
     print('k5 ok:', len(middle), 'theme rooms, rivers of water and fire')
 
 
+def places():
+    """Temples, towers and barrows of every people on their own land: every stair can be reached and leads somewhere,
+    the guard stops a stranger, the top of a tower shows the land, the edge asks before you fall, the bier wakes its
+    king, and the loose flagstone at the bottom of a temple lifts when you know the tale."""
+    from avarenthia import places as PL, towers as TOW, crime as CR, events as EV
+    from avarenthia.entities import make_monster
+    from collections import Counter, deque
+    import pickle
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    kinds = Counter((s.kind, PL.people_of(s)) for s in w.sites if PL.is_place(s))
+    for pe in PL.PEOPLES:
+        assert kinds[('temple', pe)] >= 1, ('temple', pe)
+    for pe in ('human', 'elf', 'dwarf', 'orc', 'goblin', 'kobold', 'gnoll', 'lizard'):
+        assert kinds[('tower', pe)] >= 1, ('tower', pe)
+    assert sum(v for (k, _pe), v in kinds.items() if k == 'barrow') >= 6, kinds
+    assert not any(s.kind == 'watchtower' for s in w.sites)
+
+    def reach(m, start):
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                c = (x + dx, y + dy)
+                if c not in seen and m.inb(*c) and (D.TILES[m.tile(*c)].walk or m.tile(*c) in (D.DOOR, D.SECRET)):
+                    seen.add(c)
+                    q.append(c)
+        return seen
+
+    done = set()
+    for s in w.sites:
+        tag = (s.kind, PL.people_of(s), getattr(s, 'state', '') if s.kind == 'tower' else '')
+        if not PL.is_place(s) or tag in done:
+            continue
+        done.add(tag)
+        to_over(g, 0)
+        p.x, p.y = s.x, s.y
+        g.over_pos = (s.x, s.y)
+        g.enter_site(s.id)
+        m = g.map
+        app.render()
+        got = reach(m, m.entry)
+        for t in (D.UP, D.DOWN):
+            for i in [i for i, v in enumerate(m.t) if v == t]:
+                assert (i % m.w, i // m.w) in got, (tag, t)
+        for t, d in ((D.UP, 'up'), (D.DOWN, 'down')):
+            if t not in m.t:
+                continue
+            g.cur = s.map_key
+            i = m.t.index(t)
+            p.x, p.y = i % m.w, i // m.w
+            g.use_stairs(d)
+            assert g.map is not m, (tag, d)
+            app.render()
+            for _ in range(8):                          # all the way up, or all the way down
+                mm = g.map
+                if t not in mm.t or (d == 'down' and mm.kind != 'dungeon'):
+                    break
+                i = mm.t.index(t)
+                p.x, p.y = i % mm.w, i // mm.w
+                g.use_stairs(d)
+                app.render()
+            pickle.dumps(g.map)
+            back = {D.UP: D.DOWN, D.DOWN: D.UP}[t]      # and the way back leads home
+            for _ in range(10):
+                mm = g.map
+                if mm.key == s.map_key or back not in mm.t:
+                    break
+                i = mm.t.index(back)
+                p.x, p.y = i % mm.w, i // mm.w
+                g.use_stairs('down' if d == 'up' else 'up')
+            assert g.cur == s.map_key, (tag, d, g.cur)
+        print('  ', *tag, 'ok')
+    # a stranger is stopped by the warden; pushing past is a crime
+    tem = next(q for q in w.sites if q.kind == 'temple' and q.people in ('elf', 'dwarf', 'gnome', 'halfling'))
+    to_over(g, 0)
+    g.enter_site(tem.id)
+    m = g.map
+    assert m.bar, 'a warden'
+    cell, need = next(iter(m.bar.items()))
+    real = PL.tier
+    PL.tier = lambda game, site: 0
+    try:
+        assert PL.barred(g, *cell) == 0 and g.pending and g.pending['key'] == 'place_bar'
+        heat = CR.max_heat(g)
+        EV.resolve(g, 'force')
+        assert m.forced and CR.max_heat(g) >= heat
+        assert PL.barred(g, *cell) is None
+    finally:
+        PL.tier = real
+    # the top of a tower: the land below, the edge asks first, and the fall hurts by the floors
+    tw = next(q for q in w.sites if q.kind == 'tower' and q.people == 'human' and getattr(q, 'state', 'whole') == 'whole')
+    to_over(g, 0)
+    om = g.maps['over']
+    for i in range(len(om.seen)):                       # forget the land round it, seen on the walk above
+        if cheb(i % om.w, i // om.w, tw.x, tw.y) <= 8:
+            om.seen[i] = 0
+    before = sum(om.seen)
+    floors = climb(g, tw)
+    assert floors >= 2, floors
+    assert sum(om.seen) > before, 'the lookout marks the land'
+    m = g.map
+    assert m.sky == tw.id
+    air = next(((i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.AIR
+                and any(D.TILES[m.t[j]].walk for j in (i + 1, i - 1, i + m.w, i - m.w) if 0 <= j < len(m.t))), None)
+    if air is None:                                     # a whole top has its parapet all round: break a gap in it
+        i = next(i for i, t in enumerate(m.t) if t == D.PARAPET
+                 and any(D.TILES[m.t[j]].walk for j in (i + 1, i - 1, i + m.w, i - m.w))
+                 and any(m.t[j] == D.AIR for j in (i + 1, i - 1, i + m.w, i - m.w)))
+        m.t[i] = D.AIR
+        air = (i % m.w, i // m.w)
+    p.x, p.y = next((air[0] + dx, air[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                    if D.TILES[m.tile(air[0] + dx, air[1] + dy)].walk)
+    m.mons[:] = []
+    g.compute_fov()
+    life = p.life
+    g.try_move(air[0] - p.x, air[1] - p.y)
+    assert g.pending and g.pending['key'] == 'tower_edge'
+    EV.resolve(g, 'bye')
+    assert g.map is m and p.life == life
+    g.try_move(air[0] - p.x, air[1] - p.y)
+    EV.resolve(g, 'jump')
+    assert g.map is not m and p.life < life, 'over the edge'
+    p.life = g.stats()['max_life']
+    g.request = None
+    # a foe shoved over the edge falls away
+    g.cur = m.key
+    o = make_monster(g, 'goblin', *air, 2)
+    m.mons.append(o)
+    TOW.shove_over(g, o, *air)
+    assert o not in m.mons
+    # the bier wakes its king
+    br = next(q for q in w.sites if q.kind == 'barrow' and q.people == 'human')
+    to_over(g, 0)
+    g.enter_site(br.id)
+    i = g.map.t.index(D.DOWN)
+    p.x, p.y = i % g.map.w, i // g.map.w
+    g.use_stairs('down')
+    m = g.map
+    bx, by = m.bier
+    m.mons[:] = []
+    spot = next((bx + dx, by + dy) for dx, dy in ((-1, 0), (1, 0), (0, 1), (0, -1)) if D.TILES[m.tile(bx + dx, by + dy)].walk)
+    p.x, p.y = spot
+    g.compute_fov()
+    g.try_move(bx - p.x, by - p.y)
+    assert g.pending and g.pending['key'] == 'barrow_bier'
+    EV.resolve(g, 'take')
+    assert m.bier_taken and any(o.name for o in m.mons if not o.is_npc), 'the king rises'
+    pickle.dumps(m)
+    # the hidden bottom of a temple: a tale tells of it, the loose flagstone lifts, the older place lies under it
+    old = PL.hidden_temples(g)
+    if old:
+        q = old[0]
+        p.old_bottoms = {q.id}
+        dg = w.dungeons[q.below]
+        g.enter_dungeon(dg.id, dg.depth, 'up')
+        m = g.map
+        assert D.LOOSE in m.t
+        i = m.t.index(D.LOOSE)
+        p.x, p.y = i % m.w, i // m.w
+        PL.loose_step(g)
+        assert m.tile(p.x, p.y) == D.DOWN and m.ancient
+        g.use_stairs('down')
+        assert g.map.depth == dg.depth + 1 and any(o.name == 'The Old Warden' for o in g.map.mons)
+        pickle.dumps(g.map)
+    print('places ok:', len(done), 'kinds of place,', sum(kinds.values()), 'in the world,', len(old), 'over older places')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

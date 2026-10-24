@@ -151,7 +151,7 @@ def hint_dungeon(game):
     from .engine import dir_name
     ox, oy = _origin(game)
     om = game.maps['over']
-    cands = [d for d in game.world.dungeons.values() if not d.main and not om.seen[d.y * om.w + d.x]
+    cands = [d for d in game.world.dungeons.values() if not d.main and not om.seen[d.y * om.w + d.x] and getattr(d, 'site', None) is None
              and cheb(d.x, d.y, ox, oy) < 45]
     if not cands:
         return None

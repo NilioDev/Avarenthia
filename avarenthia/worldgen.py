@@ -232,14 +232,24 @@ def gen_k5(m):
 def gen_dungeon(game, did, depth):
     from . import k5
     d = game.world.dungeons[did]
+    styles = getattr(d, 'styles', None)
+    style = styles[min(depth, len(styles)) - 1] if styles else d.style
+    if depth > d.depth:
+        style = 'cave'                          # the older bottom a temple was built over (places.py)
+    if style == 'tower':
+        from . import towers as TOW
+        return TOW.floor_map(game, d, depth)
+    if style == 'barrow':
+        from . import barrows as BR
+        return BR.level(game, d, depth)
     lvl = d.base + depth
-    last = depth == d.depth
-    dw, dh = k5.SIZES['small' if d.tag == 'den' else 'large']
-    m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if d.style == 'cave' else WALL)
+    last = depth >= d.depth
+    dw, dh = k5.SIZES[getattr(d, 'size', None) or ('small' if d.tag == 'den' else 'large')]
+    m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if style == 'cave' else WALL)
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
-    m.dtag, m.last = d.tag, last
+    m.dtag, m.last, m.style = d.tag, last, style
     m.mine_rock = d.tag == 'deep' or did == 'mine'           # now and then a glint of ore in the rock
-    if d.style == 'cave':
+    if style == 'cave':
         gen_cave(m)
         floors = [i for i, t in enumerate(m.t) if t == FLOOR]
         s = random.choice(floors)
@@ -300,6 +310,12 @@ def gen_dungeon(game, did, depth):
     if getattr(m, 'things', None) is not None:
         from . import themes as TH
         TH.setup(game, m, lvl)
+    if getattr(d, 'site', None) is not None and getattr(d, 'older', False):
+        from . import places as PL
+        if depth == d.depth:
+            PL.bottom(game, m, d)               # the way on lies under a loose flagstone
+        elif depth > d.depth:
+            PL.ancient(game, m, d)
     return m
 
 

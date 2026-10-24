@@ -244,7 +244,8 @@ def lead_place(game):
     """A tomb, a ruin or an old place the book names that you do not know yet."""
     om = game.maps['over']
     w = game.world
-    cands = [(d.name, d.x, d.y) for d in w.dungeons.values() if not om.seen[d.y * om.w + d.x] and getattr(d, 'mine', None) is None]
+    cands = [(d.name, d.x, d.y) for d in w.dungeons.values() if not om.seen[d.y * om.w + d.x] and getattr(d, 'mine', None) is None
+             and getattr(d, 'site', None) is None]
     return random.choice(cands) if cands else None
 
 

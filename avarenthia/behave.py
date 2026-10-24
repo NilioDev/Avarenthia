@@ -441,6 +441,10 @@ def push(game, mon):
     moved = 0
     for _ in range(2):
         nx, ny = p.x + dx, p.y + dy
+        if m.inb(nx, ny) and m.tile(nx, ny) == D.AIR and getattr(m, 'sky', None) is not None:
+            from . import towers as TOW
+            TOW.thrown(game, nx, ny)                        # knocked off a tower
+            return
         if not m.inb(nx, ny) or not D.TILES[m.tile(nx, ny)].walk or game.occupied(m, nx, ny):
             if not (m.inb(nx, ny) and D.TILES[m.tile(nx, ny)].walk):
                 game.msg('You slam into the wall.', 'bad')

@@ -9,6 +9,7 @@ from .entities import GameMap, make_npc
 from .worldgen import cheb
 
 SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 130)), 'watchtower': ('¡', (200, 200, 210)),
+             'tower': ('¡', (200, 200, 210)), 'barrow': ('∩', (196, 200, 170)),
              'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84)), 'valley': ('•', (226, 196, 130)),
              'glade': ('♠', (170, 236, 150)), 'gnomes': ('♣', (226, 204, 120)), 'oasis': ('¥', (130, 214, 96)),
              'shieling': ('⌂', (214, 200, 170))}
@@ -41,6 +42,9 @@ class Site:
     def glyph(self):
         if self.kind in _SEATS.KINDS:
             return _SEATS.glyph(self)
+        from . import places as PL
+        if PL.is_place(self):
+            return PL.glyph(self)
         return SITE_LOOK[self.kind]
 
 
@@ -193,6 +197,9 @@ def gen_site_map(game, site):
         return NT.site_map(game, site)
     if _SEATS.is_seat(site):
         return _SEATS.gen_map(game, site)
+    from . import places as PL
+    if PL.is_place(site):
+        return PL.gen_map(game, site)
     m = _site_map(game, site)
     ex, ey = m.entry
     lamps = [(x, y) for x in range(4, m.w - 2) for y in (ey - 2, ey + 2) if m.tile(x, y) == GRASS
@@ -278,25 +285,6 @@ def _site_map(game, site):
                   'guard', fg=gfg, role='guard')
     m.mons.append(make_npc(game, f'Captain {names.pop()}', 'tower', '#e8e0c0', cx + 1, cy, True))
     return m
-
-
-def climb_tower(game):
-    """From the top of a watchtower you can see far over the land."""
-    m = game.map
-    site = game.world.sites[m.site]
-    om = game.maps['over']
-    # a circle around the tower; mountains and high hills block the view, the treetops do not
-    from . import fov
-    vis = fov.cells(om, site.x, site.y, 10)
-    n = 0
-    for i, v in enumerate(vis):
-        if v and not om.seen[i]:
-            om.seen[i] = 1
-            n += 1
-    from .hidden import from_tower
-    from_tower(game, vis)
-    game.msg('You climb to the top of the tower. The land lies spread out below you, and you mark what you see on your map.'
-             if n else 'You climb to the top of the tower. Nothing you have not seen before.', 'info')
 
 
 # ------------------------------------------------------------------ farmsteads and roadside inns

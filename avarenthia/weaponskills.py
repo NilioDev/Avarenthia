@@ -440,6 +440,10 @@ def push(game, mon, n, sign=None):
             from . import underground as UG
             UG.into_fire(game, mon, (mon.x, mon.y))         # shoved into a river of fire
             break
+        if (dx or dy) and m.inb(nx, ny) and m.tile(nx, ny) == _D.AIR and getattr(m, 'sky', None) is not None:
+            from . import towers as TOW
+            TOW.shove_over(game, mon, nx, ny)               # off a tower: down to what lies below
+            break
         if (dx or dy) and m.inb(nx, ny) and m.tile(nx, ny) == _D.CHASM and m.kind == 'dungeon':
             from . import underground as UG
             UG.over_edge(game, mon)                         # the edge rule: shoved down to the level below

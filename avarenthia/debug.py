@@ -177,16 +177,27 @@ def places(game):
     for s in w.settlements:
         out.append((s.kind, s.name, ('s', s.id)))
     for did, d in w.dungeons.items():
+        if getattr(d, 'site', None) is not None:      # a place's floors and deeps: reached through the place
+            continue
         out.append((f'dungeon ({d.style})', d.name, ('d', did)))
+    from . import places as PL
     for s in w.sites:
-        out.append((s.kind, s.name, ('site', s.id)))
+        kind = s.kind
+        if PL.is_place(s):                      # temples, towers and barrows by people and state
+            bits = [PL.people_of(s)]
+            if getattr(s, 'state', 'whole') != 'whole':
+                bits.append(s.state)
+            if getattr(w.dungeons.get(getattr(s, 'below', None)), 'older', False):
+                bits.append('older below')
+            kind = f"{s.kind} ({', '.join(bits)})"
+        out.append((kind, s.name, ('site', s.id)))
     for h in w.holds:
         out.append((h.kind, getattr(h, 'title', h.name), ('h', h.id)))
     for q in w.pois:
         out.append((f'poi {q.kind}', q.name, ('xy', q.x, q.y)))
     for name, x, y in w.wonders:
         out.append(('wonder', name, ('xy', x, y)))
-    for nb in w.named.values():
+    for nb in getattr(w, 'named', {}).values():
         if nb.alive and nb.x is not None:
             out.append(('named beast', nb.name, ('xy', nb.x, nb.y)))
     for e in w.evils:
@@ -240,6 +251,13 @@ def teleport(game, act):
         to_over(game, h.x, h.y)
         game.enter_hold(h.id)
     game.request = ('save',)
+
+
+def old_tale(game):
+    """Hear the tale of the nearest temple built over something older: its loose flagstone will lift for you."""
+    from . import places as PL
+    tale = PL.rumour(game)
+    game.msg(f'Debug: {tale}' if tale else 'Debug: no older place you have not heard of lies near enough.', 'info')
 
 
 def theme_level(game, what):

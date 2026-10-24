@@ -424,6 +424,24 @@ def ch_land(g):
                ([('Ψ', SIGN_COL['Ψ'])], 'stones: standing stones. Touch them to learn from old memories.'),
                ([('¤', SIGN_COL['¤'])], 'wagon: an abandoned wagon. Loot, or a trap.')]),
         ('p', 'Battlefields, where armies fought, keep the dead and what they carried, for a while.'),
+        ('h', 'Temples and towers'),
+        ('p', 'Every people builds its own temple, the sign {π|240,230,200}, and its own tower, the sign {¡|240,230,200}, '
+              'drawn in that people\'s colour; the dead of old lie in barrows, the sign {∩|240,230,200}. Each stands '
+              'on its own stretch of land: you walk in from the edge, and stairs lead up or down from there.'),
+        ('p', 'How far in you may go depends on your name with that people. A friend walks everywhere; a stranger may '
+              'see the open parts, and a warden stops you at the rest. Push past and it is a crime. The temples and '
+              'towers of the hostile peoples you fight your way through.'),
+        ('p', 'Below every temple lies its own deep place, older and rougher the deeper you go. Some temples were '
+              'built over something older still. A tale may tell you which: then a loose flagstone at the very bottom '
+              'lifts for you.'),
+        ('p', 'From the top of a tower you mark the land round about on your map: the higher the tower, the further, '
+              'and further still on a hill. Fog and rain halve it; by night you see only lights. Up there the land '
+              'lies faded far below, and the tower throws its shadow across it.'),
+        ('p', 'A fallen tower has broken floors with open edges. Stepping off asks you first and says how far down it '
+              'is; a fall hurts by the number of floors. A foe that knocks you back can throw you over, and your own '
+              'shove sends a foe the same way.'),
+        ('p', 'In the burial chamber of a barrow lies the bier, heaped with grave goods. Walk into it to take from it, '
+              'and whoever lies there wakes, with the whole barrow.'),
         ('h', 'Falls and springs'),
         ('s', [([('≡', (236, 248, 255))], 'falls: a waterfall, a cascade or great falls. Fish bite better in the pool, '
                                           'a hollow may hide behind the falling water, and from the cairn on top of a '
@@ -455,8 +473,8 @@ def ch_land(g):
               'sometimes get to a dungeon before you. Walk into a traveller to talk.'),
         ('h', 'The old ways'),
         ('p', 'Hidden paths of the old Varnish Empire: a faint, broken grey-green line on the map. You only see what '
-              'you have found: walk on one, hear a rumour, read an old map or buy a chart, or look out from a '
-              'watchtower. They are faster than open land and never patrolled. They lead over passes, to waystations '
+              'you have found: walk on one, hear a rumour, read an old map or buy a chart, or look out from the '
+              'top of a tower. They are faster than open land and never patrolled. They lead over passes, to waystations '
               '{Σ}, a safe rest; milestones {╥}; sealed vaults {Φ}; forgotten graveyards; and into hidden valleys {•}.'),
         ('h', 'Their own lands'),
         ('l', ['Halflings keep a green country of hills and hedges.',

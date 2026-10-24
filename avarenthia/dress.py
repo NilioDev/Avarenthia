@@ -62,7 +62,7 @@ def dress(game, m, d):
     m.deco = bytearray(m.w * m.h)
     m.lights = []
     tag = d.tag
-    style = d.style
+    style = getattr(m, 'style', d.style)
     floors = _floor_cells(m)
     theme = getattr(m, 'theme_cells', None)
     if theme:

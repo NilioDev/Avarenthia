@@ -527,8 +527,7 @@ CLIMATE_ADD = {'cold': ['snow_ape', 'mammoth', 'sabretooth', 'winter_wolf', 'fro
 NIGHT_ADD = ['ghoul', 'banshee', 'vampire_spawn', 'wisp', 'imp']
 
 THEMED = [
-    (['The Old King\'s Barrow', 'Howe of the Nine', 'The Grey Mound', 'Barrow of the Hollow Crown'], 'rooms', 'barrow',
-     'ghast_lord', '#6a7a70', ('grass', 'hills', 'swamp')),
+    # the barrows stand on their own land now, each people its own (barrows.py)
     (['The Gloam', 'The Weeping Deep', 'Hollowstar Pit', 'The Eyeless Hollow'], 'cave', 'gloam', 'staring_dark',
      '#5a4a6a', ('hills', 'forest')),
     (['The Drowned Grotto', 'Saltmother\'s Cave', 'The Brine Halls', 'Gullscream Grotto'], 'cave', 'grotto',

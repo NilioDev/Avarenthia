@@ -17,7 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: the epics** | 22 epic skills from hidden teachers, two per class, on key 6 instead of the elite (classes part 4, round 13). The rest of the classes is built |
 | **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
-| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026); the places on their own land and the editor are not |
+| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers and barrows on their own land; the abbeys, forts, manors, goblin places and the editor are not |
 | **Approved: the northern lights' gift** | Under the northern lights old rune stones glow and point to hidden places, Frost and Storm cost less mana, the spirits of northern barrows give a job (wake them by digging and they turn on you), and northern villages hold a light-feast. Ghostly creatures get a wan blue-green glow, fiends a faint red fire glow. Not built yet |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
@@ -36,7 +36,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 3. **Classes part 2** (L): the trees. Built 23 October 2026 (see `docs/built.md`). 4. **Classes part 3** (XL): pair and pure rules, Cunning and Arcane, guild
    elites, the balance test. Built 23 October 2026 (see `docs/built.md`). A pause after 2, 3 and 4; merge after 4. The epics wait for round 13.
 5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms. Built 24 October 2026 (see `docs/built.md`).
-6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows.
+6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows. Built 24 October 2026 (see `docs/built.md`).
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans.
 8. **The northern lights' gift** (M): needs the barrows. Its light-feast moves to the feast days (round 20).
 9. **The Rift and the Ashen Deep** (L). 10. **The editor** (L; its controls are still to talk about, may come later).
@@ -315,7 +315,7 @@ Approved so far:
 
 ## Dungeons on their own land (approved 22 October 2026, not built)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).
-- **Built places start outside.** A place that stands on the land (temple, abbey or monastery, tower, fort, manor, and other buildings on the world map) starts on its own play map with land around it, matching the world-map terrain: you walk in from the edge, through a gate or a door. An upper floor (a tower, a bell loft) and cellars or a crypt are their own levels, reached by stairs. Caves, dens, nests and mines still start straight underground. Mockup C.
+- **Built places start outside** (built for temples, towers and barrows, 24 October 2026; see `docs/built.md`). A place that stands on the land (temple, abbey or monastery, tower, fort, manor, and other buildings on the world map) starts on its own play map with land around it, matching the world-map terrain: you walk in from the edge, through a gate or a door. An upper floor (a tower, a bell loft) and cellars or a crypt are their own levels, reached by stairs. Caves, dens, nests and mines still start straight underground. Mockup C.
 - **Each kind its own plan.** A temple has a nave with pews and pillars, a transept, chapels and an altar; an abbey a cloister round a garden, a refectory and cells; a tomb a procession hall and burial galleries. You can tell from the map what the place is. Mockups A and C.
 - **Bigger and roomier**, for fights with hirelings and spells: levels up to 120 x 70 (sizes per kind below), halls two or three wide. Ties in with Nilio's later wish for bigger play maps (the map view now shows 80 x 51).
 - **Built walls are thin joined lines** (as town houses already draw them), one wall between neighbouring rooms, never a double one; caves keep their raw rock.
@@ -339,54 +339,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Middle, 100 x 60:** the temple, the abbey, the fort, and the levels below them.
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
-- **Towers (approved 22 October)**: slender and high. Mockups `T_tower.png`, `T_towers_peoples.png` and `T_towers_peoples2.png`.
-  - **Floors.** Every floor is the same small footprint, about 15 across, and has 3 to 6 storeys. A floor may be split into rooms. Each floor has its own use: a guard room, a store, the keeper's room. There is no room for hordes, only for a few strong foes, and the stair is the choke point.
-  - **Stairs.** A stair or ladder comes out at the same spot it left from below. The next one up lies elsewhere on that floor; in a stone tower it is a quarter turn further along the wall, like a spiral stair.
-  - **Below.** A cellar or dungeon may lie underneath, reached through a hatch.
-  - **The top is a lookout.** Standing there marks the land around on the world map, the way the great falls' cairn does. The radius grows with the tower's height: about 10 for a low tower and 14 for a high one, with 4 more on a hill. Fog or rain halves it. At night you see only lights: villages, campfires and ships. In a manned tower, a watch at the top sees you coming from afar and raises the alarm sooner.
-  - **Up high you see it.** Mockup `T_tower_height.png`.
-    - Round the top platform, the ground map below is drawn faded in a blue-grey haze; the higher the tower, the paler.
-    - The tower casts its shadow across the land.
-    - Birds (v) wheel below you, and now and then a wisp of cloud (░) drifts past, using the small animations.
-    - Lower floors show the same through an arrow slit when you stand next to one.
-    - A message line: "The wind tugs at your cloak. The land lies small below."
-    - The land shown is the real map below, so it matches where you walk out again.
-  - **Not every tower is hostile.** Human, elf and dwarf towers are manned by their own people.
-    - Whether you may climb up depends on your standing with that people or its lord. With good standing, the keeper lets you up to the lookout.
-    - Otherwise the guard on the stair turns you away, and forcing your way up is a crime.
-    - The towers of the hostile peoples you fight your way up.
-  - **Fallen towers and ruins.** Mockup `T_tower_ruins.png`.
-    - **Half fallen:** one side came down. Its stones lie in a heap round the foot of the tower, and a few fell in through the roof. Higher up, half of each floor is gone, and you stand at a broken edge.
-    - **What you see below** is always the real level underneath, faded in the haze: through a gap or over an edge you see the ground floor with its rubble.
-    - **A true ruin:** only a stump of wall stands, with ivy on it, and rubble and grass inside. The stair ends at a last broken ledge, and the cellar hatch still leads down.
-    - **Who lives there:** no people keeps a fallen tower, but bandits, a nesting beast or something in the cellar may.
-    - **Edges and falls** (the same for a hole in a floor, as in a goblin tower): stepping off first asks, with a warning of how far down it is; you never fall by one careless key. A monster that knocks you back can throw you over the edge, though, and the same works the other way: a shove or a knockback of yours sends a foe over the edge and down. A fall hurts by the number of floors, and you land at the same spot on the level below.
-  - **Each people builds its own tower:**
-    - **Human:** grey stone, round, with rooms behind doors. On top, battlements and a brazier.
-    - **Elf:** white stone in thin lines, built round a living trunk that the stair winds about. The top is open to the stars, with a crown of leaves.
-    - **Dwarf:** hewn blocks, square with cut corners, and runes in the wall; a forge and a store. On top, a bolt thrower and a beacon.
-    - **Orc:** rough logs, square, with ladders instead of stairs, and skulls. On top, a hide roof and a war drum.
-    - **Goblin:** crooked, of scrap and planks, with holes in the floor that drop you to the floor below. On top, a crow's nest with a gong.
-    - **Kobold:** a narrow spire of piled stone with shiny bits set in the walls, ladders, and a hoard room. On top, a polished shield that flashes a warning.
-    - **Gnoll:** poles and hides lashed together, taken down when the pack moves on, with bones lying about. On top, an open platform and a bone horn.
-    - **Lizardfolk:** woven reeds on stilts over the swamp, with an egg nest. On top, a smoke fire that signals over the reeds.
-    - **Halflings and gnomes** build no towers.
-- **Temples (approved 22 October)**: a middle place, 100 x 60, on its own land. Mockups `C_temple_on_its_land.png`, `TF_1`-`TF_4` (every level of a human temple), `TP_temples_peoples.png` (style sketch) and `TP_full_elf.png`, `TP_full_orc.png`, `TP_full_gnoll.png` (true size).
-  - **Below every temple** lies its own deep place, 3 to 5 levels: older and rougher the deeper you go.
-  - **The bell tower is a chance.** Not every human temple has one; when it does, it follows the tower rules and its top is a lookout.
-  - **The ancient bottom is a chance too, and hidden.** Some temples were built over something older (a cave, a ring of standing stones, what guards it). The way in is walled up or under a loose flagstone; a job or a rumour leads you to it, in the spirit of the old ways (`hidden.py`).
-  - **Each people its own temple:**
-    - **Human:** a nave with pews and pillars, a transept with chapels, the altar; maybe a bell tower. Below: the priests' crypt, then old catacombs.
-    - **Elf:** no walls and no roof: glades in the old wood, the living trees as walls, linked by paths of white stone. The great glade holds the moonwell; round it the hall of songs, the healers' grove, the grove of the fallen; the eldest tree has a stair up to a lookout in its crown. Below: the root halls.
-    - **Dwarf:** the hall of the forefathers cut in the rock, ancestors in stone, a forge altar. Below: the tombs of the forefathers.
-    - **Halfling:** a round hearth chapel with a harvest altar, a garden inside a hedge.
-    - **Gnome:** a hollow under the roots, a ring of glowing mushrooms round a crystal.
-    - **Orc:** a palisade ring open to the sky, the ring of blood with the skull pole and blood pit in the middle; the warchief's long hall, the shaman's hut, a trophy hut, a cage of captives, a warg pen. Below: the cave of the war god, cells at the top, a blood altar at the bottom.
-    - **Goblin:** a cave nook with an idol made of junk and heaps of offerings.
-    - **Kobold:** a shrine to shine: a hoard of coins, a polished mirror, candles.
-    - **Gnoll:** a camp on the plain in a hedge of thorn bush, a ring of bone poles round an altar of skulls, a moon stone; hide tents, a feeding pit, a hyena pen. Below: the burrows, down to the bone pit of the bone-caller.
-    - **Lizardfolk:** a stepped mound in the swamp, stairs on four sides, the egg altar on top.
-  - **Friendly or not** by standing, as with towers: how far in you may walk depends on your name with that people.
 - **Abbeys (approved 22 October)**: a middle place, 100 x 60, on its own land: a place apart where the devout live, learn and keep lore. Each people has its own, under its own name, with levels up (<) and down (>). Mockup `AP_abbeys_peoples.png` (style sketch).
   - **Human, the Abbey:** a church on the north side, a cloister walk round a garth with a well, a chapter house, refectory, kitchen and infirmary. Up: the dormitory and the scriptorium with books (ties to the libraries of `history.py`). Down: the wine cellar and the bone house.
   - **Elf, the Starhaven:** a ring of great trees round a star garden of white stone; sleeping halls in the crowns; a still pool that mirrors the stars; an archive of song-scrolls in a hollow trunk.
@@ -422,17 +374,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
   - **Kobold, the Hoard Burrow:** the hoardmaster sleeps on his coin; side holes for gems, a mirror, a polishing bench; the deep hoard.
   - **Gnoll, the Great Tent:** the packlord's great tent of hides in a thorn ring, his seat of bones, his share of the kill, hyenas at the door; the den below.
   - **Lizardfolk, the Sun House:** the elder's house on stilts with a window to the sun, an egg of the line, a fish pen; the mud cellar.
-- **Barrows (approved 22 October)**: a small place, 80 x 50: the grave of someone great. Each people has its own, under its own name. Narrow and low: fights in passages, not hordes. The bier is the telling thing: take from it and the dead wake (an event). Sometimes an older grave lies below. Mockup `BP_barrows_peoples.png` (style sketch).
-  - **Human, the Barrow:** a mound in a ring of standing stones, its stone door half sunk; inside a long passage lined with stones, an antechamber of grave goods, side rooms of bone niches, the hill king on his bier.
-  - **Elf, the Root Tomb:** under a dead great tree the elves lie in cradles of root; a sapling grows from the eldest's breast; starlight lamps.
-  - **Dwarf, the Sealed Vault:** behind a sealed door of runes, a hall of stone kings with rune traps, treasure rooms, the lord in his armour.
-  - **Halfling, the Resting Hill:** a family tomb in a small hill behind a round door, flowers laid every year; quiet, seldom anything worse than a grieving ghost.
-  - **Gnome, the Crystal Crypt:** the dead sealed in crystal round the great inventor, the book of their works, clever traps on the way in.
-  - **Orc, the Bone Cairn:** a warlord under a cairn of piled stones, his slain wargs and weapons round him, skull poles on the way in.
-  - **Goblin, the Trapped Tomb:** a zigzag way with a trap at every turn, to a boss buried with what he stole; a false tomb and a real one.
-  - **Kobold, the Hoard Tomb:** the old hoardmaster buried in his coin; take some and the loose floor gives way into the old shaft.
-  - **Gnoll, the Bone Hill:** a hill of the bones of every kill heaped over a great packlord; the bone-callers wake what lies below.
-  - **Lizardfolk, the Drowned Tomb:** stone coffins sunk in a sacred pool round an island with a stone egg; wade or dive; the drowned halls below.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
 - **Goblin places (approved 22 October)**:
   - **An ordinary goblin hole** (small, 80 x 50; mockup `E3_goblin_hole.png`): a hole in a slope with a lookout and the alarm gong by the way in (silence the watch and the hole sleeps on); rough passages braced with beams; tripwires and a covered pit; a sleeping den with straw, a cook den, a loot corner with what they took from the road, the leader's nook; a narrow back way out where they flee. Short and sharp: one level, sometimes two.

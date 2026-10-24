@@ -163,7 +163,7 @@ def generate(game, m, world, R):
            f'since.', pos[0], pos[1], prio=1)
     # houses that fell: their seats are ruins now
     ruins = [d for d in world.dungeons.values() if getattr(d, 'mine', None) is None and d.style != 'cave'
-             and not d.main]
+             and not d.main and getattr(d, 'site', None) is None]
     random.shuffle(ruins)
     for d in ruins[:random.randint(3, 6)]:
         hn = RL.family_name(used)

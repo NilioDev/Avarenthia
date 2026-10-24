@@ -307,6 +307,13 @@ def cell(m, i, depth=None):
             return ('│' if run_ns > run_we else '='), _jit((176, 128, 80), r2, .06), (52, 18, 6) if fire else (14, 26, 48)
         return ('║' if run_ns > run_we else '═'), _jit((190, 184, 170) if stone else (176, 128, 80), r2, .06), \
             (60, 58, 54) if stone else (44, 30, 16)
+    if t in (D.UP, D.DOWN) and getattr(m, 'ladders', False):     # orc, goblin and other wooden towers: ladders
+        return 'H', (220, 200, 160), td.bg or BG
+    if t == D.SLIT:                                              # an arrow slit in a tower wall
+        vert = sum(1 for dy in (-1, 1) if m.inb(x, y + dy) and m.t[(y + dy) * m.w + x] in (WALL, D.SLIT))
+        return ('|' if vert else '-'), (200, 196, 186), (30, 27, 24)
+    if t == D.PARAPET:                                           # the rim of a tower top, in the tower's own stone
+        return '■', _jit(m.wall_fg or td.fg, r2, .05), (30, 27, 24)
     if t == D.DOOR and getattr(m, 'round_doors', False):     # halfling doors: round, and painted
         return '○', [(200, 70, 50), (220, 180, 60), (60, 130, 60), (70, 110, 190)][r % 4], (30, 22, 14)
     if t == PATH and not over:      # village lanes: packed earth with ruts and stones
@@ -324,8 +331,8 @@ def cell(m, i, depth=None):
         if m.kind == 'dungeon' or getattr(m, 'underground', False):
             if not _face(m, x, y):              # the rock beyond the walls: a quiet speckle, never a wall
                 return rock_look(m, r, r2)
-            if t == WALL and getattr(m, 'rooms', None) is not None:    # built halls: thin walls that join up
-                key = tuple(1 if m.inb(x + dx, y + dy) and (m.t[(y + dy) * m.w + x + dx] in (D.DOOR, D.ODOOR, D.VAULTDOOR) or (
+            if t == WALL and (getattr(m, 'rooms', None) is not None or getattr(m, 'built', False)):    # built halls: thin walls that join up
+                key = tuple(1 if m.inb(x + dx, y + dy) and (m.t[(y + dy) * m.w + x + dx] in (D.DOOR, D.ODOOR, D.VAULTDOOR, D.SLIT) or (
                     m.t[(y + dy) * m.w + x + dx] in (WALL, D.SECRET) and _face(m, x + dx, y + dy))) else 0
                     for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
                 return WALL_GLYPH.get(key, '■'), _jit(fg, r2, .05), (30, 27, 24)
