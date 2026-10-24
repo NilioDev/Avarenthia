@@ -39,6 +39,8 @@ from . import named as NM
 from . import folk as FK
 from . import tribes as TR
 from . import deephold as DH
+from . import underground as UG
+from . import themes as TH
 from . import jobs as JB
 from . import lands as LN
 from . import seasons as SE
@@ -65,7 +67,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 36
+SAVE_VERSION = 37
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -479,6 +481,19 @@ class Game:
                 from . import chronicle as CH
                 CH.seen_wonder(self, name, x, y)
 
+    def _see_rock(self, m, px, py, r):
+        """The rock beyond a wall you see shows its quiet speckle, two cells deep (look.rock_look)."""
+        vis, seen, w, h, t = self.vis, m.seen, m.w, m.h, m.t
+        for y in range(max(0, py - r - 1), min(h, py + r + 2)):
+            for i in range(y * w + max(0, px - r - 1), y * w + min(w, px + r + 2)):
+                if not vis[i] or t[i] not in (D.WALL, D.ROCK):
+                    continue
+                x = i % w
+                for yy in range(max(0, y - 2), min(h, y + 3)):
+                    for j in range(yy * w + max(0, x - 2), yy * w + min(w, x + 3)):
+                        if not seen[j] and t[j] in (D.WALL, D.ROCK):
+                            seen[j] = 1
+
     def compute_fov(self):
         m, p = self.map, self.player
         r = m.radius
@@ -509,6 +524,8 @@ class Game:
             self.vis = bytearray(1 if (near[i] or (far[i] and lm[i][0] > amb[0] + .18)) else 0 for i in range(len(far)))
         else:
             self.vis = fov.compute(m, p.x, p.y, r)
+        if m.kind == 'dungeon':
+            self._see_rock(m, p.x, p.y, r)
         if DBG.ON and DBG.has(self, 'sight'):          # the debug menu's sight off: the whole map in view
             self.vis = bytearray(b'\x01' * (m.w * m.h))
             m.seen[:] = self.vis
@@ -1006,6 +1023,12 @@ class Game:
             self.msg('The door is too small for you. Only a gnome could get through it.')
             return 0
         if not D.TILES[t].walk:
+            if getattr(m, 'things', None) is not None:
+                spent = TH.bump(self, nx, ny)
+                if spent is not None:
+                    return spent
+            if m.kind == 'dungeon' and t in (WATER, D.LAVA):
+                return UG.step_in(self, nx, ny, dx, dy)
             if t in (D.ORE, D.GEMS, D.RUBBLE):
                 return DH.dig(self, nx, ny)
             if t == D.CHASM:
@@ -1070,6 +1093,8 @@ class Game:
             TR.on_step(self)
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
+        if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
+            TH.on_step(self)
         if getattr(m, 'nature', None):
             NT.on_step(self)
         if zone and ZN.after_move(self):
@@ -2166,6 +2191,8 @@ class Game:
             if di < 0 or di >= bd or self.occupied(m, nx, ny):
                 continue
             bd, best = di, (nx, ny)
+        if not best and m.kind == 'dungeon' and UG.swims(mon) and UG.swim_after(self, mon):
+            return                              # a swimmer goes into the water after you
         if not best and cd < 0:
             sx = (p.x > mon.x) - (p.x < mon.x)
             sy = (p.y > mon.y) - (p.y < mon.y)
@@ -2362,6 +2389,8 @@ class Game:
                     self.msg(f'{b[3]} wears off.')
             BH.tick(self)
             TT.tick(self)
+            if getattr(self.map, 'things', None) is not None:
+                TH.tick(self)
             ART.through_gate(self)
             s = self.stats()
             HU.tick(self, WX.food_factor(self))
@@ -2758,9 +2787,10 @@ class Game:
 
     def rest_here(self, quiet=False):
         p, n = self.player, 0
+        safe = TH.sanctuary_here(self)            # among warding signs nothing of the dark comes near
         while n < 300 and not self.dead:
             s = self.stats()
-            if self.hostile_visible():
+            if self.hostile_visible() and not safe:
                 if not n:
                     self.msg('You cannot rest with enemies in sight.', 'bad')
                 break
@@ -2772,6 +2802,8 @@ class Game:
             n += 1
         if n and not quiet:
             self.msg(f'You rest for {n} turns.')
+        if n and safe:
+            TH.after_rest(self)
         return n
 
     # ------------------------------------------------------------ sleeping out in the wild

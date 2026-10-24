@@ -376,6 +376,33 @@ def ch_jobs(g):
     ]
 
 
+def ch_dungeons(g):
+    return [
+        ('h', 'Rooms of every shape'),
+        ('p', 'A dungeon level is rooms of many shapes, round, cross-shaped, pillared, a room inside a room, joined by '
+              'main ways three wide and narrow ways one wide, where a horde must come at you one by one. Most '
+              'levels are big; a kobold den is smaller. The first time you step into a room, the log says what it is.'),
+        ('p', 'The rock beyond the walls shows faintly round what you have seen: grey stone, brown earth, or dark '
+              'basalt deep down, and in a mine now and then a glint of ore.'),
+        ('h', 'Theme rooms'),
+        ('p', 'Two or three rooms on a level hold one telling thing: an altar to pray at, shelves to search, a '
+              'fountain, an anvil, a well, a gong, a mirror, a lever, a dice table. Walk into it to use it; a thing '
+              'you can stand on, such as a summoning circle, the sign {·|224,72,72}, works when you step on it. Most '
+              'give only once, and some are better left alone.'),
+        ('p', 'Some rooms keep their find: a vault behind a locked door, the sign {+|224,176,64}, whose key lies '
+              'elsewhere on the level, often with a guard; a hidden door, which you notice as you pass; three '
+              'plinths, the sign {º|200,192,176}, where you may take one thing and the rest sink away. Among warding '
+              'signs, {∞|240,224,160}, nothing of the dark comes in, and you may rest there once.'),
+        ('h', 'Rivers underground'),
+        ('p', 'A river of water or of fire may run through a level, in at one edge and out at another. Cross it by a '
+              'bridge, {=|176,128,80}, a ford, or a crust of cooled rock, {▒|110,90,78}: each is a choke point.'),
+        ('p', 'You can swim the water, slowly. Heavy armour or a heavy pack pulls you under: you are asked first, and '
+              'every stroke then hurts. Most creatures stay on the bank, but some swim after you.'),
+        ('p', 'The river of fire, {≈|255,138,40}, burns badly, and you are asked before you step in. Shove a foe into '
+              'it and it burns; shove one over the edge of a chasm and it falls to the level below.'),
+    ]
+
+
 def ch_land(g):
     return [
         ('h', 'Roads and danger'),
@@ -785,7 +812,7 @@ def ch_keys(g):
 CHAPTERS = [
     ('First steps', ch_first_steps), ('Moving and looking', ch_moving), ('Fighting', ch_fighting),
     ('Your hero', ch_hero), ('Who you become', ch_who), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
-    ('The land', ch_land), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
+    ('The land', ch_land), ('Dungeons', ch_dungeons), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
     ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
     ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),

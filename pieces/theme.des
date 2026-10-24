@@ -1,0 +1,683 @@
+; The theme rooms of the classic dungeons (K5), the arrival rooms and the bottom rooms.
+; Approved 22 October 2026; the list is in the project files, dungeons/themakamers.md. The format: README.txt.
+
+; ================================================================== something to do
+NAME:   shrine
+SHAPE:  a nave with an apse
+MOOD:   An old shrine. A stone altar stands in the apse, dusty but whole.
+MOOD:   A shrine, long forgotten. Pillars lead your eye to the altar.
+THING:  A = altar do:shrine
+MAP
+     .....
+   .........
+  ...........
+  .....A.....
+  ...........
+  .#.......#.
+  ...........
+  .#.......#.
+  ...........
+  .#.......#.
+  ...........
+       +
+ENDMAP
+
+NAME:   library
+SHAPE:  an L, lined with shelves
+MOOD:   A library. Shelves of mouldering books run along every wall.
+MOOD:   Books, hundreds of them, swollen with damp. Someone once read here.
+THING:  K = shelves do:library
+MAP
+KKKKKKKKKKKKKK
+K............K
+K..t......t..K
+K............K
+K............K
+K.....KKKKKKKK
+K.....K
+K.....K
+K..t..K
+K.....K
+K.....K
+   +
+ENDMAP
+
+NAME:   fountain
+SHAPE:  an octagon
+MOOD:   A fountain in the dark. The water still runs, clear and cold.
+MOOD:   The sound of water: a fountain, carved with faces worn smooth.
+THING:  F = fountain do:fountain
+MAP
+   .......
+  .........
+ ...........
+ ...........
+ .....F.....
+ ...........
+ ...........
+  .........
+   .......
+      +
+ENDMAP
+
+NAME:   forge
+SHAPE:  a workshop with cut corners
+MOOD:   An abandoned forge. The anvil is still good; the hearth is cold.
+MOOD:   A smithy, left in a hurry. Tongs still lie on the anvil.
+THING:  A = anvil do:forge
+THING:  H = hearth do:cook
+MAP
+  ........
+ ..........
+ .H..A.....
+ ..........
+ ..b....b..
+ ..........
+  ........
+     +
+ENDMAP
+
+NAME:   alchemy
+SHAPE:  a long room with benches
+MOOD:   An alchemist's room. Glass and stoppered jars crowd the benches.
+MOOD:   It smells of sulphur and old herbs. Two benches, stained every colour.
+THING:  A = alchemy do:alchemy
+MAP
+  ........
+ ..........
+ .A..kk..A.
+ ..........
+ ..t....t..
+ ..........
+  ........
+     +
+ENDMAP
+
+NAME:   fungus
+SHAPE:  a cave
+MOOD:   A fungus garden. Pale caps glow softly all over the floor.
+MOOD:   Mushrooms, everywhere, giving off a faint green light.
+THING:  M = mushrooms do:fungus
+MAP
+    ....
+  ...mm...
+ ..mMm..m..
+ .m......M.
+ ..M..mm...
+ ...m...Mm.
+  ........
+   .....
+     +
+ENDMAP
+
+NAME:   larder
+SHAPE:  a store lined with barrels
+MOOD:   A larder. Barrels and sacks, and a hearth for cooking.
+MOOD:   A kitchen of sorts. Someone ate well down here, once.
+THING:  B = barrel do:larder
+THING:  H = hearth do:cook
+MAP
+ bbbbbbbbb
+ b.......b
+ b..ttt..b
+ b.......b
+ B.......H
+ b.......b
+ bb.....bb
+   .....
+     +
+ENDMAP
+
+NAME:   wishing
+SHAPE:  round
+MOOD:   A well in a round room. Coins glint far down in the water.
+MOOD:   A wishing well. The rim is worn smooth by many hands.
+THING:  W = well do:wishing
+MAP
+   .....
+  .......
+ .........
+ ....W....
+ .........
+  .......
+   .....
+     +
+ENDMAP
+
+NAME:   training
+SHAPE:  a long hall
+MOOD:   A training hall. Straw dummies stand in a row, hacked and patched.
+MOOD:   Practice dummies, and a floor scuffed by a thousand drills.
+THING:  D = dummy do:training
+MAP
+ .D..D..D..D.
+ ............
+ ............
+ ..t......t..
+ ............
+      +
+ENDMAP
+
+NAME:   maproom
+SHAPE:  a small room with cut corners
+MOOD:   A map room. A great map is spread on the table, pinned at the corners.
+MOOD:   Shelves of rolled charts, and one map left open on the table.
+THING:  M = map do:maptable
+MAP
+  .......
+ .........
+ ..k.M.k..
+ .........
+  .......
+     +
+ENDMAP
+
+NAME:   wine
+SHAPE:  rows of barrels
+MOOD:   A wine cellar. Rows of barrels, some still full.
+MOOD:   It smells of old wine. The barrels are stamped with a forgotten mark.
+THING:  B = barrel do:wine
+MAP
+ BBBBBBBBB
+ .........
+ BBB...BBB
+ .........
+ BBB...BBB
+ .........
+     +
+ENDMAP
+
+; ================================================================== something to find
+NAME:   vault
+SHAPE:  an octagon behind a heavy door
+GATE:   vault
+MOOD:   A vault. Its door was made to keep everyone out, and it nearly did.
+SUBST:  1 = c:1 b:2
+MAP
+  .......
+ .........
+ ..1...1..
+ .........
+ ..1...1..
+ .........
+  .......
+     +
+ENDMAP
+
+NAME:   choice
+SHAPE:  a half moon
+MOOD:   Three plinths, each with something on it. A sign: TAKE ONE.
+MOOD:   A choice vault. Take one thing; the others will be gone.
+THING:  P = plinth do:choice
+MAP
+ .............
+ ..P...P...P..
+ .............
+  ...........
+    .......
+       +
+ENDMAP
+
+NAME:   hidden
+SHAPE:  a small room behind a hidden door
+GATE:   secret
+MOOD:   A hidden room. Nobody has been in here for a very long time.
+SUBST:  1 = c:1 b:1
+MAP
+ .......
+ .1.....
+ .......
+ ...b...
+ .......
+    +
+ENDMAP
+
+NAME:   flooded
+SHAPE:  round, with an island
+MOOD:   A flooded hall. Black water, and an island in the middle with something on it.
+MOOD:   The floor drops away into deep water. Out in the middle: a little island.
+MAP
+    ,,,,,,,
+  ,,~~~~~~~,,
+ ,~~~~~~~~~~~,
+ ,~~~~...~~~~,
+ ,~~~~.c.~~~~,
+ ,~~~~...~~~~,
+ ,~~~~~~~~~~~,
+  ,,~~~~~~~,,
+    ,,,,,,,
+       +
+ENDMAP
+
+NAME:   armoury
+SHAPE:  a room with racks on every wall
+MOOD:   An armoury. Weapon racks, most of them empty, the rest rusted.
+MOOD:   Racks for spears and shields. What is left has seen better days.
+THING:  Y = rack do:armoury
+MAP
+ Y.Y.Y.Y.Y
+ .........
+ .........
+ Y.......Y
+ .........
+ .........
+     +
+ENDMAP
+
+NAME:   adventurer
+SHAPE:  a small room
+MOOD:   A dead camp. Someone came this far, and no farther.
+MOOD:   Old remains by a cold fire. A pack lies beside them.
+THING:  R = remains do:adventurer
+MAP
+ .......
+ ..R....
+ .......
+ ...b...
+ .......
+    +
+ENDMAP
+
+; ================================================================== something to fight
+NAME:   pillars
+SHAPE:  an octagon with rows of pillars
+MOOD:   A great pillared hall. Something stirs among the pillars.
+MOOD:   A hall of pillars, and in the dark between them, many eyes.
+EVENT:  when=enter then=spawn:pack:6
+MAP
+    .........
+  .............
+ ...............
+ ..#..#...#..#..
+ ...............
+ ...............
+ ..#..#...#..#..
+ ...............
+  .............
+    .........
+        +
+ENDMAP
+
+NAME:   circle
+SHAPE:  round, a ring on the floor
+MOOD:   A summoning circle, scratched deep into the floor. It waits for someone to step in.
+MOOD:   A ring of red signs on the floor. The air inside it hums.
+THING:  O = circle
+THING:  X = circle do:circle
+MAP
+    .......
+  ...........
+ ....OOOOO....
+ ...O.....O...
+ ...O..X..O...
+ ...O.....O...
+ ....OOOOO....
+  ...........
+    .......
+       +
+ENDMAP
+
+NAME:   statues
+SHAPE:  a gallery with statues in bays
+MOOD:   A hall of statues. Stone warriors, one after another. You feel watched.
+MOOD:   Statues line the walls. One of them is not quite like the others.
+THING:  S = statue do:statues
+MAP
+ S.S.S.S.S.S.S
+ .............
++.............
+ .............
+ S.S.S.S.S.S.S
+ENDMAP
+
+NAME:   ossuary
+SHAPE:  a cross, walled with bones
+MOOD:   An ossuary. The walls are bones, stacked to the ceiling. A bier stands in the middle.
+MOOD:   Skulls look down from every wall. At the crossing: a stone bier.
+THING:  B = bier do:bier
+THING:  Z = floor
+EVENT:  when=step at=Z then=msg:"The bones in the walls rattle, and the dead climb down." then=spawn:undead:4
+MAP
+      .....
+      o...o
+      o...o
+ .oooo.....oooo.
+ ......ZZZ......
+ ......ZBZ......
+ ......ZZZ......
+ .oooo.....oooo.
+      o...o
+      o...o
+      .....
+        +
+ENDMAP
+
+NAME:   nest
+SHAPE:  a cave full of webs
+MOOD:   A nest. Webs, and eggs as big as your head, warm to the touch.
+MOOD:   Eggs in sticky heaps, and webs from wall to wall. Something laid them.
+THING:  E = eggs do:nest
+MAP
+   .......
+  .x..E..x.
+ ..E.....E..
+ .x...x....x
+ ..E.....E..
+  .........
+   .......
+      +
+ENDMAP
+
+NAME:   guardpost
+SHAPE:  a guard room
+MOOD:   A guard post. A gong hangs by the door; one stroke would wake the whole place.
+MOOD:   Bunks, a table with dice, and a gong. The watch sleeps here.
+THING:  G = gong do:gong
+MAP
+ .......
+ .G...t.
+ .......
+ ..p.p..
+ .......
+    +
+ENDMAP
+
+NAME:   prison
+SHAPE:  a row of cells
+MOOD:   A prison block. Cells with barred fronts, and something moves in one of them.
+MOOD:   Cells, cut into the rock. Somebody calls out, weakly.
+THING:  J = bars do:cell
+THING:  Q = floor
+MAP
+ Q#Q#Q#Q#Q
+ Q#Q#Q#Q#Q
+ J#J#J#J#J
+ .........
+ .........
+     +
+ENDMAP
+
+NAME:   mirror
+SHAPE:  a small hall
+MOOD:   A tall mirror in a black frame. Your face looks back, a moment late.
+MOOD:   A mirror room. Your reflection seems to smile.
+THING:  M = mirror do:mirror
+MAP
+ ....M....
+ .........
+ .s.....s.
+ .........
+ .........
+     +
+ENDMAP
+
+NAME:   menagerie
+SHAPE:  cages along one wall
+MOOD:   A menagerie. Beasts pace behind the bars. A lever stands in the middle.
+MOOD:   Cages, and growling in them. A lever would open them all.
+THING:  J = bars
+THING:  Q = floor
+THING:  V = lever do:menagerie
+MAP
+ QQ#QQ#QQ#QQ
+ JJ#JJ#JJ#JJ
+ ...........
+ .....V.....
+ ...........
+      +
+ENDMAP
+
+NAME:   echo
+SHAPE:  a long high hall
+MOOD:   An echo hall. Your steps come back to you from far away. A fight here would be heard everywhere.
+MOOD:   Every sound rolls on and on in this hall. Best be quiet.
+EVENT:  when=enter then=do:echo
+MAP
+ ...................
+ ...................
+ .s...............s.
+ ...................
+ ...................
+          +
+ENDMAP
+
+NAME:   gaming
+SHAPE:  a den
+MOOD:   A gaming den. Bandits round a table, dice in hand. They look up.
+MOOD:   Dice rattle on a table, and stop. A circle of hard faces turns your way.
+THING:  D = dice do:dice
+EVENT:  when=enter then=spawn:bandit:3
+MAP
+ ..........
+ .p..D..p..
+ ..........
+ .t......b.
+ ..........
+     +
+ENDMAP
+
+; ================================================================== something of the place
+NAME:   chasm
+SHAPE:  a hall split by a chasm, a rope bridge across
+MOOD:   A chasm splits the room. A rope bridge sways across it.
+MOOD:   The floor ends at a black chasm. Only a rope bridge goes over.
+MAP
+ .............
+ .............
+ vvvvvv=vvvvvv
+ vvvvvv=vvvvvv
+ vvvvvv=vvvvvv
+ .............
+ .............
+       +
+ENDMAP
+
+NAME:   fallen
+SHAPE:  a room half filled with rubble
+MOOD:   The ceiling came down here. Behind the rubble, something glints.
+MOOD:   A fallen-in room. You could clear a way through the rubble.
+MAP
+ ...c...
+ .......
+ rrrrrrr
+ .r...r.
+ .......
+ .......
+    +
+ENDMAP
+
+NAME:   traps
+SHAPE:  a long gallery
+MOOD:   A long gallery, with a chest at the far end. The floor is suspiciously clean.
+MOOD:   A trap corridor, if ever you saw one. Tread carefully.
+THING:  T = floor do:plate
+MAP
+ c..............
+ ...T...T..T....
+ .T...T.....T...+
+ ...............
+ ...............
+ENDMAP
+
+NAME:   rift
+SHAPE:  a cave split by fire
+DEPTH:  3
+MOOD:   A rift of fire. The heat beats at you; something moves in the glow.
+MOOD:   Molten rock wells up through a crack in the floor.
+EVENT:  when=enter then=spawn:fire:2
+MAP
+   ......
+ ....LL....
+ ...LLLL...
+ ....LLL...
+ .....LL...
+ ..........
+   ......
+      +
+ENDMAP
+
+NAME:   breakthrough
+SHAPE:  a cave
+MOOD:   The built wall gives up here; you walk into raw cave.
+MOOD:   The masonry ends. Beyond it the rock was never cut by hands.
+MAP
+     ......
+   ..r.......
+  ...........r
+ ......r.......
+ ..............
+  ....r......
+   ........
+     .....
+       +
+ENDMAP
+
+NAME:   sanctuary
+SHAPE:  a room with signs at the corners
+MOOD:   A sanctuary. Old signs glow faintly on the floor: no creature of the dark will cross them.
+MOOD:   Warding signs, still whole. Here, at least, you could rest.
+THING:  W = ward do:sanctuary
+MAP
+  .........
+ .W.......W.
+ ...........
+ .....s.....
+ ...........
+ .W.......W.
+  .........
+      +
+ENDMAP
+
+NAME:   arch
+SHAPE:  a room with a standing arch
+MOOD:   An old stone arch stands alone in the room. It goes nowhere, or so it seems.
+MOOD:   An arch of the old ways, carved with signs you half know.
+THING:  A = arch do:arch
+MAP
+   .....
+  .......
+ ....A....
+ .........
+ .s.....s.
+ .........
+     +
+ENDMAP
+
+NAME:   collapse
+SHAPE:  a room with holes in the floor
+MOOD:   The floor here is broken: holes drop into the dark below. Watch your step.
+MOOD:   Cracks run across the floor, and in places it has already fallen through.
+THING:  Z = floor do:collapse
+MAP
+ ............
+ ..v...Z..v..
+ .Z..vv....Z.
+ ....Z..v....
+ .v.......Z..
+ ............
+      +
+ENDMAP
+
+NAME:   garden
+SHAPE:  an overgrown room under a light shaft
+MOOD:   A garden under a light shaft. Grass and herbs grow in the pale light from above.
+MOOD:   Daylight falls through a crack far above. Things grow here.
+THING:  H = grass do:herbs
+MAP
+   .......
+  .""""""".
+ .""H"""H"".
+ .""""""""".
+ .""H"""H"".
+  .""""""".
+   .......
+      +
+ENDMAP
+
+NAME:   clockwork
+SHAPE:  a gnome workshop with turning gears
+KIND:   any
+MOOD:   A clockwork room. Great gears turn in the walls, and bars rise and fall with them.
+MOOD:   Gnome work: gears, chains and bars that open and shut on their own.
+THING:  G = gears do:gears
+THING:  Q = floor
+MAP
+ ....c....
+ .........
+ ###QQQ###
+ G.......G
+ .........
+ .........
+     +
+ENDMAP
+
+; ================================================================== arrival
+NAME:   deadcamp
+PART:   arrival
+MOOD:   A camp of adventurers who came before you. None of them left.
+THING:  R = remains do:adventurer
+MAP
+ .........
+ ..%...p..
+ ....<....
+ .p.....R.
+ .........
+     +
+ENDMAP
+
+NAME:   chapel
+PART:   arrival
+MOOD:   A quiet chapel by the stairs. It feels safe, for now.
+THING:  A = altar do:shrine
+MAP
+   .....
+ .........
+ ....A....
+ .........
+ .t.....t.
+ ....<....
+ .........
+     +
+ENDMAP
+
+; ================================================================== bottom
+NAME:   throne
+PART:   bottom
+MOOD:   A throne hall. At the far end, someone waits.
+MAP
+    .......
+  ...........
+ ....s...s....
+ ......>......
+ .............
+ ..#...#...#..
+ .............
+ ..#...#...#..
+ .............
+       +
+ENDMAP
+
+NAME:   treasury
+PART:   bottom
+MOOD:   The treasure room. Its keeper does not mean to share.
+MAP
+ ...........
+ ..*..>..*..
+ ...........
+ .c.......b.
+ ...........
+      +
+ENDMAP
+
+NAME:   lair
+PART:   bottom
+MOOD:   A lair. Gnawed bones, and the smell of something big.
+MAP
+   .......
+  ..o...o..
+ .....>.....
+ ..o.....o..
+ ...........
+   .......
+      +
+ENDMAP

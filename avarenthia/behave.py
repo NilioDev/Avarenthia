@@ -256,6 +256,11 @@ def stepped(game):
     t = traps(m).pop((p.x, p.y), None)
     if t is None:
         return
+    if getattr(m, 'trap_kind', {}).pop((p.x, p.y), None) == 'plate':     # a trap corridor (themes.py)
+        game.flash([(p.x, p.y)], (200, 200, 220), '^', .3)
+        game.msg('A plate clicks under your foot. Darts spit from the walls!', 'bad')
+        game.hurt(max(2, t), 'a dart trap')
+        return
     game.flash([(p.x, p.y)], (220, 200, 120), '^', .3)
     game.msg('A snare snaps shut on your leg!', 'bad')
     game.hurt(max(2, t), 'a kobold snare')
@@ -271,7 +276,8 @@ def spot_traps(game):
         if cheb(x, y, p.x, p.y) <= 1 and game.visible(x, y) and random.random() < .25 + game.player.dex / 200:
             if (x, y) not in getattr(m, 'known_traps', set()):
                 m.known_traps = getattr(m, 'known_traps', set()) | {(x, y)}
-                game.msg('You spot a snare in the dirt.', 'info')
+                game.msg('You spot a pressure plate in the floor.' if getattr(m, 'trap_kind', {}).get((x, y)) == 'plate'
+                         else 'You spot a snare in the dirt.', 'info')
 
 
 # ------------------------------------------------------------------ monster strength

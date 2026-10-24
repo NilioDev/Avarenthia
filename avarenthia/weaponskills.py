@@ -436,6 +436,14 @@ def push(game, mon, n, sign=None):
     trail = []
     for _ in range(n):
         nx, ny = mon.x + dx, mon.y + dy
+        if (dx or dy) and m.inb(nx, ny) and m.tile(nx, ny) == _D.LAVA:
+            from . import underground as UG
+            UG.into_fire(game, mon, (mon.x, mon.y))         # shoved into a river of fire
+            break
+        if (dx or dy) and m.inb(nx, ny) and m.tile(nx, ny) == _D.CHASM and m.kind == 'dungeon':
+            from . import underground as UG
+            UG.over_edge(game, mon)                         # the edge rule: shoved down to the level below
+            break
         if not (dx or dy) or not D_walk(m, nx, ny) or game.occupied(m, nx, ny):
             break
         trail.append((mon.x, mon.y))

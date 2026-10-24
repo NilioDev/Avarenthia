@@ -51,6 +51,9 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `realms.py` the empire, kings, barons, houses and wars; `powers.py` the other powers (grudges, the wood, the Gorvash,
   raiders, church, Watch, companies, revolts, pretender, witches); `seats.py` their places' maps; `realmjobs.py` the
   'realm' jobs; `history.py` the made history and the libraries;
+  `k5.py` the maker of classic dungeon levels (Brogue-like); `pieces.py` the drawn pieces (`pieces/*.des`, format in
+  `pieces/README.txt`, packed and sealed by `tools/pack_pieces.py` in CI); `themes.py` theme rooms, their telling things
+  and the mood lines of rooms; `underground.py` rivers of water and fire, swimming;
   `arts.py` the arts of Cunning and Arcane (first blow, snares, runes, gates, dispel); `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what
   you know of each creature kind (on the player); `classes.py` who you become (classes, pair names, the bar); `weaponskills.py` keys 1-2 per weapon kind and the

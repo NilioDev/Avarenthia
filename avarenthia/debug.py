@@ -242,6 +242,50 @@ def teleport(game, act):
     game.request = ('save',)
 
 
+def theme_level(game, what):
+    """A fresh classic dungeon level made round one drawn piece (its name), or with a river ('river:water' or
+    'river:fire'); you stand at the theme room's door, or on the river bank."""
+    from . import pieces as PC, themes as TH, underground as UG
+    w = game.world
+    did = next(k for k, d in w.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3)
+    d = w.dungeons[did]
+    real = PC.pick, UG.CHANCE, UG.FIRE_SHARE, UG.FIRE_FROM
+    pc = PC.by_name(what)
+    try:
+        if pc is not None:
+            PC.pick = lambda part, tag, depth, n, used=(): [pc] if part == pc.part else []
+        else:
+            UG.CHANCE, UG.FIRE_FROM, UG.FIRE_SHARE = 1.0, 0, 1.0 if what == 'river:fire' else 0.0
+        for _ in range(6):
+            game.maps.pop(f'{did}:3', None)
+            to_over(game, d.x, d.y)
+            game.enter_dungeon(did, 3, 'down')
+            m = game.map
+            rid = next((i for i, r in enumerate(m.rooms) if r[2] == what), None) if pc else None
+            if (pc and rid is not None) or (not pc and getattr(m, 'river', None)):
+                break
+    finally:
+        PC.pick, UG.CHANCE, UG.FIRE_SHARE, UG.FIRE_FROM = real
+    m, p = game.map, game.player
+    if pc and rid is not None:
+        cells = set(TH.cells_of(m, rid))
+        ring = [(x + dx, y + dy) for x, y in cells for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                if (x + dx, y + dy) not in cells and m.tile(x + dx, y + dy) != D.WALL]
+        door = ring[0] if ring else next(iter(cells))
+        out = [(door[0] + dx, door[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+               if (door[0] + dx, door[1] + dy) not in cells and D.TILES[m.tile(door[0] + dx, door[1] + dy)].walk]
+        p.x, p.y = out[0] if out else door
+        game.msg(f'Debug: the theme room "{what}" lies right beside you.', 'info')
+    elif getattr(m, 'river', None):
+        i = next(i for i in m.river_flow if any(0 <= i + o < len(m.t) and m.t[i + o] == D.FLOOR for o in (1, -1, m.w, -m.w)))
+        j = next(i + o for o in (1, -1, m.w, -m.w) if m.t[i + o] == D.FLOOR)
+        p.x, p.y = j % m.w, j // m.w
+        game.msg(f'Debug: a river of {m.river} runs beside you.', 'info')
+    else:
+        game.msg('Debug: that did not come out this time; try again.', 'bad')
+    game.compute_fov()
+
+
 def days_ahead(game, n):
     """Time runs on n days (a fraction for hours); the days pass as they would (markets, news, seasons)."""
     game.turn += round(n * D.DAY_LEN)

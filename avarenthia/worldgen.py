@@ -59,6 +59,8 @@ def occupied(game, m, x, y):
     p = game.player
     if game.cur == m.key and p.x == x and p.y == y:
         return True
+    if (x, y) in getattr(m, 'warded', ()):          # a sanctuary: nothing of the dark steps in (themes.py)
+        return True
     return m.mon_at(x, y) is not None
 
 
@@ -85,76 +87,6 @@ def free_around(game, m, x, y, r):
 
 
 # ------------------------------------------------------------------ dungeons
-def gen_rooms(m):
-    rooms = []
-    want = max(8, m.w * m.h // 280)
-    for _ in range(600):
-        if len(rooms) >= want:
-            break
-        rw, rh = random.randint(5, 12), random.randint(4, 9)
-        x, y = random.randint(2, m.w - rw - 3), random.randint(2, m.h - rh - 3)
-        if any(x - 2 < r[0] + r[2] and x + rw + 2 > r[0] and y - 2 < r[1] + r[3] and y + rh + 2 > r[1] for r in rooms):
-            continue
-        rooms.append((x, y, rw, rh))
-    for x0, y0, rw, rh in rooms:
-        shape = random.random()
-        cxr, cyr = x0 + (rw - 1) / 2, y0 + (rh - 1) / 2
-        for yy in range(y0, y0 + rh):
-            for xx in range(x0, x0 + rw):
-                if shape < .3 and rw >= 6 and rh >= 5:      # a round hall
-                    if ((xx - cxr) / (rw / 2)) ** 2 + ((yy - cyr) / (rh / 2)) ** 2 > 1.05:
-                        continue
-                elif shape < .45 and rw >= 7 and rh >= 6:   # a cross-shaped chamber
-                    if abs(xx - cxr) > rw / 5 + .5 and abs(yy - cyr) > rh / 5 + .5:
-                        continue
-                elif shape < .6:                            # pillars
-                    if (xx - x0) % 3 == 1 and (yy - y0) % 3 == 1 and 0 < xx - x0 < rw - 1 and 0 < yy - y0 < rh - 1:
-                        continue
-                m.set(xx, yy, FLOOR)
-    rooms.sort(key=lambda r: r[0])
-    c = lambda r: (r[0] + r[2] // 2, r[1] + r[3] // 2)
-
-    def hl(x1, x2, y):
-        for x in range(min(x1, x2), max(x1, x2) + 1):
-            if m.tile(x, y) == WALL:
-                m.set(x, y, FLOOR)
-
-    def vl(y1, y2, x):
-        for y in range(min(y1, y2), max(y1, y2) + 1):
-            if m.tile(x, y) == WALL:
-                m.set(x, y, FLOOR)
-
-    def tunnel(a, b):
-        (x1, y1), (x2, y2) = c(a), c(b)
-        if random.random() < .5:
-            hl(x1, x2, y1)
-            vl(y1, y2, x2)
-        else:
-            vl(y1, y2, x1)
-            hl(x1, x2, y2)
-
-    for i in range(len(rooms) - 1):
-        tunnel(rooms[i], rooms[i + 1])
-    for _ in range(2):
-        tunnel(random.choice(rooms), random.choice(rooms))
-    for x0, y0, rw, rh in rooms:
-        cand = []
-        for yy in range(y0, y0 + rh):
-            cand += [(x0 - 1, yy, 'v'), (x0 + rw, yy, 'v')]
-        for xx in range(x0, x0 + rw):
-            cand += [(xx, y0 - 1, 'h'), (xx, y0 + rh, 'h')]
-        for x, y, o in cand:
-            if m.tile(x, y) != FLOOR:
-                continue
-            if o == 'v':
-                ok = m.tile(x, y - 1) == WALL and m.tile(x, y + 1) == WALL
-            else:
-                ok = m.tile(x - 1, y) == WALL and m.tile(x + 1, y) == WALL
-            if ok and random.random() < .45:
-                m.set(x, y, DOOR)
-    return [c(r) for r in rooms]
-
-
 def gen_cave(m):
     w, h = m.w, m.h
     for _ in range(40):
@@ -248,13 +180,65 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
     return elite > 0
 
 
+def gen_k5(m):
+    """A classic dungeon level from the K5 maker (k5.py): rooms of many shapes, main and narrow ways, lakes, and
+    2 or 3 theme rooms drawn as pieces (pieces.py, themes.py). Keeps on the map which room each cell belongs to
+    (m.room_of, m.rooms) for the mood lines and theme rooms. Returns where the stairs up and down go."""
+    from . import k5
+    from . import pieces as PC
+    from . import themes as TH
+    from . import underground as UG
+    tag, depth = getattr(m, 'dtag', 'crypt'), getattr(m, 'depth', 1) or 1
+    n = random.choice((2, 2, 3)) if m.w >= 100 else 1
+    themes = [(pc, PC.drawn(pc)) for pc in PC.pick('middle', tag, depth, n)]
+    arr = PC.pick('arrival', tag, depth, 1) if random.random() < .3 else []
+    low = PC.pick('bottom', tag, depth, 1) if getattr(m, 'last', False) and random.random() < .6 else []
+    plan = k5.make(m.w, m.h, themes=themes, arrival=(arr[0], PC.drawn(arr[0])) if arr else None,
+                   bottom=(low[0], PC.drawn(low[0])) if low else None)
+    cells = {'room': FLOOR, 'cave': FLOOR, 'hall': FLOOR, 'rubble': FLOOR, 'water': WATER, 'shallow': D.SHALLOW}
+    for (x, y), k in plan.floor.items():
+        m.set(x, y, cells[k])
+    for x, y in plan.doors:
+        m.set(x, y, DOOR)
+    m.room_of = bytearray(b'\xff') * (m.w * m.h)
+    m.rooms = []
+    m.made = random.getrandbits(40)                 # which level this is, for the rooms you have seen
+    room_ids, piece_of, gates = {}, {}, []
+    for r in plan.rooms:
+        if r.kind == 'hall' or not r.cells or len(m.rooms) >= 250:
+            continue
+        rid = len(m.rooms)
+        m.rooms.append([r.shape, r.kind, None])      # shape, kind, theme (filled in by the theme rooms)
+        for x, y in r.cells:
+            m.room_of[y * m.w + x] = rid
+            room_ids[(x, y)] = rid
+        if r.theme:
+            pc = PC.by_name(r.theme)
+            piece_of[rid] = pc
+            if pc.part == 'middle':
+                gates.append((rid, pc.gate))
+    TH.lay(m, plan, room_ids, piece_of)
+    for rid, kind in gates:
+        TH.gate(m, rid, kind)
+    m.k5_rubble = [y * m.w + x for (x, y), k in plan.floor.items() if k == 'rubble']
+    m.k5_themes = [m.room_of[c[1] * m.w + c[0]] for r in plan.themes for c in [next(iter(r.cells))]
+                   if m.room_of[c[1] * m.w + c[0]] != 255]
+    m.mood = plan.mood
+    if m.w >= 120 and random.random() < UG.CHANCE:          # a river of water or fire runs through
+        UG.add_river(m, depth, (plan.up, plan.down))
+    return plan.up, plan.down
+
+
 def gen_dungeon(game, did, depth):
+    from . import k5
     d = game.world.dungeons[did]
     lvl = d.base + depth
     last = depth == d.depth
-    dw, dh = (80, 50) if d.tag == 'den' else (84, 50)       # square cells: maps as tall as they are wide
+    dw, dh = k5.SIZES['small' if d.tag == 'den' else 'large']
     m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if d.style == 'cave' else WALL)
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
+    m.dtag, m.last = d.tag, last
+    m.mine_rock = d.tag == 'deep' or did == 'mine'           # now and then a glint of ore in the rock
     if d.style == 'cave':
         gen_cave(m)
         floors = [i for i, t in enumerate(m.t) if t == FLOOR]
@@ -264,8 +248,7 @@ def gen_dungeon(game, did, depth):
         bi = max(floors, key=lambda i: dist[i])
         far = (bi % m.w, bi // m.w)
     else:
-        centers = gen_rooms(m)
-        up, far = centers[0], centers[-1]
+        up, far = gen_k5(m)
     m.set(up[0], up[1], UP)
     if not last:
         m.set(far[0], far[1], DOWN)
@@ -278,7 +261,7 @@ def gen_dungeon(game, did, depth):
             m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
-    npacks = round((4 + depth + random.randint(0, 1)) * 1.5)
+    npacks = round((4 + depth + random.randint(0, 1)) * 1.5 * (m.w * m.h / 4200) ** .5)     # bigger levels, a few more
     if d.tag == 'den':
         npacks = 5                      # the first fight should teach, not punish (packs of one or two)
     elites = 0
@@ -314,6 +297,9 @@ def gen_dungeon(game, did, depth):
             it = Item(game.new_id(), 'potion', 'hp' if random.random() < .65 else 'mp')
             it.x, it.y = c
             m.items.append(it)
+    if getattr(m, 'things', None) is not None:
+        from . import themes as TH
+        TH.setup(game, m, lvl)
     return m
 
 

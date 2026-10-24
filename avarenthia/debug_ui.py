@@ -186,6 +186,7 @@ class DebugScreen(Modal):
                            ('d', 'Time...', self.time_page),
                            ('w', 'Weather...', self.weather_page),
                            ('s', 'Spawn a creature...', self.spawn_page),
+                           ('z', 'Theme room or river...', self.theme_page),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
@@ -347,6 +348,12 @@ class DebugScreen(Modal):
                 (str(r + 1), n, lambda r=r: (DBG.set_guild(self.game, k, r), 'back')[1])
                 for r, n in enumerate(GU.GUILDS[k]['ranks'])])]])
         return ListPage(self, 'Guild rank', rows, pick)
+
+    def theme_page(self):
+        from . import pieces as PC
+        rows = [('river', 'a river of water', 'river:water'), ('river', 'a river of fire', 'river:fire')] + \
+            [(pc.part, f'{pc.name}: {pc.shape or pc.part}', pc.name) for pc in PC.load()]
+        return ListPage(self, 'Theme room or river', rows, lambda k: (DBG.theme_level(self.game, k), 'close')[1])
 
     def hireling_page(self):
         from . import mercs as MC

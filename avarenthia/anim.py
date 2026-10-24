@@ -9,7 +9,7 @@ from .canvas import mix, scale
 from .look import _h
 
 WATERS = (D.WATER, D.SHALLOW, D.RIVER)
-MOVING = {D.FIREPIT, D.MOLTEN, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP,
+MOVING = {D.FIREPIT, D.MOLTEN, D.LAVA, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP,
           D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM, D.ANVIL}
 RISE_EVERY = 25           # about one water cell in this many along a shore has fish rising, a new set each day
 
@@ -104,8 +104,9 @@ def cell(m, i, x, y, look, t, night, day):
     if tt == D.FIREPIT:
         f = flame(t, x, y)
         return ch, mix(scale(fg, f), (255, 220, 120), max(0.0, f - .9) * 3), scale(bg, .8 + .3 * (f - .7))
-    if tt == D.MOLTEN:
-        k = .5 + .5 * math.sin(t * 1.1 - x * .35 + y * .2)
+    if tt in (D.MOLTEN, D.LAVA):
+        d = getattr(m, 'river_flow', {}).get(i) if tt == D.LAVA else None
+        k = .5 + .5 * math.sin(t * 1.1 - x * .35 + y * .2) if d is None else .5 + .5 * math.sin(t * 1.4 - d * .5)
         return ch, mix(fg, (255, 214, 120), k * .7), mix(bg, (170, 72, 14), k * .6)
     if tt == D.ALTAR:
         return ch, scale(fg, flame(t * .7, x, y) * 1.05), bg
@@ -131,6 +132,11 @@ def cell(m, i, x, y, look, t, night, day):
         if d is not None:
             g = _bump((d / 9 + t * .5) % 1.0, .18)          # light runs down the river towards the sea
             return ch, mix(fg, (190, 222, 255), g * .5), bg
+    if tt == D.WATER and m.kind == 'dungeon':
+        d = getattr(m, 'river_flow', {}).get(i)
+        if d is not None:
+            g = _bump((t * .5 - d / 9) % 1.0, .18)         # light runs downstream through the dark
+            return ch, mix(fg, (170, 205, 245), g * .55), bg
     g = _bump(_phase(t, x, y, .07, 51), .03)
     if g > 0:
         return '~', mix(fg, (214, 232, 255), g * .8), bg

@@ -22,6 +22,17 @@ Each line: **what** - what to check - what the debug menu should offer.
   weapon guild's on 1 or 2 with its weapon in hand; a master refusing a technique you could not use. Debug: Guild
   rank (q), Coin.
 
+## The K5 maker (built 24 October 2026)
+
+- **Theme rooms** - each of the 38 rooms, its mood line, its telling thing (pray, search, drink, the vault and its key,
+  the plinths, the circle's waves, the gong guard, cells, the mirror, the lever, the arch, the falling floor...).
+  Debug: "Theme room or river" (z) makes a level round the room you pick and puts you at its door.
+- **Arrival and bottom rooms** - the dead camp and the chapel by the stairs up, the throne, treasury and lair with
+  the boss. Debug: the same list (z).
+- **Rivers underground** - water: swimming, the question with heavy armour or pack, swimmers that follow; fire: the
+  question, the burn, shoving a foe in; the crossings. Debug: "a river of water" or "a river of fire" (z).
+- **Rock you can see, mood lines of plain rooms, sizes** - walk any classic dungeon. Debug: Teleport to a dungeon.
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

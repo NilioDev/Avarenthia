@@ -2562,6 +2562,8 @@ def camps_and_holds():
     s.rep = 0
     p.cargo.clear()
     rep = s.rep
+    dw = next(o for o in mine.mons if o.is_npc and getattr(o, 'race', '') == 'dwarf')
+    dw.x, dw.y = p.x, p.y                           # a dwarf of the clan sees you do it
     assert DH.dig(g, *vein) > 0 and p.cargo.get('ore') == 1 and mine.tile(*vein) == D.FLOOR and s.rep < rep, (s.rep, rep)
     # the old galleries further down are anyone's, and their props are cracked
     dg = w.dungeons[mine.did]
@@ -5047,11 +5049,201 @@ def debug_menu():
         DBG.ON = False
 
 
+def k5():
+    """The K5 maker: levels with no bad doors and no double walls, fast, every cell reachable; the drawn pieces read,
+    packed and sealed; every theme room set in and its telling thing used; the mood line of a room; rivers
+    underground: swimming, heavy armour, the river of fire, shoving a foe in."""
+    import pickle
+    import time
+    from avarenthia import k5 as K5, pieces as PC, themes as TH, underground as UG, events as EV
+    from avarenthia.entities import Item, make_monster
+    print('== k5')
+    pcs = PC.load(True)
+    middle = [pc for pc in pcs if pc.part == 'middle']
+    assert len(middle) >= 38 and {pc.part for pc in pcs} >= {'arrival', 'middle', 'bottom'}, len(middle)
+    for seed in range(1, 5):
+        random.seed(seed)
+        t0 = time.time()
+        th = [(pc, PC.drawn(pc)) for pc in random.sample(middle, 3)]
+        plan = K5.make(*K5.SIZES['large'], themes=th)
+        assert time.time() - t0 < 4, time.time() - t0
+        assert plan.bad_doors == 0 and plan.double == 0, (seed, plan.bad_doors, plan.double)
+        assert len(K5.walk(plan.floor, plan.up)) == len(plan.floor), seed
+        assert sum(1 for r in plan.rooms if r.theme) >= 2, seed
+    # a broken piece is refused with where it went wrong; a changed pack is ignored
+    for bad in ('NAME: x\nMAP\n...\n...\nENDMAP\n', 'NAME: x\nMAP\n.....\n..Q..\n.....\n  +\nENDMAP\n',
+                'NAME: x\nTHING: A = teapot\nMAP\n.....\n.....\n  +\nENDMAP\n'):
+        try:
+            PC.parse(bad, 'bad.des')
+            raise AssertionError(bad)
+        except PC.Bad as e:
+            assert 'bad.des' in str(e), e
+    texts = PC._source_texts()
+    raw, seal = PC.pack(texts)
+    assert PC.unpack(raw, seal) == texts
+    assert PC.unpack(raw[:-1] + bytes([raw[-1] ^ 1]), seal) is None and PC.unpack(raw, None) is None
+    # in the game: each theme room is set into a level, says what it is, and its thing answers a bump or a step
+    app = new_app('soft', 3)
+    g = app.game
+    p = g.player
+    p.vit = 600
+    did = next(k for k, d in g.world.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3)
+    real_pick = PC.pick
+    try:
+        for pc in middle:
+            PC.pick = lambda part, tag, depth, n, used=(), pc=pc: [pc] if part == 'middle' else []
+            rid = None
+            for _ in range(5):
+                g.maps.pop(f'{did}:3', None)
+                g.enter_dungeon(did, 3, 'up')
+                m = g.map
+                rid = next((i for i, r in enumerate(m.rooms) if r[2] == pc.name), None)
+                if rid is not None:
+                    break
+            assert rid is not None, pc.name
+            m.mons[:] = [o for o in m.mons if o.is_npc or cheb(o.x, o.y, *TH.cells_of(m, rid)[0]) < 12]
+            cells = [c for c in TH.cells_of(m, rid) if D.TILES[m.tile(*c)].walk and not m.mon_at(*c)]
+            p.x, p.y = cells[0]
+            g.compute_fov()
+            n0 = len(g.log)
+            TH.on_step(g)
+            assert any(str(ln[0] if isinstance(ln, tuple) else ln).rstrip(' x0123456789()') in pc.moods
+                       for ln in g.log[n0:]), (pc.name, g.log[n0:])
+            for c, (act, r) in list(m.things.items()):
+                if r != rid:
+                    continue
+                if D.TILES[m.tile(*c)].walk:
+                    p.x, p.y = c
+                    TH.on_step(g)
+                    continue
+                nb = [(c[0] + dx, c[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if (dx or dy)
+                      and m.inb(c[0] + dx, c[1] + dy) and D.TILES[m.tile(c[0] + dx, c[1] + dy)].walk
+                      and not m.mon_at(c[0] + dx, c[1] + dy)]
+                if not nb:
+                    continue
+                p.x, p.y = nb[0]
+                g.compute_fov()
+                g.try_move(c[0] - p.x, c[1] - p.y)
+                if g.pending:
+                    opts = [k for _l, k in g.pending['options'] if k not in (None, 'bye')]
+                    EV.resolve(g, opts[0] if opts else 'bye')
+                break
+            for _ in range(3):
+                g.end_turn(1)
+            if g.cur != m.key or g.dead:           # the floor gave way, or the arch took you up
+                g.dead = False
+            p.life = g.stats()['max_life']
+            pickle.dumps(m)                         # a level with theme rooms saves
+    finally:
+        PC.pick = real_pick
+    # the gates: a hidden door is found by walking into it, a vault opens only with its key
+    g.maps.pop(f'{did}:3', None)
+    g.enter_dungeon(did, 3, 'up')
+    m = g.map
+    x, y = next((i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.FLOOR and m.t[i + 1] == D.WALL)
+    p.x, p.y = x, y
+    m.set(x + 1, y, D.SECRET)
+    g.try_move(1, 0)
+    assert m.tile(x + 1, y) == D.DOOR
+    m.set(x + 1, y, D.VAULTDOOR)
+    assert g.try_move(1, 0) == 0 and m.tile(x + 1, y) == D.VAULTDOOR
+    key = Item(g.new_id(), 'vkey', 'k5', 1)
+    key.name, key.door = 'Heavy Iron Key', (m.key, (x + 1, y))
+    p.inv.append(key)
+    g.try_move(1, 0)
+    assert m.tile(x + 1, y) == D.ODOOR and key not in p.inv
+    # mood lines: walking through a level's rooms names some of them
+    lines = {ln for v in TH.SHAPE_MOODS.values() for ln in v}
+    n0 = len(g.log)
+    for rid in range(len(m.rooms)):
+        c = next((c for c in TH.cells_of(m, rid) if D.TILES[m.tile(*c)].walk), None)
+        if c:
+            p.x, p.y = c
+            TH.on_step(g)
+    assert any(str(ln[0] if isinstance(ln, tuple) else ln) in lines for ln in g.log[n0:])
+    # rivers underground: one always runs from edge to edge, and every part of the level stays reachable
+    UG.CHANCE, UG.FIRE_SHARE = 1.0, 0.0
+    try:
+        for kind in ('water', 'fire'):
+            UG.FIRE_SHARE = 1.0 if kind == 'fire' else 0.0
+            g.maps.pop(f'{did}:3', None)
+            g.enter_dungeon(did, 3, 'up')
+            m = g.map
+            assert getattr(m, 'river', None) == kind, getattr(m, 'river', None)
+            tile = D.LAVA if kind == 'fire' else D.WATER
+            riv = [i for i in m.river_flow if m.t[i] == tile]
+            xs, ys = {i % m.w for i in riv}, {i // m.w for i in riv}
+            assert (min(xs) == 0 and max(xs) == m.w - 1) or (min(ys) == 0 and max(ys) == m.h - 1)
+            parts = [q for q in UG._parts(m) if not q <= getattr(m, 'theme_cells', set())]
+            assert len(parts) == 1, [len(q) for q in parts]
+            assert any(t in (D.BRIDGE, D.SHALLOW, D.CRUST) for t in m.t)
+            bank = next((i, j) for i in riv for j in (i + 1, i - 1, i + m.w, i - m.w)
+                        if 0 <= j < len(m.t) and m.t[j] == D.FLOOR and not m.mon_at(j % m.w, j // m.w))
+            wet, dry = bank
+            p.x, p.y = dry % m.w, dry // m.w
+            dx, dy = wet % m.w - p.x, wet // m.w - p.y
+            m.mons[:] = []
+            if kind == 'water':
+                arm = next((it for it in p.inv if it.id == p.eq.get('armor')), None)
+                plate = Item(g.new_id(), 'gear', 'platemail')
+                plate.base, plate.slot = 'platemail', 'armor'
+                p.inv.append(plate)
+                p.eq['armor'] = plate.id
+                assert g.try_move(dx, dy) == 0 and g.pending and g.pending['key'] == 'river_swim'
+                life = p.life
+                EV.resolve(g, 'in')
+                assert (p.x, p.y) == (wet % m.w, wet // m.w) and p.life < life
+                p.x, p.y = dry % m.w, dry // m.w
+                p.inv.remove(plate)
+                p.eq['armor'] = arm.id if arm else None
+                if arm is None:
+                    p.eq.pop('armor')
+                assert g.try_move(dx, dy) == 2 and not g.pending and m.tile(p.x, p.y) == D.WATER
+                # a swimmer comes after you into the water; others stay on the bank
+                p.x, p.y = wet % m.w, wet // m.w
+                spot = next((x, y) for x in range(p.x - 2, p.x + 3) for y in range(p.y - 2, p.y + 3)
+                            if m.inb(x, y) and m.tile(x, y) == D.WATER and cheb(x, y, p.x, p.y) == 2)
+                croc = make_monster(g, 'crocodile', spot[0], spot[1], 3)
+                croc.awake = True
+                m.mons.append(croc)
+                assert UG.swims(croc) and UG.swim_after(g, croc) and cheb(croc.x, croc.y, p.x, p.y) == 1
+            else:
+                assert g.try_move(dx, dy) == 0 and g.pending and g.pending['key'] == 'river_fire'
+                life = p.life
+                EV.resolve(g, 'in')
+                assert p.life < life * .8, (life, p.life)
+                p.life = g.stats()['max_life']
+                # shove a foe into the fire: it burns, and crawls back out if it lives
+                p.x, p.y = dry % m.w - dx, dry // m.w - dy
+                if not D.TILES[m.tile(p.x, p.y)].walk:
+                    m.set(p.x, p.y, D.FLOOR)
+                foe = make_monster(g, 'skeleton', dry % m.w, dry // m.w, 3)
+                foe.awake = True
+                m.mons.append(foe)
+                hp = foe.hp
+                from avarenthia import weaponskills as WS
+                WS.push(g, foe, 1)
+                assert foe not in m.mons or foe.hp < hp
+            pickle.dumps(m)
+    finally:
+        UG.CHANCE, UG.FIRE_SHARE = .45, .35
+    # the test build makes a level round a theme room, or with a river, and puts you beside it
+    from avarenthia import debug as DBG
+    DBG.theme_level(g, 'vault')
+    rid = next(i for i, r in enumerate(g.map.rooms) if r[2] == 'vault')
+    assert min(cheb(p.x, p.y, *c) for c in TH.cells_of(g.map, rid)) <= 3
+    assert D.VAULTDOOR in g.map.t and any(it.k == 'vkey' for it in g.map.items)
+    DBG.theme_level(g, 'river:fire')
+    assert g.map.river == 'fire' and any(g.map.t[(p.y + dy) * g.map.w + p.x + dx] == D.LAVA
+                                         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+    print('k5 ok:', len(middle), 'theme rooms, rivers of water and fire')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

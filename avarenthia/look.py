@@ -188,6 +188,8 @@ def _wet(m, x, y):
 def cell(m, i, depth=None):
     """(glyph, fg, bg) for cell i of map m."""
     t = m.t[i]
+    if t == D.SECRET:                               # a hidden door looks like any other wall
+        t = WALL
     x, y = i % m.w, i // m.w
     td = D.TILES[t]
     over = m.kind == 'over'
@@ -300,6 +302,9 @@ def cell(m, i, depth=None):
         run_ns = sum(1 for dy in (-2, -1, 1, 2) if m.inb(x, y + dy) and m.t[(y + dy) * m.w + x] == D.BRIDGE)
         run_we = sum(1 for dx in (-2, -1, 1, 2) if m.inb(x + dx, y) and m.t[y * m.w + x + dx] == D.BRIDGE)
         stone = getattr(m, 'stone_bridges', False)
+        if m.kind == 'dungeon':          # underground the walls are double lines, so the deck is drawn plainer
+            fire = any(m.inb(x + dx, y + dy) and m.t[(y + dy) * m.w + x + dx] == D.LAVA for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+            return ('│' if run_ns > run_we else '='), _jit((176, 128, 80), r2, .06), (52, 18, 6) if fire else (14, 26, 48)
         return ('║' if run_ns > run_we else '═'), _jit((190, 184, 170) if stone else (176, 128, 80), r2, .06), \
             (60, 58, 54) if stone else (44, 30, 16)
     if t == D.DOOR and getattr(m, 'round_doors', False):     # halfling doors: round, and painted
@@ -317,9 +322,57 @@ def cell(m, i, depth=None):
     if t in (WALL, ROCK):
         fg = m.wall_fg if (t == WALL and m.wall_fg) else td.fg
         if m.kind == 'dungeon' or getattr(m, 'underground', False):
+            if not _face(m, x, y):              # the rock beyond the walls: a quiet speckle, never a wall
+                return rock_look(m, r, r2)
+            if t == WALL and getattr(m, 'rooms', None) is not None:    # built halls: thin walls that join up
+                key = tuple(1 if m.inb(x + dx, y + dy) and (m.t[(y + dy) * m.w + x + dx] in (D.DOOR, D.ODOOR, D.VAULTDOOR) or (
+                    m.t[(y + dy) * m.w + x + dx] in (WALL, D.SECRET) and _face(m, x + dx, y + dy))) else 0
+                    for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)))
+                return WALL_GLYPH.get(key, '■'), _jit(fg, r2, .05), (30, 27, 24)
             return td.ch, _jit(fg, r2, .07), _jit(scale(fg, .32), r, .1)
         return td.ch, _jit(fg, r2, .07), td.bg or BG
     return td.ch, td.fg, td.bg or BG
+
+
+def _face(m, x, y):
+    """A wall that faces open ground: something other than rock lies beside it, straight or slanting."""
+    for dy in (-1, 0, 1):
+        yy = y + dy
+        if not 0 <= yy < m.h:
+            continue
+        for dx in (-1, 0, 1):
+            xx = x + dx
+            if 0 <= xx < m.w and m.t[yy * m.w + xx] not in (WALL, ROCK, D.SECRET):
+                return True
+    return False
+
+
+# the tint of the rock beyond the walls, by the kind of ground (Nilio, 22 October 2026)
+ROCK_TINT = {'stone': (84, 84, 90), 'earth': (98, 76, 54), 'basalt': (62, 58, 66)}
+ORE_GLINT = ((212, 172, 80), (190, 120, 80), (170, 176, 190))
+
+
+def rock_kind(m):
+    """Grey stone, brown earth, or dark basalt deep down."""
+    k = getattr(m, 'rock', None)
+    if k:
+        return k
+    d = getattr(m, 'depth', 0) or 0
+    tag = getattr(m, 'dtag', '')
+    if tag in ('lair_dragon', 'gloam') or d >= 4:
+        return 'basalt'
+    if tag in ('den', 'cave', 'warren', 'antnest', 'barrow', 'spiderlair', 'lair_spider'):
+        return 'earth'
+    return 'stone'
+
+
+def rock_look(m, r, r2):
+    """Solid rock: a sparse speckle in a dim earth colour, the same each time you look; a glint of ore in a mine."""
+    tint = ROCK_TINT[rock_kind(m)]
+    if getattr(m, 'mine_rock', False) and r % 53 == 0:
+        return '*', ORE_GLINT[r2 % 3], (8, 8, 9)
+    ch = _pick(r, [(20, '#'), (7, '·'), (73, ' ')])
+    return ch, _jit(tint, r2, .12), (8, 8, 9)
 
 
 ROAD_JOIN = {D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT}
@@ -374,6 +427,11 @@ def get(m, i):
     if m._look_t[i] != m.t[i]:
         m._look_t[i] = m.t[i]
         cache[i] = _decorate(m, i, cell(m, i))
+        if m.kind == 'dungeon':                 # a wall dug away: the walls round it face the open now
+            x, y = i % m.w, i // m.w
+            for j in (i - m.w - 1, i - m.w, i - m.w + 1, i - 1, i + 1, i + m.w - 1, i + m.w, i + m.w + 1):
+                if 0 <= j < len(m.t) and abs(j % m.w - x) <= 1:
+                    cache[j] = _decorate(m, j, cell(m, j))
     return cache[i]
 
 

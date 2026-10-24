@@ -64,6 +64,9 @@ def dress(game, m, d):
     tag = d.tag
     style = d.style
     floors = _floor_cells(m)
+    theme = getattr(m, 'theme_cells', None)
+    if theme:
+        floors = [i for i in floors if i not in theme]       # the theme rooms keep what was drawn for them
     if not floors:
         return
     up = m.t.index(UP) if UP in m.t else floors[0]
@@ -71,7 +74,7 @@ def dress(game, m, d):
     goal = m.t.index(DOWN) if DOWN in m.t else max(floors, key=lambda i: abs(i % m.w - upxy[0]) + abs(i // m.w - upxy[1]))
     goalxy = (goal % m.w, goal // m.w)
     # water: a lake or a few pools, deep in the middle when that does not cut the level in two
-    for _ in range(random.randint(1, 3) if style == 'cave' else random.randint(0, 2)):
+    for _ in range(random.randint(1, 3) if style == 'cave' else 0 if hasattr(m, 'rooms') else random.randint(0, 2)):
         c = random.choice(floors)
         cells = _blob(m, c % m.w, c // m.w, random.randint(10, 45), lambda i: m.t[i] == FLOOR)
         for i in cells:
@@ -184,6 +187,9 @@ def dress(game, m, d):
             if tag == 'crypt' and v == TORCH:
                 col = (110, 170, 255)                # pale witchfire in the crypts
             m.lights.append((i % m.w, i // m.w, col, r))
+    for i in getattr(m, 'k5_rubble', ()):          # what fell from the roof in K5's halls
+        if m.t[i] == FLOOR and not m.deco[i]:
+            m.deco[i] = RUBBLE
     m.ambient = AMBIENT.get(tag, AMBIENT.get(style, .26))
 
 

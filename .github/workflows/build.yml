@@ -35,6 +35,8 @@ jobs:
         run: pip install -r requirements.txt pyinstaller
       - name: Run headless tests
         run: python tests/test_headless.py
+      - name: Pack and seal the drawn pieces
+        run: python tools/pack_pieces.py
       - name: Build
         run: pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia --add-data "assets${{ matrix.sep }}assets" main.py
       - uses: actions/upload-artifact@v4

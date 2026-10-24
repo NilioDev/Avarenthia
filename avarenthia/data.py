@@ -157,6 +157,27 @@ TILES = [
     Tile('Φ', '#be96ff', True, False, 'rune', bg='#241a34'),
     Tile('Ω', '#78a0ff', True, False, 'gate', bg='#141e3a'),
     Tile('▒', '#9a9a9a', True, True, 'smoke', bg='#2a2a2a'),
+    Tile('▒', '#6e5a4e', True, False, 'cooled crust', bg='#2a1a14'),
+    Tile('≈', '#ff8a28', False, False, 'river of fire', bg='#6a2006'),
+    # the telling things of the theme rooms (themes.py, drawn in pieces/)
+    Tile('#', '#8c8c96', False, True, 'wall'),                          # a hidden door: a wall until you find it
+    Tile('+', '#e0b040', False, True, 'vault door', bg='#3a2a08'),
+    Tile('º', '#c8c0b0', False, False, 'plinth', bg='#24221e'),
+    Tile('▐', '#d8e4f0', False, False, 'tall mirror', bg='#1a2230'),
+    Tile('φ', '#d8a040', False, False, 'gong', bg='#2a1e0c'),
+    Tile('/', '#c0a070', False, False, 'lever'),
+    Tile('†', '#d8c070', False, False, 'straw dummy'),
+    Tile('·', '#e04848', True, False, 'summoning circle', bg='#2a0c10'),
+    Tile('∞', '#f0e0a0', True, False, 'warding sign', bg='#2a2614'),
+    Tile('▬', '#b8b0a4', False, False, 'bier', bg='#22201c'),
+    Tile('%', '#a08868', False, False, 'remains of a camp'),
+    Tile('π', '#e8d8b0', False, False, 'dice table', bg='#2a1e10'),
+    Tile('¤', '#d0a050', False, False, 'turning gears', bg='#24180a'),
+    Tile('╫', '#9aa0a8', False, False, 'iron bars'),
+    Tile('π', '#e8dcb4', False, False, 'table with a map', bg='#2e2414'),
+    Tile('×', '#d8d8d8', True, False, 'web'),
+    Tile('∩', '#a8a4b8', False, False, 'old stone arch', bg='#1c1a26'),
+    Tile('ƒ', '#7ad08a', False, False, 'alchemy bench', bg='#14261a'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -166,6 +187,9 @@ HEARTH, FRAME, BENCH = range(107, 110)      # cooking at the inn, a hide stretch
 SHELVES, HIGHSEAT = 110, 111                # a library's books, the lord's high seat in his hall
 (BURNING, ICEWALL, SPELLICE, ROOTS, BRAMBLE, BONEWALL, HALLOWED, SPIRITTOTEM, BALL, DRIFT) = range(112, 122)
 SNARE, CALTROPS, RUNE, GATE, SMOKE = range(122, 127)      # the tiles of Cunning and Arcane (arts.py)
+CRUST, LAVA = 127, 128                      # a river of fire and the cooled crust over it (underground.py)
+(SECRET, VAULTDOOR, PLINTH, MIRROR, GONG, LEVER, DUMMY, CIRCLE, WARD, BIER, REMAINS, DICE, GEARS, BARS, MAPTABLE, WEB, ARCH,
+ ALCHEMY) = range(129, 147)                 # the telling things of the theme rooms (themes.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
