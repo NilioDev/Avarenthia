@@ -3429,6 +3429,7 @@ def herds_and_cooking():
     assert all(h.state == 'tanning' for h in hides[:2]) and 'Tanning' in hides[0].display_name()
     for h in hides[:2]:
         h.until = g.day
+        h.q = max(h.q, 2)                  # a well-skinned hide: how well you skinned it is luck, not the point here
     HT.spoil(g)
     leather = sum(i.n for i in p.inv if i.k == 'leather')
     assert leather >= 3, f'the hides tanned into leather: {leather}'
