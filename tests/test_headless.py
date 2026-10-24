@@ -1411,10 +1411,13 @@ def hirelings_and_camp():
     for k in range(40):
         p.x, p.y = city.x + 6, city.y + 6
         g.cur = 'over'
+        g.compute_fov()
         p.life = max(1, p.life)
         g.camp(k % 2 == 0)
         if g.map.kind == 'wild':
             clear_wild(g)
+        elif g.map.kind != 'over':
+            print('  camp led to', g.cur, g.map.kind)
         assert not g.dead
     # guild perks
     st = GU.state(g)['iron']
