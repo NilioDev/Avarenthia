@@ -209,7 +209,7 @@ def ground(game, site, m, tw, friendly):
         if hatch:
             m.set(hatch[0], hatch[1], DOWN)
     if tw['state'] == 'half':
-        _fallen_foot(m, tw, cells, wall)
+        _fallen_foot(m, tw, cells, wall, [c for c in (door, up) if c])
     elif tw['state'] == 'ruin':
         _stump(m, tw, cells, wall, up)
     m.tower_door = door
@@ -221,8 +221,9 @@ def _spot(m, cells, avoid=(), st=None):
     return random.choice(opts) if opts else None
 
 
-def _fallen_foot(m, tw, cells, wall):
-    """Half fallen: its stones lie in a heap round the foot on the fallen side, and a few fell in through the roof."""
+def _fallen_foot(m, tw, cells, wall, keep=()):
+    """Half fallen: its stones lie in a heap round the foot on the fallen side, and a few fell in through the roof.
+    The way to the door and the stairs stays open."""
     fx, fy = tw['fall']
     cx, cy = tw['cx'], tw['cy']
     for y in range(cy - 14, cy + 15):
@@ -231,11 +232,13 @@ def _fallen_foot(m, tw, cells, wall):
                 continue
             d = (x - cx) * fx + (y - cy) * fy
             side = abs((x - cx) * -fy + (y - cy) * fx)
+            if any(cheb(x, y, *k) <= 2 for k in keep):
+                continue
             if d > 6 and d < 14 and side < 6 and random.random() < .5 - (d - 6) * .05 and D.TILES[m.tile(x, y)].walk:
                 m.set(x, y, D.RUBBLE)
     inner = list(cells - wall)
     for x, y in random.sample(inner, min(len(inner), 6)):
-        if m.tile(x, y) in (FLOOR, PLANK):
+        if m.tile(x, y) in (FLOOR, PLANK) and all(cheb(x, y, *k) > 1 for k in keep):
             m.set(x, y, D.RUBBLE)
 
 
