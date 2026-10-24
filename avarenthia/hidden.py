@@ -418,7 +418,7 @@ def random_unknown(game, near=None):
         return None
     if near:
         om = game.maps['over']
-        left.sort(key=lambda wy: min(cheb(i % om.w, i // om.w, *near) for i in wy.cells[::4]))
+        left.sort(key=lambda wy: min((cheb(i % om.w, i // om.w, *near) for i in wy.cells[::4]), default=10 ** 6))
         return left[0]
     return random.choice(left)
 

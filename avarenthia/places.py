@@ -225,11 +225,12 @@ def place(game, m, world, reach_set):
         pool = NAMES[kind].get(kw.get('pool', pe)) or NAMES[kind]['human']
         name = next((n for n in random.sample(pool, len(pool)) if n not in used), None)
         if kind in ('tower', 'fort', 'manor') and pool is NAMES[kind].get('human'):
-            name = f'{world.region_at(x, y).name} {random.choice(pool)}'      # as the old watchtowers were named
-            if name in used:
-                name = None
-        elif name is None:
-            name = f'{random.choice(pool)} of {world.region_at(x, y).name}'
+            rn = world.region_at(x, y).name
+            name = next((f'{rn} {n}' for n in random.sample(pool, len(pool)) if f'{rn} {n}' not in used), None)   # as the old watchtowers were named
+        if name is None:
+            rn = world.region_at(x, y).name
+            name = next((f'{n} of {rn}' for n in random.sample(pool, len(pool)) if f'{n} of {rn}' not in used),
+                        f'{random.choice(pool)} of {rn}')
         s = Site(len(world.sites), kind, x, y, name)
         s.faction = world.region_at(x, y).faction
         s.people = pe
