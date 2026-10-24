@@ -1794,8 +1794,10 @@ def creatures_and_hunts():
     app.screens = [ui.GameScreen(app)]
     ax, ay, r = NM.area(g, n)
     p.x, p.y = ax, ay
-    for _ in range(80):
-        NM.sign(g, n)
+    keep = random.random
+    random.random = lambda: 0.0                    # a sign is found (in the rain they are rare: that is not the point here)
+    NM.sign(g, n)
+    random.random = keep
     assert NM.area(g, n)[2] < r or r <= 3, 'signs shrink the area'
     p.x, p.y = n.x + 1, n.y
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + (290 if n.habit == 'nocturnal' else 10)
