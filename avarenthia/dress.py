@@ -74,7 +74,7 @@ def dress(game, m, d):
     goal = m.t.index(DOWN) if DOWN in m.t else max(floors, key=lambda i: abs(i % m.w - upxy[0]) + abs(i // m.w - upxy[1]))
     goalxy = (goal % m.w, goal // m.w)
     # water: a lake or a few pools, deep in the middle when that does not cut the level in two
-    for _ in range(random.randint(1, 3) if style == 'cave' else 0 if hasattr(m, 'rooms') else random.randint(0, 2)):
+    for _ in range(0 if getattr(m, 'delve', None) else random.randint(1, 3) if style == 'cave' else 0 if hasattr(m, 'rooms') else random.randint(0, 2)):
         c = random.choice(floors)
         cells = _blob(m, c % m.w, c // m.w, random.randint(10, 45), lambda i: m.t[i] == FLOOR)
         for i in cells:

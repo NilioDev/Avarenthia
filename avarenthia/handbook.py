@@ -393,6 +393,15 @@ def ch_dungeons(g):
               'elsewhere on the level, often with a guard; a hidden door, which you notice as you pass; three '
               'plinths, the sign {º|200,192,176}, where you may take one thing and the rest sink away. Among warding '
               'signs, {∞|240,224,160}, nothing of the dark comes in, and you may rest there once.'),
+        ('h', 'Who made it'),
+        ('p', 'Caves, nests and dens are shaped by whoever made them. Water grinds long halls along a stream; ants hang '
+              'their chambers on tunnels like grapes; spiders fill whole halls with web; gnolls scrape round dens; '
+              'goblins dig narrow ways braced with props, with a watch and an alarm gong by the way in; the dead lie '
+              'in galleries of niches. Each room has its use, and the folk stand where they belong: a watch by the way '
+              'in, sleepers in the dens, the leader at the bottom.'),
+        ('p', 'Kill a goblin watch before it strikes the gong, or the whole hole wakes. Tripwires rattle tins and wake '
+              'the nearest den; a covered pit drops you to the level below. Smash a nest\'s eggs and the nest comes '
+              'for you. Push the slab off a sealed tomb for what was buried with the dead.'),
         ('h', 'Rivers underground'),
         ('p', 'A river of water or of fire may run through a level, in at one edge and out at another. Cross it by a '
               'bridge, {=|176,128,80}, a ford, or a crust of cooled rock, {▒|110,90,78}: each is a choke point.'),
@@ -739,6 +748,10 @@ def ch_wild_peoples(g):
                'The young, the old and the workers run when there is trouble.',
                'Some will trade with those they trust. The kobolds love shiny things: a toll in gems buys a welcome.',
                'Captives are sometimes kept there, waiting for someone to free them.']),
+        ('p', 'At the end of a goblin ravine a carved gate leads into their village, cut deep into the rock: a market '
+              'hall, a forge, family halls, cells and wolf pens along a wide gallery, and the chief\'s hall at the back. '
+              'Below lie the mine and the deep halls. Kill the chief and sit in the high seat, and the village bows to '
+              'you, for a while.'),
     ]
 
 

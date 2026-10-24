@@ -249,7 +249,15 @@ def gen_dungeon(game, did, depth):
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
     m.dtag, m.last, m.style = d.tag, last, style
     m.mine_rock = d.tag == 'deep' or did == 'mine'           # now and then a glint of ore in the rock
-    if style == 'cave':
+    from . import delves as DV
+    kind = DV.plan_for(d, depth)
+    if kind:
+        if DV.KINDS[kind].get('small') and getattr(d, 'size', None) is None:
+            m = GameMap(f'{did}:{depth}', 'dungeon', d.name, *k5.SIZES['small'], ROCK)
+            m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
+            m.dtag, m.last, m.style = d.tag, last, style
+        up, far = DV.carve(game, m, d, depth, kind)
+    elif style == 'cave':
         gen_cave(m)
         floors = [i for i, t in enumerate(m.t) if t == FLOOR]
         s = random.choice(floors)
@@ -266,14 +274,18 @@ def gen_dungeon(game, did, depth):
     dress(game, m, d)
     if m.tile(*far) not in (D.FLOOR, DOWN):
         m.set(far[0], far[1], D.FLOOR if last else DOWN)
-    if last:
+    if kind:
+        DV.folk(game, m, d, depth, up, far)
+        npacks = 0
+    elif last:
         if d.boss:
             m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
-    npacks = round((4 + depth + random.randint(0, 1)) * 1.5 * (m.w * m.h / 4200) ** .5)     # bigger levels, a few more
-    if d.tag == 'den':
-        npacks = 5                      # the first fight should teach, not punish (packs of one or two)
+    if not kind:
+        npacks = round((4 + depth + random.randint(0, 1)) * 1.5 * (m.w * m.h / 4200) ** .5)     # bigger levels, a few more
+        if d.tag == 'den':
+            npacks = 5                  # the first fight should teach, not punish (packs of one or two)
     elites = 0
     for i in range(npacks):
         c = rand_free(game, m, lambda t: t == FLOOR, (up[0], up[1], 9))

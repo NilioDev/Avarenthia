@@ -519,6 +519,8 @@ def ravine(game, site):
     boss = who(game, m, x, y, ('g', (240, 200, 80)), f'{names.pop()}, boss of the gully', 'gob_boss', job='chief', race='goblin')
     x, y = at(a_m + 6, cm + 3)
     who(game, m, x, y, ('g', (150, 220, 120)), 'The gully shaman', 'gob_shaman', job='shaman', race='goblin')
+    from . import gobvillage as GV
+    m.delve_gate = GV.ravine_gate(m, at, put, L, lo, hi)     # the carved gate into their village, at the end
     m.gate = at(5, mid)
     m.warn_line = 7                            # how far along the ravine the lookouts let you come
     m.along_ns = ns

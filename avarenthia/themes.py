@@ -226,6 +226,9 @@ def on_step(game):
     if t and D.TILES[m.tile(p.x, p.y)].walk:
         ACTIONS[t[0]](game, p.x, p.y, t[1], state(m, t[1]))
     fire(game, 'step', cell=(p.x, p.y))
+    if getattr(m, 'delve', None):
+        from .delves import tick
+        tick(game)
 
 
 def mood(game, m, rid):
@@ -235,6 +238,12 @@ def mood(game, m, rid):
         pc = PC.by_name(name)
         if pc and pc.moods:
             game.msg(random.choice(pc.moods), 'info')
+        return
+    if shape.startswith('delve:'):
+        from .delves import MOODS
+        lines = MOODS.get(shape[6:])
+        if lines:
+            game.msg(random.choice(lines), 'info')
         return
     lines = SHAPE_MOODS.get(shape) or SHAPE_MOODS['plain']
     if (rid * 7 + len(m.rooms)) % 3 == 0 or shape in ('pillars', 'rotunda', 'inner', 'gallery', 'cave', 'cross'):

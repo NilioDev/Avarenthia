@@ -256,7 +256,15 @@ def stepped(game):
     t = traps(m).pop((p.x, p.y), None)
     if t is None:
         return
-    if getattr(m, 'trap_kind', {}).pop((p.x, p.y), None) == 'plate':     # a trap corridor (themes.py)
+    kind = getattr(m, 'trap_kind', {}).pop((p.x, p.y), None)
+    if kind in ('wire', 'pit'):                                         # a goblin hole (delves.py)
+        from . import delves as DV
+        if kind == 'wire':
+            DV.wire(game)
+        else:
+            DV.pit(game, t)
+        return
+    if kind == 'plate':                                                 # a trap corridor (themes.py)
         game.flash([(p.x, p.y)], (200, 200, 220), '^', .3)
         game.msg('A plate clicks under your foot. Darts spit from the walls!', 'bad')
         game.hurt(max(2, t), 'a dart trap')

@@ -769,7 +769,7 @@ class Game:
             if wd.kind == 'hunt':
                 self.msg(f"{self.world.evils[wd.evil].name}'s hunters fall. Somewhere far away, something howls in rage.", 'unique')
             else:
-                self.msg(f'You have dealt with {wd.name[0].lower() + wd.name[1:]}.', 'good')
+                self.msg(f'You have dealt with {(wd.name[:1].lower() + wd.name[1:]) or "them"}.', 'good')
             MS.on_group_defeated(self, wd)
         else:
             wd.cooldown = 4
@@ -1057,8 +1057,18 @@ class Game:
         if not D.TILES[t].walk:
             if t == D.AIR and getattr(m, 'sky', None) is not None:
                 return TOW.edge(self, nx, ny)
+            if getattr(m, 'village', False):
+                from . import gobvillage as GV
+                spent = GV.bump(self, nx, ny)
+                if spent is not None:
+                    return spent
             if getattr(m, 'barrow', None):
                 spent = BR.bump(self, nx, ny)
+                if spent is not None:
+                    return spent
+            if getattr(m, 'delve', None):
+                from . import delves as DV
+                spent = DV.bump(self, nx, ny)
                 if spent is not None:
                     return spent
             if getattr(m, 'place', None) or getattr(m, 'sky', None) is not None:

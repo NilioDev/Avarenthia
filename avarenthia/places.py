@@ -527,6 +527,9 @@ def stairs(game, t, d):
     """Stairs that belong to a place: up a tower, down into a crypt, cellar or barrow, and back. Returns the turns
     spent, or None when these stairs are not a place's."""
     m = game.map
+    if getattr(m, 'tribe', None) == 'ravine':
+        from . import gobvillage as GV
+        return GV.stairs(game, t, d)
     if getattr(m, 'place', None) and getattr(m, 'site', None) is not None:
         site = game.world.sites[m.site]
         if t == UP and d != 'down':
@@ -557,7 +560,7 @@ def stairs(game, t, d):
             return 1
         return None
     if t == UP and d != 'down' and m.depth == 1:
-        back(game, site, DOWN)
+        back(game, site, DOWN, getattr(dg, 'home', None))
         return 1
     if t == DOWN and d != 'up' and m.depth >= dg.depth and getattr(m, 'ancient', False):
         game.enter_dungeon(dg.id, m.depth + 1, 'up')
@@ -565,12 +568,18 @@ def stairs(game, t, d):
     return None
 
 
-def back(game, site, tile):
+def back(game, site, tile, home=None):
     """Out of a tower or up out of a crypt: back onto the place's own map, on its stair."""
     p = game.player
-    if site.map_key not in game.maps:
-        game.maps[site.map_key] = gen_map(game, site)
-    game.cur = site.map_key
+    home = home or site.map_key
+    if home not in game.maps:
+        if home != site.map_key:
+            from . import gobvillage as GV
+            game.maps[home] = GV.make(game, site)
+        else:
+            from .sites import gen_site_map
+            game.maps[home] = gen_site_map(game, site)
+    game.cur = home
     m = game.map
     spot = None
     if tile in m.t:

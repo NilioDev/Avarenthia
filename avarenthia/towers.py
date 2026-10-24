@@ -188,7 +188,10 @@ def ground(game, site, m, tw, friendly):
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 m.set(cx + dx, cy + dy, D.TRUNK)
-    door = min((c for c in wall if abs(c[1] - cy) <= 1), key=lambda c: (c[0], abs(c[1] - cy)))
+    inner = cells - wall
+    ok = [c for c in wall if (c[0] + 1, c[1]) in inner and (c[0] - 1, c[1]) not in cells]   # a door opens inside
+    door = min([c for c in ok if abs(c[1] - cy) <= 1] or ok or [c for c in wall if abs(c[1] - cy) <= 1],
+               key=lambda c: (c[0], abs(c[1] - cy)))
     if not st.get('stilts'):
         m.set(door[0], door[1], DOOR)
     up = tw['stairs'][0] if tw['stairs'] else None

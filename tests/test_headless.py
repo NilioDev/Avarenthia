@@ -5294,6 +5294,12 @@ def places():
         got = reach(m, m.entry)
         for t in (D.UP, D.DOWN):
             for i in [i for i, v in enumerate(m.t) if v == t]:
+                if (i % m.w, i // m.w) not in got:
+                    from avarenthia import look as LK
+                    ux, uy = i % m.w, i // m.w
+                    for y in range(max(0, uy - 9), min(m.h, uy + 10)):
+                        print(''.join(('o' if (x, y) in got else LK.get(m, y * m.w + x)[0]) for x in range(max(0, ux - 20), min(m.w, ux + 20))))
+                    print(m.entry, (ux, uy))
                 assert (i % m.w, i // m.w) in got, (tag, t)
         for t, d in ((D.UP, 'up'), (D.DOWN, 'down')):
             if t not in m.t:
