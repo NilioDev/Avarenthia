@@ -737,6 +737,22 @@ def edge_point(m, cx, cy, dx, dy):
     return best
 
 
+def dry_exits(m, cx, cy):
+    """A road that leaves along the coast may have its way out drowned by the sea: move it to the nearest dry spot
+    on the edge, and lay the road there anew."""
+    edge = [(x, y) for x in range(m.w) for y in (0, m.h - 1)] + [(x, y) for y in range(1, m.h - 1) for x in (0, m.w - 1)]
+    dry = [c for c in edge if m.tile(*c) in (GRASS, PATH)]
+    moved = {}
+    for k, (ex, ey, other) in enumerate(m.exits):
+        if m.tile(ex, ey) in (GRASS, PATH) or not dry:
+            continue
+        if (ex, ey) not in moved:
+            nx, ny = min(dry, key=lambda c: abs(c[0] - ex) + abs(c[1] - ey))
+            lay_road(m, meander((cx, cy), (nx, ny), 6, 1, abs(nx - cx) >= abs(ny - cy)), 2)
+            moved[(ex, ey)] = (nx, ny)
+        m.exits[k] = (*moved[(ex, ey)], other)
+
+
 D8 = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
 
 
@@ -1048,6 +1064,7 @@ def gen_village(game, s):
     from . import harbour as HB
     if getattr(s, 'harbour', False):
         plots.append(HB.carve(m, s))
+        dry_exits(m, cx, cy)
     if s.id == 0 or (tier != 'hamlet' and random.random() < .3 and not wet):
         pond = fishing_pond(game, m, plots, cy, names, fisher=s.id == 0)
         if pond:

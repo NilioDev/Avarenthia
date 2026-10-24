@@ -876,7 +876,7 @@ def thornfield_and_faith():
         x, y = q.popleft()
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
             nx, ny = x + dx, y + dy
-            if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in (D.PATH, D.GRASS, D.SIGNPOST, D.WELL):
+            if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in (D.PATH, D.GRASS, D.SIGNPOST, D.WELL, D.BRIDGE):
                 seen.add((nx, ny))
                 q.append((nx, ny))
     from avarenthia import towns as TWN

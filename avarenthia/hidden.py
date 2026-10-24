@@ -171,7 +171,8 @@ def generate(game, m, world):
             wy = Way(len(world.ways), 'hidden', f'an old path to {poi.name}', [])
             wy.cells = _lay(m, world, [(x, y)] + p, wy.id)
             wy.target = ('poi', poi.id)
-            world.ways.append(wy)
+            if wy.cells:                            # a path that runs all along older ways is no way of its own
+                world.ways.append(wy)
             taken.append((x, y))
             break
     # ---- the valleys: a pass from the nearest road over the mountains
@@ -185,7 +186,8 @@ def generate(game, m, world):
         wy = Way(len(world.ways), 'valley', f'the pass to {site.name}', [])
         wy.cells = _lay(m, world, [(site.x, site.y)] + p, wy.id)
         wy.target = ('site', site.id)
-        world.ways.append(wy)
+        if wy.cells:
+            world.ways.append(wy)
     # ---- milestones along the longer ways, each pointing at another secret
     for wy in world.ways:
         for k in range(18, len(wy.cells) - 6, 26):
