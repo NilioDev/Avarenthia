@@ -112,7 +112,8 @@ def x_shadowstep(game, sk, r):
     game.fx('trail', cells=game.cells_between((p.x, p.y), (x, y)), col=sk.color, ch='░')
     p.x, p.y = x, y
     p.last_target = t.id
-    p.buffs = [b for b in p.buffs if b[0] != 'ambush'] + [['ambush', 1, 5, sk.name]]
+    p.buffs = [b for b in p.buffs if b[0] != 'ambush' and b[3] != sk.name] + \
+        [['ambush', 1, 5, sk.name], ['def', SK.STEP_DEF, SK.STEP_TURNS, sk.name]]
     game.compute_fov()
     game.msg(f'You step out of the shadows behind {t.the()}.', 'good')
     return True
@@ -184,6 +185,7 @@ def envenom_hit(game, mon):
     v = b[1] + TT.total(game, 'venom')
     t = 4 + TT.total(game, 'venom_t')
     mon.effects['poison'] = [t, max(1, v)]
+    mon.effects['weaken'] = [t, 0]                  # the venom saps its strength: its blows land softer
     if TT.has(game, 'rimeknife'):
         mon.effects['slow'] = [2, 0]
     if TT.has(game, 'black_lotus'):

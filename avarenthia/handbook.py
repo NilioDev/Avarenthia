@@ -231,7 +231,8 @@ def ch_who(g):
               'Envenom, Garrote, Smoke Bomb, Shadowstep and Vanish, snares, the sign {^|200,170,120}, and caltrops, '
               'the sign {÷|180,180,180}. Smoke, the sign {▒|154,154,154}, hides what stands in it. A foe that does not '
               'see you coming, asleep, blinded or unaware, takes your first blow twice over; a Rogue\'s, three '
-              'times. Who sneaks is seen far less often.'),
+              'times. Who sneaks is seen far less often. Venom saps a foe\'s strength, and who steps out of the shadows '
+              'is hard to hit for a moment.'),
         ('p', 'Arcane is the old learned magic: Arcane Bolt, Blink, Slow, Dispel, Counterspell and Stop Time, runes, '
               'the sign {Φ|190,150,255}, that wait on the ground for a foe, and gates, the sign {Ω|120,160,255}: step '
               'into one and come out of the other. Dispel takes a spell off the ground or the magic off a foe; '

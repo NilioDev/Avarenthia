@@ -331,6 +331,10 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   waves on three worlds, each must win 11 of 12. Tuned so (24 October 2026, Nilio: the Rogue stands level with the
   rest): dagger 2-7 (was 1-5), Envenom 10 + 0.6 a rank for 20 turns, Shadowstep back in 6 turns, Iron Skin 30% +
   0.4 a rank for 12 turns. Over eight worlds: Pyromancer, Firebrand, Reaver 32 of 32, Rogue 31, Warrior 30.
+  Tuned again at the end of block 2 (24 October 2026; the new dungeons made the Warrior and the Rogue fall on some
+  worlds): Iron Skin 40% + 0.4 a rank for 16 turns, back in 20; Envenom also weakens the foe while the poison lasts;
+  Shadowstep gives +60 defense for 4 turns. The test now fights on six worlds and each build must win 22 of 24 waves.
+  Over ten worlds: Warrior 40 of 40, Rogue 38, Reaver 39, Firebrand 40.
 - **The K5 maker** (24 October 2026; `k5.py`, `pieces.py`, `themes.py`, `underground.py`, `pieces/`). Classic dungeon
   levels grow the way of Brogue: rooms of 15 shapes slid onto the level, main ways 3 wide, narrow ways 1 wide, every
   passage from room to room, loops only where the way round is long, lakes, a check (0 bad doors, 0 double walls).

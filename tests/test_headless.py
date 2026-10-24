@@ -4538,8 +4538,8 @@ def pairs():
 
 def balance():
     """The balance test: the same foes, five ways to fight them: a pure caster, a pure warrior, two who mix weapon and
-    class, and a pure rogue. Each wears what such a one wears. On three worlds they should all win, about as fast,
-    with a different risk."""
+    class, and a pure rogue. Each wears what such a one wears. On six worlds they should all win, about as fast,
+    with a different risk. Six worlds, so that one hard draw does not decide it: each must win 22 of 24 waves."""
     from avarenthia import skills as SK, classes as CL
     from avarenthia.entities import make_monster, make_gear
     from avarenthia.worldgen import free_around, bfs
@@ -4554,7 +4554,7 @@ def balance():
     out = {}
     for name, (cl, weapon, wear, bar, (st, dx, vi, en)) in builds.items():
         won, turns, taken = 0, 0, 0
-        for world in (11, 12, 13):
+        for world in range(11, 17):
             app = new_app('soft', seed=world)
             random.seed(world * 7)
             g, p = app.game, app.game.player
@@ -4624,8 +4624,8 @@ def balance():
                 if g.dead:
                     break
         out[name] = (won, turns, taken)
-        print(f'  {name}: {won} of 12 waves won in {turns} turns, {taken} damage taken')
-    assert all(w >= 11 for w, _t, _d in out.values()), out
+        print(f'  {name}: {won} of 24 waves won in {turns} turns, {taken} damage taken')
+    assert all(w >= 22 for w, _t, _d in out.values()), out
     ts = [t for _w, t, _d in out.values()]
     assert max(ts) <= 3 * max(1, min(ts)), out
     print('balance ok')

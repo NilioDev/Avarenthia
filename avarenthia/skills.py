@@ -105,6 +105,8 @@ S = Skill
 LEAF, BONE, BEAST = (120, 200, 90), (210, 210, 180), (200, 150, 90)
 SNEAK, ARC = (150, 150, 170), (190, 150, 255)
 FIRE, ICE, STORM, HOLY, DARK, STEEL, ARROW, WAR = (255, 122, 44), (159, 216, 255), (242, 240, 122), (150, 255, 170), (176, 110, 255), (255, 106, 74), (216, 208, 176), (242, 196, 67)
+STEP_DEF, STEP_TURNS = 60, 4             # out of the shadows: hard to pin down for a moment
+
 SKILL_LIST = [
     # the weapon skills come with the weapon in hand (weaponskills.py), not from tomes
     # fire: the strongest against one; burning enemies take more fire, and fire leaves burning ground
@@ -195,7 +197,7 @@ SKILL_LIST = [
     S('rage', 'Battle Rage', 'warcraft', 1, 6, 25, 'self', buff=('dmg', 20, .5, 12), color=WAR, glyph='!'),
     S('brace', 'Brace', 'warcraft', 2, 5, 18, 'self', buff=('dr', 20, .25, 8), color=WAR, glyph='#'),
     S('second_wind', 'Second Wind', 'warcraft', 3, 6, 30, 'self', heal=(20, 1.5), cure=True, color=WAR, glyph='+'),
-    S('iron_skin', 'Iron Skin', 'warcraft', 4, 8, 30, 'self', buff=('dr', 30, .4, 12), color=WAR, glyph='#'),
+    S('iron_skin', 'Iron Skin', 'warcraft', 4, 8, 20, 'self', buff=('dr', 40, .4, 16), color=WAR, glyph='#'),
     S('rally', 'Rally', 'warcraft', 5, 10, 35, 'self', heal=(15, 1.0), buff=('dmg', 15, .3, 12), party=True, fury=12, color=WAR, glyph='!'),
     S('charge', 'Charge', 'warcraft', 6, 9, 12, 'leap', pct=200, pct_r=2, range=6, fx={'stun': 2}, color=WAR),
     S('unbroken', 'Unbroken', 'warcraft', 7, 10, 45, 'self', buff=('unbroken', 3, .05, 15), color=WAR, glyph='#'),
@@ -422,7 +424,8 @@ def describe(sk, r):
     elif m == 'smoke':
         parts.append(f"A cloud of smoke round you, {sk.radius} tile{'s' if sk.radius > 1 else ''} each way, that no eye sees through.")
     elif m == 'shadowstep':
-        parts.append(f'Step behind an enemy up to {sk.range} tiles away; your next blow is unseen.')
+        parts.append(f'Step behind an enemy up to {sk.range} tiles away; your next blow is unseen, and for {STEP_TURNS} turns '
+                     f'you are hard to hit, +{STEP_DEF} defense.')
     elif m == 'vanish':
         parts.append('Foes that see you lose you, and you move unseen for a while; your next blow is unseen.')
     elif m == 'blink':
@@ -548,7 +551,8 @@ def describe(sk, r):
                       'feint': 'Your next blow goes past a shield or a guard;', 'riposte': 'The first blow at you is '
                       'turned aside and answered with a strike,', 'keepback': 'Who comes up beside you meets your point '
                       'first,', 'sneak': 'You move unseen: foes notice you far less often,',
-                      'envenom': f'Each blow of your weapon poisons the foe, {v} a turn,',
+                      'envenom': f'Each blow of your weapon poisons the foe, {v} a turn, and the venom saps its '
+                      'strength: its blows land softer,',
                       'counter': 'The next spell cast at you comes to nothing,',
                       'haste': 'You act twice in each of their turns,'}[k]
                      + f' for {t} turns.')
