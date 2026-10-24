@@ -18,11 +18,13 @@ from .worldgen import cheb
 
 PEOPLES = ('human', 'elf', 'dwarf', 'halfling', 'gnome', 'orc', 'goblin', 'kobold', 'gnoll', 'lizard')
 HOSTILE = {'orc', 'goblin', 'kobold', 'gnoll', 'lizard'}
-KINDS = {'tower', 'barrow'}                 # new site kinds; temples keep their old kind and gain a people
+KINDS = {'tower', 'barrow', 'fort', 'manor'}   # new site kinds; temples and monasteries keep theirs and gain a people
+OLD = ('temple', 'monastery')
+HALLS = ('monastery', 'fort', 'manor')
 FG = {'human': (240, 230, 200), 'elf': (206, 240, 200), 'dwarf': (226, 176, 126), 'halfling': (206, 220, 126),
       'gnome': (226, 204, 120), 'orc': (170, 204, 100), 'goblin': (196, 204, 96), 'kobold': (230, 156, 90),
       'gnoll': (214, 178, 100), 'lizard': (116, 196, 126)}
-SIGN = {'temple': 'π', 'tower': '¡', 'barrow': '∩'}
+SIGN = {'temple': 'π', 'tower': '¡', 'barrow': '∩', 'monastery': 'Θ', 'fort': '╩', 'manor': 'Å'}
 PLURAL = {'human': 'people', 'elf': 'elves', 'dwarf': 'dwarves', 'halfling': 'halflings', 'gnome': 'gnomes', 'orc': 'orcs',
           'goblin': 'goblins', 'kobold': 'kobolds', 'gnoll': 'gnolls', 'lizard': 'lizardfolk'}
 ADJ = {'human': 'human', 'elf': 'elven', 'dwarf': 'dwarven', 'halfling': 'halfling', 'gnome': 'gnome', 'orc': 'orc',
@@ -88,7 +90,7 @@ def people_of(site):
 
 
 def is_place(site):
-    return site is not None and (site.kind in KINDS or (site.kind == 'temple' and getattr(site, 'people', None)))
+    return site is not None and (site.kind in KINDS or (site.kind in OLD and getattr(site, 'people', None)))
 
 
 def glyph(site):
@@ -108,6 +110,9 @@ def a_name(people):
 
 def describe(game, site):
     pe = people_of(site)
+    if site.kind in HALLS:
+        from . import halls as HL
+        return HL.describe(game, site)
     if site.kind == 'temple':
         return f'A temple of the {PLURAL[pe]}. ' + ('Priests heal the sick and lift curses; a place to wake if you fall.'
                                                     if pe not in HOSTILE else 'Its altar is not for strangers.')
@@ -155,6 +160,9 @@ def place(game, m, world, reach_set):
     near their own places, in the land they like."""
     from .world import scaled
     from .sites import Site
+    from . import halls as HL
+    for k, v in HL.NAMES.items():
+        NAMES.setdefault(k, v)
     taken = [(s.x, s.y) for s in world.settlements] + [(q.x, q.y) for q in world.sites] + \
             [(d.x, d.y) for d in world.dungeons.values()] + [(h.x, h.y) for h in world.holds]
     halfland = set(getattr(world, 'halfling_land', ()))
@@ -165,6 +173,9 @@ def place(game, m, world, reach_set):
             setup(game, world, st)
         elif st.kind == 'watchtower':
             st.kind, st.people = 'tower', 'human'
+            setup(game, world, st)
+        elif st.kind == 'monastery':
+            st.people = 'human'
             setup(game, world, st)
 
     def anchors(pe):
@@ -211,8 +222,10 @@ def place(game, m, world, reach_set):
         used = {q.name for q in world.sites}
         pool = NAMES[kind].get(kw.get('pool', pe)) or NAMES[kind]['human']
         name = next((n for n in random.sample(pool, len(pool)) if n not in used), None)
-        if kind == 'tower' and pool is NAMES['tower']['human']:
+        if kind in ('tower', 'fort', 'manor') and pool is NAMES[kind].get('human'):
             name = f'{world.region_at(x, y).name} {random.choice(pool)}'      # as the old watchtowers were named
+            if name in used:
+                name = None
         elif name is None:
             name = f'{random.choice(pool)} of {world.region_at(x, y).name}'
         s = Site(len(world.sites), kind, x, y, name)
@@ -250,6 +263,15 @@ def place(game, m, world, reach_set):
             xy = spot(pe, (6, 24))
             if xy:
                 add('barrow', pe, xy)
+    for pe in PEOPLES:                          # abbeys, forts and manors (halls.py); the humans' old monasteries stay
+        if pe == 'halfling' and not halfland:
+            continue
+        for kind, n in (('monastery', 0 if pe == 'human' else 1), ('fort', 2 if pe == 'human' else 1),
+                        ('manor', 2 if pe == 'human' else 1)):
+            for _ in range(n):
+                xy = spot(pe, (5, 20)) or spot(pe, (4, 40), anywhere=True)
+                if xy:
+                    add(kind, pe, xy)
 
 
 def setup(game, world, site):
@@ -296,6 +318,9 @@ def setup(game, world, site):
         site.god = {'dwarf': 'durnak', 'elf': 'thessa', 'halfling': 'thessa', 'gnome': 'skell'}.get(pe, getattr(site, 'god', None))
         if pe in HOSTILE:
             site.god = 'morrak'
+    elif site.kind in HALLS:
+        from . import halls as HL
+        HL.setup(game, world, site)
     elif site.kind == 'barrow':
         did = f'br{site.id}'
         deeper = pe == 'kobold' or random.random() < .35
@@ -401,6 +426,9 @@ def gen_map(game, site):
     if site.kind == 'barrow':
         from . import barrows as BR
         return BR.site_map(game, site)
+    if site.kind in HALLS:
+        from . import halls as HL
+        return HL.site_map(game, site)
     from . import temples as TP
     return TP.site_map(game, site)
 
@@ -470,6 +498,9 @@ def on_enter(game, site, m):
     """Arriving: who is here and what they make of you; in a hostile tower the watch sees you coming."""
     t = tier(game, site)
     pe = people_of(site)
+    if site.kind in HALLS:
+        from . import halls as HL
+        return HL.on_enter(game, site, m)
     if site.kind == 'tower' and getattr(site, 'manned', False) and t < 0:
         site.alarm = game.day
         for o in m.mons:
@@ -596,6 +627,8 @@ def bump(game, x, y):
     from . import gods as GD
     m = game.map
     t = m.tile(x, y)
+    if (x, y) in getattr(m, 'things', ()):
+        return None                             # a telling thing of its own (halls.py, themes.py)
     site = game.world.sites[m.site] if getattr(m, 'site', None) is not None else None
     if t == D.ALTAR and site is not None and site.kind == 'temple':
         if people_of(site) in HOSTILE and tier(game, site) < 2:

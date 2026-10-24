@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: abbeys, forts, manors and the underground kinds (24 Oct)** | Every people's abbey, fort and manor on its own land with floors above and cellars below; forts held, taken, empty or ruined, with their own ways in; caves, nests, dens and crypts shaped by whoever made them; the goblin hole and the goblin village |
 | **Built: the K5 maker (24 Oct)** | Classic dungeons grow from rooms of many shapes; 38 theme rooms drawn as pieces, each with one telling thing; rivers of water and fire underground; rock you can see; a mood line per room |
 | **Built: classes part 2, the trees (23 Oct)** | A tree per class, 3 branches of 6 passive knots, a point per 5 ranks, spent where you rested, a temple takes them back; the imbues; Nature's three shapes |
 | **Built: classes part 1 (23 Oct)** | A blank start, the first and second class, 55 pair names; the bar is 2 weapon skills, 3 class skills, 1 elite; two skills for every weapon kind, each family with a rule for class skills |
@@ -361,6 +362,24 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **Places on their own land, part 2** (24 October 2026; `halls.py`, `delves.py`, `gobvillage.py`). Every people
+  has an abbey (Θ; the old human monasteries keep their place), a fort (╩) and a manor (Å), each its own plan as
+  the spec says, on its own land: 100 x 60 for abbeys and forts, 80 x 50 for manors. Floors above for the human
+  abbey (dormitory and scriptorium), the elves' crowns, the halfling loft, the human manor, the elven bower and the
+  gnome cap house (style 'upper', the land faded below); a fort's tower follows the tower rules (two new small
+  styles, 'corner' and 'loft'). Below: cellars, archives and dungeons of 1 to 5 levels. A fort is held by its people,
+  or taken by bandits, abandoned to beasts or a ruin. Telling things through `m.things`: lore on shelves and rune
+  stones (history), a still pool or lens shows a far place, the goblins' map room marks a dungeon, the halfling long
+  table feeds a friend once a day, letters give a rumour, a portrait or seat says who lives there; the keep's
+  portcullis drops on alarm (a postern at the back), the lizardfolk pull in their walkway, the kobold trap gate and
+  its falling ceiling, the gnomes' hidden door and peep holes, the elves' woven gate for friends only, the dwarves'
+  murder holes and bolt throwers. The underground kinds (den, warren, cave, ant nest, spider lair, grotto, gloam,
+  dragon and spider lairs, burrow, swamp, crypt) lay out rooms by use with their folk where they belong; the goblin
+  hole has a watch that strikes the gong, tripwires, a covered pit and a back way out. The goblin ravine ends in a
+  carved gate to the goblin village (120 x 70) with the deep halls below; its chief's high seat holds the village.
+  Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
+  the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
+  hamlets yet.
 
 ## The K5 maker (built 24 October 2026; the spec)
 - **The random maker for classic dungeons (K5, approved 22 October)**: the way of Brogue, in our style. The theme rooms come from the pieces; the rest stays random. Mockups `K5_ways_seed1-4`, script `mockups/mockup_brogue_v5.py`, notes `brogue.md` and `inspiratie.md`.
@@ -1159,6 +1178,47 @@ burning ground, ice wall, root tiles, thorn tiles, bone walls, corpses, hallowed
 A tile under a spell in a fight shows in IN SIGHT like any other danger. No new keys: skills stay on the bar (1-6)
 and are chosen in town (Z). Two beasts (Packmaster) take the beast's place in the company screen (h).
 **Save data** changes (known skills, second beast, corpses): bump `SAVE_VERSION`.
+
+## Places on their own land, part 2 (built 24 October 2026; the spec)
+- **Underground kinds get their own plan too** (`ondergronds.md`): whoever made the place decides its shape (water, beasts, ants, goblins, dwarves, people); rooms by use (a goblin delve has a market hall, forge, family halls, cells, the chief's hall); tunnels at least 3 wide, main ones 4, well connected with a loop; inhabitants placed where they belong, fewer than now; two ways down where it fits. Goblins are a clever people: their delve is cut into the back wall of their ravine, not a cave. Cells have bars only as their front, between stone walls. Bridges no longer use ═ (the built wall). Mockups E2 and F.
+- **Abbeys (approved 22 October)**: a middle place, 100 x 60, on its own land: a place apart where the devout live, learn and keep lore. Each people has its own, under its own name, with levels up (<) and down (>). Mockup `AP_abbeys_peoples.png` (style sketch).
+  - **Human, the Abbey:** a church on the north side, a cloister walk round a garth with a well, a chapter house, refectory, kitchen and infirmary. Up: the dormitory and the scriptorium with books (ties to the libraries of `history.py`). Down: the wine cellar and the bone house.
+  - **Elf, the Starhaven:** a ring of great trees round a star garden of white stone; sleeping halls in the crowns; a still pool that mirrors the stars; an archive of song-scrolls in a hollow trunk.
+  - **Dwarf, the Rune Hall:** a hall of rune stones where the lore is carved, a forge chapel, a brewery, the brothers' cells; store halls and the deep archive below.
+  - **Halfling, the Harvest House:** a round hall with the long table, a bakery and a brewhouse, vegetable gardens, an orchard and beehives inside a hedge; pantry cellars below.
+  - **Gnome, the Lantern House:** round rooms under the roots, lit by crystals: a star dome with a lens, a library, an alchemy room, sleeping nooks; the deep workshop below.
+  - **Orc, the Spirit Lodge:** where shamans train the young: a sweat lodge, the young warriors' hut, a ring of trial stones round the spirit pole, drums; the spirit cave below.
+  - **Goblin, the Scroll Warren:** a cave of stolen books and scrolls in heaps round a junk idol, a map room, an ink pit, reading nooks; the vault of secrets below.
+  - **Kobold, the Gleam House:** a mirror hall and a sorting hall where coins, gems and metal are sorted and polished; the deep hoard below.
+  - **Gnoll, the Bone Kraal:** where bone-callers learn: the howl rock with its moon stone, the bone-caller's hut, hide racks, a bone heap, a carrion pit; the bone tunnels below.
+  - **Lizardfolk, the Hatchery:** reed huts on stilts joined by walkways round the sacred eggs in warm mud; the priests' hut and the sun stone; the drowned halls below.
+  - **Friendly or not** by standing, as with temples and towers.
+- **Forts (approved 22 October)**: a middle place, 100 x 60 (a border fort large), built to hold ground. Each people has its own, under its own name; its way in is its one telling thing. Below lie 3 to 5 levels of cells, stores or older dungeon. Mockup `FP_forts_peoples.png` (style sketch). Only the goblin hole and the goblin village get no version per people; they are goblin kinds already.
+  - **Human, the Keep:** a moat and a drawbridge, a gatehouse with a portcullis that drops on alarm, four corner towers (tower rules; shoot over the wall from the wall walk), a yard with a well, barracks, stable, armoury and the lord's keep. Below: the dungeon, a place for rescue jobs.
+  - **Elf, the Thornwatch:** a ring of thorn grown as a wall, a gate of woven living branches, guard trees with archers' platforms, the captain's stone; root cellars below.
+  - **Dwarf, the Gatehold:** a wall across a gorge with the gate in the rock, murder holes over the road, bolt throwers in the cliff, barracks and a forge; the battlements up, the halls down.
+  - **Halfling, the Hedge Post:** a small watch house in a thick hedge, a bell to raise the hamlets, a lookout loft; the root cellar.
+  - **Gnome, the Hidden Hill:** a hill that looks empty through an illusion crystal; peep holes all round, traps on every way in; the deep burrows below.
+  - **Orc, the Stockade:** a palisade behind a ditch of stakes, gate towers, the warlord's seat, sleeping rows, a weapon heap, a warg pen; the pits below.
+  - **Goblin, the Scrap Fort:** a ring of scrap, carts and planks, a gong tower, catapults of junk, spiked pits at the gate; tunnels below.
+  - **Kobold, the Trap Gate:** one long tunnel in, trapped every few steps, spy holes from side tunnels, a ceiling ready to drop; the warrens below.
+  - **Gnoll, the War Boma:** two rings of thorn, lookout platforms on poles, the packlord's bones, hyenas inside; the dug den below.
+  - **Lizardfolk, the Stilt Bastion:** a reed fort on stilts in deep water, reached by one plank walkway they pull in when warned; the flooded cellars below.
+  - **Who holds it:** its own people (access by standing), or it is taken, abandoned or a ruin.
+- **Manors (approved 22 October)**: a small place, 80 x 50: the house of someone who matters. Each people has its own, under its own name. Letters and ledgers in it can point to a job; the one telling thing says who lives there. Mockup `MP_manors_peoples.png` (style sketch); the human one is mockup D.
+  - **Human, the Manor:** the great hall with the portrait over the hearth, kitchen and store with a back door to the well and the kitchen garden, a chapel, a dining room, a garden wall and a lane to the road. Up: bedrooms and the study. Down: the wine cellar, sometimes with a secret way out.
+  - **Elf, the Bower:** a house grown round four trunks, rooms of living wood joined by bridges (the hall of songs, the study, the bedroom), a moon garden on the ground; the root cellar.
+  - **Dwarf, the Clan House:** behind a carved door, the hearth hall with the ancestor wall, a brew room, the treasury, sleeping rooms; the clan vault below.
+  - **Halfling, the Hill Hall:** a big home dug into a green hill behind a round door: the parlour, pantries full of jars, a study, bedrooms, flower gardens; the deep pantry.
+  - **Gnome, the Cap House:** a house in a giant mushroom with a stair up its stem: a workshop, a study, a potion room, a bedroom; the root workshop.
+  - **Orc, the Longhouse:** the chief's long hall, fires down the middle, sleeping benches along the walls, the chief's seat at the end, a skull pole at the door, a warg yard; the store pit.
+  - **Goblin, the Counting House:** a trader-boss's house in the rock: the counting room with ledgers, a locked strongroom, a store of stolen goods; the smugglers' tunnel.
+  - **Kobold, the Hoard Burrow:** the hoardmaster sleeps on his coin; side holes for gems, a mirror, a polishing bench; the deep hoard.
+  - **Gnoll, the Great Tent:** the packlord's great tent of hides in a thorn ring, his seat of bones, his share of the kill, hyenas at the door; the den below.
+  - **Lizardfolk, the Sun House:** the elder's house on stilts with a window to the sun, an egg of the line, a fish pen; the mud cellar.
+- **Goblin places (approved 22 October)**:
+  - **An ordinary goblin hole** (small, 80 x 50; mockup `E3_goblin_hole.png`): a hole in a slope with a lookout and the alarm gong by the way in (silence the watch and the hole sleeps on); rough passages braced with beams; tripwires and a covered pit; a sleeping den with straw, a cook den, a loot corner with what they took from the road, the leader's nook; a narrow back way out where they flee. Short and sharp: one level, sometimes two.
+  - **The goblin village** (large, 120 x 70, built like a settlement; mockup `E2b_goblin_village.png`): cut into the back wall of their ravine, the ravine as the square, a gate with the goblin tower; a main gallery 4 wide; the market hall with pillars, the forge, family halls with hearths, the cell block (barred fronts between stone walls), wolf pens (a keepers' aisle with room to stand, pens cut into the rock, a barred front with a door on each), a shrine, the chief's hall at the back with the treasury, a loop round the back. Two levels: the village, and the mine and deep halls below. Traders, children and non-fighters who flee; the warn-then-rouse rule of `tribes.py`; captives for a rescue job. The chief's throne decides whether the village goes with you or against you.
 
 ## Places on their own land, part 1 (built 24 October 2026; the spec)
 - **Towers (approved 22 October)**: slender and high. Mockups `T_tower.png`, `T_towers_peoples.png` and `T_towers_peoples2.png`.

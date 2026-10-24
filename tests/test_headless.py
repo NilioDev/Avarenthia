@@ -5424,11 +5424,186 @@ def places():
     print('places ok:', len(done), 'kinds of place,', sum(kinds.values()), 'in the world,', len(old), 'over older places')
 
 
+def halls():
+    """Abbeys, forts and manors of every people, the underground kinds' own plans and the goblin village: each stands
+    where it should, its stairs lead up and down, its telling things answer, a fort may be taken, abandoned or broken,
+    the portcullis drops on alarm, and the round trip from the ravine to the deep halls comes home."""
+    from avarenthia import places as PL, halls as HL, themes as TH, delves as DV, gobvillage as GV, hunger as HU
+    from avarenthia.world import Dungeon
+    from collections import Counter, deque
+    import pickle
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    kinds = Counter((s.kind, PL.people_of(s)) for s in w.sites if s.kind in PL.HALLS)
+    for pe in PL.PEOPLES:
+        if pe == 'halfling' and not getattr(w, 'halfling_land', None):
+            continue
+        for k in ('monastery', 'fort', 'manor'):
+            assert kinds[(k, pe)] >= 1, (k, pe, kinds)
+    assert all(PL.people_of(s) == 'human' for s in w.sites if s.kind == 'monastery' and s.name in
+               ('Monastery of the Grey Brothers', 'Abbey of Saint Wendel'))
+
+    def reach(m, start):
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                c = (x + dx, y + dy)
+                if c not in seen and m.inb(*c) and (D.TILES[m.tile(*c)].walk or m.tile(*c) in (D.DOOR, D.SECRET, D.WOVEN)):
+                    seen.add(c)
+                    q.append(c)
+        return seen
+
+    def visit(s):
+        to_over(g, 0)
+        p.x, p.y = s.x, s.y
+        g.over_pos = (s.x, s.y)
+        g.enter_site(s.id)
+        return g.map
+
+    told = Counter()
+    for s in [q for q in w.sites if q.kind in PL.HALLS]:
+        m = visit(s)
+        app.render()
+        assert m.hall == s.kind and getattr(m, 'things', None) is not None
+        got = reach(m, m.entry)
+        for t in (D.UP, D.DOWN):
+            for i in [i for i, v in enumerate(m.t) if v == t]:
+                assert (i % m.w, i // m.w) in got, (s.kind, s.people, t)
+        assert D.DOWN in m.t, (s.kind, s.people)
+        for (x, y), (act, rid) in list(m.things.items()):     # every telling thing answers
+            if act in told and act not in ('h_portrait',):
+                continue
+            told[act] += 1
+            p.x, p.y = m.entry
+            spent = TH.ACTIONS[act](g, x, y, rid, TH.state(m, rid))
+            assert spent is not None and spent >= 0, act
+            if g.dead or g.map is not m:
+                g.dead = False
+                g.cur = s.map_key
+        if getattr(s, 'up', None):
+            g.cur = s.map_key
+            i = m.t.index(D.UP)
+            p.x, p.y = i % m.w, i // m.w
+            g.use_stairs('up')
+            um = g.map
+            assert getattr(um, 'upper', False) and um.sky == s.id, s.name
+            app.render()
+            assert len(reach(um, (p.x, p.y))) > 30, s.name
+            pickle.dumps(um)
+            g.use_stairs('down')
+            assert g.cur == s.map_key
+    for act in ('h_lore', 'h_pool', 'h_lens', 'h_dungeonmap', 'h_meal', 'h_portrait', 'h_letters', 'h_say'):
+        assert told[act], (act, told)
+    print('  telling things:', dict(told))
+    # a halfling house feeds a friend once a day
+    hh = next((q for q in w.sites if q.kind == 'monastery' and q.people == 'halfling'), None)
+    if hh:
+        m = visit(hh)
+        cell = next(c for c, v in m.things.items() if v[0] == 'h_meal')
+        p.food, p.hall_meal = 100, -1
+        TH.ACTIONS['h_meal'](g, *cell, m.things[cell][1], {})
+        assert p.food > 600
+        before = p.food
+        TH.ACTIONS['h_meal'](g, *cell, m.things[cell][1], {})
+        assert p.food == before, 'one meal a day'
+    # who holds a fort: taken by bandits, abandoned to beasts, or a ruin
+    fort = next(q for q in w.sites if q.kind == 'fort' and q.people == 'human')
+    for st in ('taken', 'abandoned', 'ruin', 'whole'):
+        fort.state = st
+        fort.holder = 'bandits' if st == 'taken' else None
+        g.maps.pop(fort.map_key, None)
+        m = visit(fort)
+        foes = [o for o in m.mons if not o.is_npc]
+        folk = [o for o in m.mons if o.is_npc]
+        if st == 'taken':
+            assert foes and not folk and getattr(m, 'portcullis', None)
+            assert not PL.friendly(g, fort)
+        elif st == 'abandoned':
+            assert not folk and not m.bar
+        elif st == 'ruin':
+            assert D.RUBBLE in m.t and not folk
+        else:
+            assert folk
+        print('  ', fort.name, st, len(foes), 'foes', len(folk), 'folk')
+    # the portcullis drops when the bandits see you
+    fort.state, fort.holder = 'taken', 'bandits'
+    g.maps.pop(fort.map_key, None)
+    m = visit(fort)
+    gate = m.portcullis[0]
+    o = next(o for o in m.mons if not o.is_npc)
+    p.x, p.y = gate[0] - 1, gate[1]
+    o.x, o.y = gate[0] + 3, gate[1]
+    g.compute_fov()
+    HL.alarm(g)
+    assert m.alarmed and m.tile(*gate) == D.BARS
+    fort.state, fort.holder = 'whole', None
+    g.maps.pop(fort.map_key, None)
+    # the elves' gate of woven branches shuts for a stranger; the gnomes' hill hides its door
+    real = PL.tier
+    PL.tier = lambda game, site: 0
+    try:
+        for kind, pe, tile in (('fort', 'elf', D.WOVEN), ('fort', 'gnome', D.SECRET)):
+            q = next((q for q in w.sites if q.kind == kind and q.people == pe and getattr(q, 'state', 'whole') == 'whole'),
+                     None)
+            if q:
+                g.maps.pop(q.map_key, None)
+                m = visit(q)
+                assert tile in m.t, (kind, pe)
+                g.maps.pop(q.map_key, None)
+    finally:
+        PL.tier = real
+    # every underground kind lays out its own plan: rooms by their use, folk where they belong
+    for k, kd in DV.KINDS.items():
+        did = f'test_{k}'
+        dg = Dungeon(did, f'Test {k}', 2, 3, 'cave' if not kd.get('built') else 'rooms', k, None, (120, 110, 100), 5, 5, False)
+        w.dungeons[did] = dg
+        to_over(g, 0)
+        g.enter_dungeon(did, 1, 'up')
+        m = g.map
+        assert getattr(m, 'delve', None) == k, k
+        got = reach(m, (p.x, p.y))
+        for t in (D.UP, D.DOWN):
+            for i in [i for i, v in enumerate(m.t) if v == t]:
+                assert (i % m.w, i // m.w) in got, (k, t)
+        assert any(not o.is_npc for o in m.mons) or k in ('cave', 'grotto'), k
+        app.render()
+        print('  ', k, len(m.mons), 'folk', len([r for r in m.rooms if r[0].startswith('delve:')]), 'rooms')
+        del w.dungeons[did]
+    # the goblin ravine leads down to the village, the village down to the deep halls, and all the way back
+    rv = next((q for q in w.sites if q.kind == 'ravine'), None)
+    if rv:
+        m = visit(rv)
+        assert getattr(m, 'delve_gate', None)
+        i = m.t.index(D.DOWN)
+        p.x, p.y = i % m.w, i // m.w
+        g.use_stairs('down')
+        vm = g.map
+        assert getattr(vm, 'village', False) and D.HIGHSEAT in vm.t
+        app.render()
+        i = vm.t.index(D.DOWN)
+        p.x, p.y = i % vm.w, i // vm.w
+        g.use_stairs('down')
+        assert g.map.kind == 'dungeon' and g.map.did == GV.deep_id(rv)
+        i = g.map.t.index(D.UP)
+        p.x, p.y = i % g.map.w, i // g.map.w
+        g.use_stairs('up')
+        assert g.map is vm
+        i = vm.t.index(D.UP)
+        p.x, p.y = i % vm.w, i // vm.w
+        g.use_stairs('up')
+        assert g.cur == rv.map_key
+        pickle.dumps(vm)
+    print('halls ok:', sum(kinds.values()), 'abbeys, forts and manors;', len(DV.KINDS), 'underground kinds')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

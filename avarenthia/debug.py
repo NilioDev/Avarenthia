@@ -183,13 +183,13 @@ def places(game):
     from . import places as PL
     for s in w.sites:
         kind = s.kind
-        if PL.is_place(s):                      # temples, towers and barrows by people and state
+        if PL.is_place(s):                      # temples, towers, barrows, abbeys, forts, manors by people and state
             bits = [PL.people_of(s)]
             if getattr(s, 'state', 'whole') != 'whole':
                 bits.append(s.state)
             if getattr(w.dungeons.get(getattr(s, 'below', None)), 'older', False):
                 bits.append('older below')
-            kind = f"{s.kind} ({', '.join(bits)})"
+            kind = f"{'abbey' if s.kind == 'monastery' else s.kind} ({', '.join(bits)})"
         out.append((kind, s.name, ('site', s.id)))
     for h in w.holds:
         out.append((h.kind, getattr(h, 'title', h.name), ('h', h.id)))
@@ -258,6 +258,24 @@ def old_tale(game):
     from . import places as PL
     tale = PL.rumour(game)
     game.msg(f'Debug: {tale}' if tale else 'Debug: no older place you have not heard of lies near enough.', 'info')
+
+
+def fort_holder(game):
+    """On a fort's own map: the next holder in turn (its people, bandits, nobody, a ruin), and the fort made again."""
+    m = game.map
+    site = game.world.sites[m.site] if getattr(m, 'site', None) is not None else None
+    if site is None or site.kind != 'fort':
+        game.msg('Debug: stand on the land of a fort first.', 'info')
+        return
+    order = ('whole', 'taken', 'abandoned', 'ruin')
+    site.state = order[(order.index(getattr(site, 'state', 'whole')) + 1) % len(order)]
+    site.holder = 'bandits' if site.state == 'taken' else None
+    game.maps.pop(site.map_key, None)
+    fl = getattr(site, 'floors', None) or f'tw{site.id}'
+    for k in [k for k in game.maps if k.startswith(f'{fl}:')]:
+        del game.maps[k]
+    game.enter_site(site.id)
+    game.msg(f'Debug: {site.name} is now {site.state}.', 'info')
 
 
 def theme_level(game, what):

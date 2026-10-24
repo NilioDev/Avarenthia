@@ -71,7 +71,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 38
+SAVE_VERSION = 39
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1143,6 +1143,11 @@ class Game:
             BH.spot_traps(self)
         if getattr(m, 'tribe', None):
             TR.on_step(self)
+        if getattr(m, 'hall', None):
+            from . import halls as HL
+            HL.on_step(self)
+            if self.dead:
+                return 1
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
         if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':

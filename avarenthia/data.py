@@ -196,6 +196,10 @@ TILES = [
     Tile('#', '#6a9a50', False, True, 'ivy on old stone', bg='#1a2614'),
     Tile('#', '#a8b070', False, True, 'wall of woven reeds', bg='#262a14'),
     Tile('·', '#e8eae0', True, False, 'white stone path'),
+    # abbeys, forts and manors (halls.py)
+    Tile('◘', '#e8c860', False, False, 'beehive', bg='#2a2410'),
+    Tile('°', '#f0d890', False, False, 'brass lens', bg='#1a2230'),
+    Tile('#', '#7ab060', False, True, 'gate of woven branches', bg='#14200e'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -210,6 +214,7 @@ CRUST, LAVA = 127, 128                      # a river of fire and the cooled cru
  ALCHEMY) = range(129, 147)                 # the telling things of the theme rooms (themes.py)
 (PARAPET, SLIT, LOOSE, BOLTS, DRUM, HORN, BELL, PEW, PILLAR, CRYSTAL, IDOL, BLOODPIT, BONES, STONE, IVY,
  REEDS, WHITE) = range(147, 164)            # places on their own land: temples, towers, barrows
+HIVE, LENS, WOVEN = range(164, 167)        # abbeys, forts and manors (halls.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

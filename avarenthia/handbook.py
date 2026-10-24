@@ -451,6 +451,19 @@ def ch_land(g):
               'shove sends a foe the same way.'),
         ('p', 'In the burial chamber of a barrow lies the bier, heaped with grave goods. Walk into it to take from it, '
               'and whoever lies there wakes, with the whole barrow.'),
+        ('h', 'Abbeys, forts, manors'),
+        ('p', 'Every people also has its abbey, the sign {Θ|240,230,200}, where its devout live and keep their lore; '
+              'its fort, the sign {╩|240,230,200}, built to hold the ground; and the manors of those who matter, the '
+              'sign {Å|240,230,200}. Each is built the way of its people, and the same rule of names holds: a friend '
+              'goes everywhere, a stranger only so far.'),
+        ('p', 'Each has its telling things. Shelves and rune stones keep a page of the past; a still pool or a lens '
+              'shows you a far place; a map in a goblin warren marks a way down; at a halfling long table a friend is '
+              'fed once a day; letters on a desk give you a lead; a portrait or a seat says who lives there. Walk into '
+              'them.'),
+        ('p', 'A fort may be taken by bandits, left empty, or fallen to a ruin. Seen by its foes, a keep drops its '
+              'portcullis; look for the postern. Lizardfolk pull in their plank walkway and you wade, the kobolds\' '
+              'way in is trapped every few steps, the gnomes\' hill hides its door, and the elves\' gate of woven '
+              'branches opens only for their friends.'),
         ('h', 'Falls and springs'),
         ('s', [([('≡', (236, 248, 255))], 'falls: a waterfall, a cascade or great falls. Fish bite better in the pool, '
                                           'a hollow may hide behind the falling water, and from the cairn on top of a '

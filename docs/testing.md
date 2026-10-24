@@ -47,6 +47,20 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Barrows** - each people's barrow, its twist (false tomb, hidden door, the kobolds' floor, the pool), the bier and
   its king. Debug: Teleport (barrow and its people).
 
+## Places on their own land, part 2 (built 24 October 2026)
+
+- **Abbeys, forts and manors of every people** - the walk in, how far a stranger gets, the floor above where there
+  is one, the cellars below, each telling thing (shelves, rune stones, the pool and the lens, the goblins' map room,
+  the long table, letters, the portrait or seat). Debug: Teleport (abbey, fort or manor and its people); Standing (f).
+- **Who holds a fort** - its people, bandits, nobody, a ruin; the portcullis that drops when the bandits see you, the
+  postern; the lizardfolk's walkway pulled in. Debug: "Change who holds this fort" (F) on the fort's land.
+- **The ways in** - the kobolds' trapped tunnel and falling ceiling, the gnomes' hidden door, the elves' woven gate
+  (stranger only), the dwarves' murder holes. Debug: Standing (f) to be a stranger, then Teleport.
+- **Underground kinds** - every kind's rooms and folk, the goblin hole's watch and gong, tripwires and the covered
+  pit, the back way out; smashing a nest's eggs. Debug: Teleport (dungeon), Spawn.
+- **The goblin village** - the carved gate at the end of the ravine, the village, the deep halls, the chief's high
+  seat, rousing in sync. Debug: Teleport (ravine).
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

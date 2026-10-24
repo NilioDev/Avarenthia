@@ -55,6 +55,11 @@ STYLE = {
                  slits=True, rim=D.PARAPET, marks=(D.BELL,), uses=('ringing loft', 'store'), name='a bell tower'),
     'elftree': dict(shape=('disc', 4.6), wall=D.TRUNK, fg=None, floor=PLANK, ladder=False, split=None, small=True,
                     slits=False, rim=D.HEDGE, marks=(), uses=('crown',), name='the eldest tree'),
+    # the towers set into a fort (halls.py): a stone corner tower, and a lookout loft of logs
+    'corner': dict(shape=('square', 3, 0), wall=WALL, fg=(186, 182, 172), floor=FLOOR, ladder=False, split=None, small=True,
+                   slits=True, rim=D.PARAPET, marks=(D.BOLTS,), uses=('guard room', 'store'), name='a corner tower'),
+    'loft': dict(shape=('square', 2, 0), wall=D.PALISADE, fg=None, floor=PLANK, ladder=True, split=None, small=True,
+                 slits=False, rim=D.FENCE, marks=(D.BELL,), uses=('sleeping floor', 'store'), name='a lookout loft'),
 }
 STONE = {'human', 'elf', 'dwarf', 'kobold'}
 USES = {
@@ -84,7 +89,9 @@ TOP_LINE = {'human': 'The battlements. A brazier burns in the middle of the roof
             'gnoll': 'An open platform on the poles, and a horn of bone.',
             'lizard': 'A platform of reeds over the water. A smoke fire smoulders on a stone.',
             'bell': 'The bell chamber, open on all sides. The great bell hangs in the middle.',
-            'elftree': 'The crown of the eldest tree. Through the leaves the land lies far below.'}
+            'elftree': 'The crown of the eldest tree. Through the leaves the land lies far below.',
+            'corner': 'The top of the tower, behind the battlements. You can shoot down over the wall from here.',
+            'loft': 'The lookout loft, open to the wind. From here they watch the land all round.'}
 WATCH = {'human': ('soldier', 'A tower guard'), 'elf': ('warden', 'An elven warden'), 'dwarf': ('clansman', 'A dwarf guard')}
 FOES = {'orc': ('orc', 'orc_spear', 'orc_berserker'), 'goblin': ('goblin', 'gobarcher', 'gob_sneak'),
         'kobold': ('kobold', 'kob_slinger', 'kob_trapper'), 'gnoll': ('gnoll_hunter', 'hyena'),
@@ -303,6 +310,8 @@ def floor_map(game, dg, depth):
             marks = list(st['marks'])
             if tw.get('bell'):
                 marks = [D.BELL]
+            if tw.get('mark'):
+                marks = [tw['mark']]
             spots = sorted((c for c in cells - wall if m.tile(*c) == st['floor'] and cheb(c[0], c[1], *down) > 1),
                            key=lambda c: cheb(c[0], c[1], cx, cy))
             for k, t in enumerate(marks):
@@ -392,7 +401,7 @@ def _connect(m, a, b, st):
 def people(game, m, site, tw, dg, depth, top, use, keep):
     """Who is up here: the tower's own people where it is manned, a few strong foes where it is not."""
     from . import places as PL
-    hold = getattr(site, 'holder', None) or tw['people']
+    hold = getattr(site, 'holder', None) or tw.get('folk') or tw['people']
     free = [i for i, t in enumerate(m.t) if t in (FLOOR, PLANK) and all(k is None or cheb(i % m.w, i // m.w, *k) >= 2 for k in keep)]
     random.shuffle(free)
     lvl = m.level
@@ -479,7 +488,8 @@ def air_look(game, m, i):
             fg, bg = mix(fg, HAZE, k), mix(bg, HAZE_BG, min(.9, k + .1))
             if getattr(b, 'sky', None) is None:
                 site = game.world.sites[m.sky]
-                if (i % m.w, i // m.w) in shadow(game, b, site.tw, m.depth):
+                if getattr(site, 'tw', None) and not getattr(m, 'upper', False) and \
+                        (i % m.w, i // m.w) in shadow(game, b, site.tw, m.depth):
                     fg, bg = scale(fg, .62), scale(bg, .55)
             return ch, fg, bg
     return ' ', (0, 0, 0), HAZE_BG
@@ -658,7 +668,8 @@ def on_level(game, m, dg):
     """Arriving on a floor: its line, and from the top the lookout."""
     if getattr(m, 'mood_line', None):
         game.msg(m.mood_line, 'info')
-    if m.depth == dg.depth and game.world.sites[dg.site].tw['state'] != 'ruin':
+    tw = getattr(game.world.sites[dg.site], 'tw', None)
+    if m.depth == dg.depth and tw and tw['state'] != 'ruin' and not getattr(dg, 'upper', False):
         lookout(game)
 
 

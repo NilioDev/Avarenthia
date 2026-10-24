@@ -242,6 +242,9 @@ def gen_dungeon(game, did, depth):
     if style == 'barrow':
         from . import barrows as BR
         return BR.level(game, d, depth)
+    if style == 'upper':
+        from . import halls as HL
+        return HL.upper_map(game, d, depth)
     lvl = d.base + depth
     last = depth >= d.depth
     dw, dh = k5.SIZES[getattr(d, 'size', None) or ('small' if d.tag == 'den' else 'large')]
