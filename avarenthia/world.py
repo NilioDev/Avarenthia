@@ -167,7 +167,8 @@ class World:
 
     def dungeon_at(self, x, y):
         for d in self.dungeons.values():
-            if d.x == x and d.y == y and getattr(d, 'town', None) is None and getattr(d, 'site', None) is None:
+            if d.x == x and d.y == y and getattr(d, 'town', None) is None and getattr(d, 'site', None) is None \
+                    and getattr(d, 'under', None) is None:
                 return d
         return None
 

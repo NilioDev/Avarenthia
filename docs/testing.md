@@ -72,6 +72,19 @@ Each line: **what** - what to check - what the debug menu should offer.
   dead and the hostile spirit. Debug: N, Teleport to a barrow in the north.
 - **The glow** - blue-green round ghosts and their kin, red round fiends. Debug: N, Spawn a ghost or an imp.
 
+## The Rift and the Ashen Deep (built 24 October 2026)
+
+- **The rift on the land** - the glowing entrance, the ash spreading month by month, the omen, the raids as news and
+  a plundered village; closed, the ash going back. Debug: "Open a rift near you" (R), Time (months on).
+- **Under a deep dungeon** - the crack at the bottom of a dungeon four levels deep or more, down and back up.
+  Debug: R until it opens under one, or Teleport to that dungeon's bottom.
+- **The levels** - the river of fire and its chains, vents and their smoke, bone fields rising, cages and the gaoler
+  running for the gong, no rest. Debug: Teleport (dungeon: The Ashen Deep).
+- **The creatures** - each trick: swarm and burning ground, the hooked chain over the fire, blinding ash, sulphur,
+  the slag brute's burn and brittleness. Debug: Spawn.
+- **The Lord of Cinders and the gate** - healing while the bowls burn, the hounds at half strength, the gate's three
+  blows, the rift closing. Debug: Teleport to the bottom, God mode.
+
 ## Old places on the land (approved 23 October 2026)
 
 ### Part A: the old, lived-in world

@@ -366,6 +366,8 @@ def note(game, kind, data):
 
 def daily(game):
     PW = P(game.world)
+    from . import rift as RF
+    RF.daily(game)
     for n in list(PW['notes']):
         if n['kind'] == 'wedding' and game.day >= n['day']:
             PW['notes'].remove(n)
@@ -393,6 +395,8 @@ def monthly(game):
     companies_month(game)
     revolt_month(game)
     pretender_month(game)
+    from . import rift as RF
+    RF.monthly(game)
 
 
 def dwarves_month(game):

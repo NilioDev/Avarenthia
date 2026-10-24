@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the Rift and the Ashen Deep (24 Oct)** | A rift opens now and then as a world event (or under a deep dungeon's bottom), the land round it burns to ash, fiends raid at night; three to five levels of basalt, fire, chains, vents, bone fields and cages; seven new creatures; the Lord of Cinders before the burning gate; break it and the rift closes |
 | **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast comes with the feast days |
 | **Built: abbeys, forts, manors and the underground kinds (24 Oct)** | Every people's abbey, fort and manor on its own land with floors above and cellars below; forts held, taken, empty or ruined, with their own ways in; caves, nests, dens and crypts shaped by whoever made them; the goblin hole and the goblin village |
 | **Built: the K5 maker (24 Oct)** | Classic dungeons grow from rooms of many shapes; 38 theme rooms drawn as pieces, each with one telling thing; rivers of water and fire underground; rock you can see; a mood line per room |
@@ -363,6 +364,23 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **The Rift and the Ashen Deep** (24 October 2026; `rift.py`). A world event (`world.rift`): from day 40 a 10% chance
+  a month when no rift is open (again a year after one closed and healed). It tears open on the land (a glowing `>`
+  on the world map, `D.ENTR`) or, three times in ten, under the bottom of a dungeon four or more levels deep (a crack
+  `>` on its bottom level; `dg.under`, `rift_below`). The ash round it grows a cell a month up to 9 and shrinks again
+  after it closes (`ash_cells`, the 'ash' omen); at night fiends raid a village within 30 now and then (plundered,
+  news, the taken). The Deep: 3 to 5 levels of 120 x 70 cave (the bottom 150 x 90), basalt, ash underfoot, red
+  light from the fire (`m.ambient`), a river of fire on every level with bridges of chains (`underground.add_river`
+  takes fire, bridge and swallow now), brimstone vents that puff every 5 to 9 turns (stamina and a little harm),
+  bone fields that raise ashwalkers, cages with the taken (bump to free) and a gaoler that runs for the gong. No rest
+  down there. Creatures: cinderling (horde, dies into burning ground), chain warden (hooks and drags you, over the
+  fire if it can), ashwalker (blinding ash when struck up close), brimstone toad (sulphur costs stamina), slag brute
+  (burns who strikes it; frost makes it brittle, then double damage), gaoler, and the Lord of Cinders (named per
+  rift, heals from the gate while its four fire bowls burn, calls three hellhounds at half, drops only its own gear);
+  imp, hellhound, hollow spawn and hungering shade live there too. The burning gate takes three blows (burning you
+  while the lord lives) and closes the rift. Debug R opens one near you. Test `rift`. SAVE_VERSION 41. Not as asked:
+  the iron hall is only on the bottom level (the court of the Lord of Cinders); no fiend raid walks the world map,
+  the raids come as news and a plundered village.
 - **The northern lights' gift** (24 October 2026; `aurora.py`). While the lights are in the sky (weather 'aurora',
   or the debug toggle N): rune stones ╨ (a few per world, in the cold lands, `hidden.py`) are found only then, glow
   on the map and, bumped, point to a hidden way's end and show its first stretch; a milestone shows the other way's
@@ -393,6 +411,21 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## The Rift and the Ashen Deep (built 24 October 2026; the spec)
+a hell-like place. Mockups `H_ashen_deep.png` and `H2_ashen_deep_river.png` (the river running through).
+  - **How it comes:** a rift opens in the world as a world event, like the raiders and revolts of `powers.py`. It is a scar on the world map, and the land round it slowly burns to ash. At night fiends raid the villages nearby, and the news goes round through people. Now and then the bottom of a very deep dungeon breaks into it instead.
+  - **Below the rift:** 3 to 5 levels of black basalt, faintly warm, ash underfoot (large, 120 x 70; the bottom may be 150 x 90). A river of fire runs through each level, with a bridge of chains over it. Vents of brimstone puff choking smoke every few turns. There are fields of bones where the dead rise, cages hung on chains with the taken (a rescue), and a hall of black iron where a fiend lord keeps court.
+  - **At the bottom stands the burning gate,** the anchor of the rift. Break it and the rift closes; the land heals slowly.
+  - **Rules:** the heat lets you rest nowhere there; fire resistance and frost matter; the fire gives the light, so you carry none.
+  - **Monsters:** the fiend family already in the game (imp, hellhound, hollow spawn, hungering shade), and these new ones (approved 22 October), each with one clear trick:
+    - **Cinderling:** a small glowing ember thing that comes in swarms, the horde of the Deep; it dies into burning ground, so do not fight in its ashes.
+    - **Chain Warden:** keeps the bridges; it throws a hooked chain and drags you to it, past the fire if it can.
+    - **Ashwalker:** a dead one from the bone fields wrapped in ash; hit it and a cloud of ash puffs up that blinds for a moment.
+    - **Brimstone Toad:** sits by the vents and spits sulphur that chokes: it costs stamina.
+    - **Slag Brute:** big, slow and glowing hot: whoever hits it up close is burnt; frost makes it brittle, and then every blow does double.
+    - **Gaoler:** keeps the cages; when it sees you it runs for the gong to wake the level.
+    - **The Lord of Cinders,** the boss: each rift has one, with its own name from a list. While the burning gate stands it heals from it; put out the fire bowls round the gate first. At half strength it calls its hellhounds. It drops only its own gear.
 
 ## The northern lights' gift (built 24 October 2026; the spec)
 Today the northern lights are only weather (`weather.py` 'aurora': cold lands, autumn and winter nights). Now they

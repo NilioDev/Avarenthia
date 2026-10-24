@@ -409,6 +409,18 @@ def ch_dungeons(g):
               'every stroke then hurts. Most creatures stay on the bank, but some swim after you.'),
         ('p', 'The river of fire, {≈|255,138,40}, burns badly, and you are asked before you step in. Shove a foe into '
               'it and it burns; shove one over the edge of a chasm and it falls to the level below.'),
+        ('h', 'The Ashen Deep'),
+        ('p', 'Now and then a rift tears open in the world: a red glow on the map, and the land round it burning slowly '
+              'to ash. At night fiends come out of it and raid the villages near it; you hear of it in the inns. '
+              'Sometimes the bottom of a very deep dungeon breaks through into it instead, a crack going down.'),
+        ('p', 'Below lie three to five levels of black basalt and ash, lit by the fire itself. A river of fire runs '
+              'through each, crossed by bridges of chains, {≡|154,150,160}. Brimstone vents, {°|232,208,80}, puff choking '
+              'smoke every few turns. On the fields of bones, {,|216,204,176}, the dead rise when you step in. The '
+              'taken hang in cages, {╫|160,150,140}: break one open to free them, before the gaoler reaches the gong. '
+              'Nobody can rest down there.'),
+        ('p', 'At the bottom, in a hall of black iron, the Lord of Cinders keeps court before the burning gate, '
+              '{Ω|255,112,48}. While its fire bowls, {☼|255,160,64}, burn, the gate heals it: tip them over first. '
+              'Break the gate and the rift closes, and the land heals, slowly.'),
     ]
 
 
@@ -542,7 +554,7 @@ def ch_weather(g):
                'Under a roof you stay dry.',
                'Rain and snow send the townsfolk indoors: the streets empty and the inn fills.']),
         ('h', 'Omens'),
-        ('p', 'Falling ash, a sickly miasma, smoke on the wind: a great evil is near.'),
+        ('p', 'Falling ash, a sickly miasma, smoke on the wind: a great evil is near, or a rift has opened.'),
         ('h', 'The year'),
         ('p', f'Twelve months of {CAL.DAYS_IN_MONTH} days, {len(CAL.WEEKDAYS)} days in a week, from '
               f'{CAL.WEEKDAYS[0]} to {CAL.WEEKDAYS[-1]}. Your story begins on the {CAL.ordinal(int(start[0]))} of '

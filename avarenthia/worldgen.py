@@ -245,6 +245,9 @@ def gen_dungeon(game, did, depth):
     if style == 'upper':
         from . import halls as HL
         return HL.upper_map(game, d, depth)
+    if style == 'rift':
+        from . import rift as RF
+        return RF.level(game, d, depth)
     lvl = d.base + depth
     last = depth >= d.depth
     dw, dh = k5.SIZES[getattr(d, 'size', None) or ('small' if d.tag == 'den' else 'large')]
@@ -325,6 +328,9 @@ def gen_dungeon(game, did, depth):
     if getattr(m, 'things', None) is not None:
         from . import themes as TH
         TH.setup(game, m, lvl)
+    if last and getattr(d, 'rift_below', None):
+        from . import rift as RF
+        RF.crack(game, m)                       # the bottom broke through into the Ashen Deep
     if getattr(d, 'site', None) is not None and getattr(d, 'older', False):
         from . import places as PL
         if depth == d.depth:

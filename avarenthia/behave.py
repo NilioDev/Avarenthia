@@ -374,6 +374,9 @@ def incoming(game, mon, dmg, weapon, elem):
         mon.shield -= 1
         game.msg(f'{The(mon)} turns the blow aside.', 'info')
         dmg *= .25
+    if beh(mon, 'slag'):
+        from . import rift as RF
+        dmg = RF.incoming(game, mon, dmg, elem)
     if weapon and beh(mon, 'metal'):
         game.wear('weapon', .8)
         if random.random() < .25:
@@ -386,6 +389,9 @@ def struck(game, mon, dmg):
     if 'Thorny' in mon.mods and dmg > 0 and not game.dead:
         game.msg(f"{The(mon)}'s thorns cut you.", 'bad')
         game.hurt(max(1, round(dmg * .15)), mon.the())
+    if beh(mon, 'slag') or beh(mon, 'ash'):
+        from . import rift as RF
+        RF.struck(game, mon, dmg)
 
 
 # ------------------------------------------------------------------ on a hit
@@ -513,6 +519,15 @@ def _turn(game, mon, df):
             AI.on_wake(game, mon)
             return True
         return True
+    # the Ashen Deep (rift.py): a gaoler runs for the gong, a chain warden hooks you, a toad spits sulphur
+    if beh(mon, 'gaoler') or beh(mon, 'hook') or beh(mon, 'sulphur'):
+        from . import rift as RF
+        if beh(mon, 'gaoler') and RF.gaoler(game, mon, dist, seen):
+            return True
+        if beh(mon, 'hook') and RF.hook(game, mon, dist):
+            return True
+        if beh(mon, 'sulphur') and RF.sulphur(game, mon, dist):
+            return True
     # a totem does nothing but tend its band
     if beh(mon, 'still'):
         if random.random() < .5:
@@ -875,6 +890,9 @@ def on_death(game, mon):
     if getattr(mon, 'carry', None):
         game.spill(m, mon.x, mon.y, mon.carry)
         game.msg(f'{mon.carry.display_name()} falls to the ground.', mon.carry.rar)
+    if beh(mon, 'cinders'):
+        from . import rift as RF
+        RF.died(game, mon)
     sp = mon.tpl.get('split') or ('Splitting' in mon.mods and mon.k)
     if sp and sp in D.MONSTERS:
         from .entities import make_monster

@@ -190,6 +190,7 @@ class DebugScreen(Modal):
                            ('T', 'Hear the tale of an older place', self.do(lambda: DBG.old_tale(g()), True)),
                            ('F', 'Change who holds this fort', self.do(lambda: DBG.fort_holder(g()), True)),
                            ('N', self.flag('aurora'), self.do(lambda: DBG.toggle(g(), 'aurora'))),
+                           ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),

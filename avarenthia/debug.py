@@ -261,6 +261,21 @@ def old_tale(game):
     game.msg(f'Debug: {tale}' if tale else 'Debug: no older place you have not heard of lies near enough.', 'info')
 
 
+def open_rift(game):
+    """A rift tears open a little way off (rift.py), or says where the open one is."""
+    from . import rift as RF
+    r = RF.active(game.world)
+    if not r:
+        p = game.player
+        near = (p.x, p.y) if game.cur == 'over' else game.over_pos
+        r = RF.open_rift(game, spot=RF.find_spot(game, near, 4, 14) or RF.find_spot(game))
+    if r:
+        game.reveal_place(r['x'], r['y'], 2)
+        game.msg(f'Debug: the rift lies at {r["x"]}, {r["y"]}; its Deep is {game.world.dungeons[r["did"]].depth} levels.', 'info')
+    else:
+        game.msg('Debug: no place for a rift was found.', 'info')
+
+
 def fort_holder(game):
     """On a fort's own map: the next holder in turn (its people, bandits, nobody, a ruin), and the fort made again."""
     m = game.map

@@ -38,7 +38,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows. Built 24 October 2026 (see `docs/built.md`).
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans. Built 24 October 2026 (see `docs/built.md`).
 8. **The northern lights' gift** (M): needs the barrows. Built 24 October 2026 (see `docs/built.md`); its light-feast moves to the feast days (round 20).
-9. **The Rift and the Ashen Deep** (L). 10. **The editor** (L; its controls are still to talk about, may come later).
+9. **The Rift and the Ashen Deep** (L). Built 24 October 2026 (see `docs/built.md`). 10. **The editor** (L; its controls are still to talk about, may come later).
    A pause after 5, 7 and 9; merge after 9 (the editor apart).
 11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
 12. **The Varnish** (XL): their cities and places, the hidden dungeons (need K5), the lore, the books, the riddles.
@@ -321,19 +321,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
-- **The Rift and the Ashen Deep (approved 22 October)**: a hell-like place. Mockups `H_ashen_deep.png` and `H2_ashen_deep_river.png` (the river running through).
-  - **How it comes:** a rift opens in the world as a world event, like the raiders and revolts of `powers.py`. It is a scar on the world map, and the land round it slowly burns to ash. At night fiends raid the villages nearby, and the news goes round through people. Now and then the bottom of a very deep dungeon breaks into it instead.
-  - **Below the rift:** 3 to 5 levels of black basalt, faintly warm, ash underfoot (large, 120 x 70; the bottom may be 150 x 90). A river of fire runs through each level, with a bridge of chains over it. Vents of brimstone puff choking smoke every few turns. There are fields of bones where the dead rise, cages hung on chains with the taken (a rescue), and a hall of black iron where a fiend lord keeps court.
-  - **At the bottom stands the burning gate,** the anchor of the rift. Break it and the rift closes; the land heals slowly.
-  - **Rules:** the heat lets you rest nowhere there; fire resistance and frost matter; the fire gives the light, so you carry none.
-  - **Monsters:** the fiend family already in the game (imp, hellhound, hollow spawn, hungering shade), and these new ones (approved 22 October), each with one clear trick:
-    - **Cinderling:** a small glowing ember thing that comes in swarms, the horde of the Deep; it dies into burning ground, so do not fight in its ashes.
-    - **Chain Warden:** keeps the bridges; it throws a hooked chain and drags you to it, past the fire if it can.
-    - **Ashwalker:** a dead one from the bone fields wrapped in ash; hit it and a cloud of ash puffs up that blinds for a moment.
-    - **Brimstone Toad:** sits by the vents and spits sulphur that chokes: it costs stamina.
-    - **Slag Brute:** big, slow and glowing hot: whoever hits it up close is burnt; frost makes it brittle, and then every blow does double.
-    - **Gaoler:** keeps the cages; when it sees you it runs for the gong to wake the level.
-    - **The Lord of Cinders,** the boss: each rift has one, with its own name from a list. While the burning gate stands it heals from it; put out the fire bowls round the gate first. At half strength it calls its hellhounds. It drops only its own gear.
 - Still to settle (in `docs/open.md`, "Dungeons"): the editor's controls.
 
 ## Cities that grew (approved 22 October 2026, not built)

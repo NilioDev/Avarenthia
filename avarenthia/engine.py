@@ -64,6 +64,7 @@ from . import classes as CL
 from . import trees as TT
 from . import arts as ART
 from . import aurora as AU
+from . import rift as RF
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -72,7 +73,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 40
+SAVE_VERSION = 41
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -684,6 +685,8 @@ class Game:
             BR.on_level(self, m, dg, depth)
         elif site and site.kind == 'temple':
             TPL.on_level(self, m, dg, depth)
+        elif getattr(m, 'rift', False):
+            RF.on_enter(self, m)
         elif first and depth == dg.depth:
             self.msg('An evil presence fills the air. This is the deepest level.', 'bad')
         self.compute_fov()
@@ -1107,6 +1110,10 @@ class Game:
             if t == D.BENCH:
                 HT.bench(self, nx, ny)
                 return 0
+            if getattr(m, 'rift', False):
+                got = RF.bump(self, nx, ny, t)
+                if got is not None:
+                    return got
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0
@@ -1151,6 +1158,8 @@ class Game:
                 return 1
         if getattr(m, 'place', None) == 'barrow':
             AU.on_barrow(self)
+        if getattr(m, 'rift', False):
+            RF.on_step(self)
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
         if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
@@ -1411,6 +1420,8 @@ class Game:
             self.msg('There is nothing to enter here.')
             return 0
         got = PL.stairs(self, t, d) if t in (UP, DOWN) else None
+        if got is None and t in (UP, DOWN):
+            got = RF.stairs(self, t, d)
         if got is not None:
             return got
         if t in (UP, DOWN) and getattr(m, 'tree', None) is not None and d != ('down' if t == UP else 'up'):
@@ -2517,6 +2528,8 @@ class Game:
             self.monsters_act()
             if not self.dead and self.map.kind != 'town':
                 SM.tick(self)
+            if not self.dead and getattr(self.map, 'rift', False):
+                RF.turn(self)
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)
         elif self.cur == 'over':
@@ -2840,6 +2853,9 @@ class Game:
 
     def rest(self):
         p = self.player
+        if getattr(self.map, 'rift', False):
+            self.msg('The heat lets you rest nowhere here. Not a moment.', 'bad')
+            return
         if getattr(self.map, 'ring', None) and NT.rest(self):
             return
         if self.map.kind in ('over', 'wild') and not self.hostile_visible():

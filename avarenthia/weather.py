@@ -965,6 +965,9 @@ def shown(game):
     if not loc:
         return 'clear'
     rid, x, y = loc
+    from . import rift as RF
+    if RF.ash_at(game, x, y):
+        return 'ash'                           # the land round a rift burns slowly to ash
     ev = EVL.taint_at(game, x, y)
     if ev:
         omen = {'scorch': 'ash', 'mire': 'miasma', 'blight': 'miasma', 'warpath': 'smoke'}.get(ev.d['taint'])

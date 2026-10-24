@@ -10,7 +10,7 @@ from .look import _h
 
 WATERS = (D.WATER, D.SHALLOW, D.RIVER)
 MOVING = {D.FIREPIT, D.MOLTEN, D.LAVA, D.ALTAR, D.WATER, D.SHALLOW, D.RIVER, D.ORE, D.GEMS, D.GLITTER, D.SWAMP,
-          D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM, D.ANVIL}
+          D.BURNING, D.BALL, D.HALLOWED, D.SPIRITTOTEM, D.ANVIL, D.FIREBOWL, D.FIREGATE, D.VENT}
 RISE_EVERY = 25           # about one water cell in this many along a shore has fish rising, a new set each day
 
 
@@ -101,7 +101,10 @@ def cell(m, i, x, y, look, t, night, day):
         if g > 0:
             return ('*' if g > .5 else '∙'), mix(fg, (255, 226, 120), g), mix(bg, (150, 70, 20), g * .7)
         return ch, fg, bg
-    if tt == D.FIREPIT:
+    if tt == D.VENT:                                        # a brimstone vent smoulders between puffs
+        k = .5 + .5 * math.sin(t * 2.3 + x * 1.7 + y)
+        return ch, mix(fg, (255, 250, 180), k * .4), mix(bg, (70, 56, 10), k * .5)
+    if tt in (D.FIREPIT, D.FIREBOWL, D.FIREGATE):
         f = flame(t, x, y)
         return ch, mix(scale(fg, f), (255, 220, 120), max(0.0, f - .9) * 3), scale(bg, .8 + .3 * (f - .7))
     if tt in (D.MOLTEN, D.LAVA):

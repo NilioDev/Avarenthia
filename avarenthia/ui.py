@@ -30,6 +30,7 @@ from . import bestiary as BE
 from . import towns as TW
 from . import war as WAR
 from . import aurora as AUR
+from . import rift as RIFT
 from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
@@ -710,6 +711,8 @@ class GameScreen(Screen):
         tgt_id = getattr(p, 'target', None)
         sight = g.over_sight() if m.kind == 'over' else 0
         taint = getattr(g.world, 'taint', None) if m.kind == 'over' else None
+        rift = RIFT.active(g.world) if m.kind == 'over' else None
+        rash = RIFT.ash_cells(g.world) if rift else ()
         ways = getattr(m, 'oldway', None) if m.kind == 'over' else None
         way_of = getattr(g.world, 'way_of', {})
         ways_seen = g.__dict__.get('ways_seen', set())
@@ -752,6 +755,12 @@ class GameScreen(Screen):
                             ch, fg, bg = lk
                 if ways and i in ways and i in ways_seen:
                     ch, fg = ways[i], LOOK.PATH_FG
+                if rash and i in rash and not (taint and taint[i]) and m.t[i] not in (TOWN, D.CITY, D.ENTR, D.ROAD):
+                    ch, fg, bg = LOOK.tainted((ch, fg, bg), 'scorch', i)       # the land round a rift burns to ash
+                if rift and (mx, my) == (rift['x'], rift['y']) and rift['under'] is None:
+                    f = AN.flame(t, mx, my)
+                    ch, fg, bg = '>', mix((255, 120, 40), (255, 220, 140), max(0.0, f - .8) * 3), (int(90 * f), 16, 6)
+                    self.moving = True
                 if taint and taint[i]:
                     ch, fg, bg = LOOK.tainted((ch, fg, bg), g.world.evils[taint[i] - 1].d['taint'], i)
                     if v:                           # the marked land breathes, slowly

@@ -69,9 +69,12 @@ def _course(w, h):
     return line, along == w
 
 
-def add_river(m, depth, keep=()):
-    """Run a river through a dug level. Returns 'water', 'fire' or None (when it could not be joined up again)."""
-    fire = depth >= FIRE_FROM and random.random() < FIRE_SHARE
+def add_river(m, depth, keep=(), fire=None, bridge=None, swallow=10):
+    """Run a river through a dug level. Returns 'water', 'fire' or None (when it could not be joined up again).
+    fire forces a river of fire; bridge is the one tile every crossing is made of (the Deep's chains); a cut-off
+    scrap of floor smaller than swallow goes under the river."""
+    if fire is None:
+        fire = depth >= FIRE_FROM and random.random() < FIRE_SHARE
     tile = D.LAVA if fire else D.WATER
     old = bytearray(m.t)
     line, across_y = _course(m.w, m.h)
@@ -92,7 +95,7 @@ def add_river(m, depth, keep=()):
             if 0 <= x + dx < m.w and 0 <= y + dy < m.h and j in flow:
                 m.t[j] = old[j] if _walk(old[j]) else D.FLOOR
                 del flow[j]
-    if not _join(m, tile, keep, flow):
+    if not _join(m, tile, keep, flow, bridge, swallow):
         m.t[:] = old
         return None
     m.river_flow = flow
@@ -100,7 +103,7 @@ def add_river(m, depth, keep=()):
     return m.river
 
 
-def _join(m, tile, keep, flow):
+def _join(m, tile, keep, flow, bridge=None, swallow=10):
     """Make every part reachable from the stairs again: tiny cut-off bits go under the river, bigger ones get a
     crossing (the shortest way over the river from what is reachable)."""
     start = keep[0][1] * m.w + keep[0][0] if keep else None
@@ -115,13 +118,13 @@ def _join(m, tile, keep, flow):
             return True
         swallowed = False
         for p in rest:
-            if len(p) < 10 and not any(k[1] * m.w + k[0] in p for k in keep) and \
+            if len(p) < swallow and not any(k[1] * m.w + k[0] in p for k in keep) and \
                     any(m.t[j] == tile for i in p for j in _round(m, i)):
                 for i in p:                          # a scrap of floor the river swallowed
                     m.t[i] = tile
                     flow[i] = min((flow[j] for j in _round(m, i) if j in flow), default=0)
                 swallowed = True
-        if not swallowed and not _cross(m, tile, main, flow):
+        if not swallowed and not _cross(m, tile, main, flow, bridge):
             return False
     return False
 
@@ -131,7 +134,7 @@ def _round(m, i):
     return [(y + dy) * m.w + x + dx for dx, dy in D4 if 0 <= x + dx < m.w and 0 <= y + dy < m.h]
 
 
-def _cross(m, tile, main, flow):
+def _cross(m, tile, main, flow, bridge=None):
     """Lay one crossing: a straight-as-can-be way over the river from the reachable part to another one."""
     prev = {}
     q = deque()
@@ -148,7 +151,9 @@ def _cross(m, tile, main, flow):
                 while i is not None:
                     way.append(i)
                     i = prev[i]
-                if tile == D.LAVA:
+                if bridge is not None:
+                    kind = bridge
+                elif tile == D.LAVA:
                     kind = D.CRUST if random.random() < .6 else D.BRIDGE
                 else:
                     kind = D.BRIDGE if random.random() < .6 or len(way) > 4 else D.SHALLOW

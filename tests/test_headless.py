@@ -5725,11 +5725,177 @@ def aurora():
     print('northern lights ok:', len(stones), 'rune stones,', len(barrows), 'barrows, errands', sorted(subs))
 
 
+def rift():
+    """The Rift and the Ashen Deep: the rift opens, the land burns to ash, fiends raid; every level of the Deep with
+    its river of fire and chains, vents, bone fields, cages, gaoler and gong; the creatures' tricks; the lord heals
+    from the gate until its bowls are out; breaking the gate closes the rift; a rift under a deep dungeon."""
+    from avarenthia import rift as RF, weather as WX, behave as BH
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    from collections import deque
+    import pickle
+    print('== the rift')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    om = g.maps['over']
+    vil = next(s for s in w.settlements if s.kind in ('village', 'hamlet') and s.id != 0)
+    r = RF.open_rift(g, spot=RF.find_spot(g, (vil.x, vil.y), 8, 20))
+    assert r and om.tile(r['x'], r['y']) == D.ENTR and w.dungeon_at(r['x'], r['y']).id == r['did']
+    for _ in range(3):
+        RF.monthly(g)
+    assert r['r'] == 4 and RF.ash_cells(w)
+    to_over(g, 0)
+    p.x, p.y = r['x'] + 1, r['y']
+    g.over_pos = (p.x, p.y)
+    assert WX.shown(g) == 'ash'
+    app.render()
+    keep = random.random
+    random.random = lambda: 0.0
+    RF.daily(g)
+    random.random = keep
+    assert r['raids'] == 1 and r.get('taken')
+    dg = w.dungeons[r['did']]
+
+    def reach(m, start):
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    c = (x + dx, y + dy)
+                    if c not in seen and m.inb(*c) and D.TILES[m.tile(*c)].walk:
+                        seen.add(c)
+                        q.append(c)
+        return seen
+    for depth in range(1, dg.depth + 1):
+        g.enter_dungeon(dg.id, depth, 'up')
+        m = g.map
+        assert m.rift and D.LAVA in m.t and m.vents and m.bonefields, depth
+        i = m.t.index(D.UP)
+        got = reach(m, (i % m.w, i // m.w))
+        want = [D.DOWN] if depth < dg.depth else [D.FIREGATE, D.FIREBOWL]
+        for t in want:
+            j = m.t.index(t)
+            x, y = j % m.w, j // m.w
+            assert any((x + a, y + b) in got for a in (-1, 0, 1) for b in (-1, 0, 1)), (depth, t)
+        assert all(any((cx + a, cy + b) in got for a in (-1, 0, 1) for b in (-1, 0, 1)) for cx, cy in m.cages), depth
+        app.render()
+    g.enter_dungeon(dg.id, 1, 'up')
+    m = g.map
+    # nobody rests here
+    t0 = g.turn
+    g.rest()
+    assert g.turn == t0
+    # a vent puffs
+    (vx, vy), _k = next(iter(m.vents.items()))
+    m.vents[(vx, vy)] = 1
+    p.x, p.y = next(c for c in free_around(g, m, vx, vy, 1) if D.TILES[m.tile(*c)].walk)
+    p.stamina = 50
+    RF.turn(g)
+    assert p.stamina < 50
+    # the dead rise from a bone field
+    bf = m.bonefields[0]
+    p.x, p.y = bf['cells'][0]
+    n = len(m.mons)
+    RF.on_step(g)
+    assert bf['risen'] and len(m.mons) > n
+    # the gaoler runs for the gong and wakes the level
+    if getattr(m, 'gong', None):
+        gl = next((o for o in m.mons if o.k == 'gaoler'), None)
+        if gl:
+            for _ in range(200):
+                d = cheb(gl.x, gl.y, p.x, p.y)
+                RF.gaoler(g, gl, 3, True)
+                if getattr(m, 'rung', False):
+                    break
+            assert m.rung
+    # the creatures' tricks, on an open floor
+    m.mons = [o for o in m.mons if o.is_npc]
+    fl = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t in (D.FLOOR, D.ASH)]
+    spot = next(c for c in fl if all(m.inb(c[0] + k, c[1]) and m.tile(c[0] + k, c[1]) in (D.FLOOR, D.ASH) for k in range(0, 6)))
+    p.x, p.y = spot
+    g.compute_fov()
+    random.random = lambda: 0.0
+    try:
+        wd = make_monster(g, 'chain_warden', spot[0] + 4, spot[1], 8)
+        m.mons.append(wd)
+        g.compute_fov()
+        assert RF.hook(g, wd, 4) and cheb(p.x, p.y, wd.x, wd.y) == 1
+        m.mons.remove(wd)
+        p.x, p.y = spot
+        toad = make_monster(g, 'brimstone_toad', spot[0] + 3, spot[1], 8)
+        m.mons.append(toad)
+        g.compute_fov()
+        p.stamina = 50
+        assert RF.sulphur(g, toad, 3) and p.stamina < 50
+        m.mons.remove(toad)
+        brute = make_monster(g, 'slag_brute', spot[0] + 1, spot[1], 8)
+        m.mons.append(brute)
+        life = p.life
+        BH.struck(g, brute, 5)
+        assert p.life < life
+        assert BH.incoming(g, brute, 10, None, 'cold') == 10 and brute.brittle
+        assert BH.incoming(g, brute, 10, True, None) == 20
+        m.mons.remove(brute)
+        ash = make_monster(g, 'ashwalker', spot[0] + 1, spot[1], 8)
+        BH.struck(g, ash, 5)
+        assert BH.has(g, 'blinded')
+        BH.clear(g, 'blinded', True)
+        cl = make_monster(g, 'cinderling', spot[0] + 2, spot[1], 8)
+        BH.on_death(g, cl)
+        assert m.tile(spot[0] + 2, spot[1]) == D.BURNING
+    finally:
+        random.random = keep
+    p.life = g.stats()['max_life']
+    # the bottom: the lord heals from the gate until its bowls are out, calls hounds, and the gate breaks
+    g.enter_dungeon(dg.id, dg.depth, 'up')
+    m = g.map
+    lord = next(o for o in m.mons if getattr(o, 'lord', False))
+    assert lord.name == r['lord'] and lord.is_boss
+    lord.hp = lord.maxhp * 3 // 4
+    hp = lord.hp
+    RF.turn(g)
+    assert lord.hp > hp
+    for i, t in enumerate(list(m.t)):
+        if t == D.FIREBOWL:
+            RF.bump(g, i % m.w, i // m.w, t)
+    assert D.FIREBOWL not in m.t
+    lord.hp = lord.maxhp // 2 - 1
+    hp = lord.hp
+    n = len(m.mons)
+    RF.turn(g)
+    assert lord.hp == hp and len(m.mons) > n, 'no healing without the bowls; the hounds come'
+    m.mons.remove(lord)
+    gx, gy = m.gate
+    p.life = g.stats()['max_life']
+    for _ in range(3):
+        RF.bump(g, gx, gy, m.tile(gx, gy))
+    assert r['state'] == 'closed' and m.tile(gx, gy) == D.BROKENGATE
+    rr = r['r']
+    RF.monthly(g)
+    assert r['r'] == rr - 1
+    app.render()
+    # a rift under a deep dungeon: the crack at its bottom
+    deep = RF.deep_dungeons(w)
+    if deep:
+        un = deep[0]
+        r2 = RF.open_rift(g, under=un)
+        assert r2 and r2['under'] == un.id and w.dungeon_at(un.x, un.y).id == un.id
+        g.enter_dungeon(un.id, un.depth, 'up')
+        assert D.DOWN in g.map.t
+        assert RF.stairs(g, D.DOWN, None) == 1 and g.map.did == r2['did'] and g.map.depth == 1
+        assert RF.stairs(g, D.UP, None) == 1 and g.map.did == un.id
+    pickle.dumps(g)
+    print('rift ok:', dg.depth, 'levels, lord', r['lord'], '; under a dungeon:', bool(deep))
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

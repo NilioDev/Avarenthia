@@ -200,6 +200,16 @@ TILES = [
     Tile('◘', '#e8c860', False, False, 'beehive', bg='#2a2410'),
     Tile('°', '#f0d890', False, False, 'brass lens', bg='#1a2230'),
     Tile('#', '#7ab060', False, True, 'gate of woven branches', bg='#14200e'),
+    # the Ashen Deep below a rift (rift.py)
+    Tile('.', '#6a625c', True, False, 'ash', bg='#161210'),
+    Tile('°', '#e8d050', True, False, 'brimstone vent', bg='#2a2006'),
+    Tile(',', '#d8ccb0', True, False, 'field of bones', bg='#1e1a16'),
+    Tile('≡', '#9a96a0', True, False, 'bridge of chains', bg='#3a1004'),
+    Tile('Ω', '#ff7030', False, False, 'the burning gate', bg='#4a1004'),
+    Tile('☼', '#ffa040', False, False, 'fire bowl', bg='#3a1404'),
+    Tile('o', '#7a706a', False, False, 'cold fire bowl', bg='#1a1614'),
+    Tile('.', '#5a5a66', True, False, 'black iron floor', bg='#121216'),
+    Tile('╪', '#8a8a96', False, False, 'broken gate', bg='#1a1616'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -215,6 +225,7 @@ CRUST, LAVA = 127, 128                      # a river of fire and the cooled cru
 (PARAPET, SLIT, LOOSE, BOLTS, DRUM, HORN, BELL, PEW, PILLAR, CRYSTAL, IDOL, BLOODPIT, BONES, STONE, IVY,
  REEDS, WHITE) = range(147, 164)            # places on their own land: temples, towers, barrows
 HIVE, LENS, WOVEN = range(164, 167)        # abbeys, forts and manors (halls.py)
+ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = range(167, 176)   # the Ashen Deep (rift.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
