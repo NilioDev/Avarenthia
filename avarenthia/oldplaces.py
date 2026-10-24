@@ -205,14 +205,15 @@ def place(game, m, world, reach_set):
     hills = [i for i, t in enumerate(m.t) if t == D.HILLS]
     random.shuffle(hills)
     made = 0
-    for i in hills:
-        if made >= scaled(2):
-            break
-        x, y = i % w, i // w
-        if free(x, y, 10) and world.road_dist[i] <= 12:
-            reg = world.region_at(x, y)
-            add('quarry', (x, y), f'The Old Quarry of {reg.name}', flooded=random.random() < .4)
-            made += 1
+    for gap, rd in ((10, 12), (6, 30)):                # near a road if it can be, else further out
+        for i in hills:
+            if made >= scaled(2):
+                break
+            x, y = i % w, i // w
+            if free(x, y, gap) and world.road_dist[i] <= rd:
+                reg = world.region_at(x, y)
+                add('quarry', (x, y), f'The Old Quarry of {reg.name}', flooded=random.random() < .4)
+                made += 1
     # wrecks on the shore
     shore = [i for i, t in enumerate(m.t) if t in (SAND, GRASS) and sum(1 for o in (1, -1, w, -w)
                                                                     if 0 <= i + o < len(m.t) and m.t[i + o] == WATER) >= 1]
@@ -220,21 +221,23 @@ def place(game, m, world, reach_set):
     made = 0
     ships = SHIPS[:]
     random.shuffle(ships)
-    for i in shore:
-        if made >= scaled(2) or not ships:
-            break
-        x, y = i % w, i // w
-        if free(x, y, 12) and not riv[i]:
-            add('wreck', (x, y), f'The Wreck of the {ships.pop()}')
-            made += 1
+    for gap in (12, 6):
+        for i in shore:
+            if made >= scaled(2) or not ships:
+                break
+            x, y = i % w, i // w
+            if free(x, y, gap) and not riv[i]:
+                add('wreck', (x, y), f'The Wreck of the {ships.pop()}')
+                made += 1
     # hermitages, far from the roads
     made = 0
-    for _t in range(3000):
+    for _t in range(6000):
         if made >= scaled(2):
             break
         x, y = random.randint(4, w - 5), random.randint(4, m.h - 5)
         i = y * w + x
-        if free(x, y, 10) and m.t[i] in (D.FOREST, D.HILLS, TREE) and 8 <= world.road_dist[i] <= 28:
+        wild = m.t[i] in (D.FOREST, D.HILLS, TREE) if _t < 3000 else m.t[i] not in (SAND, D.SWAMP)
+        if free(x, y, 10 if _t < 3000 else 6) and wild and (8 if _t < 3000 else 5) <= world.road_dist[i] <= 40:
             add('hermitage', (x, y), f'{random.choice(["Old", "Brother", "Mother", "Father"])} '
                 f'{random.choice(["Wendel", "Ninian", "Hilde", "Corwen", "Ismay", "Aldo", "Brannoc"])}\'s Hut')
             made += 1
@@ -462,7 +465,7 @@ def _oldbridge(game, site):
     for x in (rx - 4, rx - 3, rx + 3, rx + 4):
         m.set(x, by, D.RUBBLE)
     for x in range(rx - 4, rx + 5):                  # the ford, downstream
-        m.set(x, by + 6, D.FORD)
+        m.set(x, by + 6, SHALLOW)
     _path(m, (0, by), (rx - 5, by))
     _path(m, (rx + 5, by), (w - 1, by))
     _path(m, (rx - 5, by), (rx - 5, by + 6))
