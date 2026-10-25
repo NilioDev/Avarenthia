@@ -21,6 +21,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built |
+| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Not built |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -623,6 +624,68 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 - **Still to write while building**: the lieutenants' pools, each kind's weakness and relic, the climb's map.
 
 ---
+
+## Trade as a way to play (approved 25 October 2026, not built; not in the build order yet)
+
+Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
+want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
+
+**Fixing the money first.** Today 30 gems from the hills to a city earn ~23 gold, while a job pays ~12 silver and grain
+earns ~1.5 gold a trip; and stock springs back 15% a day, so two towns become a money machine. So: the price bends
+harder the dearer the good (selling ten gems moves the price more than ten sacks of grain), stock comes back more slowly,
+and each route tires (the same good to the same town fetches less until the market forgets). Weigh it against wages,
+beds, repairs and the temple: trade pays well, never endlessly.
+
+**Goods with a name.** Each world picks 12-15 famous goods of a region (`world.areas`), named after it: Amber Coast
+Wine, Thornwood Mead, Highfells Wool, halfling pipe-weed, one dwarf hold's stout. Dearer than the plain good, best sold
+far from home, made known by rumours and news ("the duke drinks only Amber Coast"). The maker has only a few each
+season. Good and bad years: a hail summer spoils a region's harvest (dearer), a good year makes a sought-after vintage.
+Every kind comes from several regions and peoples (the rule: never one people or one place).
+
+**Master makers.** In some towns a master smith, weaver, brewer or goldsmith makes a few masterworks a season (a
+dress sword, a tapestry, a silver cup). Trade goods, not gear: no loot. Brought to a baron, a temple or a rich town that
+asks; sometimes as an order ("bring me an Ironhills cup before winter").
+
+**More ways to trade.**
+- Contraband: a realm or the church bans a good (black lotus, untaxed salt, stolen relics); the Watch searches you at a
+  city gate; Cunning hides it; a fence or the pirate cove pays well.
+- Barter with peoples without coin: kobolds want shiny things, orcs salt and arms, elves only barter; what they give is
+  sold nowhere else.
+- Monster goods: troll fat, dragon scale, spider silk, sold to alchemists in the cities (ties into Skinning and the
+  named beasts).
+- Spoiling: fish, fruit and milk go off on the way, like ice melts; speed or salt wins.
+- Need far away: a snowed-in pass village or a besieged city pays three times as much, if you get there.
+- Far goods: silk, incense, porcelain and dyes come only by the big merchant ship or the oasis caravans.
+- War trade: arms to both sides pays a fortune; when it comes out, it costs standing.
+- Market news: a traveller or innkeeper tells what is dear far away; news a few days old, so it may have changed.
+- The great fair: once a year one city's fair wants everything (with the feast days).
+- Merchant rank with the Merchant League (the faction exists): better prices and the best orders; at the top a title
+  and a League caravan to escort.
+Left out on purpose (they do not come across in a roguelike): a shop of your own, a bank, shares.
+
+**Your own caravan.**
+- Buy a wagon at a wagonmaker: up to 3 (more with League rank), ~150 cargo each, each needs a mule or an ox (the ox
+  pulls more and walks slower). The wagons follow you on the world map as a string ♦♦♦. It lives on the player.
+- Crew: a driver per wagon on a weekly wage, guards from the hirelings (`mercs.py`). A steady cost, so a money sink too.
+- The road matters: slow, slower off the road; no snowed-in passes, stuck in spring mud, no high fords; a ferry costs
+  per wagon. You choose your route.
+- Upkeep: the beasts eat fodder (grain from the cargo); now and then a wheel breaks: bump the wagon, mend it with Tools.
+- At night the wagons stand in a ring on the map; a round of drink (brewing) keeps the crew glad; night raids happen.
+- Raids: bandits, raiders or desert riders ask a toll or attack: a small fight map where the wagons give cover (like
+  the pirates' deck). A wagon that falls loses its cargo.
+- Bump the lead wagon: make camp, leave the caravan in a stable or caravanserai, look at the cargo, pay the crew. You go
+  into a dungeon without it; it waits.
+- Your caravan gets a name and people talk of it.
+
+**The NPC caravans** (they exist: a town with plenty sends up to 40 of a good to the town that lacks it most; bandits
+and armies at war fall on them; a robbed one never arrives, so prices stay high there). New:
+- Travel along: pay a caravan to walk with its guards. Safe and slow, for a beginner without a wagon.
+- Trade on the road: bumping a caravan also offers buy or sell, at its home town's prices.
+- Rivals: League caravans race you; if they arrive first your cargo is worth less. You see them on the road.
+- Robbing has weight: prices rise in that town, towns send more guards along, the Watch looks for you.
+
+UI: named goods stand by their own name in the market list; the caravan is a sign on the world map named by
+`guide.py`; its choices are one `EV.ask`; each new key gets one first-time tip. The handbook's trade chapter grows with it.
 
 ## Round 6: livelier settlements (on hold)
 
