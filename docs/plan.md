@@ -20,6 +20,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is not |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). Not built yet |
+| **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -54,7 +55,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     city maps. 20. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`). Pause after 17 and 19, merge after 20.
 21. **Old places part B and the 44 places of the peoples and powers** (XL). 22. **Places 45-64 and the seasonal
     places** (L). Merge after 22.
-After that: the great evils (open.md), then Multiplayer (parked).
+After that: the great evils (see "The great evils as storyteller"; Nilio, 25 October 2026: after the epics, in
+three parts: the frame with eight servants, the quest and the Sky-Seat, the other sixteen), then Multiplayer (parked).
 
 ---
 
@@ -554,6 +556,73 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
     (no crime) a small thing, an apple, a few copper, or a rhyme that is a rumour of a place you did not know; devoted to
     Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
     Who does it, the game never says.
+
+## The great evils as storyteller (approved 25 October 2026, not built; after the epics)
+
+The great evils become the world's storyteller, as in RimWorld: one shadow with a goal, and the world lives round it
+whether the player joins in or not. Worked out with Nilio in the thread "Grote kwaden als verteller"; the Dutch
+proposal with every servant: project files `kwaden/voorstel.md`. Replaces the growth with your level in `evils.py`;
+its blight, hunters and whispers stay (the whispers go over the rule "no taunts" again).
+- **The Hollow King** (from the riddles: made by the Varnish mages of star-iron, the winds and the bound dead) is the
+  one ultimate evil, in every world. He sits in the piece of the Sky-Seat that never fell, a scar of the Varnish
+  times that nobody remembers: bound winds keep it hidden in mist and storm; at sea you see a whirlpool and hear bells.
+  His goal is to return. Only he is of the Varnish; the servants are of after them.
+- **His land** is the coast facing the Sky-Seat (its place differs per world). As he wakes it turns his: blight, the
+  bound dead, cults, empty fishing villages. Above it the sky darkens; the glow and the storm round the Sky-Seat grow
+  with every broken seal, seen from the coast.
+- **Three servants per world**, from 24 kinds, one of each weight, each in its own part of the world and on its own
+  land (no Ifrit without desert, no Lindworm without dwarves); never two that want the same.
+  - **Light**, awake from the start, only in its own land: Brood Mother, Wendigo, Ifrit, Nightmare (the Mare), Great
+    Wolf, Gorgon, Wild Hunt, the Hag in the walking hut.
+  - **Middle**, wakes halfway, a few baronies or a coast: Dragon, Drowned One, Rat King, Queen under the Hill (fey,
+    not elven), Vampire Count, Keening Woman (banshee), Thunderbird, Lindworm.
+  - **Heavy**, wakes late, a whole realm or more: Lich, Warlord, Fallen Mage, Sold King, False Prophet, Debt Lord,
+    Giant King, Demon Prince.
+  Each has the same set: one goal with one lever in the world, three lieutenants, one weakness, one relic. Only the
+  reach differs, and everything grows from its own land, barony by barony. No people is wholly evil: some orc tribes
+  refuse the Warlord, most glades fight the Queen under the Hill, part of the Church stays true.
+- **The levers are the existing systems** (`realms.py`, `powers.py`, `seasons.py`, the economy, the news): a claim,
+  a revolt, a war, hunger, debt, plague. At most one push per realm per month; the realms push back (an alliance, a
+  levy, the Church's order). No doubled systems: the Warlord becomes the Gorvash, the Sold King is one of the kings
+  who turns. New: a barony can be held by a servant, with its own colour on the realms layer.
+- **Two clocks.** A slow one always runs (over years the servants grow a little, a village falls now and then, the
+  news travels). The attention clock runs only when the player meddles (a lieutenant killed, a lair entered, a
+  weakness learnt, a battle fought against him): hunters, faster plans, the next servant wakes sooner. It cools when
+  you leave him alone and has a ceiling (each step up after a pause). Attention belongs to the world, not the player
+  (in co-op he notices the group). Meddling pays: lieutenants' gear, standing with the realms, knowledge.
+- **Only the player** can kill a servant or the Hollow King; the world can hold him back, never stop him. Named NPC
+  heroes ride to the lairs: now and then they kill a lieutenant (heard through the news), never a servant; their grave
+  becomes a place and their journal tells what they knew. Battles become places on the map (fight in them, or plunder
+  them after). Refugees walk the roads, cities fill up, prices rise.
+- **Lieutenants**: three per servant, drawn from a pool per kind, each with a place of its own in its servant's land
+  (a fort, a camp, a tower). Not needed, but each one dead weakens its servant (fewer hunters, a weaker lair). One who
+  survives you comes back scarred and promoted; he does not talk.
+- **Weakness and relic**: one fixed weakness per kind, found from two or three sources (the riddles, libraries,
+  Archaeology, a dying hero), with a real edge (the Lich's phylactery: leave it, and she comes back). The relic a slain
+  servant leaves is a key with at most one small power (the loot rule holds); one can also be won elsewhere, harder.
+- **The quest**, one heavy road as in The Lord of the Rings. The mist parts and the Sky-Seat comes on the world map
+  when you know the truth or the first servant breaks a seal (each servant that reaches its goal breaks one). The
+  relics let you through the mist. A long road through his land to the coast, no quick travel, a skipper who dares the
+  whirlpool, your hirelings as the company. The Varnish chained the city down with star-iron chains to sea rocks and
+  the cliff: you climb one (its own map: gusts, broken links, things that hang there), then the underside (breaking
+  glass, wind that throws you off the edge, falls to the sea as in `towers.py`). The Sky-Seat is five floors of glass
+  and bronze, from the under-city through the hall of the winds and the halls of the dead to the throne; a beacon on
+  each floor. The last fight has three phases (the winds, the dead, himself); each relic you bring makes one lighter.
+- **Dying there** (no point of no return): he keeps those who die in the Sky-Seat, so the priests' raising costs more
+  and you wake on the mainland. Your body rises as your **shade** with your backpack (what you wear stays with you, as
+  now): an echo, weaker than you, that does not heal; beat it for your things. What you opened stays open (mist,
+  seals, chains), the slain stay dead, he sends a few new bound dead, a floor with its beacon lit stays calm. A shade
+  rises only where the dead are bound: his land, a Lich's land, barrows, crypts, the Rift; a fallen hireling too.
+- **If he wins**: the Long Night. The sky goes dark, his coast spreads, cities become strongholds, prices climb; he can
+  still be beaten, only harder. You play on. **If you win**: one closing screen, then you play on in a world that
+  heals: the blight lifts, the chronicle names you, the barons fight over the freed lands. No new ultimate evil. After
+  a servant falls: a scramble for its baronies, its lair a ruin, your name in the chronicle.
+- **Where it shows** (the UI rule): a journal tab "The Shadow" (what you know of him, the servants and lieutenants,
+  kept on the player), a world-map layer (blight, lairs, hosts, seals), the line under the map in his land, a handbook
+  chapter. No new key. `history.py` writes his first rising and fall so the chronicle and the lore agree.
+- **Still to write while building**: the lieutenants' pools, each kind's weakness and relic, the climb's map.
+
+---
 
 ## Round 6: livelier settlements (on hold)
 

@@ -42,10 +42,6 @@ test maps keep the rules). Still not right to Nilio's eye:
 ## Testing the new things
 - How to make the lines in `docs/testing.md` easy to test (Nilio, 23 October: "kijken we later hoe we dat makkelijk kunnen doen").
 
-## The great evils (later)
-- Go through the great evils together (`evils.py`: the Lich, the Dragon, the Brood Mother, the Warlord, the Drowned One;
-  one to three per world). They are of after the Varnish (Nilio, 23 October 2026). Nothing decided yet.
-
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.
