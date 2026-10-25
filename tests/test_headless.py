@@ -5828,6 +5828,11 @@ def rift():
     if getattr(m, 'gong', None):
         gl = next((o for o in m.mons if o.k == 'gaoler'), None)
         if gl:
+            # set it a few steps from the gong, with nobody in its way
+            dm = RF.bfs(m, m.gong[0], m.gong[1], lambda t: D.TILES[t].walk)
+            m._gong_dist = dm
+            gl.x, gl.y = next((i % m.w, i // m.w) for i, v in enumerate(dm) if 4 <= v <= 8)
+            m.mons = [o for o in m.mons if o is gl or o.is_npc]
             for _ in range(200):
                 d = cheb(gl.x, gl.y, p.x, p.y)
                 RF.gaoler(g, gl, 3, True)
