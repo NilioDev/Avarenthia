@@ -636,6 +636,13 @@ harder the dearer the good (selling ten gems moves the price more than ten sacks
 and each route tires (the same good to the same town fetches less until the market forgets). Weigh it against wages,
 beds, repairs and the temple: trade pays well, never endlessly.
 
+**Small to great** (Nilio: begin small and grow). A trader climbs a ladder, each step paid for by the one before:
+a peddler's pack (30) with cheap goods from village to village (grain, salt, ale, wool: a few silver a trip, but
+safe and sure), small supply orders from a village's board; then a pack mule, then a cart; then wagons, crew and League
+rank; at the top the dear goods, named goods, masterworks and far goods. Capital is the gate, nothing else: dear goods
+cost too much to buy in bulk early, and small towns hold only a few of them. Neighbouring villages differ enough that
+the first short trips always pay a little.
+
 **Goods with a name.** Each world picks 12-15 famous goods of a region (`world.areas`), named after it: Amber Coast
 Wine, Thornwood Mead, Highfells Wool, halfling pipe-weed, one dwarf hold's stout. Dearer than the plain good, best sold
 far from home, made known by rumours and news ("the duke drinks only Amber Coast"). The maker has only a few each
