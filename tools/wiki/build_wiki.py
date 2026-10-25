@@ -46,7 +46,7 @@ def rgb(c):
 
 
 def badge(kind):
-    t = {'built': 'built', 'built': 'built, not on main yet', 'planned': 'planned', 'notes': 'design notes'}[kind]
+    t = {'built': 'built', 'planned': 'planned', 'notes': 'design notes'}[kind]
     return f'<span class="badge b-{kind}">{t}</span>'
 
 
@@ -265,8 +265,61 @@ add('factions', 'World', 'Factions and powers', f'<p>The realm factions (data.py
     '<h3 class="gh">Factions</h3><div class="cards">' + fa + '</div><h3 class="gh">Other powers</h3><div class="cards">' + pw + '</div>')
 
 # ---------------------------------------------------------------- monsters
-ABIL = {'fast': 'fast', 'slow': 'slow', 'erratic': 'erratic', 'ranged': 'ranged', 'poison': 'poisons', 'caster': 'caster', 'regen': 'regenerates',
-        'leech': 'drains life', 'leap': 'leaps', 'nova': 'nova', 'chief': 'chief', 'boss': 'boss'}
+sys.path.insert(0, HERE)
+import abilities as AB
+import avarenthia.ai as AI
+PREY = {'kick': ('Kicks', 'When hunted, it kicks out at you up close.'),
+        'rocks': ('Flees to the rocks', 'When hunted, it makes for rocky ground.'),
+        'skittish': ('Skittish', 'When hunted, it notices you from 3 tiles further off.'),
+        'far': ('Runs far', 'When hunted, it runs two steps every other turn.'),
+        'small': ('Small game', 'When hunted, it does not slow down when hurt.')}
+TRAIT_OF = {'kite': 'kite', 'rage': 'berserk', 'charge': 'charge', 'burrow': 'lurk', 'ambush': 'lurk', 'hunt': 'wander',
+            'disguise': 'lurk', 'pack': 'pack', 'leader': 'chief'}
+USERS = {}      # ability label -> [monster keys]
+
+
+def abilities(k, m):
+    """[(label, text)] for one monster: its flags, the old traits and its behaviours."""
+    out = []
+    behs = sorted(str(b) for b in m['beh'])
+    covered = {TRAIT_OF[b] for b in behs if b in TRAIT_OF}
+    for f, (lab, txt) in AB.FLAGS.items():
+        v = m.get(f)
+        if not v or f in covered:
+            continue
+        if f == 'summon':
+            txt = f"Calls a {D.MONSTERS.get(v, {}).get('name', v).lower()} beside it now and then (chiefs up to 4, bosses up to 6)."
+        elif f == 'caster' or (f == 'ranged' and m.get('shot')):
+            what = m.get('bolt') if f == 'caster' else m.get('shot')
+            if what:
+                txt = txt.replace('a bolt', 'a ' + what) if f == 'caster' else f'Shoots its {what} from 2-7 tiles away.'
+        elif f == 'split':
+            txt = f"When it dies, two to four young ({D.MONSTERS.get(v, {}).get('name', v).lower()}) spill out."
+        out.append((lab, txt))
+    for t, (lab, txt) in AB.TRAITS.items():
+        if k in AI.TRAITS.get(t, ()) and t not in covered:
+            out.append((lab, txt))
+    for b in behs:
+        lab, txt = AB.BEH.get(b, (b, ''))
+        if b == 'gaze' and m.get('gaze') and m['gaze'] != 'any':
+            txt = txt.replace('paralyses, confuses or frightens you', {'paralysed': 'paralyses you for 2 turns',
+                              'confused': 'confuses you for 3 turns', 'afraid': 'frightens you for 6 turns'}.get(m['gaze'], m['gaze']))
+        out.append((lab, txt))
+    for f, (lab, txt) in PREY.items():
+        if m.get(f):
+            out.append((lab, txt))
+    if m.get('elem'):
+        out.append(('Element', f"Its attacks are {m['elem']}."))
+    seen = set()
+    res = []
+    for lab, txt in out:
+        if lab not in seen:
+            seen.add(lab)
+            res.append((lab, txt))
+            USERS.setdefault((lab, txt if lab != 'Element' else 'Its attacks carry an element.'), []).append(k)
+    return res
+
+
 evil_boss = {v['boss']: v['title'] for v in EV.EVILS.values()}
 groups = {}
 for k, m in D.MONSTERS.items():
@@ -291,17 +344,7 @@ for fam in sorted(groups, key=lambda f: (f == 'bosses and legends', f)):
     for k in sorted(groups[fam], key=lambda k: (D.MONSTERS[k].get('lvl_fix') or D.MONSTERS[k]['min_l'], D.MONSTERS[k]['name'])):
         m = D.MONSTERS[k]
         lvl, hp, dmg, df, xp = mstats(m)
-        ab = [ABIL[a] for a in ABIL if m.get(a)]
-        if m.get('summon'):
-            ab.append('summons ' + D.MONSTERS.get(m['summon'], {}).get('name', m['summon']))
-        for x in ('gaze', 'split', 'charge', 'rocks', 'healer', 'kick', 'disguise', 'skittish', 'small'):
-            if m.get(x):
-                ab.append(x)
-        if m.get('bolt'):
-            ab.append('casts ' + m['bolt'])
-        if m.get('elem'):
-            ab.append(m['elem'] + ' attacks')
-        ab += sorted(str(b) for b in m['beh'])
+        ab = abilities(k, m)
         lore = D.LORE.get(k)
         txt = ''
         if lore:
@@ -322,9 +365,9 @@ for fam in sorted(groups, key=lambda f: (f == 'bosses and legends', f)):
             extra.insert(0, 'Boss of ' + evil_boss[k])
         stats = (f'<div class="stats"><span><b>Lvl</b> {lvl}{"" if m.get("lvl_fix") else "+"}</span><span><b>Life</b> {hp}</span><span><b>Dmg</b> {dmg}</span>'
                  f'<span><b>Def</b> {df}</span><span><b>XP</b> {xp}</span><span class="mult">x{m["hp"]} / x{m["dmg"]} / x{m["df"]}</span></div>')
-        chips = ''.join(f'<span class="chip">{e(a)}</span>' for a in dict.fromkeys(ab))
+        chips = ''.join(f'<li><b>{e(a)}</b> {e(t)}</li>' for a, t in ab)
         cards += (f'<article class="entry mon" id="m-{k}"><h3><span class="glyph" style="color:{rgb(m["fg"])}">{e(m["ch"])}</span> {e(m["name"])}'
-                  f'<span class="sub">{e(k)}</span>{badge("built")}</h3>{stats}<div class="chips">{chips}</div>{txt}'
+                  f'<span class="sub">{e(k)}</span>{badge("built")}</h3>{stats}{txt}' + (f'<ul class="abil">{chips}</ul>' if chips else '')
                   + ''.join(f'<p class="meta">{e(x)}</p>' for x in extra) + '</article>')
     mon_html += f'<h3 class="gh">{e(fam.capitalize())} <span class="count">{len(groups[fam])}</span></h3><div class="cards">{cards}</div>'
 add('monsters', 'Creatures', f'Monsters ({len(D.MONSTERS)})',
@@ -332,6 +375,16 @@ add('monsters', 'Creatures', f'Monsters ({len(D.MONSTERS)})',
     '(bosses at their fixed level): life = (4 + 4.5·lvl)·x, damage = (2 + 1.4·lvl)…(4 + 2.8·lvl)·x, defence = (3 + 3·lvl)·x. '
     'The three multipliers are life / damage / defence. A champion has 2.5× life and 1.25× damage; a unique 3.5× life and one or two of: '
     + e(', '.join(D.ELITE_MODS)) + '.</p>', mon_html)
+
+ab_rows = ''
+for (lab, txt), ks in sorted(USERS.items(), key=lambda kv: kv[0][0].lower()):
+    who = ', '.join(f'<a href="#m-{x}">{e(D.MONSTERS[x]["name"])}</a>' for x in sorted(ks, key=lambda x: D.MONSTERS[x]['name']))
+    ab_rows += entry(e(lab), f'<p>{e(txt)}</p><p class="meta">{len(ks)}: {who}</p>', 'built')
+st_rows = ''.join(f'<dt>{e(a)}</dt><dd>{e(b)}</dd>' for a, b in AB.STATES.items())
+add('abilities', 'Creatures', 'Monster abilities',
+    '<p>Everything a monster can do beyond walking up and hitting you, and who does it (engine.py, ai.py, behave.py, rift.py). '
+    'Dangerous moves are announced a turn ahead: a web weaver lifts its abdomen, a goblin lights a fuse. Step aside.</p>',
+    entry('The states they leave you in', f'<dl class="kv">{st_rows}</dl>', 'built') + '<div class="cards">' + ab_rows + '</div>')
 
 tr = ''.join(f'<dt>{e(t)}</dt><dd>{e(NM.TRAIT_TEXT.get(t, ""))}</dd>' for t in NM.TRAITS)
 hb = ''.join(f'<dt>{e(a)}</dt><dd>{e(b)}</dd>' for a, b in NM.HABITS.items())
