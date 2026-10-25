@@ -113,16 +113,18 @@ def discover(game, site, how=''):
     om = game.maps['over']
     om.seen[site.y * om.w + site.x] = 1
     if how is not None:
-        what = {'gnomes': 'a gnome hamlet', 'cove': 'a pirate cove'}.get(site.kind, 'an elven glade')
+        from .varnish import WHAT
+        what = {'gnomes': 'a gnome hamlet', 'cove': 'a pirate cove', **WHAT}.get(site.kind, 'an elven glade')
         game.msg((how + ' ' if how else '') + f'You have found {site.name}, {what}. It is on your map now.', 'unique')
 
 
 def on_step(game):
     """Walking in the deep woods: come close enough to a glade and you see its lanterns between the trees.
     Elves hear the singing from further off."""
+    from .varnish import is_varnish
     p = game.player
     for st in getattr(game.world, 'sites', ()):
-        if unfound(st):
+        if unfound(st) and not is_varnish(st):
             d = cheb(st.x, st.y, p.x, p.y)
             gnomes = st.kind == 'gnomes'
             if d <= 1:

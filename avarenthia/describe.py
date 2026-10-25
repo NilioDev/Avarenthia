@@ -256,6 +256,9 @@ def over(game, x, y):
         from . import oldplaces as OP
         if OP.is_old(site):
             return site.name, site.glyph[1], [OP.DESC[site.kind]]
+        from . import varnish as VN
+        if VN.is_varnish(site):
+            return site.name, site.glyph[1], [VN.DESC[site.kind]]
         from . import seats as SEATS
         if SEATS.is_seat(site):
             return site.name, site.glyph[1], [SEATS.describe(game, site)]

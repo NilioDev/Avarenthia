@@ -54,6 +54,9 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `k5.py` the maker of classic dungeon levels (Brogue-like); `pieces.py` the drawn pieces (`pieces/*.des`, format in
   `pieces/README.txt`, packed and sealed by `tools/pack_pieces.py` in CI); `themes.py` theme rooms, their telling things
   and the mood lines of rooms; `underground.py` rivers of water and fire, swimming; `oldplaces.py` old places from the history (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, the peoples' marks); `aurora.py` the northern lights' gift (rune stones, cheaper Frost/Storm, barrow spirits, the glow); `rift.py` the Rift and the Ashen Deep;
+  `varnish.py` the Varnish: ruined cities in the zones, their places, the Northern Wall, league stones, the hidden deeps
+  and their bosses, pages and bound books, the five riddles (state on `world.varnish` and `p.varnish`); `varnishtexts.py`
+  their texts (fragments, 27 books, riddles);
   `places.py` temples, towers and barrows of every people on their own land (who may go how far, stairs, the hidden
   bottom); `towers.py` tower plans and floors, the haze below, the lookout, edges and falls; `temples.py` each
   people's temple; `barrows.py` each people's barrow and the bier;

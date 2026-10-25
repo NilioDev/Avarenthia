@@ -309,7 +309,12 @@ def hint_history(game, npc=None):
     return HI.hint(game, npc)
 
 
-HINTS = [(hint_wonder, 1.5), (hint_place, 4), (hint_dungeon, 2), (hint_plant, 2), (hint_evil, 3), (hint_war, 1.5), (hint_trade, 2),
+def hint_varnish(game, npc=None):
+    from . import varnish as VN
+    return VN.rumour(game, npc)
+
+
+HINTS = [(hint_varnish, 1), (hint_wonder, 1.5), (hint_place, 4), (hint_dungeon, 2), (hint_plant, 2), (hint_evil, 3), (hint_war, 1.5), (hint_trade, 2),
          (hint_news, 1.5), (hint_lore, 2.5), (hint_history, 2)]
 
 
@@ -323,9 +328,9 @@ def hint(game, npc=None):
     for _ in range(6):
         fn = random.choices([h for h, _w in HINTS], [w for _h, w in HINTS])[0]
         LAST_PLACE = None
-        line = fn(game, npc) if fn in (hint_lore, hint_history) else fn(game)
+        line = fn(game, npc) if fn in (hint_lore, hint_history, hint_varnish) else fn(game)
         if line:
-            if fn is hint_history:
+            if fn in (hint_history, hint_varnish):
                 return line
             if fn not in (hint_lore, hint_trade):
                 remember(game, line)

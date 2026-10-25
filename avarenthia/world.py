@@ -392,6 +392,8 @@ def gen_world(game):
         RL.generate(game, m, world)
         from . import oldplaces as OP
         OP.place(game, m, world, reach_set)
+        from . import varnish as VN
+        VN.place(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways

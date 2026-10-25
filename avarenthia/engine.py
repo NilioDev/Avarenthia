@@ -14,6 +14,7 @@ from . import missions as MS
 from . import ferries as _FY  # noqa: F401  (the village ferries register their choice)
 from . import nature as NT
 from . import oldplaces as OP
+from . import varnish as VN
 from . import zones as ZN
 from . import wanderers as WA
 from . import war as WAR
@@ -74,7 +75,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 42
+SAVE_VERSION = 43
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -659,6 +660,7 @@ class Game:
             if getattr(dg, 'varnish', False):
                 from .hidden import vault_loot
                 vault_loot(self, self.maps[key], dg)
+            VN.on_level(self, self.maps[key], dg, depth)
             if depth == dg.depth and dg.relic is not None:
                 mi = MS.find(self, dg.relic)
                 if mi and mi.state == 'active':
@@ -858,6 +860,7 @@ class Game:
             NT.on_enter(self, site, m)
         if OP.is_old(site):
             OP.on_enter(self, site, m)
+        VN.on_enter(self, site, m)
         if PL.is_place(site):
             PL.on_enter(self, site, m)
         self.compute_fov()
@@ -1051,6 +1054,10 @@ class Game:
             if why:
                 self.msg(why, 'info')
                 return 0
+        if t in VN.BUMP or getattr(m, 'vn', None):
+            spent = VN.bump(self, nx, ny)
+            if spent is not None:
+                return spent
         if getattr(m, 'old', None):
             why = OP.blocked(self, nx, ny)
             if why:
@@ -1181,6 +1188,10 @@ class Game:
             NT.on_step(self)
         if getattr(m, 'old', None):
             OP.on_step(self)
+        if getattr(m, 'vn', None):
+            VN.on_step(self)
+        if zone:
+            VN.zone_step(self)
         if zone and ZN.after_move(self):
             return 1
         self.auto_pickup()
@@ -1247,6 +1258,7 @@ class Game:
         from . import hidden as HP
         HP.on_step(self)
         FK.on_step(self)
+        VN.over_step(self)
         LN.on_step(self)
         HT.on_step(self)
         SE.on_step(self)
@@ -1330,6 +1342,8 @@ class Game:
                 p.mana = min(s['max_mana'], p.mana + round(s['max_mana'] * .1))
                 self.num(p.x, p.y, f'+{h}', C_HEAL)
                 self.msg('The health orb restores you.', 'good')
+            elif it.k == 'vpage':
+                VN.pick_page(self, it)
             elif (it.k == 'gear' and getattr(it, 'thrown', False)) or it.k == 'ammo':
                 if not WP.pick_up(self, it):          # your spear back in hand, your knives back in the set
                     self.msg('Your bag is full.', 'bad')
@@ -1432,7 +1446,9 @@ class Game:
                 return 1
             self.msg('There is nothing to enter here.')
             return 0
-        got = PL.stairs(self, t, d) if t in (UP, DOWN) else None
+        got = VN.stairs(self, t, d) if t in (UP, DOWN) else None
+        if got is None and t in (UP, DOWN):
+            got = PL.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
             got = RF.stairs(self, t, d)
         if got is not None:

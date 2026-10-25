@@ -286,7 +286,12 @@ def talk_ferry(game, wd):
         game.msg('The ferryman shrugs at the ice. "Walk across. Nobody pays me in winter."')
         return
     high = any(SE.spate(om, y * om.w + x, st) for x, y in across)
-    fare = 8 if high else 3
+    fare = 0 if getattr(game.player, 'ferry_free', False) else 8 if high else 3
+    if not fare:
+        EV.ask(game, 'ferry', 'The ferryman', 'The ferryman looks at the old tally in your papers for a long time. '
+               '"The Last Ferry. My grandfather\'s grandfather kept that one. Sit down. No fare from you."',
+               [('Cross', 'cross'), ('Not now', 'bye')], wd=wd.id, fare=0)
+        return
     EV.ask(game, 'ferry', 'The ferryman', ('"High water, but she floats. Costs more, mind." ' if high else
                                            '"Over the river? Sit in the middle and don\'t lean."') +
            f'\n\nThe fare is {fmt(fare)}.', [(f'Cross ({fmt(fare)})', 'cross'), ('Not now', 'bye')], wd=wd.id, fare=fare)

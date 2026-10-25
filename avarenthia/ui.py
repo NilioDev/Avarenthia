@@ -1800,6 +1800,11 @@ class InventoryScreen(Modal):
             app.pop()
             HP.read_map(g, it)
             return
+        if it.k == 'vbook':
+            from . import varnish as VNM
+            app.pop()
+            VNM.read_bound(g, it)
+            return
         if it.k == 'oldbook':
             from . import chronicle as CH
             app.pop()
@@ -2874,7 +2879,7 @@ class BookScreen(Modal):
             elif kind == 'h':
                 if out and out[-1]['parts']:
                     out.append({'parts': []})
-                out.append({'parts': [(0, b[1], GOLD, PAPER)], 'sec': b[1]})
+                out.append({'parts': [(0, b[1], GOLD, PAPER)], 'sec': b[1], 'toc': b[2] if len(b) > 2 else b[1]})
             elif kind in ('k', 'keys'):
                 rows = [(b[1], b[2])] if kind == 'k' else b[1]
                 col = 12 if kind == 'k' else 21
@@ -3029,6 +3034,7 @@ class BookScreen(Modal):
         room = self.BH - 6
         self.scroll = max(0, min(self.scroll, len(rows) - room))
         secs = [r['sec'] for r in rows if r.get('sec')]
+        short = {r['sec']: r.get('toc', r['sec']) for r in rows if r.get('sec')}
         at = next((r['sec'] for r in reversed(rows[:self.scroll + 1]) if r.get('sec')), None) if self.focus == 'page' else None
         cv.text(x + 2, y + 2, 'CONTENTS', DIM, PANEL)
         yy = y + 4
@@ -3045,7 +3051,7 @@ class BookScreen(Modal):
                 for sname in secs:
                     if yy >= y + self.BH - 2:
                         break
-                    cv.text(x + 5, yy, sname, GOLD if sname == at else DIM, PANEL, maxw=self.TOC - 5)
+                    cv.text(x + 5, yy, short[sname], GOLD if sname == at else DIM, PANEL, maxw=self.TOC - 5)
                     yy += 1
         for yy in range(y + 1, y + self.BH - 1):
             cv.put(x + self.TOC + 2, yy, '│', LINE, PANEL)

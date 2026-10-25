@@ -274,6 +274,8 @@ def make(game, cx0, cy0, nx=3, ny=3):
     t[path & ~wetnow] = D.PATH
     t[lane & ~wetnow] = D.ROAD
     t[lane & wetnow] = D.BRIDGE
+    from . import varnish as VN
+    VN.paint(game, t, cx0, cy0, nx, ny, ox, oy)
     # what stands in the middle of its cell
     marks = {}
     th = things(game)

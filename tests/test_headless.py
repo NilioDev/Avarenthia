@@ -6075,11 +6075,234 @@ def old_places():
     print('old places ok:', dict(kinds), len(marks), 'marks')
 
 
+def varnish():
+    """The Varnish: ruined cities found by walking their zones, the Varnish places and the Northern Wall, league stones
+    that count down to a city, the way into a city's hidden deep and its own boss, pages in the old letters kept with
+    your papers and read once you have the letters, books bound whole by a scribe and sold once, the five riddles made
+    whole with their false pieces shown up, and the chapter The Varnish with its headings."""
+    from avarenthia import varnish as VN, varnishtexts as T, chronicle as CH, folk as FK, zones as ZN, events as EV
+    from avarenthia import history as HI, debug as DBG
+    from avarenthia.entities import Item
+    from collections import Counter, deque
+    import pickle
+    print('== varnish')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    V = VN.info(g)
+    kinds = Counter(s.kind for s in w.sites if VN.is_varnish(s))
+    assert kinds['vcity'] >= 2 and kinds['walltower'] >= 5 and kinds['vdeep'] == 5, kinds
+    for k in VN.PLACE_KINDS:
+        assert kinds[k], (k, kinds)
+    assert all(FK.unfound(s) for s in w.sites if VN.is_varnish(s)), 'no Varnish place is on the map beforehand'
+    assert len(V['books']) == 8 and {T.BOOK[b]['thread'] for b in V['books']} == set(T.THREADS)
+    assert all((bk, n) in V['pages'] for bk in V['books'] for n in range(len(T.BOOK[bk]['pages'])))
+    assert len(V['src']) == sum(len(r['frags']) for r in T.RIDDLES)
+    for (rk, i), src in V['src'].items():           # every piece of a riddle can be had in this world
+        assert src in ('stone', 'library', 'rumour') or src.startswith('page:') and src.split(':')[1] in V['books'] \
+            or src.startswith('place:') and any(s.kind == src[6:] or getattr(s, 'deep', None) == src[6:]
+                                                for s in w.sites), (rk, i, src)
+    for r in T.RIDDLES:
+        assert sum(1 for i, fr in enumerate(r['frags']) if not fr[2]) >= T.WHOLE
+
+    def reach(m, start):
+        seen, q = {start}, deque([start])
+        while q:
+            x, y = q.popleft()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    c = (x + dx, y + dy)
+                    if c not in seen and m.inb(*c) and D.TILES[m.tile(*c)].walk:
+                        seen.add(c)
+                        q.append(c)
+        return seen
+    # walking into a ruin's zone finds it; a name stone with the letters names it
+    city = next(s for s in w.sites if s.kind == 'vcity')
+    to_over(g, 0)
+    ZN.enter(g, (city.x - 1, city.y))
+    m = g.map
+    ruin = [i for i, t in enumerate(m.t) if t in (D.COLUMN, D.VPAVE)]
+    assert len(ruin) > 200, 'columns and paving in the ruin\'s zones'
+    i = ruin[0]
+    p.x, p.y = i % m.w, i // m.w
+    VN.zone_step(g)
+    assert not FK.unfound(city) and city.name == 'A Varnish ruin'
+    app.render()
+    # the play maps: every telling thing can be walked to and answers a bump, with and without the letters
+    for letters in (False, True):
+        g.varnish_letters = letters
+        for s in [s for s in w.sites if VN.is_varnish(s)]:
+            to_over(g, 0)
+            g.enter_site(s.id)
+            m = g.map
+            assert m.vn == s.kind and g.cur == s.map_key
+            got = reach(m, (p.x, p.y))
+            cells = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if (t in VN.BUMP and t != D.SKYWELL) or t == D.DOWN
+                     or (t == D.LEVER and m.vthings.get((i % m.w, i // m.w)))]
+            well = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.SKYWELL]
+            assert not well or any((x + a, y + b) in got for x, y in well for a in (-1, 0, 1) for b in (-1, 0, 1))
+            cells += well[:1] + [c for c in m.vthings if c not in cells]
+            assert cells, s.name
+            for x, y in cells:
+                assert m.tile(x, y) == D.SKYWELL or VN.underwater(m, x, y) or any((x + a, y + b) in got for a in (-1, 0, 1) for b in (-1, 0, 1)), \
+                    (s.name, D.TILES[m.tile(x, y)].name)
+            for x, y in cells:
+                if m.tile(x, y) == D.DOWN or D.TILES[m.tile(x, y)].walk:
+                    continue
+                spent = VN.bump(g, x, y)
+                assert spent is not None, (s.name, D.TILES[m.tile(x, y)].name)
+                if g.pending and g.pending['key'] == 'varnish':
+                    EV.resolve(g, 'seal')
+                g.request = None
+                g.pending = None
+            app.render()
+            pickle.dumps(m)
+    assert city.named and city.name == city.vname, 'the city\'s stone says its name'
+    assert any(s.kind == 'sluice' and s.drained for s in w.sites), 'the sluice opens and the hall runs dry'
+    assert any(f['key'].startswith('vr:') for f in CH.facts(g)), 'pieces of the riddles at the places'
+    # the way down: open, the hidden deep below with its own boss, and back up to the court
+    to_over(g, 0)
+    g.enter_site(city.id)
+    m = g.map
+    assert city.open and D.DOWN in m.t, city.way
+    i = m.t.index(D.DOWN)
+    p.x, p.y = i % m.w, i // m.w
+    g.use_stairs('down')
+    assert g.cur == f'{city.below}:1'
+    dg = w.dungeons[city.below]
+    assert dg.varnish and dg.boss in VN.CITY_BOSSES and dg.size == 'middle'
+    g.enter_dungeon(dg.id, dg.depth, 'up')
+    assert any(o.k == dg.boss for o in g.map.mons), 'the deep\'s own boss waits at the bottom'
+    assert D.STARIRON in g.map.t
+    g.enter_dungeon(dg.id, 1, 'down')
+    i = g.map.t.index(D.UP)
+    p.x, p.y = i % g.map.w, i // g.map.w
+    g.use_stairs('up')
+    assert g.cur == city.map_key and g.map.tile(p.x, p.y) == D.DOWN, 'up the stair, back in the Sky Court'
+    bosses = [w.dungeons[s.below].boss for s in w.sites if VN.is_varnish(s) and getattr(s, 'below', None)]
+    assert len(bosses) == len(set(bosses)), 'every deep has a boss of its own'
+    # pages: kept with your papers, read once you have the letters
+    g.varnish_letters = False
+    st = VN.st(g)
+    bk = V['books'][0]
+    key = (bk, 0)
+    st['pages'].discard(key)
+    st['read'].discard(key)
+    to_over(g, 0)
+    it = Item(g.new_id(), 'vpage', 'vpage')
+    it.vpage = key
+    it.x, it.y = p.x, p.y
+    g.map.items.append(it)
+    n = len(p.inv)
+    g.auto_pickup()
+    assert key in st['pages'] and key not in st['read'] and len(p.inv) == n, 'a page goes in with your papers'
+    town = w.settlements[w.realm.great]
+    g.enter_town(town.id)
+    scribe = next(o for o in g.map.mons if getattr(o, 'role', '') == 'scribe')
+    p.gold = 100000
+    g.talk(scribe)
+    assert 'vlore' in [o[1] for o in g.pending['options']]
+    EV.resolve(g, 'letters')
+    assert key in st['read'], 'learning the letters reads the pages you carry'
+    n0 = len(st['lore'])
+    g.talk(scribe)
+    EV.resolve(g, 'vlore')
+    assert len(st['lore']) > n0, 'the scribe\'s Varnish shelf'
+    # a whole book bound, its hidden page and what it shows; sold once
+    was_on, DBG.ON = DBG.ON, True
+    DBG.varnish_pages(g)
+    DBG.ON = was_on
+    assert len(VN.complete(g)) == 8
+    g.talk(scribe)
+    opts = [o[1] for o in g.pending['options']]
+    bind = next(o for o in opts if o and o.startswith('vbind:'))
+    EV.resolve(g, bind)
+    b = bind[6:]
+    assert b in st['bound'] and any(i.k == 'vbook' and i.book == b for i in p.inv)
+    assert any(f['key'] == f'vb:{b}' for f in CH.facts(g))
+    gold = p.gold
+    g.talk(scribe)
+    EV.resolve(g, f'vsell:{b}')
+    assert p.gold == gold + VN.BOUND_PRICE and b in st['sold']
+    g.talk(scribe)
+    assert f'vsell:{b}' not in [o[1] for o in g.pending['options']]
+    g.pending = None
+    for bk in VN.complete(g):
+        VN.bind(g, bk, 'here')
+    assert all(k in st['bound'] for k in V['books'])
+    if 'hessa' in V['books']:
+        from avarenthia import cooking as CK
+        assert 'fig_bread' in CK.known(g), 'Hessa\'s Kitchen gives its recipe'
+    st['apple'] = True                              # the gardener's tree at the Anchor: one apple a year
+    to_over(g, 0)
+    g.enter_site(V['deep']['anchor'])
+    tree = next(c for c, v in g.map.vthings.items() if v == 'apple')
+    n = len(p.inv)
+    assert VN.bump(g, *tree) and len(p.inv) == n + 1 and p.inv[-1].t == 'apple'
+    assert VN.bump(g, *tree) == 0 and len(p.inv) == n + 1
+    vb = next(i for i in p.inv if i.k == 'vbook')
+    VN.read_bound(g, vb)
+    assert g.request[0] == 'dialog' and T.BOOK[vb.book]['hidden'] in g.request[2]
+    g.request = None
+    # the riddles made whole: the answer, the lies shown up, the place it points to, and the last paragraph
+    for r in T.RIDDLES:
+        for i in range(len(r['frags'])):
+            VN.riddle_frag(g, r['key'], i, 'a test', 'here')
+        assert r['key'] in st['whole']
+        site = w.sites[V['deep'][r['place']]]
+        assert not FK.unfound(site), r['place']
+        for i, fr in enumerate(r['frags']):
+            f = next(f for f in CH.facts(g) if f['key'] == f'vr:{r["key"]}:{i}')
+            assert bool(f['false']) == bool(fr[2]), (r['key'], i)
+        assert any(f['key'] == f'vr:{r["key"]}:answer' for f in CH.facts(g))
+    assert any(f['key'] == 'vr:last' for f in CH.facts(g)), 'all five riddles whole'
+    deep = w.sites[V['deep']['anchor']]
+    to_over(g, 0)
+    g.enter_site(deep.id)
+    i = g.map.t.index(D.DOWN)
+    p.x, p.y = i % g.map.w, i // g.map.w
+    g.use_stairs('down')
+    dd = w.dungeons[deep.below]
+    g.enter_dungeon(dd.id, dd.depth, 'up')
+    assert any(o.k == 'chained_star' for o in g.map.mons), 'the Anchor\'s own boss'
+    # league stones count down to a city
+    for c in [s for s in w.sites if s.kind == 'vcity']:
+        stones = [q for q in w.pois if q.kind == 'leaguestone' and q.city == c.id]
+        if len(stones) < 2:
+            continue
+        c.found = False
+        for q in stones:
+            q.found = False
+        for q in stones:
+            assert VN.on_poi(g, q) and g.request[0] == 'dialog'
+            g.request = None
+        assert all(q.found for q in stones[1:]), 'each stone shows the next'
+        if stones[-1].num == 'I':
+            assert c.found, 'the last stone shows the city'
+        break
+    # heard: a rumour of the Varnish
+    line = VN.rumour(g)
+    assert line is None or isinstance(line, str)
+    # the chronicle's chapters, with their headings
+    for ch in ('The Old Days', 'The Varnish'):
+        i = CH.CHAPTERS.index(ch)
+        bl = CH.blocks(g, i)
+        assert any(b[0] == 'h' for b in bl), ch
+        app.screens = [ui.GameScreen(app), ui.ChronicleScreen(app, i)]
+        app.render()
+    heads = [b[1] for b in CH.blocks(g, CH.CHAPTERS.index('The Varnish')) if b[0] == 'h']
+    assert 'Bound books' in heads, heads
+    app.screens = [ui.GameScreen(app)]
+    pickle.dumps(g)
+    print('   varnish ok:', dict(kinds), len(st['lore']), 'loose fragments')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

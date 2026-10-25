@@ -66,6 +66,7 @@ DISHES = {
     'millet_cakes': ('Millet Cakes', 'simple', ['wild_millet', 'honey'], 'savanna', 'I', 'keeps', None),
     'date_porridge': ('Date Porridge', 'simple', ['dates', 'barley'], 'desert', 'I', None, None),
     'fig_paste': ('Fig Paste', 'simple', ['fig', 'honey'], 'desert', 'T', 'keeps', 'herders'),
+    'fig_bread': ('Fig Bread', 'simple', ['bread', 'fig'], None, 'B', None, None),     # from Hessa's Kitchen (varnish.py)
     'sage_mutton': ('Sage Mutton', 'simple', ['bighorn_meat', 'wild_sage'], 'canyon', 'I', None, None),
     'eel_in_ale': ('Eel in Ale', 'simple', ['eel', 'ale'], 'marsh', 'I', None, None),
     'frog_legs': ('Fried Frog Legs', 'simple', ['frog_legs', 'watercress'], 'marsh', 'T', None, 'hunters'),

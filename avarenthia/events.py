@@ -181,6 +181,9 @@ def on_poi(game, poi):
     from .oldplaces import on_poi as old_marks
     if old_marks(game, poi):
         return
+    from .varnish import on_poi as league
+    if league(game, poi):
+        return
     from .hidden import on_poi as old_ways
     if old_ways(game, poi):
         return
@@ -729,3 +732,5 @@ from . import hidden as _HP  # noqa: E402  (the old ways register their own choi
 POI_LOOK.update(_HP.POI_LOOK)
 from .oldplaces import POI_LOOK as _OLD_POI_LOOK  # noqa: E402
 POI_LOOK.update(_OLD_POI_LOOK)
+from .varnish import LEAGUE_LOOK as _LEAGUE  # noqa: E402
+POI_LOOK['leaguestone'] = _LEAGUE

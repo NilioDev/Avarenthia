@@ -99,7 +99,8 @@ def signs(g):
 NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war camp', 'stones': 'Standing stones',
               'wagon': 'Abandoned wagon', 'waystation': 'Waystation', 'milestone': 'Milestone',
               'runestone': 'Rune stone', 'dwarfstone': 'Dwarf boundary stone', 'moonstone': 'Moonstone',
-              'skullpole': 'Skull pole', 'scratch': 'Kobold scratches', 'cache': "Kobolds' hoard"}
+              'skullpole': 'Skull pole', 'scratch': 'Kobold scratches', 'cache': "Kobolds' hoard",
+              'leaguestone': 'League stone'}
 
 
 # ------------------------------------------------------------------ first-time tips

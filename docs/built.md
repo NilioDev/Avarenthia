@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
 | **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
 | **Built: the Rift and the Ashen Deep (24 Oct)** | A rift opens now and then as a world event (or under a deep dungeon's bottom), the land round it burns to ash, fiends raid at night; three to five levels of basalt, fire, chains, vents, bone fields and cages; seven new creatures; the Lord of Cinders before the burning gate; break it and the rift closes |
 | **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast comes with the feast days |
@@ -369,6 +370,39 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **The Varnish** (25 October 2026; `varnish.py`, texts in `varnishtexts.py`). Placed after the old places
+  (`VN.place`), all in `world.varnish`: `ruin` (cell to city), `wall` (the Northern Wall's cells), `books` (8 of 27,
+  one per thread at least), `pages` ((book, n) to ('site', id), ('dungeon', did), ('poi', id) or ('library', None)),
+  `src` (each riddle piece's source in this world: what is not here falls back to the library) and `deep`. Hidden
+  sites (`folk.unfound`): four cities (`vcity`, 3 x 3 cells, land overgrown, sand, marsh or ice, painted into the zones
+  by `VN.paint` from `zones.make`: streets, columns, roofless houses, a gate of star-iron, a name stone), found by
+  walking among the ruins (`zone_step`, `over_step`); named only by a name stone read with the letters (`site.vname`).
+  The city map: the Sky Court round the sky well, and one way down per city (`site.way`: a stone that says where to
+  press, a well that draws air, a hollow flagstone, a lever behind a statue); below a deep of 2-3 levels (style
+  rooms, tag vault, size middle, `dg.vn`) with a boss from four (iron sentinel, bound gale, standing legate, hollow
+  echo), each once per world, a lump of star-iron and a stone at the bottom; up from level 1 is back on the court.
+  Places (each its own small map, `m.vn`, telling things in `m.vthings`): 5-7 wall towers with the wall painted
+  between them (one has a lantern: light it at night and the whole wall goes on your map), wind towers (a look-out;
+  they howl in a storm), roads of the standing dead (read a seal, or break it and a bound dead steps down), a
+  star-iron forge by Starfall Crater when there is one, Gates of Leagues (the star map shows the nearest city and the
+  other gates), a sluice hall (open the sluice: the hall runs dry, old coins and a piece), the fallen sky, star
+  houses (your feet sweep the dust off a star floor; most of it swept gives a piece) and a sunken harbour. The five
+  deep places (`vdeep`: the Anchor by the coast nearest the Sky-Seat, the Hollow Throne beside a city, the Pits of the
+  East, the Last Vault, the Standing Hall beside a road of the dead), each with a deep of 3 levels and its own boss
+  (chained star, shard of the Hollow King, first of the uncounted, keeper of names, bound magister); found by walking
+  or by its riddle made whole. League stones IV-I (POI 'leaguestone') toward each city, each showing the next once
+  you have the letters, I showing the city. New tiles 188-211; ten creatures in `menagerie.py` (bound dead and the
+  nine bosses). Pages are items 'vpage' that go into `p.varnish['pages']` on pickup and are read with the letters
+  (learning them reads what you carry); the chronicle's new chapter The Varnish groups by heading (the fragments'
+  subjects, Loose pages, Pages that belong together with "n of N" and the missing ones by number, Bound books); The
+  Old Days shows the riddles under their titles with their gap, the answer after six true pieces, false pieces red,
+  and The Ruin, as it was after all five. The scribe: The Varnish (3s, two fragments, a riddle piece, a page kept in
+  a library), Bind (5s, an hour: item 'vbook', its hidden page and its effect: a place, a riddle piece, an old way, a
+  lie shown up, the wall's lantern, the ferrymen's tally that crosses free) and selling a bound book once for 20s.
+  Rumours (`lore.hint_varnish`) bring riddle pieces and Voices. Debug V (letters and every Varnish place) and P (every
+  page). Test `varnish`. SAVE_VERSION 43. Not as asked: no archaeology yet (round 16), so the pieces come from stones,
+  places, pages, libraries and rumours; "mine" pages lie in the cities' deeps; the Anchor stands on the nearest coast,
+  not under the Sky-Seat itself.
 - **Old places from the history** (24 October 2026; `oldplaces.py`). Placed after the history is made
   (`OP.place` after `RL.generate`). Ten site kinds, each one world cell with a small play map (`m.old` = kind) and
   telling tiles you bump (new tiles 176-187: mound, dug mound, spear point, half-cut block, ship's timbers, sea chest,
@@ -434,6 +468,53 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## The Varnish (built 25 October 2026; the spec)
+From "Old places on the land" (approved 23 October 2026; archaeology and part B stay in `docs/plan.md`).
+- **Varnish ruins in the wild** (Nilio's addition): old Varnish cities, overgrown by forest, half under the sand in a
+  desert, sunk in a marsh, frozen in the tundra. They have no name and no sign on the world map beforehand; you find
+  them only by walking the land (the zones), and what you saw goes on your map. A city spans several zones: columns
+  between the trees, a forum full of bushes, a gate without a wall, stones with Varnish letters that say its name.
+- **Hidden dungeons** hang under such ruins: no rumour names them, no map shows them, no job asks for them. You find
+  the way in only on the spot (a stone you read with the Varnish letters, a well that draws air, a floor that sounds
+  hollow, a lever behind a statue). Its own boss and a treasure room, kept modest; unique to each world.
+- **The Varnish get a face of their own** (approved 23 October; not a copy of Rome): iron, stars and measuring. Their
+  black iron is star-iron (as in a Starfall crater): it never rusts and still shines in every ruin. They built to the
+  stars (a city lies round a round sky well) and measured everything in leagues; league stones count down towards a
+  ruin. They buried their dead standing, bound to the stone. This fits what `lore.py` and the stones already say (the
+  Sky-Seat, the winds and the dead bound, the Hollow King, the northern wall of nine legions, the sealed vaults).
+- **The Varnish' own lore** (approved 23 October, "de toon is goed, mag alle kanten op gaan"): loose fragments of the
+  empire itself, not about today's world: its gods (today's gods are their worn-down remains: Skell was Eskelion,
+  Measurer of Roads), emperors, mages, daily life, food, feasts, trades, soldiers, law, love, songs, books and plays,
+  and its last days. They count years "from the Founding" (FF); the empire lasted 1400 years. Found as archaeology
+  finds, on stones, in city library books, now and then as a rumour; the chronicle gets a chapter The Varnish with
+  headings. A few longer works (the Song of the Nine Walls, the Book of Leagues) lie in pieces across the world, one per
+  find; a whole work sells once and well to a city library, and its last line may point to a hidden place. Dry humour
+  is welcome. The empire was not kind: the dirty side (slaves, "the uncounted", the dead bound for debt, conquest)
+  shows too, with what people thought of it, for and against, from many mouths (Nilio: "de menselijke kant"). The texts: project files `poi/varnish-lore.md` (more may come).
+- **Books bound from fragments** (approved 23 October): a book is a set of 5-8 fragments spread over the world
+  (letters, sherds, diary pages), each readable on its own. From the second one the chronicle sees they belong together
+  ("2 of 6", the gaps named, never where). With a whole set, a scribe in a city library binds it in order (talk, one
+  option, a few silver and an hour) and finds what only the whole shows: a hidden last page with the end of the story,
+  sometimes a lead to a hidden place or a piece of a riddle. The book is then a thing in your pack and its story in the
+  chronicle; keep it or sell it once, well, to a library. 27 books written out (more may come); each world picks about eight at random, at least one from each
+  thread (Tam and his mother, the winds, the fall, the uncounted, the bound dead, the emperors), and the pages lie where
+  they fit. Stories cross between books, each still whole on its own. No new key. Stories and titles: project files `poi/varnish-boeken.md` (all 27 with their hidden
+  pages and what they add to the chronicle or the map). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
+  for her bound son; a dealer in the dead; a banned play); the stories may cross (a soldier in one is in another).
+- **The five riddles written** (23 October; project files `poi/raadsels.md`): eight fragments each, some false (a red
+  "Not so" later); a riddle is whole with about six; then the chronicle writes the answer and points to a unique hidden
+  place (the Anchor, the Hollow Throne, the Pits of the East, the Last Vault, the Standing Hall). All five whole give a last
+  paragraph, The Ruin, as it was. The answer, never told outright: the mages made the Hollow King of star-iron, every
+  bound wind and the bound dead; they made the first orcs of the uncounted to feed the work; the last star they pulled
+  down was the Ruin; the vaults hold the names and what they could not destroy. The great evils (`evils.py`) are of after the
+  Varnish and stay out of these riddles (Nilio).
+- **The Varnish places** (all approved 23 October; part C of `poi/ideeen.md`): the overgrown city round a sky well
+  with a sunken Sky Court; the Northern Wall of the nine legions with its tower ruins; the wind tower that howls in a
+  storm; the road of the bound dead (break a seal and the dead one rises); the star-iron forge by an old crater; the Gate
+  of Leagues whose star map points to other gates; the sluice hall (open a sluice and a flooded hall runs dry); the fallen
+  sky of black stones and glassy sand; the star house with an iron star floor under the dust; and as small extras a
+  sunken harbour and old coins.
 
 ## Old places from the history (built 24 October 2026; the spec)
 Part A of "Old places on the land" (approved 23 October 2026; the rest of that section stays in `docs/plan.md`).

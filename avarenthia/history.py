@@ -450,6 +450,8 @@ def talk(game, npc):
                 opt('This city', 'city', PRICE), opt('Beasts you have met', 'beasts', PRICE)]
         if not game.__dict__.get('varnish_letters'):
             opts.append(opt('Varnish letters', 'letters', LETTERS_PRICE))
+        from . import varnish as VN
+        opts += VN.scribe_opts(game, opt)
         books = [it for it in p.inv if it.k == 'oldbook']
         if books:
             it = books[0]
@@ -488,6 +490,9 @@ def r_library(game, choice, ctx):
             from .money import fmt
             game.say(npc, f'"{it.name}. We have not had a copy of that in a long time." The scribe counts out {fmt(got)}.')
         return
+    from . import varnish as VN
+    if VN.r_scribe(game, npc, choice, lambda c: price(game, c)):
+        return
     cost = price(game, LETTERS_PRICE if choice == 'letters' else 0 if choice == 'grudges' else PRICE)
     if p.gold < cost:
         game.msg('You cannot pay for that.', 'bad')
@@ -503,6 +508,7 @@ def r_library(game, choice, ctx):
         from . import chronicle as CH
         CH.add(game, 'The Old Days', 'You learnt the Varnish letters: the old stones in the ruins can be read now.', 'seen',
                where=where, key='varnish_letters', title='The Varnish letters')
+        VN.learnt_letters(game)
         return
     game.end_turn(HOUR * 3, True)
     if choice == 'beasts':

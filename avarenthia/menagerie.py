@@ -538,6 +538,85 @@ NEW = {
                         does='Rules a warren. Every goblin fights harder with the king in sight, and more keep coming.',
                         weak='He is slow and greedy. Cut through to him and the warren falls apart.',
                         home='The heart of a goblin warren.'),
+    # ------------------------------------------------------------------ the Varnish: their bound dead and their makings (varnish.py)
+    'bound_dead': dict(hit_word='strikes', ch='z', fg='#b8b0a0', name='Bound Dead', family='undead', tags='vault', min_l=4,
+                       hp=1.2, dmg=1.0, df=1.3, xp=1.4, slow=True, beh='', gender='mf', noun='bound dead',
+                       res=dict(poison=100, cold=50),
+                       looks=['One of the bound dead of the Varnish: dry as leather, standing as {he} was buried, a seal '
+                              'of star-iron on {his} chest.'],
+                       does='Was buried standing, bound to the stone to serve. Break the seal and it serves no one: it '
+                            'only remembers it was told to guard.',
+                       weak='Slow. Fire, and a mace to the seal.', home='The roads and halls of the old dead.'),
+    'iron_sentinel': dict(ch='Ω', fg='#8aa0c8', name='The Iron Sentinel', family='construct', tags='', min_l=8,
+                          hp=4.6, dmg=1.6, df=2.0, xp=7.0, boss=True, slow=True, beh='shield knockback', gender=None,
+                          noun='iron sentinel', res=dict(poison=100, fire=25, lightning=-30),
+                          looks=['The Iron Sentinel: a figure of black star-iron three men tall, without a speck of rust '
+                                 'on {him} after a thousand years.'],
+                          does='Guards the lowest hall of a Varnish city, as it was told to. Its blows throw you across '
+                               'the room, and its arm turns the first blows.',
+                          weak='Lightning in its joints; hammers and maces.', home='Under one Varnish city.'),
+    'bound_gale': dict(ch='&', fg='#b8e0f0', name='The Bound Gale', family='fiend', tags='', min_l=8,
+                       hp=3.8, dmg=1.4, df=1.6, xp=7.0, boss=True, fast=True, caster=True, elem='lightning',
+                       bolt='howl of wind', beh='pull phase', gender=None, noun='bound gale',
+                       res=dict(poison=100, lightning=75, cold=25),
+                       looks=['The Bound Gale: a wind kept in a stone hall for a thousand years, a face in it now and '
+                              'then.'],
+                       does='A wind the Varnish bound and forgot. It drags you in and is not always where you strike.',
+                       weak='Fire, and the far wall behind you.', home='Under one Varnish city.'),
+    'standing_legate': dict(ch='Z', fg='#d8ccb0', name='The Standing Legate', family='undead', tags='', min_l=8,
+                            hp=4.4, dmg=1.6, df=1.6, xp=7.0, boss=True, beh='drain leader', summon='bound_dead',
+                            summon_msg='{name} raises an arm, and the bound dead step out of their niches!',
+                            gender='m', noun='standing legate', res=dict(poison=100, cold=50, fire=-25),
+                            looks=['The Standing Legate: a commander of the Varnish, buried upright in his armour '
+                                   'with his legion round him.'],
+                            does='Calls up the bound dead of his legion. His blade saps your strength.',
+                            weak='Fire. Cut through to him; the dead stop when he does.', home='Under one Varnish city.'),
+    'hollow_echo': dict(ch='G', fg='#a0b0d0', name='The Hollow Echo', family='undead', tags='', min_l=8,
+                        hp=3.6, dmg=1.5, df=1.5, xp=7.0, boss=True, beh='wail phase', gender='mf', noun='hollow echo',
+                        res=dict(poison=100, cold=75, fire=25),
+                        looks=['The Hollow Echo: the voice of a mage who asked the thirteenth wind, and what is left of '
+                               '{him}.'],
+                        does='Wails, so that you lose your nerve, and is not where you strike.',
+                        weak='Holy things and fire; stand fast.', home='Under one Varnish city.'),
+    'chained_star': dict(ch='*', fg='#d0e0ff', name='The Chained Star', family='construct', tags='', min_l=10,
+                         hp=5.2, dmg=1.7, df=1.8, xp=8.0, boss=True, caster=True, elem='fire', bolt='lash of white light',
+                         beh='pull', gender=None, noun='chained star', res=dict(poison=100, fire=75, cold=-25),
+                         looks=['The Chained Star: a lump of star-iron the size of a house, still hot, still held by a '
+                                'chain as thick as a man.'],
+                         does='What the mages pulled down and could not hold. It pulls you to it and burns.',
+                         weak='Frost. Its chain holds it: keep out of its reach.', home='The Anchor, under the Sky-Seat.'),
+    'hollow_shard': dict(ch='K', fg='#7a8ab0', name='Shard of the Hollow King', family='construct', tags='', min_l=10,
+                         hp=5.0, dmg=1.7, df=1.9, xp=8.0, boss=True, beh='drain wail', gender='m', noun='shard',
+                         res=dict(poison=100, lightning=50, cold=25),
+                         looks=['A Shard of the Hollow King: a piece of a god of star-iron, the height of a man, with '
+                                'winds still caught inside it.'],
+                         does='Hungers. It drains your strength and its voice is the voice of many winds.',
+                         weak='Hammers. It is hollow: strike where it rings.', home='The Hollow Throne.'),
+    'first_uncounted': dict(ch='O', fg='#9aa878', name='The First of the Uncounted', family='orc', tags='', min_l=10,
+                            hp=5.0, dmg=1.8, df=1.5, xp=8.0, boss=True, beh='charge leader', summon='orc',
+                            summon_msg='{name} roars, and orcs come up out of the pits!',
+                            gender='m', noun='first of the uncounted', res=dict(poison=25),
+                            looks=['The First of the Uncounted: a man once, changed in the pits into the first of the '
+                                   'orcs, and kept alive by what changed him.'],
+                            does='Charges, and calls his children out of the pits.',
+                            weak='He is old, older than anything. Wear him down.', home='The Pits of the East.'),
+    'name_keeper': dict(ch='Ω', fg='#d8d0a8', name='The Keeper of Names', family='construct', tags='', min_l=10,
+                        hp=5.0, dmg=1.6, df=2.0, xp=8.0, boss=True, caster=True, elem='lightning', bolt='arc of lightning',
+                        beh='shield', gender=None, noun='keeper of names', res=dict(poison=100, lightning=90, cold=25),
+                        looks=['The Keeper of Names: a guardian of bronze and star-iron, its body cut all over with '
+                               'names.'],
+                        does='Guards the Last Vault and what the Varnish could not destroy. Lightning, and a bronze arm '
+                             'that turns your blows.',
+                        weak='Cold slows its workings.', home='The Last Vault.'),
+    'bound_magister': dict(ch='L', fg='#a8c0e0', name='The Bound Magister', family='undead', tags='', min_l=10,
+                           hp=4.6, dmg=1.6, df=1.6, xp=8.0, boss=True, caster=True, elem='cold', bolt='breath of the grave',
+                           beh='drain leader', summon='bound_dead',
+                           summon_msg='{name} speaks the binding, and the dead stand up!',
+                           gender='m', noun='bound magister', res=dict(poison=100, cold=90, fire=-25),
+                           looks=['The Bound Magister: the mage who bound the dead, bound himself at the last, upright '
+                                  'in the middle of his hall.'],
+                           does='Throws the cold of the grave and calls up the bound dead.',
+                           weak='Fire.', home='The Standing Hall.'),
 }
 
 BANDS = {
@@ -552,6 +631,8 @@ BANDS = {
 }
 HORDE = {'ghoul': (3, 5), 'cinderling': (5, 8)}
 GEAR = {
+    'standing_legate': ['shortsword', 'chainmail', 'roundshield'],
+    'first_uncounted': ['greataxe', 'maul'],
     'cinder_lord': ['greatsword', 'platemail', 'fullhelm', 'ring'],
     'skel_warrior': ['shortsword', 'longsword', 'roundshield', 'ringmail', 'skullcap'],
     'skel_mage': ['staff', 'circlet', 'amulet'],

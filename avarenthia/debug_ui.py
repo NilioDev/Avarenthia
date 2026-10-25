@@ -193,6 +193,8 @@ class DebugScreen(Modal):
                            ('B', self.flag('oldfind'), self.do(lambda: DBG.toggle(g(), 'oldfind'))),
                            ('W', self.flag('oldnight'), self.do(lambda: DBG.toggle(g(), 'oldnight'))),
                            ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
+                           ('V', 'Varnish letters and places', self.do(lambda: DBG.varnish_places(g()), True)),
+                           ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),

@@ -262,6 +262,33 @@ def old_tale(game):
     game.msg(f'Debug: {tale}' if tale else 'Debug: no older place you have not heard of lies near enough.', 'info')
 
 
+def varnish_places(game):
+    """The Varnish letters, and every Varnish city and place on your map."""
+    from . import varnish as VN
+    from . import folk as FK
+    game.varnish_letters = True
+    VN.learnt_letters(game)
+    n = 0
+    for s in game.world.sites:
+        if VN.is_varnish(s):
+            if FK.unfound(s):
+                FK.discover(game, s, None)
+            n += 1
+    game.msg(f'Debug: you know the Varnish letters, and all {n} Varnish places are on your map.', 'info')
+
+
+def varnish_pages(game):
+    """Every page of this world's books, read if you have the letters."""
+    from . import varnish as VN
+    s = VN.st(game)
+    for key in VN.info(game).get('pages', {}):
+        s['pages'].add(key)
+    if VN.letters(game):
+        VN.read_carried(game)
+    game.msg(f'Debug: you carry all {len(s["pages"])} pages of this world\'s {len(VN.info(game).get("books", ()))} '
+             'books.', 'info')
+
+
 def open_rift(game):
     """A rift tears open a little way off (rift.py), or says where the open one is."""
     from . import rift as RF

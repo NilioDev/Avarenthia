@@ -502,6 +502,28 @@ def ch_land(g):
               'holds. Moonstones, the sign {·|214,226,255}, each show the next, on toward a hidden elven place. Orcs '
               'hang skull poles, the sign {ⁿ|220,210,186}, near their camps, and kobold scratches, the sign '
               '{«|204,182,110}, point at a hoard of shiny things, the sign {*|236,210,120}. Walk onto them.'),
+        ('h', 'The Varnish'),
+        ('p', 'The empire before the Ruin built in iron and to the stars, and measured everything in leagues. Its '
+              'ruins are on no map. You find a city by walking its land: columns between the trees, old paving under '
+              'the moss or the sand, a gate of star-iron with no wall, stones with letters that say its name. Once '
+              'you have seen it, it is on your map.'),
+        ('s', [([('╩', (176, 190, 224))], 'a Varnish city, round its Sky Court and the round sky well. Somewhere in the '
+                                          'court lies a way down that no map shows: a stone that tells you where to '
+                                          'press, a well that draws air, a flagstone that sounds hollow, a lever '
+                                          'behind a statue. Below waits a deep with a guardian of its own.'),
+               ([('▐', (168, 176, 196))], 'a tower of the Northern Wall, where the nine legions watched the north. '
+                                          'The wall runs on between the towers.'),
+               ([('⌠', (176, 200, 220))], 'a wind tower: from the top you see the land round. It howls in a storm.'),
+               ([('Ö', (196, 188, 168))], 'a road of the standing dead. Break a seal, and the dead one steps down.'),
+               ([('◘', (150, 170, 220))], 'a star-iron forge; a shard of star-iron is worth something to a smith.'),
+               ([('╦', (180, 196, 236))], 'a Gate of Leagues: its star map shows the nearest city and the other '
+                                          'gates.'),
+               ([('╟', (150, 180, 200))], 'a sluice hall: open the sluice, and the drowned hall runs dry.'),
+               ([('♦', (140, 150, 190))], 'the fallen sky: black stones and glassy sand.'),
+               ([('☼', (190, 206, 255))], 'a star house: your feet sweep the dust off an iron floor of stars.'),
+               ([('╢', (150, 176, 196))], 'a sunken harbour, with old coins in the shallows.')]),
+        ('p', 'League stones, the sign {│|196,200,214}, count down IV, III, II, I toward a city; once you can read the '
+              'old letters, each shows the next. Walk into the telling things of these places.'),
         ('h', 'Falls and springs'),
         ('s', [([('≡', (236, 248, 255))], 'falls: a waterfall, a cascade or great falls. Fish bite better in the pool, '
                                           'a hollow may hide behind the falling water, and from the cairn on top of a '
@@ -843,10 +865,22 @@ def ch_chronicle(g):
               'books lie in the deepest dungeons: read one from your bag, and it may name a place you did not know.'),
         ('h', 'Libraries'),
         ('p', 'Every city has a library, with shelves of books and a scribe. Walk into the scribe and choose: The old '
-              'days, The realms, A lord or house, This city, Beasts you have met, or the Varnish letters. A subject costs a few silver and '
+              'days, The realms, A lord or house, This city, Beasts you have met, the Varnish letters, or The Varnish. A subject costs a few silver and '
               'a few hours, the letters a day; members of the Circle of Magi read for free. A library is true but '
               'slow: its own realm it knows well, far realms late. It also buys the old books you find.'),
         ('p', 'The dwarves keep their Grudge Book, and under the Elder Tree a loremaster sings of the old days.'),
+        ('h', 'The Varnish'),
+        ('p', 'What is left of the empire before the Ruin goes in its own chapter, The Varnish, by subject: its gods, '
+              'its emperors, its daily life, its uncounted, its bound dead. Pieces of it are cut on stones in its '
+              'ruins, heard now and then, and kept on a library\'s Varnish shelf.'),
+        ('p', 'Some of its books lie in pieces across the world, a letter or a leaf in each place. You keep a page '
+              'with your papers, not in your bag, and read it once you have the letters. From the second page the '
+              'chronicle sees which belong together, and which are still missing, never where. With every page of a '
+              'book, a scribe binds it for a few silver and an hour, and finds what only the whole shows. Read the '
+              'bound book from your bag, or sell it to a library, once, and well.'),
+        ('p', 'Five old riddles grow in The Old Days, each under its own heading: how the Sky-Seat fell, who the '
+              'Hollow King was, where the orcs came from, what lies in the vaults, why the dead were bound. With six '
+              'true pieces a riddle is whole; then what was false shows up red, and the riddle points to a place.'),
         ('h', 'Two hundred years'),
         ('p', 'The old folk tell of the founding of the empire, its wars and the houses that fell, where it happened '
               'near them. Some of them have it wrong; what you read later puts it right. A record may name the ruin '

@@ -102,17 +102,18 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Marks of the peoples** - boundary stones, moonstones, skull poles, kobold scratches and their hoard. Debug: Teleport
   (poi kinds).
 
-### Part A still to build
-- **Varnish ruins in the wild** - never on the map before you walk there; found by walking the zones; they match the land
-  (forest, sand, marsh, ice). Debug: list them; teleport; reveal on the map.
-- **Hidden dungeons** - no rumour, map or job names them; the way in only on the spot (stone with the letters, well, hollow
-  floor, lever). Debug: list them with their way in; teleport to the entrance; give the Varnish letters.
-
-### The Varnish places
-- **Overgrown city** (sky well, Sky Court), **Northern Wall** (tower ruins), **wind tower** (howls in a storm), **road of the
-  bound dead** (break a seal, the dead rises), **star-iron forge**, **Gate of Leagues** (its star map points on), **sluice
-  hall** (open a sluice, a hall runs dry), **the fallen sky**, **star house**, sunken harbour, old coins. League stones count
-  down towards a ruin. Debug: teleport by kind; choose the weather (storm); spawn star-iron and coins.
+### The Varnish (built 25 October 2026)
+- **Varnish ruins in the wild** - never on the map before you walk there; found by walking among the columns in their
+  zones; they match the land (overgrown, sand, marsh, ice); a name stone read with the letters names the city. Debug:
+  Teleport (kind vcity); V gives the letters and puts every Varnish place on the map.
+- **Hidden dungeons** - no rumour, map or job names them; the way in only on the spot (a stone with the letters, a well
+  that draws air, a hollow flagstone, a lever behind a statue); a boss of its own at the bottom, each once per world, and
+  back up onto the Sky Court. Debug: Teleport to the city; V for the letters.
+- **The Varnish places** - wall towers (the lantern on one, lit at night, shows the whole wall), wind tower (look-out;
+  howls in a storm: Weather), road of the standing dead (read a seal; break one and a bound dead steps down), star-iron
+  forge (shards of star-iron), Gate of Leagues (its star map shows the nearest city and the other gates), sluice hall
+  (open the sluice: it runs dry, old coins), the fallen sky, star house (sweep the dust by walking), sunken harbour.
+  League stones IV to I toward a city. Debug: Teleport by kind; Time for the night; Weather for a storm.
 
 ### Archaeology (a life skill)
 - Dig spots seen by rank; breaking less at higher rank; learnt only at places of your own height. Debug: set the rank;
@@ -120,14 +121,14 @@ Each line: **what** - what to check - what the debug menu should offer.
 - Gives lore fragments (the five riddles), star-iron pieces a smith mends into an old power, a modest income from collectors
   and libraries. Debug: give a fragment or a piece by name; show a riddle's state.
 
-### The Varnish' own lore and books
-- **Fragments** in the chronicle chapter The Varnish, under their headings (Gods, Daily life, Law and measure, Songs and
-  books, Voices, The last days, and the dirty side). Debug: give any fragment by name; give all; open the chronicle there.
-- **Books bound from fragments** - 27 books, about eight picked per world, at least one per thread; from the second page the
-  chronicle shows "2 of 6" with the gaps; a library scribe binds a whole set and finds the hidden page; the book sells once.
-  Debug: list this world's books and where each page lies; give a whole set; give one page; teleport to a page.
-- What some books add: the recipe Fig Bread; the ferryman who ferries you free; one apple a year from the tree on the
-  Sky-Seat; an old way revealed at once; places put on the map. Debug: check each after binding.
+### The Varnish' own lore and books (built 25 October 2026)
+- **Fragments** in the chronicle chapter The Varnish, under their headings: from stones read with the letters, the
+  scribe's option The Varnish, now and then a rumour. Debug: V for the letters, then read stones; open the chronicle.
+- **Books bound from pages** - eight of the 27 per world, at least one per thread; a page goes in with your papers and is
+  read with the letters; from the second page "n of N" with the missing ones; the scribe binds a whole set (Bind) and
+  finds the hidden page; the bound book reads from the bag and sells once. Debug: P gives every page of this world.
+- What some books add: the recipe Fig Bread; the ferrymen's tally (ferries free); the apple tree at the Anchor (one apple
+  a year); an old way; places on the map; a riddle piece; a lie shown up. Debug: P, then bind each at a library.
 
 ### Part B: newer places
 - Logging camp, charcoal burners, peat cutters, salt pans, a realm's war camp (only in a war), refugee camp (after a
@@ -158,7 +159,7 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **The Masking** - a mask hides who you are (also when wanted). **The Naming** - a ghost's name lays it down. **Thirst
   Month** - oases must take you in. Debug: give a mask; spawn a named ghost; set wanted.
 
-### The five riddles
-- Each riddle in the chronicle with its gaps named; whole at about six of eight fragments; false ones get "Not so" later;
-  the answer and the lead to its hidden place; all five give The Ruin, as it was. Debug: give fragments of a riddle one by
-  one; make a riddle whole; teleport to its hidden place.
+### The five riddles (built 25 October 2026)
+- Each riddle in The Old Days under its title, with its gap; whole at six true pieces of eight; false ones get "Not so"
+  then; the answer and the lead to its deep place with its own boss; all five give The Ruin, as it was. Debug: V and P,
+  then the stones, the places and the library; Teleport to the deep places (kind vdeep).

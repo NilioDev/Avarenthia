@@ -13,7 +13,7 @@ import random
 from . import calendar as CAL
 from . import data as D
 
-CHAPTERS = ['The Old Days', 'The Realms', 'Lords and houses', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
+CHAPTERS = ['The Old Days', 'The Varnish', 'The Realms', 'Lords and houses', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
 MARK = {'heard': ('·', (217, 165, 71)), 'read': ('≡', (196, 170, 255)), 'seen': ('☼', (255, 226, 120))}
 
 
@@ -321,6 +321,9 @@ def blocks(game, i):
         return HB.ch_signs(game)
     out = []
     fs = [f for f in facts(game) if f['ch'] == ch]
+    if ch in ('The Old Days', 'The Varnish'):
+        from . import varnish as VN
+        return VN.blocks(game, ch, fs) or [('p', 'Nothing yet.')]
     for f in fs:
         out.append(('fact', f))
     for gp in gaps(game, ch):

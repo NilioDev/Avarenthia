@@ -223,6 +223,31 @@ TILES = [
     Tile('o', '#b0aca0', False, False, 'stone head'),
     Tile('┴', '#d0ccbc', False, False, 'stone of names'),
     Tile('Ω', '#c8b070', False, False, 'bell on a post'),
+    # the Varnish: their ruined cities and places (varnish.py)
+    Tile('○', '#c8c4b8', False, False, 'old column'),
+    Tile('∙', '#a8a49a', True, False, 'old paving'),
+    Tile('╥', '#8aa0c8', False, False, 'gate of star-iron'),
+    Tile('¶', '#d8d0b4', False, False, 'stone with old letters'),
+    Tile('░', '#7890c0', False, False, 'the sky well', bg='#0e1424'),
+    Tile('Ö', '#c8c0a8', False, False, 'niche with a standing dead', bg='#1e1c18'),
+    Tile('∩', '#7a7468', False, False, 'broken niche', bg='#1a1814'),
+    Tile('▲', '#6a5a50', False, False, 'heap of slag'),
+    Tile('╤', '#8aa0c8', False, False, 'anvil of star-iron', bg='#141a26'),
+    Tile('*', '#b0c8f8', False, False, 'lump of star-iron', bg='#10141e'),
+    Tile('☼', '#c0d0ff', False, False, 'star map', bg='#101830'),
+    Tile('╫', '#8a9aa8', False, False, 'sluice gate'),
+    Tile('╬', '#5a6470', True, False, 'open sluice'),
+    Tile('♦', '#4a4a5a', False, False, 'black stone', bg='#141418'),
+    Tile('∙', '#a0c8c0', True, False, 'glassy sand', bg='#182220'),
+    Tile('§', '#8aa0c8', False, False, 'snapped chain of star-iron'),
+    Tile('░', '#8a8070', True, False, 'dust'),
+    Tile('*', '#8aa0e0', True, False, 'iron star floor', bg='#141a2a'),
+    Tile('≡', '#b0a890', False, True, 'wall scratched with days', bg='#24221c'),
+    Tile('¡', '#7a7a80', False, False, 'cold lantern'),
+    Tile('¡', '#ffd070', False, False, 'lit lantern', bg='#3a2a08'),
+    Tile('o', '#a0a8b0', False, False, 'well that draws air'),
+    Tile('▒', '#8a8478', False, False, 'cracked flagstone'),
+    Tile('#', '#9a968c', False, True, 'Varnish wall', bg='#24221e'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -241,6 +266,9 @@ HIVE, LENS, WOVEN = range(164, 167)        # abbeys, forts and manors (halls.py)
 ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = range(167, 176)   # the Ashen Deep (rift.py)
 (MOUND, DUGMOUND, SPEARS, BLOCK, HULL, SEACHEST, WETSAND, PIER, GALLOWS, HEAD, NAMESTONE,
  LEPERBELL) = range(176, 188)               # old places on the land (oldplaces.py)
+(COLUMN, VPAVE, IRONGATE, VSTONE, SKYWELL, NICHE, OPENNICHE, SLAG, VANVIL, STARIRON, STARMAP, SLUICE, OPENSLUICE,
+ BLACKSTONE, GLASSSAND, CHAINLINK, DUST, STARFLOOR, DAYMARKS, VLAMP, LITLAMP, AIRWELL, HOLLOW,
+ VWALL) = range(188, 212)                   # the Varnish (varnish.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

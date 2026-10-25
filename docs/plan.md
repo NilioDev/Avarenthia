@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
-| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026); the Varnish places and the rest are not |
+| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -43,7 +43,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
    A pause after 5, 7 and 9; merge after 9.
 11. **Old places from the history** (L): battlefields, deserted villages, memorials, hermitages and the rest of part A.
     Built 24 October 2026 (see `docs/built.md`).
-12. **The Varnish** (XL): their cities and places, the hidden dungeons (need K5), the lore, the books, the riddles.
+12. **The Varnish** (XL): their cities and places, the hidden dungeons, the lore, the books, the riddles. Built 25
+    October 2026 (see `docs/built.md`).
 13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. Pause after 12,
     merge after 13.
 14. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
@@ -441,19 +442,8 @@ eerst A doen, alle ideeen klinken goed". Details and the full list (also the new
 tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
 `living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
 - Part A's old places (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages,
-  leper colonies, the peoples' marks) are built (24 October 2026; spec in `docs/built.md`). Still to build here:
-- **Varnish ruins in the wild** (Nilio's addition): old Varnish cities, overgrown by forest, half under the sand in a
-  desert, sunk in a marsh, frozen in the tundra. They have no name and no sign on the world map beforehand; you find
-  them only by walking the land (the zones), and what you saw goes on your map. A city spans several zones: columns
-  between the trees, a forum full of bushes, a gate without a wall, stones with Varnish letters that say its name.
-- **Hidden dungeons** hang under such ruins: no rumour names them, no map shows them, no job asks for them. You find
-  the way in only on the spot (a stone you read with the Varnish letters, a well that draws air, a floor that sounds
-  hollow, a lever behind a statue). Its own boss and a treasure room, kept modest; unique to each world.
-- **The Varnish get a face of their own** (approved 23 October; not a copy of Rome): iron, stars and measuring. Their
-  black iron is star-iron (as in a Starfall crater): it never rusts and still shines in every ruin. They built to the
-  stars (a city lies round a round sky well) and measured everything in leagues; league stones count down towards a
-  ruin. They buried their dead standing, bound to the stone. This fits what `lore.py` and the stones already say (the
-  Sky-Seat, the winds and the dead bound, the Hollow King, the northern wall of nine legions, the sealed vaults).
+  leper colonies, the peoples' marks) are built (24 October 2026), and so are the Varnish: their cities, places,
+  hidden dungeons, lore, books and riddles (25 October 2026); specs in `docs/built.md`. Still to build here:
 - **Archaeology, a new life skill** (approved 23 October): dig spots on old places, a tile you see once you have the eye
   for it; the higher your rank, the more spots you see and the less you break; learnt only at places of your own height.
   It gives three things: (1) fragments of lore for the chronicle, belonging to five old riddles that grow as small
@@ -462,43 +452,13 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   libraries, stones and rumours stay other ways to that knowledge; (2) pieces of star-iron and old things that a smith
   mends, a mended piece carrying an old power (Smithing's found powers), so finds stay rare and the smith's work counts;
   (3) a modest income: collectors and city libraries buy finds and old coins. Its place in the life skills order is
-  still open.
-- **The Varnish' own lore** (approved 23 October, "de toon is goed, mag alle kanten op gaan"): loose fragments of the
-  empire itself, not about today's world: its gods (today's gods are their worn-down remains: Skell was Eskelion,
-  Measurer of Roads), emperors, mages, daily life, food, feasts, trades, soldiers, law, love, songs, books and plays,
-  and its last days. They count years "from the Founding" (FF); the empire lasted 1400 years. Found as archaeology
-  finds, on stones, in city library books, now and then as a rumour; the chronicle gets a chapter The Varnish with
-  headings. A few longer works (the Song of the Nine Walls, the Book of Leagues) lie in pieces across the world, one per
-  find; a whole work sells once and well to a city library, and its last line may point to a hidden place. Dry humour
-  is welcome. The empire was not kind: the dirty side (slaves, "the uncounted", the dead bound for debt, conquest)
-  shows too, with what people thought of it, for and against, from many mouths (Nilio: "de menselijke kant"). The texts: project files `poi/varnish-lore.md` (more may come).
-- **Books bound from fragments** (approved 23 October): a book is a set of 5-8 fragments spread over the world
-  (letters, sherds, diary pages), each readable on its own. From the second one the chronicle sees they belong together
-  ("2 of 6", the gaps named, never where). With a whole set, a scribe in a city library binds it in order (talk, one
-  option, a few silver and an hour) and finds what only the whole shows: a hidden last page with the end of the story,
-  sometimes a lead to a hidden place or a piece of a riddle. The book is then a thing in your pack and its story in the
-  chronicle; keep it or sell it once, well, to a library. 27 books written out (more may come); each world picks about eight at random, at least one from each
-  thread (Tam and his mother, the winds, the fall, the uncounted, the bound dead, the emperors), and the pages lie where
-  they fit. Stories cross between books, each still whole on its own. No new key. Stories and titles: project files `poi/varnish-boeken.md` (all 27 with their hidden
-  pages and what they add to the chronicle or the map). Books of the dirty side too (Twelve, a runaway slave; a mother's petitions
-  for her bound son; a dealer in the dead; a banned play); the stories may cross (a soldier in one is in another).
-- **The five riddles written** (23 October; project files `poi/raadsels.md`): eight fragments each, some false (a red
-  "Not so" later); a riddle is whole with about six; then the chronicle writes the answer and points to a unique hidden
-  place (the Anchor, the Hollow Throne, the Pits of the East, the Last Vault, the Standing Hall). All five whole give a last
-  paragraph, The Ruin, as it was. The answer, never told outright: the mages made the Hollow King of star-iron, every
-  bound wind and the bound dead; they made the first orcs of the uncounted to feed the work; the last star they pulled
-  down was the Ruin; the vaults hold the names and what they could not destroy. The great evils (`evils.py`) are of after the
-  Varnish and stay out of these riddles (Nilio).
+  still open. Already built with the Varnish (25 October 2026): the riddles and their pieces (`world.varnish['src']`
+  says where each comes from; archaeology adds digging as one more source), the Varnish fragments and the curio
+  'stariron' (a shard of star-iron, for the smith).
 - **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 16, 20, 21, 22).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
-- **The Varnish places** (all approved 23 October; part C of `poi/ideeen.md`): the overgrown city round a sky well
-  with a sunken Sky Court; the Northern Wall of the nine legions with its tower ruins; the wind tower that howls in a
-  storm; the road of the bound dead (break a seal and the dead one rises); the star-iron forge by an old crater; the Gate
-  of Leagues whose star map points to other gates; the sluice hall (open a sluice and a flooded hall runs dry); the fallen
-  sky of black stones and glassy sand; the star house with an iron star floor under the dust; and as small extras a
-  sunken harbour and old coins.
 - **Places of today's peoples and powers** (all 44 approved 23 October; `poi/volken.md`), fixed in the wild:
   the realms (a boundary stone moved at night, a lone inn on a long road, a mill, a bridge chapel, lime kilns); the
   Church (a pilgrims' chapel up a rock, a tithe barn, a holy well, a plague cross); the Watch, companies, revolt and
