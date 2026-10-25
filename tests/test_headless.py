@@ -3858,6 +3858,11 @@ def schools():
         g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
         for xy in list(SM.fields(g.map)):
             SM.clear(g.map, xy)
+        if sid == 'blink':                          # room to blink to: an open stretch of floor
+            m_ = g.map
+            p.x, p.y = max(((i % m_.w, i // m_.w) for i, t in enumerate(m_.t) if t == D.FLOOR),
+                           key=lambda c: sum(1 for a in range(-3, 4) for b in range(-3, 4)
+                                             if m_.inb(c[0] + a, c[1] + b) and m_.tile(c[0] + a, c[1] + b) == D.FLOOR))
         k = 'skeleton' if sid in ('turn_undead', 'hallowed_ground', 'dawnbreak', 'smite') else \
             'wolf' if sid == 'tame' else 'goblin'
         for x, y in free_around(g, g.map, p.x, p.y, 2)[:3]:
@@ -3875,12 +3880,12 @@ def schools():
         p.bar[5] = sid
         ok = False
         p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]    # Elder Bear's shape lets go
-        for _ in range(40 if sid == 'tame' else 1):
+        for _ in range(40 if sid == 'tame' else 8):    # a jump may find no spot this time: try again
             p.cooldowns.clear()
             p.mana = p.stamina = 999
             p.life = max(p.life, 400)
             ok = SK.use(g, 5)
-            if sid != 'tame' or MC.beasts(g):
+            if ok and (sid != 'tame' or MC.beasts(g)):
                 break
         assert ok, sid
         if sid == 'tame':
