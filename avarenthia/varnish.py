@@ -174,7 +174,11 @@ def place(game, m, world, reach_set):
     towers = []
     for j, lg in enumerate(legions):
         x = int(w * (.1 + .8 * (j + .5) / n))
-        spot = near(x, y0, 0, 8, 6) or near(x, y0, 0, 16, 4) or near(x, y0 + 12, 0, 16, 3)
+        spot = near(x, y0, 0, 8, 6) or near(x, y0, 0, 16, 4)
+        yy = y0
+        while not spot and yy < h * .5:                 # a northern sea: the wall stands on the first land south of it
+            yy += 8
+            spot = near(x, yy, 0, 12, 3)
         if spot:
             towers.append(add('walltower', spot, f'The Tower of the {T.LEGIONS[lg]} Legion', legion=lg, lamp=False))
     if towers:
