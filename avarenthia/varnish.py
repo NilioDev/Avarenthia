@@ -78,8 +78,18 @@ def info(game):
 
 # ------------------------------------------------------------------ on the world map
 def place(game, m, world, reach_set):
-    """After the old places: the Varnish cities, their places and wall, the league stones, the five deep places, and
-    which books lie in this world and where their pages are."""
+    """Last of all the world: the Varnish cities, their places and wall, the league stones, the five deep places, and
+    which books lie in this world and where their pages are. With dice of its own, so the rest of the world comes out
+    as it would without them."""
+    state = random.getstate()
+    random.seed(game.seed * 7717 + 12)
+    try:
+        _place(game, m, world, reach_set)
+    finally:
+        random.setstate(state)
+
+
+def _place(game, m, world, reach_set):
     from .sites import Site
     from .world import scaled, Dungeon
     from . import nature as NT

@@ -392,14 +392,14 @@ def gen_world(game):
         RL.generate(game, m, world)
         from . import oldplaces as OP
         OP.place(game, m, world, reach_set)
-        from . import varnish as VN
-        VN.place(game, m, world, reach_set)
         from .events import gen_pois
         gen_pois(game, m, world)
         from .hidden import generate as old_ways
         old_ways(game, m, world)
         from .harbour import mark_coast
         mark_coast(m, world)
+        from . import varnish as VN
+        VN.place(game, m, world, reach_set)
         return m, world
     raise RuntimeError('World generation failed')
 

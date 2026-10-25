@@ -370,8 +370,8 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
-- **The Varnish** (25 October 2026; `varnish.py`, texts in `varnishtexts.py`). Placed after the old places
-  (`VN.place`), all in `world.varnish`: `ruin` (cell to city), `wall` (the Northern Wall's cells), `books` (8 of 27,
+- **The Varnish** (25 October 2026; `varnish.py`, texts in `varnishtexts.py`). Placed last of all the world
+  (`VN.place`, with dice of its own so the rest of the world comes out as before), all in `world.varnish`: `ruin` (cell to city), `wall` (the Northern Wall's cells), `books` (8 of 27,
   one per thread at least), `pages` ((book, n) to ('site', id), ('dungeon', did), ('poi', id) or ('library', None)),
   `src` (each riddle piece's source in this world: what is not here falls back to the library) and `deep`. Hidden
   sites (`folk.unfound`): four cities (`vcity`, 3 x 3 cells, land overgrown, sand, marsh or ice, painted into the zones
