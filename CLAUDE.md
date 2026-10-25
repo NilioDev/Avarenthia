@@ -84,6 +84,9 @@ jobs, what they know, what they were told, where they are) lives on the player, 
   - Once, at the end of a build, before merging to `main`: seeds 1-3, then `smoke`, then the bot.
   - CI runs the whole suite (seed 1 with `smoke`) on every push: read its result, don't run it again locally.
 - `python tests/bot.py 2` lets a bot play.
+- The wiki (Nilio, 25 Oct 2026): `python tools/wiki/build_wiki.py` writes `wiki/avarenthia-wiki.html` from the code and
+  docs (lore, great evils, monsters, skills, classes, items, the handbook, plan.md); CI builds it on every push as the
+  artifact "Avarenthia wiki". A new data table worth reading gets a few lines there.
 - `text_fits` fails when a sentence is cut short with "…": wrap text, don't truncate it.
 - Push to `main`; GitHub Actions runs the tests and builds Windows/macOS/Linux executables.
 - Screenshots for checking: `tools/screenshot.save(canvas, path, scale)` with `canvas.FakeCanvas`.

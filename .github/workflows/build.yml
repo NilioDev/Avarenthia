@@ -1,6 +1,7 @@
 # Builds standalone executables for Windows, macOS and Linux on every push, twice: the game for players, and
 # "Avarenthia (test)" with the debug menu (F12) switched on, for testers.
-# Download them from the run's "Artifacts" section on the Actions tab.
+# Download them from the run's "Artifacts" section on the Actions tab. The Linux job also builds the wiki
+# (tools/wiki/build_wiki.py): lore, monsters, skills, items and the handbook in one HTML page.
 name: Build executables
 
 on:
@@ -35,6 +36,14 @@ jobs:
         run: pip install -r requirements.txt pyinstaller
       - name: Run headless tests
         run: python tests/test_headless.py
+      - name: Build the wiki
+        if: matrix.os == 'ubuntu-latest'
+        run: python tools/wiki/build_wiki.py
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: Avarenthia wiki
+          path: wiki/avarenthia-wiki.html
       - name: Pack and seal the drawn pieces
         run: python tools/pack_pieces.py
       - name: Build
