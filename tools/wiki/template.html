@@ -1,0 +1,188 @@
+<title>Avarenthia Codex</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,600;1,400&family=Alegreya+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a fixed contents column on the left like the in-game handbook, one chapter at a time on the right; dark first, like the game screen */
+:root {
+  --bg: #15171a; --panel: #1c1f23; --line: #2e3238; --fg: #ddd6c6; --dim: #9a9488; --gold: #e2b54a; --tile: #0d0e10;
+  --built: #6fbf73; --branch: #e0a344; --planned: #7f9bff; --false: #e06a5a;
+  --f-disp: 'Alegreya SC', Georgia, serif; --f-body: 'Alegreya', Georgia, serif; --f-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #eeece6; --panel: #f8f7f3; --line: #d4d0c6; --fg: #25231f; --dim: #6b665c; --gold: #9a6d10; --tile: #1a1b1e;
+  --built: #2f7d35; --branch: #9a5e00; --planned: #3550c0; --false: #b03a2a; color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #eeece6; --panel: #f8f7f3; --line: #d4d0c6; --fg: #25231f; --dim: #6b665c; --gold: #9a6d10; --tile: #1a1b1e;
+  --built: #2f7d35; --branch: #9a5e00; --planned: #3550c0; --false: #b03a2a; color-scheme: light; }
+body { background: var(--bg); color: var(--fg); font: 17px/1.55 var(--f-body); }
+a { color: var(--gold); }
+.wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+nav.side { position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; overflow-y: auto; border-right: 1px solid var(--line);
+  background: var(--panel); padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 14px; }
+.brand { font: 700 1.5rem/1 var(--f-disp); color: var(--gold); letter-spacing: .04em; margin: 0 0 4px; }
+.brand-sub { font-size: .85rem; color: var(--dim); margin: 0 0 14px; }
+#q { width: 100%; box-sizing: border-box; font: inherit; font-size: .95rem; padding: 7px 10px; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 3px; }
+#q:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+#hits { font-size: .8rem; color: var(--dim); min-height: 1.2em; margin: 4px 0 8px; }
+nav ul { list-style: none; margin: 0; padding: 0; }
+nav li.ng { font: 500 .78rem var(--f-disp); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 16px 0 4px; }
+nav a { display: block; padding: 3px 8px; border-radius: 3px; color: var(--fg); text-decoration: none; font-size: .95rem; }
+nav a:hover, nav a:focus-visible { background: var(--line); outline: none; }
+nav a.on { color: var(--gold); background: var(--bg); }
+.legend { margin-top: 18px; font-size: .8rem; color: var(--dim); display: grid; gap: 4px; }
+main { padding-block: 22px 80px; padding-left: max(16px, 4vw); padding-right: max(16px, env(safe-area-inset-right, 0px)); min-width: 0; max-width: 1200px; }
+.sh h2 { font: 700 2rem/1.1 var(--f-disp); color: var(--gold); margin: 0 0 8px; text-wrap: balance; letter-spacing: .02em; }
+.sh p { max-width: 70ch; color: var(--dim); margin: 0 0 10px; }
+h3.gh { font: 700 1.25rem var(--f-disp); margin: 28px 0 10px; border-bottom: 1px solid var(--line); padding-bottom: 4px; letter-spacing: .03em; }
+.count { font: .8rem var(--f-mono); color: var(--dim); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; align-items: start; }
+.cards.wide { grid-template-columns: 1fr; }
+.entry { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; min-width: 0; }
+section > .entry { margin-bottom: 12px; }
+.entry h3 { font: 600 1.1rem/1.3 var(--f-body); margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+.entry p, .entry ul, .entry ol, .entry dl { margin: 6px 0; }
+.entry ul, .entry ol { padding-left: 1.2em; }
+.sub { font: .78rem var(--f-mono); color: var(--dim); font-weight: 400; }
+.badge { margin-left: auto; font: 600 .68rem var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 1px 6px; border-radius: 2px; border: 1px solid currentColor; white-space: nowrap; }
+.b-built { color: var(--built); } .b-branch { color: var(--branch); } .b-planned { color: var(--planned); } .b-notes { color: var(--dim); }
+.glyph { font: 600 1.05em var(--f-mono); background: var(--tile); padding: 0 .3em; border-radius: 2px; display: inline-block; min-width: 1em; text-align: center; }
+.lead { font-style: italic; }
+.meta { font-size: .88rem; color: var(--dim); }
+.quote { font-size: .92rem; border-left: 2px solid var(--line); padding-left: 10px; color: var(--dim); }
+.tip { font-size: .92rem; border-left: 2px solid var(--gold); padding-left: 10px; }
+dl.kv { display: grid; grid-template-columns: minmax(90px, max-content) minmax(0, 1fr); gap: 3px 12px; font-size: .93rem; }
+dl.kv dt { color: var(--dim); } dl.kv dd { margin: 0; }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font: .82rem var(--f-mono); font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+.stats b { color: var(--dim); font-weight: 400; } .stats .mult { color: var(--dim); }
+.abil { font-size: .9rem; padding-left: 1.1em; margin: 6px 0; }
+.abil li { margin: 2px 0; }
+.abil b { font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font: .74rem var(--f-mono); border: 1px solid var(--line); border-radius: 2px; padding: 0 5px; color: var(--fg); }
+details summary { cursor: pointer; color: var(--gold); font-size: .92rem; margin-top: 6px; }
+li.false { color: var(--false); }
+.tw { overflow-x: auto; margin: 8px 0; }
+table { border-collapse: collapse; font-size: .9rem; width: 100%; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 .78rem var(--f-disp); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+tr.entry { background: none; border: 0; }
+tr.entry td { border-bottom: 1px solid var(--line); }
+table.skills td:last-child { min-width: 260px; }
+kbd { font: 600 .8em var(--f-mono); background: var(--gold); color: var(--tile); padding: 0 .35em; border-radius: 2px; }
+code { font: .85em var(--f-mono); background: var(--panel); padding: 0 .25em; border-radius: 2px; }
+.branches { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.branch h4 { margin: 4px 0; font: 600 1rem var(--f-body); color: var(--gold); }
+.branch ol { font-size: .9rem; }
+.book h4 { font: 700 1rem var(--f-disp); color: var(--gold); margin: 14px 0 4px; letter-spacing: .03em; }
+.prose { max-width: 80ch; }
+.prose h2, .prose h3 { font-family: var(--f-disp); color: var(--gold); margin-top: 28px; }
+.prose h4, .prose h5 { margin-top: 18px; }
+.planned h2, .planned h3 { color: var(--planned); }
+ol.hist li { margin: 4px 0; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-top: 16px; }
+.home-grid a { display: block; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); text-decoration: none; color: var(--fg); }
+.home-grid a:hover { border-color: var(--gold); }
+.menu-btn { display: none; }
+@media (max-width: 760px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); }
+  nav.side { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  nav.side ul { display: none; } nav.side.open ul { display: block; }
+  .menu-btn { display: inline-block; font: inherit; font-size: .9rem; margin-top: 8px; background: var(--bg); color: var(--gold); border: 1px solid var(--line); border-radius: 3px; padding: 4px 10px; }
+  main { padding-left: max(16px, env(safe-area-inset-left, 0px)); }
+  .cards { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) { nav a { transition: background .12s; } }
+</style>
+<div class="wrap">
+  <nav class="side" id="side">
+    <p class="brand">Avarenthia</p>
+    <p class="brand-sub">The codex: lore, creatures and rules, taken from the game itself.</p>
+    <label for="q" class="meta">Search everything</label>
+    <input id="q" type="search" placeholder="wolf, lich, Varnish…" autocomplete="off">
+    <div id="hits"></div>
+    <button class="menu-btn" id="menu" type="button" aria-expanded="false">Contents</button>
+    <ul>
+      <li><a href="#home" data-s="home">Start</a></li>
+      %%NAV%%
+    </ul>
+    <div class="legend">
+      <span><span class="badge b-built">built</span> in the game</span>
+      <span><span class="badge b-planned">planned</span> approved, not built</span>
+    </div>
+  </nav>
+  <main id="main">
+    <section id="home" data-title="Start">
+      <header class="sh"><h2>The Avarenthia Codex</h2>
+      <p>Everything the game knows about its world, read straight from the code: %%MONS%% creatures with their stats, the great evils, peoples, gods, factions, the Varnish lore, every skill, class and item, and the whole handbook. The plans that are approved but not built yet are here too, marked in blue.</p>
+      <p class="meta">%%NOTE%%</p></header>
+      <div class="home-grid" id="homegrid"></div>
+    </section>
+    %%SECTIONS%%
+  </main>
+</div>
+<script>
+(function () {
+  var secs = Array.prototype.slice.call(document.querySelectorAll('main > section'));
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a[data-s]'));
+  var q = document.getElementById('q'), hits = document.getElementById('hits');
+  var grid = document.getElementById('homegrid');
+  secs.forEach(function (s) {
+    if (s.id === 'home') return;
+    var a = document.createElement('a'); a.href = '#' + s.id;
+    var n = s.querySelectorAll('.entry').length;
+    a.innerHTML = '<b>' + s.dataset.title + '</b><br><span class="meta">' + n + ' entries</span>';
+    grid.appendChild(a);
+  });
+  function show(id) {
+    if (!document.getElementById(id)) id = 'home';
+    secs.forEach(function (s) { s.hidden = s.id !== id; });
+    links.forEach(function (a) { a.classList.toggle('on', a.dataset.s === id); });
+  }
+  function route() {
+    if (q.value.trim().length >= 2) return;
+    var h = location.hash.slice(1);
+    var el = h && document.getElementById(h);
+    if (el && el.tagName !== 'SECTION') { var s = el.closest('section'); show(s.id); el.scrollIntoView(); }
+    else { show(h || 'home'); window.scrollTo(0, 0); }
+  }
+  window.addEventListener('hashchange', route);
+  document.addEventListener('click', function (ev) {
+    var a = ev.target.closest('a[href^="#"]');
+    if (a && q.value) { q.value = ''; search(); }
+    if (a) { document.getElementById('side').classList.remove('open'); }
+  });
+  var all = Array.prototype.slice.call(document.querySelectorAll('main .entry'));
+  all.forEach(function (x) { x._t = x.textContent.toLowerCase(); });
+  function search() {
+    var t = q.value.trim().toLowerCase();
+    if (t.length < 2) {
+      all.forEach(function (x) { x.hidden = false; });
+      document.querySelectorAll('main h3.gh, main .prose, main .sh').forEach(function (x) { x.hidden = false; });
+      hits.textContent = ''; route(); return;
+    }
+    var n = 0, words = t.split(/\s+/);
+    all.forEach(function (x) {
+      var ok = words.every(function (w) { return x._t.indexOf(w) >= 0; });
+      x.hidden = !ok; if (ok) n++;
+    });
+    secs.forEach(function (s) {
+      var any = s.querySelector('.entry:not([hidden])');
+      var prose = s.querySelector('.prose');
+      var pm = prose && words.every(function (w) { return prose.textContent.toLowerCase().indexOf(w) >= 0; });
+      s.hidden = !(any || pm);
+      s.querySelectorAll('h3.gh').forEach(function (h) {
+        var c = h.nextElementSibling; h.hidden = c && !c.querySelector('.entry:not([hidden])');
+      });
+    });
+    var home = document.getElementById('home'); home.hidden = true;
+    links.forEach(function (a) { a.classList.remove('on'); });
+    hits.textContent = n + ' entries match' + (n ? '' : '; the plan texts are searched as whole pages');
+  }
+  q.addEventListener('input', search);
+  var menu = document.getElementById('menu');
+  menu.addEventListener('click', function () { var s = document.getElementById('side'); s.classList.toggle('open'); menu.setAttribute('aria-expanded', s.classList.contains('open')); });
+  route();
+})();
+</script>

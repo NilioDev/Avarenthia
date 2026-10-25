@@ -163,3 +163,16 @@ Each line: **what** - what to check - what the debug menu should offer.
 - Each riddle in The Old Days under its title, with its gap; whole at six true pieces of eight; false ones get "Not so"
   then; the answer and the lead to its deep place with its own boss; all five give The Ruin, as it was. Debug: V and P,
   then the stones, the places and the library; Teleport to the deep places (kind vdeep).
+
+## The great evils as storyteller (approved 25 October 2026)
+
+- **The servants** - each of the 24 kinds: its land, its lever on the realms and powers, its lieutenants, its weakness
+  and relic, waking by weight. Debug: pick the world's three servants; wake one now; set its power.
+- **The two clocks** - the slow growth, the attention rising when you meddle and cooling when you stop, the ceiling.
+  Debug: show and set the attention; let a year pass.
+- **The realms** - a servant's push, the realms pushing back, a barony held by a servant. Debug: force a push now.
+- **The quest** - the mist parting, the relics, the road, the chain climb, the five floors, the beacons, the last
+  fight's three phases. Debug: break a seal; give a relic; teleport to the chain, to each floor, to the throne.
+- **Dying there** - the dearer raising, the shade with your backpack, what stays open. Debug: kill the player there;
+  spawn your shade.
+- **The ends** - the Long Night, the closing screen and the healing world. Debug: let him win; kill him.
