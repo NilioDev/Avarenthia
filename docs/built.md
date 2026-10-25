@@ -400,7 +400,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   a library), Bind (5s, an hour: item 'vbook', its hidden page and its effect: a place, a riddle piece, an old way, a
   lie shown up, the wall's lantern, the ferrymen's tally that crosses free) and selling a bound book once for 20s.
   Rumours (`lore.hint_varnish`) bring riddle pieces and Voices. Debug V (letters and every Varnish place) and P (every
-  page). Test `varnish`. SAVE_VERSION 43. Not as asked: no archaeology yet (round 18), so the pieces come from stones,
+  page). Test `varnish`. SAVE_VERSION 43. Not as asked: no archaeology yet (round 19), so the pieces come from stones,
   places, pages, libraries and rumours; "mine" pages lie in the cities' deeps; the Anchor stands on the nearest coast,
   not under the Sky-Seat itself.
 - **Old places from the history** (24 October 2026; `oldplaces.py`). Placed after the history is made
@@ -448,7 +448,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   asks first; going down anyway, or taking from a northern bier, wakes the dead (`site.wrath`): every dead below
   awake and angry, and the spirit rises hostile on later nights until it is killed. Glow: blue-green round ghost,
   wraith, banshee, shade, wight and the spirit (brighter and restless when angry, a wisp below), red round fiends.
-  Test `aurora`. SAVE_VERSION 40. Not as asked: the light-feast moved to the feast days (round 22, as the build
+  Test `aurora`. SAVE_VERSION 40. Not as asked: the light-feast moved to the feast days (round 25, as the build
   order says).
 - **Places on their own land, part 2** (24 October 2026; `halls.py`, `delves.py`, `gobvillage.py`). Every people
   has an abbey (Θ; the old human monasteries keep their place), a fort (╩) and a manor (Å), each its own plan as

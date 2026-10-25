@@ -176,3 +176,19 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Dying there** - the dearer raising, the shade with your backpack, what stays open. Debug: kill the player there;
   spawn your shade.
 - **The ends** - the Long Night, the closing screen and the healing world. Debug: let him win; kill him.
+
+## Trade as a way to play (approved 25 October 2026)
+
+- **The money** - prices bending by how dear a good is, stock coming back slowly, a route tiring. Debug: give coin and
+  cargo; set a town's stock of a good; let days pass.
+- **Goods with a name** - each named good, its region, the rumour, good and bad years. Debug: list the world's named
+  goods; teleport to a maker; set the year good or bad.
+- **Master makers** - a masterwork bought and brought to who asks, an order. Debug: give a masterwork; teleport to a master.
+- **The other ways** - contraband and the gate search, barter with kobolds, orcs and elves, monster goods, spoiling, a
+  far town in need, far goods, war trade, market news, the great fair, League rank. Debug: give each good; start a ban,
+  a siege or the fair now; set League standing.
+- **Your caravan** - buying wagons and beasts, the crew and wages, the string on the map, passes, mud, fords, ferries,
+  fodder, a broken wheel, the night ring, a raid on the fight map, leaving it in a stable. Debug: give wagons and crew;
+  spawn a raid on it; break a wheel.
+- **The NPC caravans** - travelling along, trading on the road, League rivals arriving first, what robbing brings.
+  Debug: spawn a caravan beside you; send a League caravan to a town.

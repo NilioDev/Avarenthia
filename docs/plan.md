@@ -20,12 +20,13 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
-| **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built: rounds 14-15 right after the epics, the other sixteen servants in rounds 25-26 |
+| **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built: rounds 15-16 right after the epics, the other sixteen servants in rounds 28-29 |
+| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Not built: rounds 14, 20, 23, and the great fair with the feast days in 25 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
 **The build order** (settled with Nilio 23 October 2026, thread "Bouwvolgorde plan.md"; the Dutch proposal with the
-reasons: project files `bouw/volgorde.md`). 26 rounds in 9 blocks (the great evils added 25 October 2026). Sizes: S like market day, M like spell effects
+reasons: project files `bouw/volgorde.md`). 29 rounds in 9 blocks (the great evils and trade added 25 October 2026). Sizes: S like market day, M like spell effects
 part 2, L like herds and hunting, XL like the magic schools. No play builds in between (Nilio, 23 October 2026): he plays only when all blocks are built, so the
 "pauses" below are only clean points to stop at when his usage limit runs low. The full test run and the merge to
 `main` come at the end of each block; CI keeps testing every push. Each block starts on Nilio's "ga".
@@ -38,7 +39,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 5. **The K5 maker** (XL): sizes, rock texture, rivers underground, mood lines, the pieces format, theme rooms. Built 24 October 2026 (see `docs/built.md`).
 6. **Places on their own land, part 1** (XL): temples, towers (floors, lookout, ruins, edges and falls), barrows. Built 24 October 2026 (see `docs/built.md`).
 7. **Part 2** (XL): abbeys, forts, manors, the goblin hole and goblin village, the underground kinds' plans. Built 24 October 2026 (see `docs/built.md`).
-8. **The northern lights' gift** (M): needs the barrows. Built 24 October 2026 (see `docs/built.md`); its light-feast moves to the feast days (round 20).
+8. **The northern lights' gift** (M): needs the barrows. Built 24 October 2026 (see `docs/built.md`); its light-feast moves to the feast days (round 25).
 9. **The Rift and the Ashen Deep** (L). Built 24 October 2026 (see `docs/built.md`). 10. ~~The editor~~: taken out of
    the build order (Nilio, 24 October 2026: "pas voor veel later"); it waits in `docs/open.md`, "Dungeon editor".
    A pause after 5, 7 and 9; merge after 9.
@@ -46,29 +47,35 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     Built 24 October 2026 (see `docs/built.md`).
 12. **The Varnish** (XL): their cities and places, the hidden dungeons, the lore, the books, the riddles. Built 25
     October 2026 (see `docs/built.md`).
-13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. Pause after 12,
-    merge after 13.
-14. **The great evils, part 1: the frame** (XL): the Hollow King and his land, the three weights, the two clocks, the
+13. **Classes part 4: the epics** (L): their teachers live in hermitages, their deeds need barrows. 14. **Trade part 1:
+    the money fixes** (S): dear goods bend the price harder, stock comes back more slowly, routes tire; alone in
+    `economy.py`, weighed against wages, beds, repairs and the temple. Pause after 12, merge after 14.
+15. **The great evils, part 1: the frame** (XL): the Hollow King and his land, the three weights, the two clocks, the
     levers on the realms and powers, lieutenants, weakness and relic, the journal tab "The Shadow" and the map layer,
     with eight servants (the five of `evils.py` done again, and three more, so that every weight has some). Its
     weaknesses come from the riddles, libraries and dying heroes; Archaeology adds its source when it is built.
-15. **Part 2: the quest and the Sky-Seat** (XL): the mist, the relics, the road, a skipper for the whirlpool, the chain
+16. **Part 2: the quest and the Sky-Seat** (XL): the mist, the relics, the road, a skipper for the whirlpool, the chain
     climb and the underside, the five floors, the last fight, dying there (the shade), the Long Night and the healing
-    world. Pause after 14, merge after 15 (Nilio, 25 October 2026: the great evils come right after the epics, in parts).
-16. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
-    alchemy, brewing (ore lies by depth in the new caves). 17. **Part 2** (XL): beast parts, crafted powers, Unmake,
+    world. Pause after 15, merge after 16 (Nilio, 25 October 2026: the great evils come right after the epics, in parts).
+17. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
+    alchemy, brewing (ore lies by depth in the new caves). 18. **Part 2** (XL): beast parts, crafted powers, Unmake,
     master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters.
-18. **Archaeology** (M): needs the old places and Smithing; also a source for the servants' weaknesses. Pause after 16
-    and 17, merge after 18.
-19. **Cities that grew, part 1** (XL): human cities, the metropolis, canal and fortress towns, test `city_rules`. The
+19. **Archaeology** (M): needs the old places and Smithing; also a source for the servants' weaknesses.
+20. **Trade part 2: goods and ways** (L): named goods of a region with good and bad years, master makers, barter,
+    monster goods, spoiling, need far away, far goods, contraband, war trade, market news, rank with the Merchant
+    League; after the life skills, because it leans on brewing, Skinning, Smithing and the named beasts. Pause after
+    17, 18 and 19, merge after 20.
+21. **Cities that grew, part 1** (XL): human cities, the metropolis, canal and fortress towns, test `city_rules`. The
     bridges are not yet perfect (open.md, "City streets and bridges"); that does not hold this round up.
-20. **Part 2** (L): dwarf, halfling and orc towns, bridges on the open land. 21. **Round 6** (L): it lives in the new
-    city maps, and refugees from the great evils fill them. 22. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`). Pause after 19 and 21, merge after 22.
-23. **Old places part B and the 44 places of the peoples and powers** (XL). 24. **Places 45-64 and the seasonal
-    places** (L). Merge after 24.
-25. **The great evils, part 3: the other sixteen servants** (XL), each with its lieutenants, weakness, relic and lair;
+22. **Part 2** (L): dwarf, halfling and orc towns, bridges on the open land. 23. **Trade part 3: caravans** (L): your
+    own caravan (wagons, crew, the road, raids, stables in the grown cities) and the NPC caravans' new parts (travel
+    along, trade on the road, League rivals, robbing has weight). 24. **Round 6** (L): it lives in the new city maps,
+    and refugees from the great evils fill them. 25. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`) and trade's great fair. Pause after 21, 23 and 24, merge after 25.
+26. **Old places part B and the 44 places of the peoples and powers** (XL), with the caravanserai for the caravans.
+    27. **Places 45-64 and the seasonal places** (L). Merge after 27.
+28. **The great evils, part 3: the other sixteen servants** (XL), each with its lieutenants, weakness, relic and lair;
     late, because many of them live in what comes before (the Rat King in the grown cities, the Lindworm under the
-    dwarves, the Wild Hunt and the Hag with the feast days). 26. **Part 4** (XL) if one round is not enough for
+    dwarves, the Wild Hunt and the Hag with the feast days). 29. **Part 4** (XL) if one round is not enough for
     sixteen: then eight and eight. Merge after the last.
 After that: Multiplayer (parked).
 
@@ -468,7 +475,7 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
   still open. Already built with the Varnish (25 October 2026): the riddles and their pieces (`world.varnish['src']`
   says where each comes from; archaeology adds digging as one more source), the Varnish fragments and the curio
   'stariron' (a shard of star-iron, for the smith).
-- **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 16, 20, 21, 22).
+- **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 19, 25, 26, 27).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
   prospectors' camp after a Starfall, a lord's hunting lodge.
@@ -512,7 +519,7 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
     Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
     Who does it, the game never says.
 
-## The great evils as storyteller (approved 25 October 2026, not built; rounds 14-15 and 25-26)
+## The great evils as storyteller (approved 25 October 2026, not built; rounds 15-16 and 28-29)
 
 The great evils become the world's storyteller, as in RimWorld: one shadow with a goal, and the world lives round it
 whether the player joins in or not. Worked out with Nilio in the thread "Grote kwaden als verteller"; the Dutch
@@ -578,6 +585,68 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 - **Still to write while building**: the lieutenants' pools, each kind's weakness and relic, the climb's map.
 
 ---
+
+## Trade as a way to play (approved 25 October 2026, not built; rounds 14, 20, 23 and the great fair in 25)
+
+Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
+want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
+
+**Fixing the money first.** Today 30 gems from the hills to a city earn ~23 gold, while a job pays ~12 silver and grain
+earns ~1.5 gold a trip; and stock springs back 15% a day, so two towns become a money machine. So: the price bends
+harder the dearer the good (selling ten gems moves the price more than ten sacks of grain), stock comes back more slowly,
+and each route tires (the same good to the same town fetches less until the market forgets). Weigh it against wages,
+beds, repairs and the temple: trade pays well, never endlessly.
+
+**Goods with a name.** Each world picks 12-15 famous goods of a region (`world.areas`), named after it: Amber Coast
+Wine, Thornwood Mead, Highfells Wool, halfling pipe-weed, one dwarf hold's stout. Dearer than the plain good, best sold
+far from home, made known by rumours and news ("the duke drinks only Amber Coast"). The maker has only a few each
+season. Good and bad years: a hail summer spoils a region's harvest (dearer), a good year makes a sought-after vintage.
+Every kind comes from several regions and peoples (the rule: never one people or one place).
+
+**Master makers.** In some towns a master smith, weaver, brewer or goldsmith makes a few masterworks a season (a
+dress sword, a tapestry, a silver cup). Trade goods, not gear: no loot. Brought to a baron, a temple or a rich town that
+asks; sometimes as an order ("bring me an Ironhills cup before winter").
+
+**More ways to trade.**
+- Contraband: a realm or the church bans a good (black lotus, untaxed salt, stolen relics); the Watch searches you at a
+  city gate; Cunning hides it; a fence or the pirate cove pays well.
+- Barter with peoples without coin: kobolds want shiny things, orcs salt and arms, elves only barter; what they give is
+  sold nowhere else.
+- Monster goods: troll fat, dragon scale, spider silk, sold to alchemists in the cities (ties into Skinning and the
+  named beasts).
+- Spoiling: fish, fruit and milk go off on the way, like ice melts; speed or salt wins.
+- Need far away: a snowed-in pass village or a besieged city pays three times as much, if you get there.
+- Far goods: silk, incense, porcelain and dyes come only by the big merchant ship or the oasis caravans.
+- War trade: arms to both sides pays a fortune; when it comes out, it costs standing.
+- Market news: a traveller or innkeeper tells what is dear far away; news a few days old, so it may have changed.
+- The great fair: once a year one city's fair wants everything (with the feast days).
+- Merchant rank with the Merchant League (the faction exists): better prices and the best orders; at the top a title
+  and a League caravan to escort.
+Left out on purpose (they do not come across in a roguelike): a shop of your own, a bank, shares.
+
+**Your own caravan.**
+- Buy a wagon at a wagonmaker: up to 3 (more with League rank), ~150 cargo each, each needs a mule or an ox (the ox
+  pulls more and walks slower). The wagons follow you on the world map as a string ♦♦♦. It lives on the player.
+- Crew: a driver per wagon on a weekly wage, guards from the hirelings (`mercs.py`). A steady cost, so a money sink too.
+- The road matters: slow, slower off the road; no snowed-in passes, stuck in spring mud, no high fords; a ferry costs
+  per wagon. You choose your route.
+- Upkeep: the beasts eat fodder (grain from the cargo); now and then a wheel breaks: bump the wagon, mend it with Tools.
+- At night the wagons stand in a ring on the map; a round of drink (brewing) keeps the crew glad; night raids happen.
+- Raids: bandits, raiders or desert riders ask a toll or attack: a small fight map where the wagons give cover (like
+  the pirates' deck). A wagon that falls loses its cargo.
+- Bump the lead wagon: make camp, leave the caravan in a stable or caravanserai, look at the cargo, pay the crew. You go
+  into a dungeon without it; it waits.
+- Your caravan gets a name and people talk of it.
+
+**The NPC caravans** (they exist: a town with plenty sends up to 40 of a good to the town that lacks it most; bandits
+and armies at war fall on them; a robbed one never arrives, so prices stay high there). New:
+- Travel along: pay a caravan to walk with its guards. Safe and slow, for a beginner without a wagon.
+- Trade on the road: bumping a caravan also offers buy or sell, at its home town's prices.
+- Rivals: League caravans race you; if they arrive first your cargo is worth less. You see them on the road.
+- Robbing has weight: prices rise in that town, towns send more guards along, the Watch looks for you.
+
+UI: named goods stand by their own name in the market list; the caravan is a sign on the world map named by
+`guide.py`; its choices are one `EV.ask`; each new key gets one first-time tip. The handbook's trade chapter grows with it.
 
 ## Round 6: livelier settlements (on hold)
 
