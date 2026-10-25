@@ -27,7 +27,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 
 **The build order** (settled with Nilio 23 October 2026, thread "Bouwvolgorde plan.md"; the Dutch proposal with the
 reasons: project files `bouw/volgorde.md`). 29 rounds in 9 blocks (the great evils and trade added 25 October 2026). Sizes: S like market day, M like spell effects
-part 2, L like herds and hunting, XL like the magic schools. No play builds in between (Nilio, 23 October 2026): he plays only when all blocks are built, so the
+part 2, L like herds and hunting, XL like the magic schools. No play builds in between (Nilio, 23 October 2026): he plays only when all blocks are built, through round 29 (Nilio, 25 October 2026), so the
 "pauses" below are only clean points to stop at when his usage limit runs low. The full test run and the merge to
 `main` come at the end of each block; CI keeps testing every push. Each block starts on Nilio's "ga".
 0. **Debug menu and test build** (M). Built 23 October 2026 (see `docs/built.md`).
