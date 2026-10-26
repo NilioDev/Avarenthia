@@ -188,3 +188,22 @@ Each line: **what** - what to check - what the debug menu should offer.
   spawn a raid on it; break a wheel.
 - **The NPC caravans** - travelling along, trading on the road, League rivals arriving first, what robbing brings.
   Debug: spawn a caravan beside you; send a League caravan to a town.
+
+## Boss fights (approved 26 October 2026)
+
+- **A fixed boss** - each phase, its deck, its room tricks, its three items to choose from. Debug: place any fixed boss;
+  set its phase (1-3).
+- **A made boss** - the maker's draw from a base, element, level and seed; its name, rumour, deck and arena. Debug:
+  make a boss (base, element, level, seed) and place it, or open its job.
+- **The rhythm** - draws, the shuffle card, the rhythm breaking. Debug: "Show rhythm" writes its deck and next beat
+  under IN SIGHT (test build only).
+- **Marks and fairness** - every shape, the number's colours, a free tile for each blow. Debug: "Fairness check" runs
+  every move of the boss in this room and names the ones that fail.
+- **Spent, staggered, breaking, Resolve, breaking through a phase** - Debug: "Spent now", "Stagger now", give the
+  stunning skills.
+- **Helpers and twins** - each job, each twin kind. Debug: place a helper with a job; kill helpers.
+- **The arena** - the mist, the shut room, the way out, coming back after fleeing. Debug: shut or open the arena;
+  "Flee test" (as if you fled once more).
+- **Roaming bosses** - sounds, tracks, following up the stairs. Debug: place a roaming boss on the level.
+- **Hirelings in a boss fight** - stepping out, handling marks, breaking. Debug: give a hireling of each kind and rank.
+
