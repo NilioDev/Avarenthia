@@ -6729,6 +6729,15 @@ def bosses():
     m = g.map
     for o in [o for o in m.mons if not o.is_npc]:
         m.mons.remove(o)
+    ar0 = m.arena                                    # Grolm's own room down here: the test sets its own
+    if ar0:
+        for cc, t in ar0['orig'].items():
+            m.set(cc[0], cc[1], t)
+        for cc in ar0.get('props', ()):
+            m.set(cc[0], cc[1], D.FLOOR)
+        if ar0['rotten']:
+            m.set(ar0['rotten'][0], ar0['rotten'][1], D.WALL)
+    m.arena = None
     bad = {m.room_of[i] for i, t in enumerate(m.t) if t in (D.UP, D.DOWN)}
     from collections import Counter
     cnt = Counter(r for r in m.room_of if r != 255 and r not in bad)
@@ -6937,16 +6946,304 @@ def bosses():
         random.random = lambda: .01
         BS.turn(g, grolm, g.stats()['def'])
         random.random = keep_r
-        assert grolm.cast and grolm.cast['mv'] in ('leap', 'nova')
+        c = grolm.__dict__.get('cast')
+        assert (c and c['mv'] in BS.MOVES) or BS.st(grolm)['engaged']     # Grolm has a kit now: part B tests it
     pickle.dumps(g)
     print('   bosses ok')
+
+
+def boss_moves():
+    """Boss fights part B: the move library, the kits of every fixed, theme and Varnish boss with their rooms and
+    tricks (rat holes and the knot, props and the falling roof, rising water and chains, webs and eggs, the banner and
+    the duel, the stones of light), stances and images, the hex, three named things to choose from, and a roaming boss
+    that walks its rounds, is heard, leaves tracks and follows you down the stair."""
+    from avarenthia import bosses as BS, bossmoves as BM, debug as DBG, events as EV, behave as BH
+    from avarenthia.worldgen import free_around
+    from collections import Counter
+    print('== boss_moves')
+    random.seed(16)
+    g = E.Game('Mover', False, 4243)
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    p = g.player
+    for k, mv in BS.MOVES.items():
+        assert mv['role'] in 'kVGZBOR' and mv.get('name') and (mv.get('shape') or mv.get('kind')), k
+    assert sum(1 for mv in BS.MOVES.values() if mv.get('kind') != 'call') >= 100, 'the library'
+    for k, kt in BS.KITS.items():
+        assert k in D.MONSTERS, k
+        ats = [ph['at'] for ph in kt['phases'][1:]]
+        assert ats == sorted(ats, reverse=True) and len(kt['phases']) in (2, 3), k
+        assert all(c in BS.MOVES for ph in kt['phases'] for cs in ph['cards'].values() for c in cs), k
+        assert all(r in ph['cards'] or r == 'k' for ph in kt['phases'] for r in ph['beat']), k
+    us = Counter(u['boss'] for u in D.UNIQUES if u.get('boss'))
+    assert all(us[k] == 3 for k in ('snagtooth', 'ratking', 'grolm', 'lich', 'dragon', 'broodmother', 'warlord',
+                                    'drowned_king', 'cinder_lord')), us
+    g.enter_dungeon('mine', g.world.dungeons['mine'].depth, 'up')
+    m = g.map
+    bad = {m.room_of[i] for i, t in enumerate(m.t) if t in (D.UP, D.DOWN)}
+    cnt = Counter(r for r in m.room_of if r != 255 and r not in bad)
+    rid = max(cnt, key=lambda r: cnt[r])
+    cells = [(i % m.w, i // m.w) for i, r in enumerate(m.room_of) if r == rid and D.TILES[m.t[i]].walk]
+    cx, cy = sum(c[0] for c in cells) // len(cells), sum(c[1] for c in cells) // len(cells)
+    mid = min(cells, key=lambda c: cheb(*c, cx, cy))
+    p.lvl, p.vit = 14, 220
+    DBG.ON = True
+
+    def fresh(k):
+        for o in [o for o in m.mons if not o.is_npc]:
+            m.mons.remove(o)
+        a0 = m.__dict__.get('arena')
+        if a0:
+            for cc, t in a0['orig'].items():
+                m.set(cc[0], cc[1], t)
+            if a0['rotten']:
+                m.set(a0['rotten'][0], a0['rotten'][1], D.WALL)
+            for cc in list(a0.get('holes', ())) + list(a0.get('chains', ())):
+                m.set(cc[0], cc[1], D.WALL)
+        m.arena = None
+        m.__dict__.pop('boss_eggs', None)
+        for c in cells:
+            if m.tile(*c) not in (D.FLOOR, D.UP, D.DOWN):
+                m.set(c[0], c[1], D.FLOOR)
+        p.x, p.y = mid
+        p.life = g.stats()['max_life']
+        BH.status(g).clear()
+        g.pending = None
+        g.compute_fov()
+        b = DBG.boss(g, k)
+        assert b is not None and BS.st(b) is not None, k
+        b.awake = True
+        return b
+
+    # every shaped move from a boss in its room: a way out within the turns it loads, and it lands without harm to
+    # the game; every other kind can be done or refused
+    b = fresh('lich')
+    for k, mv in sorted(BS.MOVES.items()):
+        p.life = g.stats()['max_life']
+        BH.status(g).clear()
+        if b not in m.mons:
+            b = fresh('lich')
+        b.cast = None
+        BS.st(b)['air'] = False
+        b.invis = 0
+        if mv.get('shape'):
+            if BS.start(g, b, k):
+                c = b.cast
+                if mv['shape'] not in ('mark', 'self'):
+                    n = BS.need(g, b, mv, set(map(tuple, c['cells'])), c['tx'], c['ty'], 5)
+                    assert n is not None and n <= c['left'], (k, n, c['left'])
+                c['left'] = 1
+                b.cast = None
+                BS.release(g, b, c)
+        elif mv.get('kind') not in ('melee', 'bolt'):
+            BS.do(g, b, k, g.stats()['def'])
+        assert not g.dead, k
+    # each kit boss through its fight: no marked blow without a free tile, and it reaches its second phase
+    for k in sorted(BS.KITS):
+        if BS.KITS[k].get('roam'):
+            continue
+        b = fresh(k)
+        for t in range(90):
+            p.life = g.stats()['max_life']
+            BH.status(g).clear()
+            g.pending = None
+            if b not in m.mons or g.dead:
+                break
+            if random.random() < .3:
+                sp = [cc for cc in free_around(g, m, b.x, b.y, 6) if g.visible(*cc)]
+                if sp:
+                    p.x, p.y = random.choice(sp)
+                    g.compute_fov()
+            g.monsters_act()
+            if g.cur != 'mine:' + str(g.world.dungeons['mine'].depth):
+                break
+            c = b.__dict__.get('cast')
+            if c and c['left'] == c['load']:
+                mv = BS.MOVES[c['mv']]
+                if mv['shape'] not in ('mark', 'self'):
+                    n = BS.need(g, b, mv, set(map(tuple, c['cells'])), c['tx'], c['ty'], 5)
+                    assert n is not None and n <= c['left'], (k, c['mv'], n, c['left'])
+            if random.random() < .15:
+                g.damage_mon(b, b.maxhp * .1, weapon=False)
+            for o in BS.helpers(g, b):
+                if random.random() < .2:
+                    g.kill(o)
+        assert not g.dead, k
+        assert BS.st(b)['phase'] >= 1 or b not in m.mons, k
+    g.pending = None
+    # a stance: the shield of light takes three blows
+    b = fresh('name_keeper')
+    assert BS.BM.do(g, b, BS.MOVES['holy_shield'])
+    hp = b.hp
+    for _ in range(3):
+        g.damage_mon(b, 5, weapon=True)
+    assert b.hp == hp and 'holy' not in BS.st(b)['guard']
+    g.damage_mon(b, 5, weapon=True)
+    assert b.hp < hp
+    # images: one blow and an image is gone
+    b = fresh('bound_magister')
+    assert BS.BM.do(g, b, BS.MOVES['mirror'])
+    imgs = [o for o in m.mons if getattr(o, 'image_of', None) == b.id]
+    assert len(imgs) == 2
+    hp = b.hp
+    g.damage_mon(imgs[0], 50, weapon=True)
+    assert imgs[0] not in m.mons and b.hp == hp
+    # the hex: a toad has no skills
+    BH.give(g, 'hexed', 3)
+    assert g.use_skill(1) == 0 and 'toad' in g.log[-1][0]
+    BH.status(g).clear()
+    # the Rat King: rats from the holes, a hole stopped up, the water rising, the knot that splits
+    b = fresh('ratking')
+    ar = m.arena
+    assert len(ar['holes']) >= 2 and all(m.tile(*c) == D.RATHOLE for c in ar['holes'])
+    BS.seal(g, ar)
+    assert BS.do(g, b, 'rats', g.stats()['def']) and any(o.k == 'rat' for o in BS.helpers(g, b))
+    h = ar['holes'][0]
+    assert BS.bump(g, h[0], h[1], D.RATHOLE) == 1 and m.tile(*h) == D.RUBBLE
+    BS.set_phase(g, b, 2)
+    assert ar['water'] == 1 and any(m.tile(*c) == D.SHALLOW for c in map(tuple, ar['cells']))
+    BS.st(b)['spent'] = 0
+    assert BS.start(g, b, 'knot_split')
+    c = b.cast
+    b.cast = None
+    BS.release(g, b, c)
+    kings = [o for o in m.mons if o.k == 'ratking']
+    assert len(kings) == 3 and all(o.knot == b.id for o in kings)
+    for o in kings[:2]:
+        o.hp = 0
+        g.kill(o)
+        assert not ar['done'], 'the room stays shut while one king lives'
+    o = kings[2]
+    o.hp = 0
+    g.kill(o)
+    assert ar['done'] and g.banner[0] == 'FOE FELLED'
+    assert g.pending and g.pending['key'] == 'boss_loot' and len(g.pending['options']) == 3
+    pick = g.pending['options'][1][1]
+    EV.resolve(g, pick)
+    assert any(it.name == pick for it in m.items), 'the one you took'
+    # Grolm: a prop kicked out, the roof that falls, never beside a prop that stands
+    b = fresh('grolm')
+    ar = m.arena
+    BS.seal(g, ar)
+    props = [c for c in ar['props'] if m.tile(*c) == D.PROP]
+    assert len(props) >= 3
+    assert BS.do(g, b, 'kick_prop', g.stats()['def'])
+    assert sum(1 for c in ar['props'] if m.tile(*c) == D.PROP) == len(props) - 1
+    b.cast = None
+    BS.set_phase(g, b, 2)
+    assert ar['ceiling'] == 0
+    BS.tick(g)
+    stand = [c for c in ar['props'] if m.tile(*c) == D.PROP]
+    assert ar['falling'] and all(min(cheb(*c, *q) for q in stand) > 1 for c in ar['falling'])
+    assert all(BS.marks(g).get(tuple(c)) for c in ar['falling'])
+    BS.tick(g)
+    assert not ar['falling']
+    # the Drowned King: the water rises with every change; a chain broken lowers it; ledges and chains stay dry
+    b = fresh('drowned_king')
+    ar = m.arena
+    assert ar['water'] == 1 and len(ar['chains']) >= 2
+    BS.seal(g, ar)
+    BS.set_phase(g, b, 1)
+    assert ar['water'] == 2
+    ch = ar['chains'][0]
+    BS.bump(g, ch[0], ch[1], D.BCHAIN)
+    BS.bump(g, ch[0], ch[1], D.BCHAIN)
+    assert ar['water'] == 1 and m.tile(*ch) == D.WALL
+    b.cast = None
+    BS.st(b)['phase'] = 2
+    if BS.start(g, b, 'deep_calls'):
+        gold = b.cast['gold']
+        assert gold and all(m.tile(*c) == D.BLEDGE or any(m.tile(c[0] + a, c[1] + bb) == D.BCHAIN
+                                                          for a in (-1, 0, 1) for bb in (-1, 0, 1)) for c in gold)
+        assert all(BS.marks(g)[tuple(c)][1] == BS.GOLDN for c in gold)
+    # the Brood Mother: eggs hatch unless you tread on them; webs on the floor hold you
+    b = fresh('broodmother')
+    eg = BM.eggs(g)
+    n0 = len(eg)
+    BS.do(g, b, 'egg_clutch', g.stats()['def'])
+    assert len(eg) >= n0 + 3
+    c = next(iter(eg))
+    p.x, p.y = c
+    BS.floor_things(g)
+    assert c not in eg and m.tile(*c) == D.FLOOR, 'trodden'
+    p.x, p.y = mid
+    for v in eg.values():
+        v[0] = 1
+    BS.floor_things(g)
+    assert not eg and any(o.k == 'spiderling' for o in m.mons)
+    from avarenthia import spellmap as SM
+    web = next(cc for cc in free_around(g, m, p.x, p.y, 1))
+    SM.place(g, m, web[0], web[1], D.WEBS, 30)
+    p.x, p.y = web
+    BS.floor_things(g)
+    assert BH.has(g, 'held') and m.tile(*web) != D.WEBS
+    BH.status(g).clear()
+    # the Warlord: the banner and its bearer; the duel, broken by a blow from afar
+    b = fresh('warlord')
+    BS.seal(g, m.arena)
+    BS.set_phase(g, b, 1)
+    bearer = next(o for o in BS.helpers(g, b) if o.job == 'bearer')
+    at = (bearer.x, bearer.y)
+    bearer.hp = 0
+    g.kill(bearer)
+    if m.tile(*at) == D.BANNER:
+        assert BS.bump(g, at[0], at[1], D.BANNER) == 1 and m.tile(*at) == D.FLOOR
+    BS.call(g, b, (('orc', 'guard'),), '')
+    BS.set_phase(g, b, 2)
+    assert BS.st(b)['duel'] and all(o.watching for o in BS.helpers(g, b))
+    p.x, p.y = next(cc for cc in free_around(g, m, b.x, b.y, 4) if cheb(*cc, b.x, b.y) >= 3)
+    g.damage_mon(b, 1, weapon=False)
+    assert not BS.st(b)['duel'] and not any(o.watching for o in BS.helpers(g, b))
+    # Dawnbreak: two stones of light, the safe ground round them gold, gone after the blow
+    b = fresh('name_keeper')
+    BS.st(b)['phase'] = 1
+    if BS.start(g, b, 'dawnbreak'):
+        c = b.cast
+        assert len(c['stones']) == 2 and all(m.tile(*s_) == D.LIGHTSTONE for s_ in c['stones']) and c['gold']
+        c['left'] = 1
+        b.cast = None
+        BS.release(g, b, c)
+        assert all(m.tile(*s_) != D.LIGHTSTONE for s_ in c['stones'])
+    g.compute_fov()
+    app.render()
+    # a roaming boss: it walks its rounds, you hear it, it leaves tracks; it hunts you and follows you down
+    for o in [o for o in m.mons if not o.is_npc]:
+        m.mons.remove(o)
+    m.arena = None
+    g.enter_dungeon('mine', 1, 'up')
+    m = g.map
+    for o in [o for o in m.mons if not o.is_npc]:
+        m.mons.remove(o)
+    p.life = g.stats()['max_life']
+    r = DBG.boss(g, 'roam:troll')
+    assert r is not None and r.roam
+    n0 = len(g.log)
+    for _ in range(300):
+        if BS.hunting(g, r):
+            break
+        g.end_turn(1)
+        p.life = g.stats()['max_life']
+    assert r.roam['heard'] > 0 and any('of you' in ln[0] or 'somewhere' in ln[0] for ln in g.log[-80:]), 'heard'
+    assert m.deco and D.MONSTERS and sum(1 for v in m.deco if v == 16) >= 5, 'tracks'
+    r.roam['seen'] = g.turn
+    i = m.t.index(D.DOWN)
+    p.x, p.y = i % m.w, i // m.w
+    sp = [cc for cc in free_around(g, m, p.x, p.y, 4) if cheb(*cc, p.x, p.y) >= 3]
+    r.x, r.y = sp[0]
+    g.use_stairs('down')
+    assert r not in m.mons and g.map.coming
+    for _ in range(8):
+        g.end_turn(1)
+        p.life = g.stats()['max_life']
+    assert r in g.map.mons and any('after you' in ln[0] for ln in g.log[-20:])
+    print('boss moves ok')
 
 
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

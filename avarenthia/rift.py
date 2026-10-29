@@ -274,6 +274,8 @@ def level(game, d, depth):
             m.items.append(it)
     if last:
         place_chest(m)
+        from . import bosses as BS
+        BS.on_level(game, m)                       # the hall shuts behind you until its lord falls
     m.mood_line = random.choice(['Black stone, warm to the touch. Ash drifts down from nowhere, and the air tastes of sulphur.',
                                  'The heat comes up through your boots. Somewhere a river of fire roars.',
                                  'Red light on black rock, and ash over everything. Nobody could sleep here.'])
@@ -462,8 +464,9 @@ def turn(game):
         if not getattr(o, 'lord', False) or o.hp <= 0:
             continue
         lit = D.FIREBOWL in m.t and getattr(m, 'gate', None) and m.tile(*m.gate) == D.FIREGATE
-        if lit and o.hp < o.maxhp:
-            o.hp = min(o.maxhp, o.hp + max(2, o.maxhp // 40))
+        from . import bosses as BS
+        if lit and o.hp < BS.cap_hp(o):
+            o.hp = min(BS.cap_hp(o), o.hp + max(2, o.maxhp // 40))
             if game.visible(o.x, o.y) and random.random() < .15:
                 game.msg(f'Fire runs from the gate into {o.name}, and its wounds close.', 'bad')
         if o.hp <= o.maxhp // 2 and not getattr(o, 'called', False):

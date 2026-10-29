@@ -875,7 +875,7 @@ class GameScreen(Screen):
                                 fg, bg = (255, 255, 255), (120, 30, 20)
                     if bmarks and (mx, my) in bmarks:
                         num, ncol, hot = bmarks[(mx, my)]
-                        bg = BS.MARK_HOT if hot else BS.MARK_BG
+                        bg = BS.MARK_GOLD if ncol == BS.GOLDN else BS.MARK_HOT if hot else BS.MARK_BG
                         if num and not o and not it and (mx, my) != (p.x, p.y) and D.TILES[m.t[i]].walk:
                             ch, fg = num, ncol
                     if mx == p.x and my == p.y:

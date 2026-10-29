@@ -387,7 +387,7 @@ add('abilities', 'Creatures', 'Monster abilities',
     entry('The states they leave you in', f'<dl class="kv">{st_rows}</dl>', 'built') + '<div class="cards">' + ab_rows + '</div>')
 
 import avarenthia.bosses as BS
-ROLE = {'k': 'small', 'V': 'set-up', 'G': 'great', 'Z': 'heaviest', 'B': 'move', 'O': 'summon'}
+ROLE = {'k': 'small', 'V': 'set-up', 'G': 'great', 'Z': 'heaviest', 'B': 'move', 'O': 'summon', 'R': 'stance'}
 bs_html = ''
 for k, kt in BS.KITS.items():
     rows = ''
@@ -397,7 +397,12 @@ for k, kt in BS.KITS.items():
         cards = '; '.join(f"{ROLE[r]}: " + ', '.join(sorted({BS.MOVES[m]['name'] for m in ms})) for r, ms in ph['cards'].items())
         rows += f'<dt>Phase {BS.ROMAN[i]}{e(at)}</dt><dd>Beat: {e(beat)}. {e(cards)}.</dd>'
     rows += f"<dt>Weakness</dt><dd>{e(', '.join(kt['weak']))}</dd>"
-    bs_html += entry(D.MONSTERS[k]['name'], f'<dl class="kv">{rows}</dl>', 'built')
+    kind = 'roaming' if kt.get('roam') else 'theme boss' if kt.get('theme') else 'fixed boss'
+    bs_html += entry(D.MONSTERS[k]['name'], f'<dl class="kv">{rows}</dl>', 'built', sub=kind)
+mv_rows = ''.join(f"<dt>{e(mv['name'])}</dt><dd>{e(ROLE[mv['role']])}; {e(mv.get('shape') or mv.get('kind'))}"
+                  f"{'; loads ' + str(mv['load']) if mv.get('load') else ''}{'; ' + mv['elem'] if mv.get('elem') else ''}</dd>"
+                  for k, mv in sorted(BS.MOVES.items(), key=lambda kv: kv[1]['name']) if mv.get('kind') != 'call')
+bs_html += entry('The move library', f'<dl class="kv">{mv_rows}</dl>', 'built')
 add('bossfights', 'Creatures', 'Boss fights',
     '<p>Bosses with a kit (bosses.py) fight in a rhythm drawn from a deck: each phase has a beat of roles and a few '
     'moves per role. Great blows are marked on the ground with a count; every marked blow leaves a free tile. '

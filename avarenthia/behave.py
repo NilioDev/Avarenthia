@@ -26,11 +26,13 @@ STATUS = {
     'slowed': ('Slowed', (159, 216, 255)), 'confused': ('Confused', (230, 160, 230)), 'afraid': ('Afraid', (230, 200, 120)),
     'blinded': ('Blinded', (130, 120, 160)), 'diseased': ('Diseased', (170, 190, 90)), 'cursed': ('Cursed', (190, 110, 220)),
     'weakened': ('Weakened', (200, 150, 130)), 'charmed': ('Charmed', (240, 160, 220)),
+    'hexed': ('Hexed', (150, 200, 110)),
 }
 STATUS_END = {'held': 'You are free.', 'paralysed': 'You can move again.', 'asleep': 'You wake.',
               'slowed': 'Your limbs warm and quicken.', 'confused': 'Your head clears.', 'afraid': 'The fear passes.',
               'blinded': 'The darkness lifts.', 'diseased': 'The fever breaks. You feel yourself again.',
-              'cursed': 'The curse fades.', 'weakened': 'Your strength comes back.', 'charmed': 'The charm wears off.'}
+              'cursed': 'The curse fades.', 'weakened': 'Your strength comes back.', 'charmed': 'The charm wears off.',
+              'hexed': 'The hex lifts. You are yourself again.'}
 HELPLESS = ('paralysed', 'asleep')
 AREA_MODES = ('around', 'chain', 'storm', 'target_area', 'volley')
 

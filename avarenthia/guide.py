@@ -70,8 +70,12 @@ def in_view(g):
         if g.visible(c[1], c[2]):
             things.setdefault('Corpse', ('%', (150, 130, 110)))
     from . import bosses as BS
-    if m.kind != 'over' and any(g.visible(*c) for c in BS.marks(g)):
-        things.setdefault('Red ground: a great blow will land there', ('▒', (180, 40, 30)))
+    if m.kind != 'over':
+        mk = BS.marks(g)
+        if any(g.visible(*c) and v[1] != BS.GOLDN for c, v in mk.items()):
+            things.setdefault('Red ground: a great blow will land there', ('▒', (180, 40, 30)))
+        if any(g.visible(*c) and v[1] == BS.GOLDN for c, v in mk.items()):
+            things.setdefault('Gold ground: safe from the blow, stand in it', ('▒', (200, 170, 50)))
     if getattr(m, 'zone', None) is not None:
         from . import zones as ZN
         for (x, y), got in m.marks.items():

@@ -21,7 +21,7 @@ from . import data as D
 from .worldgen import cheb, free_around
 
 RED, PURPLE, GOLDN = (255, 104, 80), (206, 132, 255), (255, 214, 90)
-MARK_BG, MARK_HOT = (88, 18, 16), (140, 30, 22)
+MARK_BG, MARK_HOT, MARK_GOLD = (88, 18, 16), (140, 30, 22), (78, 62, 14)
 ROMAN = ('I', 'II', 'III', 'IV')
 JOBS = {'warder': 'warding', 'mender': 'mending', 'channeler': 'channelling', 'guard': 'guarding',
         'swarm': 'swarming', 'bearer': 'bearing'}
@@ -89,7 +89,12 @@ MOVES = {
     'leap': dict(role='G', name='Leap', shape='circle', r=1, at='aim', load=1, power=.3, fx=dict(land=1)),
 }
 
-STANCE = {'k': '{He} watches your hands.', 'V': '{His} eyes go to the floor round your feet.',
+from .bossmoves import LIBRARY as _LIBRARY  # noqa: E402
+from . import bossmoves as BM  # noqa: E402
+
+MOVES.update(_LIBRARY)
+
+STANCE = {'R': '{He} settles, waiting for you.', 'k': '{He} watches your hands.', 'V': '{His} eyes go to the floor round your feet.',
           'G': '{He} draws {himself} up.', 'Z': 'Something gathers in {him}, slowly.', 'B': '{He} sets {his} feet.',
           'O': '{His} eyes go to the dark at the edges.'}
 
@@ -116,11 +121,159 @@ KITS = {
              say='{name} roars until the cave shakes. Far off in the dark, drakes answer.'),
         dict(at=.33, beat='kGkZ', cards=dict(k=['claw'], G=['breath_follow', 'tail_sweep'], Z=['inferno']),
              trick='burn', say='Fire runs in the cracks of the floor, and stone falls from the roof.')]),
+    # ---- the other fixed bosses (round 16)
+    'ratking': dict(weak=('fire',), things='holes', phases=[
+        dict(beat='kkOG', cards=dict(k=['bite'], O=['rats'], G=['tail_lash'])),
+        dict(at=.66, beat='kVGkO', cards=dict(k=['bite'], V=['plague_cloud'], G=['gnaw', 'tail_lash'], O=['rats']),
+             say='{name} shrieks, and the whole sewer shrieks with {him}.'),
+        dict(at=.33, beat='kGkZ', cards=dict(k=['bite'], G=['gnaw', 'tail_lash'], Z=['knot_split']), trick='water',
+             say='Somewhere a sluice gives. Filthy water comes pouring into the sewer and begins to rise.')]),
+    'grolm': dict(weak=('lightning',), things='props', phases=[
+        dict(beat='kGkB', cards=dict(k=['pick'], G=['smash'], B=['burrow'])),
+        dict(at=.66, beat='kVGkG', cards=dict(k=['pick'], V=['kick_prop'], G=['undermine', 'smash']),
+             say='{name} spits and grins at the props that hold up the roof.'),
+        dict(at=.33, beat='kGkZ', cards=dict(k=['pick'], G=['undermine', 'smash'], Z=['earthshaker']), trick='ceiling',
+             say='The roof groans. Dust and stones begin to fall. Keep near a prop!')]),
+    'broodmother': dict(weak=('fire',), things='nest', phases=[
+        dict(beat='kVGk', cards=dict(k=['bite'], V=['web_spray'], G=['venom_spit', 'pounce'])),
+        dict(at=.66, beat='kOGkB', cards=dict(k=['bite'], O=['egg_clutch', 'call_spiders'], G=['pounce', 'venom_spit'],
+                                              B=['drop_above']), trick='webs',
+             say='{name} shakes the whole web. Threads fall across the floor everywhere.'),
+        dict(at=.33, beat='kVGkZ', cards=dict(k=['bite'], V=['web_spray'], G=['venom_spit', 'pounce'], Z=['cocoon']),
+             say='{name} rears up over her nest, hissing.')]),
+    'warlord': dict(weak=('lightning',), phases=[
+        dict(beat='kGkGO', cards=dict(k=['strike'], G=['cleave', 'charge'], O=['call_band', 'war_cry'])),
+        dict(at=.66, beat='kGOkZ', cards=dict(k=['strike'], G=['cleave', 'charge'], O=['war_cry', 'call_band'],
+                                              Z=['earthshaker']), trick='banner',
+             say='{name} bellows. A bearer runs up with his war banner, and the band takes heart.'),
+        dict(at=.33, beat='kGkZ', cards=dict(k=['strike'], G=['cleave', 'smash'], Z=['executioner']), trick='duel',
+             say='{name} waves his guard back. This is between you and him now.')]),
+    'drowned_king': dict(weak=('lightning',), things='pool', phases=[
+        dict(beat='kGOk', cards=dict(k=['brine_lance'], G=['tidal_wave'], O=['call_drowned'])),
+        dict(at=.66, beat='kVGkO', cards=dict(k=['brine_lance'], V=['drag_under'], G=['whirlpool', 'tidal_wave'],
+                                              O=['call_drowned']), trick='water',
+             say='{name} lifts {his} arms, and the water rises with them.'),
+        dict(at=.33, beat='kGkVZ', cards=dict(k=['brine_lance'], G=['whirlpool', 'tidal_wave'], V=['drag_under'],
+                                              Z=['deep_calls']), trick='water',
+             say='The water rises again, black and cold. Only the ledges and the chains stand above it.')]),
+    'cinder_lord': dict(weak=('cold',), phases=[
+        dict(beat='kGkO', cards=dict(k=['firebolt'], G=['fireball', 'burning_lines'], O=['call_hounds'])),
+        dict(at=.66, beat='kGkVZ', cards=dict(k=['firebolt'], G=['burning_lines', 'fireball'], V=['ring_of_fire'],
+                                              Z=['meteor']),
+             say='{name} draws fire out of the gate behind {him}. The iron floor glows.'),
+        dict(at=.33, beat='kGkZ', cards=dict(k=['firebolt'], G=['burning_lines'], Z=['meteor', 'hellfire']), trick='burn',
+             say='The floor of the hall cracks and fire runs in the cracks.')]),
+    # ---- the theme bosses at the bottom of their nests (two phases)
+    'matriarch': dict(weak=('fire',), theme=True, things='nest', phases=[
+        dict(beat='kVGk', cards=dict(k=['bite'], V=['web_spray'], G=['pounce', 'venom_spit'])),
+        dict(at=.5, beat='kOGkV', cards=dict(k=['bite'], O=['egg_clutch'], G=['pounce'], V=['web_spray']), trick='webs',
+             say='{name} shakes her web. Threads come down all over the floor.')]),
+    'ant_queen': dict(weak=('fire',), theme=True, phases=[
+        dict(beat='kOGk', cards=dict(k=['bite'], O=['call_ants'], G=['acid_spray'])),
+        dict(at=.5, beat='kOGkG', cards=dict(k=['bite'], O=['tunnel'], G=['acid_spray']),
+             say='{name} beats the floor with her legs. Far below, the nest answers.')]),
+    'goblin_king': dict(weak=('cold',), theme=True, hide=True, phases=[
+        dict(beat='kGOk', cards=dict(k=['strike'], G=['bomb_volley'], O=['call_goblins'])),
+        dict(at=.5, beat='kGBkO', cards=dict(k=['strike'], G=['bomb_volley'], B=['smoke_bomb'], O=['call_goblins']),
+             say='{name} screeches for more bombs, and keeps his goblins between you and him.')]),
+    'viper_coil': dict(weak=('cold',), theme=True, phases=[
+        dict(beat='kVGk', cards=dict(k=['bite'], V=['coil'], G=['venom_spit'])),
+        dict(at=.5, beat='kRGkV', cards=dict(k=['bite'], R=['shed_skin'], G=['venom_spit'], V=['coil']),
+             say='{name} hisses. {His} scales split down the back.')]),
+    'ghast_lord': dict(weak=('fire',), theme=True, phases=[
+        dict(beat='kVGk', cards=dict(k=['strike'], V=['stench'], G=['paralyse_claw'])),
+        dict(at=.5, beat='kOGkZ', cards=dict(k=['strike'], O=['raise_dead', 'call_ghouls'], G=['paralyse_claw'],
+                                             Z=['corpse_burst']),
+             say='{name} howls for {his} pack. The dead on the floor twitch.')]),
+    'staring_dark': dict(weak=('lightning',), theme=True, things='pillars', phases=[
+        dict(beat='kVGk', cards=dict(k=['shadow_bolt'], V=['dread', 'darkness'], G=['gaze_ray'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['shadow_bolt'], G=['gaze_ray', 'life_drain'], Z=['mark_doom']), trick='dark',
+             say='The great eye closes, and the room goes dark round it.')]),
+    'deep_mother': dict(weak=('fire',), theme=True, phases=[
+        dict(beat='kVGk', cards=dict(k=['shadow_bolt'], V=['babble', 'hex'], G=['morraks_hand'])),
+        dict(at=.5, beat='kOGkV', cards=dict(k=['shadow_bolt'], O=['call_spawn'], G=['morraks_hand', 'life_drain'],
+                                             V=['babble']),
+             say='{name} swells, and things begin to crawl out of {his} folds.')]),
+    'wasp_queen': dict(weak=('cold',), theme=True, phases=[
+        dict(beat='kOGB', cards=dict(k=['bite'], O=['call_wasps'], G=['venom_spit'], B=['sting_dive'])),
+        dict(at=.5, beat='kOBkG', cards=dict(k=['bite'], O=['call_wasps'], B=['sting_dive'], G=['venom_spit']),
+             say='{name} buzzes so loud the air shakes. The swarm thickens.')]),
+    # ---- the Varnish guardians in their hidden deeps (two phases)
+    'iron_sentinel': dict(weak=('lightning',), phases=[
+        dict(beat='kGkR', cards=dict(k=['strike'], G=['smash', 'charge'], R=['shield_wall'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['strike'], G=['smash'], Z=['earthshaker']),
+             say='Something grinds inside {name}. It moves faster now.')]),
+    'bound_gale': dict(weak=('cold',), things='pillars', phases=[
+        dict(beat='kVGk', cards=dict(k=['spark'], V=['gust', 'static_field'], G=['chain_lightning', 'ball_lightning'])),
+        dict(at=.5, beat='kGVkZ', cards=dict(k=['spark'], G=['ball_lightning', 'chain_lightning'], V=['gust', 'static_field'],
+                                             Z=['tempest']), trick='wind',
+             say='{name} howls round the room. The wind will not stop now.')]),
+    'standing_legate': dict(weak=('fire',), phases=[
+        dict(beat='kGOk', cards=dict(k=['strike'], G=['cleave'], O=['call_bound'])),
+        dict(at=.5, beat='kGOkZ', cards=dict(k=['strike'], G=['life_drain', 'cleave'], O=['war_cry'], Z=['army_dead']),
+             say='{name} raises the old standard. The bound dead stand straighter.')]),
+    'hollow_echo': dict(weak=('fire',), things='pillars', phases=[
+        dict(beat='kVGk', cards=dict(k=['shadow_bolt'], V=['dread', 'darkness'], G=['wail'])),
+        dict(at=.5, beat='kVGkZ', cards=dict(k=['shadow_bolt'], V=['dread'], G=['wail'], Z=['mark_doom']), trick='fog',
+             say='{name} comes apart into many voices. A grey fog fills the hall.')]),
+    'chained_star': dict(weak=('cold',), phases=[
+        dict(beat='kGkV', cards=dict(k=['arcane_bolt'], G=['starfall', 'morraks_hand'], V=['static_field'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['arcane_bolt'], G=['starfall'], Z=['meteor']),
+             say='{name} strains at its chains, and the links glow white.')]),
+    'hollow_shard': dict(weak=('fire',), phases=[
+        dict(beat='kVGk', cards=dict(k=['shadow_bolt'], V=['curse_weak'], G=['life_drain'])),
+        dict(at=.5, beat='kGVkZ', cards=dict(k=['shadow_bolt'], G=['life_drain'], V=['dread'], Z=['hellfire']),
+             say='{name} cracks, and something cold looks out of the crack.')]),
+    'first_uncounted': dict(weak=('cold',), phases=[
+        dict(beat='kGOk', cards=dict(k=['strike'], G=['charge', 'cleave'], O=['call_band', 'war_cry'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['strike'], G=['cleave', 'charge'], Z=['executioner']), trick='enrage',
+             say='{name} throws down {his} shield and takes {his} axe in both hands.')]),
+    'name_keeper': dict(weak=('lightning',), phases=[
+        dict(beat='kRGk', cards=dict(k=['smite'], R=['holy_shield'], G=['divine_light'])),
+        dict(at=.5, beat='kVGkZ', cards=dict(k=['smite'], V=['hex'], G=['divine_light'], Z=['dawnbreak']),
+             say='{name} begins to read the names aloud. The light in the hall grows.')]),
+    'bound_magister': dict(weak=('fire',), phases=[
+        dict(beat='kVGB', cards=dict(k=['arcane_bolt'], V=['runes', 'slow_spell'], G=['fireball'], B=['blink'])),
+        dict(at=.5, beat='kRGkZ', cards=dict(k=['arcane_bolt'], R=['mirror', 'spell_ward'], G=['fireball', 'fan_knives'],
+                                             Z=['stop_time']),
+             say='{name} opens a book of chains. The words in it are moving.')]),
+    # ---- roaming bosses: they walk a level with their band (two phases)
+    'troll': dict(weak=('fire',), roam=True, phases=[
+        dict(beat='kGkB', cards=dict(k=['strike'], G=['boulder', 'smash'], B=['pounce'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['strike'], G=['boulder', 'smash'], Z=['rampage']),
+             say='{name} roars and beats the ground. {His} wounds are closing.')]),
+    'ogre': dict(weak=('cold',), roam=True, phases=[
+        dict(beat='kGkG', cards=dict(k=['strike'], G=['smash', 'charge'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['strike'], G=['smash', 'charge'], Z=['earthshaker']),
+             say='{name} bellows and lifts {his} club with both hands.')]),
+    'orc_chief': dict(weak=('cold',), roam=True, phases=[
+        dict(beat='kGOk', cards=dict(k=['strike'], G=['cleave', 'charge'], O=['war_cry'])),
+        dict(at=.5, beat='kGkZ', cards=dict(k=['strike'], G=['cleave', 'charge'], Z=['executioner']),
+             say='{name} spits blood and laughs. {He} fights on harder.')]),
+    'hob_captain': dict(weak=('lightning',), roam=True, phases=[
+        dict(beat='kVGk', cards=dict(k=['strike'], V=['pinning_shot'], G=['volley'])),
+        dict(at=.5, beat='kRGkZ', cards=dict(k=['strike'], R=['shield_wall'], G=['charge', 'volley'], Z=['executioner']),
+             say='{name} barks an order. The line closes up round {him}.')]),
+    'gnoll_packlord': dict(weak=('fire',), roam=True, phases=[
+        dict(beat='kVGk', cards=dict(k=['bite'], V=['roar'], G=['maul'])),
+        dict(at=.5, beat='kBGkZ', cards=dict(k=['bite'], B=['pounce'], G=['maul'], Z=['rampage']),
+             say='{name} howls, and the howl is answered from every side.')]),
 }
+ROAMERS = {'dungeon': ['troll', 'ogre'], 'deep': ['troll', 'ogre'], 'cave': ['troll', 'ogre'], 'wild': ['ogre'],
+           'orccamp': ['orc_chief', 'hob_captain'], 'lair_orc': ['orc_chief', 'ogre'], 'warren': ['hob_captain'],
+           'burrow': ['gnoll_packlord'], 'crypt': ['ghast_lord'], 'barrow': ['ghast_lord']}
+HEARD = {'troll': ['Heavy steps, somewhere {dir} of you.', 'Something big grunts and sniffs, {dir} of you.'],
+         'ogre': ['Heavy steps, somewhere {dir} of you.', 'A great club drags on stone, {dir} of you.'],
+         'orc_chief': ['A war horn, {dir} of you.', 'Orcs laugh and shout, somewhere {dir}.'],
+         'hob_captain': ['Boots in step, somewhere {dir} of you.', 'A captain barks an order, {dir} of you.'],
+         'gnoll_packlord': ['Laughing howls, {dir} of you.', 'Claws click on stone, somewhere {dir}.'],
+         'ghast_lord': ['A wet, hungry sound, {dir} of you.', 'The stink of the grave drifts from the {dir}.']}
 
 
 def kit(mon):
-    return KITS.get(mon.k) if not mon.is_npc else None
+    if mon.is_npc or not (mon.tpl.get('boss') or 'bs' in mon.__dict__):
+        return None
+    return KITS.get(mon.k)
 
 
 def st(mon):
@@ -128,8 +281,13 @@ def st(mon):
 
 
 def on_spawn(game, mon):
-    """A kit boss gets its state when it is made."""
-    if mon.k in KITS:
+    """A kit boss gets its state when it is made; a theme boss or a roamer when it is set down as one (`arm`)."""
+    if mon.k in KITS and mon.tpl.get('boss'):
+        arm(mon)
+
+
+def arm(mon):
+    if mon.k in KITS and 'bs' not in mon.__dict__:
         mon.bs = dict(phase=0, pending=None, i=0, piles={}, spent=0, stag=0, dots=0, stun=0, resolve=RESOLVE,
                       seen_hold=0, sil=False, engaged=False, took={}, breaks=0, prep=[], weak_t=-1, fed=0)
 
@@ -142,8 +300,11 @@ def name_of(mon):
 def fill(text, mon, aim=None):
     from .behave import his, him, PRON
     he = PRON[getattr(mon, 'gender', None)][0]
-    out = text.replace('{name}', name_of(mon)).replace('{his}', his(mon)).replace('{him}', him(mon))
+    import re
+    out = re.sub(r'(^|[.!?] )\{name\}', lambda mt: mt.group(1) + name_of(mon), text)
+    out = out.replace('{name}', mon.the()).replace('{his}', his(mon)).replace('{him}', him(mon))
     out = out.replace('{aim}', aim or 'you').replace('{He}', he.capitalize()).replace('{His}', his(mon).capitalize())
+    out = out.replace('{he}', he)
     return out.replace('{himself}', him(mon) + 'self')
 
 
@@ -186,9 +347,67 @@ def cells_for(game, mon, mv, tx, ty):
         r = mv.get('r', 1)
         out = {(x, y) for x in range(tx - r, tx + r + 1) for y in range(ty - r, ty + r + 1)}
     elif shape == 'ring':
+        r, inner = mv.get('r', 2), mv.get('inner', 0)
+        out = {(x, y) for x in range(bx - r, bx + r + 1) for y in range(by - r, by + r + 1)
+               if cheb(x, y, bx, by) > inner}
+    elif shape == 'ringat':                                 # a ring round you: get out before it closes
         r = mv.get('r', 2)
-        out = {(x, y) for x in range(bx - r, bx + r + 1) for y in range(by - r, by + r + 1) if (x, y) != (bx, by)}
-    elif shape in ('line', 'cone'):
+        out = {(x, y) for x in range(tx - r, tx + r + 1) for y in range(ty - r, ty + r + 1) if cheb(x, y, tx, ty) == r}
+    elif shape == 'arc':                                    # the cells before it, towards whom it wants
+        dx, dy = tx - bx, ty - by
+        n = max(1, (dx * dx + dy * dy) ** .5)
+        ln = mv.get('len', 1)
+        for x in range(bx - ln, bx + ln + 1):
+            for y in range(by - ln, by + ln + 1):
+                vx, vy = x - bx, y - by
+                d = (vx * vx + vy * vy) ** .5
+                if d and (vx * dx + vy * dy) / (d * n) >= .5:
+                    out.add((x, y))
+    elif shape == 'cross':                                  # round you (at aim), or through the room from it
+        cx, cy = (tx, ty) if mv.get('at') == 'aim' else (bx, by)
+        ln = mv.get('len', 1)
+        out = {(cx + k * a, cy + k * b) for k in range(0 if mv.get('at') == 'aim' else 1, ln + 1)
+               for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))}
+        if mv.get('at') != 'aim':
+            out = {c for c in out if clear_line(m, bx, by, *c)}
+    elif shape == 'strips':                                 # bands of floor across the room, one through you
+        own = area(game, mon)
+        n = mv.get('n', 3)
+        rows = sorted({y for _x, y in own})
+        flip = (tx + ty + game.turn) % 2 == 0
+        key = (lambda c: c[1]) if flip else (lambda c: c[0])
+        mine = ty if flip else tx
+        lines = {mine + 3 * k for k in range(-(n // 2), n - n // 2)} if rows else set()
+        out = {c for c in own if key(c) in lines}
+    elif shape == 'scatter':                                # rings or single stones over the floor, one on you
+        own = sorted(area(game, mon))
+        r, n = mv.get('r', 1), mv.get('n', 4)
+        rnd = random.Random(game.turn * 7 + tx * 31 + ty)
+        pts = [(tx, ty)]
+        rnd.shuffle(own)
+        for c in own:
+            if len(pts) >= n:
+                break
+            if all(cheb(*c, *q) >= 2 * r + 2 for q in pts):
+                pts.append(c)
+        out = {(x + a, y + b) for x, y in pts for a in range(-r, r + 1) for b in range(-r, r + 1)}
+    elif shape == 'wave':                                   # a wave from its side of the room: behind cover is dry
+        own = {c for c in area(game, mon) if _open(m, *c)}
+        horiz = abs(tx - bx) >= abs(ty - by)
+        step = ((1 if tx >= bx else -1), 0) if horiz else (0, (1 if ty >= by else -1))
+        for c in own:
+            x, y = c
+            ok = True
+            while True:
+                x, y = x - step[0], y - step[1]
+                if (x, y) not in own:
+                    if m.inb(x, y) and D.TILES[m.tile(x, y)].opaque and (x - step[0], y - step[1]) in own:
+                        ok = False                         # a pillar or a wall in the room stands before it
+                    break
+            if ok:
+                out.add(c)
+        out = {c for c in out if c != (bx, by)}
+    elif shape in ('line', 'cone', 'wide'):
         dx, dy = tx - bx, ty - by
         n = max(1, (dx * dx + dy * dy) ** .5)
         ux, uy = dx / n, dy / n
@@ -203,7 +422,8 @@ def cells_for(game, mon, mv, tx, ty):
                 if along <= 0:
                     continue
                 side = abs(vx * uy - vy * ux)
-                if (shape == 'line' and side <= .75) or (shape == 'cone' and along >= d * .7):
+                if (shape == 'line' and side <= .75) or (shape == 'wide' and side <= 1.6) \
+                        or (shape == 'cone' and along >= d * .7):
                     out.add((x, y))
     elif shape == 'tail':                                   # the half behind it: where you are not
         dx, dy = tx - bx, ty - by
@@ -212,17 +432,33 @@ def cells_for(game, mon, mv, tx, ty):
                 if (x, y) != (bx, by) and (x - bx) * dx + (y - by) * dy <= 0:
                     out.add((x, y))
     elif shape == 'room':
-        out = {c for c in area(game, mon) if clear_line(m, bx, by, c[0], c[1])}
+        out = {c for c in area(game, mon) if clear_line(m, bx, by, c[0], c[1])} - shelter(game, mon, mv)
     elif shape == 'corpses':
         own = area(game, mon)
         for k, x, y, _l in getattr(m, 'slain', ()):
             if (x, y) in own:
                 out |= {(x + a, y + b) for a in (-1, 0, 1) for b in (-1, 0, 1)}
-    elif shape == 'mark':
+    elif shape in ('mark', 'self'):
         return set()
     out = {c for c in out if _open(m, *c)}
-    if shape not in ('room', 'circle', 'corpses'):
+    if shape not in ('room', 'circle', 'corpses', 'ringat', 'strips', 'scatter', 'wave') \
+            and not (shape == 'cross' and mv.get('at') == 'aim'):
         out = {c for c in out if clear_line(m, bx, by, c[0], c[1])}
+    return out
+
+
+def shelter(game, mon, mv):
+    """The cells a room-wide blow spares: by a stone of light, on a ledge, by a chain that still holds."""
+    safe = mv.get('safe')
+    if not safe:
+        return set()
+    m = game.map
+    tiles = {'light': (D.LIGHTSTONE,), 'ledge': (D.BLEDGE, D.BCHAIN)}[safe]
+    out = set()
+    for c in area(game, mon):
+        if m.tile(*c) in tiles or any(m.inb(c[0] + a, c[1] + b) and m.tile(c[0] + a, c[1] + b) in tiles
+                                      and (safe == 'light' or m.tile(c[0] + a, c[1] + b) == D.BCHAIN) for a, b in D8):
+            out.add(c)
     return out
 
 
@@ -230,6 +466,8 @@ def need(game, mon, mv, cells, tx, ty, cap=3):
     """How many steps you need to get out of it (0: you are not in it); None if no free tile lies within `cap`.
     A blow loads at least that long, so there is always a way out in time."""
     m, p = game.map, game.player
+    if mv.get('shape') == 'self':
+        return 0
     if mv.get('shape') == 'mark':
         safe = lambda c: not clear_line(m, mon.x, mon.y, c[0], c[1]) or m.tile(*c) == D.HALLOWED  # noqa: E731
         start = (tx, ty)
@@ -323,15 +561,26 @@ def draw(mon, role):
 # ------------------------------------------------------------------ a boss's turn
 def turn(game, mon, df):
     """Before its usual moves. True if it used its turn."""
-    if mon.is_npc or not mon.tpl.get('boss'):
+    if mon.is_npc:
+        return False
+    if mon.__dict__.get('image_of') is not None:
+        if not mon.__dict__.get('skin') and cheb(mon.x, mon.y, game.player.x, game.player.y) > 1:
+            game.step_toward(mon)                              # an image only shows itself; it never strikes
+        return True
+    bs = st(mon)
+    if bs is None and not mon.tpl.get('boss'):
         return False
     c = mon.__dict__.get('cast')
     if c:
         _go_on(game, mon, c)
         return True
-    bs = st(mon)
     if bs is None:
         return _plain(game, mon)
+    crossed(mon)
+    BM.wear(mon)
+    if mon.__dict__.get('roam') and not hunting(game, mon):
+        patrol(game, mon)
+        return True
     if bs.get('pending') is not None:
         _phase(game, mon, bs.pop('pending'), True)
         bs['pending'] = None
@@ -347,6 +596,17 @@ def turn(game, mon, df):
     if role != 'k':
         mvid = draw(mon, 'k')
     return _small(game, mon, mvid, df)
+
+
+def crossed(mon):
+    """Blows that went round `blow` (a hireling's, a beast's) can take it past a threshold: the change comes now."""
+    bs = st(mon)
+    if bs.get('pending') is not None:
+        return
+    ph = phases(mon)
+    nxt = bs['phase'] + 1
+    if nxt < len(ph) and mon.hp <= round(mon.maxhp * ph[nxt]['at']):
+        bs['pending'] = nxt
 
 
 def _small(game, mon, mvid, df):
@@ -431,7 +691,8 @@ def do(game, mon, mvid, df):
         mon.invis = 99
         st(mon)['air'] = True
         return True
-    return False
+    got = BM.do(game, mon, mv)
+    return bool(got)
 
 
 def start(game, mon, mvid, say=None):
@@ -443,23 +704,29 @@ def start(game, mon, mvid, say=None):
         who, tx, ty = aim(game, mon)
     else:
         who, tx, ty = 'p', game.player.x, game.player.y
-    if mv.get('shape') not in ('ring', 'room', 'corpses') and cheb(mon.x, mon.y, tx, ty) > max(9, mv.get('len', 0)):
+    if mv.get('shape') not in ('ring', 'room', 'corpses', 'self', 'wave', 'strips') \
+            and cheb(mon.x, mon.y, tx, ty) > max(9, mv.get('len', 0)):
         return False
+    if mv.get('fx', {}).get('split') and mon.__dict__.get('knot') is not None:
+        return False                                         # a knot comes apart only once
+    stones = lightstones(game, mon, mv)
     cells = cells_for(game, mon, mv, tx, ty)
-    if mv.get('shape') == 'corpses' and not cells:
-        return False
-    if mv.get('shape') not in ('mark',) and not cells:
+    if mv.get('shape') not in ('mark', 'self') and not cells:
+        unlight(game, stones)
         return False
     n = need(game, mon, mv, cells, tx, ty, 4 if mv['role'] == 'Z' else 3)
     if n is None:
+        unlight(game, stones)
         return False                                         # no way out: it picks another move
-    load = max(mv.get('load', 1), n)                         # never faster than you can get out
     bs = st(mon)
+    load = mv.get('load', 1) - (1 if bs and bs.get('enrage') and mv.get('load', 1) >= 2 else 0)
+    load = max(load, n, 1)                                   # never faster than you can get out
     brk = mv.get('brk', load >= 2)
     if bs and 'unbroken' in bs['prep'] and bs['phase'] == len(phases(mon)) - 1:
         brk = False
     mon.cast = dict(mv=mvid, left=load, load=load, cells=sorted(cells), who=who if who == 'p' else who.who,
-                    tx=tx, ty=ty, taken=0, brk=brk, told=[])
+                    tx=tx, ty=ty, taken=0, brk=brk, told=[], stones=stones,
+                    gold=sorted(shelter(game, mon, mv) & {c for c in area(game, mon) if D.TILES[game.map.tile(*c)].walk}))
     text = say if say is not None else mv.get('say', '')
     if text:
         aim_name = 'you' if who == 'p' else who.name
@@ -468,6 +735,29 @@ def start(game, mon, mvid, say=None):
     if game.visible(mon.x, mon.y):
         GD.tip(game, 'red')
     return True
+
+
+def lightstones(game, mon, mv):
+    """Dawnbreak: it sets down two stones of light first, one near you; by them the light does no harm."""
+    if mv.get('safe') != 'light':
+        return []
+    m, p = game.map, game.player
+    own = [c for c in area(game, mon) if m.tile(*c) == D.FLOOR and not game.occupied(m, *c)]
+    near = [c for c in own if 2 <= cheb(*c, p.x, p.y) <= 3]
+    far = [c for c in own if cheb(*c, p.x, p.y) >= 5 and cheb(*c, mon.x, mon.y) >= 3]
+    out = []
+    for pool in (near, far):
+        if pool:
+            c = random.choice(pool)
+            m.set(c[0], c[1], D.LIGHTSTONE)
+            out.append(c)
+    return out
+
+
+def unlight(game, stones):
+    for c in stones or ():
+        if game.map.tile(*c) == D.LIGHTSTONE:
+            game.map.set(c[0], c[1], D.FLOOR)
 
 
 def _target_xy(game, mon, c):
@@ -497,7 +787,6 @@ def _go_on(game, mon, c):
 
 def release(game, mon, c):
     """The blow lands on every cell that was marked: you, your company, and its own helpers too."""
-    from .behave import give
     from . import spellmap as SM
     from . import mercs as MC
     m, p = game.map, game.player
@@ -521,7 +810,8 @@ def release(game, mon, c):
             if (x, y) not in cells or not D.TILES[m.tile(x, y)].walk or game.occupied(m, x, y) or not may_stand(game, mon, x, y):
                 break
             mon.x, mon.y = x, y
-    col = {'fire': (255, 120, 40), 'cold': (160, 216, 255)}.get(mv.get('elem'), (255, 80, 60))
+    col = {'fire': (255, 120, 40), 'cold': (160, 216, 255), 'lightning': (220, 230, 255), 'poison': (150, 220, 90),
+           'holy': (255, 240, 170)}.get(mv.get('elem'), (255, 80, 60))
     if mv.get('shape') == 'mark':
         tx, ty = _target_xy(game, mon, c)
         safe = not clear_line(m, mon.x, mon.y, tx, ty) or m.tile(tx, ty) == D.HALLOWED
@@ -531,7 +821,14 @@ def release(game, mon, c):
     game.flash([cc for cc in cells if game.visible(*cc)], col, '*', .3)
     if c['mv'] in ('nova', 'leap') and game.visible(mon.x, mon.y):
         game.msg(mon.tpl.get(c['mv'] + '_msg', '{name} strikes!').format(name=name_of(mon)), 'bad')
+    if mv.get('shape') == 'self':
+        BM.on_self(game, mon, mv)
+        if bs and mv['role'] == 'Z' and mon in m.mons:
+            bs['spent'] = 1
+            game.msg(f'{name_of(mon)} stands spent, {fill("{his}", mon)} strength gone for a moment. Now!', 'gold')
+        return
     power = mv.get('power', .3) * (1 + (bs['fed'] if bs and mv['role'] == 'Z' else 0))
+    power = BM.power(game, mon, mv, power)
     if bs and mv['role'] == 'Z':
         bs['fed'] = 0
     lvl = mon.lvl
@@ -544,15 +841,10 @@ def release(game, mon, c):
         game.hurt(dmg, mon.the(), mv.get('elem'))
         game.__dict__.pop('spare_full', None)
         if not game.dead:
-            if fx.get('hold'):
-                give(game, 'held', fx['hold'], None)
-                p.held_by = None
-            if fx.get('slow'):
-                give(game, 'slowed', fx['slow'])
-            if fx.get('sick'):
-                give(game, 'diseased', fx['sick'])
+            BM.on_you(game, mon, fx)
             if fx.get('push'):
                 push(game, mon, p, fx['push'])
+            BM.hit_more(game, mon, mv, dmg)
     elif c['who'] == 'p' and cells and mv.get('shape') != 'mark' and min(cheb(*cc, p.x, p.y) for cc in cells) <= 2:
         game.msg('The blow lands where you stood a moment ago.', 'info')
     for mc in MC.party(game):
@@ -588,6 +880,8 @@ def release(game, mon, c):
             m.items.append(it)
     if fx.get('pillar'):
         break_pillar(game, mon)
+    BM.after(game, mon, mv, cells, c)
+    unlight(game, c.get('stones'))
     if bs and mv['role'] == 'Z' and not game.dead and mon in m.mons:
         bs['spent'] = 2 if random.random() < .25 else 1
         game.msg(f'{name_of(mon)} stands spent, {fill("{his}", mon)} strength gone for a moment. Now!', 'gold')
@@ -624,9 +918,11 @@ def call(game, mon, which, say):
     if not spots:
         return False
     random.shuffle(spots)
+    have = {o.job for o in helpers(game, mon)}
     for (k, job), c in zip(which, spots):
-        if k not in D.MONSTERS:
-            continue
+        if k not in D.MONSTERS or (job in ('mender', 'warder', 'channeler', 'bearer') and job in have):
+            continue                                         # one of each such job at a time
+        have.add(job)
         o = make_monster(game, k, c[0], c[1], max(1, mon.lvl - 1))
         o.awake = o.called = True
         o.job, o.boss_of = job, mon.id
@@ -658,6 +954,9 @@ def raise_dead(game, mon, n, say):
 
 
 def warded(game, mon):
+    m = game.map
+    if getattr(mon, 'lord', False) and getattr(m, 'gate', None) and m.tile(*m.gate) == D.FIREGATE and D.FIREBOWL in m.t:
+        return True                                          # the burning gate is his warder while a bowl burns
     return any(o.job == 'warder' for o in helpers(game, mon))
 
 
@@ -668,10 +967,20 @@ def helper_turn(game, mon, df):
         return False
     job = mon.job
     p = game.player
+    if getattr(mon, 'watching', False):
+        return True                                          # the duel: the guard stands back and watches
+    if boss.__dict__.get('roam') and not hunting(game, boss):
+        if cheb(mon.x, mon.y, boss.x, boss.y) > 2:
+            step_to(game, mon, boss.x, boss.y)
+        return True                                          # the band keeps to its leader
+    if job == 'bearer':
+        if cheb(mon.x, mon.y, boss.x, boss.y) > 2:
+            return False
+        return cheb(mon.x, mon.y, p.x, p.y) > 1
     if job in ('warder', 'mender', 'channeler') and cheb(mon.x, mon.y, p.x, p.y) > 1:
-        if job == 'mender' and game.turn % 3 == 0 and boss.hp < boss.maxhp and clear_line(game.map, mon.x, mon.y, boss.x, boss.y):
+        if job == 'mender' and game.turn % 4 == 0 and boss.hp < boss.maxhp and clear_line(game.map, mon.x, mon.y, boss.x, boss.y):
             cap = cap_hp(boss)
-            boss.hp = min(cap, boss.hp + max(2, boss.maxhp // 30))
+            boss.hp = min(cap, boss.hp + max(2, boss.maxhp // 40))
             game.flash([(boss.x, boss.y)], (120, 240, 140), '+', .25)
             return True
         if job == 'channeler':
@@ -712,8 +1021,39 @@ def _phase(game, mon, i, trick):
     game.shake()
     t = ph.get('trick')
     ar = arena_of(game, mon)
+    m = game.map
     if t == 'call':
-        call(game, mon, MOVES['call_kobolds']['helpers'], '')
+        o = next((MOVES[c] for c in ph['cards'].get('O', ()) if MOVES[c].get('kind') == 'call'), MOVES['call_kobolds'])
+        call(game, mon, o['helpers'], '')
+    elif t == 'water' and ar:
+        ar['water'] = ar.get('water', 0) + 1
+        flood(game, ar)
+    elif t == 'ceiling' and ar:
+        ar['ceiling'] = 0
+    elif t == 'collapse' and ar:
+        for c in ar.get('pillars', ()):
+            if m.tile(*c) == D.PILLAR:
+                m.set(c[0], c[1], D.FALLEN)
+    elif t == 'webs':
+        from . import spellmap as SM
+        own = [c for c in area(game, mon) if m.tile(*c) == D.FLOOR and cheb(*c, game.player.x, game.player.y) >= 2]
+        random.shuffle(own)
+        SM.area(game, m, own[:max(6, len(own) // 7)], D.WEBS, 80)
+    elif t == 'wind' and ar:
+        ar['wind'] = random.choice(D8[:4])
+    elif t == 'fog' and ar:
+        ar['fog'] = True
+    elif t == 'enrage':
+        bs['enrage'] = True
+        mon.effects['frenzy'] = [999, 0]
+    elif t == 'banner':
+        call(game, mon, (('orc', 'bearer'),), '')
+    elif t == 'duel':
+        bs['duel'] = True
+        bs['enrage'] = True
+        for o in helpers(game, mon):
+            o.watching = True
+            o.cast = None
     elif t == 'rise':
         raise_dead(game, mon, 3, '')
         call(game, mon, (('wraith', 'warder'),), '')
@@ -753,6 +1093,10 @@ def do_break(game, mon, how):
             bs['air'] = False
             mon.invis = 0
         add_dot(game, mon)
+    if c:
+        unlight(game, c.get('stones'))
+        if c['mv'] in ('emerge', 'dive'):
+            mon.invis = 0
     name = MOVES[c['mv']]['name'] if c else 'blow'
     game.flash([(mon.x, mon.y)], (206, 132, 255), '!', .35)
     game.msg(f"{how}{name_of(mon)}'s {name} breaks! {fill('{He}', mon)} reels.", 'gold')
@@ -848,6 +1192,9 @@ def blow(game, mon, dmg, crit, weapon, elem):
     critical hit while it is spent or staggered breaks through."""
     if mon.is_npc:
         return dmg
+    if mon.__dict__.get('image_of') is not None and not mon.__dict__.get('skin'):
+        vanish(game, mon)
+        return 0
     dmg = twin_blow(game, mon, dmg, weapon)
     bs = st(mon)
     if bs is None:
@@ -855,9 +1202,18 @@ def blow(game, mon, dmg, crit, weapon, elem):
     if bs.get('air'):
         return 0
     engage(game, mon)
+    p = game.player
+    near = cheb(p.x, p.y, mon.x, mon.y) <= 1
+    if bs.get('duel') and not near:
+        break_duel(game, mon, 'You strike from afar. The duel is broken, and the guard comes on!')
+    dmg = BM.guard(game, mon, dmg, weapon, elem, near)
+    if not dmg:
+        return 0
     mult = 1.0
     if warded(game, mon):
         mult *= .5
+    if kit(mon).get('hide') and any(cheb(o.x, o.y, mon.x, mon.y) <= 1 for o in helpers(game, mon)):
+        mult *= .5                                           # he keeps a goblin between you and him
     if bs['spent'] or bs['stag']:
         mult *= 1.5
     if bs.get('lichcraft') and weapon and not silvered(game):
@@ -901,10 +1257,40 @@ def blow(game, mon, dmg, crit, weapon, elem):
     return max(0, dmg)
 
 
+def vanish(game, mon):
+    m = game.map
+    if mon in m.mons:
+        m.mons.remove(mon)
+    game.flash([(mon.x, mon.y)], (206, 132, 255), '*', .2)
+    game.msg('It was only an image. It breaks like a reflection in water.', 'info')
+
+
+def break_duel(game, mon, text):
+    bs = st(mon)
+    if not bs.get('duel'):
+        return
+    bs['duel'] = False
+    for o in helpers(game, mon):
+        o.watching = False
+        o.awake = True
+    game.msg(text, 'bad')
+
+
 def spare(game, mon):
     """It would die: but a threshold not yet crossed holds it, or a phylactery shard raises it again."""
     bs = st(mon)
     if bs is None or mon.hp > 0:
+        return False
+    if mon.__dict__.get('knot') is not None:                 # one of the knot falls; the last one is the real death
+        m = game.map
+        rest = [o for o in m.mons if o is not mon and o.__dict__.get('knot') == mon.knot and o.hp > 0]
+        if rest:
+            m.mons.remove(mon)
+            ar = m.__dict__.get('arena')
+            if ar and ar.get('boss') == mon.id:
+                ar['boss'] = rest[0].id
+            game.msg(f'One of the kings falls. {len(rest)} still {"fights" if len(rest) == 1 else "fight"}.', 'good')
+            return True
         return False
     ph = phases(mon)
     cur = bs['pending'] if bs.get('pending') is not None else bs['phase']
@@ -925,7 +1311,19 @@ def spare(game, mon):
 
 
 def felled(game, mon):
-    """It is dead: FOE FELLED, the way opens."""
+    """It is dead: FOE FELLED, the way opens. A fallen helper may heal its master, or drop its banner."""
+    m = game.map
+    if getattr(mon, 'boss_of', None) is not None:
+        boss = next((o for o in m.mons if o.id == mon.boss_of), None)
+        if boss is not None and (st(boss) or {}).get('martyr'):
+            boss.hp = min(cap_hp(boss), boss.hp + round(boss.maxhp * .08))
+            game.msg(f'As it falls, light flows from it into {boss.the()}.', 'bad')
+        if getattr(mon, 'job', None) == 'bearer' and m.tile(mon.x, mon.y) == D.FLOOR:
+            m.set(mon.x, mon.y, D.BANNER)
+            ar = m.__dict__.get('arena')
+            if ar:
+                ar['banner'] = (mon.x, mon.y)
+            game.msg('The bearer falls, and the war banner stands where he planted it. Hack it down!', 'info')
     if mon.__dict__.get('twin'):
         twin_fell(game, mon)
         if twin_of(game, mon)[1] is not None and twin_of(game, mon)[1] in game.map.mons:
@@ -967,11 +1365,34 @@ def boss_of(game):
 
 
 def on_level(game, m):
-    """The bottom of a place with a kit boss: its room becomes an arena behind a veil of mist."""
-    boss = next((o for o in m.mons if st(o) is not None), None)
+    """The bottom of a place with a kit boss: its room becomes an arena behind a veil of mist. A theme boss at the
+    bottom of its nest fights with its kit too."""
+    d = game.world.dungeons.get(getattr(m, 'did', None))
+    for o in m.mons:
+        if d is not None and o.k == d.boss and o.k in KITS and not o.is_npc:
+            arm(o)
+    boss = next((o for o in m.mons if st(o) is not None and not o.__dict__.get('roam')), None)
     if boss is None:
         return
+    if getattr(m, 'hall_cells', None):
+        hall(game, m, boss)
+        return
     build(game, m, boss)
+
+
+def hall(game, m, boss):
+    """The Lord of Cinders' hall of black iron is its own arena: the door shuts behind you."""
+    cells = {(i % m.w, i // m.w) for i in m.hall_cells if D.TILES[m.t[i]].walk}
+    ring = {(x + a, y + b) for x, y in cells for a, b in D8} - cells
+    gates = sorted(c for c in ring if m.inb(*c) and D.TILES[m.tile(*c)].walk)
+    if not gates:
+        return
+    orig = {c: m.tile(*c) for c in gates}
+    for c in gates:
+        m.set(c[0], c[1], D.VEIL)
+    m.arena = dict(boss=boss.id, cells=sorted(cells), gates=gates, orig=orig, sealed=False, rotten=None, hits=0,
+                   home=(boss.x, boss.y), shards=[], pillars=[c for c in cells if m.tile(*c) == D.PILLAR], dark=False,
+                   dance=None, flees=0, rising=None, done=False)
 
 
 def build(game, m, boss):
@@ -1066,12 +1487,55 @@ def furnish(game, m, boss, ar):
     if things == 'hoard':
         for c in inner[:3]:
             m.set(c[0], c[1], D.GLITTER)
-    elif things in ('tomb', 'lair'):
-        # cover spread over the room, so that from anywhere a pillar or a shard is a few steps away
+    elif things in ('holes', 'pool'):                       # rat holes or chains in the walls round the room
+        ring = sorted({(x + a, y + b) for x, y in room for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))} - room)
+        ring = [c for c in ring if m.inb(*c) and m.tile(*c) in (D.WALL, D.ROCK) and c not in ar['gates']
+                and c != (tuple(ar['rotten']) if ar['rotten'] else None)]
+        random.shuffle(ring)
+        got = []
+        for c in ring:
+            if len(got) >= 4:
+                break
+            if all(cheb(*c, *q) >= 5 for q in got):
+                got.append(c)
+        for c in got:
+            m.set(c[0], c[1], D.RATHOLE if things == 'holes' else D.BCHAIN)
+        ar['holes' if things == 'holes' else 'chains'] = got
+        if things == 'pool':
+            edge = [c for c in inner if any((c[0] + a, c[1] + b) not in room for a, b in D8)] or inner
+            ledges = []
+            for c in sorted(edge, key=lambda c: -cheb(*c, bx, by)):
+                if len(ledges) >= 4:
+                    break
+                if all(cheb(*c, *q) >= 4 for q in ledges):
+                    ledges.append(c)
+            for c in ledges:
+                m.set(c[0], c[1], D.BLEDGE)
+            ar['water'] = 1
+            flood(game, ar)
+    elif things == 'props':
         pts = []
-        for c in sorted(inner, key=lambda c: (c[0] // 6 + c[1] // 5) % 2):
-            if all(cheb(*c, *q) >= 5 for q in pts) and cheb(*c, bx, by) >= 3 and _inner(m, ar, c, room, 1):
+        for c in inner:
+            if all(cheb(*c, *q) >= 4 for q in pts) and cheb(*c, bx, by) >= 2 and _inner(m, ar, c, room, 1):
                 pts.append(c)
+        for c in pts[:8]:
+            m.set(c[0], c[1], D.PROP)
+        ar['props'] = pts[:8]
+    elif things == 'nest':
+        from . import spellmap as SM
+        SM.area(game, m, inner[:max(4, len(inner) // 10)], D.WEBS, 400)
+        for c in [c for c in inner if 2 <= cheb(*c, bx, by) <= 3][:2]:
+            m.set(c[0], c[1], D.EGGS)
+            BM.eggs(game)[c] = [40, boss.id]
+    elif things in ('tomb', 'lair', 'pillars'):
+        # cover spread over the room, so that from anywhere a pillar or a shard is a few steps away
+        for gap in (5, 4, 3):                               # a small room: the cover stands closer together
+            pts = []
+            for c in sorted(inner, key=lambda c: (c[0] // 6 + c[1] // 5) % 2):
+                if all(cheb(*c, *q) >= gap for q in pts) and cheb(*c, bx, by) >= 3 and _inner(m, ar, c, room, 1):
+                    pts.append(c)
+            if len(pts) >= 6:
+                break
         pts = pts[:12]
         random.shuffle(pts)
         if things == 'tomb':
@@ -1085,7 +1549,7 @@ def furnish(game, m, boss, ar):
                 sl.append(('skeleton', c[0], c[1], boss.lvl))
         else:
             pillars = pts
-            for c in [c for c in inner if cheb(*c, bx, by) == 2 and c not in pts][:2]:
+            for c in [c for c in inner if cheb(*c, bx, by) == 2 and c not in pts][:2 if things == 'lair' else 0]:
                 m.set(c[0], c[1], D.GLITTER)
         for c in pillars:
             m.set(c[0], c[1], D.PILLAR)
@@ -1096,7 +1560,7 @@ def furnish(game, m, boss, ar):
     if ups:
         dist = W.bfs(m, ups[0] % m.w, ups[0] // m.w, lambda t: D.TILES[t].walk or D.TILES[t].door or t == D.VEIL)
         for c in ar['cells']:
-            if m.tile(*c) in (D.GLITTER, D.PILLAR, D.SHARD) and not any(
+            if m.tile(*c) in (D.GLITTER, D.PILLAR, D.SHARD, D.PROP, D.BLEDGE) and not any(
                     dist[g[1] * m.w + g[0]] >= 0 for g in ar['gates']):
                 m.set(c[0], c[1], D.FLOOR)
 
@@ -1129,8 +1593,9 @@ def open_up(game, ar, fell):
             m.set(c[0], c[1], ar['orig'].get(tuple(c), D.FLOOR) if fell else D.VEIL)
     if fell:
         ar['done'] = True
-        ar['dark'] = False
-        ar['dance'] = None
+        ar['dark'] = ar['fog'] = False
+        ar['dance'] = ar['ceiling'] = ar['wind'] = None
+        ar['falling'] = []
         game.msg('The stones in the way crumble, and the mist is gone.', 'info')
     elif ar['rotten'] and m.tile(*ar['rotten']) == D.FLOOR and not game.occupied(m, *ar['rotten']):
         m.set(ar['rotten'][0], ar['rotten'][1], D.ROTTEN)
@@ -1145,6 +1610,8 @@ def no_rest(game):
 
 def sight(game, r):
     ar = game.map.__dict__.get('arena')
+    if ar and ar.get('fog') and ar['sealed']:
+        return min(r, 2)
     if ar and ar.get('dark') and ar['sealed']:
         return min(r, 3)
     return r
@@ -1185,6 +1652,28 @@ def bump(game, x, y, t):
     if t == D.SEALED:
         game.msg('Fallen stones fill the way. It will not open while the fight goes on.', 'info')
         return 0
+    if t == D.RATHOLE:
+        m.set(x, y, D.RUBBLE)
+        game.msg('You kick stones into the rat hole until it is stopped up.', 'good')
+        return 1
+    if t == D.BCHAIN:
+        ar['chain_hits'] = ar.get('chain_hits', 0) + 1
+        if ar['chain_hits'] % 2:
+            game.msg('You strike the great chain. A link cracks.', 'info')
+        else:
+            m.set(x, y, D.WALL)
+            ar['water'] = max(0, ar.get('water', 0) - 1)
+            flood(game, ar)
+            game.msg('The chain breaks with a sound like a bell! Somewhere a sluice opens, and the water sinks.', 'good')
+            game.shake()
+        return 1
+    if t == D.BANNER:
+        m.set(x, y, D.FLOOR)
+        game.msg('You hack the war banner down. The band falters.', 'good')
+        return 1
+    if t == D.PROP:
+        game.msg('A pit prop. It holds up the roof here.', 'info')
+        return 0
     return None
 
 
@@ -1210,6 +1699,8 @@ def tick(game):
     """Each turn on a map with an arena: fled from, the boss heals and makes ready; the dead lich rises; the floor
     burns in strips."""
     m, p = game.map, game.player
+    floor_things(game)
+    roamers(game)
     ar = m.__dict__.get('arena')
     if not ar or ar['done']:
         return
@@ -1239,6 +1730,141 @@ def tick(game):
                 game.kill(mon)
     if ar.get('dance') is not None and ar['sealed']:
         _dance(game, ar, room)
+    if not ar['sealed']:
+        return
+    boss = next((o for o in m.mons if o.id == ar['boss']), None)
+    if ar.get('ceiling') is not None:
+        _ceiling(game, ar, room)
+    if ar.get('wind') and not game.dead:
+        _wind(game, ar, room)
+    if boss is not None and st(boss) is not None:
+        bs = st(boss)
+        if bs.get('duel'):
+            from . import mercs as MC
+            if any(mc.body is not None and mc.body in m.mons and mc.order not in ('hold', 'passive')
+                   and cheb(mc.body.x, mc.body.y, boss.x, boss.y) <= 1 for mc in MC.party(game)):
+                break_duel(game, boss, 'Your company steps in. The duel is broken, and the guard comes on!')
+        flag = [o for o in helpers(game, boss) if o.job == 'bearer'] or \
+            ([] if not ar.get('banner') or m.tile(*ar['banner']) != D.BANNER else [ar['banner']])
+        if flag:
+            fx, fy = (flag[0].x, flag[0].y) if not isinstance(flag[0], tuple) else flag[0]
+            for o in helpers(game, boss):
+                if cheb(o.x, o.y, fx, fy) <= 4 and not getattr(o, 'watching', False):
+                    o.effects['frenzy'] = [2, 0]
+
+
+def floor_things(game):
+    """Webs that hold, thorns that cut, eggs that hatch unless you tread on them."""
+    from . import spellmap as SM
+    from .behave import give
+    m, p = game.map, game.player
+    t = m.tile(p.x, p.y)
+    if t == D.WEBS:
+        SM.clear(m, (p.x, p.y))
+        if give(game, 'held', 2):
+            p.held_by = None
+            game.msg('You walk into a web on the floor. It holds you fast!', 'bad')
+    elif t == D.BRAMBLE and getattr(m, 'arena', None) and m.arena.get('sealed'):
+        fd = SM.fields(m).get((p.x, p.y))
+        game.hurt(max(1, fd[3] if fd else 2), 'thorns')
+    eg = m.__dict__.get('boss_eggs')
+    if not eg:
+        return
+    from .entities import make_monster
+    for c, v in list(eg.items()):
+        if (p.x, p.y) == tuple(c):
+            eg.pop(c)
+            m.set(c[0], c[1], D.FLOOR)
+            game.msg('You tread the eggs into the floor. They burst with a wet crunch.', 'good')
+            continue
+        v[0] -= 1
+        if v[0] > 0:
+            continue
+        eg.pop(c)
+        m.set(c[0], c[1], D.FLOOR)
+        boss = next((o for o in m.mons if o.id == v[1]), None)
+        lvl = boss.lvl if boss else getattr(m, 'level', 3)
+        for sp in [c] + free_around(game, m, c[0], c[1], 1)[:1]:
+            if not game.occupied(m, *sp):
+                o = make_monster(game, 'spiderling', sp[0], sp[1], max(1, lvl - 3))
+                o.awake = o.called = True
+                if boss is not None:
+                    o.job, o.boss_of = 'swarm', boss.id
+                m.mons.append(o)
+        if game.visible(*c):
+            game.msg('The eggs split open. Spiderlings spill out!', 'bad')
+
+
+def flood(game, ar):
+    """The water stands as high as `ar['water']` says: bands of the room from its low side, shallow, then deep."""
+    m = game.map
+    lv = ar.get('water', 0)
+    room = [tuple(c) for c in ar['cells']]
+    if not room:
+        return
+    dry = ar.setdefault('dry', {})
+    if not ar.get('low'):
+        hx, hy = ar['home']
+        xs, ys = [c[0] for c in room], [c[1] for c in room]
+        sides = {'n': hy - min(ys), 's': max(ys) - hy, 'w': hx - min(xs), 'e': max(xs) - hx}
+        ar['low'] = max(sides, key=sides.get)
+    lo = ar['low']
+    xs, ys = [c[0] for c in room], [c[1] for c in room]
+    edge = {'n': min(ys), 's': max(ys), 'w': min(xs), 'e': max(xs)}[lo]
+    for c in room:
+        t = m.tile(*c)
+        if c not in dry:
+            if t != D.FLOOR:
+                continue
+            dry[c] = t
+        if t not in (D.FLOOR, D.SHALLOW, D.WATER):
+            continue
+        i = abs((c[1] if lo in 'ns' else c[0]) - edge)
+        want = D.WATER if i < 2 * (lv - 2) else D.SHALLOW if lv and i < 2 * lv + 1 else dry[c]
+        o = m.mon_at(*c)
+        if want == D.WATER and (o is not None or (game.player.x, game.player.y) == c):
+            want = D.SHALLOW
+        if t != want:
+            m.set(c[0], c[1], want)
+
+
+def _ceiling(game, ar, room):
+    """The falling roof: two stones marked one turn, falling the next, never beside a prop that still stands."""
+    m, p = game.map, game.player
+    ar['ceiling'] += 1
+    if ar['ceiling'] % 2 == 1:
+        props = [c for c in ar.get('props', ()) if m.tile(*c) == D.PROP]
+        ok = [c for c in room if m.tile(*c) == D.FLOOR and not any(cheb(*c, *q) <= 1 for q in props)]
+        near = [c for c in ok if cheb(*c, p.x, p.y) <= 2]
+        pick = random.sample(near, 1) if near else []
+        rest = [c for c in ok if c not in pick]
+        pick += random.sample(rest, min(1, len(rest)))
+        ar['falling'] = pick
+        return
+    lvl = getattr(m, 'level', 8)
+    for c in ar.get('falling', ()):
+        if m.tile(*c) == D.FLOOR and not game.occupied(m, *c):
+            m.set(c[0], c[1], D.FALLEN)
+        if (p.x, p.y) == tuple(c) and not game.dead:
+            game.msg('A stone falls from the roof on to you!', 'bad')
+            game.spare_full = True
+            game.hurt(.12 * ref_life(game, lvl, game.stats()['max_life']), 'a falling stone')
+            game.__dict__.pop('spare_full', None)
+    game.flash([tuple(c) for c in ar.get('falling', ()) if game.visible(*c)], (180, 160, 130), '*', .2)
+    ar['falling'] = []
+
+
+def _wind(game, ar, room):
+    """A wind that will not stop pushes you a step, unless you stand by something that breaks it."""
+    m, p = game.map, game.player
+    dx, dy = ar['wind']
+    if any(m.inb(p.x + a, p.y + b) and D.TILES[m.tile(p.x + a, p.y + b)].opaque for a, b in D8):
+        return
+    nx, ny = p.x + dx, p.y + dy
+    if (nx, ny) in room and D.TILES[m.tile(nx, ny)].walk and not game.occupied(m, nx, ny):
+        p.x, p.y = nx, ny
+        if game.turn % 4 == 0:
+            game.msg('The wind shoves you along the floor.', 'bad')
 
 
 def _dance(game, ar, room):
@@ -1267,8 +1893,9 @@ def fled(game, ar):
     open_up(game, ar, False)
     ar['asked'] = False
     ar['flees'] += 1
-    ar['dark'] = False
-    ar['dance'] = None
+    ar['dark'] = ar['fog'] = False
+    ar['dance'] = ar['ceiling'] = ar['wind'] = None
+    ar['falling'] = []
     if boss is None:
         return
     bs = st(boss)
@@ -1277,7 +1904,10 @@ def fled(game, ar):
     boss.threat = {}
     boss.x, boss.y = ar['home'] if not game.occupied(m, *ar['home']) else (boss.x, boss.y)
     bs.update(phase=0, pending=None, i=0, piles={}, spent=0, stag=0, dots=0, stun=0, resolve=RESOLVE, engaged=False,
-              lichcraft=False, air=False, fed=0)
+              lichcraft=False, air=False, fed=0, guard={}, duel=False, enrage=False, martyr=False, shed=False)
+    if ar.get('water') is not None and 'chains' in ar:
+        ar['water'] = 1
+        flood(game, ar)
     boss.invis = 0
     if len(bs['prep']) < MAX_PREP:
         took = bs['took']
@@ -1390,9 +2020,11 @@ def marks(game):
             cells = [_target_xy(game, o, c)]
         for cc in cells:
             out[tuple(cc)] = (num, col, hot)
+        for cc in c.get('gold', ()):
+            out[tuple(cc)] = (num, GOLDN, False)
     ar = game.map.__dict__.get('arena')
-    if ar and ar.get('strip'):
-        for cc in ar['strip']:
+    if ar:
+        for cc in list(ar.get('strip') or ()) + list(ar.get('falling') or ()):
             out.setdefault(tuple(cc), (None, RED, True))
     return out
 
@@ -1531,6 +2163,229 @@ def twin_fell(game, mon):
     other.twin = None
 
 
+# ------------------------------------------------------------------ roaming bosses
+COMPASS = {(0, -1): 'north', (1, -1): 'north-east', (1, 0): 'east', (1, 1): 'south-east', (0, 1): 'south',
+           (-1, 1): 'south-west', (-1, 0): 'west', (-1, -1): 'north-west'}
+
+
+def place_roamer(game, m, d, lvl, up):
+    """Halfway down a place that is not small, now and then a boss walks the level with its band."""
+    from .entities import make_monster
+    from . import worldgen as W
+    kinds = [k for k in ROAMERS.get(d.tag, ()) if k in D.MONSTERS]
+    if not kinds:
+        return None
+    k = random.choice(kinds)
+    c = W.rand_free(game, m, lambda t: t == D.FLOOR, (up[0], up[1], 20))
+    if not c:
+        return None
+    o = make_monster(game, k, c[0], c[1], lvl + 1)
+    arm(o)
+    o.roam = dict(seen=-999, goal=None, path=[], heard=0, hunted=False)
+    m.mons.append(o)
+    band = W.band_keys(k, 3) if D.MONSTERS[k].get('chief') else [W.choose_monster(lvl, d.tag) for _ in range(2)]
+    for bk, sp in zip(band, free_around(game, m, c[0], c[1], 2)):
+        if bk in D.MONSTERS and not D.MONSTERS[bk].get('boss'):
+            b = make_monster(game, bk, sp[0], sp[1], lvl)
+            b.job, b.boss_of = 'guard', o.id
+            m.mons.append(b)
+    return o
+
+
+def hunting(game, mon):
+    """It knows where you are: it saw you, or heard you close by, not long ago."""
+    r = mon.roam
+    p = game.player
+    if game.visible(mon.x, mon.y) or cheb(mon.x, mon.y, p.x, p.y) <= 5:
+        if not r.get('hunted'):
+            r['hunted'] = True
+            mon.awake = True
+            for o in helpers(game, mon):
+                o.awake = True
+        r['seen'] = game.turn
+    on = game.turn - r.get('seen', -999) < 300
+    if not on and r.get('hunted'):                          # it lost you: it heals, and waits by the stair
+        r['hunted'] = False
+        mon.hp = mon.maxhp
+        bs = st(mon)
+        bs.update(phase=0, pending=None, i=0, piles={}, engaged=False, guard={})
+        stairs = [i for i, t in enumerate(game.map.t) if t in (D.UP, D.DOWN)]
+        if stairs:
+            i = random.choice(stairs)
+            r['goal'], r['path'] = (i % game.map.w, i // game.map.w), []
+    return on
+
+
+def patrol(game, mon):
+    """It walks from hall to hall, and leaves its tracks."""
+    from . import worldgen as W
+    m = game.map
+    r = mon.roam
+    if r.get('t') == game.turn:
+        return
+    r['t'] = game.turn
+    heard(game, mon)
+    if not r.get('path'):
+        goal = r.get('goal')
+        if goal is None or cheb(mon.x, mon.y, *goal) <= 1:
+            goal = W.rand_free(game, m, lambda t: t == D.FLOOR, (mon.x, mon.y, 15))
+        r['goal'] = goal
+        r['path'] = path_to(m, (mon.x, mon.y), goal) if goal else []
+        r['goal'] = None if not r['path'] else goal
+        return
+    if game.turn % 2:
+        return                                               # it walks slowly when it does not hunt
+    nx, ny = r['path'][0]
+    if game.occupied(m, nx, ny) or not D.TILES[m.tile(nx, ny)].walk:
+        if D.TILES[m.tile(nx, ny)].door or m.tile(nx, ny) == D.DOOR:
+            m.set(nx, ny, D.ODOOR)
+        r['path'] = []
+        return
+    r['path'].pop(0)
+    ox, oy = mon.x, mon.y
+    mon.x, mon.y = nx, ny
+    if m.kind == 'dungeon' and random.random() < .5:
+        if getattr(m, 'deco', None) is None:
+            m.deco = bytearray(m.w * m.h)
+        i = oy * m.w + ox
+        if not m.deco[i] and m.tile(ox, oy) == D.FLOOR:
+            from .dress import TRACKS
+            m.deco[i] = TRACKS
+
+
+def path_to(m, a, b):
+    from collections import deque
+    if a == b:
+        return []
+    prev = {a: None}
+    q = deque([a])
+    while q:
+        c = q.popleft()
+        if c == b:
+            break
+        for dx, dy in D8:
+            n = (c[0] + dx, c[1] + dy)
+            if n in prev or not m.inb(*n):
+                continue
+            t = m.tile(*n)
+            if not (D.TILES[t].walk or D.TILES[t].door):
+                continue
+            prev[n] = c
+            q.append(n)
+        if len(prev) > 6000:
+            return []
+    if b not in prev:
+        return []
+    out = []
+    c = b
+    while c != a:
+        out.append(c)
+        c = prev[c]
+    return out[::-1][:200]
+
+
+def heard(game, mon):
+    """Now and then you hear it, from where it walks."""
+    r = mon.roam
+    p = game.player
+    d = cheb(mon.x, mon.y, p.x, p.y)
+    if game.visible(mon.x, mon.y) or d > 40 or game.turn < r.get('heard', 0):
+        return
+    r['heard'] = game.turn + random.randint(25, 45)
+    dx, dy = (mon.x > p.x) - (mon.x < p.x), (mon.y > p.y) - (mon.y < p.y)
+    where = COMPASS.get((dx, dy), 'somewhere')
+    game.msg(random.choice(HEARD.get(mon.k, HEARD['troll'])).format(dir=where), 'info')
+
+
+def step_to(game, mon, x, y):
+    m = game.map
+    best = None
+    for dx, dy in D8:
+        nx, ny = mon.x + dx, mon.y + dy
+        if m.inb(nx, ny) and D.TILES[m.tile(nx, ny)].walk and not game.occupied(m, nx, ny) and may_stand(game, mon, nx, ny):
+            d = cheb(nx, ny, x, y)
+            if best is None or d < best[0]:
+                best = (d, nx, ny)
+    if best and best[0] < cheb(mon.x, mon.y, x, y):
+        mon.x, mon.y = best[1], best[2]
+        return True
+    return False
+
+
+def roamers(game):
+    """Roamers walk their rounds, asleep to you or not; one that followed you down or up the stair comes after a
+    few turns."""
+    m = game.map
+    for o in [o for o in m.mons if o.__dict__.get('roam')]:
+        if not hunting(game, o):
+            patrol(game, o)
+    come = m.__dict__.get('coming')
+    if not come:
+        return
+    for row in list(come):
+        row[0] -= 1
+        if row[0] > 0:
+            continue
+        come.remove(row)
+        mon, at = row[1], tuple(row[2])
+        sp = [at] if not game.occupied(m, *at) else free_around(game, m, at[0], at[1], 2)
+        if not sp:
+            continue
+        mon.x, mon.y = sp[0]
+        mon.roam['seen'] = game.turn
+        mon.awake = True
+        m.mons.append(mon)
+        game.msg(f'{name_of(mon)} comes after you down the stair!' if m.depth > row[3] else
+                 f'{name_of(mon)} comes up the stair after you!', 'bad')
+        game.shake()
+
+
+def leaving(game):
+    """You take the stair: a roamer that hunts you and is not far behind follows (it knows where you went)."""
+    m, p = game.map, game.player
+    if m.kind != 'dungeon':
+        return []
+    out = []
+    for o in list(m.mons):
+        r = o.__dict__.get('roam')
+        if r and game.turn - r.get('seen', -999) < 40 and cheb(o.x, o.y, p.x, p.y) <= 20 and o.hp > 0:
+            m.mons.remove(o)
+            o.cast = None
+            out.append([max(2, cheb(o.x, o.y, p.x, p.y) // 2), o, None, m.depth])
+    return out
+
+
+def arrive(game, follow):
+    m, p = game.map, game.player
+    if not follow or m.kind != 'dungeon':
+        return
+    for row in follow:
+        row[2] = (p.x, p.y)
+    m.__dict__.setdefault('coming', []).extend(follow)
+
+
+# ------------------------------------------------------------------ what a great boss leaves: three things, one whole
+def offer(game, mon, us):
+    """Three named things lie where it fell. Take one: the other two broke in the fall."""
+    from . import events as EV
+    random.shuffle(us)
+    us = us[:3]
+    EV.ask(game, 'boss_loot', f'What {mon.name} leaves', f'Three things of {mon.name} lie where {fill("{he}", mon)} '
+           'fell. One you can take; the other two break as you lift it.',
+           [(u['name'] + ', ' + D.BASES[u['base']]['name'].lower(), u['name']) for u in us], at=(mon.x, mon.y))
+
+
+def r_loot(game, choice, ctx):
+    from .entities import make_unique, unique_named
+    u = unique_named(choice)
+    if u is None:
+        return
+    it = make_unique(game, u)
+    game.spill(game.map, ctx['at'][0], ctx['at'][1], it)
+    game.announce(it)
+    game.msg('The other two crack and fall apart.', 'info')
+
+
 # ------------------------------------------------------------------ the test build (debug.py)
 def spawn(game, k):
     """Set a kit boss down beside you, with its room if the map has none."""
@@ -1540,7 +2395,8 @@ def spawn(game, k):
     if not sp:
         return None
     x, y = sp[-1]
-    o = make_monster(game, k, x, y, D.MONSTERS[k].get('lvl_fix', p.lvl))
+    o = make_monster(game, k, x, y, D.MONSTERS[k].get('lvl_fix', max(p.lvl, D.MONSTERS[k]['min_l'])))
+    arm(o)
     o.awake = True
     m.mons.append(o)
     return o
@@ -1571,3 +2427,4 @@ def check_fair(game, mon):
 from . import events as _EV  # noqa: E402
 
 _EV.RESOLVERS['boss_veil'] = r_veil
+_EV.RESOLVERS['boss_loot'] = r_loot

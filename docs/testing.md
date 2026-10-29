@@ -202,6 +202,10 @@ Each line: **what** - what to check - what the debug menu should offer.
 Built in part A: F12, Bosses (K) sets down Snagtooth, the Lich or the Dragon, sets its phase, shows the rhythm, shuts
 or opens its room, runs the fairness check, kills its helpers, makes it spent or staggered, flees once more, and adds a
 twin of the next kind. Test part `bosses`.
+Built in part B: Bosses (K), "Any boss with a kit..." sets down any of the 31 (the fixed bosses, the theme bosses,
+the Varnish guardians), each in a room of its own with its tricks; "A roaming boss..." sets one down ten steps off,
+out of sight, to listen for it, follow its tracks and take it up or down the stair. Killing a fixed boss offers its
+three things. Test part `boss_moves`.
 
 
 - **A fixed boss** - each phase, its deck, its room tricks, its three items to choose from. Debug: place any fixed boss;

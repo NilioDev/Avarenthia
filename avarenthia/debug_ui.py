@@ -286,8 +286,22 @@ class DebugScreen(Modal):
 
         def act(what):
             return self.do(lambda: DBG.boss(g(), what), True)
+        from . import bosses as BS
+
+        def kind(k):
+            kt = BS.KITS[k]
+            return 'roaming' if kt.get('roam') else 'theme' if kt.get('theme') else 'fixed'
+
+        def setdown(roam):
+            rows = sorted(((kind(k), D.MONSTERS[k]['name'], k) for k in BS.KITS if bool(BS.KITS[k].get('roam')) == roam),
+                          key=lambda r: (r[0], r[1]))
+            pre = 'roam:' if roam else ''
+            return lambda: ListPage(self, 'A roaming boss' if roam else 'Set a boss down', rows,
+                                    lambda k: (DBG.boss(self.game, pre + k), 'close')[1])
         return MenuPage(self, 'Bosses', [[('SET ONE DOWN', [('1', 'Snagtooth', act('snagtooth')), ('2', 'The Lich', act('lich')),
-                                                            ('3', 'The Dragon', act('dragon'))]),
+                                                            ('3', 'The Dragon', act('dragon')),
+                                                            ('4', 'Any boss with a kit...', setdown(False)),
+                                                            ('5', 'A roaming boss, a way off...', setdown(True))]),
                                           ('ITS PHASE', [('a', 'Phase I', act('p1')), ('b', 'Phase II', act('p2')),
                                                          ('c', 'Phase III', act('p3'))])],
                                          [('THE FIGHT', [('r', self.flag('rhythm'), self.do(lambda: DBG.toggle(g(), 'rhythm'))),

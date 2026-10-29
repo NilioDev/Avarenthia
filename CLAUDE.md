@@ -64,7 +64,8 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `halls.py` each people's abbey, fort and manor (the floor above: style 'upper'; who holds a fort; telling things);
   `delves.py` the underground kinds' own plans (rooms by use, folk where they belong, the goblin hole's watch and
   snares); `gobvillage.py` the goblin village behind the ravine and its deep halls;
-  `arts.py` the arts of Cunning and Arcane (first blow, snares, runes, gates, dispel); `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
+  `bosses.py` boss fights (marked blows, the deck, phases, arenas, roaming bosses, the three things); `bossmoves.py` the
+  move library of the bosses; `arts.py` the arts of Cunning and Arcane (first blow, snares, runes, gates, dispel); `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what
   you know of each creature kind (on the player); `classes.py` who you become (classes, pair names, the bar); `weaponskills.py` keys 1-2 per weapon kind and the
   family rules; `trees.py` the class trees (knots as data, `tuned` + hooks) and the 66 rules (`RULES`); `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build

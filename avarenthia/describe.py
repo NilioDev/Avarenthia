@@ -65,7 +65,8 @@ DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.'
              4: 'Old bones lie scattered about.', 5: 'Rubble and broken stone.', 6: 'Blood. Fresh, or nearly.',
              7: 'Thick cobwebs.', 8: 'A faded carpet.', 9: 'A torch burns in a bracket on the wall.',
              10: 'Crystals glitter in the rock.', 11: 'Ash and cinders.', 12: 'Green slime, faintly glowing.',
-             13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.'}
+             13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.',
+             16: 'Heavy tracks in the dust, and more than one kind. Something big walks here with company.'}
 ROLE_DESC = {
     'skipper': 'A skipper. Walk into them to hire a passage along the coast.',
     'inn': 'The innkeeper. Jobs on the board, hot meals, a bed and the local gossip.',

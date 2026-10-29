@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
 | **Built: boss fights part A, the kit (29 Oct)** | Great blows marked red on the ground with a count, purple ones you can break; a rhythm from a deck per phase; phases at two thirds and one third that stop a blow; spent after the heaviest blow, three dots to a stagger, resolve; helpers with a job; twins; a boss bar in IN SIGHT; the end-boss room behind a veil that shuts until it falls, one rotten wall out; Snagtooth, the Lich and the Dragon |
 | **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
 | **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
@@ -522,6 +523,43 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   'shut'. Lich life 7 to 4.5 and Dragon 8.5 to 5 (the kit makes them longer). Tiles 212-217. Debug: Bosses (K):
   spawn, phase, shut/open, fairness, helpers, spent, flee, twins, flag 'rhythm'. Test `bosses`. SAVE_VERSION 46. Not
   as asked: the three named items per boss come with part B, for every fixed boss at once.
+- **Boss fights part B: the library** (29 October 2026; `bossmoves.py`, `bosses.py`). `BM.LIBRARY` (merged into
+  `BS.MOVES`, 131 moves besides the calls) by school: weapons, fire, ice, storm, shadow, the dead, nature and beasts,
+  holy light, arcane and cunning, and the bosses' own; role R is a stance. New shapes in `cells_for`: arc, wide,
+  cross (round you or through the room), ringat, strips, scatter, wave (cover stops it), ring with a hole, circle of
+  one tile, room with a `safe` (stones of light, ledges and chains; `shelter()`, shown gold, MARK_GOLD), self (a
+  spell on itself, broken like any other; `BM.on_self`: mend, army of the dead, stop time, the knot). Kinds without
+  ground in `BM.do`: curse, guard (riposte, shield wall: a flail or war hammer gets past, glacial ward, holy shield
+  of three blows, pyre, sanctuary, counterspell; 12 turns before the same again), cry, icewall, bramble, runes,
+  blink, smoke, step, burrow/drop (aloft, then a following circle), eggs, holes, prop, mirror (images of 1 life,
+  `image_of`), harvest, martyr, gust, tunnel, shed (a skin left as decoy). States on you in `BM.on_you` (the new
+  status 'hexed': no skills); pull, gather, drain, chain, crater, roots, webs in `BM.hit_more` and `BM.after`.
+  Kits (`BS.KITS`, 31): the Rat King (rat holes you stop up by walking in; the water rises at a third; the knot
+  splits into three kings, `knot`, the last one is the real death), Grolm (pit props; kicking one drops marked
+  stones; the falling roof, never beside a standing prop), the Brood Mother (webs on the floor hold you, eggs hatch
+  unless trodden, drop from above, cocoon heals her), the Warlord (his band, a banner bearer whose banner stays until
+  hacked down, then the duel: the guard watches until you strike from afar or your company steps in; enrage), the
+  Drowned King (`flood()`: water bands from the low side, shallow then deep; every change raises it, each chain in
+  the wall broken in two blows lowers it; the deep calls spares ledges and chains), the Lord of Cinders (his hall is
+  the arena, `hall()`; the burning gate is his warder while a bowl burns; its healing stops at the thresholds),
+  eight theme bosses at the bottom of their nests (`on_level` arms the dungeon's boss: Spider Matriarch, Ant Queen,
+  Goblin King who hides behind his goblins, Viperkin Coilguard, Ghast Lord, the Staring Dark, the Deep Mother, the
+  Wasp Queen; two phases at one half), the nine Varnish guardians (two phases; wind, fog, enrage as room tricks).
+  Room tricks per phase in `_phase`: water, ceiling, collapse, webs, wind, fog, enrage, banner, duel. One of each
+  helper job at a time (mender, warder, channeler, bearer); a mender heals a fortieth every fourth turn. Blows that
+  went round `blow` (a hireling's) still take it past a threshold (`crossed`). Roaming bosses (`ROAMERS` by place
+  tag: troll, ogre, orc warchief, hobgoblin captain, gnoll packlord, ghast lord): `place_roamer` halfway down a place
+  of three levels or more that is not small, half the time, with a band; `patrol` walks a path from hall to hall and
+  leaves tracks (decoration TRACKS), `heard` gives a line with its direction every 25-45 turns, `hunting` (seen or
+  within 5 in the last 300 turns; lost, it heals and goes to a stair); `leaving`/`arrive` in `enter_dungeon` bring it
+  after you up or down the stair. Loot: three named things per fixed boss (`D.UNIQUES` with `boss`, 18 new), a
+  choice `boss_loot` when it falls; you take one. Life of the Rat King 6 to 4, Grolm 6 to 4.5, Brood Mother 6.5 to
+  4.5, Warlord 7.5 to 5, Drowned King 7 to 5. Tiles 218-225 (rat hole, pit prop, web on the floor, clutch of eggs,
+  stone of light, chain in the wall, stone ledge, war banner). Debug: Bosses (K) sets down any kit boss or a roaming
+  one ten steps off. Test `boss_moves`. SAVE_VERSION 47. Not built from the spec (left for part C): arenas dressed per place (tower
+  top, temple nave...), ways out other than the rotten wall, the thing a place hides that eases its fight, floors
+  above that foretell the boss, the place that wakes or falls in; the other fixed bosses' named sets come with the
+  great evils' servants.
 
 ## Trade part 1: the money fixes (built 29 October 2026; the spec)
 

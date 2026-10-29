@@ -6,7 +6,7 @@ from . import data as D
 from .data import FLOOR, WALL, ROCK, WATER, SHALLOW, STATUE, DOOR, ODOOR, UP, DOWN
 
 # decoration codes (m.deco); they only change how a floor (or wall) looks, never what it does
-MOSS, GRASS, FUNGUS, BONES, RUBBLE, BLOOD, WEB, CARPET, TORCH, CRYSTAL, ASH, SLIME, FILTH, MUD, FIRE = range(1, 16)
+MOSS, GRASS, FUNGUS, BONES, RUBBLE, BLOOD, WEB, CARPET, TORCH, CRYSTAL, ASH, SLIME, FILTH, MUD, FIRE, TRACKS = range(1, 17)
 
 DECO_LOOK = {
     MOSS: ([(55, ','), (30, '.'), (15, '"')], (70, 128, 70), None),
@@ -23,6 +23,7 @@ DECO_LOOK = {
     FILTH: ([(40, '%'), (35, ','), (25, '~')], (140, 112, 60), (30, 22, 10)),
     MUD: ([(50, '.'), (30, ','), (20, '~')], (110, 84, 52), (28, 20, 12)),
     FIRE: ([(100, '☼')], (255, 150, 60), (70, 26, 8)),
+    TRACKS: ([(60, ','), (40, '.')], (150, 118, 80), None),
 }
 # (colour, radius) of things that glow
 GLOW = {FUNGUS: ((60, 200, 170), 3), TORCH: ((255, 160, 70), 6), CRYSTAL: ((150, 110, 255), 4), FIRE: ((255, 130, 50), 6)}

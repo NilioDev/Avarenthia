@@ -77,7 +77,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 46
+SAVE_VERSION = 47
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -632,6 +632,7 @@ class Game:
         self.mark_visit('d', did)
         key = f'{did}:{depth}'
         p = self.player
+        follow = BS.leaving(self) if self.cur != 'over' else []     # a roaming boss that hunts you follows
         dg = self.world.dungeons[did]
         if any(getattr(q, 'did', None) == did and q.kind == 'graveyard' for q in self.world.pois):
             GU.on_graveyard(self)
@@ -674,6 +675,7 @@ class Game:
         if want in m.t:
             i = m.t.index(want)
             p.x, p.y = i % m.w, i // m.w
+        BS.arrive(self, follow)
         first = self.max_depth.get(did, 0) < depth
         if first:
             self.max_depth[did] = depth
@@ -2164,8 +2166,11 @@ class Game:
                 (1 if random.random() < .2 else 0) if mon.elite == 1 else (1 if random.random() < .04 else 0)
         u = None
         if boss:
-            u = next((u for u in D.UNIQUES if u.get('boss') == mon.k), None)
-            if u:
+            us = [u for u in D.UNIQUES if u.get('boss') == mon.k]
+            u = us[0] if us else None
+            if len(us) >= 3:
+                BS.offer(self, mon, us)                 # three of its things: you take one (bosses.py)
+            elif u:
                 it = make_unique(self, u)
                 self.spill(m, mon.x, mon.y, it)
                 self.announce(it)
@@ -2778,6 +2783,9 @@ class Game:
         return min(lst, key=lambda o: cheb(o.x, o.y, p.x, p.y))
 
     def use_skill(self, n):
+        if BH.has(self, 'hexed'):
+            self.msg('A toad has no skills. You can only hop.', 'bad')
+            return 0
         return SK.use(self, n)
 
     def fire(self):

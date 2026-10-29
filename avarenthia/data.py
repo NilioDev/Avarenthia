@@ -255,6 +255,14 @@ TILES = [
     Tile('¤', '#d090ff', False, True, 'phylactery shard', bg='#20142e'),
     Tile('¤', '#5a5064', False, True, 'broken shard', bg='#16121a'),
     Tile('▒', '#8a8070', True, False, 'broken pillar'),
+    Tile('o', '#5a4a3a', False, True, 'rat hole', bg='#1a1410'),
+    Tile('║', '#a07a4a', False, True, 'pit prop', bg='#201810'),
+    Tile('"', '#e8e8f0', True, False, 'web on the floor'),
+    Tile('0', '#c8d890', True, False, 'clutch of eggs'),
+    Tile('☼', '#ffe890', False, False, 'stone of light', bg='#3a3010'),
+    Tile('§', '#9aa0a8', False, True, 'chain in the wall', bg='#1a1c20'),
+    Tile('=', '#a8a090', True, False, 'stone ledge', bg='#22201c'),
+    Tile('¶', '#e04838', False, False, 'war banner'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -277,6 +285,7 @@ ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = ra
  BLACKSTONE, GLASSSAND, CHAINLINK, DUST, STARFLOOR, DAYMARKS, VLAMP, LITLAMP, AIRWELL, HOLLOW,
  VWALL) = range(188, 212)                   # the Varnish (varnish.py)
 VEIL, SEALED, ROTTEN, SHARD, DARKSHARD, FALLEN = range(212, 218)    # boss fights (bosses.py)
+RATHOLE, PROP, WEBS, EGGS, LIGHTSTONE, BCHAIN, BLEDGE, BANNER = range(218, 226)     # bosses part B (bossmoves.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
@@ -365,8 +374,8 @@ MONSTERS = {
     'robber_knight': dict(ch='K', fg='#a02828', name='Robber Knight', tags='faction', min_l=6, hp=2, dmg=1.5, df=1.6, xp=2.2),
     'snagtooth': dict(ch='k', fg='#f0b040', name='Snagtooth the Kobold Chief', boss=True, lvl_fix=1, hp=2.0, dmg=.65, df=.8, xp=6,
                       tags=''),
-    'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
-    'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
+    'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=4, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
+    'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=4.5, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
     'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=4.5, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags='',
                  summon_msg='{name} beckons, and a skeleton claws its way out of the ground!', nova_msg='{name} unleashes a wave of grave-cold!',
                  bolt='bolt of darkness'),
@@ -374,12 +383,12 @@ MONSTERS = {
     'dragon': dict(ch='D', fg='#ff5a30', name='The Dragon', boss=True, lvl_fix=16, hp=5, dmg=1.6, df=1.7, xp=18, caster=True, nova=True,
                    summon='drake', tags='', summon_msg='{name} roars, and a drake answers the call!',
                    nova_msg='{name} breathes a torrent of fire!', bolt='gout of flame', nova_col=(255, 120, 40)),
-    'broodmother': dict(ch='S', fg='#d080f0', name='The Brood Mother', boss=True, lvl_fix=12, hp=6.5, dmg=1.3, df=1.3, xp=14, poison=True,
+    'broodmother': dict(ch='S', fg='#d080f0', name='The Brood Mother', boss=True, lvl_fix=12, hp=4.5, dmg=1.3, df=1.3, xp=14, poison=True,
                         summon='spider', fast=True, tags='', summon_msg='Eggs burst around {name}. More spiders!'),
-    'warlord': dict(ch='O', fg='#ff6040', name='The Warlord', boss=True, lvl_fix=13, hp=7.5, dmg=1.7, df=1.5, xp=15, leap=True,
+    'warlord': dict(ch='O', fg='#ff6040', name='The Warlord', boss=True, lvl_fix=13, hp=5, dmg=1.7, df=1.5, xp=15, leap=True,
                     summon='goblin', tags='', summon_msg='{name} bellows, and a goblin rushes to his side!',
                     leap_msg='{name} charges at you with a war cry!'),
-    'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.5, xp=15, caster=True,
+    'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=5, dmg=1.4, df=1.5, xp=15, caster=True,
                          nova=True, summon='drowned', tags='', summon_msg='Something wet crawls out of the dark water. A drowned one!',
                          nova_msg='{name} calls a wave of black water!', bolt='lance of brine', nova_col=(90, 200, 200)),
     'watchman': dict(ch='@', fg='#b8a888', name='Village Watchman', tags='', min_l=1, hp=.9, dmg=.8, df=.9, xp=.8),

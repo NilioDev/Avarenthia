@@ -318,6 +318,22 @@ def boss(game, what):
     kill its helpers, make it spent, or play that you fled from it."""
     from . import bosses as BS
     m = game.map
+    if what.startswith('roam:'):
+        k = what[5:]
+        p = game.player
+        spots = [c for c in BS.free_around(game, m, p.x, p.y, 20) if BS.cheb(*c, p.x, p.y) >= 10] if m.kind != 'over' else []
+        spots.sort(key=lambda c: (not game.visible(*c), BS.cheb(*c, p.x, p.y)))     # out of sight first, then far
+        spots = [c for c in spots[-12:] if BS.path_to(m, (p.x, p.y), c)][-1:] or spots     # one that can walk to you
+        if not spots:
+            game.msg('Debug: no room for a roamer ten steps off.', 'bad')
+            return None
+        from .entities import make_monster
+        o = make_monster(game, k, *spots[-1], max(p.lvl, D.MONSTERS[k]['min_l']))
+        BS.arm(o)
+        o.roam = dict(seen=-999, goal=None, path=[], heard=0, hunted=False)
+        m.mons.append(o)
+        game.msg(f'Debug: {o.name} walks this level now, out of sight. Listen.', 'info')
+        return o
     if what in BS.KITS:
         if m.kind == 'over':
             game.msg('Debug: bosses are set down on a play map, not on the world map.', 'bad')

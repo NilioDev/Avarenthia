@@ -288,6 +288,10 @@ def gen_dungeon(game, did, depth):
             m.mons.append(make_monster(game, d.boss, far[0], far[1], lvl))
         else:
             spawn_pack(game, m, lvl + 1, d.tag, far, 2, False)
+    if not kind and not last and d.depth >= 3 and depth == (d.depth + 1) // 2 and getattr(d, 'size', None) != 'small' \
+            and d.tag != 'den' and random.random() < .5:
+        from . import bosses as BS
+        BS.place_roamer(game, m, d, lvl, up)    # a boss that walks this level with its band
     if not kind:
         npacks = round((4 + depth + random.randint(0, 1)) * 1.5 * (m.w * m.h / 4200) ** .5)     # bigger levels, a few more
         if d.tag == 'den':

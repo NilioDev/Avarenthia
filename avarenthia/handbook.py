@@ -146,9 +146,26 @@ def ch_fighting(g):
         ('p', 'An end boss waits behind a veil of mist, the sign {░}. Once you step through, the room shuts at the '
               'first blow: no rest inside and no portal, and one hard way out, a rotten wall, the sign {#}, that gives '
               'after five blows. A boss you flee from heals, and is ready for you next time.'),
+        ('p', 'Gold ground is the other way round: stand in it. When a blow will fill the whole room, the cells by '
+              'its stones of light, the sign {☼}, or up on a ledge or beside a chain in the wall, the sign {§}, stay '
+              'safe, and they show gold.'),
         ('p', 'Your company plays it as you do: they step out of the red, better as they rank up, and a defender '
               'smashes his shield into a boss that winds up. Each of them beside you gives the boss one more small '
               'blow.'),
+        ('p', 'Every boss has its own room and its own tricks. The Rat King\'s rats come out of holes in the walls: '
+              'walk into a hole to stop it up. Grolm kicks out the props that hold up his roof, and no stone falls '
+              'beside a prop that still stands. The Drowned King\'s water rises with every change; break the chains '
+              'in the wall, two blows each, and it sinks. The Brood Mother\'s eggs hatch unless you tread on them, '
+              'and her webs on the floor hold you fast.'),
+        ('p', 'Some bosses take a stance: a shield of light that takes three blows, a wall of shields that only a '
+              'flail or a war hammer gets past, a ward that eats your next spell, flames that burn whoever strikes '
+              'them. Wait it out, or find what breaks it. Some throw images of themselves: one blow and an image '
+              'is gone.'),
+        ('p', 'Not every boss waits at the bottom. Some walk a level with their band: you hear them now and then, '
+              'from where they are, and their tracks lie in the dust. Once one hunts you it follows you up or down '
+              'the stair, and it does not heal while it hunts.'),
+        ('p', 'When a great boss falls, three of its things lie there: a weapon, a piece of armour and a jewel. Take '
+              'one; the other two break as you lift it.'),
         ('h', 'Running away'),
         ('p', 'Wolves are fast; bandits are not. Walk off the edge of the field to get away, or onto a road: the '
               'patrols are there.'),
