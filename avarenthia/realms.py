@@ -604,6 +604,9 @@ def realm_key(world, rid):
     held = getattr(b, 'held_by', None) if b else None
     if held is not None:
         return ('raid', held)
+    sv = getattr(world, 'shadow', None)
+    if sv and b is not None and rid in sv['held']:
+        return ('evil', sv['held'][rid])                # a servant of the Hollow King holds it (shadow.py)
     if r.faction == 'crown' and b is not None:
         return ('k', b.kingdom)
     if r.faction == 'crown':
@@ -625,6 +628,9 @@ def realm_info(world, key):
         from . import powers as PW
         rd = PW.raiders(world)[key[1]]
         return rd['land'], rd['fg']
+    if key[0] == 'evil':
+        e = world.evils[key[1]]
+        return (e.name if e.known else 'Lost lands'), e.fg
     f = D.FACTIONS.get(key[0])
     if not f:
         return None, None
@@ -757,6 +763,8 @@ def monthly(game):
         war_month(game, war)
     from . import powers as PW
     PW.monthly(game)
+    from . import shadow as SH
+    SH.monthly(game)
     refresh(w)
 
 

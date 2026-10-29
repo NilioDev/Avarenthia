@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
-| **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built: rounds 17-18 after the epics and the boss kit, the other sixteen servants in rounds 31-32 |
+| **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
 | **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; not built: rounds 22, 26, and the great fair with the feast days in 28 |
 | **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Parts A and B, the kit and the library with every fixed boss and the roaming bosses, built 29 October 2026; not built: the maker and the job bosses in 23 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
@@ -51,13 +51,10 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     the money fixes** (S). Built 29 October 2026 (see `docs/built.md`). Pause after 12, merge after 14.
 15. **Boss fights part A: the kit** (XL). Built 29 October 2026 (see `docs/built.md`). 16. **Part B** (XL): the
     move library, the other fixed bosses, roaming bosses. Built 29 October 2026 (see `docs/built.md`).
-17. **The great evils, part 1: the frame** (XL): the Hollow King and his land, the three weights, the two clocks, the
-    levers on the realms and powers, lieutenants, weakness and relic, the journal tab "The Shadow" and the map layer,
-    with eight servants (the five of `evils.py` done again, and three more, so that every weight has some). Its
-    weaknesses come from the riddles, libraries and dying heroes; Archaeology adds its source when it is built.
-18. **Part 2: the quest and the Sky-Seat** (XL): the mist, the relics, the road, a skipper for the whirlpool, the chain
-    climb and the underside, the five floors, the last fight, dying there (the shade), the Long Night and the healing
-    world. Pause after 15, 16 and 17, merge after 18 (Nilio, 25 October 2026: the great evils come right after the
+17. **The great evils, part 1: the frame** (XL). Built 29 October 2026 (see `docs/built.md`); Archaeology adds its
+    source of weaknesses when it is built.
+18. **Part 2: the quest and the Sky-Seat** (XL). Built 29 October 2026 (see `docs/built.md`). Pause after 15, 16 and
+    17, merge after 18 (Nilio, 25 October 2026: the great evils come right after the
     epics, in parts).
 19. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
     alchemy, brewing (ore lies by depth in the new caves). 20. **Part 2** (XL): beast parts, crafted powers, Unmake,
@@ -461,7 +458,7 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
     Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
     Who does it, the game never says.
 
-## The great evils as storyteller (approved 25 October 2026, not built; rounds 17-18 and 31-32)
+## The great evils as storyteller (approved 25 October 2026; parts 1 and 2 built 29 October 2026, not built: rounds 31-32)
 
 The great evils become the world's storyteller, as in RimWorld: one shadow with a goal, and the world lives round it
 whether the player joins in or not. Worked out with Nilio in the thread "Grote kwaden als verteller"; the Dutch
@@ -524,7 +521,15 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 - **Where it shows** (the UI rule): a journal tab "The Shadow" (what you know of him, the servants and lieutenants,
   kept on the player), a world-map layer (blight, lairs, hosts, seals), the line under the map in his land, a handbook
   chapter. No new key. `history.py` writes his first rising and fall so the chronicle and the lore agree.
-- **Still to write while building**: the lieutenants' pools, each kind's weakness and relic, the climb's map.
+- **Built in part 1** (round 17, `shadow.py`): the coast, the three weights, both clocks, the levers, held baronies,
+  lieutenants, weaknesses, relics, heroes and their cairns, the Shadow tab and layer, for eight kinds (Brood Mother,
+  Wendigo, Great Wolf, Dragon, Drowned One, Lich, Warlord, Fallen Mage). Left for part 2: the mist and the Sky-Seat
+  on the map, the relics as keys, the road, the skipper, the climb, the five floors, the last fight, the shade, the
+  Long Night and the healing world; `history.py`'s first rising. All built in part 2 (round 18, `skyseat.py`).
+- **Left for rounds 31-32 besides the sixteen kinds**: a fallen hireling rising where the dead are bound, refugees on
+  the roads, the barons' wars over freed lands as real wars (now news), the relic won elsewhere besides the Star-Iron
+  Key.
+- **Still to write while building**: the climb's map; the other sixteen kinds' pools, weaknesses and relics.
 
 ---
 

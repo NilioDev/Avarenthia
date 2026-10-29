@@ -204,6 +204,12 @@ def places(game):
             out.append(('named beast', nb.name, ('xy', nb.x, nb.y)))
     for e in w.evils:
         out.append(('great evil', e.name, ('xy', e.x, e.y)))
+        for lt in e.lts:
+            if lt['site'] is not None:
+                out.append(('lieutenant', lt['name'], ('site', lt['site'])))
+    sh = getattr(w, 'shadow', None)
+    if sh and sh['coast']:
+        out.append(('great evil', "The Hollow King's coast", ('xy', *sh['coast'])))
     return out
 
 
@@ -797,3 +803,109 @@ def status_bits(game):
     p = game.player
     wx, wy = game.world_pos()
     return f' {p.x},{p.y} · w {wx},{wy} · t {game.turn} · seed {game.seed} '
+
+
+def shadow(game, what):
+    """The shadow (great evils part 1): his attention, the servants' clocks, what you know of them."""
+    import random
+    from . import shadow as SH
+    from . import evils as EVL
+    w = game.world
+    sh = SH.st(w)
+    if not sh:
+        return
+    if what == 'up':
+        sh['step_day'] = -99
+        SH.meddle(game, SH.ATT_STEP)
+    elif what == 'zero':
+        sh['att'], sh['pts'] = 0, 0.0
+        game.msg('Debug: he looks away.', 'info')
+    elif what == 'name':
+        for e in w.evils:
+            if not e.known:
+                EVL.learn(game, e)
+    elif what == 'wake':
+        for e in w.evils:
+            if not e.awake and not e.defeated:
+                SH.wake(game, e)
+        game.msg('Debug: every servant is awake.', 'info')
+    elif what == 'seal':
+        e = next((e for e in w.evils if not e.sealed and not e.defeated), None)
+        if e:
+            e.awake, e.goal = True, 100.0
+            SH.seal(game, e)
+    elif what == 'weak':
+        for e in w.evils:
+            for src in ('library', 'hero'):
+                SH.know(game)['src'].setdefault(e.key, set()).add(src)
+        game.msg('Debug: you know every weakness.', 'info')
+    elif what == 'lts':
+        om = game.maps['over']
+        for i, e in enumerate(w.evils):
+            for j, lt in enumerate(e.lts):
+                if lt['site'] is not None:
+                    s = w.sites[lt['site']]
+                    SH.know(game)['lts'].add((i, j))
+                    om.seen[s.y * om.w + s.x] = 1
+        game.msg('Debug: every lieutenant is on your map.', 'info')
+    elif what == 'hero':
+        for h in sh['heroes']:
+            if h['state'] == 'riding':
+                h['arrive'] = game.day
+        if not any(h['state'] == 'riding' for h in sh['heroes']):
+            keep = random.random
+            random.random = lambda: 0.0
+            try:
+                SH.heroes_month(game)
+            finally:
+                random.random = keep
+            for h in sh['heroes']:
+                if h['state'] == 'riding':
+                    h['arrive'] = game.day
+        SH.heroes_day(game)
+        game.msg('Debug: a hero rode out, and the news will come.', 'info')
+    elif what in ('reveal', 'relic', 'chain', 'under', 'f1', 'f3', 'f5', 'night', 'won'):
+        _skyseat(game, what)
+    elif what == 'month':
+        for _ in range(30):
+            SH.daily(game)
+        SH.monthly(game)
+        EVL.compute_taint(game)
+        game.msg('Debug: a month went by for the servants.', 'info')
+
+
+def _skyseat(game, what):
+    from . import skyseat as SK
+    from . import shadow as SH
+    sh = SH.st(game.world)
+    if what == 'reveal':
+        if not sh.get('seen'):
+            SK.reveal(game)
+    elif what == 'relic':
+        from .entities import Item
+        e = next((e for e in game.world.evils if not any(it.k == 'relic' and it.t == e.key for it in game.player.inv)), None)
+        if e:
+            name = SH.SERVANT[e.key]['relic'][0]
+            it = Item(game.new_id(), 'relic', e.key)
+            it.name = name
+            game.add_to_inv(it)
+            game.msg(f'Debug: {name} is in your pack.', 'info')
+    elif what in ('chain', 'under'):
+        if not sh.get('seen'):
+            SK.reveal(game)
+        if game.cur != 'over' and not SK.in_seat(game):
+            game.over_pos = game.world_pos()
+        SK.to_chain(game, top=what == 'under', ask=False)
+    elif what.startswith('f'):
+        if not sh.get('seen'):
+            SK.reveal(game)
+        if game.cur != 'over' and not SK.in_seat(game):
+            game.over_pos = game.world_pos()
+        SK.enter_floor(game, int(what[1]))
+    elif what == 'night':
+        for e in game.world.evils:
+            if not e.sealed and not e.defeated:
+                e.awake, e.goal = True, 100.0
+                SH.seal(game, e)
+    elif what == 'won':
+        SK.won(game)

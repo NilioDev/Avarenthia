@@ -23,6 +23,8 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the great evils part 2, the quest and the Sky-Seat (29 Oct)** | Mist over the Sky-Seat until you know the truth or a seal breaks; relics as keys (and the Star-Iron Key for all five riddles); no travelling by road through his coast; one skipper who dares the whirlpool; the star-iron chain with gusts, handholds and broken links, the glass underside; five floors with beacons; the Hollow King in three phases, one lighter per relic; your shade where the dead are bound, a double fee in his city; the Long Night; the end and a healing world |
+| **Built: the great evils part 1, the frame (29 Oct)** | The Hollow King's coast facing the Sky-Seat; three servants per world, one light, one middle, one heavy, from eight kinds (three new: the Wendigo, the Great Wolf, the Fallen Mage), on their own slow clock and his attention clock; levers on the realms (war, tribute, webs, the Gorvash, floods, hunger, wolves, swayed barons), held baronies, the realms pushing back; seals; lieutenants in forts, camps and towers; a weakness from two sources; relics; heroes who ride out and their cairns; the Shadow tab and map layer [7] |
 | **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
 | **Built: boss fights part A, the kit (29 Oct)** | Great blows marked red on the ground with a count, purple ones you can break; a rhythm from a deck per phase; phases at two thirds and one third that stop a blow; spent after the heaviest blow, three dots to a stagger, resolve; helpers with a job; twins; a boss bar in IN SIGHT; the end-boss room behind a veil that shuts until it falls, one rotten wall out; Snagtooth, the Lich and the Dragon |
 | **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
@@ -560,6 +562,51 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   top, temple nave...), ways out other than the rotten wall, the thing a place hides that eases its fight, floors
   above that foretell the boss, the place that wakes or falls in; the other fixed bosses' named sets come with the
   great evils' servants.
+- **The great evils part 1: the frame** (29 October 2026; `shadow.py`, `evils.py`). `world.shadow`: the Hollow King's
+  coast (`land`, the land cells within 36 of the coast cell nearest the Sky-Seat; his as far as `land_r`, which grows
+  with `wake`), `wake`, `seals`, `torn` (the mist may part: part 2), `night` (three seals: part 2), the attention
+  clock (`att` 0-5, `pts`; a step needs 3 points and 10 days since the last, cools a step every 15 days after 20 days
+  left alone; `meddle()`), `held` baronies (realm key `('evil', i)`), `heroes`. `p.shadow`: weakness clues per
+  servant, lieutenants known, cairns read, `king`. Servants: `EVL.choose` draws one heavy, one middle, one light;
+  `place_lairs` puts them far from home, from each other and from his coast, a light or middle kind giving way when
+  its land is missing. New kinds: the Wendigo (cold woods), the Great Wolf (plains), the Fallen Mage (sways barons),
+  each a boss with a kit; the call `call_wolves`. Strength from `power()` (its weight, its goal, his attention, dead
+  lieutenants), never from your level; the mark's reach by weight (14, 26, 42). The slow clock: a light one awake
+  from the start, middle at day 100-140, heavy at 250-330 (sooner with his attention); the goal fills by weight and
+  breaks a seal at 100. Levers once a month, one push per realm (`LEVERS`), then `_push_back` (levy, the Church's
+  order, a held barony freed). Lieutenants: three per servant from a pool of four or five, sites kind 'lt' (fort,
+  camp, tower) near the lair; killed: papers (a clue), favour with the kingdom, a weaker servant; survived and hurt:
+  scarred, its place made anew stronger. Weakness: two of library (scribe subject "The dark powers"), riddles (a
+  Varnish riddle made whole; the king riddle also gives `king`), a hero's journal (cairn, sites kind 'hgrave', tile
+  HCAIRN), a lieutenant's papers; the edge in the lair (`on_level`): fire half again, blows a quarter harder, no calls,
+  no rising water, a quarter weaker, or the Lich's jar (tile JAR beside her; whole, she rises 40 days later). Relic:
+  item kind 'relic' with one small power while carried (`SH.stats`). Heroes: one rides out at a time, kills a
+  lieutenant a third of the time, mostly dies (a cairn). The world no longer ends when all three fall (the Hollow King
+  does that, part 2). His coast: ambushes of the bound dead, villages struck by the dead. UI: journal tab Shadow, map
+  layer Shadow on [7], the line under the map, chronicle chapter The Shadow, tip 'shadow'. Debug: The shadow (S).
+  Tiles 226-227. Test `shadow`. SAVE_VERSION 48. Not built from the spec (part 2): the battles as places for the
+  servants' wars beyond what the realms already leave, refugees on the roads, the sky darkening over his land.
+- **The great evils part 2: the quest and the Sky-Seat** (29 October 2026; `skyseat.py`). At the making of the world
+  the Sky-Seat's cells go under a mist overlay (`seat_over` keeps what was there) and it leaves `world.wonders`;
+  `check()` tears the mist when you know the truth (`p.shadow['king']`, the riddle of the Hollow King) or a seal broke
+  (`torn`). Keys: items kind 'relic' (each fallen servant's, or the Star-Iron Key when all five riddles are whole).
+  `travel_iter` refuses a route through his coast; on his coast his hunters come as if his attention were 2. The
+  skipper on the harbour nearest his coast offers "Out past the mist" (20 silver, a relic, two days; no company).
+  The chain (`chain_map`, key `skyseat:chain`, `m.chain`): the sea rocks and the boat (RAFT, back to the harbour),
+  a star-iron chain three links wide in the air, handholds (`D.CHAIN`), broken links and cracked glass that give way
+  on the second turn you stand on them, gusts sung a turn before (`turn()`), the fall into the sea (`fall()`, by the
+  height), the glass underside and the stair up. Five floors (dungeon 'skyseat', tag 'skyseat'): `FLOORS` names, a
+  beacon on each (walk into it: `beacons`; from the rocks a rope of light up to the highest lit floor), the throne
+  and the Hollow King (boss 'hollow_king', kit of three phases: the winds, the dead, himself; `kit_over` drops a
+  phase's heaviest blow and its trick per relic carried; a third more life in the Long Night). Dying there: the
+  fee doubles, your body rises as your shade (`shade()`, a 'shade' with your pack in `my_body`; also in barrows,
+  crypts and the Rift), bound dead come back on the unlit floors; no town portal in his city. The Long Night at
+  three seals (`night_falls`): his coast to 54, the world map darker, prices a fifth up (`ECO.NIGHT`), the cities
+  shut their gates (news). The end (`won()`): his coast and the marks fade, the clocks stop, held baronies freed,
+  the chronicle and Your deeds, the closing screen (WinScreen). `history.py`: the first fall of the Hollow King in
+  1 AR. Tiles 228-234. Debug: The shadow (S), the Sky-Seat column. Test `skyseat`. SAVE_VERSION 49. Not built from the
+  spec: a fallen hireling rising as well; the relic won elsewhere besides the Star-Iron Key; the barons' fight over
+  freed lands is news, not a war (left for rounds 31-32).
 
 ## Trade part 1: the money fixes (built 29 October 2026; the spec)
 

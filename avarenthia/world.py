@@ -402,6 +402,8 @@ def gen_world(game):
         VN.place(game, m, world, reach_set)
         from . import epics as EP
         EP.place(game, m, world, reach_set)             # the teachers of the epics, last, with dice of their own
+        from . import shadow as SH
+        SH.setup(game, m, world, reach_set)              # the Hollow King's coast and the lieutenants, with dice of their own
         return m, world
     raise RuntimeError('World generation failed')
 
@@ -646,17 +648,9 @@ def _place_dungeons(m, world, reach, dist, start):
     for did, (x, y) in (('den', den), ('rat', rat), ('mine', mine)):
         t = D.DUNGEONS[did]
         world.dungeons[did] = Dungeon(did, t['name'], t['depth'], t['base'], t['style'], t['tag'], t['boss'], t['wall'], x, y, True)
-    # the lairs of the great evils, far from home and in the land that suits them
-    terr = {'swamp': (SWAMP,), 'forest': (FOREST,), 'hills': (HILLS,), 'grass': (GRASS,), 'coast': (SAND, SWAMP)}
-    for e in world.evils:
-        d = e.d
-        want = set(t for k in d['terrain'] for t in terr[k])
-        far = [i for i in reach if 30 * LINEAR <= dist[i] <= 60 * LINEAR]
-        x, y = choose([i for i in far if m.t[i] in want] or far, reach[len(reach) // 3])
-        did = 'crypt' if e.key == 'lich' else f'lair_{e.key}'
-        world.dungeons[did] = Dungeon(did, d['lair'].format(short=e.short), d['depth'], d['base'], d['style'], d['tag'],
-                                      d['boss'], D.hexrgb(d['wall']), x, y, True)
-        e.did, e.x, e.y = did, x, y
+    # the lairs of the servants of the Hollow King: far from home, far from each other, in the land that suits them
+    from . import shadow as SH
+    SH.place_lairs(m, world, reach, dist, choose, Dungeon)
     sides = D.SIDE_DUNGEONS[:]
     random.shuffle(sides)
     pool = reach[:]

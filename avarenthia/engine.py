@@ -21,6 +21,8 @@ from . import war as WAR
 from . import towns as TW
 from . import events as EV
 from . import evils as EVL
+from . import shadow as SH
+from . import skyseat as SK
 from . import factions as FA
 from . import races as RC
 from . import calendar as CAL
@@ -77,7 +79,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 47
+SAVE_VERSION = 49
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -437,6 +439,7 @@ class Game:
         buff_dmg += GU.unarmoured(self)
         GD.apply(self, s)
         TT.stats(self, s)
+        SH.stats(self, s)
         s['dr'] = min(60, s['dr'] + gear_dr)
         if getattr(p, 'race', '') == 'dwarf':
             s['res_poison'] += 20                    # dwarves shrug off venom
@@ -703,6 +706,9 @@ class Game:
         self.request = ('save',)
         if lair:
             EVL.learn(self, lair)
+        SH.on_level(self, m, did)
+        if did == 'skyseat':
+            SK.on_level(self, m, depth)
 
     def leave_to_over(self, walk=None):
         """Back to the world map. walk: the step (dx, dy) that took you off the edge of a town, site or hold; you
@@ -782,6 +788,7 @@ class Game:
                 CR.commit(self, 10, 'killing the law', 1.0)
             if wd.kind == 'hunt':
                 self.msg(f"{self.world.evils[wd.evil].name}'s hunters fall. Somewhere far away, something howls in rage.", 'unique')
+                SH.meddle(self, 1, self.world.evils[wd.evil], 'hunters')
             else:
                 self.msg(f'You have dealt with {(wd.name[:1].lower() + wd.name[1:]) or "them"}.', 'good')
             MS.on_group_defeated(self, wd)
@@ -869,6 +876,8 @@ class Game:
             OP.on_enter(self, site, m)
         VN.on_enter(self, site, m)
         EP.on_enter(self, site, m)
+        if SH.is_shadow(site):
+            SH.on_enter(self, site, m)
         if PL.is_place(site):
             PL.on_enter(self, site, m)
         self.compute_fov()
@@ -1071,6 +1080,10 @@ class Game:
         spent = EP.bump(self, nx, ny, t)
         if spent is not None:
             return spent
+        if t in (D.JAR, D.HCAIRN):
+            return SH.bump(self, nx, ny, t)
+        if t in (D.BEACON, D.LITBEACON) or (t in (D.RAFT, D.AIR) and getattr(m, 'chain', False)):
+            return SK.bump(self, nx, ny, t) if t != D.AIR else SK.edge(self, nx, ny)
         if getattr(m, 'arena', None):
             spent = BS.bump(self, nx, ny, t)
             if spent is not None:
@@ -1315,7 +1328,7 @@ class Game:
             return 1
         if random.random() < chance:
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
-            keys = EVL.wild_keys(self, p.x, p.y, lvl) or LN.pack(self, lvl) or \
+            keys = SH.wild_keys(self, p.x, p.y, lvl) or EVL.wild_keys(self, p.x, p.y, lvl) or LN.pack(self, lvl) or \
                 WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
             r = random.random()
             elite = 1 if r < .08 + off * .004 else 0
@@ -1468,7 +1481,9 @@ class Game:
                 return 1
             self.msg('There is nothing to enter here.')
             return 0
-        got = VN.stairs(self, t, d) if t in (UP, DOWN) else None
+        got = SK.stairs(self, t, d) if t in (UP, DOWN) else None
+        if got is None and t in (UP, DOWN):
+            got = VN.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
             got = PL.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
@@ -1524,6 +1539,9 @@ class Game:
             return 0
         if any(cheb(o.x, o.y, p.x, p.y) <= 1 for o in self.visible_hostiles()):
             self.msg('The portal will not open with an enemy at your side.', 'bad')
+            return 0
+        if SK.in_seat(self):
+            self.msg('The bound winds tear the portal shut before it opens. Here there is only the way you came.', 'bad')
             return 0
         if BS.no_rest(self):
             self.msg('The shut room smothers the portal before it opens. There is one way out of here.', 'bad')
@@ -1944,6 +1962,7 @@ class Game:
                 dmg *= 1 + und / 100
         if 'vuln' in mon.effects:
             dmg *= 1.25
+        dmg *= SH.edge_mult(self, mon, weapon, elem)       # the weakness of a servant, once you know it
         dmg *= 1 + .03 * self.lore(mon.k)
         dmg = max(1, round(dmg * (2 if crit else 1)))
         dmg = EP.duel_blow(self, mon, round(EP.on_damage(self, mon, dmg, weapon, ranged)))
@@ -2123,7 +2142,7 @@ class Game:
         elif mon.k == 'grolm':
             self.flags['grolm'] = True
             self.msg('The Lost Mine falls silent.', 'gold')
-        if mon.tpl.get('boss'):
+        if mon.tpl.get('boss') or mon.__dict__.get('lt') or mon.__dict__.get('my_body') is not None:
             EVL.on_kill(self, mon)
         BS.felled(self, mon)                             # FOE FELLED, the room opens; or its twin lives on
         JB.on_kill(self, mon)
@@ -2608,6 +2627,8 @@ class Game:
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
                 RF.turn(self)
+            if not self.dead and getattr(self.map, 'chain', False):
+                SK.turn(self)
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)
         elif self.cur == 'over':
@@ -2651,7 +2672,9 @@ class Game:
         """Softcore death: the priests of the nearest temple call you back, for a fee from your purse. Your backpack
         and cargo stay with your body. Without the coin for the temple your tale ends here."""
         p = self.player
-        fee = self.raise_fee()
+        seat = SK.in_seat(self)
+        fee = self.raise_fee() * (2 if seat else 1)           # he keeps those who die in his city: the priests fight for you
+        bound = SK.binds(self)
         if p.gold < fee:
             self.dead = True
             p.life = 0
@@ -2697,6 +2720,8 @@ class Game:
             pl['stolen'] = stolen
             self.maps[key].items.append(corpse)
             self.corpses.append((key, corpse.id))
+            if bound and key != 'over':
+                SK.shade(self, key, corpse)                 # where the dead are bound, your body rises (skyseat.py)
             p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
             p.cargo, p.cost_basis = {}, {}
         here = self.world.settlements[self.home] if self.home is not None else None
@@ -2718,9 +2743,15 @@ class Game:
         else:
             self.enter_town(dest.id)
             self.msg(f'You were slain by {cause}... and wake on the cold floor of the temple in {dest.name}.', 'bad')
-        if corpse:
+        if corpse and bound and key != 'over':
+            self.msg(f'Your body did not lie still in {self.maps[key].name}: it walks there now as your shade, with '
+                     'your backpack and cargo. Beat it to get them back.', 'bad')
+        elif corpse:
             where = 'in the wilds' if key == 'over' else self.maps[key].name
             self.msg(f'Your backpack and cargo lie with your body {where}. Go and get them back.', 'bad')
+        if seat:
+            SK.more_dead(self)
+            self.msg('He kept you as long as he could. The priests had to fight for you, and the fee is double.', 'bad')
         self.msg(f'The priests took {fmt(fee)} for their prayers. You will be weak for a day or two.', 'bad')
         self.request = ('save',)
 
@@ -3083,6 +3114,9 @@ class Game:
         path = self.travel_route(tgt)
         if not path:
             self.msg('You cannot find a way there.')
+            return
+        if any(SH.his_land(self, x, y) for x, y in path):
+            self.msg('No road you would trust goes through his coast. From here on you walk it, step by step.', 'bad')
             return
         self.msg(f'You set out for {obj.name}.')
         seen_folk = {wd.id for wd in w.wanderers if self.visible(wd.x, wd.y)}

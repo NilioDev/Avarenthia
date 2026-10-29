@@ -1356,6 +1356,8 @@ def whole(game, rk):
         _fact(game, 'The Old Days', T.LAST[0], T.LAST[1], 'read', 'your own reckoning', 'from all you found',
               'vr:last', title=T.LAST[0])
         game.msg('All five riddles are whole. You know now what the Ruin was.', 'unique')
+    from . import shadow as SH
+    SH.riddle_whole(game, rk)
     return True
 
 

@@ -165,11 +165,17 @@ def play(cls):
                 r = turn(g)
                 if g.dead:
                     return f'died {did}{lv} L{g.player.lvl} by {g.cause}', g
-                if g.flags.get('saved'):
+                if all(e.defeated for e in g.world.evils):
                     return 'WIN', g
                 if r == 'done':
                     m = g.map
                     if lv == depth:
+                        jar = getattr(m, 'jar', None)          # the Lich's jar: break it, or she rises again
+                        if jar and m.tile(*jar) == D.JAR:
+                            st = step_to(g, *jar)
+                            if st:
+                                act(g, lambda: g.try_move(*st))
+                                continue
                         boss = next((o for o in m.mons if o.is_boss), None)
                         if boss:
                             st = step_to(g, boss.x, boss.y)
@@ -185,7 +191,7 @@ def play(cls):
                     if not st:
                         break
                     act(g, lambda: g.try_move(*st))
-    return ('WIN' if g.flags.get('saved') else 'stuck'), g
+    return ('WIN' if all(e.defeated for e in g.world.evils) else 'stuck'), g
 
 
 if __name__ == '__main__':

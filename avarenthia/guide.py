@@ -113,7 +113,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 # ------------------------------------------------------------------ first-time tips
 TIPS = {
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
-    'over': 'Tip: m opens the map; on it, the keys 1 to 6 show the land, danger, factions, realms, jobs and trade.',
+    'over': 'Tip: m opens the map; on it, the keys 1 to 7 show the land, danger, factions, realms, jobs, trade and the shadow.',
     'job': 'Tip: e opens the journal. Enter on a job follows it, and an arrow on the edge of the map points the way.',
     'merc': 'Tip: h gives orders to your company; there, 3 sends them at your target.',
     'dungeon': 'Tip: x explores by itself until something turns up.',
@@ -131,6 +131,8 @@ TIPS = {
     'tree': 'Tip: you have a tree point to spend. Z, then Tab, while you are still where you rested.',
     'red': 'Tip: red ground shows where a great blow will land. A number counts the turns left.',
     'shut': 'Tip: the way is shut until it falls. Look for the one way out.',
+    'skyseat': 'Tip: one skipper dares the whirlpool, on the harbour nearest his coast. Walk into him with a relic in your pack.',
+    'shadow': 'Tip: e, then the Shadow tab, keeps what you know of the Hollow King and his servants; on the map, 7 shows their marks.',
 }
 
 

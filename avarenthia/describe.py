@@ -267,6 +267,9 @@ def over(game, x, y):
         from . import epics as EP
         if EP.is_teacher(site):
             return site.name, site.glyph[1], [EP.DESC[site.kind]]
+        from . import shadow as SH
+        if SH.is_shadow(site):
+            return site.name, site.glyph[1], [SH.describe(game, site)]
         from . import seats as SEATS
         if SEATS.is_seat(site):
             return site.name, site.glyph[1], [SEATS.describe(game, site)]
@@ -326,7 +329,9 @@ def over(game, x, y):
     if ev:
         lines.append({'blight': 'The land here is grey and dying.', 'scorch': 'The land here is burned black.',
                       'web': 'Webs hang from every branch.', 'warpath': 'Trampled, burned and bloodied ground.',
-                      'mire': 'The ground is turning to bog.'}[ev.d['taint']])
+                      'mire': 'The ground is turning to bog.', 'hunger': 'No birds, no tracks: the woods are empty.',
+                      'wolfland': 'Wolf tracks everywhere, and bones in the grass.',
+                      'sway': 'Fresh notices on every post, all sealed with the same black wax.'}[ev.d['taint']])
     from . import seasons as SE
     note = SE.describe(game, x, y)
     if note:

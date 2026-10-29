@@ -13,7 +13,7 @@ import random
 from . import calendar as CAL
 from . import data as D
 
-CHAPTERS = ['The Old Days', 'The Varnish', 'The Realms', 'Lords and houses', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
+CHAPTERS = ['The Old Days', 'The Varnish', 'The Realms', 'The Shadow', 'Lords and houses', 'Peoples', 'Gods', 'Places', 'Wonders', 'Your deeds', 'Creatures', 'The kitchen', 'Signs']
 MARK = {'heard': ('·', (217, 165, 71)), 'read': ('≡', (196, 170, 255)), 'seen': ('☼', (255, 226, 120))}
 
 
@@ -274,6 +274,10 @@ def gaps(game, ch):
         if len(fs) < 3:
             out.append('News of the courts and the wars comes late on the roads, and not always right. The library of a '
                        'city knows its own realm.')
+    elif ch == 'The Shadow':
+        if len(fs) < 3:
+            out.append('What the dark powers want, and what they fear, the libraries keep, and the riddles, and those '
+                       'who rode out against them and did not come back.')
     elif ch == 'Lords and houses':
         if len(fs) < 3:
             out.append('Who rules where, and who comes after them, the scribes keep. Or go and see the lords yourself.')

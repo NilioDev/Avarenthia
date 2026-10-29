@@ -223,6 +223,11 @@ def generate(game, m, world, R):
                f'the elves of {s.name} shut the old paths of their wood after the woodcutters of the empire burned a '
                f'grove to clear a road; they have let few in since.', s.x, s.y, sid=s.id, prio=1)
             forest.setdefault('history', True)
+    # the Hollow King's first rising and fall, as the oldest letters tell it (the lore and the riddles agree)
+    sky = next(((x, y) for nm, x, y in world.wonders if nm == 'The Sky-Seat'), (great.x, great.y))
+    ev(1, 'The Old Days', 'hollow', 'The first fall of the Hollow King',
+       'the last mages of the Varnish wrote that the Hollow King had risen in the Sky-Seat and brought it down, and '
+       'that he fell with it into the sea. They did not write that he was dead.', sky[0], sky[1], prio=9)
     # thirty to sixty, the most telling kept
     H.sort(key=lambda e: -e['prio'])
     del H[60:]
@@ -452,6 +457,8 @@ def talk(game, npc):
             opts.append(opt('Varnish letters', 'letters', LETTERS_PRICE))
         from . import varnish as VN
         opts += VN.scribe_opts(game, opt)
+        from . import shadow as SH
+        opts += SH.scribe_opts(game, opt)
         books = [it for it in p.inv if it.k == 'oldbook']
         if books:
             it = books[0]
@@ -492,6 +499,9 @@ def r_library(game, choice, ctx):
         return
     from . import varnish as VN
     if VN.r_scribe(game, npc, choice, lambda c: price(game, c)):
+        return
+    from . import shadow as SH
+    if SH.r_scribe(game, npc, choice):
         return
     cost = price(game, LETTERS_PRICE if choice == 'letters' else 0 if choice == 'grudges' else PRICE)
     if p.gold < cost:

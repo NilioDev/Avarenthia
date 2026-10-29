@@ -661,6 +661,10 @@ class GameScreen(Screen):
             cv.text(x, MAP_H, '· ', DIM, BG)
             cv.text(x + 2, MAP_H, '■' * n, (GOOD, GOOD, GOLD, BAD, BAD)[n - 1], BG)
             cv.text(x + 2 + n, MAP_H, '□' * (5 - n) + ' ', LINE, BG)
+            from . import shadow as SH
+            sw = SH.where_line(g, wx, wy) if m.kind == 'over' else None
+            if sw and x + 10 + len(sw) < room:
+                cv.text(x + 9, MAP_H, f'· {sw} ', (190, 130, 230), BG)     # his coast, or a barony a servant holds
         if DBG.has(g, 'coords'):
             cv.text_right(MAP_W - 2, MAP_H, DBG.status_bits(g), INFO, BG)
         elif right:
@@ -716,6 +720,10 @@ class GameScreen(Screen):
         tgt_id = getattr(p, 'target', None)
         sight = g.over_sight() if m.kind == 'over' else 0
         taint = getattr(g.world, 'taint', None) if m.kind == 'over' else None
+        from . import shadow as SH
+        from . import skyseat as SKS
+        kland = m.kind == 'over' and SH.land_r(g.world) > 0
+        dark = m.kind == 'over' and SKS.long_night(g.world)          # the Long Night: the sky stays dark
         rift = RIFT.active(g.world) if m.kind == 'over' else None
         rash = RIFT.ash_cells(g.world) if rift else ()
         ways = getattr(m, 'oldway', None) if m.kind == 'over' else None
@@ -774,6 +782,10 @@ class GameScreen(Screen):
                     if v:                           # the marked land breathes, slowly
                         k = .9 + .1 * math.sin(t * .8 + (mx + my) * .12)
                         fg, bg, self.moving = scale(fg, k), scale(bg, k), True
+                elif kland and SH.his_land(g, mx, my) and m.t[i] not in (TOWN, D.CITY, D.ENTR, D.ROAD):
+                    ch, fg, bg = LOOK.tainted((ch, fg, bg), 'blight', i)      # the Hollow King's coast
+                if dark:
+                    fg, bg = scale(fg, .62), scale(bg, .5)
                 if trail and (mx, my) in trail and v:
                     ch, fg = ',', (170, 30, 30)
                 elif deco and deco[i]:
@@ -3648,14 +3660,15 @@ class DeathScreen(Modal):
 
 
 class WinScreen(Modal):
-    title = 'The vale is saved'
+    title = 'The Hollow King has fallen'
 
     def render(self, cv):
         g = self.game
         p = g.player
         x, y = self.box(cv, 64, 15)
-        names = ', '.join(e.name for e in g.world.evils)
-        cv.wrap(x + 3, y + 2, 58, f"{p.name} has destroyed {names}. The vale is free, and Thornfield will sing of this for generations.", FG, PANEL, 3)
+        cv.wrap(x + 3, y + 2, 58, f"{p.name} climbed the chain of the Sky-Seat and broke the Hollow King on his throne. "
+                "The mist over the sea is only mist now. The land will heal, slowly, and the chronicle keeps your name.",
+                FG, PANEL, 4)
         rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
@@ -3874,10 +3887,14 @@ def hunt_areas(g):
     return out
 
 
+def SKS_night(sh):
+    return bool(sh.get('night') and not sh.get('won'))
+
+
 class JournalScreen(Modal):
     """The journal in tabs: jobs, the road (story, rumours, news), standing, lore (what you know, every sign) and the
     log to read back. Left and right (or Tab) pick a tab; up and down move or scroll."""
-    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log']
+    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log', 'Shadow']
     tab = 0
     BW, BH = 100, 30
 
@@ -3897,7 +3914,7 @@ class JournalScreen(Modal):
             lab = f' {nm} '
             cv.text(xx, y + 1, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
             xx += len(lab) + 1
-        rows = [self.rows_jobs, self.rows_road, self.rows_standing, self.rows_lore, self.rows_log][self.tab]()
+        rows = [self.rows_jobs, self.rows_road, self.rows_standing, self.rows_lore, self.rows_log, self.rows_shadow][self.tab]()
         room = self.BH - 5
         self.scroll = max(0, min(self.scroll, len(rows) - room))
         for i, row in enumerate(rows[self.scroll:self.scroll + room]):
@@ -3989,19 +4006,75 @@ class JournalScreen(Modal):
                 out.append({'parts': [(3, '·', GOLD), (5, lines[0], scale(FG, .85))]})
                 out += [{'parts': [(5, ln, scale(FG, .85))]} for ln in lines[1:]]
             out.append({'parts': []})
-        known = [ev for ev in g.world.evils if ev.known]
-        if known:
-            out.append(self.head('DARK POWERS'))
-            for ev in known:
-                out.append({'parts': [(5, ev.name[:26], ev.fg if not ev.defeated else DIM),
-                                      (33, f'lair to the {g.dir_to(ev.did)}' if not ev.defeated else 'destroyed', FG if not ev.defeated else DIM)]})
-            out.append({'parts': []})
         out.append(self.head('NEWS'))
         evs = [st for st in g.world.settlements if st.event]
         if not evs:
             out += self.para('All quiet across the land.', DIM)
         for st in evs:
             out += self.para(D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)')
+        return out
+
+    def rows_shadow(self):
+        """The Hollow King, his servants and their lieutenants: what you know of them (shadow.py)."""
+        g = self.game
+        from . import shadow as SH
+        w = g.world
+        sh = SH.st(w)
+        k = SH.know(g)
+        out = [self.head('THE HOLLOW KING')]
+        if not sh:
+            return out + self.para('Nothing stirs.', DIM)
+        if k['king']:
+            out += self.para('The Hollow King, made by the Varnish mages of star-iron, the winds and the bound dead. '
+                             'He sits in the piece of the Sky-Seat that never fell, and he wants to come back.')
+        else:
+            out += self.para('Something old stirs out past the sea. Whatever the dark powers serve, you do not know its '
+                             'name yet.', DIM)
+        seals = len(sh['seals'])
+        if seals:
+            out += self.para(f'{seals} of the old seals {"is" if seals == 1 else "are"} broken: the sky over the sea '
+                             'glows at night.', BAD)
+        out += self.para(SH.ATTENTION[sh['att']], BAD if sh['att'] >= 3 else GOLD if sh['att'] else DIM)
+        if sh.get('won'):
+            out += self.para('He is gone. The mist over the sea is only mist now.', GOOD)
+        elif sh.get('seen'):
+            n = sum(1 for it in g.player.inv if it.k == 'relic')
+            lit = len(sh.get('beacons', ()))
+            out += self.para('The mist over the sea has torn: the Sky-Seat hangs there, and one skipper, on the harbour '
+                             f'nearest his coast, dares the whirlpool. You carry {n} of the keys'
+                             + (f', and {lit} of its five beacons burn.' if lit else '.'), GOLD)
+        if SKS_night(sh):
+            out += self.para('The Long Night: the sky stays dark, and his coast keeps growing.', BAD)
+        out.append({'parts': []})
+        out.append(self.head('HIS SERVANTS'))
+        for e in w.evils:
+            if not e.known:
+                continue
+            col = e.fg if not e.defeated else DIM
+            state = 'destroyed' if e.defeated else EVL.stage(e).lower() if e.awake else 'asleep'
+            out.append({'parts': [(3, '♦', col), (5, e.name[:30], col), (37, SH.WEIGHT_WORD[e.weight], DIM),
+                                  (-3, state, FG if not e.defeated else DIM)]})
+            if not e.defeated:
+                out += self.para(f'It wants {SH.SERVANT[e.key]["goal"]}. Its lair lies to the {g.dir_to(e.did)}.', FG, 7, 88)
+                name, _edge, text = SH.SERVANT[e.key]['weak']
+                got = k['src'].get(e.key, set())
+                if len(got) >= 2:
+                    out += self.para(f'Weakness: {text}', GOOD, 7, 88)
+                elif got:
+                    out += self.para(f'Weakness: {name}, so {next(iter(SH.SOURCES[s_] for s_ in got))} says. One more '
+                                     'source will tell you how.', GOLD, 7, 88)
+            for j, lt in enumerate(e.lts):
+                if (w.evils.index(e), j) not in k['lts'] and lt['dead'] != 'you':
+                    continue
+                site = w.sites[lt['site']] if lt['site'] is not None else None
+                how = 'dead' if lt['dead'] else 'scarred' if lt['scars'] else 'alive'
+                out.append({'parts': [(7, '·', DIM), (9, lt['name'][:34], FG if not lt['dead'] else DIM),
+                                      (45, site.name[:32] if site else '', DIM), (-3, how, BAD if how == 'alive' else DIM)]})
+            out.append({'parts': []})
+        unknown = sum(1 for e in w.evils if not e.known)
+        if unknown:
+            out += self.para(f'{"One more has" if unknown == 1 else f"{unknown} more have"} no name yet: only rumours, '
+                             'and marks on the land.', DIM)
         return out
 
     def rows_standing(self):
@@ -4093,7 +4166,7 @@ class WorldMapScreen(Modal):
     tall = False
     """The overworld: a scrollable close-up, or the whole realm with each character covering 2x2 cells."""
     layer = 0         # what the map shows over the land: see LAYERS
-    LAYERS = ['Land', 'Danger', 'Factions', 'Realms', 'Jobs', 'Trade']
+    LAYERS = ['Land', 'Danger', 'Factions', 'Realms', 'Jobs', 'Trade', 'Shadow']
     BANDS = [((44, 66, 40), 'safe'), ((92, 86, 36), 'watchful'), ((128, 62, 30), 'dangerous'), ((120, 26, 34), 'deadly')]
     PRIORITY = {D.CITY: 9, D.TOWN: 8, D.ENTR: 7, D.ROAD: 6, D.WATER: 5, D.MOUNTAIN: 4, D.HILLS: 3, D.SWAMP: 3, D.FOREST: 2, D.SAND: 2, D.GRASS: 1}
     zoom = 1          # 1: close-up you can scroll around, 0: the whole realm
@@ -4188,6 +4261,12 @@ class WorldMapScreen(Modal):
                 return ch, scale(fg, .55), scale(base or bg, .6)       # lawless land
             return ch, fg if border else scale(fg, .8), mix(base or bg, col, {2: .62, 1: .4, 0: .24}[border])
         t = self.game.maps['over'].tile(mx, my)
+        if lay == 'Shadow':
+            from . import shadow as SH
+            col = SH.layer_look(self.game, mx, my)
+            if col is None:
+                return ch, scale(fg, .5), scale(base or bg, .55)
+            return ch, fg, mix(base or bg, col, .5)
         if lay == 'Danger':
             if t == D.WATER or not D.TILES[t].walk and t != D.MOUNTAIN:
                 return ch, scale(fg, .6), scale(bg, .6)
@@ -4225,6 +4304,9 @@ class WorldMapScreen(Modal):
                      ('/', (230, 170, 80), 'hunting ground')]
         elif lay == 'Trade':
             parts = [('▲', GOOD, 'sells dear'), ('▼', INFO, 'cheap to buy'), ('·', DIM, 'faded: old prices')]
+        elif lay == 'Shadow':
+            from . import shadow as SH
+            parts = SH.legend(self.game)
         else:
             parts = [(g_, DIM, n_) for g_, n_ in (('⌂', 'village'), ('■', 'city'), ('Ω', 'castle'), ('╬', 'fort'),
                                                     ('>', 'dungeon'), ('Π', 'ruin'), ('†', 'shrine'), ('∆', 'camp'))]
@@ -4490,7 +4572,7 @@ class WorldMapScreen(Modal):
         if tok in ('l', 'L'):
             WorldMapScreen.layer = (self.layer + (-1 if shift or tok == 'L' else 1)) % len(self.LAYERS)
             return
-        if tok in ('1', '2', '3', '4', '5', '6'):
+        if tok in ('1', '2', '3', '4', '5', '6', '7'):
             WorldMapScreen.layer = int(tok) - 1
             return
         if tok == 'tab' and self.dests:

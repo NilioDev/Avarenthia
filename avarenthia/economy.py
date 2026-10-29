@@ -94,10 +94,13 @@ def units(s, g):
     return int(s.market[g][0] / step(g))
 
 
+NIGHT = [1.0]           # the Long Night: everything a fifth dearer (skyseat.py sets it every day)
+
+
 def price(s, g):
     stock = max(1.0, s.market[g][0])
     f = (REF / stock) ** bend(g)
-    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100     # copper
+    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100 * NIGHT[0]     # copper
 
 
 def buy_price(s, g):

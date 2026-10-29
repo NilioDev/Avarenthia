@@ -175,6 +175,17 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **The two clocks** - the slow growth, the attention rising when you meddle and cooling when you stop, the ceiling.
   Debug: show and set the attention; let a year pass.
 - **The realms** - a servant's push, the realms pushing back, a barony held by a servant. Debug: force a push now.
+
+Built in part 1 (29 October 2026): The shadow (S) in the debug menu: his attention one step up or back to nothing;
+name, wake every servant; break a seal; know every weakness; every lieutenant on your map; a hero rides out now; a
+month goes by for the servants. Teleport lists the lieutenants' places and his coast. Look at the Shadow tab (e),
+the Shadow layer [7] and the Realms layer for held baronies. Test part `shadow`.
+
+Built in part 2 (29 October 2026): The shadow (S), column THE SKY-SEAT: tear the mist, give a relic, to the foot of
+the chain, to the underside, to the first and third floor, to the throne, let him win (three seals), kill him (the
+end). Climb the chain and wait for a gust beside and away from a handhold; stand on a broken link; light a beacon;
+die on a floor and beat your shade; ask the skipper nearest his coast with and without a relic. Test part `skyseat`.
+
 - **The quest** - the mist parting, the relics, the road, the chain climb, the five floors, the beacons, the last
   fight's three phases. Debug: break a seal; give a relic; teleport to the chain, to each floor, to the throne.
 - **Dying there** - the dearer raising, the shade with your backpack, what stays open. Debug: kill the player there;

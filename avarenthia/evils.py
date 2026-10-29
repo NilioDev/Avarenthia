@@ -1,7 +1,8 @@
-"""The great evils of the vale. Every world draws one to three of them. Each sleeps in a lair, grows stronger
-as you do and as time passes, and leaves its mark on the land around it: blight, ash, webs, war or flood.
-They raid the villages in their shadow and, once strong enough, send hunters after you.
-Destroy one and its mark fades; destroy them all and the vale is saved. Or ignore them, at a price."""
+"""The servants of the Hollow King: the kinds a world draws its three from (one light, one middle, one heavy). Each
+sleeps or wakes in a lair in its own land and leaves its mark on the land around it: blight, ash, webs, war, flood,
+hunger, wolves or swayed lords. It strikes at the villages in its shadow and, once the Hollow King's attention is on
+you, sends hunters after you. Destroy one and its mark fades. How they grow, push the realms and break the seals
+is shadow.py."""
 import math
 import random
 
@@ -22,12 +23,12 @@ EVILS = {
         hunt=['skeleton', 'zombie', 'skarcher', 'ghost', 'wraith'], hunt_glyph='W',
         hunt_names=['Herald of {short}', "{short}'s Gravecaller", 'The Pale Rider', 'The Bone Shepherd'],
         cult=('The Cult of the Undying', 'Cult', ['cultist', 'skeleton', 'zombie', 'skarcher'], 'Black Spire', 'Bone Tower'),
-        whispers=['A cold voice brushes your thoughts: "I see you, little one."',
-                  'You hear a woman laughing, far away. No one else seems to hear it.',
+        whispers=['Somewhere a grave bell rings once, though there is no church near.',
+                  'You hear a woman singing, far away. No one else seems to hear it.',
                   'Frost creeps over your boots, though the night is mild.',
-                  '"Come to me," whispers a voice like dry leaves. "Come, and rest."',
+                  'Dry leaves blow across the path in a ring, and lie still.',
                   'A crow lands nearby and watches you with pale, dead eyes.',
-                  '"Every one you kill, I will raise again."', 'Your shadow moves a heartbeat after you do.'],
+                  'A fresh grave by the road has been dug open, from below.', 'Your shadow moves a heartbeat after you do.'],
         rumors=['The graves are restless lately. They say {short} is waking.',
                 'Nothing grows near the old crypt any more. The blight spreads every season.',
                 'My cousin saw the dead walking on the road at night. Walking, I tell you.'],
@@ -50,7 +51,7 @@ EVILS = {
         omen='Smoke on the horizon. {name} has woken hungry, and the scorched land spreads.',
         defeat='{name} crashes to the ground with a sound like a landslide. The fires die down.'),
     'spider': dict(
-        names=['Ysolde the Brood Mother', 'Ixxiza, Mother of Webs', 'The Hollow Queen'], title='the Brood Mother',
+        names=['Ysolde the Brood Mother', 'Ixxiza, Mother of Webs', 'The Grey Queen'], title='the Brood Mother',
         boss='broodmother', lair='The Webbed Hollow', style='cave', tag='lair_spider', depth=4, base=6, wall='#6a6a78',
         terrain=('forest',), taint='web', taint_name='webbed woods', fg=(225, 225, 240), event='plague',
         hunt=['spider', 'spider', 'spider'], hunt_glyph='s', hunt_names=['A swarm of her brood', 'Children of {short}'],
@@ -89,6 +90,48 @@ EVILS = {
         lore='something old that sleeps beneath a drowned abbey. The mire spreads, the fields flood and the drowned walk.',
         omen='The waters rise. {name} stirs in the deep, and the mire spreads.',
         defeat='{name} sinks back into the black water, never to rise again. The floods recede.'),
+    'wendigo': dict(
+        names=['The Wendigo', 'Hunger-in-the-Snow', 'Old Antlers'], title='the Wendigo', boss='wendigo',
+        lair='The Bone Lodge', style='cave', tag='lair_wendigo', depth=4, base=6, wall='#8a9aa4', terrain=('cold', 'forest'),
+        taint='hunger', taint_name='hungry woods', fg=(200, 220, 232), event='famine',
+        hunt=['winter_wolf', 'ghoul', 'snow_ape'], hunt_glyph='W',
+        hunt_names=['The Starved of {short}', 'Things that were hunters', 'The Hollow-bellied'],
+        cult=('The Fasting Lodge', 'Fasters', ['cultist', 'ghoul', 'winter_wolf'], 'Bone Lodge', 'Antler Tower'),
+        whispers=['Something calls your name from the trees, in your mother\'s voice.', 'You are hungry. You have never been this hungry.',
+                  'Antlers move between the trunks, far too high up for any deer.', 'The snow by the path is full of tracks that end.'],
+        rumors=['The hunters went up into the woods in autumn. None came back.', 'The deer are gone. The hares are gone. What eats them?',
+                'They say it was a man once, who ate his own kin in a hard winter.'],
+        lore='a hunger that walks on two legs in the cold woods. Hunters do not come back, and the game is gone.',
+        omen='The woods go still. {name} is hungry, and the hungry woods spread.',
+        defeat='{name} falls in the snow, and is only bones and old antlers. Far off, a deer calls.'),
+    'wolf': dict(
+        names=['Fenra the Great Wolf', 'Old Greymane', 'The Wolf of the Long Grass'], title='the Great Wolf', boss='great_wolf',
+        lair='The Wolf Hollow', style='cave', tag='lair_wolf', depth=3, base=5, wall='#8a7a64', terrain=('grass', 'hills'),
+        taint='wolfland', taint_name='wolf country', fg=(196, 190, 176), event='famine',
+        hunt=['wolf', 'worg', 'winter_wolf'], hunt_glyph='C',
+        hunt_names=['The pack of {short}', 'Grey runners', 'The Long Grass Pack'],
+        cult=('The Wolf-Sworn', 'Wolf-Sworn', ['cultist', 'wolf', 'worg'], 'Grey Lodge', 'Howling Tower'),
+        whispers=['A howl answers another, closer than the last.', 'Grey shapes run beside you in the long grass, then are gone.',
+                  'The sheep in the fold all face the same way, and shake.', 'You find a lamb, or half of one.'],
+        rumors=['The wolves are bigger this year, and cleverer. They wait until the dogs are asleep.',
+                'Old Harl lost his whole flock in one night. Not a sheep left, and no blood.', 'The shepherds are leaving the plain.'],
+        lore='a wolf as big as a horse, older than the roads. The packs follow it, the flocks die, the shepherds go.',
+        omen='Howling all night. {name} calls the packs together, and wolf country spreads.',
+        defeat='{name} lies still at last, grey and enormous. The packs break up and run.'),
+    'mage': dict(
+        names=['Azrael Vey the Fallen', 'Magister Oduran', 'Ysolt the Unbound'], title='the Fallen Mage', boss='fallen_mage',
+        lair='The Unlit Tower', style='rooms', tag='lair_mage', depth=5, base=8, wall='#6a5a80', terrain=('forest', 'hills', 'grass'),
+        taint='sway', taint_name='swayed land', fg=(176, 96, 224), event='war',
+        hunt=['cultist', 'skel_mage', 'imp', 'animated_armour'], hunt_glyph='@',
+        hunt_names=['The Grey Hands of {short}', 'Sworn Magisters', 'The Unlit'],
+        cult=('The Circle of the Unlit', 'Unlit', ['cultist', 'cultist', 'skel_mage'], 'Unlit Tower', 'Black Library'),
+        whispers=['For a moment you know exactly what to do, and it is not your thought.', 'Ink stains on your hands. You wrote nothing.',
+                  'A letter lies on the road, sealed with no arms, addressed to no one.', 'Your shadow reads over your shoulder.'],
+        rumors=['The baron has a new counsellor. Nobody saw him come.', 'They say the Circle threw one of its own out, and he did not go far.',
+                'Lords who never agreed on anything all sign the same letters now.'],
+        lore='a mage the Circle cast out. He does not raise armies; he takes the lords, one by one, from inside.',
+        omen='Another lord bends the knee to no one you can see. {name} grows stronger, and the swayed land spreads.',
+        defeat='{name} burns from the inside, like a page. The lords he held wake up and look at what they signed.'),
 }
 EVIL_KEYS = list(EVILS)
 # what people notice before anyone knows what is behind it
@@ -108,10 +151,23 @@ SIGNS = {
     'mire': ['The marshes are rising. Fields that were dry last year are under water.',
              'Fishermen pull strange things from the water lately, and will not say what.',
              'Bells ring under the marsh at night, they say. There is no church there.'],
+    'hunger': ['Hunters in the north woods do not come back. The deer are gone too.',
+               'A trapper came down out of the snow and would not stop eating.',
+               'Something with antlers was seen at the edge of the trees, standing like a man.'],
+    'wolfland': ['The wolves are bolder on the plain this year. Whole flocks lost.',
+                 'Shepherds are driving their sheep to the towns and not going back.',
+                 'A howl at night that the dogs will not answer.'],
+    'sway': ['Barons who hated each other sign the same letters now.',
+             'A new counsellor at a lord\'s side, and nobody knows where he came from.',
+             'The Circle of Magi will not say why one of its towers stands empty.'],
 }
+# each servant's weight: a light one is awake from the start in its own land, a middle one wakes halfway and holds a
+# few baronies or a coast, a heavy one wakes late and reaches a whole realm or more (shadow.py)
+WEIGHT = {'spider': 'light', 'wendigo': 'light', 'wolf': 'light', 'dragon': 'middle', 'drowned': 'middle',
+          'lich': 'heavy', 'warlord': 'heavy', 'mage': 'heavy'}
 STAGES = ['Dreaming', 'Stirring', 'Restless', 'Watching', 'Searching', 'Hunting', 'Hunting', 'Wrathful', 'Wrathful',
           'Ascendant', 'Ascendant']
-DIVE_COST = {'web': 6, 'mire': 6}
+DIVE_COST = {'web': 6, 'mire': 6, 'hunger': 4}
 
 
 class Evil:
@@ -124,6 +180,13 @@ class Evil:
         self.lvl = 0
         self.defeated = False
         self.known = False
+        self.weight = 'light'
+        self.awake = False        # the slow clock: a light one from the start, the others later (shadow.py)
+        self.wake_day = 0
+        self.goal = 0.0           # 0..100: at 100 it has what it wants, and a seal breaks
+        self.sealed = False
+        self.lts = []             # its three lieutenants (dicts), each with a place of its own
+        self.back = None          # the day the Lich rises again, if her phylactery was left whole
 
     @property
     def d(self):
@@ -135,14 +198,19 @@ class Evil:
 
 
 def choose(n=None):
-    n = n or random.choices([1, 2, 3], [2, 5, 3])[0]
-    keys = random.sample(EVIL_KEYS, n)
+    """Three servants, one of each weight: the heavy one first (its cult is the world's cult), then the middle and
+    the light one. A kind whose land the world turns out not to have is swapped when the lairs are placed."""
     out = []
-    for i, k in enumerate(keys):
-        e = Evil(k, random.choice(EVILS[k]['names']))
-        e.pace = 1 + i * 3 + random.randint(0, 2)     # they wake slowly, one after another
-        out.append(e)
+    for wt in ('heavy', 'middle', 'light'):
+        k = random.choice([k for k in EVIL_KEYS if WEIGHT[k] == wt])
+        out.append(make(k))
     return out
+
+
+def make(k):
+    e = Evil(k, random.choice(EVILS[k]['names']))
+    e.weight = WEIGHT[k]
+    return e
 
 
 def setup_monsters(world):
@@ -159,10 +227,10 @@ def info(e):
 
 # ------------------------------------------------------------------ strength and the mark on the land
 def strength(game, e):
-    if e.defeated:
-        return 0
-    p = game.player
-    return min(10, max(0, (p.lvl - 1) // 3 + (game.day - 1) // 30 - e.pace))
+    """How strong it is now: from its own slow clock and the Hollow King's attention, never from your level
+    (shadow.py)."""
+    from . import shadow as SH
+    return SH.power(game, e)
 
 
 def active(game):
@@ -195,7 +263,8 @@ def compute_taint(game):
     om = game.maps['over']
     tn = bytearray(om.w * om.h)
     for idx, e in enumerate(w.evils):
-        r = 0 if e.defeated else 5 + e.lvl * 4
+        from .shadow import reach
+        r = 0 if e.defeated else reach(e)
         if not r:
             continue
         for y in range(max(0, e.y - r * 2), min(om.h, e.y + r * 2 + 1)):
@@ -260,14 +329,19 @@ def defeat(game, e):
     idx = w.evils.index(e)
     w.wanderers = [x for x in w.wanderers if not (x.kind == 'hunt' and getattr(x, 'evil', None) == idx)]
     compute_taint(game)
-    if not active(game):
-        game.flags['saved'] = True
-        game.request = ('win',)
+    from . import shadow as SH
+    SH.fallen(game, e)
 
 
 def on_kill(game, mon):
+    from . import shadow as SH
+    from . import skyseat as SK
+    if SH.on_kill(game, mon) or SK.on_kill(game, mon):
+        return
     for e in game.world.evils:
         if not e.defeated and mon.k == e.d['boss']:
+            if SH.returns(game, e, mon):
+                return
             defeat(game, e)
             from . import chronicle as CH
             CH.deed(game, f'{e.name} destroyed', f'You destroyed {e.name} in its lair.', (e.x, e.y) if hasattr(e, 'x') else None)
@@ -290,6 +364,8 @@ def whisper(game):
 
 
 def daily(game):
+    from . import shadow as SH
+    SH.daily(game)
     update(game)
     w = game.world
     for idx, e in enumerate(w.evils):
@@ -306,9 +382,6 @@ def daily(game):
                         s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
                 who = e.name if e.known else 'Something'
                 NW.post(game, 'danger', f'{who} struck at {s.name}! ' + ev['text'].format(town=s.name), s.x, s.y)
-        hunts = [x for x in w.wanderers if x.kind == 'hunt' and getattr(x, 'evil', None) == idx]
-        if e.known and e.lvl >= 5 and len(hunts) < 1 + (e.lvl - 4) // 2 and random.random() < .15 + e.lvl * .03:
-            spawn_hunt(game, idx)
 
 
 def spawn_hunt(game, idx):

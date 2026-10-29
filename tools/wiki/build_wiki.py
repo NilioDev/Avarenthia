@@ -17,6 +17,8 @@ import avarenthia.skills as SK
 import avarenthia.weaponskills as WS
 import avarenthia.data as D
 import avarenthia.evils as EV
+import avarenthia.shadow as SHD
+import avarenthia.skyseat as SKY
 import avarenthia.gods as GODS
 import avarenthia.races as RC
 import avarenthia.lore as LO
@@ -166,6 +168,12 @@ for k, v in EV.EVILS.items():
     rows = [('Names', ', '.join(v['names'])), ('Lair', v['lair'].replace('{short}', '…') + f" ({v['style']}, {v['depth']} levels deep)"),
             ('Lives in', ', '.join(v['terrain'])), ('Mark on the land', v['taint_name']),
             ('Sends after you', hunt + ' (hunters: ' + '; '.join(n.replace('{short}', '…') for n in v['hunt_names']) + ')')]
+    sv = SHD.SERVANT[k]
+    rows = [('Weight', f"{EV.WEIGHT[k]} ({SHD.WEIGHT_WORD[EV.WEIGHT[k]]})"), ('Wants', sv['goal']),
+            ('Its lever on the realms', sv['lever'])] + rows
+    rows.append(('Lieutenants (three of)', '; '.join(f"{t} ({D.MONSTERS[mk]['name']}, a {pl})" for t, mk, pl, _p in sv['lts'])))
+    rows.append(('Weakness', f"{sv['weak'][0]}: {sv['weak'][2]}"))
+    rows.append(('Relic', f"{sv['relic'][0]}: {sv['relic'][3]} (+{sv['relic'][2]} {sv['relic'][1]} while carried)"))
     if cult:
         rows.append(('Cult', f"{cult[0]}: {', '.join(D.MONSTERS[c]['name'] for c in cult[2] if c in D.MONSTERS)}; seats: {cult[3]}, {cult[4]}"))
     if boss:
@@ -182,7 +190,8 @@ for k, v in EV.EVILS.items():
             f'<p class="quote">Defeat: {e(v["defeat"].replace("{name}", v["names"][0]))}</p>{lists}')
     evil_html.append(entry(f'<span class="glyph" style="color:{rgb(v["fg"])}">{e(boss.get("ch", "?"))}</span> {e(v["title"].title())}',
                            body, 'built', ident='evil-' + k))
-intro = (f'<p>{e(EV.__doc__.strip())}</p><p>Each world draws one to three. They grow through these stages: {e(STAGES)}.</p>')
+intro = (f'<p>{e(SHD.__doc__.strip())}</p><p>{e(EV.__doc__.strip())}</p><p>They grow through these stages: {e(STAGES)}.</p>'
+         f'<p>{e(SKY.__doc__.strip())}</p><p>The five floors of the Sky-Seat: {e(", ".join(SKY.FLOORS))}.</p>')
 add('evils', 'World', 'The great evils', intro, '<div class="cards">' + ''.join(evil_html) + '</div>')
 
 # ---------------------------------------------------------------- lore

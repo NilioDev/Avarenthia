@@ -128,11 +128,13 @@ def talk(game, npc):
         game.say(npc, why)
         return
     rs = routes(game, here)[:7]
-    if not rs:
+    from . import skyseat as SK
+    whirl = SK.opt(game, here)
+    if not rs and not whirl:
         game.say(npc, 'Nothing sails from here to anywhere you would want to go.')
         return
     opts = [(f"{s.name}: {SHIPS[k]['name']}, {fmt(fare(k, n))}, {days(k, n)} day{'s' if days(k, n) > 1 else ''}",
-             f'to:{s.id}:{k}:{n}') for s, k, n in rs]
+             f'to:{s.id}:{k}:{n}') for s, k, n in rs] + whirl
     EV.ask(game, 'sail', npc.name, '"Where to? I know every skipper on this coast. Your cargo comes along, if the boat '
            'can take it."', opts + [('Ask about pirates', 'pirates'), ('Not today', 'bye')], npc=npc.id)
 
@@ -141,6 +143,10 @@ def r_sail(game, choice, ctx):
     from . import events as EV
     from . import economy as ECO
     p = game.player
+    if choice == 'whirl':
+        from . import skyseat as SK
+        SK.whirl(game)
+        return
     if choice == 'pirates':
         cv = [c for c in coves(game) if not getattr(c, 'found', False)]
         if not cv:

@@ -258,6 +258,34 @@ KITS = {
         dict(beat='kVGk', cards=dict(k=['bite'], V=['roar'], G=['maul'])),
         dict(at=.5, beat='kBGkZ', cards=dict(k=['bite'], B=['pounce'], G=['maul'], Z=['rampage']),
              say='{name} howls, and the howl is answered from every side.')]),
+    # the Hollow King: the winds, the dead, himself (skyseat.py makes a phase lighter for every relic you bring)
+    'hollow_king': dict(weak=('fire',), things='pillars', phases=[
+        dict(beat='kVGkZ', cards=dict(k=['arcane_bolt'], V=['gust', 'static_field'], G=['chain_lightning', 'ball_lightning'],
+                                      Z=['tempest'])),
+        dict(at=.66, beat='kOGkZ', cards=dict(k=['bone_spear'], O=['call_bound'], G=['life_drain', 'wail'], Z=['army_dead']),
+             trick='call', say='{name} lets the winds go. The bound dead come up through the floor, all of them at once.'),
+        dict(at=.33, beat='kGVkZ', cards=dict(k=['strike'], G=['cleave', 'starfall'], V=['withering'], Z=['meteor', 'mark_doom']),
+             trick='dark', say='{name} stands up from the throne. He is taller than you thought, and the lamps go out.')]),
+    # three servants of the Hollow King (shadow.py)
+    'wendigo': dict(weak=('fire',), phases=[
+        dict(beat='kGkV', cards=dict(k=['claw'], G=['pounce', 'cone_cold'], V=['dread'])),
+        dict(at=.66, beat='kOGkB', cards=dict(k=['claw'], O=['call_wolves'], G=['cone_cold', 'pounce'], B=['shadowstep']),
+             trick='fog', say='{name} breathes out, and a freezing fog fills the lodge.'),
+        dict(at=.33, beat='kGkZ', cards=dict(k=['claw'], G=['life_drain', 'pounce'], Z=['blizzard']),
+             say='{name} howls with hunger. {His} wounds close as {he} feeds on the cold.')]),
+    'great_wolf': dict(weak=('fire',), phases=[
+        dict(beat='kBkV', cards=dict(k=['bite'], B=['pounce'], V=['roar'])),
+        dict(at=.66, beat='kOBkG', cards=dict(k=['bite'], O=['call_wolves'], B=['pounce'], G=['maul']),
+             say='{name} lifts {his} head and howls. The pack comes.'),
+        dict(at=.33, beat='kBGkZ', cards=dict(k=['bite'], B=['pounce'], G=['maul', 'hamstring'], Z=['rampage']), trick='enrage',
+             say='{name} bleeds, and does not slow down.')]),
+    'fallen_mage': dict(weak=('lightning',), phases=[
+        dict(beat='kVGkR', cards=dict(k=['shadow_bolt'], V=['hex', 'slow_spell'], G=['fireball'], R=['spell_ward'])),
+        dict(at=.66, beat='kOGkV', cards=dict(k=['arcane_bolt'], O=['call_hounds'], G=['chain_lightning', 'fireball'],
+                                              V=['mirror']), say='{name} laughs once, and there are three of {him}.'),
+        dict(at=.33, beat='kGVkZ', cards=dict(k=['shadow_bolt'], G=['life_drain', 'chain_lightning'], V=['blink'],
+                                              Z=['meteor']), trick='dark',
+             say='{name} tears a page from the air. The lamps go out.')]),
 }
 ROAMERS = {'dungeon': ['troll', 'ogre'], 'deep': ['troll', 'ogre'], 'cave': ['troll', 'ogre'], 'wild': ['ogre'],
            'orccamp': ['orc_chief', 'hob_captain'], 'lair_orc': ['orc_chief', 'ogre'], 'warren': ['hob_captain'],
@@ -273,7 +301,7 @@ HEARD = {'troll': ['Heavy steps, somewhere {dir} of you.', 'Something big grunts
 def kit(mon):
     if mon.is_npc or not (mon.tpl.get('boss') or 'bs' in mon.__dict__):
         return None
-    return KITS.get(mon.k)
+    return mon.__dict__.get('kit_over') or KITS.get(mon.k)          # a lighter kit: the Hollow King (skyseat.py)
 
 
 def st(mon):
@@ -586,10 +614,12 @@ def turn(game, mon, df):
         bs['pending'] = None
         return True
     p = game.player
-    if not bs['engaged'] and mon.awake and game.visible(mon.x, mon.y) and cheb(mon.x, mon.y, p.x, p.y) <= 9:
+    if (not bs['engaged'] and mon.awake and game.visible(mon.x, mon.y) and cheb(mon.x, mon.y, p.x, p.y) <= 9) or bs['engaged']:
         engage(game, mon)
     role = beat(game, mon)
     mvid = draw(mon, role)
+    if mon.__dict__.get('no_call') and MOVES[mvid].get('kind') == 'call':
+        role, mvid = 'k', draw(mon, 'k')                     # its weakness named: no one comes to it (shadow.py)
     if do(game, mon, mvid, df):
         bs['i'] += 1
         return True
@@ -1020,6 +1050,8 @@ def _phase(game, mon, i, trick):
     game.msg(fill(ph.get('say', '{name} changes.'), mon), 'bad')
     game.shake()
     t = ph.get('trick')
+    if t and t in (mon.__dict__.get('no_trick'), 'call' if mon.__dict__.get('no_call') else None):
+        t = None
     ar = arena_of(game, mon)
     m = game.map
     if t == 'call':
@@ -1163,7 +1195,12 @@ def extra(game, mon, df):
 # ------------------------------------------------------------------ your blows on it
 def engage(game, mon):
     bs = st(mon)
-    if bs is None or bs['engaged']:
+    if bs is None:
+        return
+    if bs['engaged']:                                   # it saw you from outside: the room shuts once you are in
+        ar = arena_of(game, mon)
+        if ar and not ar.get('sealed') and (game.player.x, game.player.y) in set(map(tuple, ar['cells'])):
+            seal(game, ar)
         return
     bs['engaged'] = True
     game.banner = [mon.name.upper(), None]
@@ -1512,7 +1549,7 @@ def furnish(game, m, boss, ar):
             for c in ledges:
                 m.set(c[0], c[1], D.BLEDGE)
             ar['water'] = 1
-            flood(game, ar)
+            flood(game, ar, m)
     elif things == 'props':
         pts = []
         for c in inner:
@@ -1526,7 +1563,7 @@ def furnish(game, m, boss, ar):
         SM.area(game, m, inner[:max(4, len(inner) // 10)], D.WEBS, 400)
         for c in [c for c in inner if 2 <= cheb(*c, bx, by) <= 3][:2]:
             m.set(c[0], c[1], D.EGGS)
-            BM.eggs(game)[c] = [40, boss.id]
+            BM.eggs(game, m)[c] = [40, boss.id]
     elif things in ('tomb', 'lair', 'pillars'):
         # cover spread over the room, so that from anywhere a pillar or a shard is a few steps away
         for gap in (5, 4, 3):                               # a small room: the cover stands closer together
@@ -1795,9 +1832,11 @@ def floor_things(game):
             game.msg('The eggs split open. Spiderlings spill out!', 'bad')
 
 
-def flood(game, ar):
-    """The water stands as high as `ar['water']` says: bands of the room from its low side, shallow, then deep."""
-    m = game.map
+def flood(game, ar, m=None):
+    """The water stands as high as `ar['water']` says: bands of the room from its low side, shallow, then deep.
+    m: the map, when the room is made before you stand on it."""
+    here = m is None
+    m = m or game.map
     lv = ar.get('water', 0)
     room = [tuple(c) for c in ar['cells']]
     if not room:
@@ -1822,7 +1861,7 @@ def flood(game, ar):
         i = abs((c[1] if lo in 'ns' else c[0]) - edge)
         want = D.WATER if i < 2 * (lv - 2) else D.SHALLOW if lv and i < 2 * lv + 1 else dry[c]
         o = m.mon_at(*c)
-        if want == D.WATER and (o is not None or (game.player.x, game.player.y) == c):
+        if want == D.WATER and (o is not None or (here and (game.player.x, game.player.y) == c)):
             want = D.SHALLOW
         if t != want:
             m.set(c[0], c[1], want)

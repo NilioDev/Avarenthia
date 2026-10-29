@@ -197,6 +197,7 @@ class DebugScreen(Modal):
                            ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
                            ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
                            ('K', 'Bosses...', self.boss_page),
+                           ('S', 'The shadow...', self.shadow_page),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
@@ -313,6 +314,30 @@ class DebugScreen(Modal):
                                                          ('g', 'Stagger now', act('stagger')),
                                                          ('l', 'Flee test', act('flee')),
                                                          ('t', 'A twin (the next of six kinds)', act('twin'))])]])
+
+    def shadow_page(self):
+        g = lambda: self.game  # noqa: E731
+
+        def act(what):
+            return self.do(lambda: DBG.shadow(g(), what))
+        return MenuPage(self, 'The shadow', [[('HIS ATTENTION', [('a', 'One step up', act('up')),
+                                                                ('z', 'Back to nothing', act('zero'))]),
+                                              ('HIS SERVANTS', [('n', 'Name them all', act('name')),
+                                                                ('w', 'Wake them all', act('wake')),
+                                                                ('s', 'Break a seal', act('seal')),
+                                                                ('k', 'Know every weakness', act('weak')),
+                                                                ('l', 'Every lieutenant on your map', act('lts')),
+                                                                ('h', 'A hero rides out now', act('hero')),
+                                                                ('m', 'A month goes by for them', act('month'))])],
+                                             [('THE SKY-SEAT', [('r', 'Tear the mist', act('reveal')),
+                                                                ('g', 'Give a relic', act('relic')),
+                                                                ('c', 'To the foot of the chain', self.do(lambda: DBG.shadow(g(), 'chain'), True)),
+                                                                ('u', 'To the underside', self.do(lambda: DBG.shadow(g(), 'under'), True)),
+                                                                ('1', 'To the first floor', self.do(lambda: DBG.shadow(g(), 'f1'), True)),
+                                                                ('3', 'To the third floor', self.do(lambda: DBG.shadow(g(), 'f3'), True)),
+                                                                ('t', 'To the throne', self.do(lambda: DBG.shadow(g(), 'f5'), True)),
+                                                                ('v', 'Let him win: three seals', act('night')),
+                                                                ('x', 'Kill him: the end', act('won'))])]])
 
     def coin_page(self):
         g = lambda: self.game  # noqa: E731

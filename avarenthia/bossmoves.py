@@ -266,11 +266,13 @@ CALLS = {
     'call_bound': (('bound_dead', 'guard'), ('bound_dead', 'warder')),
     'call_hobs': (('hob_legionary', 'guard'), ('hob_archer', 'swarm')),
     'call_gnolls': (('gnoll_hunter', 'swarm'), ('gnoll_caller', 'mender')),
+    'call_wolves': (('winter_wolf', 'swarm'), ('wolf', 'swarm'), ('worg', 'guard')),
 }
 for _k, _h in CALLS.items():
     LIBRARY[_k] = M(role='O', name='Call', kind='call', helpers=_h, say='{name} calls, and {his} kind come out of the dark!')
 LIBRARY['call_drowned']['say'] = '{name} lifts a hand out of the water. Drowned ones rise beside {him}.'
 LIBRARY['call_hounds']['say'] = '{name} howls into the fire. Hellhounds come running out of it.'
+LIBRARY['call_wolves']['say'] = '{name} howls. Wolves come running out of the dark.'
 LIBRARY['call_bound']['say'] = '{name} calls the bound dead. They come in step, chains dragging.'
 
 GUARDS = {'riposte': 'Riposte', 'wall': 'Shield Wall', 'glacial': 'Glacial Ward', 'holy': 'Holy Shield',
@@ -500,8 +502,8 @@ LIBRARY['tunnel_up'] = M(role='O', name='Swarm Tunnel', shape='scatter', n=3, r=
                          fx=M(ants=1), say='', hit='Ants boil up out of the ground under you!')
 
 
-def eggs(game):
-    return game.map.__dict__.setdefault('boss_eggs', {})
+def eggs(game, m=None):
+    return (m or game.map).__dict__.setdefault('boss_eggs', {})
 
 
 # ------------------------------------------------------------------ what a blow does to you besides the hurt

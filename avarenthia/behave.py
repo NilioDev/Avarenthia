@@ -545,7 +545,11 @@ def _turn(game, mon, df):
             if band:
                 o = random.choice(band)
                 if getattr(mon, 'kind', 'heal') == 'heal' and o.hp < o.maxhp:
-                    o.hp = min(o.maxhp, o.hp + max(2, o.maxhp // 8))
+                    from . import bosses as BS
+                    if BS.st(o):                                 # a boss takes only a little, and not past its phase
+                        o.hp = min(BS.cap_hp(o), o.hp + max(2, o.maxhp // 40))
+                    else:
+                        o.hp = min(o.maxhp, o.hp + max(2, o.maxhp // 8))
                     game.flash([(o.x, o.y)], (120, 240, 140), '+', .25)
                 else:
                     o.effects['frenzy'] = [4, 0]

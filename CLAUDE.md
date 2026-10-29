@@ -26,7 +26,7 @@ in the project files and is linked.
 
 ## The UI rule (Nilio, 17 Oct 2026)
 Every new version must fit the layout, see "The UI rule" in `docs/plan.md`: lists go in a journal tab, things on the
-land in a world-map layer (keys 1-6, L), where-you-stand in the line under the map, fights in IN SIGHT; signs are
+land in a world-map layer (keys 1-7, L), where-you-stand in the line under the map, fights in IN SIGHT; signs are
 named by the data (`guide.py`); a new key is taught by one first-time tip (`guide.TIPS`), never by screen text.
 Keys are learnt by playing: don't add hints like "c: your numbers" to the screen.
 
@@ -64,6 +64,10 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `halls.py` each people's abbey, fort and manor (the floor above: style 'upper'; who holds a fort; telling things);
   `delves.py` the underground kinds' own plans (rooms by use, folk where they belong, the goblin hole's watch and
   snares); `gobvillage.py` the goblin village behind the ravine and its deep halls;
+  `shadow.py` the Hollow King and his three servants (great evils: the clocks, levers on the realms, lieutenants,
+  weaknesses, relics, heroes; state on `world.shadow` and `p.shadow`); `evils.py` the servants' kinds, marks and hunters;
+  `skyseat.py` the quest: the mist, the skipper, the chain climb, the five floors and beacons, the last fight, the
+  shade, the Long Night and the end;
   `bosses.py` boss fights (marked blows, the deck, phases, arenas, roaming bosses, the three things); `bossmoves.py` the
   move library of the bosses; `arts.py` the arts of Cunning and Arcane (first blow, snares, runes, gates, dispel); `spellmap.py` what spells leave on the ground (burning ground, ice walls, roots...) and corpses;
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what

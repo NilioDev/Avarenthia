@@ -263,6 +263,15 @@ TILES = [
     Tile('§', '#9aa0a8', False, True, 'chain in the wall', bg='#1a1c20'),
     Tile('=', '#a8a090', True, False, 'stone ledge', bg='#22201c'),
     Tile('¶', '#e04838', False, False, 'war banner'),
+    Tile('Φ', '#c486ff', False, True, 'phylactery', bg='#1a1020'),
+    Tile('▲', '#b0a898', False, False, "hero's cairn"),
+    Tile('§', '#c8ccd8', True, False, 'star-iron chain', bg='#10161e'),
+    Tile(':', '#a0603c', True, False, 'broken link', bg='#10161e'),
+    Tile('▒', '#a8d8e8', True, False, 'glass floor', bg='#1c2a34'),
+    Tile('░', '#d8eef4', True, False, 'cracked glass', bg='#1c2a34'),
+    Tile('¥', '#8890a0', False, False, 'cold beacon', bg='#18181c'),
+    Tile('¥', '#ffd860', False, False, 'lit beacon', bg='#3a2a08'),
+    Tile('Π', '#d8c890', False, False, 'throne of star-iron', bg='#201c10'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -286,6 +295,8 @@ ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = ra
  VWALL) = range(188, 212)                   # the Varnish (varnish.py)
 VEIL, SEALED, ROTTEN, SHARD, DARKSHARD, FALLEN = range(212, 218)    # boss fights (bosses.py)
 RATHOLE, PROP, WEBS, EGGS, LIGHTSTONE, BCHAIN, BLEDGE, BANNER = range(218, 226)     # bosses part B (bossmoves.py)
+JAR, HCAIRN = 226, 227          # the Lich's phylactery, a fallen hero's cairn (shadow.py)
+STARLINK, WEAKLINK, GLASS, CRACKGLASS, BEACON, LITBEACON, THRONE = range(228, 235)     # the Sky-Seat (skyseat.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
@@ -391,6 +402,21 @@ MONSTERS = {
     'drowned_king': dict(ch='&', fg='#60d0b8', name='The Drowned King', boss=True, lvl_fix=14, hp=5, dmg=1.4, df=1.5, xp=15, caster=True,
                          nova=True, summon='drowned', tags='', summon_msg='Something wet crawls out of the dark water. A drowned one!',
                          nova_msg='{name} calls a wave of black water!', bolt='lance of brine', nova_col=(90, 200, 200)),
+    # the Hollow King himself, on his throne at the top of the Sky-Seat (skyseat.py)
+    'hollow_king': dict(ch='K', fg='#e8dcb0', name='The Hollow King', boss=True, lvl_fix=22, hp=7, dmg=1.7, df=1.8, xp=40,
+                        caster=True, nova=True, summon='bound_dead', tags='', bolt='bolt of star-fire',
+                        nova_col=(232, 220, 176), summon_msg='{name} lifts a hand, and the bound dead step out of the walls.',
+                        nova_msg='{name} opens his hands, and the winds tear through the hall!'),
+    # three more servants of the Hollow King (great evils part 1)
+    'wendigo': dict(ch='W', fg='#c8dce8', name='The Wendigo', boss=True, lvl_fix=11, hp=4.5, dmg=1.5, df=1.3, xp=13, fast=True,
+                    summon='winter_wolf', tags='', summon_msg='{name} calls into the snow, and something white comes running.'),
+    'great_wolf': dict(ch='C', fg='#c4bea8', name='The Great Wolf', boss=True, lvl_fix=10, hp=4.5, dmg=1.5, df=1.3, xp=12,
+                       fast=True, leap=True, summon='wolf', tags='', summon_msg='{name} howls, and the pack answers.',
+                       leap_msg='{name} leaps at you!'),
+    'fallen_mage': dict(ch='@', fg='#b060e0', name='The Fallen Mage', boss=True, lvl_fix=15, hp=4.5, dmg=1.4, df=1.5, xp=16,
+                        caster=True, nova=True, summon='imp', tags='', bolt='bolt of black fire', nova_col=(176, 96, 224),
+                        summon_msg='{name} speaks a word, and an imp unfolds out of the air.',
+                        nova_msg='{name} spreads his hands, and the air turns to black fire!'),
     'watchman': dict(ch='@', fg='#b8a888', name='Village Watchman', tags='', min_l=1, hp=.9, dmg=.8, df=.9, xp=.8),
     'huntsman': dict(ch='@', fg='#a0b070', name='Huntsman', tags='', min_l=1, hp=.8, dmg=.8, df=.9, xp=.9, ranged=True),
     'deputy': dict(ch='@', fg='#c8b070', name='Deputy', tags='', min_l=2, hp=1.1, dmg=1, df=1.1, xp=1.1),
@@ -435,6 +461,9 @@ for _k, _res in (('skeleton', dict(cold=25, poison=100, fire=-25)), ('skarcher',
                  ('wraith', dict(cold=50, poison=100, fire=-25)), ('lich', dict(cold=75, poison=100)),
                  ('drowned', dict(cold=50, lightning=-50, poison=50)), ('drowned_king', dict(cold=60, lightning=-50, poison=75)),
                  ('troll', dict(fire=-50, poison=50)), ('spider', dict(poison=100)), ('broodmother', dict(poison=100, fire=-25)),
+                 ('wendigo', dict(cold=90, fire=-50, poison=50)), ('great_wolf', dict(cold=40, fire=-25)),
+                 ('fallen_mage', dict(fire=40, cold=40, lightning=40)),
+                 ('hollow_king', dict(cold=60, lightning=60, poison=100, fire=20)),
                  ('drake', dict(fire=75, cold=-25)), ('dragon', dict(fire=75, cold=-25)), ('salamander', dict(fire=90, cold=-50)),
                  ('ice_witch', dict(cold=75, fire=-50)), ('storm_spirit', dict(lightning=90, poison=100)),
                  ('bog_lurker', dict(poison=75, fire=-25)), ('ogre', dict(cold=20)), ('bat', dict(lightning=-25)),
@@ -664,6 +693,15 @@ LORE = {
                 'He calls more rats. Kill him fast, then the brood.'),
     'grolm': ('An exiled dwarf who dug too deep and found madness.', 'The bottom of the Lost Mine.',
               'He leaps across the room at you. Keep your guard up.'),
+    'hollow_king': ('A god of star-iron the Varnish made, with the winds and the dead bound into him.',
+                    'The throne at the top of the Sky-Seat.',
+                    'Three phases: the winds, the dead, himself. Every relic you bring makes one of them lighter.'),
+    'wendigo': ('A hunger as tall as a tree, with antlers and a face of bone.', 'The cold woods of the north.',
+                'Fire hurts it badly; frost does nothing. It is fast: do not run.'),
+    'great_wolf': ('A grey wolf as big as a horse, older than the roads.', 'The open plains and the hills.',
+                   'It leaps and calls the pack. Fight with your back to a wall.'),
+    'fallen_mage': ('A mage the Circle cast out, who rules lords from inside.', 'The top of his unlit tower.',
+                    'His spells strike from afar. Break his casting, and keep moving.'),
     'lich': ('Morvenna the Undying, author of the curse.', 'The bottom of her crypt.',
              'Her bolts and frost waves strike from anywhere. Close in and do not stop.'),
     'salamander': ('A lizard as long as a man, its belly glowing like a forge.', 'Deserts, ash lands and the burning isles.',

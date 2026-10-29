@@ -495,19 +495,22 @@ def items_skills_curse():
     assert ring.identified and not ring.cursed
     g.unequip('ring1')
     assert not g.is_equipped(ring)
-    # Morvenna grows with you
+    # the servants grow on their own clock, not with you; meddling brings his attention, and hunters
     tainted = lambda: sum(1 for v in g.world.taint if v)
     print('evils:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted())
-    p.lvl = 30
     g.request = None
-    EVL.update(g)
     to_over(g, 0)
-    for _ in range(40):
+    from avarenthia import shadow as SH
+    for e in g.world.evils:
+        e.awake, e.goal = True, 60.0
+    sh = SH.st(g.world)
+    sh['att'], sh['step_day'] = 4, g.day
+    for _ in range(60):
         EVL.daily(g)
     hunts = [w for w in g.world.wanderers if w.kind == 'hunt']
-    print('at level 20:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted(), 'hunters', len(hunts))
+    print('awake and watched:', [(e.name, EVL.stage(e)) for e in g.world.evils], 'tainted cells', tainted(), 'hunters', len(hunts))
     assert tainted() > 300 and any(e.known for e in g.world.evils)
-    assert hunts, 'strong, known evils send hunters'
+    assert hunts, 'his attention sends hunters'
     h = hunts[0]
     d0 = cheb(h.x, h.y, p.x, p.y)
     for _ in range(30):
@@ -585,9 +588,10 @@ def world_and_people():
         boss = E.make_monster(g, e.d['boss'], 1, 1, 10)
         g.enter_dungeon(e.did, g.world.dungeons[e.did].depth, 'up')
         g.map.mons.append(boss)
+        e.jar = True                            # the Lich's jar broken, or she would rise again
         g.kill(boss)
         assert e.defeated
-    assert g.request == ('win',) or g.flags.get('saved')
+    assert sum(1 for it in g.player.inv if it.k == 'relic') >= 1, 'a fallen servant leaves its relic'
     # fishing by a river
     g2 = E.Game('Fisher', False, 99, 'halfling', 'male')
     om = g2.maps['over']
@@ -7050,7 +7054,9 @@ def boss_moves():
             if b not in m.mons or g.dead:
                 break
             if random.random() < .3:
-                sp = [cc for cc in free_around(g, m, b.x, b.y, 6) if g.visible(*cc)]
+                ar = m.__dict__.get('arena')                # a sealed room: you cannot step out of it
+                room = set(map(tuple, ar['cells'])) if ar and ar.get('sealed') else None
+                sp = [cc for cc in free_around(g, m, b.x, b.y, 6) if g.visible(*cc) and (room is None or cc in room)]
                 if sp:
                     p.x, p.y = random.choice(sp)
                     g.compute_fov()
@@ -7063,7 +7069,7 @@ def boss_moves():
                 if mv['shape'] not in ('mark', 'self'):
                     n = BS.need(g, b, mv, set(map(tuple, c['cells'])), c['tx'], c['ty'], 5)
                     assert n is not None and n <= c['left'], (k, c['mv'], n, c['left'])
-            if random.random() < .15:
+            if t % 4 == 3:                                # a steady tenth of its life every fourth turn
                 g.damage_mon(b, b.maxhp * .1, weapon=False)
             for o in BS.helpers(g, b):
                 if random.random() < .2:
@@ -7172,8 +7178,8 @@ def boss_moves():
     BS.floor_things(g)
     assert not eg and any(o.k == 'spiderling' for o in m.mons)
     from avarenthia import spellmap as SM
-    web = next(cc for cc in free_around(g, m, p.x, p.y, 1))
-    SM.place(g, m, web[0], web[1], D.WEBS, 30)
+    web = next(cc for cc in free_around(g, m, p.x, p.y, 10) if m.tile(*cc) == D.FLOOR and cc not in SM.fields(m))
+    assert SM.place(g, m, web[0], web[1], D.WEBS, 30)
     p.x, p.y = web
     BS.floor_things(g)
     assert BH.has(g, 'held') and m.tile(*web) != D.WEBS
@@ -7239,11 +7245,305 @@ def boss_moves():
     print('boss moves ok')
 
 
+def shadow():
+    """The great evils part 1: the Hollow King's coast, three servants of three weights on their own clocks, his
+    attention (one step after a pause, cooling), a seal, the levers and a held barony, a lieutenant killed (papers,
+    weaker servant), one that survives scarred, the weakness from two sources and its edge in the lair, the Lich's
+    jar, a hero and the cairn, the relic and its small power, the Shadow tab and map layer."""
+    import pickle
+    from avarenthia import shadow as SH, evils as EVL, realms as RL, debug as DBG
+    print('== shadow')
+    random.seed(17)
+    g = E.Game('Shade', False, 4244)
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    p = g.player
+    w = g.world
+    sh = SH.st(w)
+    assert [e.weight for e in w.evils] == ['heavy', 'middle', 'light'], [e.weight for e in w.evils]
+    assert sh['sky'] and sh['coast'] and len(sh['land']) > 100
+    for a in w.evils:
+        assert a.did in w.dungeons and len(a.lts) == 3
+        for b in w.evils:
+            if a is not b:
+                assert cheb(a.x, a.y, b.x, b.y) >= 30, (a.key, b.key)
+    sites = [lt['site'] for e in w.evils for lt in e.lts if lt['site'] is not None]
+    assert len(sites) >= 7 and all(w.sites[i].kind == 'lt' for i in sites)
+    light, middle, heavy = w.evils[2], w.evils[1], w.evils[0]
+    assert light.awake and not middle.awake and not heavy.awake
+    # its own clock, not your level
+    to_over(g, 0)
+    pw = SH.power(g, light)
+    p.lvl = 30
+    assert SH.power(g, light) == pw
+    p.lvl = 1
+    g0 = light.goal
+    middle.wake_day = g.day + 3
+    for _ in range(5):
+        g.turn += D.DAY_LEN
+        g.last_day = g.day
+        EVL.daily(g)
+    assert light.goal > g0 and middle.awake and not heavy.awake
+    # attention: one step after a pause, then it cools
+    SH.meddle(g, 3, light)
+    assert sh['att'] == 1
+    SH.meddle(g, 5, light)
+    assert sh['att'] == 1, 'a pause before the next step'
+    sh['step_day'] -= SH.ATT_PAUSE
+    SH.meddle(g, 3, light)
+    assert sh['att'] == 2
+    sh['meddled'] = g.day - SH.ATT_COOL - 1
+    sh['cooled'] = g.day - 20
+    SH.daily(g)
+    assert sh['att'] == 1, 'left alone he looks away'
+    # a seal breaks when one has what it wants
+    middle.goal = 99.99
+    SH.daily(g)
+    assert middle.sealed and sh['seals'] == [middle.key] and sh['torn'] and sh['wake'] >= 20
+    # the levers: a servant holds a barony, with its colour on the realms layer
+    heavy.awake = True
+    EVL.update(g)
+    R = w.realm
+    rids = [r for r in SH.regions_of(g, 0) if r in R.baronies] or [r for r in R.baronies][:1]
+    rid = SH._hold(g, 0, heavy, rids)
+    assert rid is not None and RL.realm_key(w, rid) == ('evil', 0)
+    keep = random.random
+    random.random = lambda: 0.0
+    try:
+        SH.monthly(g)
+    finally:
+        random.random = keep
+    assert any('Shadow' in str(n.get('fact')) for n in __import__('avarenthia.news', fromlist=['x']).store(g))
+    # a lieutenant: its place, its death, its papers
+    i, j = next((i, j) for i, e in enumerate(w.evils) for j, lt in enumerate(e.lts) if lt['site'] is not None and lt['person'])
+    e = w.evils[i]
+    lt = e.lts[j]
+    site = w.sites[lt['site']]
+    g.enter_site(site.id)
+    o = next(x for x in g.map.mons if x.__dict__.get('lt') == (i, j))
+    assert o.maxhp > 100 or o.maxhp >= 3 * 10
+    pw = SH.power(g, e)
+    pts = sh['pts']
+    g.kill(o)
+    assert lt['dead'] == 'you' and 'papers' in SH.know(g)['src'].get(e.key, set())
+    assert SH.power(g, e) <= pw and (sh['pts'] > pts or sh['att'] >= 1)
+    # one that survives you comes back scarred
+    i2, j2 = next((i_, j_) for i_, e_ in enumerate(w.evils) for j_, l_ in enumerate(e_.lts) if l_['site'] is not None
+                  and not l_['dead'])
+    lt2 = w.evils[i2].lts[j2]
+    s2 = w.sites[lt2['site']]
+    g.enter_site(s2.id)
+    o2 = next(x for x in g.map.mons if x.__dict__.get('lt') == (i2, j2))
+    o2.hp = o2.maxhp // 2
+    to_over(g, 0)
+    SH.daily(g)
+    assert lt2['scars'] == 1 and s2.map_key not in g.maps
+    g.enter_site(s2.id)
+    o2 = next(x for x in g.map.mons if x.__dict__.get('lt') == (i2, j2))
+    assert 'scarred' in o2.name and o2.hp == o2.maxhp
+    to_over(g, 0)
+    # the weakness: two sources, then the edge in the lair
+    SH.clue(g, light, 'library')
+    assert not SH.weak_known(g, light)
+    SH.clue(g, light, 'riddle')
+    assert SH.weak_known(g, light)
+    dg = w.dungeons[light.did]
+    g.enter_dungeon(light.did, dg.depth, 'up')
+    boss = next(x for x in g.map.mons if x.k == light.d['boss'])
+    assert boss.__dict__.get('edge') == SH.SERVANT[light.key]['weak'][1]
+    edge = boss.edge
+    if isinstance(edge, tuple):
+        assert SH.edge_mult(g, boss, False, edge[1]) == 1.5
+    # the Lich's jar
+    lich = EVL.make('lich')
+    lich.did = heavy.did
+    assert SH.returns(g, lich, None) and lich.back == g.day + 40
+    m = g.map
+    jx, jy = next((x, y) for x, y in ((p.x + dx, p.y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
+                  if (x, y) != (p.x, p.y) and D.TILES[m.tile(x, y)].walk and not m.mon_at(x, y))
+    m.set(jx, jy, D.JAR)
+    keep_ev = w.evils
+    w.evils = keep_ev + [lich]
+    g.try_move(jx - p.x, jy - p.y)
+    w.evils = keep_ev
+    assert m.tile(jx, jy) != D.JAR and lich.jar and lich.back is None
+    # the servant falls: its relic, with one small power
+    s0 = g.stats()
+    stat = SH.SERVANT[light.key]['relic'][1]
+    g.kill(boss)
+    assert light.defeated and any(it.k == 'relic' and it.t == light.key for it in p.inv)
+    assert g.stats().get(stat, 0) > s0.get(stat, 0)
+    # a hero rides out; one who falls leaves a cairn with the journal
+    to_over(g, 0)
+    for _ in range(12):
+        DBG.shadow(g, 'hero')
+        if any(h['state'] == 'dead' for h in sh['heroes']):
+            break
+    graves = [q for q in w.sites if q.kind == 'hgrave']
+    assert sh['heroes'] and graves, [h['state'] for h in sh['heroes']]
+    gs = graves[0]
+    g.enter_site(gs.id)
+    cx, cy = next((i_ % g.map.w, i_ // g.map.w) for i_, t in enumerate(g.map.t) if t == D.HCAIRN)
+    p.x, p.y = cx - 1, cy
+    g.try_move(1, 0)
+    assert gs.id in SH.know(g)['read'] and g.request and g.request[0] == 'dialog'
+    g.request = None
+    # where it shows: the journal tab, the map layer, the line under the map
+    to_over(g, 0)
+    for e_ in w.evils:
+        if not e_.known:
+            EVL.learn(g, e_)
+    g.request = None
+    DBG.shadow(g, 'lts')
+    app.screens = [ui.GameScreen(app), ui.JournalScreen(app, ui.JournalScreen.TABS.index('Shadow'))]
+    app.render()
+    rows = app.screens[-1].rows_shadow()
+    text = ' '.join(t for r in rows for _x, t, _c in r['parts'])
+    assert 'HIS SERVANTS' in text and heavy.name[:20] in text and lt['name'][:20] in text
+    app.screens = [ui.GameScreen(app), ui.WorldMapScreen(app)]
+    app.key('7')
+    assert ui.WorldMapScreen.LAYERS[ui.WorldMapScreen.layer] == 'Shadow'
+    app.render()
+    cx, cy = sh['coast']
+    assert SH.his_land(g, cx, cy) and SH.where_line(g, cx, cy) == "The Hollow King's coast"
+    assert SH.layer_look(g, cx, cy) is not None
+    ui.WorldMapScreen.layer = 0
+    for k in ('up', 'zero', 'name', 'wake', 'seal', 'weak', 'month'):
+        DBG.shadow(g, k)
+    pickle.dumps(g)
+    print('shadow ok')
+
+
+def skyseat():
+    """The great evils part 2: the mist over the Sky-Seat and its tearing, the skipper who dares the whirlpool, the
+    chain (gusts, handholds, broken links, the fall to the sea), the stair into the city, the five floors and their
+    beacons, the Hollow King lighter for every relic, the shade that rises with your pack where the dead are bound,
+    the dearer raising, no town portal, the Long Night and the end."""
+    import pickle
+    from avarenthia import shadow as SH, skyseat as SK, events as EV, debug as DBG, economy as ECO
+    from avarenthia.worldgen import free_around
+    print('== skyseat')
+    random.seed(18)
+    g = E.Game('Climber', False, 4245)
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    p = g.player
+    w = g.world
+    sh = SH.st(w)
+    om = g.maps['over']
+    assert 'skyseat' in w.dungeons and not sh['seen']
+    assert not any(n == 'The Sky-Seat' for n, _x, _y in w.wonders), 'hidden in the mist'
+    x0, y0 = sh['sky'][0], sh['sky'][1] + 10
+    i0 = y0 * om.w + x0
+    assert om.over.get(i0) and om.over[i0][0] in '░▒~', 'mist over the city'
+    SH.know(g)['king'] = True
+    SK.check(g)
+    assert sh['seen'] and any(n == 'The Sky-Seat' for n, _x, _y in w.wonders)
+    # the skipper on the harbour nearest his coast
+    from avarenthia.living import harbours
+    cx, cy = sh['coast']
+    here = min(harbours(g), key=lambda q: cheb(q.x, q.y, cx, cy))
+    assert SK.dares(g, here) and SK.opt(g, here)
+    others = [q for q in harbours(g) if q.id != here.id]
+    assert not others or not SK.dares(g, others[0])
+    g.enter_town(here.id)
+    SK.whirl(g)
+    assert not g.pending, 'no relic, no passage'
+    DBG.shadow(g, 'relic')
+    DBG.shadow(g, 'relic')
+    p.gold = 100000
+    SK.whirl(g)
+    assert g.pending and g.pending['key'] == 'skyseat'
+    EV.resolve(g, 'go')
+    m = g.map
+    assert g.cur == SK.CHAIN and getattr(m, 'chain', False) and p.gold == 100000 - SK.FARE
+    app.render()
+    # a gust: a handhold holds you, without one it throws you off the chain into the sea
+    links = [(i_ % m.w, i_ // m.w) for i_, t in enumerate(m.t) if t == D.STARLINK]
+    ex = next(c for c in links if m.tile(c[0] + 1, c[1]) == D.AIR and c[1] > 40 and
+              not any(m.tile(c[0] + a, c[1] + b) == D.CHAIN for a in (-1, 0, 1) for b in (-1, 0, 1)))
+    p.x, p.y = ex
+    p.life = g.stats()['max_life']
+    m.gust = dict(t=g.turn, dx=1)
+    SK.turn(g)
+    assert (p.x, p.y) == m.entry and p.life < g.stats()['max_life'], 'off the chain and into the sea'
+    p.x, p.y = ex
+    m.set(ex[0] - 1, ex[1] - 1, D.CHAIN)
+    m.gust = dict(t=g.turn, dx=1)
+    SK.turn(g)
+    assert (p.x, p.y) == ex, 'a handhold holds'
+    # a broken link gives way if you stand on it
+    m.set(*ex, D.WEAKLINK)
+    p.life = g.stats()['max_life']
+    SK.turn(g)
+    assert (p.x, p.y) == ex
+    SK.turn(g)
+    assert m.tile(*ex) == D.AIR and (p.x, p.y) == m.entry
+    # the stair into the city; each floor's name and beacon
+    p.x, p.y = m.top[0], m.top[1] - 1
+    assert m.tile(p.x, p.y) == D.UP
+    g.use_stairs('up')
+    f1 = g.map
+    assert g.cur == 'skyseat:1' and 'Under-City' in f1.name and D.BEACON in f1.t
+    bx, by = f1.beacon
+    near = next(c for c in free_around(g, f1, bx, by, 1))
+    p.x, p.y = near
+    g.try_move(bx - p.x, by - p.y)
+    assert f1.tile(bx, by) == D.LITBEACON and 1 in sh['beacons']
+    assert g.town_portal() == 0 or not any(it.k == 'scroll' for it in p.inv)
+    app.render()
+    # the throne: the Hollow King, two phases lighter for two relics
+    DBG.shadow(g, 'f5')
+    f5 = g.map
+    king = next(o for o in f5.mons if o.k == 'hollow_king')
+    kt = king.kit_over
+    assert king.light == 2 and 'Z' not in kt['phases'][0]['beat'] and 'Z' not in kt['phases'][1]['beat']
+    assert 'Z' in kt['phases'][2]['beat'] and 'Z' in BS_KIT_BEAT()
+    # dying there: the dearer raising, the shade with your pack, new bound dead on the unlit floors
+    n_inv = sum(1 for it in p.inv if not g.is_equipped(it) and it.k != 'quest')
+    gold0 = p.gold
+    fee = g.raise_fee() * 2
+    sp = next(c for c in free_around(g, f5, king.x, king.y, 12) if cheb(*c, king.x, king.y) > 6)
+    p.x, p.y = sp
+    dead_before = sum(1 for o in g.maps['skyseat:1'].mons if o.k == 'bound_dead')
+    g.die('a test')
+    assert not g.dead and p.gold == gold0 - fee and g.cur != 'skyseat:5'
+    sd = next(o for o in f5.mons if o.__dict__.get('my_body') is not None)
+    assert sd.name.startswith('The shade of') and len(sd.my_body.payload['items']) <= n_inv
+    assert sum(1 for o in g.maps['skyseat:1'].mons if o.k == 'bound_dead') == dead_before, 'a lit floor stays calm'
+    g.cur = 'skyseat:5'
+    p.x, p.y = sp
+    g.compute_fov()
+    g.kill(sd)
+    assert any(it.k == 'corpse' for it in f5.items)
+    # the Long Night: dark, wider, dearer
+    DBG.shadow(g, 'night')
+    assert sh['night'] and SH.land_r(w) == SH.NIGHT_R
+    SH.daily(g)
+    assert ECO.NIGHT[0] > 1
+    # the end: he falls, the world heals
+    g.request = None
+    g.kill(king)
+    assert sh['won'] and g.request == ('win',) and SH.land_r(w) == 0
+    SH.daily(g)
+    assert ECO.NIGHT[0] == 1.0
+    app.screens = [ui.GameScreen(app), ui.WinScreen(app)]
+    app.render()
+    app.screens = [ui.GameScreen(app)]
+    pickle.dumps(g)
+    print('skyseat ok')
+
+
+def BS_KIT_BEAT():
+    from avarenthia import bosses as BS
+    return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

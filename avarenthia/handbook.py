@@ -90,7 +90,8 @@ def ch_moving(g):
         ('p', 'In a dungeon or a ruin, [x] walks by itself until something turns up. Any key stops it.'),
         ('h', 'The map'),
         ('p', '[m] opens the map of the realm. You only see the land you have walked or been told about. The keys [1] '
-              'to [6] show it in layers: Land, Danger, Factions, Realms, Jobs and Trade; [L] goes through them in turn. '
+              'to [7] show it in layers: Land, Danger, Factions, Realms, Jobs, Trade and Shadow; [L] goes through them in '
+              'turn. '
               'In a town, [m] shows the town plan with every shop named, and [Tab] switches to the realm.'),
     ]
 
@@ -885,6 +886,68 @@ def ch_realms(g):
     ]
 
 
+def ch_shadow(g):
+    return [
+        ('p', 'Out past the sea a piece of the Sky-Seat never fell, and in it sits the Hollow King, the old shadow of '
+              'the Varnish. He wants to come back. The world lives round that, whether you meddle or not.'),
+        ('h', 'His servants'),
+        ('p', 'Three servants work for him in every world, each in a land of its own: a lesser one, awake from the '
+              'start, that keeps to its own country; a greater one that wakes later and reaches a few baronies or a '
+              'coast; and his right hand, who wakes last and reaches a whole realm. First you hear only rumours and see '
+              'marks on the land: blight, ash, webs, empty woods. Then the rumours get a name.'),
+        ('p', 'Each servant wants one thing, and gets it through the realms: wars, tribute, hunger, a baron who signs '
+              'whatever he is given. A barony a servant holds takes its colour on the Realms layer. The realms push back '
+              'with levies and the Church\'s order; that holds a servant back, but never stops it. Only you can kill one. '
+              'When a servant has what it wants, a seal breaks, and the sky over the sea glows at night.'),
+        ('h', 'His attention'),
+        ('p', 'The Hollow King does not notice you until you meddle: kill a lieutenant, go into a lair, learn a '
+              'weakness, beat his hunters. Then his attention grows, one step at a time. With it come hunters, faster '
+              'plans, and the next servant wakes sooner. Leave him alone for a while, and he looks away again.'),
+        ('h', 'Lieutenants'),
+        ('p', 'Each servant has three lieutenants, each in a fort, a camp or a tower of their own, the sign {Ω|200,120,220}. '
+              'You need not kill them, but each one dead makes its servant weaker, and a lord whose land you freed will '
+              'remember. One who survives you heals, and comes back scarred and stronger.'),
+        ('h', 'Weaknesses and relics'),
+        ('p', 'Every servant has one weakness. Two sources tell it: a city library, a lieutenant\'s papers, the old '
+              'riddles, or the journal of a hero who rode out against it. Named heroes do ride out; now and then one '
+              'kills a lieutenant, and most never come back. A cairn, the sign {▲|200,196,180}, marks where one fell: '
+              'walk into it to read what they knew. Once you know a weakness, it changes the fight in the lair. The '
+              'Lich keeps her life in a black jar beside her, the sign {Φ|196,134,255}: break it, or she rises again.'),
+        ('p', 'A fallen servant leaves a relic. Carried, it gives one small power; the old letters call the relics keys.'),
+        ('h', 'The Sky-Seat'),
+        ('p', 'Mist and storm hide the Sky-Seat out over the sea. The mist tears when you know the truth of the '
+              'Hollow King, from the riddle of his name, or when the first seal breaks. The relics are the keys '
+              'through it; whoever makes all five riddles whole finds the Star-Iron Key as well.'),
+        ('p', 'No road you can travel by goes through his coast: you walk it, and his hunters find you there. One '
+              'skipper, on the harbour nearest his coast, dares the whirlpool, for twenty silver and a relic to show '
+              'the mist. Your company cannot come in a boat that small.'),
+        ('p', 'The Varnish chained the city down with star-iron. You climb a chain, the sign {§|200,204,216}, with the '
+              'sea far below. When the chain sings, a gust is coming: stand by a handhold, the chain bound to the '
+              'rock, or it throws you off. A broken link, the sign {:|160,96,60}, and cracked glass, the sign '
+              '{░|216,238,244}, give way if you stand on them. A fall goes into the sea, and the skipper hauls you out.'),
+        ('p', 'The city has five floors of glass and bronze, from the Under-City to the throne. Walk into the beacon '
+              'on each floor, the sign {¥|136,144,160}, to light it: a lit floor stays calm, and from the rocks a rope '
+              'of light takes you up to the highest one you lit.'),
+        ('h', 'The last fight'),
+        ('p', 'The Hollow King fights in three phases: the winds, the dead, and himself. Every relic you carry makes '
+              'one of them lighter, without its heaviest blow. A town portal will not open in his city.'),
+        ('h', 'Dying there'),
+        ('p', 'He keeps those who die in his city: the priests must fight for you, the raising costs twice as much, '
+              'and you wake on the mainland. Your body rises as your shade, with your backpack: weaker than you, and it '
+              'does not heal. Beat it to get your things back. The same happens in the barrows, the crypts and the '
+              'Rift. What you opened stays open and the slain stay dead, but on every floor without a lit beacon he '
+              'sends new bound dead.'),
+        ('h', 'The ends'),
+        ('p', 'If three seals break, the Long Night comes: the sky stays dark, his coast spreads, the cities shut their '
+              'gates and everything is a fifth dearer. He can still be beaten, only harder. If you beat him, the '
+              'world heals and goes on, and the chronicle keeps your name. There is no second Hollow King.'),
+        ('h', 'Where it shows'),
+        ('p', 'The journal\'s Shadow tab keeps what you know of him, his servants and their lieutenants. On the map, '
+              '[7] shows his coast, each servant\'s mark and the lands they hold. The line under the map says when you '
+              'stand on his coast, or in a land a servant holds.'),
+    ]
+
+
 def ch_wild_peoples(g):
     return [
         ('p', 'Orcs, goblins, kobolds, gnolls and lizardfolk have homes of their own: a war camp behind a palisade, a '
@@ -906,6 +969,8 @@ def ch_death(g):
     return [
         ('p', 'Softcore: the priests raise you, for a fee from your purse. Your pack stays with your body, and you are '
               'weak for a day or two. No coin for the temple: your tale ends there.'),
+        ('p', 'Where the dead are bound, in the barrows, the crypts, the Rift and the Sky-Seat, your body does not lie '
+              'still: it rises as your shade, with your pack. Beat it to get your things back.'),
         ('p', 'Hardcore: death is final. There is one save, and it is gone.'),
         ('p', 'When you fall, the death screen names the deeds you are remembered for.'),
         ('p', 'A fallen hireling: in Hardcore they are dead, their gear on their body. In Softcore a temple raises them '
@@ -1004,7 +1069,7 @@ CHAPTERS = [
     ('Your hero', ch_hero), ('Who you become', ch_who), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Dungeons', ch_dungeons), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
     ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
-    ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms),
+    ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms), ('The shadow', ch_shadow),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
     ('All the keys', ch_keys),
 ]
