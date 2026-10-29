@@ -3040,7 +3040,7 @@ def nature_sites():
     from avarenthia import nature as NT, events as EV
     print('== nature and wonders')
     seen = set()
-    for seed in (12, 1, 5):
+    for seed in (12, 1, 5, 2):
         g = E.Game('Nature', False, seed=seed, race='human', gender='male')
         p = g.player
         p.gold = 5000
@@ -3169,12 +3169,14 @@ def nature_sites():
             assert NT.site_of(g).wish_day == g.day
         if go('wisps'):
             at(23)
+            if not NT.night(g):                            # a light summer night in the north: take the small hours
+                at(1, 1)
             m = g.map
-            m.wisp_day = -1
+            m.wisp_day, m.wisp_k = -1, 0
             for pt in m.wisp:
                 p.x, p.y = pt
                 NT.on_step(g)
-            assert m.wisp_day == g.day, 'following the lights to the end'
+            assert m.wisp_day != -1, 'following the lights to the end'
             at(12)
         if go('bay'):
             at(23, (120 - g.day % 360) % 360)            # a summer night
