@@ -333,6 +333,7 @@ def elf(game, site, m, cx, cy, friendly):
         m.set(x, y, D.TRUNK if (x, y) in rim else PLANK)
     tdoor = min((c for c in rim if c[1] >= ty), key=lambda c: (c[0], -c[1]))
     m.set(*tdoor, D.ODOOR)
+    PL.trail(m, (tdoor[0] - 1, tdoor[1]), (cx, cy), D.WHITE)        # a white path from the trunk's door to the well
     up = site.tw['stairs'][0]
     if cheb(up[0], up[1], *tdoor) <= 1:
         site.tw['stairs'].reverse()
