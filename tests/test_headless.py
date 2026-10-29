@@ -1623,11 +1623,11 @@ def overview():
     app.render()
     line = ''.join(app.cv.ch[ui.MAP_H * ui.W:(ui.MAP_H + 1) * ui.W])
     assert '►' in line, line
-    # the map: six layers, by number and by L, in both views
+    # the map: seven layers, by number and by L, in both views
     app.key('m')
     for z in (1, 0):
         ui.WorldMapScreen.zoom = z
-        for k in '123456':
+        for k in '1234567':
             app.key(k)
             app.render()
             assert ui.WorldMapScreen.layer == int(k) - 1
