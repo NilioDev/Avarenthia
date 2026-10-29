@@ -3612,7 +3612,7 @@ class WinScreen(Modal):
 # ====================================================================== trade and jobs
 def _stock_word(s, g):
     st = s.market[g][0]
-    return 'none' if st < 1 else 'scarce' if st < 12 else 'some' if st < 45 else 'plenty'
+    return 'none' if ECO.units(s, g) < 1 else 'scarce' if st < 12 else 'some' if st < 45 else 'plenty'
 
 
 class MarketScreen(Modal):
@@ -3652,7 +3652,7 @@ class MarketScreen(Modal):
             cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark == '!' else DIM, bg)
             cv.text(x + 4, yy, D.GOODS[gk]['name'], FG, bg)
             cv.text(x + 22, yy, fmt(ECO.buy_price(s, gk), True), FG, bg)
-            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk, ECO.fair_day(g, s)), True), FG, bg)
+            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk, ECO.fair_day(g, s), ECO.tired(g, s, gk)), True), FG, bg)
             sw = _stock_word(s, gk)
             cv.text(x + 36, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
             have = p.cargo.get(gk, 0)

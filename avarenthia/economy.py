@@ -8,6 +8,9 @@ from . import news as NW
 from .money import fmt
 
 REF = 40.0
+RESTOCK = .05                # each day stock comes back this share of the way to its normal level
+TIRE_FORGET = .05            # each day a market forgets this share of what you sold it
+TIRE_HALF = 90.0             # this much sold (in stock) and a market pays you only two thirds
 faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
 race_factor = lambda s: 1.0  # set by the game: how the townsfolk's race feels about yours
 today = lambda: 0            # set by the game: the day of the year, for the prices of the season
@@ -76,9 +79,24 @@ def in_season(doy):
     return [g for g, v in f.items() if v < .85], [g for g, v in f.items() if v > 1.15]
 
 
+def step(g):
+    """How far one of this good moves a market's stock: a gem far more than a sack of grain."""
+    return max(1.0, (D.GOODS[g]['base'] / 12) ** .5)
+
+
+def bend(g):
+    """How hard the price follows the stock: the dearer the good, the harder."""
+    return .55 + .2 * min(1.0, D.GOODS[g]['base'] / 120)
+
+
+def units(s, g):
+    """How many of this good a market has to sell."""
+    return int(s.market[g][0] / step(g))
+
+
 def price(s, g):
     stock = max(1.0, s.market[g][0])
-    f = (REF / stock) ** 0.55
+    f = (REF / stock) ** bend(g)
     return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100     # copper
 
 
@@ -86,10 +104,21 @@ def buy_price(s, g):
     return max(1, round(price(s, g) * 1.08 * (1 - _discount(s)) * race_factor(s)))
 
 
-def sell_price(s, g, fair=False):
-    """What a town pays for one; on its market day (fair) a tenth more."""
+def sell_price(s, g, fair=False, tired=0.0):
+    """What a town pays for one; on its market day (fair) a tenth more; less when you have sold it much of this
+    good of late (tired: see tired())."""
     b = buy_price(s, g)
-    return max(1, min(b - 1, round(price(s, g) * .92 * (1.1 if fair else 1) * (1 + _discount(s)) / race_factor(s))))
+    return max(1, min(b - 1, round(price(s, g) * .92 * (1.1 if fair else 1) * (1 + _discount(s)) / race_factor(s)
+                                   * tire_factor(tired))))
+
+
+def tire_factor(tired):
+    return 1 / (1 + tired / (2 * TIRE_HALF))
+
+
+def tired(game, s, g):
+    """What you have sold this market of this good of late, in stock; the market forgets it slowly."""
+    return getattr(game.player, 'tired', {}).get(f'{s.id}:{g}', 0.0)
 
 
 def fair_day(game, s):
@@ -114,11 +143,11 @@ def buy(game, s, g, n=1):
     done = spent = 0
     for _ in range(n):
         pr = buy_price(s, g)
-        if p.gold < pr or free_cargo(p) < D.GOODS[g]['w'] or s.market[g][0] < 1:
+        if p.gold < pr or free_cargo(p) < D.GOODS[g]['w'] or units(s, g) < 1:
             break
         p.gold -= pr
         spent += pr
-        s.market[g][0] -= 1
+        s.market[g][0] -= step(g)
         p.cargo[g] = p.cargo.get(g, 0) + 1
         done += 1
     if done:
@@ -126,7 +155,7 @@ def buy(game, s, g, n=1):
         old = p.cost_basis.get(g, 0) * (have - done)
         p.cost_basis[g] = (old + spent) / have
         game.msg(f"You buy {done} {D.GOODS[g]['name']} for {fmt(spent)}.", 'gold')
-    elif s.market[g][0] < 1:
+    elif units(s, g) < 1:
         game.msg(f"{s.name} has no {D.GOODS[g]['name']} left to sell.", 'bad')
     elif free_cargo(p) < D.GOODS[g]['w']:
         game.msg('You have no room left for cargo. A pack mule or cart would help.', 'bad')
@@ -138,13 +167,17 @@ def buy(game, s, g, n=1):
 def sell(game, s, g, n=1):
     p = game.player
     done = got = 0
+    if not hasattr(p, 'tired'):
+        p.tired = {}
+    key = f'{s.id}:{g}'
     for _ in range(n):
         if p.cargo.get(g, 0) <= 0:
             break
-        pr = sell_price(s, g, fair_day(game, s))
+        pr = sell_price(s, g, fair_day(game, s), p.tired.get(key, 0.0))
         p.gold += pr
         got += pr
-        s.market[g][0] += 1
+        s.market[g][0] += step(g)
+        p.tired[key] = p.tired.get(key, 0.0) + step(g)      # the route tires: the market remembers you
         p.cargo[g] -= 1
         if p.cargo[g] <= 0:
             del p.cargo[g]
@@ -199,6 +232,13 @@ def melt(game):
 def daily(game):
     w = game.world
     melt(game)
+    p = game.player
+    t = getattr(p, 'tired', None)
+    if t:
+        for k in list(t):
+            t[k] *= 1 - TIRE_FORGET
+            if t[k] < 1:
+                del t[k]
     for s in w.settlements:
         if s.event:
             key, left = s.event
@@ -212,7 +252,7 @@ def daily(game):
             else:
                 s.event = (key, left - 1)
         for g, m in s.market.items():
-            m[0] += (m[1] - m[0]) * .15 + random.gauss(0, max(1.0, m[1] * .03))
+            m[0] += (m[1] - m[0]) * RESTOCK + random.gauss(0, max(1.0, m[1] * .02))
             m[0] = max(0.0, m[0])
     if random.random() < .25:
         cands = [s for s in w.settlements if not s.event]

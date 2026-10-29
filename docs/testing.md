@@ -183,8 +183,8 @@ Each line: **what** - what to check - what the debug menu should offer.
 
 ## Trade as a way to play (approved 25 October 2026)
 
-- **The money** - prices bending by how dear a good is, stock coming back slowly, a route tiring. Debug: give coin and
-  cargo; set a town's stock of a good; let days pass.
+- **The money** (built 29 October 2026) - prices bending by how dear a good is, stock coming back slowly, a route
+  tiring: sell one good twice in one town and see the price drop. Debug: Coin, Time (let days pass).
 - **Goods with a name** - each named good, its region, the rumour, good and bad years. Debug: list the world's named
   goods; teleport to a maker; set the year good or bad.
 - **Master makers** - a masterwork bought and brought to who asks, an order. Debug: give a masterwork; teleport to a master.

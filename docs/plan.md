@@ -20,7 +20,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built: rounds 17-18 after the epics and the boss kit, the other sixteen servants in rounds 31-32 |
-| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Not built: rounds 14, 22, 26, and the great fair with the feast days in 28 |
+| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; not built: rounds 22, 26, and the great fair with the feast days in 28 |
 | **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Not built: rounds 15-16 before the great evils, the maker and the job bosses in 23 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -48,8 +48,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 12. **The Varnish** (XL): their cities and places, the hidden dungeons, the lore, the books, the riddles. Built 25
     October 2026 (see `docs/built.md`).
 13. **Classes part 4: the epics** (L). Built 29 October 2026 (see `docs/built.md`). 14. **Trade part 1:
-    the money fixes** (S): dear goods bend the price harder, stock comes back more slowly, routes tire; alone in
-    `economy.py`, weighed against wages, beds, repairs and the temple. Pause after 12, merge after 14.
+    the money fixes** (S). Built 29 October 2026 (see `docs/built.md`). Pause after 12, merge after 14.
 15. **Boss fights part A: the kit** (XL): marked blows, the deck, phases, spent and staggered, breaking, resolve,
     helpers, twins, threat, the boss bar, end-boss rooms and arenas, with Snagtooth, the Lich and the Dragon.
     16. **Part B** (XL): the whole move library, the other fixed bosses, roaming bosses. Both before the great evils,
@@ -536,11 +535,7 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
 want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
 
-**Fixing the money first.** Today 30 gems from the hills to a city earn ~23 gold, while a job pays ~12 silver and grain
-earns ~1.5 gold a trip; and stock springs back 15% a day, so two towns become a money machine. So: the price bends
-harder the dearer the good (selling ten gems moves the price more than ten sacks of grain), stock comes back more slowly,
-and each route tires (the same good to the same town fetches less until the market forgets). Weigh it against wages,
-beds, repairs and the temple: trade pays well, never endlessly.
+**Fixing the money first:** built 29 October 2026 (round 14, see `docs/built.md`).
 
 **Small to great** (Nilio: begin small and grow). A trader climbs a ladder, each step paid for by the one before:
 a peddler's pack (30) with cheap goods from village to village (grain, salt, ale, wool: a few silver a trip, but

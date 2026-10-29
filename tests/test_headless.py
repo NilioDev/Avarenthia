@@ -6575,11 +6575,61 @@ def epics():
     print('   epics ok: gaps between teachers', gaps[:3], '...', gaps[-1])
 
 
+def money_fixes():
+    """Trade part 1: a dear good bends the price harder than a cheap one, a town holds only a few dear goods, stock comes
+    back slowly, and a route tires: the same good in the same town fetches less until the market forgets."""
+    import copy
+    print('== money fixes')
+    random.seed(5)
+    g = E.Game('Trader', False, 4242)
+    p = g.player
+    w = g.world
+    p.gold = 10 ** 7
+    p.vit = 300
+    assert ECO.step('gems') > ECO.step('tools') > ECO.step('grain') == 1
+    assert ECO.bend('gems') > ECO.bend('grain')
+    s = max(w.settlements, key=lambda q: q.market['grain'][0])
+    keep = copy.deepcopy(s.market)
+    for gk in ('grain', 'gems'):
+        s.market[gk][0] = 60.0
+    s.market['gems'][0] = 60.0
+    a0, b0 = ECO.buy_price(s, 'grain'), ECO.buy_price(s, 'gems')
+    ECO.buy(g, s, 'grain', 10)
+    ECO.buy(g, s, 'gems', 10)
+    assert ECO.buy_price(s, 'gems') / b0 > ECO.buy_price(s, 'grain') / a0
+    assert ECO.units(s, 'gems') < ECO.units(s, 'grain')
+    # selling again and again: the market remembers you
+    s.market = copy.deepcopy(keep)
+    p.cargo = {'cloth': 40}
+    p.cost_basis = {}
+    first = ECO.sell_price(s, 'cloth', False, ECO.tired(g, s, 'cloth'))
+    ECO.sell(g, s, 'cloth', 20)
+    s.market['cloth'][0] = keep['cloth'][0]          # the same stock: only the route has tired
+    tired = ECO.sell_price(s, 'cloth', False, ECO.tired(g, s, 'cloth'))
+    assert tired < first, (tired, first)
+    for _ in range(60):
+        ECO.daily(g)
+    assert ECO.tired(g, s, 'cloth') < 3
+    # stock comes back slowly: a tenth of the way in two days at most
+    m = s.market['grain']
+    m[0], gap = m[1] - 40, 40
+    random.seed(1)
+    keep_gauss = random.gauss
+    random.gauss = lambda a, b: 0.0
+    ECO.daily(g)
+    ECO.daily(g)
+    random.gauss = keep_gauss
+    assert m[1] - m[0] > gap * .88, (m[1] - m[0])
+    import pickle
+    pickle.dumps(g)
+    print('   money ok: gems step', round(ECO.step('gems'), 2), 'cloth', first, '->', tired)
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

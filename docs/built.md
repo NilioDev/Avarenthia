@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
 | **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
 | **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
@@ -371,6 +372,13 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **Trade part 1: the money fixes** (29 October 2026; `economy.py`). One of a good moves a market's stock by
+  `step(g)` = (base / 12) ** .5, at least 1 (grain 1, cloth 1.6, gems 3.2), so a town holds `units()` of it; the
+  price follows the stock to the power `bend(g)`, .55 for cheap goods up to .75 for gems. Stock comes back 5% of
+  the way a day (was 15%). A route tires: what you sold a town of a good (`p.tired`, in stock) lowers its price
+  for you, 1 / (1 + tired / 180), and the market forgets 5% of it a day. Best route in the world with 30 cargo,
+  first trip / again a month later: grain 2.6g / 1.7g, cloth 7.8g / 2.9g, spice 11.7g / 2.5g, gems 10.3g (was
+  32.8g) / a loss. Test `money_fixes`. SAVE_VERSION 45.
 - **Classes part 4: the epics** (29 October 2026; `epics.py`). 22 skills of mode 'epic' (`EP.EPICS`, in
   `SK.SKILLS`), two per class (`BY_LINE`); `classes.fits` lets key 6 take an elite or an epic of your classes. No cost
   (`cost_of` 0); once per rest (`p.epic['spent']`, reset in `TT.rested` through `EP.rested`), Phoenix once a day
@@ -489,6 +497,16 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## Trade part 1: the money fixes (built 29 October 2026; the spec)
+
+From "Trade as a way to play" in `docs/plan.md` (approved 25 October 2026; the rest of it is still to build).
+
+**Fixing the money first.** Today 30 gems from the hills to a city earn ~23 gold, while a job pays ~12 silver and grain
+earns ~1.5 gold a trip; and stock springs back 15% a day, so two towns become a money machine. So: the price bends
+harder the dearer the good (selling ten gems moves the price more than ten sacks of grain), stock comes back more slowly,
+and each route tires (the same good to the same town fetches less until the market forgets). Weigh it against wages,
+beds, repairs and the temple: trade pays well, never endlessly.
 
 ## Classes part 4: the epics (built 29 October 2026; the spec)
 

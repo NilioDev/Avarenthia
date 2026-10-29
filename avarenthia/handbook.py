@@ -391,6 +391,11 @@ def ch_jobs(g):
         ('p', 'Every town has goods it makes cheaply and goods it wants. Buy where a good is common, carry it, sell '
               'where it is rare. A mule or a cart from the stablemaster carries more. The map\'s Trade layer [6] shows '
               'what each town you know offers and wants. Prices change with the seasons.'),
+        ('p', 'A market fills up as you sell to it, and empties as you buy: the dearer the good, the faster. Ten gems '
+              'move the price more than ten sacks of grain, and a small town has only a few to sell. What you bought '
+              'out comes back slowly, over weeks. A market also remembers you: sell the same good in the same town '
+              'again and again, and it pays less each time, until it forgets. Trade pays well, but never for '
+              'ever on one road.'),
     ]
 
 
