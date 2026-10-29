@@ -2381,8 +2381,8 @@ def roamers(game):
 
 def leaving(game):
     """You take the stair: a roamer that hunts you and is not far behind follows (it knows where you went)."""
-    m, p = game.map, game.player
-    if m.kind != 'dungeon':
+    m, p = game.maps.get(game.cur), game.player
+    if m is None or m.kind != 'dungeon':                     # the level you left is already gone
         return []
     out = []
     for o in list(m.mons):

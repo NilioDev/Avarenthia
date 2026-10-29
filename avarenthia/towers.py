@@ -201,6 +201,10 @@ def ground(game, site, m, tw, friendly):
                key=lambda c: (c[0], abs(c[1] - cy)))
     if not st.get('stilts'):
         m.set(door[0], door[1], DOOR)
+    x = door[0] + 1
+    while (x, door[1]) in wall and x < cx:                 # a thick bit of wall behind the door: a short passage
+        m.set(x, door[1], st['floor'])
+        x += 1
     up = tw['stairs'][0] if tw['stairs'] else None
     if up:
         m.set(up[0], up[1], UP)
