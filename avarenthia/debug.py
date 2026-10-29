@@ -289,6 +289,30 @@ def varnish_pages(game):
              'books.', 'info')
 
 
+def epics(game):
+    """Rank 40 in your classes, every teacher of them on your map, and their deeds done."""
+    from . import epics as EP
+    from . import classes as CL
+    from . import folk as FK
+    p = game.player
+    s = EP.st(game)
+    lines = CL.classes(game)
+    for line in lines:
+        if p.disc[line][0] < EP.TEACH_AT:
+            p.disc[line][:] = [EP.TEACH_AT, 0]
+        s['deeds'][line] = True
+    n = 0
+    for t in EP.teachers(game):
+        if t.cls in lines:
+            s['heard'].add(t.id)
+            if FK.unfound(t):
+                FK.discover(game, t, None)
+            n += 1
+    s['spent'], s['phoenix_day'] = False, -1
+    game.msg(f'Debug: rank {EP.TEACH_AT} in your classes, their deeds done, and {n} teachers on your map.' if lines else
+             'Debug: you have no class yet. Read a tome first.', 'info')
+
+
 def open_rift(game):
     """A rift tears open a little way off (rift.py), or says where the open one is."""
     from . import rift as RF

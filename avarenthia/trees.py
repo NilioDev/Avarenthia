@@ -503,6 +503,8 @@ def rested(game):
     p = game.player
     p.rest_spot = (game.cur, p.x, p.y)
     p.faith_day = p.__dict__.get('faith_day', -1)
+    from . import epics as EP
+    EP.rested(game)                                 # the epic on key 6 is with you again
     from . import classes as CL
     if any(free(game, line) for line in CL.classes(game)):
         from . import guide as GDE

@@ -193,10 +193,14 @@ def fits(game, sk, i):
         return 'Keys 1 and 2 are your weapon\'s own two skills: take up another weapon to change them.'
     if getattr(sk, 'weapon_skill', False) or weapon_guild(sk):
         return 'A weapon skill goes on keys 1 and 2.'
+    epic = getattr(sk, 'epic', False)
     if i in ELITE:
-        return None if is_elite(sk) else 'Key 6 is for one elite: a guild\'s highest technique.'
-    if is_elite(sk):
-        return f'{sk.name} is an elite: it can only go on key 6.'
+        if epic:
+            return None if sk.line in classes(game) else f'{sk.name} is not of your schools.'
+        return None if is_elite(sk) else 'Key 6 is for one elite or one epic: a guild\'s highest technique, or a ' \
+            'teacher\'s.'
+    if is_elite(sk) or epic:
+        return f'{sk.name} is {"an epic" if epic else "an elite"}: it can only go on key 6.'
     if sk.line not in classes(game):
         return f'{sk.name} is not of your schools.'
     return None

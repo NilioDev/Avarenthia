@@ -82,6 +82,9 @@ WEAPON_SKILL_LIST = [
     S('roar', 'Roar', 'nature', 0, 5, 12, 'around', dtype='none', radius=2, fx={'fear': 3}, color=(214, 140, 76), glyph='!'),
     S('talons', 'Talons', 'nature', 0, 2, 3, 'melee', dtype='weapon', pct=60, pct_r=1, hits=2, color=STEEL),
     S('dive', 'Dive', 'nature', 0, 4, 6, 'leap', dtype='weapon', pct=110, pct_r=1.5, range=5, color=(220, 230, 255)),
+    S('oak_slam', 'Slam', 'nature', 0, 4, 4, 'melee', dtype='weapon', pct=170, pct_r=2, fx={'stun': 1}, color=(150, 200, 110)),
+    S('oak_root', 'Root', 'nature', 0, 6, 10, 'around', dtype='none', radius=2, fx={'stun': 2}, color=(150, 200, 110),
+      glyph='♣'),
 ]
 # skills a knot of a tree teaches: on keys 3-5 like any class skill, never found as a tome
 TREE_SKILL_LIST = [
@@ -104,8 +107,9 @@ KIT = {
     'longbow': ('aimed', 'volley'), 'warbow': ('pierce', 'heavy_draw'), 'lightxbow': ('snap_shot', 'bolt_through'),
     'heavyxbow': ('bolt_through', 'xbow_brace'), 'sling': ('stunning_stone', 'skipping_stone'),
     'wolf': ('bite', 'wolf_lunge'), 'bear': ('maul', 'roar'), 'hawk': ('talons', 'dive'),
+    'oak': ('oak_slam', 'oak_root'),
 }
-SHAPE_KITS = ('wolf', 'bear', 'hawk')
+SHAPE_KITS = ('wolf', 'bear', 'hawk', 'oak')
 RANGED_MODES = ('shot', 'pierce', 'area_shot', 'fan', 'snap', 'skip')
 for _s in WEAPON_SKILL_LIST:
     _s.weapon_skill = True

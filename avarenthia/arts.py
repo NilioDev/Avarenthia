@@ -48,7 +48,9 @@ def first_blow(game, mon):
     """Cunning's rule: the first blow on one who does not see you coming lands twice (three times for a pure
     Rogue). Returns the multiplier, and spends the ambush."""
     p = game.player
-    if 'cunning' not in classes(game) or not unaware(game, mon) or getattr(mon, 'ambushed', False):
+    from . import epics as EP
+    dance = EP.shadow_dance(game) and not mon.is_npc       # Shadow Dance: every blow is a first one
+    if 'cunning' not in classes(game) or not dance and (not unaware(game, mon) or getattr(mon, 'ambushed', False)):
         return 1
     TT = _tt()
     mult = (3 if TT.has(game, 'rogue') else 2) * (1 + TT.total(game, 'ambush') / 100)
@@ -73,6 +75,10 @@ def broke_cover(game):
 
 def notice(game, mon):
     """A foe's chance each turn to notice you, when it can see you."""
+    from . import epics as EP
+    ec = EP.notice(game, mon)                        # the Eclipse: it sees only the tile beside it
+    if ec is not None:
+        return ec
     if not buff(game, 'sneak'):
         return .65
     TT = _tt()

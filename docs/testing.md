@@ -21,6 +21,10 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Elites and weapon-guild skills** - a guild master's techniques on key 6, a lesser one of your school on 3-5, a
   weapon guild's on 1 or 2 with its weapon in hand; a master refusing a technique you could not use. Debug: Guild
   rank (q), Coin.
+- **Epics** (built 29 October 2026) - each of the 22 on key 6, once per rest, ready/spent on the panel; Phoenix
+  instead of a death, its flames and how they go out; the teachers' huts, a rumour from rank 35, each deed to its
+  end, the swap. Debug: "Epics: rank 40, teachers, deeds" (E), Teleport to the hut, "Rested here", Weather (a storm
+  for the bell), Time (a winter night).
 
 ## The K5 maker (built 24 October 2026)
 

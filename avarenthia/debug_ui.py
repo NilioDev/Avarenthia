@@ -195,6 +195,7 @@ class DebugScreen(Modal):
                            ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
                            ('V', 'Varnish letters and places', self.do(lambda: DBG.varnish_places(g()), True)),
                            ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
+                           ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),

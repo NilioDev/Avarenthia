@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
 | **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
 | **Built: the Rift and the Ashen Deep (24 Oct)** | A rift opens now and then as a world event (or under a deep dungeon's bottom), the land round it burns to ash, fiends raid at night; three to five levels of basalt, fire, chains, vents, bone fields and cages; seven new creatures; the Lord of Cinders before the burning gate; break it and the rift closes |
@@ -370,6 +371,26 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   by people and state; "Hear the tale of an older place" (T). Test `places`. SAVE_VERSION 38. Not as asked: the
   hidden bottom is always under a loose flagstone (no walled-up way yet), found by a rumour, not yet by a job. In a
   hostile tower the watch on top sees you come and the floors wake.
+- **Classes part 4: the epics** (29 October 2026; `epics.py`). 22 skills of mode 'epic' (`EP.EPICS`, in
+  `SK.SKILLS`), two per class (`BY_LINE`); `classes.fits` lets key 6 take an elite or an epic of your classes. No cost
+  (`cost_of` 0); once per rest (`p.epic['spent']`, reset in `TT.rested` through `EP.rested`), Phoenix once a day
+  (`phoenix_day`, checked in `engine.die`). All that is yours lives on the player (`p.epic`: spent, learnt per class,
+  deeds, teachers heard of, the barrow king, Phoenix's flames, who fell last for Return). The teachers: sites of kind
+  'teacher' placed last (`EP.place`, dice of their own), two per class far apart and of other peoples where the land
+  allows (gaps of 100-300 cells on seed 11), hidden until a rumour (`lore.hint_teacher` from rank 35); a hut map of
+  its own (`site_map`, kind 'town'), a talk with role 'teacher'. Each season a teacher may die (4%); when both are
+  gone a pupil comes after a season. The deeds are jobs of kind 'epic' (`JB.LABEL`): the ember (over_step at the
+  nearest burnt land), the winter night (sit_out), the bell in a storm (`m.bell`, bumped), five undead laid, the
+  temple relic (a crime), the crowned wight on a barrow level (`on_level`), the seed at another wonder (a season),
+  a notorious beast's trophy (`NM.make`), the duel (the champion yields at 20%; no hireling, no drink), a new Varnish
+  page, the baron's strongbox unseen (`_watched`). Hooks: damage_mon (`on_damage`, `duel_blow`), hurt, mon_shoot,
+  die, kill, monsters_act (Time Stop, the duel), end_turn (flames, after_mons, daily), drink, try_move (`EP.bump`,
+  no melee in Time Stop), fire, BH.give/push (Unstoppable), arts (Eclipse, Shadow Dance), mercs (One Blood, Return,
+  the barrow king follows). New fx kinds 'line' and 'inward'; the world grey under Time Stop; the oak's colours and
+  Lich Form's pale @. Oak Shape is a fourth shape kit (`WS.KIT['oak']`: Slam and Root). Debug: "Epics: rank 40,
+  teachers, deeds" (E). Test `epics`. SAVE_VERSION 44. Not as asked: Earthshaker is called Worldshaker (a maul's
+  weapon skill already has the name); Call of the Old Ones brings a cave bear, a winter wolf or a giant hawk (the
+  kinds the game has); the relic comes from a temple's altar.
 - **The Varnish** (25 October 2026; `varnish.py`, texts in `varnishtexts.py`). Placed last of all the world
   (`VN.place`, with dice of its own so the rest of the world comes out as before), all in `world.varnish`: `ruin` (cell to city), `wall` (the Northern Wall's cells), `books` (8 of 27,
   one per thread at least), `pages` ((book, n) to ('site', id), ('dungeon', did), ('poi', id) or ('library', None)),
@@ -468,6 +489,68 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+
+## Classes part 4: the epics (built 29 October 2026; the spec)
+
+The rest of the classes spec is built (see `docs/built.md`, "Classes, trees and the bar").
+
+- **Epic skills from hidden teachers** (approved 22 October 2026, from going through Project Gorgon's skills; the
+  epics themselves settled the same day in thread "Epic skills", project files `klassen/epics/`: `voorstel.md`,
+  mockups `epics.gif`). A tier above the elites, in the same slot: key 6 holds one elite or one epic, never both,
+  so an epic costs you your elite. An epic is drawn in gold with its own sign ♦ (the elite keeps ☼).
+  - **Two epics per class (22).** A teacher teaches the two epics of their class; you pick one and may swap at a
+    later visit. With two classes you may learn from the teachers of both.
+  - **Price:** an epic works **once per rest** (an inn, your camp), no mana or stamina on top; Phoenix once per day.
+  - **Teachers:** a hermit, an old hunter, a witch, a retired master. **Two per class, 22 a world**, each in another
+    part of the world and never both with the same people. You hear of them only through a rumour (`news.py`: an
+    innkeeper, a traveller, a book), never as a sign on the map before you have heard, and only of the teachers of
+    your classes, from class rank about 35; they teach at class rank about 40. When a teacher dies (war, plunder)
+    the other remains; if both are dead, a pupil turns up elsewhere after a season, so no one is ever locked out.
+  - **A deed first,** a job of their own in the jobs tab. Fire: an ash hermit in a burnt valley, bring a glowing
+    ember from the heart of a fire mountain or fire wonder. Frost: a rime witch at a mountain pass, live through a
+    winter night outside her hut without fire. Storm: a hermit on a lightning-split peak, ring the old bell on the
+    top in a thunderstorm. Restoration: an old saint at a crossroads shrine, lay five restless dead to rest. Shadow:
+    a witch (`powers.py`), steal a relic from a church. Necromancy: an old gravedigger, half dead himself, bring a
+    crown or sword out of a barrow where a wight lies. Nature: an old druid at a wonder, plant a seed at another
+    wonder and come back when it comes up (a season). Beastcraft: an old hunter, track and kill the beast of a
+    rumour and bring its hide. Warcraft: an old champion of one of the realms' wars, win a duel against him (no
+    hireling, no drink). Arcane: a magus in exile in a tower, bring a lost page from a library (`history.py`).
+    Cunning: an old master thief "retired", steal something unseen from a baron's seat (`seats.py`).
+  - **The epics:**
+    - Fire: **Sunfall** (a small sun hangs a turn over a spot and falls, r2; the ground burns 3 turns) and
+      **Phoenix** (while it is ready on key 6, a death blow burns you up instead: you rise with 20% life, foes
+      within r2 catch fire, and you carry **4 flames** that never go out by themselves; each flame burns you a
+      little each turn; each turn standing in water and each Health or Rejuvenation Potion takes one flame off,
+      in any mix; who does nothing burns to death; shown as "Burning 3" with your states).
+    - Frost: **Long Winter** (the ground r3 round you freezes for 10 turns: who stands in it slows, who is slowed
+      freezes) and **Glass Heart** (one foe frozen 6 turns; a blow on it shatters it, heavy damage r1).
+    - Storm: **Skyfather's Spear** (one stroke from the sky along a line of 10 tiles; wet foes stunned) and **Eye
+      of the Tempest** (8 turns: arrows miss you, a spark leaps each turn to every foe within r3).
+    - Restoration: **Miracle** (you and your company wholly healed, every ailment gone) and **Return** (your fallen
+      hireling or beast gets up, if it fell in the last 20 turns).
+    - Shadow: **The Unmaking** (costs life; a foe under 30% dies at once, otherwise loses half of what it has, a
+      boss a quarter) and **Eclipse** (6 turns every foe in sight sees only 1 tile; you are unseen).
+    - Necromancy: **Lich Form** (10 turns undead: spells cost no life, no poison or cold, your touch steals life;
+      your `@` turns pale) and **Barrow King** (a barrow king rises from the ground, no corpse needed, and follows
+      you until you rest).
+    - Nature: **Wrath of the Wild** (everything within r3 grows shut: roots and thorns hold every foe, the land
+      stays green) and **Oak Shape** (a fourth shape: a walking oak, slow, much life, keys 1-2 Slam and Root).
+    - Beastcraft: **Call of the Old Ones** (a great beast of this land comes for 20 turns: cave bear, dire wolf,
+      great eagle) and **One Blood** (10 turns your beast cannot die and you share its life).
+    - Warcraft: **Earthshaker** (strike the ground: r2 stunned and knocked down, armoured foes too) and
+      **Unstoppable** (8 turns no push, stun or slow; every kill fills your stamina).
+    - Arcane: **Time Stop** (3 turns only you move: foes stand still, arrows hang in the air, the world goes grey;
+      you cannot harm anyone in it, only walk, drink, heal or buff yourself, lay runes and traps: a way out and a
+      way to get ready, not a killing key) and **Unweave** (everything magic within r3 is gone: buffs on foes,
+      spell tiles, called creatures).
+    - Cunning: **Death Mark** (unseen, your next blow kills an ordinary foe outright; a boss takes it four times)
+      and **Shadow Dance** (5 turns every blow counts as an unseen first strike).
+  - **Effects:** the same hand as the spells (star front, ░ glow, radius at most 3, at most ~0.4 s). Three looks
+    only epics have: **a line** across the land (Skyfather's Spear, white then yellow), **drawn inwards** onto one
+    foe (The Unmaking: your life out in red, then dark motes close in) and **the world grey** (Time Stop: only you
+    keep your colour). Six are drawn in `klassen/epics/epics.gif`; the rest follow the same hand.
+  - **The handbook:** a few sentences in "Who you become": what an epic is, that it takes key 6 from the elite, how
+    you find a teacher, once per rest; Phoenix's flames in "Fighting".
 
 ## The Varnish (built 25 October 2026; the spec)
 From "Old places on the land" (approved 23 October 2026; archaeology and part B stay in `docs/plan.md`).

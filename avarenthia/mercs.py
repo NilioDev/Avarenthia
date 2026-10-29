@@ -373,6 +373,8 @@ def sync(game):
     th = getattr(game, 'thralls', None)
     if th:                                            # thralls do not follow you off the map they were raised on
         game.thralls = [b for b in th if b in game.map.mons]
+    from . import epics as EP
+    EP.keep_king(game)                                # but the barrow king walks with you until you rest
 
 
 def _sync(game, mc):
@@ -558,6 +560,11 @@ def hurt(game, mc, dmg, mon=None, block=0.0):
         b.hp = mc.hp
         game.num(b.x, b.y, f'-{dmg}', (236, 140, 92))
     wear(game, mc, None, .3)
+    from . import epics as EP
+    if mc.hp <= 0 and EP.one_blood(game, mc):         # One Blood: your beast cannot die now
+        mc.hp = 1
+        if b is not None:
+            b.hp = 1
     if mc.hp <= 0:
         fall(game, mc, mon.the() if mon else f'{mc.his()} wounds')
     elif mc.hp < s['max_hp'] * .25 and not mc.fleeing and random.random() > mc.tpl['courage'] * (.5 + mc.morale / 140):
@@ -570,8 +577,11 @@ def hurt(game, mc, dmg, mon=None, block=0.0):
 def fall(game, mc, cause):
     """Down. In hardcore, dead: his gear lies with his body. In softcore, a temple can raise him."""
     from .entities import Item
+    from . import epics as EP
     b = mc.body
     m = game.map
+    mc.fell_turn = game.turn                          # for Return, the restorer's epic
+    EP.st(game)['fell'] = (getattr(mc, 'slot', 'merc'), mc)
     if b is not None and b in m.mons:
         m.mons.remove(b)
     if game.player.hardcore:

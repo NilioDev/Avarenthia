@@ -125,6 +125,9 @@ def has(game, k):
 def give(game, k, turns, text=None):
     """Put a state on you. Paralysis and sleep cannot come again for a few turns after they end."""
     st = status(game)
+    from . import epics as EP
+    if k in HELPLESS + ('slowed', 'held') and EP.unstoppable(game):
+        return False                                 # Unstoppable: nothing stops you
     if k in HELPLESS and (st.get('steady', 0) > 0 or any(st.get(h, 0) > 0 for h in HELPLESS)):
         return False
     if k in HELPLESS:
@@ -162,7 +165,9 @@ def cure(game, kinds=('diseased', 'cursed', 'confused', 'blinded', 'afraid', 'sl
 
 def shown(game):
     """Your states as (label, colour) for the panel."""
-    return [(STATUS[k][0], STATUS[k][1]) for k, t in status(game).items() if t > 0 and k in STATUS] + WP.shown(game)
+    from . import epics as EP
+    return [(STATUS[k][0], STATUS[k][1]) for k, t in status(game).items() if t > 0 and k in STATUS] + WP.shown(game) + \
+        EP.shown(game)
 
 
 def tick(game):
@@ -451,6 +456,9 @@ def on_hit(game, mon, dmg):
 def push(game, mon):
     """Knocked back: up to two cells away from it; into a wall hurts."""
     p, m = game.player, game.map
+    from . import epics as EP
+    if EP.unstoppable(game):
+        return
     dx, dy = (p.x > mon.x) - (p.x < mon.x), (p.y > mon.y) - (p.y < mon.y)
     moved = 0
     for _ in range(2):

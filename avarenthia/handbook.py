@@ -255,9 +255,26 @@ def ch_who(g):
         ('h', 'The bar'),
         ('p', 'Six keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take up '
               'another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [5] are three skills '
-              'of your classes. [6] is your elite, the sign {☼|255,214,90}: one technique a guild master taught you. '
+              'of your classes. [6] is your elite, the sign {☼|255,214,90}: one technique a guild master taught you, '
+              'or an epic in its place. '
               'A technique of a weapon guild that fits the weapon in your hand may take the place of [1] or [2] '
               'instead. Choose them in a town with [z]. The panel shows the three groups, with your name beside SKILLS.'),
+        ('h', 'Epics'),
+        ('p', 'Above the elites stand the epics, two for each class. An epic goes on [6] in the elite\'s place, the '
+              'sign {♦|255,214,90}, and costs no mana or stamina: it works once, then waits until you rest, an inn\'s '
+              'bed or your camp. The panel says whether it is ready or spent.'),
+        ('p', 'Epics are taught by teachers who live alone, far from the roads: an ash hermit in a burnt valley, a '
+              'rime witch at a mountain pass, an old master thief outside a city. Every class has two in the world, '
+              'each in another part of it, in a hut, the sign {î|232,200,120}. From rank 35 in a class you may hear '
+              'of one of its teachers, and the hut is on your map. From rank 40 the teacher sets you a deed, a job '
+              'in your jobs tab. Do it, and you may learn one of the two epics; later the teacher will trade it for '
+              'the other. Teachers grow old and die. When both of a class are gone, after a season a pupil takes up '
+              'the work somewhere else.'),
+        ('p', 'Phoenix is the one that waits. While it is ready on [6], a blow that would kill you burns you up '
+              'instead, and you rise with a fifth of your life. Four flames cling to you after and bite every turn; '
+              'water or a Health Potion puts one out. Once a day.'),
+        ('p', 'Under Time Stop only you move, for three turns, and the world goes grey. You cannot harm anyone in '
+              'it: walk, drink, heal or guard yourself, lay runes and snares.'),
         ('h', 'What your weapon adds'),
         ('p', 'Every kind of weapon also changes how your class skills work:'),
         ('l', rules),

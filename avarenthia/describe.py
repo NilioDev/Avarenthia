@@ -259,6 +259,9 @@ def over(game, x, y):
         from . import varnish as VN
         if VN.is_varnish(site):
             return site.name, site.glyph[1], [VN.DESC[site.kind]]
+        from . import epics as EP
+        if EP.is_teacher(site):
+            return site.name, site.glyph[1], [EP.DESC[site.kind]]
         from . import seats as SEATS
         if SEATS.is_seat(site):
             return site.name, site.glyph[1], [SEATS.describe(game, site)]

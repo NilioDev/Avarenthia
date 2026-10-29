@@ -6314,11 +6314,272 @@ def varnish():
     print('   varnish ok:', dict(kinds), len(st['lore']), 'loose fragments')
 
 
+def epics():
+    """The epics: 22 of them, two per class, on key 6 in the elite's place, once per rest and free; two hidden teachers
+    of each class far apart, heard of from rank 35, teaching from 40 after a deed; each epic at work in a fight; Phoenix
+    burns you up instead of dying; Time Stop, Unstoppable, Oak Shape, One Blood, Return; the duel and the bell."""
+    from avarenthia import epics as EP, skills as SK, classes as CL, mercs as MC, folk as FK, events as EV, lore as LORE
+    from avarenthia import weaponskills as WS, behave as BH, spellmap as SM, missions as MS, debug as DBG
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around, cheb
+    import pickle
+    print('== epics')
+    assert len(EP.EPICS) == 22 and set(EP.BY_LINE) == set(CL.PURE)
+    assert all(SK.SKILLS[s] is EP.EPICS[s] and SK.describe(EP.EPICS[s], 40) for s in EP.EPICS)
+    assert {s.name for s in EP.EPIC_LIST}.isdisjoint({s.name for s in SK.SKILLS.values() if not EP.is_epic(s)})
+    app = new_app('soft', seed=11)
+    g = app.game
+    p = g.player
+    w = g.world
+    # two teachers a class, hidden, each in another part of the world
+    for line in EP.TEACHERS:
+        ts = EP.teachers(g, line)
+        assert len(ts) == 2 and all(FK.unfound(t) for t in ts), (line, len(ts))
+        assert cheb(ts[0].x, ts[0].y, ts[1].x, ts[1].y) >= 30, (line, ts[0].x, ts[0].y, ts[1].x, ts[1].y)
+    gaps = sorted(cheb(*(lambda a, b: (a.x, a.y, b.x, b.y))(*EP.teachers(g, line))) for line in EP.TEACHERS)
+    p.classes = ['fire', 'cunning']
+    for line in p.classes:
+        p.disc[line] = [30, 0]
+    to_over(g, 0)
+    assert EP.hear(g) is None                       # not yet: rank 35
+    p.disc['fire'] = [36, 0]
+    line = EP.hear(g)
+    assert line and 'ash hermit' in line
+    t = next(t for t in EP.teachers(g, 'fire') if t.id in EP.st(g)['heard'])
+    assert not FK.unfound(t)
+    old = LORE.HINTS
+    LORE.HINTS = [(LORE.hint_teacher, 1)]
+    p.disc['cunning'] = [36, 0]
+    assert 'master thief' in LORE.hint(g)
+    LORE.HINTS = old
+    # the hut: the teacher refuses below 40, then sets a deed
+    g.enter_site(t.id)
+    assert g.map.kind == 'town' and getattr(g.map, 'teacher', False)
+    npc = next(o for o in g.map.mons if getattr(o, 'role', '') == 'teacher')
+    g.talk(npc)
+    assert not g.pending
+    p.disc['fire'] = [40, 0]
+    g.talk(npc)
+    assert g.pending and g.pending['key'] == 'epic'
+    EV.resolve(g, 'deed')
+    job = EP._job(g, 'fire')
+    assert job and job.state == 'active' and job.title and EP.target_pos(g, job)[0] == tuple(job.data['spot'])
+    app.render()
+    # the ember at the heart of the fire
+    g.cur = 'over'
+    p.x, p.y = job.data['spot']
+    EP.over_step(g)
+    assert EP.deed_done(g, job)
+    g.enter_site(t.id)
+    npc = next(o for o in g.map.mons if getattr(o, 'role', '') == 'teacher')
+    p.x, p.y = npc.x - 1, npc.y
+    g.talk(npc)
+    assert EP.st(g)['deeds']['fire'] and job.state == 'done'
+    assert g.pending and g.pending['key'] == 'epic'
+    EV.resolve(g, 'learn:sunfall')
+    assert p.bar[5] == 'sunfall' and 'sunfall' in p.known and CL.fits(g, EP.EPICS['sunfall'], 5) is None
+    assert CL.fits(g, EP.EPICS['sunfall'], 2) and CL.fits(g, EP.EPICS['unweave'], 5)
+    g.talk(npc)                                     # swap for the other
+    EV.resolve(g, 'learn:phoenix')
+    assert p.bar[5] == 'phoenix' and 'sunfall' not in p.known
+    app.render()
+    scr = app.cv.dump()
+    assert EP.SIGN in scr and 'Phoenix' in scr and 'ready' in scr and 'epic' in scr, scr
+    # every epic at work in a fight
+    p.classes = list(CL.PURE)
+    for line_ in p.classes:
+        p.disc[line_] = [45, 0]
+    p.vit = 400
+    g.enter_dungeon(list(w.dungeons)[0], 1, 'up')
+    mc = MC.Merc('defender', 'Test Shield', 5)
+    MC.outfit(g, mc)
+    mc.hp = MC.stats(g, mc)['max_hp']
+    g.merc = mc
+    MC.sync(g)
+    for sid in [s for s in EP.EPICS if s != 'phoenix']:
+        g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
+        p.buffs = []
+        BH.status(g).clear()
+        for xy in list(SM.fields(g.map)):
+            SM.clear(g.map, xy)
+        if sid == 'one_blood' and not MC.with_you(g, 'beast'):
+            wolf = make_monster(g, 'wolf', *free_around(g, g.map, p.x, p.y, 2)[-1], 3)
+            g.map.mons.append(wolf)
+            MC.tame(g, wolf, 'wolf')
+            MC.sync(g)
+        if sid == 'epic_return':
+            MC.hurt(g, mc, 10 ** 5)
+            assert mc.state == 'fallen'
+        for x, y in [c for c in free_around(g, g.map, p.x, p.y, 2) if c != (p.x, p.y) and not g.occupied(g.map, *c)][:3]:
+            e = make_monster(g, 'skeleton' if sid == 'unweave' else 'goblin', x, y, 6)
+            e.awake = True
+            e.hp = e.maxhp = 400
+            if sid == 'unweave':
+                e.mods = list(e.mods) + ['Fast']
+                e.called = True
+            g.map.mons.append(e)
+        g.compute_fov()
+        EP.learn(g, sid, quiet=True)
+        EP.st(g)['spent'] = False
+        p.life = g.stats()['max_life']
+        assert SK.use(g, 5), sid
+        assert EP.st(g)['spent'] and not EP.ready(g, sid), sid
+        if sid != 'oak_shape':                      # Oak Shape's key lets it go; the others are spent until you rest
+            assert not SK.use(g, 5), sid
+        foes = [o for o in g.map.mons if not o.is_npc]
+        if sid == 'sunfall':
+            hp0 = sum(o.hp for o in foes)
+            g.end_turn(1)
+            g.end_turn(1)
+            assert sum(o.hp for o in g.map.mons if not o.is_npc) < hp0 or len(g.map.mons) < len(foes) + 2
+        if sid == 'glass_heart':
+            t_ = next(o for o in foes if getattr(o, 'glass', -1) >= g.turn)
+            hp0 = t_.hp
+            g.damage_mon(t_, 5, weapon=True)
+            assert t_.hp < hp0 - 20 or t_ not in g.map.mons
+        if sid == 'epic_return':
+            assert mc.state == 'alive' and mc.hp > 0
+        if sid == 'time_stop':
+            gob = foes[0]
+            xy = (gob.x, gob.y)
+            assert g.try_move(gob.x - p.x, gob.y - p.y) == 0
+            g.end_turn(1)
+            assert (gob.x, gob.y) == xy and EP.time_stopped(g)
+            app.render()
+        if sid == 'unstoppable':
+            assert not BH.give(g, 'slowed', 5) and not BH.give(g, 'paralysed', 2)
+        if sid == 'oak_shape':
+            assert WS.kit(g) == 'oak' and CL.slot_skill(g, 0) == 'oak_slam' and BH.has(g, 'slowed'), \
+                (WS.kit(g), CL.slot_skill(g, 0), BH.status(g), p.buffs)
+            assert SK.use(g, 5) and WS.kit(g) != 'oak' and not BH.has(g, 'slowed')
+        if sid == 'one_blood':
+            bst = MC.with_you(g, 'beast')
+            MC.hurt(g, bst, 10 ** 5)
+            assert bst.state == 'alive' and bst.hp == 1
+        if sid == 'unweave':
+            assert not any(o for o in g.map.mons if not o.is_npc and cheb(o.x, o.y, p.x, p.y) <= 3)
+        if sid == 'death_mark':
+            gob = foes[0]
+            g.damage_mon(gob, 3, weapon=True)
+            assert gob not in g.map.mons
+        if sid == 'lich_form':
+            life = p.life
+            g.hurt(50, 'the cold', 'cold')
+            assert p.life == life
+        if sid == 'barrow_king':
+            assert any(getattr(o, 'barrow_king', False) for o in g.map.mons)
+        g.end_turn(1)
+        app.render()
+        assert not g.dead, sid
+        EP.rested(g)
+        assert EP.ready(g, sid) and not any(getattr(o, 'barrow_king', False) for o in g.map.mons)
+    # Phoenix: the blow that would kill you burns you up instead, once a day
+    p.buffs = []
+    EP.learn(g, 'phoenix', quiet=True)
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    p.life = 5
+    g.hurt(10 ** 5, 'a goblin')
+    assert not g.dead and p.life > 1 and EP.flames(g) == EP.FLAMES and not EP.ready(g, 'phoenix')
+    assert any('Burning' in t_ for t_, _c in BH.shown(g))
+    life = p.life
+    g.end_turn(1)
+    assert p.life < life
+    p.inv.append(__import__('avarenthia.entities', fromlist=['Item']).Item(g.new_id(), 'potion', 'hp'))
+    g.drink('hp')
+    assert EP.flames(g) == EP.FLAMES - 1
+    st0 = EP.st(g)
+    st0['flames'] = 0
+    p.life = 5
+    g.hurt(10 ** 5, 'a goblin')                     # the second death that day: no Phoenix
+    assert EP.flames(g) == 0
+    g.dead = False
+    p.life = g.stats()['max_life']
+    # the other deeds, each to its end
+    from types import SimpleNamespace
+    for line_ in ('shadow', 'necromancy', 'cunning', 'nature', 'frost', 'beastcraft', 'arcane', 'restoration'):
+        tch = EP.teachers(g, line_)[0]
+        EP.st(g)['deeds'].pop(line_, None)
+        EP.start_deed(g, tch)
+        jb = EP._job(g, line_)
+        assert jb and EP.target_pos(g, jb), line_
+        d = jb.data
+        if line_ == 'shadow' and d.get('temple') is not None:
+            g.enter_site(d['temple'])
+            alt = next(((i % g.map.w, i // g.map.w) for i, t_ in enumerate(g.map.t) if t_ == D.ALTAR), None)
+            if alt:
+                assert EP.bump(g, *alt, D.ALTAR) == 1 and EP.deed_done(g, jb)
+        if line_ == 'necromancy' and d.get('barrow') is not None:
+            g.enter_dungeon(list(w.dungeons)[0], 1, 'up')
+            EP.on_level(g, g.map, SimpleNamespace(site=d['barrow']))
+            wt = next(o for o in g.map.mons if getattr(o, 'ep_crown', None) == jb.id)
+            g.kill(wt)
+            g.player.inv += [it for it in g.map.items if getattr(it, 'mission', None) == jb.id]
+            assert EP.deed_done(g, jb)
+        if line_ == 'cunning' and d.get('seat') is not None:
+            g.enter_site(d['seat'])
+            assert g.map.ep_box
+            p.buffs.append(['sneak', 1, 30, 'Sneak'])
+            assert EP.bump(g, *g.map.ep_box, D.CHEST) == 1 and EP.deed_done(g, jb)
+        if line_ == 'nature':
+            g.cur = 'over'
+            p.x, p.y = d['spot']
+            g.compute_fov()
+            EP.over_step(g)
+            assert d['planted'] is not None
+            d['planted'] -= EP.SEASON
+            EP.over_step(g)
+            assert EP.deed_done(g, jb)
+        if line_ == 'frost':
+            g.enter_site(tch.id)
+            keep = EP.winter_night
+            EP.winter_night = lambda game: True
+            p.life = g.stats()['max_life']
+            EP.sit_out(g, tch)
+            EP.winter_night = keep
+            assert not g.dead and EP.deed_done(g, jb)
+        if line_ == 'restoration':
+            g.enter_dungeon(list(w.dungeons)[0], 1, 'up')
+            for _ in range(5):
+                sk_ = make_monster(g, 'skeleton', p.x, p.y, 3)
+                g.map.mons.append(sk_)
+                g.kill(sk_)
+            assert EP.deed_done(g, jb)
+        app.render()
+        MS.active(g).remove(jb) if jb in MS.active(g) else None
+        jb.state = 'done'
+    # the duel: the old champion yields before he falls, and no drink
+    camp = next(t for t in EP.teachers(g, 'warcraft'))
+    g.enter_site(camp.id)
+    EP.st(g)['deeds'].pop('warcraft', None)
+    npc = next(o for o in g.map.mons if getattr(o, 'role', '') == 'teacher')
+    EP.start_deed(g, camp)
+    job = EP._job(g, 'warcraft')
+    EP.start_duel(g, camp)
+    champ = next(o for o in g.map.mons if getattr(o, 'duel', False))
+    assert g.map.duel == champ.id
+    g.damage_mon(champ, champ.hp * 3)
+    assert getattr(g.map, 'duel', None) is None and job.data.get('done') and EP.deed_done(g, job)
+    assert any(getattr(o, 'role', '') == 'teacher' for o in g.map.mons)
+    # the storm hermit's bell
+    peak = EP.teachers(g, 'storm')[0]
+    g.enter_site(peak.id)
+    EP.start_deed(g, peak)
+    bx, by = g.map.bell
+    assert EP.bump(g, bx, by, D.BELL) == 1 and not EP._job(g, 'storm').data.get('done')
+    g.world.weather = getattr(g.world, 'weather', None)
+    # the debug menu's line
+    DBG.epics(g)
+    assert all(EP.st(g)['deeds'].get(c) for c in CL.classes(g))
+    assert len(MS.active(g)) >= 1
+    pickle.dumps(g)
+    print('   epics ok: gaps between teachers', gaps[:3], '...', gaps[-1])
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

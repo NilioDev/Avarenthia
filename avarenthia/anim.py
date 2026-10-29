@@ -251,7 +251,7 @@ def fx_fallback(kind, kw):
         x, y, r = kw['x'], kw['y'], kw.get('r', 1)
         return ([(x + dx, y + dy) for dy in range(-r, r + 1) for dx in range(-r, r + 1)
                  if not ((kw.get('hollow') or kind == 'wave') and dx == dy == 0)], col, kw.get('ch', '*'))
-    if kind == 'trail':
+    if kind in ('trail', 'line'):
         return kw['cells'], col, kw.get('ch', '*')
     if kind == 'raise':
         return [(kw['x'], kw['y'])], col, kw.get('ch', 'z')
@@ -442,6 +442,28 @@ def fx_cells(kind, kw, age):
                 out.append((*c, ch, mix((255, 255, 245), col, min(1.0, q * 2.5)) if kw.get('build') else
                             _fade(col, 1 - q), None))
         return out
+    if kind == 'line':                          # a stroke from the sky: the whole line at once, white to its colour
+        cells = kw['cells']
+        k = age / kw.get('dur', .4)
+        if k >= 1 or not cells:
+            return out
+        sx, sy = cells[0]
+        ex, ey = cells[-1]
+        ch = kw.get('ch') or _line_char((ex > sx) - (ex < sx), (ey > sy) - (ey < sy))
+        c = mix((255, 255, 255), col, min(1.0, k * 1.6))
+        for cx, cy in cells:
+            out.append((cx, cy, ch, c if k < .6 else _fade(c, 1 - (k - .6) / .4), None))
+        return out
+    if kind == 'inward':                        # a ring of motes drawn in to one spot, then gone
+        x, y = kw['x'], kw['y']
+        k = age / kw.get('dur', .4)
+        if k >= 1:
+            return out
+        rr = max(0, round(3 * (1 - k)))
+        if rr == 0:
+            return [(x, y, '•', mix(col, (255, 255, 255), .3), None)]
+        return [(x + dx, y + dy, '∙', _fade(col, .5 + k / 2), None) for dy in range(-rr, rr + 1)
+                for dx in range(-rr, rr + 1) if max(abs(dx), abs(dy)) == rr and (dx + dy) % 2 == 0]
     if kind == 'swing':                         # \ | / along the side of the foe, white fading to steel
         return _swing(kw, age)
     if kind == 'spin':                          # the blade once round you
@@ -503,7 +525,8 @@ def _swing(kw, age):
 # ------------------------------------------------------------------ how a creature looks under a spell
 BURN_COL, POISON_COL, ICE_BG = (255, 150, 50), (130, 230, 110), (54, 86, 112)
 SHAPES = {'bear': ((214, 140, 76), (62, 38, 22)), 'wolf': ((236, 236, 240), (66, 76, 90)),
-          'hawk': ((230, 200, 140), (48, 58, 80))}
+          'hawk': ((230, 200, 140), (48, 58, 80)), 'oak': ((150, 200, 110), (52, 40, 24))}
+LICH = ((206, 214, 196), (36, 40, 44))
 
 
 def status_look(fg, bg, t, x, y, burn=False, poison=False, frozen=False, weak=False):
@@ -537,7 +560,10 @@ def player_look(p, bg, t):
     sh = shape_of(p)
     if sh:
         fg, bg = SHAPES.get(sh, ((200, 170, 120), bg))
-    return status_look(fg, bg, t, p.x, p.y, burn=bool(p.burn), poison=bool(p.poison))
+    if any(b[0] == 'lich' for b in p.buffs):            # Lich Form: grey and cold
+        fg, bg = LICH
+    flames = getattr(p, 'epic', None) and p.epic.get('flames')
+    return status_look(fg, bg, t, p.x, p.y, burn=bool(p.burn or flames), poison=bool(p.poison))
 
 
 # ------------------------------------------------------------------ smoke from the chimneys

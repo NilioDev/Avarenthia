@@ -410,10 +410,14 @@ for line in SK.DISC_ORDER:
             d = ''
         src = e(s.flavor) if s.flavor else f'tome, rank {s.unlock}'
         cost = 'passive' if s.passive else f'{s.cost} {"stamina" if s.dtype == "weapon" else "mana"}, {s.cd} turns'
+        if getattr(s, 'epic', False):               # epics.py: from a hidden teacher, after a deed
+            from avarenthia import epics as EP
+            src = f'epic: {EP.TEACHERS[s.line][0]}, rank {EP.TEACH_AT}, after a deed'
+            cost = 'once a day' if s.id == 'phoenix' else 'once per rest'
         rows += f'<tr class="entry"><td><span class="glyph" style="color:{rgb(s.color)}">{e(s.glyph)}</span> <b>{e(s.name)}</b></td><td>{src}</td><td>{e(cost)}</td><td>{e(s.mode)}</td><td>{e(d)}</td></tr>'
     sk_html += (f'<h3 class="gh">{e(SK.DISCIPLINES[line]["name"])} <span class="count">{len(lines[line])}</span></h3>'
                 f'<div class="tw"><table class="skills"><tr><th>Skill</th><th>Learned from</th><th>Cost</th><th>Kind</th><th>At rank 1</th></tr>{rows}</table></div>')
-add('skills', 'Skills', 'Schools and skills', '<p>All tome skills and guild techniques (skills.py), by school or discipline. Descriptions are the game\'s own text at rank 1.</p>', sk_html)
+add('skills', 'Skills', 'Schools and skills', '<p>All tome skills, guild techniques and epics (skills.py, epics.py), by school or discipline. Descriptions are the game\'s own text at rank 1.</p>', sk_html)
 
 wl = {}
 for s in WS.WSKILLS.values():

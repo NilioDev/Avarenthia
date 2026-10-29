@@ -400,6 +400,8 @@ def gen_world(game):
         mark_coast(m, world)
         from . import varnish as VN
         VN.place(game, m, world, reach_set)
+        from . import epics as EP
+        EP.place(game, m, world, reach_set)             # the teachers of the epics, last, with dice of their own
         return m, world
     raise RuntimeError('World generation failed')
 

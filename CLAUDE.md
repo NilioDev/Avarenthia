@@ -57,6 +57,7 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `varnish.py` the Varnish: ruined cities in the zones, their places, the Northern Wall, league stones, the hidden deeps
   and their bosses, pages and bound books, the five riddles (state on `world.varnish` and `p.varnish`); `varnishtexts.py`
   their texts (fragments, 27 books, riddles);
+  `epics.py` the epics on key 6 (classes part 4): the 22, their teachers' huts, deeds and hooks (state on `p.epic`);
   `places.py` temples, towers and barrows of every people on their own land (who may go how far, stairs, the hidden
   bottom); `towers.py` tower plans and floors, the haze below, the lookout, edges and falls; `temples.py` each
   people's temple; `barrows.py` each people's barrow and the bier;

@@ -1901,6 +1901,9 @@ def target_pos(game, m):
     if m.kind == 'spirit':
         from . import aurora as AU
         return AU.target_pos(game, m)
+    if m.kind == 'epic':
+        from . import epics as EP
+        return EP.target_pos(game, m)
     if m.state == 'turnin' or (m.kind == 'starfall' and any(i.k == 'star' for i in game.player.inv)) or m.kind == 'gather':
         if m.hold is not None:
             h = w.holds[m.hold]

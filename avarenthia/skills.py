@@ -332,6 +332,8 @@ def pool(sk):
 
 
 def cost_of(game, sk):
+    if getattr(sk, 'epic', False):                  # an epic: once per rest instead
+        return 0
     from . import trees as TT
     if TT.free_cast(game, sk):
         return 0
@@ -385,6 +387,8 @@ RUNES_AT_ONCE = 2                 # arts.RUNES
 
 
 def describe(sk, r):
+    if getattr(sk, 'epic', False):
+        return _EP.describe(sk)
     parts = []
     if sk.dtype == 'weapon':
         dmg = f'{round(sk.pct + sk.pct_r * r)}% weapon damage'
@@ -676,9 +680,13 @@ def use(game, slot):
     from . import trees as TT
     sk = SKILLS[sid]
     if slot not in CL.WEAPON and TT.shape_keys_locked(game):
-        if sk.mode == 'shape':                      # the shape's own key lets it go
+        if sk.mode == 'shape' or sk.id == 'oak_shape':      # the shape's own key lets it go
+            oak = any(b[3] == 'Oak shape' for b in p.buffs)
             p.buffs = [b for b in p.buffs if not str(b[3]).endswith(' shape')]
-            game.msg('You let the beast go and stand up as yourself again.', 'good')
+            if oak:
+                _EP.let_go_oak(game)
+            game.msg('You let the oak go, and the bark falls from you.' if oak else
+                     'You let the beast go and stand up as yourself again.', 'good')
             return 1
         game.msg('In the shape of a beast you have only your teeth and claws: keys 1 and 2.')
         return 0
@@ -687,8 +695,12 @@ def use(game, slot):
     if p.cooldowns.get(sid, 0) > 0:
         game.msg(f'{sk.name} is recharging ({p.cooldowns[sid]} turns).')
         return 0
-    if m.kind in ('over', 'town') and sk.mode != 'self':
+    if m.kind in ('over', 'town') and sk.mode != 'self' and getattr(m, 'duel', None) is None:
         game.msg('There is nothing to fight here.')
+        return 0
+    if _EP.time_stopped(game) and sk.mode not in ('self', 'rune', 'snare', 'caltrops', 'blink', 'shadowstep'):
+        game.msg('Time stands still: you cannot harm anyone in it. Walk, drink, heal or guard yourself, lay runes and '
+                 'snares.', 'bad')
         return 0
     cost = cost_of(game, sk)
     kind = pool(sk)
@@ -746,7 +758,7 @@ def use(game, slot):
     if pool(sk) == 'mana':
         p.buffs = [b for b in p.buffs if b[0] not in ('focus', 'blinkcheap') or (b[0] == 'blinkcheap' and sk.id == 'blink')]
     price = sk.life_cost + (round(p.life * sk.life_frac) if sk.life_frac else 0)
-    if price and TT.free_life(game):
+    if price and (TT.free_life(game) or _EP.has(game, 'lich')):
         price = 0
     if price:
         p.life = max(1, p.life - price)
@@ -1693,3 +1705,4 @@ EXEC = {'summon': x_summon, 'raise': x_raise, 'burst': x_burst, 'tame': x_tame, 
 from . import weaponskills as _WS  # noqa: E402  (the weapon skills, keys 1-2)
 SKILLS.update(_WS.WSKILLS)
 from . import arts as _ART  # noqa: E402,F401  (Cunning and Arcane register their ways)
+from . import epics as _EP  # noqa: E402  (the epics, key 6)

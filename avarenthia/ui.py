@@ -693,6 +693,8 @@ class GameScreen(Screen):
         deco = getattr(m, 'deco', None)
         trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
         night = TW.is_night(g)
+        from . import epics as EP
+        stopped = EP.time_stopped(g)                     # Time Stop: the world goes grey
         portal = m.portal_pos if (m.kind == 'town' and g.portal and g.portal.get('sid') == m.sid) else None
         vis = g.vis
         self.marks = self.moving = False
@@ -894,6 +896,9 @@ class GameScreen(Screen):
                     else:
                         ch, fg, bg = WX.cell(wk, ch, fg, bg, vx, vy, t, ((vx - pvx) ** 2 + (vy - pvy) ** 2) ** .5,
                                              lightning, MAP_W, MAP_H)
+                if stopped and (mx, my) != (p.x, p.y):
+                    gf, gb = sum(fg) // 3, sum(bg) // 3
+                    fg, bg = mix(fg, (gf, gf, gf), .85), mix(bg, (gb, gb, gb), .85)
                 cv.put(vx, vy, ch, fg, bg)
         if m.kind == 'over':
             if season.midsummer:                     # the hill fires are seen from far off, beyond your sight
@@ -1265,9 +1270,11 @@ class GameScreen(Screen):
         # three groups: the weapon's two skills, three class skills, one elite
         rows = ((19, 'weapon', None), (20, None, 0), (21, None, 1), (22, 'class', None), (23, None, 2), (24, None, 3),
                 (25, None, 4), (26, 'elite', None), (27, None, 5))
+        from . import epics as EP
+        epic = EP.on_bar(g)
         for y, head, i in rows:
             if head:
-                cv.text(x + 2, y, head, scale(DIM, .7), PANEL)
+                cv.text(x + 2, y, 'epic' if head == 'elite' and epic else head, scale(DIM, .7), PANEL)
                 continue
             sid = CL.slot_skill(g, i)
             cv.text(x, y, str(i + 1), GOLD, PANEL)
@@ -1280,11 +1287,18 @@ class GameScreen(Screen):
             cd = p.cooldowns.get(sid, 0)
             ok = SK.can_pay(g, sk) and not cd
             stam = SK.pool(sk) == 'stamina'
-            if i in CL.ELITE:
+            if sid == epic:                         # an epic: once per rest, no cost
+                ok = EP.ready(g, sid)
+                cv.put(x + 2, y, EP.SIGN, GOLD, PANEL)
+            elif i in CL.ELITE:
                 cv.put(x + 2, y, '☼', GOLD, PANEL)
             elif i in CL.CLASS:
                 cv.put(x + 2, y, '•', SK.DISC_COLOR.get(sk.line, FG), PANEL)
             cv.text(x + 2 + (0 if i in CL.WEAPON else 2), y, sk.name, FG if ok else DIM, PANEL, maxw=PW - 9)
+            if sid == epic:
+                note, ncol = EP.bar_note(g, sid)
+                cv.text_right(x + PW - 1, y, note, ncol, PANEL)
+                continue
             cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f"{SK.cost_of(g, sk)}{'st' if stam else 'mp'}",
                           BAD if cd else ((scale(STAMINA, 1.3) if stam else INFO) if ok else DIM), PANEL)
         hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')

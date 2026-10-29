@@ -67,6 +67,7 @@ from . import trees as TT
 from . import arts as ART
 from . import aurora as AU
 from . import rift as RF
+from . import epics as EP
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -75,7 +76,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 43
+SAVE_VERSION = 44
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -427,6 +428,8 @@ class Game:
             elif k == 'frail':                      # back from the dead, and not yet yourself
                 buff_dmg -= v
                 s['frail'] = v
+            elif k == 'life':                       # Oak Shape: much life
+                s['life'] += v
         if getattr(p, 'food', 500) < HU.WEAK:
             buff_dmg -= 15
         buff_dmg -= BH.dmg_malus(self)
@@ -675,6 +678,7 @@ class Game:
             self.max_depth[did] = depth
         NM.on_enter_level(self, m)
         JB.on_level(self, did, depth)
+        EP.on_level(self, m, dg)
         if rise:
             self.msg(f'{m.name}: {floor_name(depth, dg.depth)}.', 'info')
         else:
@@ -861,6 +865,7 @@ class Game:
         if OP.is_old(site):
             OP.on_enter(self, site, m)
         VN.on_enter(self, site, m)
+        EP.on_enter(self, site, m)
         if PL.is_place(site):
             PL.on_enter(self, site, m)
         self.compute_fov()
@@ -1037,6 +1042,9 @@ class Game:
                     return 1
                 self.talk(mon)
                 return 0
+            if EP.time_stopped(self):
+                self.msg('Time stands still: you cannot harm anyone in it.', 'bad')
+                return 0
             self.melee(mon)
             return 1
         t = m.tile(nx, ny)
@@ -1054,6 +1062,9 @@ class Game:
             if why:
                 self.msg(why, 'info')
                 return 0
+        spent = EP.bump(self, nx, ny, t)
+        if spent is not None:
+            return spent
         if t in VN.BUMP or getattr(m, 'vn', None):
             spent = VN.bump(self, nx, ny)
             if spent is not None:
@@ -1259,6 +1270,7 @@ class Game:
         HP.on_step(self)
         FK.on_step(self)
         VN.over_step(self)
+        EP.over_step(self)
         LN.on_step(self)
         HT.on_step(self)
         SE.on_step(self)
@@ -1549,6 +1561,9 @@ class Game:
             self.num(p.x, p.y + (1 if it.t == 'rejuv' else 0), f'+{h}', C_MANA, True)
         self.msg({'hp': 'You drink a health potion.', 'mp': 'You drink a mana potion.', 'rejuv': 'You drink a rejuvenation potion.',
                   'cure': 'You drink the antidote. The poison loses its grip.'}[it.t], 'good')
+        if it.t in ('hp', 'rejuv'):
+            EP.quench(self, 'The potion cools you.')
+        EP.on_drink(self)
         return 1
 
     def stuck(self, slot):
@@ -1918,6 +1933,7 @@ class Game:
             dmg *= 1.25
         dmg *= 1 + .03 * self.lore(mon.k)
         dmg = max(1, round(dmg * (2 if crit else 1)))
+        dmg = EP.duel_blow(self, mon, round(EP.on_damage(self, mon, dmg, weapon, ranged)))
         mon.hp -= dmg
         mon.awake = True
         self.wake_pack(mon)
@@ -1992,6 +2008,7 @@ class Game:
         dmg = TT.hurt(self, dmg, elem)
         dmg = max(1, round(dmg * (1 - s['dr'] / 100)))
         dmg = SM.guard(self, dmg)
+        dmg = round(EP.hurt(self, dmg, elem)) if dmg > 0 else dmg
         if dmg <= 0:
             return
         p.life -= dmg
@@ -2015,6 +2032,7 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        EP.on_kill(self, mon)
         if not mon.is_npc:                             # where it fell: a necromancer has a use for that
             sl = m.__dict__.setdefault('slain', [])
             sl.append((mon.k, mon.x, mon.y, mon.lvl))
@@ -2257,7 +2275,10 @@ class Game:
         name = mon.the()[0].upper() + mon.the()[1:]
         if spell and ART.counter(self, mon):
             return True
-        if spell or random.random() < self.mon_hit_chance(mon, df):
+        if not spell and EP.arrows_miss(self):
+            self.msg(f"{name}'s {mon.tpl.get('shot', 'arrow')} is caught by the wind round you and goes wide.", 'info')
+            self.num(p.x, p.y, 'miss', C_MISS)
+        elif spell or random.random() < self.mon_hit_chance(mon, df):
             self.msg(f"{name}'s {mon.tpl.get('bolt', 'firebolt') if spell else mon.tpl.get('shot', 'arrow')} hits you.", 'bad')
             self.hurt(random.randint(*mon.dmg) * (.9 if spell else .8) * BH.attack_mult(self, mon), mon.the(),
                       (mon.tpl['elem'] or 'fire') if spell else None)
@@ -2321,7 +2342,7 @@ class Game:
             if spots:
                 x, y = random.choice(spots)
                 o = make_monster(self, d['summon'], x, y, max(1, mon.lvl - 2))
-                o.awake = True
+                o.awake = o.called = True                 # called up: Unweave sends it back
                 m.mons.append(o)
                 mon.summons += 1
                 self.flash([(x, y)], (196, 134, 255), '*', .2)
@@ -2394,6 +2415,8 @@ class Game:
         self.compute_dist()
         MC.decay(m)
         df = self.stats()['def']
+        if EP.time_stopped(self):
+            return                                      # Time Stop: only you move
         for mon in m.mons[:]:
             if self.dead or self.cur != key or self.request == ('win',):
                 return
@@ -2401,7 +2424,8 @@ class Game:
                 continue
             if mon.is_npc:
                 if getattr(mon, 'ally', False):
-                    MC.act(self, mon)
+                    if getattr(m, 'duel', None) is None:  # in a duel your company stand back and watch
+                        MC.act(self, mon)
                     continue
                 if getattr(mon, 'flee', False) and getattr(m, 'roused', False):
                     if cheb(mon.x, mon.y, p.x, p.y) < 12:
@@ -2509,8 +2533,11 @@ class Game:
             if self.turn % 2 == 0 and p.mana < s['max_mana'] and not TT.mana_held(self):
                 p.mana = min(s['max_mana'], p.mana + 1 + s['max_mana'] // 40 +
                              sum(b[1] for b in p.buffs if b[0] == 'mregen'))
-            if p.poison and TT.poison_free(self):
+            if p.poison and (TT.poison_free(self) or EP.poison_free(self)):
                 p.poison = None
+            EP.turn(self)
+            if self.dead:
+                return
             if p.poison:
                 p.life -= p.poison[1]
                 if not quiet:
@@ -2544,6 +2571,7 @@ class Game:
                 NT.daily(self)
                 HT.daily(self)
                 RL.daily(self)
+                EP.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2555,7 +2583,9 @@ class Game:
             TW.live(self, self.map)
         if self.map.kind != 'over':
             self.monsters_act()
-            if not self.dead and self.map.kind != 'town':
+            if not self.dead:
+                EP.after_mons(self)
+            if not self.dead and self.map.kind != 'town' and not EP.time_stopped(self):
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
                 RF.turn(self)
@@ -2581,6 +2611,8 @@ class Game:
 
     def die(self, cause):
         if self.dead or (DBG.ON and DBG.god_tick(self)):
+            return
+        if EP.phoenix(self, cause):
             return
         p = self.player
         if not p.hardcore:
@@ -2742,8 +2774,11 @@ class Game:
         if not s['ranged'] and fam not in WP.REACH:
             self.msg('You need a bow, crossbow, sling or throwing knives to shoot. Walk into enemies to fight in melee.')
             return 0
-        if self.map.kind in ('over', 'town'):
+        if self.map.kind in ('over', 'town') and getattr(self.map, 'duel', None) is None:
             self.msg('There is nothing to shoot here.')
+            return 0
+        if EP.time_stopped(self):
+            self.msg('Time stands still: you cannot harm anyone in it.', 'bad')
             return 0
         spent = WP.fire(self)
         if spent is not None:
@@ -3162,6 +3197,9 @@ class Game:
             return
         if role == 'oldplace':
             OP.talk(self, npc)
+            return
+        if role == 'teacher':
+            EP.talk(self, npc)
             return
         if role == 'leper':
             self.say(npc, random.choice(['Keep back, friend. For your own sake.', 'Bless you for stopping. Most do not.',

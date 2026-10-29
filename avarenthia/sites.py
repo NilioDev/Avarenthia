@@ -23,6 +23,8 @@ from .varnish import LOOK as _VN_LOOK  # noqa: E402
 SITE_LOOK.update(_VN_LOOK)
 from . import seats as _SEATS  # noqa: E402
 SITE_LOOK.update(_SEATS.LOOK)
+from .epics import LOOK as _EP_LOOK  # noqa: E402
+SITE_LOOK.update(_EP_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns', 'The Broken Wheel', 'The Milestone',
                  'The Sleeping Dog', 'The Pilgrim\'s Staff', 'The Black Kettle']
@@ -205,6 +207,9 @@ def gen_site_map(game, site):
     from . import varnish as VN
     if VN.is_varnish(site):
         return VN.site_map(game, site)
+    from . import epics as EP
+    if EP.is_teacher(site):
+        return EP.site_map(game, site)
     if _SEATS.is_seat(site):
         return _SEATS.gen_map(game, site)
     from . import places as PL
