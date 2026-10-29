@@ -1082,7 +1082,7 @@ class Game:
             return spent
         if t in (D.JAR, D.HCAIRN):
             return SH.bump(self, nx, ny, t)
-        if t in (D.BEACON, D.LITBEACON) or (t in (D.RAFT, D.AIR) and getattr(m, 'chain', False)):
+        if t in (D.BEACON, D.LITBEACON) or (t in (D.RAFT, D.AIR) and getattr(m, 'skychain', False)):
             return SKY.bump(self, nx, ny, t) if t != D.AIR else SKY.edge(self, nx, ny)
         if getattr(m, 'arena', None):
             spent = BS.bump(self, nx, ny, t)
@@ -2627,7 +2627,7 @@ class Game:
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
                 RF.turn(self)
-            if not self.dead and getattr(self.map, 'chain', False):
+            if not self.dead and getattr(self.map, 'skychain', False):
                 SKY.turn(self)
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)

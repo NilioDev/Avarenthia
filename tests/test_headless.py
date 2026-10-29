@@ -7458,7 +7458,7 @@ def skyseat():
     assert g.pending and g.pending['key'] == 'skyseat'
     EV.resolve(g, 'go')
     m = g.map
-    assert g.cur == SK.CHAIN and getattr(m, 'chain', False) and p.gold == 100000 - SK.FARE
+    assert g.cur == SK.CHAIN and getattr(m, 'skychain', False) and p.gold == 100000 - SK.FARE
     app.render()
     # a gust: a handhold holds you, without one it throws you off the chain into the sea
     links = [(i_ % m.w, i_ // m.w) for i_, t in enumerate(m.t) if t == D.STARLINK]

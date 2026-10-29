@@ -239,7 +239,7 @@ def chain_map(game):
         w, h = 44, 96
         m = GameMap(CHAIN, 'dungeon', 'The Chain of the Sky-Seat', w, h, D.AIR)
         m.depth, m.did = 0, 'skyseat'
-        m.chain = True
+        m.skychain = True
         m.deco = bytearray(w * h)
         m.radius = 14
         for y in range(h - 8, h):
@@ -385,7 +385,7 @@ def fall(game, x, y):
 def stairs(game, t, d):
     """The chain's top stair into the city; the first floor's way back down to the chain."""
     m = game.map
-    if getattr(m, 'chain', False):
+    if getattr(m, 'skychain', False):
         if t == D.UP and d != 'down':
             enter_floor(game, 1)
             return 1
@@ -399,7 +399,7 @@ def stairs(game, t, d):
 
 def bump(game, x, y, t):
     m = game.map
-    if t == D.RAFT and getattr(m, 'chain', False):
+    if t == D.RAFT and getattr(m, 'skychain', False):
         from . import events as EV
         EV.ask(game, 'skyseat', 'The boat', '"Back?" the skipper asks, and does not look at the chain.',
                [('Back to the mainland', 'home'), ('Not yet', 'bye')])
@@ -458,7 +458,7 @@ def on_level(game, m, depth):
 
 def in_seat(game):
     m = game.map
-    return getattr(m, 'chain', False) or getattr(m, 'did', None) == 'skyseat'
+    return getattr(m, 'skychain', False) or getattr(m, 'did', None) == 'skyseat'
 
 
 def binds(game):
