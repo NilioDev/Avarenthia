@@ -17,7 +17,7 @@ SLOTS = 3
 FLAGS = ('god', 'sight', 'ai', 'coords')
 FLAG_NAME = {'god': 'God mode', 'sight': 'Sight off', 'ai': 'AI state on look', 'coords': 'Coordinates in the status line',
              'aurora': 'Northern lights in the sky', 'oldfind': 'Old fields give up their blade',
-             'oldnight': 'The dead walk old fields every night'}
+             'oldnight': 'The dead walk old fields every night', 'rhythm': "A boss's rhythm under IN SIGHT"}
 
 
 def turn_on(argv=(), environ=None, here=None, frozen=False):
@@ -311,6 +311,67 @@ def epics(game):
     s['spent'], s['phoenix_day'] = False, -1
     game.msg(f'Debug: rank {EP.TEACH_AT} in your classes, their deeds done, and {n} teachers on your map.' if lines else
              'Debug: you have no class yet. Read a tome first.', 'info')
+
+
+def boss(game, what):
+    """The Bosses page: set a kit boss down, change its phase, close or open its room, check the fairness of its moves,
+    kill its helpers, make it spent, or play that you fled from it."""
+    from . import bosses as BS
+    m = game.map
+    if what in BS.KITS:
+        if m.kind == 'over':
+            game.msg('Debug: bosses are set down on a play map, not on the world map.', 'bad')
+            return None
+        o = BS.spawn(game, what)
+        if o is None:
+            game.msg('Debug: no room beside you.', 'bad')
+            return None
+        if getattr(m, 'arena', None) is None:
+            BS.build(game, m, o)
+        game.compute_fov()
+        game.msg(f'Debug: {o.name} (level {o.lvl}) appears' + (' in its room.' if getattr(m, 'arena', None) else '.'), 'info')
+        return o
+    b = next((o for o in m.mons if BS.st(o) is not None), None)
+    if b is None:
+        game.msg('Debug: no boss with a kit on this map.', 'bad')
+        return None
+    ar = m.__dict__.get('arena')
+    if what in ('p1', 'p2', 'p3'):
+        BS.set_phase(game, b, int(what[1]) - 1)
+        game.msg(f'Debug: {b.name} in phase {BS.ROMAN[BS.st(b)["phase"]]}.', 'info')
+    elif what == 'seal' and ar:
+        BS.seal(game, ar)
+    elif what == 'open' and ar:
+        BS.open_up(game, ar, False)
+        game.msg('Debug: the room is open again.', 'info')
+    elif what == 'fair':
+        bad = BS.check_fair(game, b)
+        game.msg('Debug: every move leaves a way out from here.' if not bad else
+                 f'Debug: no way out from here for: {", ".join(bad)}.', 'info' if not bad else 'bad')
+    elif what == 'helpers':
+        hs = BS.helpers(game, b)
+        for o in hs:
+            game.kill(o)
+        game.msg(f'Debug: {len(hs)} helpers slain.', 'info')
+    elif what == 'spent':
+        BS.st(b)['spent'] = 2
+        b.cast = None
+        game.msg(f'Debug: {b.name} is spent for two turns.', 'info')
+    elif what == 'stagger':
+        BS.st(b)['dots'] = 2
+        BS.add_dot(game, b)
+    elif what == 'flee' and ar:
+        BS.fled(game, ar)
+    elif what == 'twin':
+        kinds = list(BS.TWINS)
+        k = kinds[(game.__dict__.get('dbg_twin', -1) + 1) % len(kinds)]
+        game.dbg_twin = kinds.index(k)
+        o = BS.spawn(game, b.k)
+        if o is not None:
+            BS.link(b, o, k)
+            game.compute_fov()
+            game.msg(f'Debug: a twin of {b.name}: {BS.TWINS[k]}.', 'info')
+    return b
 
 
 def open_rift(game):

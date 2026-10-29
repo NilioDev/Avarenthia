@@ -337,6 +337,9 @@ def gen_dungeon(game, did, depth):
             PL.bottom(game, m, d)               # the way on lies under a loose flagstone
         elif depth > d.depth:
             PL.ancient(game, m, d)
+    if last:
+        from . import bosses as BS
+        BS.on_level(game, m)                    # the boss's room behind its veil of mist
     return m
 
 

@@ -196,6 +196,7 @@ class DebugScreen(Modal):
                            ('V', 'Varnish letters and places', self.do(lambda: DBG.varnish_places(g()), True)),
                            ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
                            ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
+                           ('K', 'Bosses...', self.boss_page),
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
@@ -279,6 +280,25 @@ class DebugScreen(Modal):
         rows = sorted(((('boss' if d.get('boss') else d.get('tags', '').split(' ')[0] or 'creature'), d['name'], k)
                        for k, d in D.MONSTERS.items() if k != 'npc'), key=lambda r: r[1])
         return ListPage(self, 'Spawn a creature', rows, lambda k: (DBG.spawn(self.game, k), 'close')[1])
+
+    def boss_page(self):
+        g = lambda: self.game  # noqa: E731
+
+        def act(what):
+            return self.do(lambda: DBG.boss(g(), what), True)
+        return MenuPage(self, 'Bosses', [[('SET ONE DOWN', [('1', 'Snagtooth', act('snagtooth')), ('2', 'The Lich', act('lich')),
+                                                            ('3', 'The Dragon', act('dragon'))]),
+                                          ('ITS PHASE', [('a', 'Phase I', act('p1')), ('b', 'Phase II', act('p2')),
+                                                         ('c', 'Phase III', act('p3'))])],
+                                         [('THE FIGHT', [('r', self.flag('rhythm'), self.do(lambda: DBG.toggle(g(), 'rhythm'))),
+                                                         ('s', 'Shut its room', act('seal')),
+                                                         ('o', 'Open its room', act('open')),
+                                                         ('f', 'Fairness check', act('fair')),
+                                                         ('k', 'Kill its helpers', act('helpers')),
+                                                         ('n', 'Spent now', act('spent')),
+                                                         ('g', 'Stagger now', act('stagger')),
+                                                         ('l', 'Flee test', act('flee')),
+                                                         ('t', 'A twin (the next of six kinds)', act('twin'))])]])
 
     def coin_page(self):
         g = lambda: self.game  # noqa: E731

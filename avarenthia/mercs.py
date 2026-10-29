@@ -660,6 +660,10 @@ def step_to(game, who, tx, ty, away=False):
             continue
         if not free(game, nx, ny):
             continue
+        if not who.is_npc and getattr(who, 'bs', None) is not None:
+            from . import bosses as BS
+            if not BS.may_stand(game, who, nx, ny):
+                continue
         d = cheb(nx, ny, tx, ty)
         if best is None or (d > best[0] if away else d < best[0]):
             best = (d, nx, ny, False)
@@ -706,6 +710,10 @@ def choose(game, mc, b, foes):
     p = game.player
     if mc.order == 'passive' or not foes:
         return None
+    from . import bosses as BS
+    first = BS.ally_target(game, mc, b, foes)          # a spent boss, then the warder first
+    if first is not None:
+        return first
     if mc.order == 'attack':
         t = game.target()
         if t is not None and t in foes:
@@ -784,6 +792,9 @@ def act(game, b):
         mc.cd -= 1
     if b.hold > 0:
         b.hold -= 1
+        return
+    from . import bosses as BS
+    if BS.ally_turn(game, mc, b):                    # out of the red, a shield into a loading boss
         return
     foes = hostiles(game)
     if mc.fleeing:

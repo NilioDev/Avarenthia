@@ -197,7 +197,12 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **The NPC caravans** - travelling along, trading on the road, League rivals arriving first, what robbing brings.
   Debug: spawn a caravan beside you; send a League caravan to a town.
 
-## Boss fights (approved 26 October 2026)
+## Boss fights (approved 26 October 2026; part A built 29 October 2026)
+
+Built in part A: F12, Bosses (K) sets down Snagtooth, the Lich or the Dragon, sets its phase, shows the rhythm, shuts
+or opens its room, runs the fairness check, kills its helpers, makes it spent or staggered, flees once more, and adds a
+twin of the next kind. Test part `bosses`.
+
 
 - **A fixed boss** - each phase, its deck, its room tricks, its three items to choose from. Debug: place any fixed boss;
   set its phase (1-3).

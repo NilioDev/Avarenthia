@@ -69,6 +69,9 @@ def in_view(g):
     for c in getattr(m, 'slain', ()):
         if g.visible(c[1], c[2]):
             things.setdefault('Corpse', ('%', (150, 130, 110)))
+    from . import bosses as BS
+    if m.kind != 'over' and any(g.visible(*c) for c in BS.marks(g)):
+        things.setdefault('Red ground: a great blow will land there', ('▒', (180, 40, 30)))
     if getattr(m, 'zone', None) is not None:
         from . import zones as ZN
         for (x, y), got in m.marks.items():
@@ -122,6 +125,8 @@ TIPS = {
     'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',
     'class': 'Tip: Z in a town chooses the skills on keys 3 to 6; keys 1 and 2 come with the weapon in your hand.',
     'tree': 'Tip: you have a tree point to spend. Z, then Tab, while you are still where you rested.',
+    'red': 'Tip: red ground shows where a great blow will land. A number counts the turns left.',
+    'shut': 'Tip: the way is shut until it falls. Look for the one way out.',
 }
 
 

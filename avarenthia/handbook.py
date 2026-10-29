@@ -31,6 +31,7 @@ SIGN_COL = {
     'q': (160, 88, 58), 'Q': (160, 88, 58), ':': (190, 160, 116),
     '♦': (224, 190, 80), '╓': (220, 200, 150), '╦': (220, 200, 150), 'Æ': (214, 176, 120), '╪': (240, 236, 216),
     '╫': (160, 168, 186), '¶': (226, 184, 90), '‼': (210, 178, 110), 'º': (220, 200, 150),
+    '░': (200, 204, 216), '#': (138, 154, 74),
 }
 
 
@@ -111,7 +112,9 @@ def ch_fighting(g):
                      'tiles away with a spear or a staff.'),
         ('h', 'IN SIGHT'),
         ('p', 'The panel lists every enemy you can see, with a bar for its life and what it is doing: closing in, '
-              'fleeing, stunned, unaware of you.'),
+              'fleeing, stunned, unaware of you. A boss stands at the top with a wide bar, marked where it will '
+              'change; beside its name its phase, I to III, and under the bar what it does: charging a blow, spent, '
+              'staggered, warded.'),
         ('h', 'Spells you can see'),
         ('p', 'A bolt flies to its foe and bursts where it strikes; lightning leaps from one foe to the next; life you '
               'drain flows back to you in red motes. The area of a spell is a square, as far every way, but it opens '
@@ -124,6 +127,28 @@ def ch_fighting(g):
               'or off.'),
         ('p', 'On a foe, burning flickers orange, poison pulses green, the frozen stand on pale blue ice and the '
               'weakened look dim.'),
+        ('h', 'Bosses'),
+        ('p', 'The great foes fight in their own way. Before a great blow they wind up, and the ground it will strike '
+              'turns red; a number on it counts the turns left. Step out in time: there is always a way. A purple '
+              'number means the blow can be broken: hit it with a stunning or silencing skill, or hard enough while it '
+              'winds up, and the blow is gone. Small blows come without warning, as always.'),
+        ('p', 'A boss fights in a rhythm. Learn it: a snare or a wall of bone often comes before something worse. But '
+              'it is never quite the same twice, and a look at it only tells you how it stands.'),
+        ('p', 'At two thirds and at one third of its strength a boss changes: new moves, new helpers, and often the '
+              'room itself changes round you. Your blows stop at that edge, unless a critical hit lands while it is '
+              'spent or staggered: then the blow tears through, and the change never comes. After its heaviest blow '
+              'it stands spent for a moment, and your blows land harder. Breaking its blows and striking its weakness '
+              'fill three dots beside its name; when all three are full, it staggers. Its will shrugs off the first '
+              'two stuns and holds, the two {♦}; after that they work, but shorter.'),
+        ('p', 'Helpers come with a job, written beside them in IN SIGHT: a warder halves what the boss takes while it '
+              'lives, a mender heals it, a channeler feeds its next great blow. Choose who falls first. Its great '
+              'blows strike its own helpers too.'),
+        ('p', 'An end boss waits behind a veil of mist, the sign {░}. Once you step through, the room shuts at the '
+              'first blow: no rest inside and no portal, and one hard way out, a rotten wall, the sign {#}, that gives '
+              'after five blows. A boss you flee from heals, and is ready for you next time.'),
+        ('p', 'Your company plays it as you do: they step out of the red, better as they rank up, and a defender '
+              'smashes his shield into a boss that winds up. Each of them beside you gives the boss one more small '
+              'blow.'),
         ('h', 'Running away'),
         ('p', 'Wolves are fast; bandits are not. Walk off the edge of the field to get away, or onto a road: the '
               'patrols are there.'),

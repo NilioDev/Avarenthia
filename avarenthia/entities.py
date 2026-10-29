@@ -721,6 +721,8 @@ def make_monster(game, k, x, y, lvl, elite=0):
     m.wield = pick_wield(k)                 # the one weapon it fights with, and may drop
     from .behave import on_spawn
     on_spawn(game, m)
+    from . import bosses as BS
+    BS.on_spawn(game, m)                    # a boss with a kit: its deck and its phases
     return m
 
 

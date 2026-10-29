@@ -180,6 +180,10 @@ def monster(game, mon):
     lvl_gap = mon.lvl - game.player.lvl
     lines.append('It looks far stronger than you.' if lvl_gap >= 4 else 'It looks tougher than you.' if lvl_gap >= 2
                  else 'An even match.' if lvl_gap >= -1 else 'It should be no match for you.')
+    from . import bosses as BS
+    how = BS.stance(game, mon)                      # how it stands: it changes with what comes next
+    if how:
+        lines.append(how)
     return mon.name, mon.fg, lines
 
 

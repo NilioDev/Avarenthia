@@ -386,6 +386,24 @@ add('abilities', 'Creatures', 'Monster abilities',
     'Dangerous moves are announced a turn ahead: a web weaver lifts its abdomen, a goblin lights a fuse. Step aside.</p>',
     entry('The states they leave you in', f'<dl class="kv">{st_rows}</dl>', 'built') + '<div class="cards">' + ab_rows + '</div>')
 
+import avarenthia.bosses as BS
+ROLE = {'k': 'small', 'V': 'set-up', 'G': 'great', 'Z': 'heaviest', 'B': 'move', 'O': 'summon'}
+bs_html = ''
+for k, kt in BS.KITS.items():
+    rows = ''
+    for i, ph in enumerate(kt['phases']):
+        at = f" from {round(ph['at'] * 100)}% life" if ph.get('at') else ''
+        beat = ', '.join(ROLE[c] for c in ph['beat'])
+        cards = '; '.join(f"{ROLE[r]}: " + ', '.join(sorted({BS.MOVES[m]['name'] for m in ms})) for r, ms in ph['cards'].items())
+        rows += f'<dt>Phase {BS.ROMAN[i]}{e(at)}</dt><dd>Beat: {e(beat)}. {e(cards)}.</dd>'
+    rows += f"<dt>Weakness</dt><dd>{e(', '.join(kt['weak']))}</dd>"
+    bs_html += entry(D.MONSTERS[k]['name'], f'<dl class="kv">{rows}</dl>', 'built')
+add('bossfights', 'Creatures', 'Boss fights',
+    '<p>Bosses with a kit (bosses.py) fight in a rhythm drawn from a deck: each phase has a beat of roles and a few '
+    'moves per role. Great blows are marked on the ground with a count; every marked blow leaves a free tile. '
+    'At each threshold a blow stops and the room changes. After the heaviest blow the boss is spent.</p>',
+    '<div class="cards">' + bs_html + '</div>')
+
 tr = ''.join(f'<dt>{e(t)}</dt><dd>{e(NM.TRAIT_TEXT.get(t, ""))}</dd>' for t in NM.TRAITS)
 hb = ''.join(f'<dt>{e(a)}</dt><dd>{e(b)}</dd>' for a, b in NM.HABITS.items())
 add('named', 'Creatures', 'Named enemies', '<p>Monsters that make a name for themselves as notable, notorious and legendary (named.py).</p>',

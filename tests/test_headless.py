@@ -6625,11 +6625,328 @@ def money_fixes():
     print('   money ok: gems step', round(ECO.step('gems'), 2), 'cloth', first, '->', tired)
 
 
+def bosses():
+    """Boss fights, the kit: the veil, the shut room and its rotten wall, marked blows that always leave a way out and
+    never kill from full life, the deck, phases that stop a blow and the crit that breaks through, spent, staggered,
+    breaking, resolve, helpers with a job, the lich's shards, fleeing, your company in the red, the six twins, the other
+    bosses' marked nova and leap, the boss bar; Snagtooth, the Lich and the Dragon each through all their phases."""
+    from avarenthia import bosses as BS, debug as DBG, events as EV, mercs as MC, behave as BH
+    from avarenthia.entities import make_monster
+    from avarenthia.worldgen import free_around
+    import pickle
+    print('== bosses')
+    random.seed(15)
+    g = E.Game('Bosser', False, 4242)
+    app = ui.App(FakeCanvas(ui.W, ui.H))
+    app.start_game(g)
+    p = g.player
+    p.vit, p.lvl = 60, 3
+    p.life = g.stats()['max_life']
+    # the den: its hoard is a room behind a veil of mist, with one rotten wall
+    d = g.world.dungeons['den']
+    g.enter_dungeon('den', d.depth, 'up')
+    m = g.map
+    ar = m.arena
+    boss = next(o for o in m.mons if o.k == 'snagtooth')
+    assert ar['boss'] == boss.id and ar['gates'] and all(m.tile(*c) == D.VEIL for c in ar['gates'])
+    assert ar['rotten'] and m.tile(*ar['rotten']) == D.ROTTEN, 'one hard way out'
+    room = set(map(tuple, ar['cells']))
+    gate = ar['gates'][0]
+    outside = next(c for c in free_around(g, m, *gate, 1) if c not in room and c not in ar['gates'])
+    p.x, p.y = outside
+    g.compute_fov()
+    assert g.try_move(gate[0] - p.x, gate[1] - p.y) == 0 and g.pending and g.pending['key'] == 'boss_veil'
+    EV.resolve(g, 'go')
+    assert (p.x, p.y) == tuple(gate) and ar['asked']
+    for o in [o for o in m.mons if not o.is_npc and o is not boss]:
+        m.mons.remove(o)
+    p.x, p.y = min((c for c in room if not g.occupied(m, *c)), key=lambda c: abs(cheb(*c, boss.x, boss.y) - 3))
+    g.compute_fov()
+    boss.awake = True
+    g.damage_mon(boss, 1, weapon=True)               # the first blow: the name in gold, and the room shuts
+    assert BS.st(boss)['engaged'] and ar['sealed'] and g.banner and g.banner[0] == boss.name.upper()
+    assert all(m.tile(*c) == D.SEALED for c in ar['gates'])
+    assert BS.no_rest(g)
+    n = len(g.log)
+    g.rest()
+    assert 'no rest' in g.log[-1][0]
+    p.inv.append(E.Item(g.new_id(), 'scroll', 'tp'))
+    assert g.town_portal() == 0 and g.cur.startswith('den'), 'no portal out of a shut room'
+    # a marked blow: red ground, a way out within the turns it loads, and never death from full life
+    assert BS.start(g, boss, 'coin_toss')
+    c = boss.cast
+    assert (p.x, p.y) in set(map(tuple, c['cells'])) and c['load'] >= 2, c
+    assert BS.need(g, boss, BS.MOVES['coin_toss'], set(map(tuple, c['cells'])), p.x, p.y) <= c['left']
+    marks = BS.marks(g)
+    assert (p.x, p.y) in marks and marks[(p.x, p.y)][0] == str(c['left'])
+    app.render()
+    assert 'Charging: Coin Toss' in app.cv.dump() and 'IN SIGHT' in app.cv.dump()
+    keep = BS.MOVES['coin_toss']['power']
+    BS.MOVES['coin_toss']['power'] = 50.0
+    p.life = g.stats()['max_life']
+    boss.cast['left'] = 1
+    g.mon_turn(boss, g.stats()['def'])
+    BS.MOVES['coin_toss']['power'] = keep
+    assert not g.dead and p.life == 1 and boss.cast is None, 'a marked blow never kills from full life'
+    assert any(it.k == 'gold' for it in m.items), 'the coins lie where they fell'
+    p.life = g.stats()['max_life']
+    # the threshold stops a blow; its turn goes on the phase's trick: kobolds with a job come running
+    g.damage_mon(boss, 10 ** 5, weapon=True)
+    bs = BS.st(boss)
+    assert boss in m.mons and boss.hp == round(boss.maxhp * .5) and bs['pending'] == 1
+    boss.cast = None
+    g.mon_turn(boss, g.stats()['def'])
+    assert bs['phase'] == 1 and bs['pending'] is None
+    hs = BS.helpers(g, boss)
+    assert {o.job for o in hs} == {'guard', 'mender'}, [o.job for o in hs]
+    app.render()
+    assert 'guarding' in app.cv.dump() or 'mending' in app.cv.dump()
+    # the rotten wall gives after five blows; out through it, and it heals and makes ready
+    rx, ry = ar['rotten']
+    inner = next(cc for cc in room if cheb(cc[0], cc[1], rx, ry) == 1 and abs(cc[0] - rx) + abs(cc[1] - ry) == 1)
+    p.x, p.y = inner
+    for k in range(5):
+        assert g.try_move(rx - p.x, ry - p.y) == 1
+    assert m.tile(rx, ry) == D.FLOOR
+    p.x, p.y = rx, ry
+    g.try_move(rx - inner[0], ry - inner[1])
+    assert (p.x, p.y) not in room
+    bs['took'] = {'cold': 50, 'weapon': 10}
+    BS.tick(g)
+    assert not ar['sealed'] and boss.hp == boss.maxhp and bs['phase'] == 0 and 'res:cold' in bs['prep']
+    assert all(m.tile(*cc) == D.VEIL for cc in ar['gates']) and g.mon_res(boss, 'cold') >= 50
+    # Snagtooth through all his phases, and FOE FELLED
+    p.x, p.y = inner
+    g.damage_mon(boss, 10 ** 5, weapon=True)
+    boss.cast = None
+    g.mon_turn(boss, g.stats()['def'])
+    while boss in m.mons:
+        g.damage_mon(boss, 10 ** 5, weapon=True)
+    assert g.flags.get('den') and g.banner[0] == 'FOE FELLED' and ar['done'] and not ar['sealed']
+    assert all(m.tile(*cc) != D.SEALED for cc in ar['gates'])
+    # the Lich, set down in a room of the mine: shards, phases, the breakthrough, breaking, resolve, staggering
+    g.enter_dungeon('mine', g.world.dungeons['mine'].depth, 'up')
+    m = g.map
+    for o in [o for o in m.mons if not o.is_npc]:
+        m.mons.remove(o)
+    bad = {m.room_of[i] for i, t in enumerate(m.t) if t in (D.UP, D.DOWN)}
+    from collections import Counter
+    cnt = Counter(r for r in m.room_of if r != 255 and r not in bad)
+    rid = max(cnt, key=lambda r: cnt[r])
+    cells = [(i % m.w, i // m.w) for i, r in enumerate(m.room_of) if r == rid and D.TILES[m.t[i]].walk]
+    cx, cy = sum(c[0] for c in cells) // len(cells), sum(c[1] for c in cells) // len(cells)
+    p.x, p.y = min(cells, key=lambda c: cheb(*c, cx, cy))
+    p.lvl, p.vit = 14, 160
+    p.life = g.stats()['max_life']
+    g.compute_fov()
+    DBG.ON = True
+    lich = DBG.boss(g, 'lich')
+    ar = m.arena
+    assert len(ar['shards']) == 4 and all(m.tile(*cc) == D.SHARD for cc in ar['shards'])
+    assert D.TILES[D.SHARD].opaque, 'the shards are cover'
+    bs = BS.st(lich)
+    lich.awake = True
+    BS.engage(g, lich)
+    assert ar['sealed']
+    # resolve: the first two holds are shrugged off, the third is shorter
+    for k in range(3):
+        lich.hold = 4
+        BS.pre(g, lich)
+        assert lich.hold == (0 if k < 2 else 2), (k, lich.hold)
+        lich.hold = 0
+        bs['seen_hold'] = 0
+    assert bs['resolve'] == 0
+    # breaking: a stun while it winds up a blow that loads long
+    p.x, p.y = min((cc for cc in ar['cells'] if not g.occupied(m, *cc)), key=lambda cc: abs(cheb(*cc, lich.x, lich.y) - 3))
+    g.compute_fov()
+    BS.set_phase(g, lich, 2)
+    assert ar['dark'] and bs.get('lichcraft')
+    g.compute_fov()
+    assert BS.start(g, lich, 'blizzard'), 'there is cover within reach'
+    assert lich.cast['brk'] and lich.cast['load'] >= 3
+    app.render()
+    assert 'Charging: Blizzard' in app.cv.dump()
+    lich.hold = 1
+    dots = bs['dots']
+    assert BS.pre(g, lich) and lich.cast is None and bs['breaks'] == 1 and bs['dots'] == dots + 1
+    # or enough damage while it loads
+    bs['stun'] = 0
+    assert BS.start(g, lich, 'blizzard')
+    g.damage_mon(lich, lich.maxhp * .25, elem='fire')
+    assert lich.cast is None
+    # the weakness and the breaks fill the three dots: it staggers
+    bs['stun'], bs['weak_t'] = 0, -1
+    while not bs['stag']:
+        g.turn += 1
+        g.damage_mon(lich, 1, elem='fire')
+    assert bs['stag'] == 2 and bs['dots'] == 0
+    # lichcraft: a plain weapon does half
+    bs['stag'] = 0
+    hp = lich.hp
+    g.damage_mon(lich, 40, weapon=True)
+    assert hp - lich.hp <= 21, hp - lich.hp
+    # the shards raise her again; broken, they do not
+    lich.hp = 1
+    g.damage_mon(lich, 100)
+    assert lich not in m.mons and ar['rising']
+    for _ in range(3):
+        BS.tick(g)
+    assert lich in m.mons and lich.hp == lich.maxhp // 4
+    assert sum(1 for cc in ar['shards'] if m.tile(*cc) == D.SHARD) == 3
+    for cc in ar['shards']:
+        if m.tile(*cc) == D.SHARD:
+            p.x, p.y = next(q for q in free_around(g, m, *cc, 1))
+            assert g.try_move(cc[0] - p.x, cc[1] - p.y) == 1 and m.tile(*cc) == D.DARKSHARD
+    g.damage_mon(lich, 10 ** 5)
+    assert lich not in m.mons and not ar['rising'] and ar['done']
+    # the breakthrough: a critical hit while it is spent goes through the threshold, and the trick never comes
+    lich2 = BS.spawn(g, 'lich')
+    b2 = BS.st(lich2)
+    b2['spent'] = 1
+    g.damage_mon(lich2, lich2.maxhp * .5, crit=True)
+    assert b2['phase'] == 1 and b2.get('broke_through') and b2['pending'] is None
+    assert lich2.hp > round(lich2.maxhp * .33), 'never two phases in one blow'
+    m.mons.remove(lich2)
+    # a warder halves what the boss takes
+    p.x, p.y = min((cc for cc in cells if not g.occupied(m, *cc)), key=lambda cc: cheb(*cc, cx, cy))
+    g.compute_fov()
+    lich3 = BS.spawn(g, 'lich')
+    lich3.x, lich3.y = next(cc for cc in free_around(g, m, p.x, p.y, 2) if g.visible(*cc))
+    BS.call(g, lich3, (('wraith', 'warder'),), '')
+    hp = lich3.hp
+    g.damage_mon(lich3, 40)
+    assert BS.warded(g, lich3) and hp - lich3.hp == 20, hp - lich3.hp
+    g.compute_fov()
+    app.render()
+    assert 'warding' in app.cv.dump() and 'Warded' in app.cv.dump(), app.cv.dump()[-2500:]
+    for o in BS.helpers(g, lich3):
+        m.mons.remove(o)
+    m.mons.remove(lich3)
+    # the Dragon in its own room: pillars, the breath, flight and the dive, the burning floor, Inferno and spent
+    m.arena = None
+    dragon = DBG.boss(g, 'dragon')
+    if m.__dict__.get('arena') is None:
+        BS.build(g, m, dragon)
+    ar = m.arena
+    db = BS.st(dragon)
+    dragon.awake = True
+    BS.engage(g, dragon)
+    p.x, p.y = min((cc for cc in ar['cells'] if not g.occupied(m, *cc)), key=lambda cc: abs(cheb(*cc, dragon.x, dragon.y) - 3))
+    g.compute_fov()
+    BS.set_phase(g, dragon, 1)
+    assert any(o.job == 'channeler' for o in BS.helpers(g, dragon))
+    assert BS.do(g, dragon, 'take_wing', g.stats()['def']) and db['air'] and dragon.invis
+    hp = dragon.hp
+    assert g.damage_mon(dragon, 50) is False and dragon.hp == hp, 'out of reach in the air'
+    p.life = g.stats()['max_life']
+    for _ in range(4):
+        if dragon.cast:
+            g.mon_turn(dragon, g.stats()['def'])
+    assert not db['air'] and not dragon.invis
+    BS.set_phase(g, dragon, 2)
+    assert ar['dance'] is not None
+    for _ in range(2):
+        BS.tick(g)
+    db['stun'] = 0
+    fed = db['fed']
+    ok = BS.start(g, dragon, 'inferno')
+    if ok:
+        dragon.cast['left'] = 1
+        pil = sum(1 for cc in ar['pillars'] if m.tile(*cc) == D.PILLAR)
+        g.mon_turn(dragon, g.stats()['def'])
+        assert db['spent'] >= 1 and sum(1 for cc in ar['pillars'] if m.tile(*cc) == D.PILLAR) == max(0, pil - 1)
+    # no marked blow without a free tile: many turns of all three fights, with you standing anywhere
+    for k, turns in (('snagtooth', 150), ('lich', 150), ('dragon', 150)):
+        for o in [o for o in m.mons if not o.is_npc]:
+            m.mons.remove(o)
+        m.arena = None
+        b = BS.spawn(g, k)
+        b.awake = True
+        for t in range(turns):
+            p.life = g.stats()['max_life']
+            if b not in m.mons:
+                break
+            if random.random() < .3:
+                sp = [cc for cc in free_around(g, m, b.x, b.y, 6) if g.visible(*cc)]
+                if sp:
+                    p.x, p.y = random.choice(sp)
+                    g.compute_fov()
+            g.monsters_act()
+            c = b.__dict__.get('cast')
+            if c and c['left'] == c['load']:
+                mv = BS.MOVES[c['mv']]
+                if mv['shape'] != 'mark':
+                    n = BS.need(g, b, mv, set(map(tuple, c['cells'])), c['tx'], c['ty'], 5)
+                    assert n is not None and n <= c['left'], (k, c['mv'], n, c['left'])
+            if random.random() < .15:
+                g.damage_mon(b, b.maxhp * .08, weapon=True)
+            for o in BS.helpers(g, b):
+                if random.random() < .2:
+                    g.kill(o)
+        assert BS.st(b)['phase'] >= 1 or b not in m.mons, k
+    # your company: out of the red, better with rank
+    for o in [o for o in m.mons if not o.is_npc]:
+        m.mons.remove(o)
+    b = BS.spawn(g, 'snagtooth')
+    mc = DBG.add_hireling(g, 'defender')
+    MC.sync(g)
+    body = mc.body
+    assert body is not None and body in m.mons
+    out = free_around(g, m, body.x, body.y, 1)
+    if out:
+        b.cast = dict(mv='coin_toss', left=2, load=2, cells=[(body.x + a, body.y + bb) for a in (-1, 0, 1) for bb in (-1, 0, 1)
+                                                              if (body.x + a, body.y + bb) != out[0]], who='p', tx=body.x,
+                      ty=body.y, taken=0, brk=False, told=[])
+        mc.lvl = 20
+        keep_r = random.random
+        random.random = lambda: .5
+        moved = BS.ally_turn(g, mc, body)
+        random.random = keep_r
+        assert moved and (body.x, body.y) == out[0], 'a veteran steps out of the red'
+        b.cast = None
+    # the six twins
+    for o in [o for o in m.mons if not o.is_npc]:
+        m.mons.remove(o)
+    m.arena = None
+    a, bb = BS.spawn(g, 'snagtooth'), BS.spawn(g, 'snagtooth')
+    BS.link(a, bb, 'opposites')
+    hp = a.hp
+    g.damage_mon(a, 10, weapon=True)
+    assert hp - a.hp == 5, 'one of the opposites shrugs off weapons'
+    BS.link(a, bb, 'shared')
+    hp = bb.hp
+    g.damage_mon(a, 3)
+    assert bb.hp == hp - 3
+    BS.link(a, bb, 'survivor')
+    bb.hp = 2
+    g.kill(a)
+    assert bb.hp == bb.maxhp and bb in m.mons
+    a = BS.spawn(g, 'snagtooth')
+    wolf = make_monster(g, 'wolf', a.x, a.y + 1, 3)
+    m.mons.append(wolf)
+    BS.link(a, wolf, 'master')
+    g.kill(wolf)
+    assert 'frenzy' in a.effects
+    # the other bosses: their leap is marked a turn before it lands
+    grolm = make_monster(g, 'grolm', p.x + 3, p.y, 9)
+    if not g.occupied(m, grolm.x, grolm.y) and D.TILES[m.tile(grolm.x, grolm.y)].walk:
+        m.mons.append(grolm)
+        grolm.awake = True
+        g.compute_fov()
+        keep_r = random.random
+        random.random = lambda: .01
+        BS.turn(g, grolm, g.stats()['def'])
+        random.random = keep_r
+        assert grolm.cast and grolm.cast['mv'] in ('leap', 'nova')
+    pickle.dumps(g)
+    print('   bosses ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -248,6 +248,13 @@ TILES = [
     Tile('o', '#a0a8b0', False, False, 'well that draws air'),
     Tile('▒', '#8a8478', False, False, 'cracked flagstone'),
     Tile('#', '#9a968c', False, True, 'Varnish wall', bg='#24221e'),
+    # boss fights (bosses.py)
+    Tile('░', '#c8ccd8', True, True, 'veil of mist', bg='#2a2c34'),
+    Tile('#', '#b0a084', False, True, 'fallen stones', bg='#2c261e'),
+    Tile('#', '#8a9a4a', False, True, 'rotten wall', bg='#262a14'),
+    Tile('¤', '#d090ff', False, True, 'phylactery shard', bg='#20142e'),
+    Tile('¤', '#5a5064', False, True, 'broken shard', bg='#16121a'),
+    Tile('▒', '#8a8070', True, False, 'broken pillar'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -269,6 +276,7 @@ ASH, VENT, BONEFIELD, CHAINS, FIREGATE, FIREBOWL, BOWLOUT, IRON, BROKENGATE = ra
 (COLUMN, VPAVE, IRONGATE, VSTONE, SKYWELL, NICHE, OPENNICHE, SLAG, VANVIL, STARIRON, STARMAP, SLUICE, OPENSLUICE,
  BLACKSTONE, GLASSSAND, CHAINLINK, DUST, STARFLOOR, DAYMARKS, VLAMP, LITLAMP, AIRWELL, HOLLOW,
  VWALL) = range(188, 212)                   # the Varnish (varnish.py)
+VEIL, SEALED, ROTTEN, SHARD, DARKSHARD, FALLEN = range(212, 218)    # boss fights (bosses.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
@@ -359,11 +367,11 @@ MONSTERS = {
                       tags=''),
     'ratking': dict(ch='R', fg='#e8b474', name='The Rat King', boss=True, lvl_fix=4, hp=6, dmg=1.2, df=1.2, xp=8, summon='rat', tags=''),
     'grolm': dict(ch='h', fg='#e8803c', name='Grolm the Digger', boss=True, lvl_fix=9, hp=6, dmg=1.4, df=1.3, xp=10, leap=True, tags=''),
-    'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=7, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags='',
+    'lich': dict(ch='L', fg='#c486ff', name='Morvenna the Undying', boss=True, lvl_fix=14, hp=4.5, dmg=1.4, df=1.6, xp=15, caster=True, summon='skeleton', nova=True, tags='',
                  summon_msg='{name} beckons, and a skeleton claws its way out of the ground!', nova_msg='{name} unleashes a wave of grave-cold!',
                  bolt='bolt of darkness'),
     # the great evils of the world (only some appear in each game)
-    'dragon': dict(ch='D', fg='#ff5a30', name='The Dragon', boss=True, lvl_fix=16, hp=8.5, dmg=1.6, df=1.7, xp=18, caster=True, nova=True,
+    'dragon': dict(ch='D', fg='#ff5a30', name='The Dragon', boss=True, lvl_fix=16, hp=5, dmg=1.6, df=1.7, xp=18, caster=True, nova=True,
                    summon='drake', tags='', summon_msg='{name} roars, and a drake answers the call!',
                    nova_msg='{name} breathes a torrent of fire!', bolt='gout of flame', nova_col=(255, 120, 40)),
     'broodmother': dict(ch='S', fg='#d080f0', name='The Brood Mother', boss=True, lvl_fix=12, hp=6.5, dmg=1.3, df=1.3, xp=14, poison=True,

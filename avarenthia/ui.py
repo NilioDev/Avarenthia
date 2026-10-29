@@ -31,6 +31,7 @@ from . import towns as TW
 from . import war as WAR
 from . import aurora as AUR
 from . import rift as RIFT
+from . import bosses as BS
 from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
@@ -555,6 +556,8 @@ def danger_blocks(dg):
 def intent(g, o):
     """What an enemy you can see is up to, in a word or two (who it goes for stays hidden, see mercs.py)."""
     p = g.player
+    if getattr(o, 'job', None) in BS.JOBS:
+        return BS.JOBS[o.job], INFO                  # a boss's helper: what it is there for
     if getattr(o, 'fleeing', False) or 'fear' in o.effects:
         return 'fleeing', BAD
     spell = SMAP.under_spell(g, o)
@@ -727,6 +730,9 @@ class GameScreen(Screen):
         aura, wisps = AUR.auras(g, m, t)            # the wan glow of the ghostly, the faint fire of fiends
         if aura:
             self.moving = True
+        bmarks = BS.marks(g) if m.kind != 'over' else None      # the red ground of a great blow (bosses.py)
+        if bmarks:
+            self.moving = True
         for vy in range(MAP_H):
             my = vy + oy - sy
             if not 0 <= my < m.h:
@@ -863,8 +869,15 @@ class GameScreen(Screen):
                                 self.moving = self.moving or mv
                             if o.id == tgt_id:
                                 bg = (150, 44, 30)          # your target
+                            if BS.casting(o) and int(t * 3) % 2:
+                                fg = (255, 150, 40)         # it is loading a great blow
                             if t - app.hit_times.get(o.id, -9) < .13:
                                 fg, bg = (255, 255, 255), (120, 30, 20)
+                    if bmarks and (mx, my) in bmarks:
+                        num, ncol, hot = bmarks[(mx, my)]
+                        bg = BS.MARK_HOT if hot else BS.MARK_BG
+                        if num and not o and not it and (mx, my) != (p.x, p.y) and D.TILES[m.t[i]].walk:
+                            ch, fg = num, ncol
                     if mx == p.x and my == p.y:
                         fg, bg, mv = AN.player_look(p, bg, t)
                         ch, self.moving = '@', self.moving or mv
@@ -969,6 +982,29 @@ class GameScreen(Screen):
                     for j, chh in enumerate(txt):
                         if 0 <= vx + j < MAP_W:
                             cv.put(vx + j, vy, chh, c)
+        self.draw_banner(cv, t)
+
+    def draw_banner(self, cv, t):
+        """A boss's name in gold across the map at the first blow, and FOE FELLED when it falls: two seconds, once."""
+        g = self.game
+        bn = g.__dict__.get('banner')
+        if not bn:
+            return
+        if bn[1] is None:
+            bn[1] = t
+        age = t - bn[1]
+        if age > 2.6 or age < 0:
+            g.banner = None
+            return
+        self.moving = True
+        text = bn[0]
+        if len(text) * 2 - 1 <= MAP_W - 6:
+            text = ' '.join(text)
+        k = min(1.0, age * 3, (2.6 - age) * 2)
+        x0 = max(0, (MAP_W - len(text)) // 2)
+        y0 = 6
+        cv.fill(max(0, x0 - 3), y0 - 1, min(MAP_W, len(text) + 6), 3, ' ', FG, mix(BG, (24, 16, 8), k))
+        cv.text(x0, y0, text[:MAP_W], mix(BG, (255, 214, 90), k), mix(BG, (24, 16, 8), k))
 
     LABEL_NEAR = 8
 
@@ -1349,12 +1385,37 @@ class GameScreen(Screen):
         g = self.game
         p = g.player
         foes = sorted(g.visible_hostiles(), key=lambda o: (cheb(o.x, o.y, p.x, p.y), o.id))
-        if not foes:
+        boss = BS.boss_of(g)
+        if not foes and not boss:
             return
         cv.text(x, y, 'IN SIGHT', DIM, PANEL)
         tid = getattr(p, 'target', None)
-        for i, o in enumerate(foes[:4]):
-            yy = y + 1 + i * 2
+        top = 0
+        if boss is not None:                            # the boss bar: name, thresholds, phase, what it does
+            foes = [o for o in foes if o is not boss]
+            b = BS.bar(g, boss)
+            right = '♦' * b['resolve'] + ' ' + '·' * 3 + ' ' + b['phase']
+            cv.put(x, y + 1, boss.ch, boss.fg, PANEL)
+            cv.text(x + 2, y + 1, boss.name, GOLD, PANEL, maxw=PW - len(right) - 3)
+            rx = x + PW - len(right)
+            for j, chh in enumerate(right):
+                col = INFO if chh == '♦' else (GOLD if j - b['resolve'] - 1 < b['dots'] else LINE) if chh == '·' else FG
+                cv.put(rx + j, y + 1, chh, col, PANEL)
+            fr = max(0, boss.hp) / max(1, boss.maxhp)
+            n = int(PW * fr + .99) if boss.hp > 0 else 0
+            ticks = {min(PW - 1, int(PW * a)) for a in b['marks']}
+            for j in range(PW):
+                if j in ticks:
+                    cv.put(x + j, y + 2, '│', GOLD, PANEL)
+                else:
+                    cv.put(x + j, y + 2, '█' if j < n else '░', (BAD if fr < .33 else GOLD if fr < .66 else GOOD) if j < n else LINE, PANEL)
+            if b['state']:
+                cv.text(x, y + 3, b['state'], b['col'] or FG, PANEL, maxw=PW)
+            if DBG.ON and DBG.has(g, 'rhythm'):        # the test build: its beat, and where it stands in it
+                cv.text(x, y + 9, f'[debug] {BS.rhythm(boss)}', DIM, PANEL, maxw=PW)
+            top = 3
+        for i, o in enumerate(foes[:4 - (2 if top else 0)]):
+            yy = y + 1 + top + i * 2
             bg = (52, 40, 28) if o.id == tid else PANEL
             if o.id == tid:
                 cv.fill(x, yy, PW, 2, ' ', FG, bg)
@@ -1366,8 +1427,9 @@ class GameScreen(Screen):
                 cv.put(x + PW - 10 + j, yy, '█' if j < n else '░', (BAD if fr < .4 else GOOD) if j < n else LINE, bg)
             word, col = intent(g, o)
             cv.text(x + 2, yy + 1, word, col, bg, maxw=PW - 2)
-        if len(foes) > 4:
-            cv.text(x, y + 9, f'and {len(foes) - 4} more', DIM, PANEL)
+        shown = 4 - (2 if top else 0)
+        if len(foes) > shown:
+            cv.text(x, y + 9, f'and {len(foes) - shown} more', DIM, PANEL)
 
     def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
         """A glass globe of life or mana, drawn with quarter blocks (two by two pixels a cell, square pixels, so it is

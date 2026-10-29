@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: boss fights part A, the kit (29 Oct)** | Great blows marked red on the ground with a count, purple ones you can break; a rhythm from a deck per phase; phases at two thirds and one third that stop a blow; spent after the heaviest blow, three dots to a stagger, resolve; helpers with a job; twins; a boss bar in IN SIGHT; the end-boss room behind a veil that shuts until it falls, one rotten wall out; Snagtooth, the Lich and the Dragon |
 | **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
 | **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
@@ -497,6 +498,30 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Test `halls`. SAVE_VERSION 39. Not as asked: no drawn pieces set into the fixed plans yet; the halfling abbey and
   the elven bower got floors above that the spec did not ask for; the Hedge Post's bell wakes foes but raises no
   hamlets yet.
+- **Boss fights part A: the kit** (29 October 2026; `bosses.py`). A boss with a kit (`BS.KITS`: snagtooth, lich,
+  dragon) keeps its fight in `mon.bs` and a loading blow in `mon.cast`; `BS.turn` runs before every other boss rule
+  in `mon_turn` (the old die-roll summon, nova and leap are gone; other bosses' nova and leap are now announced a
+  turn ahead, `_plain`). Moves (`BS.MOVES`): shapes line, cone, ring, cross, circle on you, room save behind cover,
+  wave and a circle that follows; `need()` counts the steps to a safe cell (BFS) and the load is at least that, so a
+  marked blow always leaves a way out (`check_fair`, 150 turns per boss in the test). The deck: per phase a skeleton
+  of beat roles (small, set-up, great, heaviest, summon, room), cards drawn from piles that reshuffle; one beat in
+  five breaks the rhythm. Phases at .66 and .33 (Snagtooth one at .5) stop a blow in `blow()`; a crit while spent
+  or staggered breaks through (never two at once). Spent a turn after the heaviest blow; breaking a blow or its
+  weakness fills three dots, full staggers two turns; ♦ resolve takes the first two stuns. Helpers carry `o.job`
+  (warder halves damage to the boss, mender, guard, channeler). Twins (`BS.TWINS`, `mon.twin`): opposites, shared
+  life, a survivor who grows, master and servant. Kills go through `BS.spare` (a threshold holds; a lich shard
+  raises her a quarter healed after 3 turns) and `BS.felled`. The arena (`m.arena`, `BS.on_level` on a last level,
+  else a dug blob): the boss's room behind a veil (tile VEIL, asks once), shut (SEALED) at the first blow, one ROTTEN
+  wall that gives after five bumps; leaving means fleeing: the boss heals and gets ready (a resistance, unbroken, a
+  helper, its second phase; four at most). No rest and no portal while shut. The Lich: four shards (SHARD, DARKSHARD)
+  and pillars as cover, lichcraft halves weapons not silvered, fire or holy, lights out (sight 3). The Dragon: drakes
+  with a channeler, takes wing out of reach and dives, the burning floor dance, Inferno breaks a pillar (FALLEN) and
+  leaves it spent. The company steps out of the red (`ally_turn`) and hits the boss once more per ally beside you.
+  Shown: red and purple ground with the count (`marks`), the boss bar on top of IN SIGHT (phase, ♦, dots, ticks at
+  the thresholds, what it does), the gold name across the map and FOE FELLED, a stance line in `l`; tips 'red' and
+  'shut'. Lich life 7 to 4.5 and Dragon 8.5 to 5 (the kit makes them longer). Tiles 212-217. Debug: Bosses (K):
+  spawn, phase, shut/open, fairness, helpers, spent, flee, twins, flag 'rhythm'. Test `bosses`. SAVE_VERSION 46. Not
+  as asked: the three named items per boss come with part B, for every fixed boss at once.
 
 ## Trade part 1: the money fixes (built 29 October 2026; the spec)
 

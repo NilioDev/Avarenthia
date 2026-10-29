@@ -68,6 +68,7 @@ from . import arts as ART
 from . import aurora as AU
 from . import rift as RF
 from . import epics as EP
+from . import bosses as BS
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
@@ -76,7 +77,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 45
+SAVE_VERSION = 46
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -518,7 +519,7 @@ class Game:
         if m.kind == 'dungeon' and p.race == 'goblin':
             r += 2
         if m.kind != 'over':
-            r = BH.sight(self, r + self.stats().get('sight', 0))
+            r = BS.sight(self, BH.sight(self, r + self.stats().get('sight', 0)))
         if m.kind == 'over':
             last = getattr(self, '_over_last', None)
             if last and last != (p.x, p.y):
@@ -1045,6 +1046,9 @@ class Game:
             if EP.time_stopped(self):
                 self.msg('Time stands still: you cannot harm anyone in it.', 'bad')
                 return 0
+            if getattr(mon, 'invis', 0) and (BS.st(mon) or {}).get('air'):
+                self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} is high above you, out of reach.', 'info')
+                return 0
             self.melee(mon)
             return 1
         t = m.tile(nx, ny)
@@ -1065,6 +1069,10 @@ class Game:
         spent = EP.bump(self, nx, ny, t)
         if spent is not None:
             return spent
+        if getattr(m, 'arena', None):
+            spent = BS.bump(self, nx, ny, t)
+            if spent is not None:
+                return spent
         if t in VN.BUMP or getattr(m, 'vn', None):
             spent = VN.bump(self, nx, ny)
             if spent is not None:
@@ -1515,6 +1523,9 @@ class Game:
         if any(cheb(o.x, o.y, p.x, p.y) <= 1 for o in self.visible_hostiles()):
             self.msg('The portal will not open with an enemy at your side.', 'bad')
             return 0
+        if BS.no_rest(self):
+            self.msg('The shut room smothers the portal before it opens. There is one way out of here.', 'bad')
+            return 0
         self.remove_one(it)
         home = self.world.settlements[self.home]
         self.portal = dict(map=self.cur, x=p.x, y=p.y, over=self.over_pos, sid=home.id)
@@ -1934,6 +1945,7 @@ class Game:
         dmg *= 1 + .03 * self.lore(mon.k)
         dmg = max(1, round(dmg * (2 if crit else 1)))
         dmg = EP.duel_blow(self, mon, round(EP.on_damage(self, mon, dmg, weapon, ranged)))
+        dmg = BS.blow(self, mon, dmg, crit, weapon, elem)
         mon.hp -= dmg
         mon.awake = True
         self.wake_pack(mon)
@@ -2011,6 +2023,8 @@ class Game:
         dmg = round(EP.hurt(self, dmg, elem)) if dmg > 0 else dmg
         if dmg <= 0:
             return
+        if self.__dict__.get('spare_full') and p.life >= s['max_life']:
+            dmg = min(dmg, p.life - 1)                  # a marked blow never kills from full life (bosses.py)
         p.life -= dmg
         BH.on_hurt(self)
         big = dmg >= s['max_life'] * .2
@@ -2029,6 +2043,8 @@ class Game:
     def kill(self, mon):
         m, p = self.map, self.player
         if mon not in m.mons:
+            return
+        if BS.spare(self, mon):                          # a threshold holds it, or a shard raises it
             return
         m.mons.remove(mon)
         self.kills += 1
@@ -2107,6 +2123,7 @@ class Game:
             self.msg('The Lost Mine falls silent.', 'gold')
         if mon.tpl.get('boss'):
             EVL.on_kill(self, mon)
+        BS.felled(self, mon)                             # FOE FELLED, the room opens; or its twin lives on
         JB.on_kill(self, mon)
         AU.on_kill(self, mon)
 
@@ -2312,7 +2329,7 @@ class Game:
             if not m.inb(nx, ny):
                 continue
             di = dist[ny * m.w + nx]
-            if di < 0 or di >= bd or self.occupied(m, nx, ny):
+            if di < 0 or di >= bd or self.occupied(m, nx, ny) or not BS.may_stand(self, mon, nx, ny):
                 continue
             bd, best = di, (nx, ny)
         if not best and m.kind == 'dungeon' and UG.swims(mon) and UG.swim_after(self, mon):
@@ -2334,10 +2351,15 @@ class Game:
         m, p, d = self.map, self.player, mon.tpl
         seen = self.visible(mon.x, mon.y)
         dist = cheb(mon.x, mon.y, p.x, p.y)
-        if BH.turn(self, mon, df):
+        if BS.turn(self, mon, df):
+            return
+        if getattr(mon, 'job', None) and BS.helper_turn(self, mon, df):
+            return
+        kit = BS.st(mon) is not None                    # a boss with a kit fights by its deck (bosses.py)
+        if not kit and BH.turn(self, mon, df):
             return
         cap = 6 if d['boss'] else 4 if d.get('chief') else 2
-        if d['summon'] and seen and mon.summons < cap and random.random() < .13:
+        if d['summon'] and not kit and seen and mon.summons < cap and random.random() < .13:
             spots = W.free_around(self, m, mon.x, mon.y, 1)
             if spots:
                 x, y = random.choice(spots)
@@ -2348,26 +2370,11 @@ class Game:
                 self.flash([(x, y)], (196, 134, 255), '*', .2)
                 self.msg(d.get('summon_msg', '{name} squeals. A rat scurries out of the dark!').format(name=BH.The(mon)), 'bad')
                 return
-        if d['nova'] and dist <= 2 and random.random() < .22:
-            self.fx('burst', x=mon.x, y=mon.y, r=2, col=d.get('nova_col', (159, 216, 255)), hollow=True)
-            self.msg(d.get('nova_msg', '{name} unleashes a wave of grave-cold!').format(name=BH.The(mon)), 'bad')
-            self.hurt(random.randint(*mon.dmg) * .8, mon.name, d['elem'] or 'cold')
-            return
         if MC.mon_turn(self, mon, df):
             return
-        if AI.turn(self, mon, df):
+        if not kit and AI.turn(self, mon, df):
             return
-        if d['leap'] and seen and 2 <= dist <= 5 and random.random() < .3:
-            sp = W.free_around(self, m, p.x, p.y, 1)
-            if sp:
-                x, y = min(sp, key=lambda c: cheb(c[0], c[1], mon.x, mon.y))
-                self.flash(line(mon.x, mon.y, x, y), (232, 128, 60), '*', .2)
-                mon.x, mon.y = x, y
-                self.msg(d.get('leap_msg', '{name} leaps at you with a roar!').format(name=BH.The(mon)), 'bad')
-                if random.random() < self.mon_hit_chance(mon, df):
-                    self.hurt(random.randint(*mon.dmg) * 1.4, mon.name)
-                return
-        if (d['ranged'] or d['caster']) and seen and 2 <= dist <= 7 and random.random() < (.45 if d['caster'] else .6) \
+        if (d['ranged'] or d['caster']) and not kit and seen and 2 <= dist <= 7 and random.random() < (.45 if d['caster'] else .6) \
                 and not (d['caster'] and 'silence' in mon.effects):
             if self.mon_shoot(mon, d['caster'], df):
                 return
@@ -2405,7 +2412,7 @@ class Game:
         if dist <= 1:
             self.mon_attack(mon, df)
             return
-        if AI.approach(self, mon):
+        if not kit and AI.approach(self, mon):
             return
         self.step_toward(mon)
 
@@ -2417,6 +2424,9 @@ class Game:
         df = self.stats()['def']
         if EP.time_stopped(self):
             return                                      # Time Stop: only you move
+        BS.tick(self)
+        if self.cur != key:
+            return
         for mon in m.mons[:]:
             if self.dead or self.cur != key or self.request == ('win',):
                 return
@@ -2465,6 +2475,8 @@ class Game:
                         mon.effects[k][0] = t - 1
                 if mon not in m.mons:
                     continue
+            if BS.pre(self, mon):                       # spent, staggered or reeling; a new hold meets its resolve
+                continue
             if mon.hold > 0:
                 mon.hold -= 1
                 if mon.hold == 0:
@@ -2493,6 +2505,8 @@ class Game:
             while acts > 0 and not self.dead and mon in m.mons and self.cur == key:
                 acts -= 1
                 self.mon_turn(mon, df)
+            if not self.dead and self.cur == key:
+                BS.extra(self, mon, df)
             SM.after_move(self, mon, ox_, oy_)
             WS.keep_back(self, mon, ox_, oy_)
 
@@ -2917,6 +2931,9 @@ class Game:
 
     def rest(self):
         p = self.player
+        if BS.no_rest(self):
+            self.msg('The way is shut and the fight goes on. There is no rest in here.', 'bad')
+            return
         if getattr(self.map, 'rift', False):
             self.msg('The heat lets you rest nowhere here. Not a moment.', 'bad')
             return

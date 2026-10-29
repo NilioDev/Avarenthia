@@ -21,7 +21,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Not built: rounds 17-18 after the epics and the boss kit, the other sixteen servants in rounds 31-32 |
 | **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; not built: rounds 22, 26, and the great fair with the feast days in 28 |
-| **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Not built: rounds 15-16 before the great evils, the maker and the job bosses in 23 |
+| **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Part A, the kit, built 29 October 2026; not built: round 16 before the great evils, the maker and the job bosses in 23 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -49,8 +49,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     October 2026 (see `docs/built.md`).
 13. **Classes part 4: the epics** (L). Built 29 October 2026 (see `docs/built.md`). 14. **Trade part 1:
     the money fixes** (S). Built 29 October 2026 (see `docs/built.md`). Pause after 12, merge after 14.
-15. **Boss fights part A: the kit** (XL): marked blows, the deck, phases, spent and staggered, breaking, resolve,
-    helpers, twins, threat, the boss bar, end-boss rooms and arenas, with Snagtooth, the Lich and the Dragon.
+15. **Boss fights part A: the kit** (XL). Built 29 October 2026 (see `docs/built.md`).
     16. **Part B** (XL): the whole move library, the other fixed bosses, roaming bosses. Both before the great evils,
     whose servants fight with this kit and these moves (Nilio, 26 October 2026).
 17. **The great evils, part 1: the frame** (XL): the Hollow King and his land, the three weights, the two clocks, the
@@ -595,7 +594,10 @@ and armies at war fall on them; a robbed one never arrives, so prices stay high 
 UI: named goods stand by their own name in the market list; the caravan is a sign on the world map named by
 `guide.py`; its choices are one `EV.ask`; each new key gets one first-time tip. The handbook's trade chapter grows with it.
 
-## Boss fights (approved 26 October 2026, not built; rounds 15, 16 and 23)
+## Boss fights (approved 26 October 2026; part A built 29 October 2026, not built: rounds 16 and 23)
+
+**Part A, the kit:** built 29 October 2026 (round 15, see `docs/built.md`). The three named items per fixed boss come
+with part B, for every fixed boss at once.
 
 Bosses now are sacks of life that roll a die each turn (summon, nova, leap), and their worst moves come without the
 warning that a common spider gives. Only the Lord of Cinders in the Rift has real mechanics. This replaces the boss
