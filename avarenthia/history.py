@@ -224,7 +224,8 @@ def generate(game, m, world, R):
                f'grove to clear a road; they have let few in since.', s.x, s.y, sid=s.id, prio=1)
             forest.setdefault('history', True)
     # the Hollow King's first rising and fall, as the oldest letters tell it (the lore and the riddles agree)
-    sky = next(((x, y) for nm, x, y in world.wonders if nm == 'The Sky-Seat'), (great.x, great.y))
+    hid = (getattr(world, 'shadow', None) or {}).get('wonder')       # under the mist it is not among the wonders
+    sky = next(((x, y) for nm, x, y in world.wonders + ([hid] if hid else []) if nm == 'The Sky-Seat'), (great.x, great.y))
     ev(1, 'The Old Days', 'hollow', 'The first fall of the Hollow King',
        'the last mages of the Varnish wrote that the Hollow King had risen in the Sky-Seat and brought it down, and '
        'that he fell with it into the sea. They did not write that he was dead.', sky[0], sky[1], prio=9)

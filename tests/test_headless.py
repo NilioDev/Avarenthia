@@ -1090,10 +1090,11 @@ def wonders():
     """The new world: one continent, a frozen north, rivers, and its wonders where they belong."""
     g = E.Game('Test', False, seed=11, race='human', gender='male')
     om, w = g.maps['over'], g.world
-    names = [n for n, _x, _y in w.wonders]
+    wl = w.wonders + ([w.shadow['wonder']] if w.shadow.get('wonder') and not w.shadow.get('seen') else [])
+    names = [n for n, _x, _y in wl]                            # the Sky-Seat lies hidden in the mist at first
     print('wonders:', names)
     assert 'The Sky-Seat' in names, names
-    sx, sy = next((x, y) for n, x, y in w.wonders if n == 'The Sky-Seat')
+    sx, sy = next((x, y) for n, x, y in wl if n == 'The Sky-Seat')
     assert om.tile(sx, sy + 10) == D.WATER                     # the maelstrom is out at sea
     bones = [(x, y) for n, x, y in w.wonders if n == "The Wyrm's Bones"]
     for x, y in bones:
@@ -1132,8 +1133,9 @@ def ways_and_wares():
     g.player.x, g.player.y = home.x + 1, home.y
     r = g.over_sight()
     assert r <= 6, r
-    # the Sky-Seat lies far out in the warm south
-    sx, sy = next((x, y) for n, x, y in w.wonders if n == 'The Sky-Seat')
+    # the Sky-Seat lies far out in the warm south (hidden in the mist at first)
+    wl = w.wonders + ([w.shadow['wonder']] if w.shadow.get('wonder') else [])
+    sx, sy = next((x, y) for n, x, y in wl if n == 'The Sky-Seat')
     land = [i for i, t in enumerate(om.t) if t != D.WATER and D.TILES[t].walk
             and om.biome_names[om.biome[i]] not in ('cay', 'atoll_palm', 'reef', 'reef_flat')]
     near = min(math.hypot(i % om.w - sx, i // om.w - (sy + 10)) for i in land)

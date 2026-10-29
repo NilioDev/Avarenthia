@@ -139,6 +139,25 @@ def greedy_step(game, wd, tx, ty, away=False):
         wd.x, wd.y = best
 
 
+def _hunt_cost(k):
+    return (60 if k in (TOWN, CITY) else 1) if D.TILES[k].walk else None   # a town only where you stand in one
+
+
+def hunt_round(game, wd, tx, ty):
+    """One step along the way round what blocks a hunter; the way is found again when you have moved on."""
+    way = getattr(wd, 'way', None)
+    if not way or cheb(way[-1][0], way[-1][1], tx, ty) > 3 or cheb(way[0][0], way[0][1], wd.x, wd.y) > 1:
+        if game.turn - getattr(wd, 'noway', -99) < 50:
+            return                                         # no way to you a moment ago: they wait it out
+        way = dijkstra_path(game.maps['over'], (wd.x, wd.y), (tx, ty), _hunt_cost) or []
+        if not way:
+            wd.noway = game.turn
+    if way and (way[0][0], way[0][1]) != (game.player.x, game.player.y) and not wanderer_at(game, *way[0]) \
+            and passable(game, way[0][0], way[0][1], wd.hostile):
+        wd.x, wd.y = way.pop(0)
+    wd.way = way
+
+
 def wander(game, wd, leash):
     if random.random() < .35:
         return
@@ -178,7 +197,11 @@ def step(game, wd):
     if wd.kind in ('hunt', 'avenger'):
         # Morvenna's hunters, and those a secret guild sends after you, always know where you are
         if on_over and wd.cooldown == 0 and random.random() < .8:
-            greedy_step(game, wd, p.x, p.y)
+            at = (wd.x, wd.y)
+            if not getattr(wd, 'way', None):
+                greedy_step(game, wd, p.x, p.y)
+            if (wd.x, wd.y) == at and cheb(wd.x, wd.y, p.x, p.y) > 2:
+                hunt_round(game, wd, p.x, p.y)             # a lake or a ridge in the way: they go round it
         elif not on_over:
             tx, ty = game.over_pos
             if cheb(wd.x, wd.y, tx, ty) > 6:
