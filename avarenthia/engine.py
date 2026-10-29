@@ -22,7 +22,7 @@ from . import towns as TW
 from . import events as EV
 from . import evils as EVL
 from . import shadow as SH
-from . import skyseat as SK
+from . import skyseat as SKY
 from . import factions as FA
 from . import races as RC
 from . import calendar as CAL
@@ -708,7 +708,7 @@ class Game:
             EVL.learn(self, lair)
         SH.on_level(self, m, did)
         if did == 'skyseat':
-            SK.on_level(self, m, depth)
+            SKY.on_level(self, m, depth)
 
     def leave_to_over(self, walk=None):
         """Back to the world map. walk: the step (dx, dy) that took you off the edge of a town, site or hold; you
@@ -1083,7 +1083,7 @@ class Game:
         if t in (D.JAR, D.HCAIRN):
             return SH.bump(self, nx, ny, t)
         if t in (D.BEACON, D.LITBEACON) or (t in (D.RAFT, D.AIR) and getattr(m, 'chain', False)):
-            return SK.bump(self, nx, ny, t) if t != D.AIR else SK.edge(self, nx, ny)
+            return SKY.bump(self, nx, ny, t) if t != D.AIR else SKY.edge(self, nx, ny)
         if getattr(m, 'arena', None):
             spent = BS.bump(self, nx, ny, t)
             if spent is not None:
@@ -1481,7 +1481,7 @@ class Game:
                 return 1
             self.msg('There is nothing to enter here.')
             return 0
-        got = SK.stairs(self, t, d) if t in (UP, DOWN) else None
+        got = SKY.stairs(self, t, d) if t in (UP, DOWN) else None
         if got is None and t in (UP, DOWN):
             got = VN.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
@@ -1540,7 +1540,7 @@ class Game:
         if any(cheb(o.x, o.y, p.x, p.y) <= 1 for o in self.visible_hostiles()):
             self.msg('The portal will not open with an enemy at your side.', 'bad')
             return 0
-        if SK.in_seat(self):
+        if SKY.in_seat(self):
             self.msg('The bound winds tear the portal shut before it opens. Here there is only the way you came.', 'bad')
             return 0
         if BS.no_rest(self):
@@ -2628,7 +2628,7 @@ class Game:
             if not self.dead and getattr(self.map, 'rift', False):
                 RF.turn(self)
             if not self.dead and getattr(self.map, 'chain', False):
-                SK.turn(self)
+                SKY.turn(self)
             if getattr(self.map, 'zone', None) is not None and not self.dead:
                 ZN.tick(self)
         elif self.cur == 'over':
@@ -2672,9 +2672,9 @@ class Game:
         """Softcore death: the priests of the nearest temple call you back, for a fee from your purse. Your backpack
         and cargo stay with your body. Without the coin for the temple your tale ends here."""
         p = self.player
-        seat = SK.in_seat(self)
+        seat = SKY.in_seat(self)
         fee = self.raise_fee() * (2 if seat else 1)           # he keeps those who die in his city: the priests fight for you
-        bound = SK.binds(self)
+        bound = SKY.binds(self)
         if p.gold < fee:
             self.dead = True
             p.life = 0
@@ -2721,7 +2721,7 @@ class Game:
             self.maps[key].items.append(corpse)
             self.corpses.append((key, corpse.id))
             if bound and key != 'over':
-                SK.shade(self, key, corpse)                 # where the dead are bound, your body rises (skyseat.py)
+                SKY.shade(self, key, corpse)                 # where the dead are bound, your body rises (skyseat.py)
             p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
             p.cargo, p.cost_basis = {}, {}
         here = self.world.settlements[self.home] if self.home is not None else None
@@ -2750,7 +2750,7 @@ class Game:
             where = 'in the wilds' if key == 'over' else self.maps[key].name
             self.msg(f'Your backpack and cargo lie with your body {where}. Go and get them back.', 'bad')
         if seat:
-            SK.more_dead(self)
+            SKY.more_dead(self)
             self.msg('He kept you as long as he could. The priests had to fight for you, and the fee is double.', 'bad')
         self.msg(f'The priests took {fmt(fee)} for their prayers. You will be weak for a day or two.', 'bad')
         self.request = ('save',)
