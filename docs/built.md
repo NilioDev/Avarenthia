@@ -607,6 +607,12 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   1 AR. Tiles 228-234. Debug: The shadow (S), the Sky-Seat column. Test `skyseat`. SAVE_VERSION 49. Not built from the
   spec: a fallen hireling rising as well; the relic won elsewhere besides the Star-Iron Key; the barons' fight over
   freed lands is news, not a war (left for rounds 31-32).
+- **Fixes from the full run, 29 October 2026 (block 4).** Hunters on the world map go round a lake or a ridge
+  (`wanderers.hunt_round`) instead of waiting behind it; a totem heals a boss only a fortieth, not past its phase;
+  a tower door in a thick bit of wall gets a short passage; the eldest tree of an elven temple gets a white path from
+  its door to the moonwell; a roaming boss's stair check survives a level already gone; the Sky-Seat's chain map has
+  its own flag (`skychain`). The balance test draws anew (`world * 7 + 1`): the Rogue stands near the edge, and on
+  some draws it lost a few of its 24 waves, before the great evils as well.
 
 ## Trade part 1: the money fixes (built 29 October 2026; the spec)
 
