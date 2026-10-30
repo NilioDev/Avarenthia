@@ -1829,7 +1829,7 @@ def on_named_meet(game, n):
     from .worldgen import free_around
     for m in MS.active(game):
         if m.kind == 'hunt' and m.data.get('nid') == n.id and m.data.get('rival', {}).get('state') == 'team':
-            sp = free_around(game, game.map, game.player.x, game.player.y, 1)
+            sp = free_around(game, game.map, game.player.x, game.player.y, 3)     # beside you, or near when hemmed in
             if sp:
                 MC.thrall(game, 'huntsman', sp[0][0], sp[0][1], 500, m.data['rival']['name'], n.lvl)
                 game.msg(f'{m.data["rival"]["name"]} is at your side.', 'good')

@@ -2267,7 +2267,7 @@ def more_jobs():
     JB.r_rival(g, 'team', dict(mid=m.id))
     overworld(n.x, n.y)
     NM.meet(g, n, 'you')
-    assert any(o.name == m.data['rival']['name'] for o in g.map.mons), 'the rival fights with you'
+    assert any(o.name == m.data['rival']['name'] for o in g.map.mons), ('the rival fights with you', g.cur, [o.name for o in g.map.mons], m.data['rival'])
     clear()
     print('  rival: hunting with', m.data['rival']['name'])
     s, m = finish('legend')
@@ -7041,6 +7041,8 @@ def boss_moves():
         g.compute_fov()
         b = DBG.boss(g, k)
         assert b is not None and BS.st(b) is not None, k
+        if not g.visible(b.x, b.y):               # in sight, not behind a pillar of its room
+            b.x, b.y = next(c for c in free_around(g, m, p.x, p.y, 4) if g.visible(*c))
         b.awake = True
         return b
 
