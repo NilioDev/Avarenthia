@@ -272,6 +272,7 @@ TILES = [
     Tile('¥', '#8890a0', False, False, 'cold beacon', bg='#18181c'),
     Tile('¥', '#ffd860', False, False, 'lit beacon', bg='#3a2a08'),
     Tile('Π', '#d8c890', False, False, 'throne of star-iron', bg='#201c10'),
+    Tile('÷', '#d6b06e', False, False, 'dig spot', bg='#241c12'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -297,6 +298,7 @@ VEIL, SEALED, ROTTEN, SHARD, DARKSHARD, FALLEN = range(212, 218)    # boss fight
 RATHOLE, PROP, WEBS, EGGS, LIGHTSTONE, BCHAIN, BLEDGE, BANNER = range(218, 226)     # bosses part B (bossmoves.py)
 JAR, HCAIRN = 226, 227          # the Lich's phylactery, a fallen hero's cairn (shadow.py)
 STARLINK, WEAKLINK, GLASS, CRACKGLASS, BEACON, LITBEACON, THRONE = range(228, 235)     # the Sky-Seat (skyseat.py)
+DIGSPOT = 235                   # archaeology (archaeology.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

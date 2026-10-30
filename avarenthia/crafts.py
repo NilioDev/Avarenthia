@@ -59,7 +59,7 @@ SMITH = {
     'ringmail': ('Ring Mail', 'ringmail', 4, 5), 'chainmail': ('Chain Mail', 'chainmail', 5, 8), 'platemail': ('Plate Mail', 'platemail', 7, 12),
     'hgloves': ('Heavy Gloves', 'hgloves', 2, 4), 'gauntlets': ('Gauntlets', 'gauntlets', 2, 10),
     'platedbelt': ('Plated Belt', 'platedbelt', 2, 10), 'hboots': ('Heavy Boots', 'hboots', 2, 4), 'greaves': ('Greaves', 'greaves', 3, 10),
-    'pick': ("Miner's Pick", 'tool:pick', 2, 0), 'knife': ('Skinning Knife', 'tool:knife', 1, 0),
+    'pick': ("Miner's Pick", 'tool:pick', 2, 0), 'trowel': ("Digger's Trowel", 'tool:trowel', 1, 0), 'knife': ('Skinning Knife', 'tool:knife', 1, 0),
     'hooks': ('Fish Hooks', 'tool:hooks', 1, 3), 'mailbarding': ('Mail Barding', 'tool:barding', 5, 15),
 }
 TAILOR = {
@@ -212,6 +212,8 @@ def anvil(game):
         opts.append(('Mend metal gear, yours or your company\'s', 'mend'))
     if game.eq_item('weapon'):
         opts.append(('Hone your blade', 'hone'))
+    from . import archaeology as AR
+    opts += AR.mend_opts(game)
     extra(game, 'smithing', opts)
     opts.append(('Leave', 'leave'))
     r = LS.rank(game, 'smithing')
@@ -295,6 +297,9 @@ def r_extra(game, choice):
         mend_others(game, choice[7:])
     elif choice.startswith('unmake:'):
         unmake_menu(game, choice[7:])
+    elif choice.startswith('oldmend:'):
+        from . import archaeology as AR
+        AR.mend(game, int(choice[8:]))
 
 
 def r_anvil_do(game, choice, ctx):

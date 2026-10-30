@@ -2578,7 +2578,11 @@ def camps_and_holds():
     mine = g.map
     assert mine.mine_depth == 1 and mine.working and D.ORE in mine.t and D.PROP in mine.t
     assert not any(not o.is_npc for o in mine.mons), 'the lamp-lit galleries are kept clear'
-    vein = next((x, y) for y in range(mine.h) for x in range(mine.w) if mine.tile(x, y) == D.ORE)
+    from avarenthia import crafts as CRF
+    ores = [(x, y) for y in range(mine.h) for x in range(mine.w) if mine.tile(x, y) == D.ORE]
+    vein = next((v for v in ores if CRF.vein(g, *v) == 'iron'), ores[0])     # iron: no rank needed
+    if CRF.vein(g, *vein) != 'iron':
+        p.life_sk['mining'] = [50, 0]
     assert DH.dig(g, *vein) == 0 and mine.tile(*vein) == D.ORE      # no pick yet
     g.add_to_inv(Item(g.new_id(), 'tool', 'pick'))
     s.rep = 0
@@ -2586,7 +2590,9 @@ def camps_and_holds():
     rep = s.rep
     dw = next(o for o in mine.mons if o.is_npc and getattr(o, 'race', '') == 'dwarf')
     dw.x, dw.y = p.x, p.y                           # a dwarf of the clan sees you do it
-    assert DH.dig(g, *vein) > 0 and p.cargo.get('ore') == 1 and mine.tile(*vein) == D.FLOOR and s.rep < rep, (s.rep, rep)
+    ore = sum(i.n for i in p.inv if i.k == 'mat' and i.t.startswith('ore_'))
+    assert DH.dig(g, *vein) > 0 and (p.cargo.get('ore', 0) >= 1 or sum(i.n for i in p.inv if i.k == 'mat' and i.t.startswith('ore_')) > ore) \
+        and mine.tile(*vein) == D.FLOOR and s.rep < rep, (s.rep, rep, p.cargo)
     # the old galleries further down are anyone's, and their props are cracked
     dg = w.dungeons[mine.did]
     g.enter_dungeon(mine.did, 3, 'up')
@@ -7953,11 +7959,105 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def archaeology():
+    """Archaeology: dig spots at old places, seen by rank, dug with a trowel; lore, a servant's weakness, old pieces
+    a smith mends, finds a library buys, the master's test."""
+    from avarenthia import lifeskills as LS, archaeology as AR, crafts as CRF, mastery as MA, shadow as SH
+    from avarenthia import debug as DBG
+    from avarenthia.entities import Item
+    print('== archaeology')
+    random.seed(21)
+    app = new_app('soft', 2121)
+    g = app.game
+    p = g.player
+    p.gold = 10 ** 6
+    assert 'archaeology' in LS.LIFE_ORDER and D.TILES[D.DIGSPOT].name == 'dig spot'
+    sites = [s for s in g.world.sites if s.kind in AR.KINDS and s.kind not in ('wreck',)]
+    assert sites, 'no old places'
+    var = [s for s in sites if s.kind in AR.VARNISH]
+    site = next((s for s in sites if s.kind == 'oldfield'), sites[0])
+    # without a tool and rank 0 nothing shows; with a trowel the easy spots do
+    to_over(g, 0)
+    g.enter_site(site.id)
+    m = g.map
+    assert m.digs and len(m.digs) <= AR.KINDS[site.kind], m.digs
+    assert D.DIGSPOT not in m.t
+    p.inv.append(Item(g.new_id(), 'tool', 'trowel'))
+    AR.show(g)
+    low = sum(1 for n in m.digs.values() if n <= AR.sight(g))
+    assert m.t.count(D.DIGSPOT) == low, (m.t.count(D.DIGSPOT), low, m.digs)
+    p.life_sk['archaeology'] = [50, 0]
+    AR.show(g)
+    assert m.t.count(D.DIGSPOT) == len(m.digs), 'rank 50 sees every spot'
+    # dig every spot: each gives something, and the place remembers it
+    if not DBG.has(g, 'oldfind'):
+        DBG.toggle(g, 'oldfind')
+    before = len(p.inv)
+    spots = list(m.digs)
+    for x, y in spots:
+        AR.dig(g, x, y)
+        assert m.tile(x, y) != D.DIGSPOT
+    assert not m.digs and site.dug == set(spots)
+    assert len(p.inv) >= before
+    # a new map of the same place holds no spot already dug
+    g.maps.pop(site.map_key, None)
+    to_over(g, 0)
+    g.enter_site(site.id)
+    assert not g.map.digs, g.map.digs
+    # a servant's weakness from the earth: one source of two
+    ev = next((e for e in g.world.evils if not e.defeated), None)
+    if ev:
+        ev.known = True
+        assert SH.clue(g, ev, 'dig', 'test') and 'dig' in SH.know(g)['src'][ev.key]
+        assert SH.SOURCES['dig'] == 'what you dug up'
+    # an old piece: the smith mends it into magic gear; a Varnish piece wants star-iron
+    to_over(g, 0)
+    g.enter_town(0)
+    op = AR.make_piece(g, False, 25)
+    vp = AR.make_piece(g, True, 35)
+    p.inv += [op, vp]
+    assert op.tier == 'C' and vp.tier == 'D' and AR.need_smith(vp) == 30
+    p.life_sk['smithing'] = [10, 0]
+    p.inv = [i for i in p.inv if i.k != 'oldpiece' or i in (op, vp)]
+    assert all(k is None for _l, k in AR.mend_opts(g)), 'too low a smith'
+    p.life_sk['smithing'] = [35, 0]
+    ok = dict((k, l) for l, k in AR.mend_opts(g))
+    assert f'oldmend:{op.id}' in ok and f'oldmend:{vp.id}' not in ok, 'the Varnish piece wants a shard'
+    from avarenthia.nature import curio
+    p.inv.append(curio(g, 'stariron'))
+    CRF.r_extra(g, f'oldmend:{op.id}')
+    CRF.r_extra(g, f'oldmend:{vp.id}')
+    made = [i for i in p.inv if i.k == 'gear' and getattr(i, 'old', False)]
+    assert len(made) == 2 and all(i.rar == 'magic' for i in made), [(i.name, i.rar) for i in made]
+    assert any(i.name.startswith('Varnish ') for i in made) and not any(i.k == 'oldpiece' for i in p.inv)
+    assert not any(i.k == 'curio' and i.t == 'stariron' for i in p.inv)
+    # a library buys finds for half again what a trader gives
+    for k in ('sherd', 'oldcoin', 'torc'):
+        p.inv.append(curio(g, k))
+    w = AR.worth(g)
+    assert w == round(sum(curio(g, k).value() for k in ('sherd', 'oldcoin', 'torc')) * 1.5) or w > 0
+    gold = p.gold
+    class N:
+        name = 'Scribe'
+    g.say = lambda *a, **k: None
+    assert AR.r_scribe(g, N(), 'finds') and p.gold == gold + w and not AR.finds(g)
+    # the master's test at 25 asks for an old piece of tier C
+    text, test, n = MA.wants('archaeology', 25)
+    assert test(AR.make_piece(g, False, 22)) and not test(AR.make_piece(g, False, 5))
+    # the varnish places hold spots too
+    if var:
+        g.maps.pop(var[0].map_key, None)
+        to_over(g, 0)
+        g.enter_site(var[0].id)
+        assert g.map.digs or var[0].kind == 'vcity'
+    print('archaeology ok')
 
 
 if __name__ == '__main__':

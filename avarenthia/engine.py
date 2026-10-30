@@ -36,6 +36,7 @@ from . import crafts as CRF
 from . import beastparts as BP
 from . import foraging as FG
 from . import mastery as MA
+from . import archaeology as AR
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -84,7 +85,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 51
+SAVE_VERSION = 52
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -160,7 +161,8 @@ def lore_rank(kills):
 
 
 SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'), ('tool', 'pick'), ('tool', 'kit'), ('tool', 'tent'), ('food', 'bread'),
-            ('food', 'ration'), ('food', 'barley'), ('food', 'honey'), ('food', 'salt'), ('tool', 'knife'), ('tool', 'frame')]
+            ('food', 'ration'), ('food', 'barley'), ('food', 'honey'), ('food', 'salt'), ('tool', 'knife'), ('tool', 'frame'),
+            ('tool', 'trowel')]
 INV_MAX = 32
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
@@ -893,6 +895,7 @@ class Game:
             PL.on_enter(self, site, m)
         BP.on_enter(self, site, m)
         MA.on_enter(self, site, m)
+        AR.on_enter(self, site, m)
         if ST._SEATS.is_seat(site):
             BP.sync_cages(self, site, m)
         self.compute_fov()
@@ -1107,6 +1110,8 @@ class Game:
             spent = VN.bump(self, nx, ny)
             if spent is not None:
                 return spent
+        if t == D.DIGSPOT:
+            return AR.dig(self, nx, ny)
         if getattr(m, 'old', None):
             why = OP.blocked(self, nx, ny)
             if why:
@@ -1246,6 +1251,8 @@ class Game:
             OP.on_step(self)
         if getattr(m, 'vn', None):
             VN.on_step(self)
+        if getattr(m, 'digs', None):
+            AR.on_step(self)
         if zone:
             VN.zone_step(self)
         if zone and ZN.after_move(self):
@@ -1812,9 +1819,9 @@ class Game:
 
     def buy_supply(self, i):
         k, t = SUPPLIES[i]
-        if k == 'tool' and t in ('rod', 'tent', 'pick', 'knife', 'frame') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
+        if k == 'tool' and t in ('rod', 'tent', 'pick', 'knife', 'frame', 'trowel') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
             self.msg({'rod': 'You already have a fishing pole.', 'tent': 'You already have a tent.',
-                      'pick': 'You already have a pick.', 'knife': 'You already have a skinning knife.',
+                      'pick': 'You already have a pick.', 'trowel': 'You already have a trowel.', 'knife': 'You already have a skinning knife.',
                       'frame': 'You already have a stretching frame.'}[t])
             return
         it = Item(self.new_id(), k, t)

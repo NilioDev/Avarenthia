@@ -460,6 +460,8 @@ def talk(game, npc):
         opts += VN.scribe_opts(game, opt)
         from . import shadow as SH
         opts += SH.scribe_opts(game, opt)
+        from . import archaeology as AR
+        opts += AR.scribe_opts(game)
         books = [it for it in p.inv if it.k == 'oldbook']
         if books:
             it = books[0]
@@ -503,6 +505,9 @@ def r_library(game, choice, ctx):
         return
     from . import shadow as SH
     if SH.r_scribe(game, npc, choice):
+        return
+    from . import archaeology as AR
+    if AR.r_scribe(game, npc, choice):
         return
     cost = price(game, LETTERS_PRICE if choice == 'letters' else 0 if choice == 'grudges' else PRICE)
     if p.gold < cost:

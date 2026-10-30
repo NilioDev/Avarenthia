@@ -22,7 +22,8 @@ from .worldgen import cheb
 LOOK = {'master': ('Φ', (232, 196, 120)), 'lostshop': ('╪', (150, 140, 128))}
 TRADE = {'fishing': 'fisher', 'foraging': 'herb-gatherer', 'alchemy': 'alchemist', 'brewing': 'brewer',
          'mining': 'miner', 'smithing': 'smith', 'hunting': 'huntsman', 'skinning': 'skinner', 'cooking': 'cook',
-         'leatherworking': 'leatherworker', 'tailoring': 'tailor'}
+         'leatherworking': 'leatherworker', 'tailoring': 'tailor',
+         'archaeology': 'antiquarian'}
 GREAT = {'smithing': ('smith', 'forge'), 'leatherworking': ('leatherworker', 'tannery'), 'tailoring': ('tailor', 'weaving hall')}
 PRICE = 30000                                   # three gold for one Unmake
 TIERS_UP = 'BCDET'
@@ -80,6 +81,9 @@ def wants(key, lvl):
         return (f'two parts of a beast of tier {t} or better', lambda i: i.k == 'part' and at_least(_tier_of(i), t), 2)
     if key == 'skinning':
         return (f'three pieces of tier {t} leather', lambda i: i.k == 'leather' and at_least(_tier_of(i), t), 3)
+    if key == 'archaeology':
+        return (f'an old piece of tier {t} or better, as you dug it up', lambda i: i.k == 'oldpiece'
+                and at_least(i.tier, t), 1)
     from . import cooking as CK
     layer = 'hearty' if lvl == 25 else 'luxury'
     return (f'three {layer} dishes of your own cooking',

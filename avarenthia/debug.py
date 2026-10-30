@@ -16,7 +16,7 @@ KEYS = deque(maxlen=200)        # the last keys pressed, for a bug report
 SLOTS = 3
 FLAGS = ('god', 'sight', 'ai', 'coords')
 FLAG_NAME = {'god': 'God mode', 'sight': 'Sight off', 'ai': 'AI state on look', 'coords': 'Coordinates in the status line',
-             'aurora': 'Northern lights in the sky', 'oldfind': 'Old fields give up their blade',
+             'aurora': 'Northern lights in the sky', 'oldfind': 'Old finds: a blade, nothing breaks',
              'oldnight': 'The dead walk old fields every night', 'rhythm': "A boss's rhythm under IN SIGHT"}
 
 
@@ -637,8 +637,11 @@ def item_list():
                 out.append(('part', BP.part_name(f'{part}:{beast}'), ('part', f'{part}:{beast}')))
     for trait in BP.TRAIT_POWER:
         out.append(('named part', f'Named beast part: {trait}', ('npart', trait)))
-    for t, nm in (('rope', 'Coil of Rope'), ('bedroll', 'Bedroll'), ('tent', 'Tent and Bedroll'), ('kit', 'Repair Kit')):
+    for t, nm in (('rope', 'Coil of Rope'), ('bedroll', 'Bedroll'), ('tent', 'Tent and Bedroll'), ('kit', 'Repair Kit'),
+                  ('trowel', "Digger's Trowel")):
         out.append(('tool', nm, ('tool', t)))
+    out += [('old piece', 'Old piece, tier C', ('oldpiece', False, 25)), ('old piece', 'Varnish piece, tier D', ('oldpiece', True, 35)),
+            ('curio', 'A shard of star-iron', ('curio', 'stariron'))]
     return out
 
 
@@ -677,6 +680,12 @@ def give(game, recipe, rar='normal'):
         it.beast, it.nid, it.rank, it.src, it.word = 'Old Greyback', None, 'notorious', 'wolf', 'pelt'
     elif kind == 'tool':
         it = EN.Item(game.new_id(), 'tool', recipe[1], 3 if recipe[1] in ('rope', 'kit') else 1)
+    elif kind == 'curio':
+        from .nature import curio
+        it = curio(game, recipe[1])
+    elif kind == 'oldpiece':
+        from . import archaeology as AR
+        it = AR.make_piece(game, recipe[1], recipe[2])
     else:
         it = LS.make_fish(game, recipe[1], 3)
     if it.k == 'gear':

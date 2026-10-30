@@ -17,7 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
-| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026); archaeology and the rest are not |
+| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026), archaeology too (30 October 2026); the rest is not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
 | **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; not built: rounds 22, 26, and the great fair with the feast days in 28 |
 | **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Parts A and B, the kit and the library with every fixed boss and the roaming bosses, built 29 October 2026; not built: the maker and the job bosses in 23 |
@@ -50,8 +50,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     the money fixes** (S). Built 29 October 2026 (see `docs/built.md`). Pause after 12, merge after 14.
 15. **Boss fights part A: the kit** (XL). Built 29 October 2026 (see `docs/built.md`). 16. **Part B** (XL): the
     move library, the other fixed bosses, roaming bosses. Built 29 October 2026 (see `docs/built.md`).
-17. **The great evils, part 1: the frame** (XL). Built 29 October 2026 (see `docs/built.md`); Archaeology adds its
-    source of weaknesses when it is built.
+17. **The great evils, part 1: the frame** (XL). Built 29 October 2026 (see `docs/built.md`); Archaeology added its
+    source of weaknesses on 30 October 2026.
 18. **Part 2: the quest and the Sky-Seat** (XL). Built 29 October 2026 (see `docs/built.md`). Pause after 15, 16 and
     17, merge after 18 (Nilio, 25 October 2026: the great evils come right after the
     epics, in parts).
@@ -59,7 +59,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     alchemy, brewing. Built 30 October 2026 (see `docs/built.md`). 20. **Part 2** (XL): beast parts, crafted powers, Unmake,
     master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters. Built 30 October 2026
     (see `docs/built.md`).
-21. **Archaeology** (M): needs the old places and Smithing; also a source for the servants' weaknesses.
+21. **Archaeology** (M). Built 30 October 2026 (see `docs/built.md`).
 22. **Trade part 2: goods and ways** (L): named goods of a region with good and bad years, master makers, barter,
     monster goods, spoiling, need far away, far goods, contraband, war trade, market news, rank with the Merchant
     League; after the life skills, because it leans on brewing, Skinning, Smithing and the named beasts.
@@ -278,18 +278,8 @@ tile used with one key or a bump. Not the same as what exists: the fresh battlef
 `living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
 - Part A's old places (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages,
   leper colonies, the peoples' marks) are built (24 October 2026), and so are the Varnish: their cities, places,
-  hidden dungeons, lore, books and riddles (25 October 2026); specs in `docs/built.md`. Still to build here:
-- **Archaeology, a new life skill** (approved 23 October): dig spots on old places, a tile you see once you have the eye
-  for it; the higher your rank, the more spots you see and the less you break; learnt only at places of your own height.
-  It gives three things: (1) fragments of lore for the chronicle, belonging to five old riddles that grow as small
-  chapters in The Old Days with their gaps named (how the Sky-Seat fell, who the Hollow King was, where the orcs came
-  from, what lies in the vaults, why the dead were bound); a riddle made whole is a lead to a unique hidden place, and
-  libraries, stones and rumours stay other ways to that knowledge; (2) pieces of star-iron and old things that a smith
-  mends, a mended piece carrying an old power (Smithing's found powers), so finds stay rare and the smith's work counts;
-  (3) a modest income: collectors and city libraries buy finds and old coins. Its place in the life skills order is
-  still open. Already built with the Varnish (25 October 2026): the riddles and their pieces (`world.varnish['src']`
-  says where each comes from; archaeology adds digging as one more source), the Varnish fragments and the curio
-  'stariron' (a shard of star-iron, for the smith).
+  hidden dungeons, lore, books and riddles (25 October 2026), and archaeology (30 October 2026); specs in
+  `docs/built.md`. Still to build here:
 - **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 21, 28, 29, 30).
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
   salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,

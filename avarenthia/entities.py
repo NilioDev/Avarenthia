@@ -73,8 +73,8 @@ class Item:
                 return 'Tent and Bedroll'
             if self.t == 'pick':
                 return 'Miner\'s Pick'
-            if self.t in ('knife', 'frame', 'waterskin', 'hooks', 'rope', 'net'):
-                return {'knife': 'Skinning Knife', 'frame': 'Stretching Frame', 'waterskin': 'Waterskin', 'hooks': 'Fish Hooks',
+            if self.t in ('knife', 'frame', 'waterskin', 'hooks', 'rope', 'net', 'trowel'):
+                return {'trowel': "Digger's Trowel", 'knife': 'Skinning Knife', 'frame': 'Stretching Frame', 'waterskin': 'Waterskin', 'hooks': 'Fish Hooks',
                         'rope': 'Coil of Rope', 'net': 'Fishing Net'}[self.t]
             if self.t == 'bandage':
                 return (f'{self.n}x ' if self.n > 1 else '') + 'Bandage'
@@ -261,6 +261,8 @@ class Item:
                 out.append('Use it out in the land to set it up; walk into it with salt in your pack to salt your hides.')
             elif self.k == 'tool' and self.t == 'waterskin':
                 out.append('Water at hand: heat wears on you less.')
+            elif self.k == 'tool' and self.t == 'trowel':
+                out.append('A small blade and a brush. Walk into a dig spot at an old place to dig it carefully.')
             elif self.k == 'tool' and self.t == 'pick':
                 out.append('Walk into an ore or gem vein to dig it out. What you dig goes on your cart, to sell.')
             elif self.k == 'tool':
@@ -331,7 +333,7 @@ class Item:
             from .skills import SKILLS
             return 90 + round(SKILLS[self.t].step * 110)
         if self.k == 'tool':
-            return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4, 'hooks': 6, 'rope': 3, 'net': 10,
+            return {'kit': 25, 'tent': 60, 'pick': 15, 'trowel': 4, 'knife': 3, 'frame': 6, 'waterskin': 4, 'hooks': 6, 'rope': 3, 'net': 10,
                     'bandage': 1, 'bedroll': 8, 'barding': 4 * getattr(self, 'bard', 3)}.get(self.t, 8)
         if self.k == 'food':
             from .hunger import FOODS

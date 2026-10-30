@@ -242,7 +242,8 @@ def ch_hero(g):
                'Hunting: reading tracks and stalking herds.',
                'Skinning: [Enter] on a carcass, with a knife or a dagger.',
                'Cooking: walk into a fire or a hearth.',
-               'Leatherworking and Tailoring: walk into a workbench.']),
+               'Leatherworking and Tailoring: walk into a workbench.',
+               'Archaeology: walk into a dig spot at an old place, with a trowel.']),
         ('p', 'The chapter Crafts tells how they grow and what they make.'),
     ]
 
@@ -581,7 +582,7 @@ def ch_land(g):
                                           'The wall runs on between the towers.'),
                ([('⌠', (176, 200, 220))], 'a wind tower: from the top you see the land round. It howls in a storm.'),
                ([('Ö', (196, 188, 168))], 'a road of the standing dead. Break a seal, and the dead one steps down.'),
-               ([('◘', (150, 170, 220))], 'a star-iron forge; a shard of star-iron is worth something to a smith.'),
+               ([('◘', (150, 170, 220))], 'a star-iron forge; a smith needs a shard of star-iron to mend Varnish work.'),
                ([('╦', (180, 196, 236))], 'a Gate of Leagues: its star map shows the nearest city and the other '
                                           'gates.'),
                ([('╟', (150, 180, 200))], 'a sluice hall: open the sluice, and the drowned hall runs dry.'),
@@ -872,6 +873,16 @@ def ch_crafts(g):
               'its worth; at 50 the whole of it. It can always fail: about 40 in 100 at rank 40, 70 at 50, never more '
               'than 80, and less for a strong power. One failure in four ruins or curses your own piece too. The '
               'chance shows before you choose. Uniques and pieces of a set cannot be unmade.'),
+        ('h', 'Archaeology'),
+        ('p', 'Old places and Varnish ruins hide dig spots, the sign {÷|214,176,110}. You see one only once you have '
+              'the eye for it: the higher your Archaeology, the more spots a place shows, and the fewer finds you '
+              'break. Walk into a spot with a trowel; a pick will do, but breaks more. Each place is as hard as its '
+              'land, and a spot far below you teaches nothing, so you learn at places of your own height.'),
+        ('p', 'What the earth gives: a piece of a Varnish riddle, or what happened on a battlefield or in a deserted '
+              'village; from rank 20 now and then an old warning of a great evil\'s weakness; old pieces of arms and '
+              'armour; shards of star-iron; old coins and finds. A smith mends an old piece at the anvil, and an old '
+              'power comes back with it; Varnish work wants a shard of star-iron as well. A city library pays half '
+              'again what a trader gives for coins and finds.'),
         ('h', 'Masters'),
         ('p', 'At rank 25 and again at 40 a life skill stops until a master has seen your work. A job in your journal '
               'tells you who and where, and what to bring. Town boards ask for orders at your own height too: they pay '
@@ -1017,7 +1028,7 @@ def ch_shadow(g):
               'remember. One who survives you heals, and comes back scarred and stronger.'),
         ('h', 'Weaknesses and relics'),
         ('p', 'Every servant has one weakness. Two sources tell it: a city library, a lieutenant\'s papers, the old '
-              'riddles, or the journal of a hero who rode out against it. Named heroes do ride out; now and then one '
+              'riddles, the earth of an old place, or the journal of a hero who rode out against it. Named heroes do ride out; now and then one '
               'kills a lieutenant, and most never come back. A cairn, the sign {▲|200,196,180}, marks where one fell: '
               'walk into it to read what they knew. Once you know a weakness, it changes the fight in the lair. The '
               'Lich keeps her life in a black jar beside her, the sign {Φ|196,134,255}: break it, or she rises again.'),

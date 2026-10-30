@@ -56,9 +56,15 @@ LIFE = {
                       perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then',
                              30: 'You mend on the road with cloth from your pack', 40: 'Two parts in a piece, and Unmake',
                              50: 'Masterwork more often; Unmake at full value'}),
+    'archaeology': dict(name='Archaeology', desc='Dig spots at old places and ruins (walk into one, with a trowel).',
+                        perks={3: 'You break fewer finds', 8: 'You see spots a little deeper down',
+                               15: 'Old pieces turn up more often',
+                               20: 'Old warnings of the great evils, among the bones',
+                               25: 'You rarely break a find', 30: 'You dig twice as fast',
+                               40: 'Lore turns up more often', 50: 'You see every spot a place holds'}),
 }
 LIFE_ORDER = ['fishing', 'foraging', 'alchemy', 'brewing', 'mining', 'smithing', 'hunting', 'skinning', 'cooking',
-              'leatherworking', 'tailoring']
+              'leatherworking', 'tailoring', 'archaeology']
 
 # the steps of a life skill: what each lets you work, and how dangerous the land must be for it to lie there
 TIERS = 'ABCDE'

@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: archaeology (30 Oct)** | A twelfth life skill: dig spots at old places and Varnish ruins, seen by rank and dug with a trowel; you learn only at places of your own height; lore and riddle pieces, a source of the servants' weaknesses, old pieces a smith mends into gear with an old power (Varnish work wants star-iron), finds a city library buys |
 | **Built: life skills part 2 (30 Oct)** | Every beast gives parts, and a part is the power a maker chooses (two from rank 40), better from stronger beasts; parts broken off big beasts; named beasts give parts of their own nature and keep a den; catching one alive for a lord, a cage in his yard; Unmake from rank 40; a master's test at 25 and 40; orders on the boards; perks at 30, 40 and 50; the three great masters and their test; mending for your hireling and the town; boots for the road, a bedroll, barding |
 | **Built: life skills part 1 (30 Oct)** | Slow crafts that teach only work at your height (grey, green, yellow, orange), the first time double; Herbalism in Foraging; 51 herbs with two properties each and alchemy without recipes (draughts, oils, a sleeping flask, the Starlight Elixir, tinctures); ten drinks, learnt per people, dearer far away, a barrel, a round, a gift; fish, ore, cloth, leather and game by tier; Smithing at the anvil and Tailoring at the bench, the material sets the grade and a property, the work crude, fine or masterwork |
 | **Built: the great evils part 2, the quest and the Sky-Seat (29 Oct)** | Mist over the Sky-Seat until you know the truth or a seal breaks; relics as keys (and the Star-Iron Key for all five riddles); no travelling by road through his coast; one skipper who dares the whirlpool; the star-iron chain with gusts, handholds and broken links, the glass underside; five floors with beacons; the Hollow King in three phases, one lighter per relic; your shade where the dead are bound, a double fee in his city; the Long Night; the end and a healing world |
@@ -675,6 +676,36 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Handbook: Hunting and cooking (parts, named beasts), Crafts (powers, mending, Unmake, masters). Test `masters`.
   SAVE_VERSION 51. Not built: Lockpicks (there are no locks yet) and the quiver (bows use no arrows): both wait for
   what they need.
+
+- **Round 21: archaeology** (30 October 2026; `archaeology.py`). A twelfth life skill (`LIFE['archaeology']`, last
+  in `LIFE_ORDER`; perks 3, 8, 15, 20, 25, 30, 40, 50; the master's test asks for an old piece of tier C, then D).
+  Dig spots (`spots`, `m.digs`, the tile `D.DIGSPOT`, the sign ÷): a few on every old place and Varnish place (`KINDS`,
+  eight in a city), each as hard as the land's tier (+5 at the Varnish, + 0-9); you see a spot up to 3 ranks above
+  you (6 from rank 8, all at 50; `show`), and only with a trowel or some rank. Walking into one with a trowel (sold
+  with the supplies and forged at the anvil) or a pick (more breaks) digs it (`dig`): the break chance falls with
+  rank over the spot (`brk`), and a spot far below you teaches nothing. Dug spots stay dug on the site (`site.dug`).
+  Finds (`find`): lore (a Varnish riddle piece from the 'library', 'place:<kind>' or, with the letters, 'stone'
+  sources; on a battlefield or in a deserted village its history event), from rank 20 a servant's weakness (source
+  'dig' in `shadow.SOURCES`), old pieces (`Item('oldpiece')`, mended at the anvil by Smithing of their tier into
+  magic gear named "of the Old Days" or "Varnish ...", the Varnish ones for a shard of star-iron too), star-iron
+  shards at the Varnish, and finds by tier (`FINDS`: potsherd, old coin, seal, figure, gold torc) that a city library
+  buys at half again their value (`scribe_opts`). Debug: the flag "Old finds" keeps finds whole; Give item (trowel,
+  old pieces). Handbook: Your hero (life skills list), Crafts (Archaeology), the Varnish forge line, Weaknesses.
+  Test `archaeology`. SAVE_VERSION 52.
+
+## Archaeology (built 30 October 2026; the spec)
+From "Old places on the land" (approved 23 October 2026):
+- **Archaeology, a new life skill** (approved 23 October): dig spots on old places, a tile you see once you have the eye
+  for it; the higher your rank, the more spots you see and the less you break; learnt only at places of your own height.
+  It gives three things: (1) fragments of lore for the chronicle, belonging to five old riddles that grow as small
+  chapters in The Old Days with their gaps named (how the Sky-Seat fell, who the Hollow King was, where the orcs came
+  from, what lies in the vaults, why the dead were bound); a riddle made whole is a lead to a unique hidden place, and
+  libraries, stones and rumours stay other ways to that knowledge; (2) pieces of star-iron and old things that a smith
+  mends, a mended piece carrying an old power (Smithing's found powers), so finds stay rare and the smith's work counts;
+  (3) a modest income: collectors and city libraries buy finds and old coins. Its place in the life skills order is
+  still open. Already built with the Varnish (25 October 2026): the riddles and their pieces (`world.varnish['src']`
+  says where each comes from; archaeology adds digging as one more source), the Varnish fragments and the curio
+  'stariron' (a shard of star-iron, for the smith).
 
 ## Life skills part 2 (built 30 October 2026; the spec)
 Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md`. Part 1

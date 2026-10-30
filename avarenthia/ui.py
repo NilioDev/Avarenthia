@@ -2023,11 +2023,12 @@ class CharacterScreen(Modal):
     def render(self, cv):
         g = self.game
         p = g.player
-        x, y = self.box(cv, 72, 26, f"{p.name} · level {p.lvl}")
+        h = 31 if self.page == 2 else 26          # the life skills take two lines each
+        x, y = self.box(cv, 72, h, f"{p.name} · level {p.lvl}")
         self.tabs(cv, x, y + 1)
         [self.page_main, self.page_disc, self.page_life, self.page_guilds][self.page](cv, x, y + 3)
         hint = ' ←→ or Tab: page · 1-4: add an attribute point · Esc: close ' if self.page == 0 else ' ←→ or Tab: page · Esc: close '
-        cv.text_center(W // 2, y + 25, hint, DIM, PANEL)
+        cv.text_center(W // 2, y + h - 1, hint, DIM, PANEL)
 
     def bar(self, cv, x, y, w, frac, col):
         fill = int(w * max(0.0, min(1.0, frac)))
@@ -4829,7 +4830,7 @@ class MenuScreen(Modal):
     GROUPS = [
         ('Hero', [('i', 'Inventory', 'what you carry and wear'), ('c', 'Character', 'who you are, attributes and numbers'),
                   ('C', 'Life skills', 'fishing, foraging, alchemy, brewing, mining, smithing, hunting, skinning, cooking, '
-                                                  'leatherworking, tailoring'),
+                                                  'leatherworking, tailoring, archaeology'),
                   ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
                   ('v', 'Bestiary', 'the creatures you have met')]),
         ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'jobs, the road, standing, lore and every sign, the log'),

@@ -27,6 +27,18 @@ Each line: **what** - what to check - what the debug menu should offer.
   for the bell), Time (a winter night).
 
 
+## Archaeology (built 30 October 2026)
+
+- **Dig spots** - at an old battlefield, a deserted village or a Varnish place: no spot without a trowel or rank,
+  more spots as the rank grows, all of them at 50; dug spots stay dug when you come back. Debug: Give item (Digger's
+  Trowel), Ranks (Archaeology), Teleport to an old place or a Varnish place.
+- **What the earth gives** - breaking a find (try a pick), a riddle piece at the Varnish, the battle or the village
+  in the chronicle, a servant's weakness from rank 20, old pieces, star-iron, coins and finds; a city library buying
+  them. Debug: the flag "Old finds" (nothing breaks), Ranks, the Shadow section (a known servant).
+- **Mending old pieces** - at an anvil, Smithing of the piece's tier, a shard of star-iron for Varnish work.
+  Debug: Give item (old pieces, a shard of star-iron), Ranks (Smithing).
+
+
 ## Life skills part 2 (built 30 October 2026)
 
 - **Parts and powers** - skinning parts of every beast, the ladder (wolf, winter wolf, sabretooth fangs), chitin from

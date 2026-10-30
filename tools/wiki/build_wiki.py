@@ -540,6 +540,9 @@ fi_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[6]}</td><td>{v[1]
 mt_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[1]}</td><td>{v[2]}</td></tr>'
                   for tab in (CRW.METALS, CRW.CLOTHS, CRW.LEATHERS) for v in tab.values())
 import avarenthia.beastparts as BPW
+import avarenthia.archaeology as ARW
+ar_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[1]}</td>'
+                  f'<td>{", ".join(t for t, ks in ARW.BY_TIER.items() if k in ks)}</td></tr>' for k, v in ARW.FINDS.items())
 bp_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{e(str(v[1]))} {e(str(v[2]))}</td><td>{e(v[3])}</td></tr>'
                   for v in BPW.PART.values())
 tp_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(str(v))}</td></tr>' for k, v in BPW.TRAIT_POWER.items())
@@ -551,7 +554,9 @@ add('lifeskills', 'Skills', 'Life skills: herbs, drinks, fish, materials',
     f'<h3 class="gh">Fish</h3><div class="tw"><table><tr><th>Fish</th><th>Tier</th><th>Rank</th><th>Water</th><th>Also</th></tr>{fi_rows}</table></div>'
     f'<h3 class="gh">Metals, cloth and leather</h3><div class="tw"><table><tr><th>Material</th><th>Tier</th><th>Rank</th></tr>{mt_rows}</table></div>'
     f'<h3 class="gh">Beast parts</h3><div class="tw"><table><tr><th>Part</th><th>Gives</th><th>On</th></tr>{bp_rows}</table></div>'
-    f'<h3 class="gh">Named beasts\' parts</h3><div class="tw"><table><tr><th>Trait</th><th>Gives</th></tr>{tp_rows}</table></div>')
+    f'<h3 class="gh">Named beasts\' parts</h3><div class="tw"><table><tr><th>Trait</th><th>Gives</th></tr>{tp_rows}</table></div>'
+    f'<h3 class="gh">Archaeology: finds</h3><p>{e(ARW.__doc__.strip().splitlines()[0])}</p>'
+    f'<div class="tw"><table><tr><th>Find</th><th>Worth (silver)</th><th>Tiers</th></tr>{ar_rows}</table></div>')
 
 # ---------------------------------------------------------------- the handbook, from a real game
 with contextlib.redirect_stdout(io.StringIO()):
