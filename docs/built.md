@@ -737,9 +737,110 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   cannot abide (`BOON`, an item 'boon'); carried into the fight it fills two dots (`boon_edge`). Handbook: Fighting,
   Bosses. Test `boss_maker`. SAVE_VERSION 54. Not built (still in `docs/plan.md`): arenas dressed per place, other
   ways out, the place that wakes or falls in, fights won another way, bosses for the big one and the relic.
+- **Round 24: cities that grew, part 1** (30 October 2026; `citygrow.py`). `towns.gen_city` now asks
+  `citygrow.make`: the city is grown in its own frame (sea to the north, river west to east) by `grow` and turned to
+  face the world (`_to`, `_dir_in`). `plan` chooses the maker (metropolis 360x220; a harbour city off the hills a
+  canal city, else a grown city, 240x140), the heart from the realms (`ruler`: the emperor's palace, a king's or
+  baron's burgh, else the cathedral; a metropolis never a burgh) and a bastioned wall for a grown city in a march.
+  Six winding main streets from the market; a world road takes the nearest (within .6 rad) and gets its gate and
+  road out, the rest end at the lane inside the wall; roads from nearly the same side are spread apart (`spread`).
+  Lanes are tried by the map's size, then a pass of blind lanes into the far yards; scraps of street cut off go back
+  to garden (`crumbs`). Houses (`c.houses`) become the buildings (`_buildings`): guild halls by the market, the
+  secret ones far down a lane, inns by the gates, shops by the market, stables and barracks by the gates, a temple
+  if no church, the burgh or palace is `m.seat` (realms furnishes it first); townsfolk live in at most 58 homes (110
+  in a metropolis). Bridges, quay walls and gate bridges have their own look (`m.over`, drawn by `look.py` on
+  streets of non-world maps). `rules(c)` counts each city rule. Handbook: Towns, Cities. Test `city_rules` (eight
+  kinds on three draws, and every human city of a world: gates and market walkable). SAVE_VERSION 55.
 - **The Rogue a little stronger** (30 October 2026, Nilio's wish after block 4). The pure Rogue's rule (`trees.RULES`)
   also gives 20% more weapon damage to a poisoned foe (`wvs` 'poisoned'), so Envenom feeds it. The balance test: the
   Rogue went from 22 to 24 of 24 waves, on the test's draw and on another.
+
+## Cities that grew, part 1 (built 30 October 2026; the spec)
+
+
+Approved in the thread on grown cities: "dit ziet er goed uit", the American grid "werkt niet in een RPG-wereld".
+The Dutch proposal, the mockups and the mockup generators (they use the real tiles and `look.py`) are in the project
+files under `steden/` (`voorstel.md`, `mockup_steden.py`, `mockup_metropool.py`, `mockup_volken.py`).
+
+**Human cities and the metropolis** replace the grid of `towns.gen_city`. The map grows in the order a town grew:
+- **The heart** fits who rules the place: a cathedral (cross plan, towers, churchyard) on the great market; a
+  king's or baron's burgh with its own moat, the market at its gate; an emperor's capital gets a walled palace,
+  court behind court on one axis with the throne hall in the middle (the only straight thing in the city).
+- **Main streets** wind from the market to the gates, one gate where each road of the world map comes in. Only the
+  great ways run from the market to a gate; every other street starts at its gate or square and joins the first
+  street it meets (no bundles of streets side by side).
+- **Old walls** that are long gone are ring streets round the old core (the metropolis has two).
+- **Lanes** branch off the streets and wander until they meet another street; some end blind. Dense in the old core,
+  wider apart towards the wall.
+- **Squares** where quarters grew round a well, a parish church or a small market.
+- **Houses** stand in rows: each is a rectangle with its front and door on a street, sharing side walls with its
+  neighbours; deep and narrow in the core, lower with bigger gardens further out. What is left behind them is yard,
+  garden and alley. Every house stays inside the wall (checked in code).
+- **The wall** with square towers and a broad moat; a gate with a tower each side; a lane runs along its inside.
+- **A river** from the world map runs through, tamed as the Amstel was: long straight reaches joined by turns of
+  45 degrees, one width all through the town, a stone quay wall along both banks (drawn thin and pale on the land
+  side, like the bridge parapets) and a quay street behind it. A metropolis lies on a broad river.
+- **Nothing is built over the water:** a great building (church, town hall, guild hall) only stands where its whole
+  plot is dry land.
+- **Bridges** were few and mattered (Nilio, 22 October 2026: "meer dan een stel houten planken"): only the great
+  ways and the ring roads cross the river (a metropolis has two or three bridges), and only where they truly cross
+  from bank to bank, never where a street runs along the water; other streets end at the quay. Each is a stone deck with a parapet each side and piers with
+  cutwaters in the stream, and has its own kind: the market bridge has statues along its parapets (Charles
+  Bridge); the rest stand on broad piers with lamps. No bridges with houses on them: they do not read on the map. A
+  stone bridge has its own look, never the double line of a wall: a deck of grey flagstones, and thin pale parapets
+  standing in the water, drawn as half blocks (▐ ▌ ▀ ▄, quarter blocks on a slant) on the side of the deck. Canal bridges are short, with a parapet and a lamp at each end.
+  Wooden planks stay only for small streams in villages; drawbridges and harbour piers are stone too.
+- **How a bridge is laid** (Nilio): first a quay street runs along both banks inside the walls. Then the bridges are
+  laid, straight from quay to quay: one below the market and one where each ring road crosses (two or three in all).
+  A bridge lies at 90 or 45 degrees to the river, the way its road runs (ASCII has only 8 directions).
+  Only then comes the street plan, made round the bridges: a great way or ring road that crosses leaves its curve a
+  little before the river, runs straight over the bridge in line with it and takes up its course on the far side (a
+  straight piece in a ring is fine: ASCII has only 8 directions). Any other way ends at the quay, which leads on to
+  the bridge, so no road stops at the water. Every gate has a stone bridge over the moat, like the other bridges (wood looks
+  untidy on the map): straight or at 45 degrees, in line with the road that leaves the gate, from the gateway to the
+  far bank where the road outside takes it up, with a tower on the wall at each side of the gateway. The moat is
+  broad (about 5), so the whole bridge with its parapets fits over it.
+- **Every way leads on** (Nilio): a bridge carries a great way or a ring road, so at both ends it runs on into the town;
+  lanes seldom end blind; a check floods the streets from the market and joins any piece that does not reach it.
+- **Light at night** as now: lamp posts along the great ways, on the squares and on the bridges, lit by the
+  lamplighters at dusk; hearth glow from the houses; the lanes stay dark.
+- **Guild halls** of the eleven guilds stand on the great market or a main street; the secret ones in an ordinary
+  house down a lane. Inns by the gates, barracks by the wall, temples on squares, each on a plot of its size.
+- **Townsfolk, the watch, lamplighters and the rest** (`people_city`) move into the new map; a metropolis has more.
+- **Sizes:** metropolis 360x220 (now 196x110), city 240x140 (now 150x80). The screen shows 80x51.
+- **Canal towns** (after old Amsterdam and Haarlem, Nilio 23 October 2026): no grid, but far more ordered than
+  other towns, and plainly a harbour. Half rings of canals round the Dam, every reach straight and every turn
+  45 degrees (a horseshoe: long sides, slanting corners, a long bottom). Three canals about 20 apart, so each block
+  holds two rows of narrow deep canal houses with gardens between. A stone quay wall along all water, a quay street
+  with trees on both sides of every canal. The Dam (the square where the river was dammed) with the town hall,
+  the Damrak harbour arm up to it, two old town canals beside it; the great church in the old town on dry land.
+  The river comes in tamed (straight reaches, one turn) and ends at the Dam. Great ways run from the Dam straight
+  out across the rings, square to every canal, with a stone canal bridge (lamp at each end) at each crossing; a
+  few long cross streets do the same; short cross streets join quay to quay inside a block. The harbour front: a
+  quay wall and quay street along the water, warehouses on it, stone piers into the harbour with ships moored
+  along them, ships at anchor further out. The land side has a bastioned wall and a broad moat; meadows with
+  ditches outside. Mockups `grachten*.png`.
+- **Fortress towns** (after Zutphen): a town in a border land or under a warlike ruler gets a bastioned wall:
+  pointed bastions at its corners and along long sides, their faces at 45 degrees, behind a broad moat, a stone
+  bridge at each gate.
+- **Crafts guilds** (Later) would each get their own street (smiths, tanners by the water), as in real old towns.
+- Villages, hamlets and towns keep their own maker.
+
+**City rules, checked by machine** (Nilio, 23 October 2026: "iedere keer komen we hier op terug"). Every rule Nilio
+sets for towns becomes a check in code, run on many seeds before a mockup is shown, and in the build the same checks
+become a test part `city_rules` (every kind of town, several seeds). A map that breaks a rule is a bug, not taste.
+The checker for the mockups is `steden/controle.py` in the project files. The rules so far:
+- A way that crosses the river has a bridge; a way with no bridge ends at the quay on both sides.
+- No two streets run side by side with a thin strip between: the strip is paved into a little square.
+- A paved square lies round every church and cathedral.
+- Every bridge, straight or at 45 degrees, has a straight way in line with it at both ends (5 cells; 3 at a canal).
+- Nothing is built over water: no house, hall or church on a river or canal.
+- Every street inside the walls joins the rest; no loose pieces.
+- No gate opens next to the river; every gate has a stone bridge over the moat and a straight road out of 12
+  cells in line with it, then the old road joins its end. Where the land runs out at the map's edge, the gate
+  moves along the wall; if there is no good place, that way has no gate.
+- A bridge crosses the water, it never runs along it: at least 40 degrees off the way the water flows.
+- How a crossing is made: the bridge first, then the straight road over it, then the joins to the street plan.
 
 ## Boss fights (approved 26 October 2026; built 29-30 October 2026; the spec)
 

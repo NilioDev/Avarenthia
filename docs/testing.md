@@ -27,6 +27,20 @@ Each line: **what** - what to check - what the debug menu should offer.
   for the bell), Time (a winter night).
 
 
+## Cities that grew, part 1 (built 30 October 2026)
+
+- **The heart** - a cathedral city, a king's or baron's burgh, the emperor's palace in the great city, each on its
+  market. Debug: Teleport (kind city, metropolis).
+- **Streets, lanes, rows, the wall** - main streets winding to the gates, a gate where each road comes in, the ring
+  street, blind lanes, houses in rows inside the wall, the moat with a stone bridge at each gate. Debug: Teleport to
+  a city, Reveal map.
+- **The river and its bridges** - quay walls, only the great ways and the ring street cross, statues on the market
+  bridge. Debug: Teleport to a city on a river.
+- **Canal and fortress towns** - a flat harbour city in canal rings round the Dam; a city in a march with bastions.
+  Debug: Teleport to a harbour city, to a city in a march.
+- **Who lives where** - guild halls by the market, the secret ones down a lane, inns by the gates, the watch by the
+  wall; the lamplighters at dusk. Debug: Teleport, Time (dusk).
+
 ## Boss fights part C: the boss maker (built 30 October 2026)
 
 - **Job bosses** - "A price on a head" on a town board or from the captain, the rumour in the job, the fight with

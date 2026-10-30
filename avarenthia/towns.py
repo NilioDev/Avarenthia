@@ -1219,124 +1219,9 @@ def gen_village(game, s):
 
 # ------------------------------------------------------------------ cities
 def gen_city(game, s):
-    big = s.kind == 'metropolis'
-    w, h = (196, 110) if big else (150, 80)
-    m = GameMap(s.map_key, 'town', s.name, w, h, GRASS)
-    m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
-    for x in range(w):
-        for y in (0, h - 1):
-            m.set(x, y, WALL)
-    for y in range(h):
-        for x in (0, w - 1):
-            m.set(x, y, WALL)
-    if big:
-        streets_y = [h // 5, 2 * h // 5, h // 2, 3 * h // 5, 4 * h // 5]
-        streets_x = [w // 8 * k for k in range(1, 8)]
-    else:
-        streets_y = [h // 4, h // 2, 3 * h // 4]
-        streets_x = [w // 6, 2 * w // 6, w // 2, 4 * w // 6, 5 * w // 6]
-    for y in streets_y:
-        for x in range(1, w - 1):
-            m.set(x, y, PATH)
-    for x in streets_x:
-        for y in range(1, h - 1):
-            m.set(x, y, PATH)
-    hy, hx = streets_y[len(streets_y) // 2], streets_x[len(streets_x) // 2]
-    for x in range(1, w - 1):           # the high street and the market way are three wide
-        for d in (-1, 1):
-            m.set(x, hy + d, PATH)
-    for y in range(1, h - 1):
-        for d in (-1, 1):
-            m.set(hx + d, y, PATH)
-    # gates where the roads of the world map come in
-    m.exits = []
-    for dx, dy, other in (road_dirs(game, s) or [(-1, 0, None)]):
-        ex, ey = edge_point(m, w // 2, h // 2, dx, dy)
-        if ex in (0, w - 1):
-            ey = min(streets_y, key=lambda v: abs(v - ey))
-        else:
-            ex = min(streets_x, key=lambda v: abs(v - ex))
-        m.set(ex, ey, PATH)
-        m.exits.append((ex, ey, other))
-    gy = m.exits[0][1]
-    # plaza
-    px, py = hx, (streets_y[len(streets_y) // 2 - 1] + hy) // 2
-    for yy in range(py - 3, py + 4):
-        for xx in range(px - 8, px + 9):
-            m.set(xx, yy, PATH)
-    m.set(px, py, FOUNTAIN)
-    course = river_course(game, s, m, 14)
-    if course:
-        carve_river(m, course, 3.0)
-    m.stone_bridges = True
-    names = town_names(getattr(s, 'race', 'human'))
-    plots = [Plot(px - 9, py - 4, 19, 9, 'plaza')]
-    from . import harbour as HB
-    if getattr(s, 'harbour', False):
-        plots.append(HB.carve(m, s))
-    stall_spots = [(px - 6, py - 2), (px - 6, py + 2), (px + 6, py - 2), (px + 6, py + 2), (px - 3, py - 3), (px + 3, py + 3)]
-    for c in stall_spots:
-        m.set(c[0], c[1], STALL)
-    kinds = ['inn', 'inn', 'inn', 'shop', 'shop', 'temple', 'stables', 'barracks', 'barracks'] + ['home'] * 58
-    if big:
-        kinds = ['inn'] * 5 + ['shop'] * 3 + ['temple', 'temple', 'stables', 'barracks', 'barracks', 'barracks'] + ['home'] * 110
-    from . import guilds as GU
-    kinds = ['guild:' + k for k in GU.halls_in(game, s.id) if k != 'anglers'] + kinds
-    buildings = []
-    for k in kinds:
-        for _ in range(300):
-            x0, y0 = random.randint(2, w - 16), random.randint(2, h - 12)
-            gk = k[6:] if k.startswith('guild:') else None
-            if gk:            # a guild hall looks like a keep; a secret den like any other house
-                secret = GU.GUILDS[gk]['secret']
-                pl = house_plot('home' if secret else 'inn', x0, y0)
-                pl.kind, pl.guild = ('home' if secret else 'keep'), gk
-            else:
-                pl = house_plot('inn' if k == 'barracks' else k, x0, y0)
-                pl.kind = k
-            bx = plot_box(pl)
-            cells = [(xx, yy) for yy in range(bx.y - 1, bx.y + bx.h + 1) for xx in range(bx.x - 1, bx.x + bx.w + 1)]
-            if bx.x < 2 or bx.x + bx.w > w - 2 or bx.y + bx.h > h - 2:
-                continue
-            if any(m.tile(*c) in (PATH, WALL, STALL, FOUNTAIN, WATER, SHALLOW, D.BRIDGE) for c in cells) or \
-                    any(bx.overlaps(o, 1) for o in plots):
-                continue
-            plots.append(bx)
-            buildings.append(pl)
-            break
-    for pl in buildings:
-        build_house(m, pl)
-        tx = min(streets_x, key=lambda sx: abs(sx - (pl.x + pl.w // 2)))
-        ty = min(streets_y, key=lambda sy_: abs(sy_ - (pl.y + pl.h // 2)))
-        if abs(ty - (pl.y + pl.h // 2)) <= abs(tx - (pl.x + pl.w // 2)):
-            out = place_door(m, pl, pl.x + pl.w // 2, ty)
-            carve_path(m, out, (out[0], ty))
-        else:
-            out = place_door(m, pl, tx, pl.y + pl.h // 2)
-            carve_path(m, out, (tx, out[1]))
-        furnish(m, pl)
-        if getattr(pl, 'guild', None):
-            if GU.GUILDS[pl.guild]['sign']:               # the secret ones hang out no sign
-                add_sign(m, pl, GU.GUILDS[pl.guild]['name'])
-        elif pl.kind in SIGN:
-            add_sign(m, pl, SIGN[pl.kind])
-    m.homes = [pl for pl in buildings if pl.kind == 'home' and pl.door]
-    for i in range(len(m.t)):
-        if m.t[i] == GRASS and random.random() < .008:
-            m.t[i] = TREE
-    spots = []
-    for y in streets_y:
-        spots += [(x, y + (2 if y == streets_y[1] else 1) * (1 if (x // 10) % 2 else -1)) for x in range(5, w - 5, 10)]
-    for x in streets_x:
-        spots += [(x + (2 if x == streets_x[2] else 1) * (1 if (y // 9) % 2 else -1), y) for y in range(5, h - 5, 9)]
-    place_lamps(m, spots)
-    streets = [(x, y) for x in streets_x for y in range(2, h - 2)] + [(x, y) for y in streets_y for x in range(2, w - 2)]
-    people_city(game, m, s, buildings, names, px, py, stall_spots, streets, 14 if big else 9)
-    ex, ey = m.exits[0][:2]
-    m.entry = (ex, ey)
-    for i in range(len(m.seen)):
-        m.seen[i] = 1
-    return m
+    """A city or the metropolis: grown round its heart as old towns grew (citygrow.py)."""
+    from . import citygrow as CG
+    return CG.make(game, s)
 
 
 def people_city(game, m, s, buildings, names, px, py, stall_spots, streets, n_guards, guard_name=None, harbour=True):
@@ -1363,12 +1248,13 @@ def people_city(game, m, s, buildings, names, px, py, stall_spots, streets, n_gu
     nm, col = TITLE['market']
     for c in stall_spots[:3]:
         spot = (c[0], c[1] + (1 if c[1] > py else -1)) if c[1] != py else (c[0] + 1, c[1])
-        if m.tile(*spot) == PATH and not m.mon_at(*spot):
+        if m.tile(*spot) in (PATH, D.ROAD) and not m.mon_at(*spot):
             m.mons.append(make_npc(game, nm.format(n=names.pop()), 'market', col, spot[0], spot[1], True))
             break
     homes = [p for p in buildings if p.kind == 'home']
     inns = [p for p in buildings if p.kind == 'inn']
-    plaza_cells = [(xx, yy) for yy in range(py - 3, py + 4) for xx in range(px - 8, px + 9) if m.tile(xx, yy) in (PATH, PLANK)]
+    plaza_cells = [(xx, yy) for yy in range(py - 3, py + 4) for xx in range(px - 8, px + 9)
+                   if m.inb(xx, yy) and m.tile(xx, yy) in (PATH, PLANK, D.ROAD) and not m.mon_at(xx, yy)] or [(px, py + 1)]
     for pl in homes:
         beds = [c for c in pl.inside if m.tile(*c) in (FLOOR, PLANK)]
         for _ in range(random.randint(1, 2)):

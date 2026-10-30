@@ -7956,6 +7956,59 @@ def masters():
     print('masters ok')
 
 
+def city_rules():
+    """Cities that grew: every kind (cathedral, burgh, palace, fortress, harbour, canal, metropolis) keeps the rules
+    Nilio set on the mock-ups, on several draws; in the game each human city is walled, peopled and can be walked
+    from its gates to its market."""
+    import pickle
+    from avarenthia import citygrow as CG, towns as TW
+    print('== city_rules')
+    kinds = [('grown', 'cathedral', False, True, 0), ('grown', 'castle', False, True, 0),
+             ('grown', 'palace', False, False, 0), ('grown', 'castle', True, True, 0),
+             ('grown', 'cathedral', False, True, 30), ('canal', 'cathedral', False, True, 30),
+             ('metropolis', 'cathedral', False, True, 30), ('metropolis', 'palace', False, True, 0)]
+    for seed in (1, 2, 3):
+        for i, k in enumerate(kinds):
+            random.seed(seed * 100 + i)
+            roads = [(random.uniform(-3, 3), 'a'), (random.uniform(-3, 3), 'b'), (random.uniform(-3, 3), None)]
+            c, sq = CG.grow('x', 'X', k[0], k[1], k[2], k[3], roads, k[4])
+            bad = {r: n for r, n in CG.rules(c).items() if n}
+            assert not bad, (seed, k, bad)
+            assert len(c.houses) > (300 if k[0] == 'metropolis' else 120), (seed, k, len(c.houses))
+            if k[0] != 'canal':
+                assert any(g[0] == {'cathedral': 'cathedral', 'castle': 'keep', 'palace': 'keep'}[k[1]] or
+                           k[1] == 'cathedral' for g in c.great), (seed, k, c.great)
+            assert len(c.exits) >= 2 and len(c.stalls) >= 6, (seed, k)
+    app = new_app('soft', seed=24)
+    g = app.game
+    cities = [s for s in g.world.settlements if s.is_city and s.race == 'human' and not getattr(s, 'elder', False)]
+    assert cities
+    seen = set()
+    for s in cities:
+        mk = CG.plan(g, s)
+        seen.add(mk[0])
+        m = TW.gen_settlement_map(g, s)
+        assert m.grown == mk[0] and m.exits, s.name
+        homes = [b for b in m.homes]
+        assert homes and any(o.is_npc for o in m.mons), s.name
+        assert any(o.is_npc and o.role == 'market' for o in m.mons), s.name
+        # from the first way in, every gate and the market can be walked to
+        q, reach = [m.entry], {tuple(m.entry)}
+        while q:
+            x, y = q.pop()
+            for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if n not in reach and m.inb(*n) and D.TILES[m.tile(*n)].walk:
+                    reach.add(n)
+                    q.append(n)
+        for ex, ey, other in m.exits:
+            assert (ex, ey) in reach, (s.name, 'a gate cut off')
+        stall = next(o for o in m.mons if o.is_npc and o.role == 'market')
+        assert any((stall.x + dx, stall.y + dy) in reach for dx in (-1, 0, 1) for dy in (-1, 0, 1)), s.name
+    print('kinds in this world:', sorted(seen))
+    pickle.dumps(g)
+    print('city_rules ok')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -7965,7 +8018,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

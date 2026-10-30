@@ -402,6 +402,16 @@ def ch_towns(g):
         ('p', 'Hamlet, village, town, city, metropolis. The bigger the place, the more it has: barracks with '
               'sellswords and a deep harbour are only found in the cities. Farms along the roads share a '
               'meal with travellers; roadside inns offer a bed and the news.'),
+        ('h', 'Cities'),
+        ('p', 'The human cities grew over the centuries round their heart: a cathedral on the great market, the '
+              'burgh of a king or baron with its own moat, or the emperor\'s walled palace in the great city. The '
+              'great ways wind from the market to the gates; a ring street follows the line of an old wall; lanes '
+              'wander off between rows of houses, some of them blind. A wall with towers and a broad moat goes round '
+              'it all, with a stone bridge at each gate. A river runs through between quay walls, crossed only by '
+              'the great ways and the ring street, on stone bridges.'),
+        ('p', 'Guild halls stand by the market, inns by the gates, the watch by the wall; the secret guilds keep an '
+              'ordinary house down a lane. Flat harbour cities lie in rings of canals round the Dam, and a city in a '
+              'march, where the realm meets its enemies, has a wall of pointed bastions.'),
         ('h', 'Names'),
         ('p', 'A name tells you where a place lies: a -ford or -bridge stands on a river, a -haven or a Port on the '
               'coast, a -fell, a Bryn- or a Dun- in the hills, a -holt or a Coed- in the woods. In the north the names '

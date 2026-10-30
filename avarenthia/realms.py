@@ -1473,6 +1473,8 @@ def furnish_town(game, m, s):
     family's head. The houses they take get a sign of their own."""
     R = get(game)
     plots = sorted(getattr(m, 'homes', ()), key=lambda pl: -(pl.w * pl.h))
+    if getattr(m, 'seat', None):                 # a grown city's burgh, palace or town hall is the lord's
+        plots.insert(0, m.seat)
     if R is None or not plots:
         return
     from .towns import free_inside, add_sign

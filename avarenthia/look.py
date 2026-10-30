@@ -451,7 +451,7 @@ def _decorate(m, i, look):
     ch, fg, bg = look
     if sh and i in sh:
         fg, bg = scale(fg, .55), scale(bg, .55)
-    if ov and i in ov and m.t[i] not in (D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT):
+    if ov and i in ov and (m.kind != 'over' or m.t[i] not in (D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT)):
         och, ofg, obg = ov[i]
         ch, fg, bg = och, tuple(ofg), (tuple(obg) if obg is not None else bg)
     return ch, fg, bg
