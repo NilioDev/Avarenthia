@@ -1736,7 +1736,9 @@ def creatures_and_hunts():
     assert mi.lurk and BH.beh(mi, 'disguise')
     g.compute_fov()
     app.render()
-    sh = make_monster(g, 'shrieker', x, y, 3)
+    g.compute_fov()
+    sx, sy = next((c for c in free_around(g, g.map, p.x, p.y, 3) if g.visible(*c) and not g.map.mon_at(*c)), (x, y))
+    sh = make_monster(g, 'shrieker', sx, sy, 3)              # it shrieks when it sees you: put it in sight
     sleeper = make_monster(g, 'goblin', max(1, x - 5), max(1, y - 5), 3)
     sleeper.awake = False
     g.map.mons += [sleeper]
