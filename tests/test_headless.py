@@ -4596,7 +4596,7 @@ def balance():
         won, turns, taken = 0, 0, 0
         for world in range(11, 17):
             app = new_app('soft', seed=world)
-            random.seed(world * 7 + 1)      # the Rogue stands near the edge: some draws cost it a few waves, old builds too
+            random.seed(world * 7 + 1)      # one draw for all five, so they fight the same foes
             g, p = app.game, app.game.player
             p.lvl, p.str, p.dex, p.vit, p.ene = 18, st, dx, vi, en
             p.classes = cl

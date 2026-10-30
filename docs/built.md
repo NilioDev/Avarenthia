@@ -737,6 +737,9 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   cannot abide (`BOON`, an item 'boon'); carried into the fight it fills two dots (`boon_edge`). Handbook: Fighting,
   Bosses. Test `boss_maker`. SAVE_VERSION 54. Not built (still in `docs/plan.md`): arenas dressed per place, other
   ways out, the place that wakes or falls in, fights won another way, bosses for the big one and the relic.
+- **The Rogue a little stronger** (30 October 2026, Nilio's wish after block 4). The pure Rogue's rule (`trees.RULES`)
+  also gives 20% more weapon damage to a poisoned foe (`wvs` 'poisoned'), so Envenom feeds it. The balance test: the
+  Rogue went from 22 to 24 of 24 waves, on the test's draw and on another.
 
 ## Boss fights (approved 26 October 2026; built 29-30 October 2026; the spec)
 

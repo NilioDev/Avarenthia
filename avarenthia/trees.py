@@ -359,8 +359,8 @@ RULES = {
     'Warrior': ('Stamina comes back faster, at the full pace in chain or plate.', [R('flag', 'heavy_training'),
                                                                                   R('stamina_plus', None, 1)]),
     'Arcanist': ('What you take away with Dispel or Counterspell gives you 8 mana.', [R('flag', 'arcanist')]),
-    'Rogue': ('A foe that does not see you coming takes your first blow three times over, not twice.',
-              [R('flag', 'rogue')]),
+    'Rogue': ('A foe that does not see you coming takes your first blow three times over, not twice, and your '
+              'weapon does 20% more to a poisoned foe.', [R('flag', 'rogue'), R('wvs', 'poisoned', 20)]),
     'Elementalist': ('Your spells do 30% more to a frozen foe: the ice cracks.', [R('svs', 'frozen', 30)]),
     'Stormbrand': ('Lightning on a burning foe bursts: the foes beside it take fire.', [R('flag', 'stormbrand')]),
     'Sunpriest': ('Your fire does double to the undead, as the light does.', [R('flag', 'sunpriest')]),
