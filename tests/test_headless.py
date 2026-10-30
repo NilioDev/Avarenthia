@@ -4895,7 +4895,8 @@ def market_days():
     assert TW.day_kind(g) == 'market' and ECO.fair_day(g, st)
     assert ECO.sell_price(st, gk, True) >= plain and ECO.sell_price(st, gk, True) < ECO.buy_price(st, gk)
     assert g.sell_value(ware) > plain_gear
-    folk = [n for n in m.mons if n.is_npc and hasattr(n, 'work_pos') and n.job not in ('guard', 'lamplighter', 'fisher', 'drinker')]
+    folk = [n for n in m.mons if n.is_npc and hasattr(n, 'work_pos') and n.job not in ('guard', 'lamplighter', 'fisher', 'drinker')
+            and n.role == 'villager' and not getattr(n, 'life', False)]      # beggars and refugees keep their own day
     traders = [o for o in m.mons if o.is_npc and o.role == 'market' and m.tile(o.x, o.y) not in TW.INDOOR]
     assert traders, 'no stall on the square'
     at_fair = [n for n in folk if n.id % 3 and tuple(TW.target_for(g, n)) == tuple(TW.fair_spot(g, n))]
@@ -8179,6 +8180,289 @@ def caravans():
     print('caravans ok:', cv['name'], len(cv['wagons']), 'wagons')
 
 
+def town_life():
+    """Round 27: woodpiles and fields through the year, market-day travellers, the town's mood, small happenings,
+    the peoples' rhythms, the poor quarter and the shanty camps, refugees of the great evils."""
+    import pickle
+    from avarenthia import townlife as TL, events as EV, shadow as SH, realms as RL, calendar as CAL, tribes as TR
+    print('== town_life')
+    random.seed(27)
+    app = new_app('soft', 2727)
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 10 ** 6
+
+    def at(h, day=None):
+        if day is not None:
+            g.turn = (day - 1) * D.DAY_LEN
+        g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + int(D.DAY_LEN * (h + .2) / 24)
+
+    def enter(s):
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        return g.map
+
+    city = next(s for s in w.settlements if s.is_city and s.race == 'human' and s.id != 0)
+    m = enter(city)
+    assert m.people == 'human' and getattr(m, 'grown', None)
+    piles = [i for i, t in enumerate(m.t) if t == TL.WOODPILE]
+    assert piles, 'woodpiles by the houses'
+    app.render()
+    # the woodpile through the year, and the fields
+    looks = set()
+    for mo in range(12):
+        g.turn = ((mo * 30 - CAL.START) % 360 + 361) * D.DAY_LEN
+        fr = TL.frame(g, m)
+        looks.add(TL.look(g, m, piles[0], ('?', (0, 0, 0), (0, 0, 0)), fr)[0])
+    assert len(looks) >= 3, looks
+    fields = set()
+    for mo in range(12):
+        g.turn = ((mo * 30 - CAL.START) % 360 + 361) * D.DAY_LEN
+        fr = TL.frame(g, m)
+        m.t[0], keep = D.FIELD, m.t[0]
+        fields.add(TL.look(g, m, 0, ('?', (0, 0, 0), (0, 0, 0)), fr)[1])
+        m.t[0] = keep
+    assert len(fields) >= 4, 'the fields change with the season'
+    # the poor quarter: beggars by day, the night trader after dark
+    slum = [o for o in m.mons if o.role == 'slum']
+    assert getattr(m, 'slum', None) and slum and any(o.job == 'nighttrader' for o in slum), [o.name for o in slum]
+    nt = next(o for o in slum if o.job == 'nighttrader')
+    at(12)
+    g.pending = None
+    TL.talk(g, nt)
+    assert not g.pending, 'the night trader does not deal by day'
+    at(23)
+    p.cargo['lotus'] = 3
+    TL.talk(g, nt)
+    assert g.pending and g.pending['key'] == 'slum'
+    gold = p.gold
+    EV.resolve(g, 'lotus')
+    assert p.gold > gold and not p.cargo.get('lotus')
+    beggar = next(o for o in slum if o.job == 'beggar')
+    TL.talk(g, beggar)
+    EV.resolve(g, 'give')
+    # the small happenings
+    for kind in TL.HAPPENINGS:
+        m.mons = [o for o in m.mons if not getattr(o, 'life', False)]
+        got = TL.happening(g, m, city, kind)
+        if got is None:
+            print('  no', kind, 'here')
+            continue
+        who = [o for o in m.mons if getattr(o, 'life', False)]
+        assert who, kind
+        gold = p.gold
+        if kind == 'pickpocket':
+            o = who[0]
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1)):
+                if m.inb(o.x + dx, o.y + dy) and D.TILES[m.tile(o.x + dx, o.y + dy)].walk and not m.mon_at(o.x + dx, o.y + dy):
+                    p.x, p.y = o.x + dx, o.y + dy
+                    break
+            TL._pickpocket(g, m, o)
+            assert p.gold < gold, 'the lad lifts some coin'
+            TL.talk(g, o)
+            assert p.gold > gold - 1
+        else:
+            TL.talk(g, who[0])
+            if kind in ('brawl', 'pig'):
+                assert p.gold > gold, kind
+        for _ in range(30):
+            TL._hap_tick(g, m)
+    # the town's mood
+    from avarenthia import wanderers as WA
+    wd = WA.Wanderer(g.new_id(), 'raiders', city.x + 3, city.y)
+    wd.hostile = True
+    w.wanderers.append(wd)
+    assert TL.mood(g, city) == 'fear'
+    w.wanderers.remove(wd)
+    R = RL.get(g)
+    kg = RL.kingdom_of_region(R, city.region) if R else None
+    if kg is not None and TL.mood(g, city) is None:
+        kg.won_day = g.day
+        assert TL.mood(g, city) == 'feast'
+        kg.won_day = -99
+    # market day: travellers in the square, gone by evening
+    day = next(d for d in range(g.day, g.day + 8) if CAL.weekday(d) == 'Starsday')
+    at(9, day)
+    TL.market_day(g, m)
+    assert any(getattr(o, 'traveller', False) for o in m.mons), 'travelling traders on market day'
+    at(18)
+    TL.market_day(g, m)
+    assert not any(getattr(o, 'traveller', False) for o in m.mons)
+    # refugees of a great evil
+    e = next(q for q in w.evils if not q.defeated)
+    e.awake = True
+    e.x, e.y = city.x + SH.reach(e) * 2 + 10, city.y
+    assert TL.refugee_lands(g, city)
+    m.mons = [o for o in m.mons if o.role != 'refugee']
+    TL.refugees(g, m, city)
+    ref = [o for o in m.mons if o.role == 'refugee']
+    assert ref, 'refugees in the city'
+    TL.talk(g, ref[0])
+    assert g.pending and g.pending['key'] == 'refugee'
+    gold = p.gold
+    EV.resolve(g, 'give')
+    assert p.gold == gold - 100
+    before = len(SH.know(g)['lts'])
+    TL.talk(g, ref[0])
+    EV.resolve(g, 'tale')
+    assert len(SH.know(g)['lts']) >= before
+    # the peoples' rhythms
+    for race, h, check in (('halfling', 9, None), ('dwarf', 6, None)):
+        s = next((q for q in w.settlements if (q.race == race or (race == 'dwarf' and q.kind == 'deephold'))), None)
+        if s is None:
+            print('  no', race, 'town')
+            continue
+        mm = enter(s)
+        assert mm.people == race, (mm.people, race)
+        at(h)
+        folk = [o for o in mm.mons if o.is_npc and hasattr(o, 'work_pos') and getattr(o, 'job', '') not in ('guard', 'lamplighter', 'child')]
+        assert folk and any(TL.target(g, o) is not None for o in folk), race
+        g.log_mark = len(g.log)
+        TL.tick(g, mm)
+    glade = next((q for q in w.sites if q.kind == 'glade'), None)
+    if glade:
+        to_over(g, 0)
+        g.enter_site(glade.id)
+        gm = g.map
+        assert gm.people == 'elf' and D.BUTTS in gm.t, 'archery butts in the glade'
+        at(22)
+        app.render()
+        folk = [o for o in gm.mons if o.is_npc and getattr(o, 'job', '') not in ('guard', 'archer') and hasattr(o, 'work_pos')]
+        assert any(TL.target(g, o) is not None for o in folk), 'elves wake at night'
+    gn = next((q for q in w.sites if q.kind == 'gnomes'), None)
+    if gn:
+        to_over(g, 0)
+        g.enter_site(gn.id)
+        gm = g.map
+        o = next(o for o in gm.mons if o.role == 'villager')
+        p.x, p.y = o.x + 1, o.y
+        g.flags.pop(f'gnomes{gn.id}', None)
+        n = len(gm.mons)
+        for _ in range(20):
+            TL._shy(g, gm)
+        assert len(gm.mons) < n, 'the gnomes dive into their holes'
+    liz = next((q for q in w.sites if q.kind == 'stilts'), None)
+    if liz:
+        to_over(g, 0)
+        g.enter_site(liz.id)
+        at(23)
+        TR.rouse(g, g.map, None)
+        assert any('slow' in o.effects for o in g.map.mons if not o.is_npc), 'lizardfolk are slow at night'
+    # the shanty camps outside the human cities
+    sh = [q for q in w.sites if q.kind == 'shanty']
+    assert sh and all(w.settlements[q.city].is_city for q in sh)
+    to_over(g, 0)
+    g.enter_site(sh[0].id)
+    assert any(o.role == 'slum' and o.job == 'nighttrader' for o in g.map.mons)
+    app.render()
+    pickle.dumps(g)
+    print('town_life ok:', len(piles), 'woodpiles,', len(slum), 'in the poor quarter,', len(ref), 'refugees,', len(sh), 'shanty camps')
+
+
+def feasts():
+    """Round 28: the feast days, each kept only where it belongs; the square dressed, someone to walk into, prices;
+    the mask, the boot, the Light-Feast; the great fair."""
+    import pickle
+    from avarenthia import feasts as FE, events as EV, economy as ECO, crime as CR, calendar as CAL
+    print('== feasts')
+    random.seed(28)
+    app = new_app('soft', 2828)
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 10 ** 6
+
+    def on_day(f):
+        mo, d0, _n = f['when']
+        target = mo * 30 + d0
+        for day in range(1, 400):
+            y, m_, d, _wd = CAL._split(day)
+            if m_ * 30 + d == target:
+                return day
+    kept = {}
+    for f in FE.FEASTS:
+        day = on_day(f)
+        towns = [s for s in w.settlements if s.market and f in FE.today(g, s, day)]
+        sites = [q for q in w.sites if FE.keeps_site(q, f['who'])]
+        kept[f['key']] = len(towns) + len(sites)
+        if f['who'] == 'humans':
+            assert all(f in FE.today(g, s, day) for s in w.settlements if s.market and s.race == 'human' and s.kind != 'deephold')
+    print('kept in this world:', {k: v for k, v in kept.items() if v})
+    assert sum(1 for v in kept.values() if v) >= 18, kept
+    nowhere = [k for k, v in kept.items() if not v]
+    # a feast in a town: the figure, the label, the actions, the prices
+    done = 0
+    for f in FE.FEASTS:
+        day = on_day(f)
+        s = next((s for s in w.settlements if s.market and f in FE.today(g, s, day) and s.id != 0), None)
+        if s is None:
+            continue
+        g.turn = (day - 1) * D.DAY_LEN + D.DAY_LEN // 2
+        FE.daily(g)
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        m = g.map
+        fs = FE.today(g)
+        assert fs and FE.label(g) == fs[0]['name'], (f['key'], s.name)
+        fig = next((o for o in m.mons if getattr(o, 'feast', None) == fs[0]['key']), None)
+        assert fig is not None, f['key']
+        for gk, k in fs[0].get('prices', {}).items():
+            assert ECO.FEAST.get((s.id, gk)) is not None
+        g.pending = None
+        FE.talk(g, fig)
+        assert g.pending and g.pending['key'] == 'feast'
+        opts = [c for _l, c in g.pending['options'] if c not in (None, 'bye')]
+        for c in opts:
+            FE.talk(g, fig)
+            EV.resolve(g, c)
+        g.pending = None
+        FE.talk(g, fig)
+        one = [c for (lab, c) in g.pending['options'] if 'done this year' in lab]
+        g.pending = None
+        app.render()
+        done += 1
+    assert done >= 10, done
+    # the Lean Month makes fish cheap where it is kept
+    lean = FE.BY_KEY['lean']
+    s = next(s for s in w.settlements if s.market and FE.keeps(g, s, 'heartwest'))
+    g.turn = (on_day(lean) + 3) * D.DAY_LEN
+    FE.prices(g)
+    cheap = ECO.price(s, 'fish')
+    ECO.FEAST.clear()
+    assert cheap < ECO.price(s, 'fish')
+    # the mask: the guards of a town where you are wanted let you in
+    s = next(s for s in w.settlements if s.market and s.id != 0)
+    s.rep = -100
+    p.buffs.append(['masked', 1, 500, 'A Masking mask'])
+    g.pending = None
+    assert not CR.at_gate(g, s) and not g.pending
+    p.buffs = [b for b in p.buffs if b[0] != 'masked']
+    s.rep = 0
+    # Wanderer's Eve: the boot in the morning
+    p.boot_day = g.day - 1
+    gold, n = p.gold, len(g.log)
+    FE.daily(g)
+    assert getattr(p, 'boot_day', None) is None and len(g.log) > n
+    # the great fair: a city's own week, every year
+    c = next(s for s in w.settlements if s.is_city and s.race == 'human')
+    mo, d0 = FE.fair_week(c)
+    day = next(d for d in range(1, 400) if CAL._split(d)[1] == mo and CAL._split(d)[2] == d0 + 2)
+    assert FE.has_fair(g, c, day) and FE.has_fair(g, c, day + 360) and not FE.has_fair(g, c, day + 30)
+    g.turn = (day - 1) * D.DAY_LEN + D.DAY_LEN // 2
+    to_over(g, c.id)
+    g.enter_town(c.id)
+    assert ECO.fair_day(g, c)
+    gk = D.GOOD_ORDER[0]
+    assert ECO.sell_price(c, gk, True) > ECO.sell_price(c, gk, False)
+    assert any(f is FE.FAIR for f in FE.today(g))
+    from avarenthia import handbook as HB
+    rows = FE.table_rows()
+    assert len(rows) == len(FE.FEASTS)
+    pickle.dumps(g)
+    print('feasts ok:', done, 'feasts walked into;', 'kept nowhere in this world:', nowhere)
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8188,7 +8472,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -52,6 +52,33 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Bridges on the land** - each people's look where a road crosses a river; a human bridge with a fallen span and
   its ford. Debug: Teleport near a river crossing, then [>] into the land.
 
+## Feast days (built 30 October 2026)
+
+- **Each feast where it is kept** - the name under the map, the square dressed, the figure, its one or two things
+  to do, the folk in the square at evening, the prices. Debug: Time (to the feast's date), Teleport to a town that
+  keeps it (the handbook's table says who).
+- **The mask, the boot, the Light-Feast** - wanted in a town, enter it masked in the Masking; the boot on
+  Wanderer's Eve and the morning after; a northern village on 1 Leaffall. Debug: Time, Teleport, standing.
+- **The Fair of Skell** - a human city's own week: travellers all week, better selling, pickpockets. Debug: Time
+  (days ahead) until the fair is in a city.
+
+## Round 6: livelier settlements (built 30 October 2026)
+
+- **Work you can see** - woodpiles by the houses and the fields through the year. Debug: Teleport to a village or
+  city, Time (month).
+- **Market day** - travelling traders with stalls in the square, gone at five. Debug: Time (to a Starsday, 9).
+- **The mood** - fear (guards at the gates, doors shut) and the feast after a war won. Debug: Force an event (a war
+  party of the raiders), then Teleport to the town near it.
+- **Happenings** - the brawl, the pig, the funeral, the pickpocket. Debug: Force an event, "Something happens in
+  this town".
+- **Each people's day** - halfling meals and hedge lanterns, elves at night and the archers at the butts, shy gnomes,
+  the dwarves' shift bell, orcs sparring, goblins squabbling, the kobolds' hoard, slow lizardfolk at night.
+  Debug: Teleport, Time.
+- **The poor quarter and shanty camps** - beggars, the night trader buying black lotus. Debug: Teleport to a human
+  city; Force an event, "Five black lotus in your cargo"; Time (night).
+- **Refugees** - in the cities near a waking servant: a silver, their tale, a lieutenant marked. Debug: the Shadow
+  menu (wake a servant).
+
 ## Trade part 3: caravans (built 30 October 2026)
 
 - **Your wagons** - buying a wagon with a mule or an ox at the stables (needs the cart), the string of ♦ on the map,

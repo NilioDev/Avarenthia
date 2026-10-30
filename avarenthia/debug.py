@@ -749,7 +749,8 @@ def finish_job(game, mi, ok=True):
 EVENTS = [('pirates', 'A pirate ship sets sail'), ('ship', 'A merchant ship sets sail'),
           ('raid', 'A war party of the raiders sets out'), ('rivals', 'Rival adventurers set out'),
           ('warband', 'A warband marches on a hold'), ('wagons', 'Three wagons of your own join you'),
-          ('wagonraid', 'Robbers fall on your wagons'), ('league', 'A League caravan races you')]
+          ('wagonraid', 'Robbers fall on your wagons'), ('league', 'A League caravan races you'),
+          ('happening', 'Something happens in this town'), ('lotus', 'Five black lotus in your cargo')]
 
 
 def force_event(game, kind):
@@ -791,6 +792,16 @@ def force_event(game, kind):
         if kind == 'wagonraid' and game.cur == 'over':
             CV.raid(game)
         game.msg('Debug: your wagons.', 'info')
+        return None
+    elif kind == 'happening':
+        from . import townlife as TL
+        s = game.here
+        got = TL.happening(game, game.map, s) if s is not None else None
+        game.msg(f'Debug: {got}.' if got else 'Debug: not in a town.', 'info')
+        return None
+    elif kind == 'lotus':
+        game.player.cargo['lotus'] = game.player.cargo.get('lotus', 0) + 5
+        game.msg('Debug: five black lotus.', 'info')
         return None
     elif kind == 'league':
         from . import caravan as CV

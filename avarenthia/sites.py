@@ -12,7 +12,7 @@ SITE_LOOK = {'temple': ('π', (240, 230, 200)), 'monastery': ('Θ', (210, 180, 1
              'tower': ('¡', (200, 200, 210)), 'barrow': ('∩', (196, 200, 170)),
              'farm': ('ƒ', (180, 196, 100)), 'roadinn': ('╤', (236, 164, 84)), 'valley': ('•', (226, 196, 130)),
              'glade': ('♠', (170, 236, 150)), 'gnomes': ('♣', (226, 204, 120)), 'oasis': ('¥', (130, 214, 96)),
-             'shieling': ('⌂', (214, 200, 170))}
+             'shieling': ('⌂', (214, 200, 170)), 'shanty': ('∩', (150, 120, 76))}
 from .tribes import LOOK as _CAMP_LOOK  # noqa: E402
 SITE_LOOK.update(_CAMP_LOOK)
 from .nature import LOOK as _NATURE_LOOK  # noqa: E402
@@ -198,6 +198,9 @@ def gen_site_map(game, site):
     if site.kind in ('master', 'lostshop'):
         from .mastery import site_map as master_map
         return master_map(game, site)
+    if site.kind == 'shanty':
+        from .townlife import shanty_map
+        return shanty_map(game, site)
     if site.kind == 'glade':
         from .folk import glade_map
         return glade_map(game, site)

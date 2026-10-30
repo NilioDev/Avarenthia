@@ -809,6 +809,10 @@ def rouse(game, m, why):
                 mon.name, mon.fg = n.name.split(',')[0], D.UNIQUE_FG
                 mon.hp = mon.maxhp = round(mon.maxhp * 1.6)
             mon.awake, mon.pack = True, pid
+            if site.kind == 'stilts':
+                from . import townlife as TL
+                if TL.sluggish(game):
+                    mon.effects['slow'] = [600, 0]      # cold blood at night and in winter: slow limbs
             mon.faction = 'horde' if site.kind in ('warcamp', 'ravine') and 'horde' in D.FACTIONS else None
             m.mons[i] = mon
         elif n.tjob != 'captive':

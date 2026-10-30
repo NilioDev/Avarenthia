@@ -39,6 +39,8 @@ from . import mastery as MA
 from . import archaeology as AR
 from . import tradegoods as TG
 from . import caravan as CV
+from . import townlife as TL
+from . import feasts as FE
 from . import bossmaker as MK  # noqa: F401  (registers the job bosses)
 from . import ai as AI
 from . import weather as WX
@@ -88,7 +90,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 57
+SAVE_VERSION = 58
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -861,6 +863,9 @@ class Game:
         self.msg(f'You enter {s.name}.', 'info')
         TG.at_gate(self, s)
         LV.on_enter_town(self, s, m)
+        if ECO.FEAST.get('day') != self.day:
+            FE.prices(self)
+        TL.on_enter(self, m)
         MC.restock(self)
         MS.on_enter(self, sid)
         NM.hand_in(self, self.world.settlements[sid])
@@ -913,6 +918,8 @@ class Game:
         BP.on_enter(self, site, m)
         MA.on_enter(self, site, m)
         AR.on_enter(self, site, m)
+        if m.kind == 'town':
+            TL.on_enter(self, m)
         if ST._SEATS.is_seat(site):
             BP.sync_cages(self, site, m)
         self.compute_fov()
@@ -2672,6 +2679,7 @@ class Game:
                 HT.daily(self)
                 RL.daily(self)
                 EP.daily(self)
+                FE.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -3323,6 +3331,8 @@ class Game:
                 self.meet_wanderer(wd)
             return
         if RL.talk(self, npc):
+            return
+        if TL.talk(self, npc):
             return
         if role == 'oldplace':
             OP.talk(self, npc)

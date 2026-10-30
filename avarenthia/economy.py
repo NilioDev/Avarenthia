@@ -95,6 +95,7 @@ def units(s, g):
     return int(s.market[g][0] / step(g))
 
 
+FEAST = {}              # (town id, good): the feast days' prices (feasts.py sets them every day)
 NIGHT = [1.0]           # the Long Night: everything a fifth dearer (skyseat.py sets it every day)
 
 
@@ -102,7 +103,8 @@ def price(s, g):
     from . import tradegoods as TG
     stock = max(1.0, s.market[g][0])
     f = (D.GOODS[g].get('ref', REF) / stock) ** bend(g)
-    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100 * NIGHT[0] * TG.factor(s, g)    # copper
+    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100 * NIGHT[0] * TG.factor(s, g) \
+        * FEAST.get((s.id, g), 1.0)    # copper
 
 
 def buy_price(s, g):
@@ -128,7 +130,8 @@ def tired(game, s, g):
 
 def fair_day(game, s):
     from . import towns as TW
-    return game.here is s and TW.day_kind(game, s) == 'market'
+    from . import feasts as FE
+    return game.here is s and (TW.day_kind(game, s) == 'market' or FE.has_fair(game, s))
 
 
 def cargo_capacity(p):

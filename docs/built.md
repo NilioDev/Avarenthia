@@ -9,6 +9,9 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 |---|---|
 | **Built** | Rounds 1-5 (monsters and behaviours, named enemies, five guilds, the jobs, seasons and sailing); world shapes; the peoples' own lands; hostile camps; dwarf holds and mines; the bigger world with nine new biomes; small animations on the maps |
 | **Built: nature and wonders** | Waterfalls, cascades, great falls and rapids; hot springs, the tidal causeway, the Frozen Stair; the Drifting Isles, the Starwater, the Thunder Anvil and eleven more wonders, each a site with its own saved map; trolls turn to stone in the sun |
+| **Built: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; parts 2 and 3, goods and ways and the caravans, and the great fair with the feast days, built 30 October 2026 |
+| **Built: feast days (30 Oct)** | Thirty-five feasts, each kept only by its land, people or faith (Ruin Night and Hearthnight by all humans); the name under the map, the square dressed, someone to walk into, fair price changes; the Masking's mask, Wanderer's Eve's boot, the Light-Feast in the north; the Fair of Skell, a week a year in each human city |
+| **Built: round 6, livelier settlements** | Woodpiles and fields through the year, market-day travellers, the town's mood (fear, feast), small happenings, each people's rhythm, the poor quarter and shanty camps, refugees of the great evils (round 27, 30 October 2026) |
 | **Built: ferries in villages** | Where a lane crosses a broad or wild river in a village: a ferry with a ferryman instead of a bridge; a main road over a broad river always gets a bridge |
 | **Built: place names** | A name maker per people for villages, towns, cities, holds, glades, hamlets and the hostile camps; human names by region; names that fit the land |
 | **Built: walking the land (zones)** | `>` in open country goes down into the zone of that world cell; walk off the edge into the next one, `<` goes back up. Ambushes are fought there; towns, sites and holds keep their own maps and are entered from the middle of their zone. The save is packed |
@@ -37,7 +40,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
 | **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
 | **Built: the Rift and the Ashen Deep (24 Oct)** | A rift opens now and then as a world event (or under a deep dungeon's bottom), the land round it burns to ash, fiends raid at night; three to five levels of basalt, fire, chains, vents, bone fields and cages; seven new creatures; the Lord of Cinders before the burning gate; break it and the rift closes |
-| **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast comes with the feast days |
+| **Built: the northern lights' gift (24 Oct)** | Under the lights rune stones glow and show an old way, Frost and Storm cost less, the spirits of the northern barrows rise and give errands, and wake angry if you dig in or rob them; the ghostly glow blue-green, fiends red. The light-feast built with the feast days (30 Oct) |
 | **Built: abbeys, forts, manors and the underground kinds (24 Oct)** | Every people's abbey, fort and manor on its own land with floors above and cellars below; forts held, taken, empty or ruined, with their own ways in; caves, nests, dens and crypts shaped by whoever made them; the goblin hole and the goblin village |
 | **Built: the K5 maker (24 Oct)** | Classic dungeons grow from rooms of many shapes; 38 theme rooms drawn as pieces, each with one telling thing; rivers of water and fire underground; rock you can see; a mood line per room |
 | **Built: classes part 2, the trees (23 Oct)** | A tree per class, 3 branches of 6 passive knots, a point per 5 ranks, spent where you rested, a temple takes them back; the imbues; Nature's three shapes |
@@ -790,6 +793,120 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   Your own wagons. Tip 'wagon'. Debug events: wagons, a raid, a League racer. Test `caravans`. SAVE_VERSION 57.
   Not as the spec: the wagons are sold at the stables, not a wagonmaker; walking along is one quick journey; trade on
   the road uses the home town's market; people do not yet talk of your caravan by name (the news round).
+- **Round 28: feast days, the light-feast and the great fair** (30 October 2026; `feasts.py`). `FEASTS` holds 35
+  feasts, each with its dates, who keeps it (`keeps`: all humans, the heartland, west or north by `names.dialect`,
+  the fjords, northern villages, river towns, ports, the great city, the steppe, savanna, desert, jungle and canyons
+  by the biome, and the peoples in their towns and sites: `keeps_site`), what you see, its decoration, its prices
+  (`economy.FEAST`, set every day by `daily`) and one or two things to do. On a feast day the name stands on the line
+  under the map, the square is dressed (`m.over`), a figure stands in it (role 'feast'; `EV.ask` 'feast'), the folk
+  gather there from five until late, and a first-time tip 'feast' says to walk in. The things to do, once a year
+  each (`p.feasts`): a blessing (a buff for a few days), a vigil until the lights come back, a free meal, a rumour, a
+  few coppers, leaping the fire, an egg in the hedge, the Masking's mask (`masked`: `crime.at_gate` lets you in where
+  you are wanted), honey for the gnomes (welcome after First Frost), the boot of Wanderer's Eve (in the morning an
+  apple and coppers or a rhyme that is a rumour; coal if you are wanted; Skell's luck for his faithful), the way to a
+  hidden glade at Starsong, a gem at the Shine, the amnesty of the Oath Day. The Light-Feast is kept on 1 Leaffall in
+  northern villages (a blessing against the cold). The Fair of Skell (`FAIR`, `fair_week`): a week a year in each
+  human city, the same week every year: travelling traders all week, a tenth more for what you sell
+  (`economy.fair_day`), pickpockets likely. Handbook: The year, Feast days (with the table, `table_rows`); Trade (the
+  fair). Test `feasts`. SAVE_VERSION 58.
+  Not as the spec: the Light-Feast keeps a fixed date (the first dark night of Leaffall), not the first night the lights
+  are really seen; the feasts' effects on the dead (stronger on the Naming, a ghost led off by the lanterns) and on the
+  tribes (no attack in the Leaping week, the Night of Tusks' duels) are only in what you see and the blessings; the
+  Lean Month's priests do not mind what you eat; no beds dearer or free at the temple on Hearthnight.
+- **Round 27: round 6, livelier settlements** (30 October 2026; `townlife.py`). Dressed once per map (`dress`):
+  woodpiles against the houses (tile WOODPILE, only where blocking keeps the way round joined: `_ring_ok`), archery
+  butts and two archers in an elven glade or city (BUTTS), the poor quarter of a grown human city (the homes
+  furthest from the heart: half-orcs and goblins, patched walls and mud lanes in `m.over`, beggars and a night
+  trader, role 'slum'). Each day you come in (`on_enter`): the town's mood (`mood`: 'fear' with a hostile band
+  within 14, a war, raid or siege event, or a great evil's mark near; 'feast' for a week after its king won a war,
+  `realms.end_war` sets `won_day`), with guards called up at the gates, doors shut and half the folk at home, or
+  tables in the square; refugees (`refugees`) from each awake servant whose land lies within 40 beyond its reach,
+  in cities and towns, who take a silver (Solmara likes it) or tell their tale and where a lieutenant keeps (marked
+  on your map, once a refugee); one small happening (`happening`: a brawl at the inn, a runaway pig, a funeral to
+  the temple, a pickpocket), each solved with a bump for a small reward. Every turn (`tick`, `target` from
+  `towns._target`): halfling meals (seven a day) and hedge lanterns, doors shut at seven; elves quiet by day and
+  singing at night, lights in the trees; gnomes dive into their holes (until you are friends with the elder) and
+  pick mushrooms at dawn; dwarves by the shift bell at 6, 14 and 22, the ale hall after a shift; orcs spar, goblins
+  squabble; the kobolds' hoard grows a little every three days; lizardfolk bask by day and, roused at night or in
+  winter, are slow. Market day brings two to four travelling traders with a stall (`market_day`). The look
+  (`look`, from the map drawing): fields by the season and its half, woodpiles by the year. Shanty camps
+  (`place_shanties`, a site 'shanty' by each human city, with dice of its own; `shanty_map`). Handbook: Towns (the
+  woodpiles and fields, A town that lives, The week); The peoples (each people's day). Test `town_life`.
+  SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
+  line move as before; the hoard grows in glitter, not in coin you could take.
+
+## Feast days, the light-feast and the great fair (built 30 October 2026; the spec)
+
+- **Feast days** (approved 23 October, "klinkt goed"; `poi/feestdagen.md`), after real feasts from all over the world
+  with names of our own. Not everywhere (Nilio): each feast belongs to a region, a people or a faith and is kept only
+  there; Ruin Night (new year, the anniversary of the Ruin: lights out at midnight) and Hearthnight (the longest night)
+  are kept by all humans. The name stands with the date; each feast shows in the town or on the land, gives one or two
+  things to do with a key or a bump, and moves prices fairly. The handbook gets a table in its chapter on the year.
+  The heartland and the west: the Masking (carnival: a Fool King, masks that hide who you are), the Lean Month, Greening
+  Day, Blossom Eve, Last Sheaf, the Naming (speak a ghost's name and it lies down), Lantern Walk, Wanderer's Eve. The
+  rest of the world: First-Footing, the Ship Burning, the Leaping, Colour Day, Wetting Day, the Thirst Month, Lantern
+  River, Moonwatch, Marigold Days, Eight Lamps, Kite and Thunder, Sun Rope, the Rising, Walpurgis Hill. The realms (the
+  Oath Day, the Day of the Fallen, the Fair of Skell) and the peoples (the Tapping and Founders' Quench of the dwarves,
+  Starsong, the Long Table, First Frost, Night of Tusks, Swap Day, the Shine, the Hatching).
+  - **Wanderer's Eve for the player:** on the night of 5 Longnight, in a heartland town with a temple or shrine of Skell,
+    bump the hearth of the inn (or the tavern, or the temple's sleeping hall) and choose "Set your boot by the hearth"
+    (EV.ask; without boots it is a sock); then sleep there that night. Other boots already stand by the hearth those days. In the morning the message line says what was in your boot, from your year since the last one: honest
+    (no crime) a small thing, an apple, a few copper, or a rhyme that is a rumour of a place you did not know; devoted to
+    Skell as well, a few days of his luck; stolen or wanted, a lump of coal (worth nothing, except one coal for a smith).
+    Who does it, the game never says.
+
+### Trade as a way to play (approved 25 October 2026; built in rounds 14, 22, 26 and 28)
+
+Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
+want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
+
+**Fixing the money first:** built 29 October 2026 (round 14, see `docs/built.md`).
+
+**Small to great** (Nilio: begin small and grow). A trader climbs a ladder, each step paid for by the one before:
+a peddler's pack (30) with cheap goods from village to village (grain, salt, ale, wool: a few silver a trip, but
+safe and sure), small supply orders from a village's board; then a pack mule, then a cart; then wagons, crew and League
+rank; at the top the dear goods, named goods, masterworks and far goods. The road is long (Nilio); where it ends (a trader's goal beyond the League title) is for later. Capital is the gate, nothing else: dear goods
+cost too much to buy in bulk early, and small towns hold only a few of them. Neighbouring villages differ enough that
+the first short trips always pay a little.
+
+**Goods and ways:** built 30 October 2026 (round 22, see `docs/built.md`): named goods, master makers, far goods,
+barter, monster goods, spoiling, need far away, contraband, war trade, market news, rank with the Merchant League. Still
+here for later: the great fair (with the feast days, round 28).
+
+**Your own caravan and the NPC caravans:** built 30 October 2026 (round 26, see `docs/built.md`).
+
+UI: named goods stand by their own name in the market list; the caravan is a sign on the world map named by
+`guide.py`; its choices are one `EV.ask`; each new key gets one first-time tip. The handbook's trade chapter grows with it.
+
+## Round 6: livelier settlements (built 30 October 2026 as round 27; the spec)
+
+Approved on 16 October 2026 for the next round after round 5; on hold until Nilio says go (17 October 2026). Everything must show as a tile or work with a bump.
+What exists: a day rhythm (work and home), day and night watch, drinkers, children, the lamplighter, hearth glow,
+doors shut at night, dogs, cats and livestock, job barks, hints, news through people.
+
+### Everywhere
+1. **Work you can see.** (Sparks at the anvil and chimney smoke built 19 October 2026.) A woodpile that grows;
+   fields change with the season (bare, green, gold, stubble).
+2. **Weather in town.** (Rain emptying the streets and filling the inn built 19 October 2026.) Bare fields in winter.
+3. **Market day and rest day.** Built 22 October 2026 (see `docs/built.md`). Left for round 6: travellers and extra
+   stalls on market day.
+4. **The town reacts to the world.** A raid nearby means more guards, fearful talk and shutters; a war won, a feast.
+5. **Small happenings to bump into.** An inn brawl, a runaway pig, a funeral procession, a pickpocket. Small, no
+   menu, a little reward.
+
+### Each people in its own rhythm
+- **Humans**: the temple bell and market day (built 22 October 2026).
+- **Half-orcs and goblins in human cities**: a slum quarter where they live as second-class citizens (beggars,
+  night trade), and shanty camps in the wild.
+- **Halflings**: many meals a day, so always walking home or to the inn; lanterns in the hedges in the evening;
+  round doors locked early.
+- **Elves**: a night rhythm: quiet by day, singing and light in the trees by night; archers at the butts.
+- **Gnomes**: shy; when a stranger comes near they dive into their root holes and come out later; mushroom picking
+  at dawn.
+- **Dwarves**: no day underground, so shifts: a shift bell, miners walking in groups, carts on the line, the ale hall
+  full after the shift.
+- **Hostile peoples**: orcs spar in pairs, goblins squabble over loot, the kobolds' hoard visibly grows, lizardfolk
+  bask by day and are sluggish at night and in winter (a chance for the player).
 
 ## Trade part 3: caravans (built 30 October 2026; the spec)
 

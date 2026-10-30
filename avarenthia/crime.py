@@ -145,6 +145,9 @@ def at_gate(game, s):
     from .events import ask
     if s.rep > WANTED_AT:
         return False
+    from . import feasts as FE
+    if FE.masked(game):
+        return False                                    # the Masking: nobody knows your face
     if getattr(s, 'stopped_day', -1) == game.day:
         return False
     s.stopped_day = game.day

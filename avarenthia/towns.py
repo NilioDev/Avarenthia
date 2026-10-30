@@ -1604,6 +1604,10 @@ def pew_spot(game, npc):
 
 
 def _target(game, npc):
+    from . import townlife as TL
+    spot = TL.target(game, npc)
+    if spot:
+        return spot
     h = hour(game)
     if npc.job not in ('guard', 'lamplighter', 'fisher'):
         kind = day_kind(game)
@@ -1687,6 +1691,9 @@ def live(game, m):
         m.bell_day = game.day
         game.msg('The temple bell rings for the rest day. The shops stay shut today.' if day == 'rest' else
                  'It is market day: the square fills up, and the traders pay a little more.')
+    from . import townlife as TL
+    TL.market_day(game, m)
+    TL.tick(game, m)
     for npc in m.mons:
         if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
             game.random_step(npc)

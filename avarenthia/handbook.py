@@ -389,9 +389,24 @@ def ch_towns(g):
                ('Captain', 'of the watch: where the trouble is, and bounties')]),
         ('p', 'Smoke rises from the chimneys of the houses where a fire is lit, and by day sparks fly at the '
               "outfitter's anvil."),
+        ('p', 'Woodpiles stand against the houses, the sign {≡|168,120,70}: low in spring, highest before winter, '
+              'burnt down by its end. The fields round a village are furrows in early spring, then green, then gold, '
+              'stubble after the harvest, and bare in winter.'),
+        ('h', 'A town that lives'),
+        ('p', 'A town feels the world. With raiders on the roads, a war or the mark of a great evil near, more guards '
+              'stand at the gates, doors stay barred and half the folk keep indoors. After a war its king won, it '
+              'keeps a feast in the square.'),
+        ('p', 'Now and then something happens in the streets: a brawl at the inn, a runaway pig, a funeral on its '
+              'way to the temple, a lad with quick fingers who comes too close. Walk into it.'),
+        ('p', 'In a human city the half-orcs and goblins live in a poor quarter by the wall, of patched walls and mud '
+              'lanes: beggars sit by the market by day, and one of them trades after dark. He buys black lotus, for '
+              'less than the cove pays. More of them live in shanty camps outside the walls, the sign {∩|150,120,76}.'),
+        ('p', 'When a great evil wakes, refugees from its lands sleep in the squares of the cities near it. Walk into '
+              'one to give a silver, or to hear what drove them out: some of them passed a lieutenant\'s stronghold on '
+              'the way.'),
         ('h', 'The week'),
         ('p', 'A week has seven days, from Moonsday to Restday. In human towns Starsday is market day: the square '
-              'fills with people, and traders and outfitters pay a little more for what you sell. Restday is the rest '
+              'fills with people and travelling traders, and traders and outfitters pay a little more for what you sell. Restday is the rest '
               'day: the temple bell rings, the townsfolk sit in the temple in the morning, and the shops, stalls and '
               'stables stay shut all day. The inn and the temple stay open. The line under the map says when it is '
               'market day or rest day.'),
@@ -478,6 +493,9 @@ def ch_jobs(g):
               'factor of the Merchant League keeps count of the profit you make. Enough of it, and the League gives '
               'you a name: Associate, Member, Master Trader, Merchant Prince. Each step makes every market a little '
               'kinder to you and the League\'s work better paid; a Merchant Prince may guard a League caravan.'),
+        ('p', 'Once a year, for a week, the Fair of Skell comes to every human city, each in its own week: travelling '
+              'traders all week, a tenth more for what you sell, and thieves who know it. The week stays the same from '
+              'year to year.'),
         ('h', 'Your own wagons'),
         ('p', 'Once you own the mule cart, the stables sell wagons, each with a mule or an ox and a driver: three '
               'at most, four for a Master Trader. An ox pulls more and walks slower. On the world map your wagons '
@@ -700,7 +718,19 @@ def ch_land(g):
                'Half-orcs have towns of their own in the outer lands: rings of round huts behind a palisade and sharp '
                'stakes, round the chief\'s longhouse and the fighting pit.',
                'Gnomes live in hamlets under the roots of great trees.']),
+        ('p', 'Each people keeps its own day. Halflings eat seven times a day and are always on their way home or to '
+              'the inn; at dusk lanterns hang in their hedges, and the round doors shut early. Elves are quiet by day, '
+              'when only their archers shoot at the butts, the sign {○|224,192,112}; at night lights wake in the '
+              'trees and they sing. Gnomes are shy: come too close, and they dive into a hole among the roots until '
+              'you are gone; at dawn they pick mushrooms. Dwarves have no day under the mountain: a bell rings the '
+              'shifts, and after a shift the ale hall is full.'),
+        ('p', 'The hostile peoples too: orcs spar in pairs in their war camp, goblins squabble over loot, the kobolds\' '
+              'hoard grows between your visits, and lizardfolk bask in the sun by day. At night and in winter their '
+              'blood is cold: roused then, they are slow.'),
     ]
+
+
+from . import feasts as FE  # noqa: E402
 
 
 def season_rows():
@@ -741,6 +771,18 @@ def ch_weather(g):
                'Summer: small streams run dry late in the season and a fire can run through the dry grass. On '
                'Midsummer night fires burn on the hills.',
                'Autumn: the woods turn gold and red; berries and mushrooms wait to be picked.']),
+        ('h', 'Feast days'),
+        ('p', 'Every feast belongs to a land, a people or a faith, and is kept only there: a traveller who is in the '
+              'right town in the right week sees what is kept nowhere else. Only Ruin Night, the new year, and '
+              'Hearthnight, the longest night, are kept by all humans. On a feast day its name stands on the line '
+              'under the map, the square is dressed for it, and the townsfolk gather there in the evening. Someone in '
+              'the square keeps the feast: walk into them to join in, once a year. A feast moves a few prices: fish '
+              'is cheap in the Lean Month, ale at the Tapping, grain at Last Sheaf.'),
+        ('t', ['When', 'Feast, and who keeps it'], FE.table_rows()),
+        ('p', 'In the Masking a mask hides your face: the guards of a town where you are wanted let you in. On '
+              'Wanderer\'s Eve, set your boot by the hearth at the inn and see in the morning what Skell thinks of your '
+              'year. The northern villages keep the Light-Feast on the first dark night of Leaffall: lamps in every '
+              'window and a blessing at the shrine against the cold.'),
     ]
 
 

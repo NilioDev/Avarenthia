@@ -1398,6 +1398,8 @@ def end_war(game, war):
             who = f'{heir.first}, the heir of {lose.short},' if heir and heir.alive else 'a royal child'
             text = f'Peace between {a.short} and {b.short}: {who} goes to the court of {win.short} as a hostage.'
     news(game, text, x, y, title=f'The peace of {a.short} and {b.short}')
+    if win:
+        win.won_day = game.day                       # its towns keep a feast (townlife.py)
     for kg in (a, b):
         for st in game.world.settlements:
             if st.region in R.baronies and R.baronies[st.region].kingdom == kg.id and st.event and st.event[0] == 'war':

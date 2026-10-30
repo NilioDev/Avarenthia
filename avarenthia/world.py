@@ -406,6 +406,8 @@ def gen_world(game):
         EP.place(game, m, world, reach_set)             # the teachers of the epics, last, with dice of their own
         from . import shadow as SH
         SH.setup(game, m, world, reach_set)              # the Hollow King's coast and the lieutenants, with dice of their own
+        from . import townlife as TL
+        TL.place_shanties(game, m, world)               # outside the human cities, with dice of their own
         return m, world
     raise RuntimeError('World generation failed')
 

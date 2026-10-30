@@ -655,6 +655,12 @@ class GameScreen(Screen):
             lab = '· market day ' if day == 'market' else '· rest day '
             cv.text(x, MAP_H, lab, GOLD if day == 'market' else DIM, BG)
             x += len(lab)
+        from . import feasts as FEA
+        fl = FEA.label(g) if m.kind == 'town' else None
+        if fl:                                          # a feast day here
+            lab = f'· {fl} '
+            cv.text(x, MAP_H, lab, GOLD, BG)
+            x += len(lab)
         if m.kind in ('over', 'wild') and not getattr(m, 'underground', False):
             wx, wy = g.world_pos()
             n = danger_blocks(g.world.danger_at(wx, wy))
@@ -710,6 +716,9 @@ class GameScreen(Screen):
         zone = getattr(m, 'zone', None) is not None
         zseason = SE.Now(g) if zone else None
         zmarks = getattr(m, 'marks', None) if zone else None
+        from . import townlife as TLF
+        tlf = TLF.frame(g, m) if m.kind == 'town' else None
+        tl_tiles = TLF.tiles(tlf) if tlf else ()
         fires = getattr(g.world, 'fires', None) if season else None
         beam = getattr(m, 'beacon', None) if m.kind == 'town' and TW.lamp_light(g) > 0 else None
         self.weather = wk = WX.shown(g)
@@ -764,6 +773,8 @@ class GameScreen(Screen):
                     ch, fg, bg = SE.look(g, m, i, (ch, fg, bg), season, t)
                     if fires and v and i in fires:
                         self.moving = True
+                elif tlf and m.t[i] in tl_tiles:
+                    ch, fg, bg = TLF.look(g, m, i, (ch, fg, bg), tlf)
                 elif zseason:
                     ch, fg, bg = ZN.look(g, m, i, (ch, fg, bg), zseason)
                     if zmarks and (mx, my) in zmarks:

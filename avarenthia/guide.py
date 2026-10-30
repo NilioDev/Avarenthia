@@ -140,6 +140,7 @@ TIPS = {
     'red': 'Tip: red ground shows where a great blow will land. A number counts the turns left.',
     'shut': 'Tip: the way is shut until it falls. Look for the one way out.',
     'skyseat': 'Tip: one skipper dares the whirlpool, on the harbour nearest his coast. Walk into him with a relic in your pack.',
+    'feast': 'Tip: on a feast day someone in the square keeps the feast; walk into them to join in.',
     'wagon': 'Tip: your wagons follow you on the world map; > takes you down to them, and walking into the lead wagon sees to the caravan.',
     'shadow': 'Tip: e, then the Shadow tab, keeps what you know of the Hollow King and his servants; on the map, 7 shows their marks.',
 }

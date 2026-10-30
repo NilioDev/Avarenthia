@@ -285,7 +285,9 @@ def over(game, x, y):
                                            'glade': 'An elven glade, hidden deep in the wood. Its path shows only to those who have walked it.',
                                            'gnomes': 'A gnome hamlet under the roots of great trees, far from the roads of the big folk.',
                                            'oasis': 'An oasis: a spring and palms. A caravan camps by the water, with a trader.',
-                                           'shieling': 'A herders\' summer hut on the mountain meadow, and a fold full of goats.'}[site.kind]]
+                                           'shieling': 'A herders\' summer hut on the mountain meadow, and a fold full of goats.',
+                                           'shanty': 'A shanty camp outside the city walls: lean-tos of hides and driftwood, '
+                                                     'where the half-orcs and goblins live whom the city does not let in.'}[site.kind]]
     h = w.hold_at(x, y)
     if h:
         return h.title, D.FACTIONS[h.faction]['fg'], [f"A {h.kind} of {D.FACTIONS[h.faction]['name']}, garrison {h.garrison}."]
