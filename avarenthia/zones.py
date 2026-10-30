@@ -493,6 +493,8 @@ def enter(game, cell, near=None):
     p.x, p.y = free_near(game, m, tx, ty)
     _seen_over(game, cell)
     sync_wanderers(game)
+    from . import caravan as CV
+    CV.place(game, m)
     game.compute_fov()
     from . import guide as GD
     GD.tip(game, 'land')
@@ -567,10 +569,14 @@ def recentre(game, m, cell):
     esc = MS.escort_wanderer(game)
     if esc:
         esc.x, esc.y = cell
+    from . import caravan as CV
     if game.encounter is not None or getattr(game, 'zone_fight', False):
         if left_foes:
             game.msg('You leave them behind.', 'info')
+            CV.after_fight(game, fled=True)
         game.resolve_encounter()
+    elif CV.get(p) and CV.get(p)['at'] is not None:
+        CV.place(game, m)
     sync_wanderers(game)
     game.compute_fov()
 
@@ -740,6 +746,8 @@ def tick(game):
             return
     if game.turn % 10 == 0:
         sync_wanderers(game)
+    from . import caravan as CV
+    CV.follow(game, m)
 
 
 def end_fight(game, m):

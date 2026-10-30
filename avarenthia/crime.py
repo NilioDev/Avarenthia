@@ -208,11 +208,13 @@ def rob_caravan(game, wd):
     p = game.player
     s = game.world.settlements[wd.origin]
     lvl = max(3, game.world.danger_at(wd.x, wd.y) + 1)
-    guards = random.randint(2, 4)
+    guards = random.randint(2, 4) + getattr(s, 'caravan_guards', 0)     # towns robbed before send more swords
     wd.group = dict(keys=['merchant'] + ['mercenary'] * guards, lvl=lvl, elite=0, leader=None, faction=s.faction)
     wd.hostile = True
     wd.robbed = True
     commit(game, 30, 'robbing a caravan', 1.0, (wd.x, wd.y))
+    from . import caravan as CV
+    CV.robbed(game, wd)
     game.start_encounter(wd)
 
 

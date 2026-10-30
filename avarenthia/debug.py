@@ -748,7 +748,8 @@ def finish_job(game, mi, ok=True):
 
 EVENTS = [('pirates', 'A pirate ship sets sail'), ('ship', 'A merchant ship sets sail'),
           ('raid', 'A war party of the raiders sets out'), ('rivals', 'Rival adventurers set out'),
-          ('warband', 'A warband marches on a hold')]
+          ('warband', 'A warband marches on a hold'), ('wagons', 'Three wagons of your own join you'),
+          ('wagonraid', 'Robbers fall on your wagons'), ('league', 'A League caravan races you')]
 
 
 def force_event(game, kind):
@@ -774,6 +775,31 @@ def force_event(game, kind):
         w.wanderers = [x for x in w.wanderers if x.kind != 'rivals']
         LV.spawn_rivals(game)
         wd = next((x for x in w.wanderers if x.kind == 'rivals'), None)
+    elif kind in ('wagons', 'wagonraid'):
+        from . import caravan as CV
+        p = game.player
+        for k in ('mule', 'cart'):
+            if k not in p.mounts:
+                p.mounts.append(k)
+        if not CV.get(p) or kind == 'wagons':
+            p.gold += 3 * (CV.WAGON_PRICE + CV.BEASTS['ox']['price'])
+            p.caravan = None
+            for b in ('mule', 'ox', 'mule'):
+                CV.buy_wagon(game, b)
+        if game.here is not None:
+            CV.on_enter_town(game, game.here)
+        if kind == 'wagonraid' and game.cur == 'over':
+            CV.raid(game)
+        game.msg('Debug: your wagons.', 'info')
+        return None
+    elif kind == 'league':
+        from . import caravan as CV
+        s = game.here or (w.settlements[0] if game.cur != 'over' else game.world.settlement_at(*game.over_pos))
+        if s and s.market:
+            g = next((k for k in s.market if any(k in o.demand for o in w.settlements if o.id != s.id)), None)
+            if g:
+                CV.race(game, s, g, 25, anywhere=True)
+                wd = next((x for x in w.wanderers if getattr(x, 'rival', False) and x.origin == s.id), None)
     elif kind == 'warband':
         from . import war as WAR
         n = len(w.wanderers)

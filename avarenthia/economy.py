@@ -132,7 +132,9 @@ def fair_day(game, s):
 
 
 def cargo_capacity(p):
-    return D.BASE_CARGO + sum(D.MOUNTS[k]['cap'] for k in p.mounts) + (20 if getattr(p, 'race', '') == 'dwarf' else 0)
+    from . import caravan as CV
+    return D.BASE_CARGO + sum(D.MOUNTS[k]['cap'] for k in p.mounts) + (20 if getattr(p, 'race', '') == 'dwarf' else 0) \
+        + CV.capacity(p)
 
 
 def cargo_weight(p):
@@ -165,6 +167,15 @@ def buy(game, s, g, n=1):
         old = p.cost_basis.get(g, 0) * (have - done)
         p.cost_basis[g] = (old + spent) / have
         game.msg(f"You buy {done} {D.GOODS[g]['name']} for {fmt(spent)}.", 'gold')
+        load = p.__dict__.setdefault('loads', {})
+        k = f'{s.id}:{g}:{game.day}'
+        before = load.get(k, 0)
+        if len(load) > 40:
+            load.clear()
+        load[k] = before + done
+        if before < 20 <= load[k]:
+            from . import caravan as CV
+            CV.race(game, s, g, load[k])                # a big load: a League caravan races you to the market
     elif units(s, g) < 1:
         game.msg(f"{s.name} has no {D.GOODS[g]['name']} left to sell.", 'bad')
     elif free_cargo(p) < D.GOODS[g]['w']:

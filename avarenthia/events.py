@@ -677,9 +677,15 @@ def r_traveller_job(game, choice, ctx):
 def talk_caravan(game, wd):
     g, q = wd.goods
     dest = game.world.settlements[wd.dest].name
-    ask(game, 'caravan', 'A merchant caravan', f'A string of mules and wagons with {q} {D.GOODS[g]["name"].lower()}, bound for {dest}. '
-        f'A merchant rides up front; hired swords walk beside the wagons and watch you closely.',
-        [('Ask the merchant for news', 'news'), ('Rob the caravan', 'rob'), ('Let them pass', 'leave')], wd=wd.id)
+    from .money import fmt
+    home = game.world.settlements[wd.origin].name
+    fare = 50 + max(1, len(wd.path) - wd.path_i) * 4
+    league = ' It flies the League\'s pennant: a rival.' if getattr(wd, 'rival', False) else ''
+    ask(game, 'caravan', 'A League caravan' if league else 'A merchant caravan',
+        f'A string of mules and wagons with {q} {D.GOODS[g]["name"].lower()}, bound for {dest}. '
+        f'A merchant rides up front; hired swords walk beside the wagons and watch you closely.{league}',
+        [(f'Trade with the merchant, at {home} prices', 'trade'), (f'Walk with them to {dest} ({fmt(fare)})', 'along'),
+         ('Ask the merchant for news', 'news'), ('Rob the caravan', 'rob'), ('Let them pass', 'leave')], wd=wd.id)
 
 
 def r_caravan(game, choice, ctx):
@@ -689,6 +695,11 @@ def r_caravan(game, choice, ctx):
     if choice == 'news':
         from . import news as NW
         game.say_text('The merchant', NW.trade_gossip(game))
+    elif choice == 'trade':
+        game.request = ('market', wd.origin)
+    elif choice == 'along':
+        from . import caravan as CV
+        CV.walk_along(game, wd)
     elif choice == 'rob':
         from .crime import rob_caravan
         rob_caravan(game, wd)

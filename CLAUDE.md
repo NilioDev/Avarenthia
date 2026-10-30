@@ -40,7 +40,7 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
 ## Code map (biggest files first)
 - `avarenthia/ui.py` all screens; `engine.py` game rules; `towns.py` settlement maps; `citygrow.py` the human cities and the metropolis, grown like old towns (`rules` = the city rules, test `city_rules`); `folktowns.py` the dwarf, halfling and half-orc towns and the peoples' bridges on the land; `weather.py`; `world.py`;
   `terrain.py` (climate, rivers, wonders); `heightmap.py` (the shape of the land: Azgaar-like templates); `data.py` tiles, monsters, items; `missions.py` jobs; `jobs.py` the many job kinds (round 4); `guilds.py`; `mercs.py` hirelings and threat;
-  `news.py` news through people; `harbour.py`; `hidden.py` old ways; `lifeskills.py` fishing etc.
+  `news.py` news through people; `harbour.py`; `caravan.py` your own wagons and the road with the NPC caravans (trade part 3, state on `p.caravan`); `hidden.py` old ways; `lifeskills.py` fishing etc.
   `folk.py` the peoples' own lands (halfling country and hill homes, hidden elven glades, the city under the Elder Tree,
   gnome hamlets); `tribes.py` hostile peoples' camps (warn, then rouse; captives; kobold toll); `deephold.py` dwarf holds,
   villages, mines (`dress_mine`), digging (`mining` life skill) and the cart line.

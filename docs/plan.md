@@ -18,7 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026), archaeology too (30 October 2026); the rest is not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
-| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026, part 2, goods and ways, built 30 October 2026; not built: round 26 and the great fair with the feast days in 28 |
+| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026, parts 2 and 3, goods and ways and the caravans, built 30 October 2026; not built: the great fair with the feast days in 28 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -62,9 +62,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 23. **Boss fights part C** (L). Built 30 October 2026 (see `docs/built.md`). Pause after 19, 20, 21 and 22, merge
     after 23.
 24. **Cities that grew, part 1** (XL). Built 30 October 2026 (see `docs/built.md`).
-25. **Part 2** (L). Built 30 October 2026 (see `docs/built.md`). 26. **Trade part 3: caravans** (L): your
-    own caravan (wagons, crew, the road, raids, stables in the grown cities) and the NPC caravans' new parts (travel
-    along, trade on the road, League rivals, robbing has weight). 27. **Round 6** (L): it lives in the new city maps,
+25. **Part 2** (L). Built 30 October 2026 (see `docs/built.md`). 26. **Trade part 3: caravans** (L). Built 30
+    October 2026 (see `docs/built.md`). 27. **Round 6** (L): it lives in the new city maps,
     and refugees from the great evils fill them. 28. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`) and trade's great fair. Pause after 24, 26 and 27, merge after 28.
 29. **Old places part B and the 44 places of the peoples and powers** (XL), with the caravanserai for the caravans.
     30. **Places 45-64 and the seasonal places** (L). Merge after 30.
@@ -282,7 +281,7 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 
 ---
 
-## Trade as a way to play (approved 25 October 2026; rounds 14 and 22 built, not built: 26 and the great fair in 28)
+## Trade as a way to play (approved 25 October 2026; rounds 14, 22 and 26 built, not built: the great fair in 28)
 
 Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
 want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
@@ -300,26 +299,7 @@ the first short trips always pay a little.
 barter, monster goods, spoiling, need far away, contraband, war trade, market news, rank with the Merchant League. Still
 here for later: the great fair (with the feast days, round 28).
 
-**Your own caravan.**
-- Buy a wagon at a wagonmaker: up to 3 (more with League rank), ~150 cargo each, each needs a mule or an ox (the ox
-  pulls more and walks slower). The wagons follow you on the world map as a string ♦♦♦. It lives on the player.
-- Crew: a driver per wagon on a weekly wage, guards from the hirelings (`mercs.py`). A steady cost, so a money sink too.
-- The road matters: slow, slower off the road; no snowed-in passes, stuck in spring mud, no high fords; a ferry costs
-  per wagon. You choose your route.
-- Upkeep: the beasts eat fodder (grain from the cargo); now and then a wheel breaks: bump the wagon, mend it with Tools.
-- At night the wagons stand in a ring on the map; a round of drink (brewing) keeps the crew glad; night raids happen.
-- Raids: bandits, raiders or desert riders ask a toll or attack: a small fight map where the wagons give cover (like
-  the pirates' deck). A wagon that falls loses its cargo.
-- Bump the lead wagon: make camp, leave the caravan in a stable or caravanserai, look at the cargo, pay the crew. You go
-  into a dungeon without it; it waits.
-- Your caravan gets a name and people talk of it.
-
-**The NPC caravans** (they exist: a town with plenty sends up to 40 of a good to the town that lacks it most; bandits
-and armies at war fall on them; a robbed one never arrives, so prices stay high there). New:
-- Travel along: pay a caravan to walk with its guards. Safe and slow, for a beginner without a wagon.
-- Trade on the road: bumping a caravan also offers buy or sell, at its home town's prices.
-- Rivals: League caravans race you; if they arrive first your cargo is worth less. You see them on the road.
-- Robbing has weight: prices rise in that town, towns send more guards along, the Watch looks for you.
+**Your own caravan and the NPC caravans:** built 30 October 2026 (round 26, see `docs/built.md`).
 
 UI: named goods stand by their own name in the market list; the caravan is a sign on the world map named by
 `guide.py`; its choices are one `EV.ask`; each new key gets one first-time tip. The handbook's trade chapter grows with it.

@@ -1191,6 +1191,15 @@ class GameScreen(Screen):
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (h.x, h.y) != (p.x, p.y) and HTM.seen_herd(g, h):
                 ch, fg = HTM.look(g, h)
                 cv.put(vx, vy, ch, fg, (30, 26, 16))
+        # your own wagons: the string behind you, or where they wait
+        from . import caravan as CVN
+        car = CVN.get(p)
+        if car and car['wagons']:
+            spots = list(car['trail']) if car['at'] is None else ([tuple(car['at'][1:])] if car['at'][0] == 'xy' else [])
+            for hx, hy in spots:
+                vx, vy = hx - ox, hy - oy
+                if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (hx, hy) != (p.x, p.y) and g.visible(hx, hy):
+                    cv.put(vx, vy, '♦', CVN.FG)
         # travellers
         for wd in w.wanderers:
             if not g.visible(wd.x, wd.y):
@@ -5236,9 +5245,10 @@ class BrewScreen(Modal):
 
 class StablesScreen(Modal):
     def render(self, cv):
+        from . import caravan as CV
         g = self.game
         p = g.player
-        x, y = self.box(cv, 64, 12, 'Stables')
+        x, y = self.box(cv, 72, 22, 'Stables')
         cv.text(x + 2, y + 1, f'"Need something to carry your goods?"   Purse {fmt(p.gold)}', DIM, PANEL)
         for i, k in enumerate(('mule', 'cart')):
             mt = D.MOUNTS[k]
@@ -5246,15 +5256,45 @@ class StablesScreen(Modal):
             owned = k in p.mounts
             cv.text(x + 2, yy, LETTERS[i], GOLD, PANEL)
             cv.text(x + 4, yy, mt['name'], FG if not owned else DIM, PANEL)
-            cv.text_right(x + 60, yy, 'owned' if owned else fmt(mt['price']), DIM if owned else GOLD, PANEL)
+            cv.text_right(x + 68, yy, 'owned' if owned else fmt(mt['price']), DIM if owned else GOLD, PANEL)
             cv.text(x + 4, yy + 1, mt['desc'], DIM, PANEL)
-        cv.text(x + 2, y + 9, f'Your cargo space: {ECO.cargo_capacity(p)}', FG, PANEL)
-        cv.text_center(W // 2, y + 11, ' a/b: buy · Esc: leave ', DIM, PANEL)
+        car = CV.get(p)
+        n = len(car['wagons']) if car else 0
+        can = 'cart' in p.mounts and n < CV.most(g)
+        for i, k in enumerate(('mule', 'ox')):
+            bt = CV.BEASTS[k]
+            yy = y + 9 + i * 3
+            price = CV.WAGON_PRICE + bt['price']
+            col = FG if can and p.gold >= price else DIM
+            cv.text(x + 2, yy, LETTERS[2 + i], GOLD, PANEL)
+            cv.text(x + 4, yy, f'A wagon with {"a mule" if k == "mule" else "an ox"}', col, PANEL)
+            cv.text_right(x + 68, yy, fmt(price), GOLD if col == FG else DIM, PANEL)
+            cv.text(x + 4, yy + 1, f'Carries {bt["cap"]}{", slower on the road" if bt["slow"] > 1 else ""}. '
+                    f'A driver at {fmt(CV.WAGE)} a week. Needs the cart.', DIM, PANEL)
+        here = g.here
+        if car and here is not None and car['at'] == ('s', here.id):
+            cv.text(x + 2, y + 15, 'e', GOLD, PANEL)
+            cv.text(x + 4, y + 15, f'Take {car["name"]} out of the stables', FG, PANEL)
+        cv.text(x + 2, y + 17, f'Your cargo space: {ECO.cargo_capacity(p)}', FG, PANEL)
+        cv.text(x + 2, y + 18, f'Wagons: {n} of {CV.most(g)}', FG, PANEL)
+        cv.text_center(W // 2, y + 21, ' a-e: buy · Esc: leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
+        from . import caravan as CV
+        from . import guide as GD
         g = self.game
         if tok == 'esc':
             self.app.pop()
         elif tok in ('a', 'b'):
             g.log_mark = len(g.log)
             g.buy_mount('mule' if tok == 'a' else 'cart')
+        elif tok in ('c', 'd'):
+            g.log_mark = len(g.log)
+            if CV.buy_wagon(g, 'mule' if tok == 'c' else 'ox'):
+                GD.tip(g, 'wagon')
+                CV.on_enter_town(g, g.here)
+        elif tok == 'e':
+            car = CV.get(g.player)
+            if car and g.here is not None and car['at'] == ('s', g.here.id):
+                car.pop('kept', None)
+                g.msg('Your wagons will be ready at the gate when you leave.', 'info')

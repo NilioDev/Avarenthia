@@ -52,6 +52,17 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Bridges on the land** - each people's look where a road crosses a river; a human bridge with a fallen span and
   its ford. Debug: Teleport near a river crossing, then [>] into the land.
 
+## Trade part 3: caravans (built 30 October 2026)
+
+- **Your wagons** - buying a wagon with a mule or an ox at the stables (needs the cart), the string of ♦ on the map,
+  the stables in town, waiting outside a dungeon. Debug: Force an event, "Three wagons of your own join you"; coin.
+- **The road** - slower off the road, no fords or swamps, the beasts eating grain, a broken wheel, spring mud, the
+  wages. Debug: Time (days ahead, spring).
+- **Raids and the land** - the toll or the fight among the wagons, the ring at night, walking into the lead wagon
+  (mend, pay, camp, leave, take). Debug: "Robbers fall on your wagons" on the world map, then [>].
+- **The NPC caravans** - walking along, trading on the road, the League racer, robbing one. Debug: "A League
+  caravan races you" in a town.
+
 ## Boss fights part C: the boss maker (built 30 October 2026)
 
 - **Job bosses** - "A price on a head" on a town board or from the captain, the rumour in the job, the fight with

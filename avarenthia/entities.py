@@ -454,6 +454,7 @@ class Player:
         self.cost_basis = {}    # trade good -> average purchase price
         self.parcels = []       # job cargo: dict(mid, name, w)
         self.mounts = []        # 'mule', 'cart'
+        self.caravan = None     # your own wagons (caravan.py)
         self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
         self.deaths = 0
         self.life_sk = {'fishing': [0, 0]}     # life skills: rank, progress

@@ -8034,7 +8034,7 @@ def city_rules():
         assert not (t == D.BRIDGE).any(), (x, y)
         st = FT.people_at(g, x, y)
         styled.add(st)
-        for par in (D.PARAPET, D.GPARAPET, D.LEAFRAIL, D.FLOWERBOX):
+        for par in (D.BPARAPET, D.GPARAPET, D.LEAFRAIL, D.FLOWERBOX):
             ys, xs = np.nonzero(t == par)
             for py, px in zip(ys.tolist(), xs.tolist()):
                 assert any(int(t[py + b, px + a]) in decks for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1),
@@ -8047,6 +8047,138 @@ def city_rules():
     print('city_rules ok')
 
 
+def caravans():
+    """Trade part 3: your own wagons (buy, carry, follow, stables, fodder, wages, raids, the wagons on the land,
+    camp) and the NPC caravans (walk along, trade, the League's race, robbing one)."""
+    import pickle
+    from avarenthia import caravan as CV, economy as ECO, events as EV, wanderers as WA, zones as ZN
+    from avarenthia.canvas import Canvas
+    print('== caravans')
+    random.seed(26)
+    app = new_app('soft', 2626)
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 10 ** 7
+    s = next(t for t in w.settlements if 'stables' in t.services and t.market)
+    to_over(g, s.id)
+    g.enter_town(s.id)
+    assert not CV.buy_wagon(g, 'mule'), 'a wagon needs the cart first'
+    p.mounts = ['mule', 'cart']
+    base = ECO.cargo_capacity(p)
+    app.push(ui.StablesScreen(app))
+    Canvas.cut = []
+    app.render()
+    app.key('c')
+    app.render()
+    app.key('d')
+    app.render()
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    app.pop()
+    cv = p.caravan
+    assert [x['beast'] for x in cv['wagons']] == ['mule', 'ox'], cv['wagons']
+    assert cv['at'] == ('s', s.id), 'bought wagons go to the stables'
+    assert ECO.cargo_capacity(p) == base, 'wagons in the stables carry nothing for you'
+    for _ in range(CV.most(g)):
+        CV.buy_wagon(g, 'mule')
+    assert len(cv['wagons']) == CV.most(g)
+    gold = p.gold
+    g.turn += 2 * D.DAY_LEN
+    g.leave_to_over()
+    assert CV.with_you(p) and p.gold < gold, 'out of the stables, for a fee'
+    assert ECO.cargo_capacity(p) == base + CV.capacity(p) > base
+    assert CV.slow(p) == 1.35, 'the ox sets the pace'
+    # the string of wagons follows on the world map
+    m = g.maps['over']
+    for _ in range(6):
+        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1)):
+            nx, ny = p.x + dx, p.y + dy
+            if m.inb(nx, ny) and not w.settlement_at(nx, ny) and D.TILES[m.tile(nx, ny)].walk and not CV.blocked(g, nx, ny) \
+                    and m.tile(nx, ny) != D.WATER:
+                g.player.x, g.player.y = nx, ny
+                g.over_pos = (nx, ny)
+                CV.over_step(g)
+                break
+    assert cv['trail'] and len(cv['trail']) <= len(cv['wagons']), cv['trail']
+    g.pending = None
+    rx = next(((x, y) for y in range(m.h) for x in range(m.w) if m.tile(x, y) == D.RIVER), None)
+    if rx:
+        assert CV.blocked(g, *rx)
+    # the beasts eat, the drivers want their wages
+    p.cargo.clear()
+    p.cargo['grain'] = 10
+    cv['day'] = g.day - 1
+    CV._days(g)
+    assert p.cargo['grain'] == 10 - len(cv['wagons']) and not cv['hungry']
+    p.cargo.clear()
+    cv['day'] = g.day - 1
+    CV._days(g)
+    assert cv['hungry'] and CV.slow(p) > 1.35
+    p.gold = 0
+    cv['week'] -= 1
+    CV._days(g)
+    cv['week'] -= 1
+    CV._days(g)
+    assert cv['owed'] >= CV.WAGE * len(cv['wagons']) * 2 and not CV.with_you(p), 'unpaid drivers stop'
+    p.gold = 10 ** 7
+    CV.r_wagon(g, 'pay', {})
+    CV.r_wagon(g, 'take', {})
+    assert CV.with_you(p) and not cv['owed']
+    # a raid: the toll, or a fight among the wagons
+    p.cargo['wine'] = 20
+    CV.raid(g)
+    assert g.pending and g.pending['key'] == 'wagon_raid'
+    gold = p.gold
+    EV.resolve(g, 'pay')
+    assert p.gold < gold and CV.with_you(p)
+    CV.raid(g)
+    EV.resolve(g, 'fight')
+    assert cv['raid'] and g.cur == ZN.KEY, g.cur
+    wagons = [o for o in g.map.mons if getattr(o, 'role', '') == 'wagon']
+    assert len(wagons) == len(cv['wagons']), 'the wagons stand round you'
+    CV.wagon_hit(g, wagons[0])
+    assert any(x['broken'] for x in cv['wagons'])
+    CV.talk(g, wagons[0])
+    keys = [k for _, k in g.pending['options']]
+    assert 'mend' in keys and 'camp' in keys and 'leave' in keys, keys
+    EV.resolve(g, 'mend')
+    assert not any(x['broken'] for x in cv['wagons'])
+    wine = p.cargo.get('wine', 0)
+    CV.after_fight(g, fled=True)
+    assert p.cargo.get('wine', 0) < wine, 'run from robbers, and they take a load'
+    g.pending = None
+    # left to wait, found again
+    CV.r_wagon(g, 'leave', {})
+    assert cv['at'] is not None and cv.get('kept')
+    CV.r_wagon(g, 'take', {})
+    assert CV.with_you(p)
+    # the NPC caravans: walk along, a League rival, robbing one
+    g.leave_to_over() if g.cur != 'over' else None
+    g.pending = None
+    to_over(g, s.id)
+    cv['trail'], cv['last'] = [], (p.x, p.y)
+    good = next(k for k in s.market if ECO.units(s, k) >= 1 and any(k in o.demand for o in w.settlements if o.id != s.id))
+    g.enter_town(s.id)
+    before = len(w.wanderers)
+    CV.race(g, s, good, 25)
+    rival = [x for x in w.wanderers if getattr(x, 'rival', False)]
+    assert len(w.wanderers) == before + 1 and rival and rival[0].origin == s.id, 'a League caravan races you'
+    wd = rival[0]
+    wd.path_i = 0
+    gold = p.gold
+    g.leave_to_over()
+    CV.walk_along(g, wd)
+    dest = w.settlements[wd.dest]
+    assert (p.x, p.y) == (dest.x, dest.y) and p.gold < gold
+    wd2 = WA.Wanderer(g.new_id(), 'caravan', s.x, s.y)
+    wd2.origin, wd2.dest, wd2.goods = s.id, dest.id, (good, 10)
+    CV.robbed(g, wd2)
+    assert s.caravan_guards == 1
+    pickle.dumps(g)
+    print('caravans ok:', cv['name'], len(cv['wagons']), 'wagons')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8056,7 +8188,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

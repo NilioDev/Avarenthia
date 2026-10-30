@@ -600,14 +600,14 @@ def orc_town(c, roads, top=0):
 
 # ---------------------------------------------------------------- bridges on the open land
 STYLE_TILES = {          # people: (deck, parapet, what stands at each end)
-    'human': (D.SDECK, D.PARAPET, None),
+    'human': (D.SDECK, D.BPARAPET, None),
     'trestle': (D.TRESTLE, None, None),
     'dwarf': (D.GDECK, D.GPARAPET, D.BRAZIER),
     'elf': (D.ROOTDECK, D.LEAFRAIL, D.GLOWMOSS),
     'halfling': (D.SDECK, D.FLOWERBOX, None),
-    'gnome': (D.COPPERDECK, D.PARAPET, None),
+    'gnome': (D.COPPERDECK, D.BPARAPET, None),
     'tribe': (D.LOGDECK, None, D.STAKES),
-    'lizard': (D.REEDS, None, None),
+    'lizard': (D.RWALK, None, None),
 }
 TRIBES = {'warcamp': 'tribe', 'ravine': 'tribe', 'kobolds': 'tribe', 'gnolls': 'tribe', 'stilts': 'lizard'}
 

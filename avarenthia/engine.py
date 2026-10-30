@@ -38,6 +38,7 @@ from . import foraging as FG
 from . import mastery as MA
 from . import archaeology as AR
 from . import tradegoods as TG
+from . import caravan as CV
 from . import bossmaker as MK  # noqa: F401  (registers the job bosses)
 from . import ai as AI
 from . import weather as WX
@@ -87,7 +88,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 56
+SAVE_VERSION = 57
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -656,6 +657,8 @@ class Game:
         p = self.player
         follow = BS.leaving(self) if self.cur != 'over' else []     # a roaming boss that hunts you follows
         dg = self.world.dungeons[did]
+        if self.cur in ('over', ZN.KEY):
+            CV.on_enter_place(self, dg.x, dg.y)
         if any(getattr(q, 'did', None) == did and q.kind == 'graveyard' for q in self.world.pois):
             GU.on_graveyard(self)
         if self.cur == 'over':
@@ -736,6 +739,7 @@ class Game:
         m = self.map
         if getattr(m, 'zone', None) is not None:
             if self.encounter is not None or getattr(self, 'zone_fight', False):
+                CV.after_fight(self, fled=bool(ZN.foes_left(m)))
                 self.resolve_encounter()
             ZN.leave(self)
         elif m.kind == 'wild':
@@ -762,6 +766,7 @@ class Game:
         if esc and (esc.x, esc.y) != (p.x, p.y) and cheb(esc.x, esc.y, p.x, p.y) > 1:
             esc.x, esc.y = p.x, p.y
         self.msg(f'You are back on the road, in {self.loc_name()}.')
+        CV.on_back(self)
         self.compute_fov()
         self.request = ('save',)
 
@@ -782,6 +787,7 @@ class Game:
 
     def _resolve_encounter(self, m):
         NM.after_fight(self)
+        CV.after_fight(self)
         wd = next((x for x in self.world.wanderers if x.id == self.encounter), None)
         self.encounter = None
         JB.after_fight(self, m)
@@ -820,6 +826,8 @@ class Game:
         s = self.world.settlements[sid]
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
+        if self.cur in ('over', ZN.KEY):
+            CV.on_enter_town(self, s)
         if s.map_key not in self.maps:
             self.maps[s.map_key] = TW.gen_settlement_map(self, s)
         self.cur = s.map_key
@@ -873,6 +881,8 @@ class Game:
         site = self.world.sites[sid]
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
+        if self.cur in ('over', ZN.KEY):
+            CV.on_enter_place(self, site.x, site.y)
         if TR.is_camp(site) and TR.stale(self, site):
             self.maps.pop(site.map_key, None)          # the camp has calmed down and rebuilt what you broke
         if PL.is_place(site) and site.map_key in self.maps and PL.stale(self, site, self.maps[site.map_key]):
@@ -1089,7 +1099,7 @@ class Game:
             return 1
         t = m.tile(nx, ny)
         if m.kind == 'over':
-            why = SE.blocked(self, nx, ny)
+            why = SE.blocked(self, nx, ny) or CV.blocked(self, nx, ny)
             if why:
                 self.msg(why, 'info')
                 return 0
@@ -1340,9 +1350,13 @@ class Game:
         old_way = HP.on_way(self, p.x, p.y)
         cost = round(SE.cost(self, LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost))
                      * WX.travel_factor(self) * (.8 if any(b[0] == 'swift' for b in p.buffs) else 1) * CRF.road_boots(self, t))
+        cost = round(CV.cost(self, cost, t))
         WX.strike(self)
         if self.dead:
             return cost
+        spent = CV.over_step(self)
+        if spent:
+            return spent
         w = self.world
         reg = w.region_at(p.x, p.y)
         off = w.off_road(p.x, p.y)
@@ -2450,14 +2464,17 @@ class Game:
         if d['erratic'] and random.random() < .5:
             self.random_step(mon)
             return
-        esc = next((o for o in m.mons if o.role == 'escort'), None)
+        esc = next((o for o in m.mons if o.role == 'escort' or o.role == 'wagon' and getattr(self, 'zone_fight', False)), None)
         if esc and cheb(mon.x, mon.y, esc.x, esc.y) < dist:
             if cheb(mon.x, mon.y, esc.x, esc.y) <= 1:
                 if random.random() < .7:
                     dmg = random.randint(*mon.dmg)
                     esc.hp -= dmg
                     self.num(esc.x, esc.y, f'-{dmg}', C_HURT)
-                    if esc.hp <= 0:
+                    if esc.hp <= 0 and esc.role == 'wagon':
+                        esc.hp = esc.maxhp
+                        CV.wagon_hit(self, esc)
+                    elif esc.hp <= 0:
                         m.mons.remove(esc)
                         if esc.name == 'Your caravan':
                             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} destroys your caravan!', 'bad')
@@ -3072,7 +3089,7 @@ class Game:
         from . import mercs as MC
         guard = MC.on_watch(self)
         beasts = risk * (.4 if fire else 1) * (.6 if near_road else 1.2)
-        robbers = risk * (1.7 if fire else .8) * (1.4 if near_road else .7)
+        robbers = risk * (1.7 if fire else .8) * (1.4 if near_road else .7) * CV.robbers_drawn(self)
         thief = risk * .5 * (.2 if guard else 1)
         if self.cur not in ('over', ZN.KEY):
             beasts = robbers = 0
@@ -3097,6 +3114,7 @@ class Game:
                 self.start_encounter(None, self.maps['over'].tile(ox, oy), danger + 1, pack, 0)
         elif r < beasts + robbers:
             pack = ['bandit'] + [random.choice(['bandit', 'brigand']) for _ in range(random.randint(1, 2 + danger // 3))]
+            CV.on_camp_robbers(self)
             self.msg('Shapes step out of the night around your fire: robbers, blades drawn!' if fire else
                      'Footsteps on the road, then voices: robbers have stumbled on your camp!', 'bad')
             if self.cur in ('over', ZN.KEY):
@@ -3294,6 +3312,9 @@ class Game:
         f, p = self.flags, self.player
         here = self.here
         role = npc.role
+        if role == 'wagon':
+            CV.talk(self, npc)
+            return
         m = self.map
         hid = getattr(m, 'hid', None)
         if getattr(npc, 'wd', None) is not None:

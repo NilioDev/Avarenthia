@@ -773,6 +773,46 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 - **The Rogue a little stronger** (30 October 2026, Nilio's wish after block 4). The pure Rogue's rule (`trees.RULES`)
   also gives 20% more weapon damage to a poisoned foe (`wvs` 'poisoned'), so Envenom feeds it. The balance test: the
   Rogue went from 22 to 24 of 24 waves, on the test's draw and on another.
+- **Round 26: trade part 3, caravans** (30 October 2026; `caravan.py`). Once you own the mule cart the stables
+  sell wagons (keys c and d: a mule, 150 cargo, or an ox, 210 and slower), three at most, four from League rank 6,
+  each with a driver at 15s a week (`p.caravan`). With you they add their cargo space and follow on the world map as
+  a string of ♦; off the road they cost 1.6 times the step, a broken wheel now and then, spring mud, a ford or a
+  swamp stops them; the beasts eat a grain a wagon a day (hungry: slower); unpaid two weeks, the drivers stop. Into a
+  town they go to the stables (a fee a night, key e takes them out), at a dungeon or site they wait outside and join
+  you when you come back. Raids on the road (richer load, worse land: more often; a watch of hirelings: less) ask a
+  toll (`EV.ask` 'wagon_raid') or fight on the land map among the wagons; robbers strike at the wagons too, a wagon
+  knocked over loses a share of the load, fleeing loses one. On the land the wagons stand behind you by day and in
+  a ring at night; walking into one (`EV.ask` 'wagon'): mend a wheel (tools from the cargo, or half a day), pay the
+  crew, make camp (a round of ale, wine or mead), leave the caravan, take it on. A camp with wagons draws more
+  robbers. A ferry costs 25 more a wagon. The NPC caravans: walk along for a fare (a quick journey to where it goes),
+  trade on the road at its home town's prices, a League caravan races you when you buy 20 or more of a good,
+  robbing one puts more guards on the next from its town and makes the good dearer where it went. Handbook: Trade,
+  Your own wagons. Tip 'wagon'. Debug events: wagons, a raid, a League racer. Test `caravans`. SAVE_VERSION 57.
+  Not as the spec: the wagons are sold at the stables, not a wagonmaker; walking along is one quick journey; trade on
+  the road uses the home town's market; people do not yet talk of your caravan by name (the news round).
+
+## Trade part 3: caravans (built 30 October 2026; the spec)
+
+**Your own caravan.**
+- Buy a wagon at a wagonmaker: up to 3 (more with League rank), ~150 cargo each, each needs a mule or an ox (the ox
+  pulls more and walks slower). The wagons follow you on the world map as a string ♦♦♦. It lives on the player.
+- Crew: a driver per wagon on a weekly wage, guards from the hirelings (`mercs.py`). A steady cost, so a money sink too.
+- The road matters: slow, slower off the road; no snowed-in passes, stuck in spring mud, no high fords; a ferry costs
+  per wagon. You choose your route.
+- Upkeep: the beasts eat fodder (grain from the cargo); now and then a wheel breaks: bump the wagon, mend it with Tools.
+- At night the wagons stand in a ring on the map; a round of drink (brewing) keeps the crew glad; night raids happen.
+- Raids: bandits, raiders or desert riders ask a toll or attack: a small fight map where the wagons give cover (like
+  the pirates' deck). A wagon that falls loses its cargo.
+- Bump the lead wagon: make camp, leave the caravan in a stable or caravanserai, look at the cargo, pay the crew. You go
+  into a dungeon without it; it waits.
+- Your caravan gets a name and people talk of it.
+
+**The NPC caravans** (they exist: a town with plenty sends up to 40 of a good to the town that lacks it most; bandits
+and armies at war fall on them; a robbed one never arrives, so prices stay high there). New:
+- Travel along: pay a caravan to walk with its guards. Safe and slow, for a beginner without a wagon.
+- Trade on the road: bumping a caravan also offers buy or sell, at its home town's prices.
+- Rivals: League caravans race you; if they arrive first your cargo is worth less. You see them on the road.
+- Robbing has weight: prices rise in that town, towns send more guards along, the Watch looks for you.
 
 ## Cities that grew, part 2 (built 30 October 2026; the spec)
 

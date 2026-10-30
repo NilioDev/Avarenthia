@@ -287,6 +287,9 @@ def talk_ferry(game, wd):
         return
     high = any(SE.spate(om, y * om.w + x, st) for x, y in across)
     fare = 0 if getattr(game.player, 'ferry_free', False) else 8 if high else 3
+    from . import caravan as CV
+    if CV.with_you(game.player):
+        fare += 25 * len(game.player.caravan['wagons'])      # every wagon goes over on its own
     if not fare:
         EV.ask(game, 'ferry', 'The ferryman', 'The ferryman looks at the old tally in your papers for a long time. '
                '"The Last Ferry. My grandfather\'s grandfather kept that one. Sit down. No fare from you."',

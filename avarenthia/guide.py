@@ -51,6 +51,14 @@ def in_view(g):
             if g.visible(wd.x, wd.y):
                 row = crs.setdefault(wd.name, [wd.ch, wd.fg, 0])
                 row[2] += 1
+        from . import caravan as CV
+        cvn = CV.get(p)
+        if cvn:
+            spots = list(cvn['trail']) if cvn['at'] is None else ([cvn['at'][1:]] if cvn['at'][0] == 'xy' else [])
+            for x, y in spots:
+                if g.visible(x, y):
+                    row = crs.setdefault('Your wagons', ['♦', CV.FG, 0])
+                    row[2] += 1
         for h in HT.herds(g):
             if HT.seen_herd(g, h):
                 ch, fg = HT.look(g, h)
@@ -132,6 +140,7 @@ TIPS = {
     'red': 'Tip: red ground shows where a great blow will land. A number counts the turns left.',
     'shut': 'Tip: the way is shut until it falls. Look for the one way out.',
     'skyseat': 'Tip: one skipper dares the whirlpool, on the harbour nearest his coast. Walk into him with a relic in your pack.',
+    'wagon': 'Tip: your wagons follow you on the world map; > takes you down to them, and walking into the lead wagon sees to the caravan.',
     'shadow': 'Tip: e, then the Shadow tab, keeps what you know of the Hollow King and his servants; on the map, 7 shows their marks.',
 }
 

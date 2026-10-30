@@ -478,6 +478,22 @@ def ch_jobs(g):
               'factor of the Merchant League keeps count of the profit you make. Enough of it, and the League gives '
               'you a name: Associate, Member, Master Trader, Merchant Prince. Each step makes every market a little '
               'kinder to you and the League\'s work better paid; a Merchant Prince may guard a League caravan.'),
+        ('h', 'Your own wagons'),
+        ('p', 'Once you own the mule cart, the stables sell wagons, each with a mule or an ox and a driver: three '
+              'at most, four for a Master Trader. An ox pulls more and walks slower. On the world map your wagons '
+              'follow you as a string of signs, {♦|110,226,236}, and carry cargo of their own. Each driver is paid '
+              'by the week; unpaid for two weeks, they stop the wagons and wait.'),
+        ('p', 'Wagons like the road. Off it they go slowly, in spring they stick in the mud, and now and then a wheel '
+              'breaks; a ford or a swamp stops them. The beasts eat a sack of grain from the cargo each day, and go '
+              'slower hungry. In a town the wagons go to the stables, for a small fee a night; at a dungeon they wait '
+              'outside, and join you again when you come back to them.'),
+        ('p', 'A rich load draws robbers. They ask a toll, or fall on you; the fight is on the land, among the '
+              'wagons. A wagon knocked over loses its load, and if you run, they drive one off. Take [>] down to the '
+              'land and walk into the lead wagon to make camp in a ring, stand the crew a round of ale, pay them, '
+              'mend a wheel, or leave the caravan to wait for you.'),
+        ('p', 'You can walk with the caravans of the towns, for a fare, safe among their guards, or trade with them '
+              'on the road at their home town\'s prices. Buy a big load, and a League factor may send a caravan to '
+              'the same market to be there first. Rob a caravan, and the next from its town has more guards.'),
     ]
 
 

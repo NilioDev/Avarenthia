@@ -313,8 +313,8 @@ RATHOLE, PROP, WEBS, EGGS, LIGHTSTONE, BCHAIN, BLEDGE, BANNER = range(218, 226) 
 JAR, HCAIRN = 226, 227          # the Lich's phylactery, a fallen hero's cairn (shadow.py)
 STARLINK, WEAKLINK, GLASS, CRACKGLASS, BEACON, LITBEACON, THRONE = range(228, 235)     # the Sky-Seat (skyseat.py)
 DIGSPOT = 235                   # archaeology (archaeology.py)
-(STEPS, SDECK, PARAPET, TRESTLE, GDECK, GPARAPET, BRAZIER, ROOTDECK, LEAFRAIL, GLOWMOSS, FLOWERBOX, COPPERDECK, LOGDECK,
- REEDS) = range(236, 250)        # the peoples' towns and their bridges on the land (folktowns.py)
+(STEPS, SDECK, BPARAPET, TRESTLE, GDECK, GPARAPET, BRAZIER, ROOTDECK, LEAFRAIL, GLOWMOSS, FLOWERBOX, COPPERDECK, LOGDECK,
+ RWALK) = range(236, 250)        # the peoples' towns and their bridges on the land (folktowns.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
