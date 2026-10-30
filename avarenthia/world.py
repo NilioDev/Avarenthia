@@ -408,6 +408,8 @@ def gen_world(game):
         SH.setup(game, m, world, reach_set)              # the Hollow King's coast and the lieutenants, with dice of their own
         from . import townlife as TL
         TL.place_shanties(game, m, world)               # outside the human cities, with dice of their own
+        from . import landmarks as LM
+        LM.place(game, m, world, reach_set)             # the places of today, with dice of their own
         return m, world
     raise RuntimeError('World generation failed')
 

@@ -182,6 +182,8 @@ def sail(game, dest, kind, n, armed):
         return
     p.gold -= cost
     d = days(kind, n)
+    if d > 1 and 'starpath' in p.__dict__.get('marks', {}):
+        d -= 1                                      # you know the voyagers' star chart, and the skipper listens
     game.voyage = dict(dest=dest.id, kind=kind, days=d, armed=armed)
     game.msg(f"You go aboard the {SHIPS[kind]['name']} for {dest.name}.", 'info')
     risk = SHIPS[kind]['risk'] * (.12 if armed else 1)

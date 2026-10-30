@@ -41,6 +41,7 @@ from . import tradegoods as TG
 from . import caravan as CV
 from . import townlife as TL
 from . import feasts as FE
+from . import landmarks as LM
 from . import bossmaker as MK  # noqa: F401  (registers the job bosses)
 from . import ai as AI
 from . import weather as WX
@@ -90,7 +91,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 58
+SAVE_VERSION = 59
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -890,6 +891,8 @@ class Game:
             CV.on_enter_place(self, site.x, site.y)
         if TR.is_camp(site) and TR.stale(self, site):
             self.maps.pop(site.map_key, None)          # the camp has calmed down and rebuilt what you broke
+        if LM.is_mark(site):
+            self.maps.pop(site.map_key, None)          # a place of today is laid out afresh: who is there now
         if PL.is_place(site) and site.map_key in self.maps and PL.stale(self, site, self.maps[site.map_key]):
             self.maps.pop(site.map_key, None)          # friends now, or foes: they meet you differently
             fl = getattr(site, 'floors', None)
@@ -909,6 +912,8 @@ class Game:
             NT.on_enter(self, site, m)
         if OP.is_old(site):
             OP.on_enter(self, site, m)
+        if LM.is_mark(site):
+            LM.on_enter(self, site, m)
         VN.on_enter(self, site, m)
         EP.on_enter(self, site, m)
         if SH.is_shadow(site):
@@ -1136,6 +1141,10 @@ class Game:
                 return spent
         if t == D.DIGSPOT:
             return AR.dig(self, nx, ny)
+        if getattr(m, 'lm', None):
+            spent = LM.bump(self, nx, ny)
+            if spent is not None:
+                return spent
         if getattr(m, 'old', None):
             why = OP.blocked(self, nx, ny)
             if why:
@@ -1273,6 +1282,8 @@ class Game:
             NT.on_step(self)
         if getattr(m, 'old', None):
             OP.on_step(self)
+        if getattr(m, 'lm', None):
+            LM.on_step(self)
         if getattr(m, 'vn', None):
             VN.on_step(self)
         if getattr(m, 'digs', None):
@@ -2139,6 +2150,8 @@ class Game:
             del sl[:-12]
         GD.on_kill(self, mon)
         TT.on_kill(self, mon)
+        if getattr(m, 'lm', None):
+            LM.on_kill(self, mon)
         if 'plague' in mon.effects:                    # the plague leaps to those beside it
             for o in [o for o in m.mons if not o.is_npc and cheb(o.x, o.y, mon.x, mon.y) <= 1]:
                 o.effects['poison'] = [6, mon.effects['plague'][1]]
@@ -2680,6 +2693,7 @@ class Game:
                 RL.daily(self)
                 EP.daily(self)
                 FE.daily(self)
+                LM.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -3336,6 +3350,9 @@ class Game:
             return
         if role == 'oldplace':
             OP.talk(self, npc)
+            return
+        if role == 'landmark':
+            LM.talk(self, npc)
             return
         if role == 'teacher':
             EP.talk(self, npc)

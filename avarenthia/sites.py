@@ -31,6 +31,8 @@ from .beastparts import LOOK as _BP_LOOK  # noqa: E402
 SITE_LOOK.update(_BP_LOOK)
 from .mastery import LOOK as _MA_LOOK  # noqa: E402
 SITE_LOOK.update(_MA_LOOK)
+from .landmarks import LOOK as _LM_LOOK  # noqa: E402
+SITE_LOOK.update(_LM_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns', 'The Broken Wheel', 'The Milestone',
                  'The Sleeping Dog', 'The Pilgrim\'s Staff', 'The Black Kettle']
@@ -198,6 +200,9 @@ def gen_site_map(game, site):
     if site.kind in ('master', 'lostshop'):
         from .mastery import site_map as master_map
         return master_map(game, site)
+    from . import landmarks as LM
+    if LM.is_mark(site):
+        return LM.site_map(game, site)
     if site.kind == 'shanty':
         from .townlife import shanty_map
         return shanty_map(game, site)

@@ -64,7 +64,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     October 2026 (see `docs/built.md`). 27. **Round 6** (L). Built 30 October 2026 (see
     `docs/built.md`). 28. **Feast days** (L). Built 30 October 2026 (see `docs/built.md`). Pause after 24, 26 and 27, merge after 28.
 29. **Old places part B and the 44 places of the peoples and powers** (XL), with the caravanserai for the caravans.
-    30. **Places 45-64 and the seasonal places** (L). Merge after 30.
+    Built 30 October 2026 (see `docs/built.md`). 30. **Places 45-64 and the seasonal places** (L). Merge after 30.
 31. **The great evils, part 3: the other sixteen servants** (XL), each with its lieutenants, weakness, relic and lair;
     late, because many of them live in what comes before (the Rat King in the grown cities, the Lindworm under the
     dwarves, the Wild Hunt and the Hag with the feast days). 32. **Part 4** (XL) if one round is not enough for
@@ -157,24 +157,11 @@ eerst A doen, alle ideeen klinken goed". Details and the full list (also the new
 tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
 `living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
 - Part A's old places (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages,
-  leper colonies, the peoples' marks) are built (24 October 2026), and so are the Varnish: their cities, places,
+  leper colonies, the peoples' marks) are built (24 October 2026), part B and the 44 places of the peoples and powers
+  (30 October 2026), and so are the Varnish: their cities, places,
   hidden dungeons, lore, books and riddles (25 October 2026), and archaeology (30 October 2026); specs in
   `docs/built.md`. Still to build here:
 - **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 21, 28, 29, 30).
-- **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
-  salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
-  prospectors' camp after a Starfall, a lord's hunting lodge.
-- **Places of today's peoples and powers** (all 44 approved 23 October; `poi/volken.md`), fixed in the wild:
-  the realms (a boundary stone moved at night, a lone inn on a long road, a mill, a bridge chapel, lime kilns); the
-  Church (a pilgrims' chapel up a rock, a tithe barn, a holy well, a plague cross); the Watch, companies, revolt and
-  pretender (a blockhouse with wanted posters, a company's winter quarters, an outlaws' clearing, the pretender's
-  hiding place); the witches (a cottage that heals and curses for a price that is not money, a hanging tree); raiders
-  and riders (Fjordmen's boat-sheds, a jarl's ship-setting, a desert well, a pass cairn, a wreckers' false light to put
-  out, cliff ladders, stone rows through the mist, star-path cairns); dwarves (an air shaft, a dwarf road through a
-  mountain beside the pass, a grudge stone, a sealed door); elves (a watch tree, the burned grove, a grave tree);
-  halflings (a hedge gate, a party field, pipeweed fields); gnomes (a bee garden, a lookout stump with a bell); orcs and
-  the tribes (a duel ring, a warlord's cairn, a goblin midden, a rope bridge, a kobold lure, a gnoll bone yard,
-  lizardfolk egg mounds); and for all (a shrine of a people long gone from there, a wayside market once a month).
 - **More places** (45-64 approved 23 October; `poi/volken.md`): the land itself (a dragon's scorch, a lightning tree,
   a sunken boat in a clear lake, an old human mine, an avalanche field, flood lines on a village wall); people who live
   apart (a hedge wizard's tower, a charcoal family, a ferryman with a boat, a beekeeper's hill, a shepherd's bothy, an

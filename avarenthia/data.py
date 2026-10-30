@@ -289,6 +289,7 @@ TILES = [
     Tile('░', '#c8b070', True, False, 'reed walkway', bg='#1a1a0c'),
     Tile('≡', '#a87846', False, False, 'woodpile', bg='#28180c'),
     Tile('○', '#e0c070', False, False, 'archery butt', bg='#22300e'),
+    Tile('■', '#d0c8b0', False, False, 'telling thing'),       # named and drawn by the place (landmarks.py)
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -318,6 +319,7 @@ DIGSPOT = 235                   # archaeology (archaeology.py)
 (STEPS, SDECK, BPARAPET, TRESTLE, GDECK, GPARAPET, BRAZIER, ROOTDECK, LEAFRAIL, GLOWMOSS, FLOWERBOX, COPPERDECK, LOGDECK,
  RWALK) = range(236, 250)        # the peoples' towns and their bridges on the land (folktowns.py)
 WOODPILE, BUTTS = 250, 251       # livelier settlements (townlife.py)
+MARK = 252                       # a telling thing of a place of today (landmarks.py, yearplaces.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

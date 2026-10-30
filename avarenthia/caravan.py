@@ -262,6 +262,8 @@ def raid_chance(game, t):
     h = w.settlements[0]
     if cheb(x, y, h.x, h.y) <= 6 or game.world.settlement_at(x, y):
         return 0
+    if any(s.kind == 'serai' and cheb(x, y, s.x, s.y) <= 2 for s in w.sites):
+        return 0        # no robber comes near the walls of a caravanserai
     from . import mercs as MC
     rich = min(2.0, .5 + cargo_value(game) / 20000)
     base = (.002 if t in (D.ROAD, D.BRIDGE) else .006) * (1 + w.danger_at(x, y) * .15)

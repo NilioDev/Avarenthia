@@ -374,3 +374,11 @@ three things. Test part `boss_moves`.
 - **Roaming bosses** - sounds, tracks, following up the stairs. Debug: place a roaming boss on the level.
 - **Hirelings in a boss fight** - stepping out, handling marks, breaking. Debug: give a hireling of each kind and rank.
 
+## Places of today (built 30 October 2026)
+
+- **Each place** - its small map, every telling thing answers a bump, every keeper talks. Debug: Teleport (the
+  place's kind is in the list).
+- **Toll bridge, serai, beacons** - pay or dodge the toll; no robbers near a serai with your wagons; beacons burn at
+  night in a war. Debug: Teleport, Force an event ("Two realms go to war"), Time (night).
+- **Coming and going** - a realm's war camp in a war, refugees by a plundered village, prospectors after the
+  Starfall. Debug: Force an event ("Two realms go to war", "A star falls"), and plunder a village with a raid.

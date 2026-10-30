@@ -12,6 +12,11 @@ from . import missions as MS
 def cell_name(m, i):
     """What a cell is called: the land's own name on the world map, the tile's name elsewhere."""
     t = m.t[i]
+    if t == D.MARK:
+        from .landmarks import thing_name
+        nm = thing_name(m, i)
+        if nm:
+            return nm[0].upper() + nm[1:]
     bio = getattr(m, 'biome', None)
     if m.kind == 'over' and bio is not None and t in LAND:
         from .describe import BIOME_DESC
@@ -141,6 +146,7 @@ TIPS = {
     'shut': 'Tip: the way is shut until it falls. Look for the one way out.',
     'skyseat': 'Tip: one skipper dares the whirlpool, on the harbour nearest his coast. Walk into him with a relic in your pack.',
     'feast': 'Tip: on a feast day someone in the square keeps the feast; walk into them to join in.',
+    'landmark': 'Tip: at a place out on the land, walk into what stands there, and talk to who lives there.',
     'wagon': 'Tip: your wagons follow you on the world map; > takes you down to them, and walking into the lead wagon sees to the caravan.',
     'shadow': 'Tip: e, then the Shadow tab, keeps what you know of the Hollow King and his servants; on the map, 7 shows their marks.',
 }

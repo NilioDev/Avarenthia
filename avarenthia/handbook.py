@@ -640,6 +640,43 @@ def ch_land(g):
               'holds. Moonstones, the sign {·|214,226,255}, each show the next, on toward a hidden elven place. Orcs '
               'hang skull poles, the sign {ⁿ|220,210,186}, near their camps, and kobold scratches, the sign '
               '{«|204,182,110}, point at a hoard of shiny things, the sign {*|236,210,120}. Walk onto them.'),
+        ('h', 'Places of today'),
+        ('p', 'Not everything on the land is old. People work it, rule it and fight over it, and you walk up to that '
+              'too. Each place has its own small map; walk into its telling things, the sign {■|208,200,176}, and '
+              'talk to whoever lives there.'),
+        ('s', [([('┼', (196, 160, 110))], 'logging camp at the edge of the elven wood. Stand watch for the loggers '
+                                          'for a silver, or spike their trees and win the elves\' favour.'),
+               ([('▲', (150, 140, 130))], 'charcoal burners, peat cutters, a lime kiln: hard work far from the inns. '
+                                          'They buy food and ale off your wagons for more than a town pays.'),
+               ([('□', (230, 230, 220))], 'salt pans on the shore: salt by the load, cheap, for your wagons.'),
+               ([('■', (226, 196, 140))], 'caravanserai on a long road: stew, a bed, news, and now and then a caravan '
+                                          'master with goods. No robber comes near its walls, so your wagons are safe '
+                                          'there.'),
+               ([('╤', (236, 164, 84))], 'lone inn between two towns, the only roof for miles.'),
+               ([('╪', (200, 180, 140))], 'mill: bread and flour, cheap. In a dry summer the wheel stands still.'),
+               ([('╬', (190, 170, 140))], 'a baron\'s toll bridge: pay, and you are over the river. Climb past the '
+                                          'gate, and it is a crime if he sees you.'),
+               ([('¥', (200, 170, 120))], 'beacon hill: from the top you see far. In a war, or with raiders near, it '
+                                          'burns at night, the sign {¥|255,150,60}, and the next hill answers.'),
+               ([('¡', (250, 240, 190))], 'lighthouse. Some nights the wreckers cut its wick: light it again.'),
+               ([('Ω', (170, 200, 120))], 'a lord\'s hunting lodge. Killing his game in his wood is poaching.')]),
+        ('p', 'The realms leave their marks: boundary stones between baronies, that a neighbour moves by night; '
+              'chapels on bridges, where you pray for the road; in a war, a realm\'s camp of tents and horses, and '
+              'after a burning, a camp of people who fled. The Church keeps pilgrims\' chapels on high rocks, holy '
+              'wells that ease small ills, plague crosses and tithe barns, full while the villages go hungry. The '
+              'Watch sits in blockhouses on the border roads, sellswords winter in empty farms, and those in revolt '
+              'meet at a marked oak. A witch lives deep in the wild, and heals for a price that is not money. After '
+              'the Starfall, prospectors dig where the star came down.'),
+        ('p', 'Each people marks its own land. The raiders have boat-sheds and ship-settings by the sea, desert '
+              'wells, cairns on the passes, ladders up the canyon walls, stone rows that show a way in the mist, and '
+              'star cairns on the skerries that teach the shortest way over the sea: after them, a voyage is a day '
+              'shorter. Dwarves have air shafts, grudge stones, doors that are sealed for a reason, and roads under '
+              'the mountain, faster than the pass. Elves keep watch trees, the burned grove and the grave trees; '
+              'halflings their hedge gates, party fields and pipe-weed slopes; gnomes their bee gardens and lookout '
+              'stumps. Orcs settle quarrels in a duel ring, goblins pick through their middens and hang rope '
+              'bridges over gorges, kobolds hang out lures, gnolls keep a bone yard and lizardfolk their egg mounds. '
+              'On the fifteenth day of each month all peoples meet at the moot stones where the roads cross, the '
+              'sign {○|230,200,120}, and trade in peace.'),
         ('h', 'The Varnish'),
         ('p', 'The empire before the Ruin built in iron and to the stars, and measured everything in leagues. Its '
               'ruins are on no map. You find a city by walking its land: columns between the trees, old paving under '

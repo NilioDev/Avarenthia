@@ -36,6 +36,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
 | **Built: boss fights part A, the kit (29 Oct)** | Great blows marked red on the ground with a count, purple ones you can break; a rhythm from a deck per phase; phases at two thirds and one third that stop a blow; spent after the heaviest blow, three dots to a stagger, resolve; helpers with a job; twins; a boss bar in IN SIGHT; the end-boss room behind a veil that shuts until it falls, one rotten wall out; Snagtooth, the Lich and the Dragon |
 | **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
+| **Built: places of today (30 Oct)** | Part B and the 44 places of the peoples and powers, each a site with its own small map: logging camps, burners, peat, salt, lime kilns, beacon chains that burn in a war, lighthouses, toll bridges, caravanserais that keep robbers off your wagons, prospectors after the Starfall, hunting lodges; the realms', the Church's, the Watch's, the witches', the raiders' and every people's own places; the moot stones' market once a month |
 | **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
 | **Built: old places from the history (24 Oct)** | The made history lies on the land: old battlefields where the dead walk on the battle's night, villages emptied by plague, war or a dragon, broken bridges of the old Empire, stones of names, the fallen emperor, gallows hills, quarries, wrecks at low tide, hermits, leper colonies; and the peoples' small marks |
@@ -800,6 +801,25 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   The crown's towns are human even when the crown was first drawn as dwarves or elves (`world.py`; the realm
   makes it the human empire later), so Thornfield never keeps dwarf shifts; a rival hunting with you finds room
   near you when you are hemmed in.
+- **Round 29: old places part B and the places of the peoples and powers** (30 October 2026; `landmarks.py`, the
+  frame for round 30 in `yearplaces.py`). 56 kinds of site (`KINDS`, `LOOK`), placed after the shanty camps by
+  `place` with dice of its own (`Lay`: free cells with a shrinking gap, cells by a road, near a people's land or a
+  raiders' seat); a few come and go each day (`daily`): a realm's war camp while a war lasts (`realm_camps`), a
+  refugee camp by a plundered village for 40 days (`refugee_camps`), a prospectors' camp near the Starfall for 30
+  (`prospectors`). Each has a small map of its own (`site_map`, `BUILD`), with telling things (tile MARK, `m.tells`,
+  named by `thing_name`), keepers (role 'landmark') and one choice dialog (`EV.ask` 'lm'). What they do: the burners,
+  peat cutters and lime burners buy food and ale cargo at x1.35; salt by the load at the pans; a beacon is a lookout
+  and burns at night in a war or with raiders within 25 (`lit`, `glyph`); the lighthouse's cut wick; the toll
+  bridge (pay or dodge, a crime); the caravanserai (stew, bed, news, a caravan master's goods, no raids within 2:
+  `caravan.raid_chance`); the hunting lodge (poaching is a crime, `on_kill`); the boundary stone moved at night; the
+  mill (still in one summer in three); the Church's tithe barn opened in a revolt; holy well; witch's healing for
+  luck or hair; the star cairns' star-path (a voyage a day shorter, `sailing.sail`); dwarf roads in pairs; the duel
+  ring (`duel_won`); the rope bridge; the moot stones' market on the 15th. Marks of what you did on `p.marks`.
+  Handbook: The land, Places of today. Test `landmarks`. SAVE_VERSION 59.
+  Not as the spec: the pretender's hiding place was already built as the powers' 'exile' site; the jobs these places
+  could give are choices at the place itself; the burners buy food rather than sell charcoal; the refugee camp
+  empties and does not become a hamlet; the pass cairn gives a blessing for the road, not cheaper guides; the
+  star-path shortens a voyage by a day.
 - **Round 28: feast days, the light-feast and the great fair** (30 October 2026; `feasts.py`). `FEASTS` holds 35
   feasts, each with its dates, who keeps it (`keeps`: all humans, the heartland, west or north by `names.dialect`,
   the fjords, northern villages, river towns, ports, the great city, the steppe, savanna, desert, jungle and canyons
@@ -841,6 +861,24 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   woodpiles and fields, A town that lives, The week); The peoples (each people's day). Test `town_life`.
   SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
   line move as before; the hoard grows in glitter, not in coin you could take.
+
+## Old places part B and the places of the peoples and powers (built 30 October 2026; the spec)
+
+From "Old places on the land" in `plan.md` (approved 23 October 2026; `poi/ideeen.md` part B, `poi/volken.md` 1-44):
+- **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and
+  salt pans, a realm's war camp, refugee camp, beacon hills, lighthouse, a baron's toll bridge, caravanserai,
+  prospectors' camp after a Starfall, a lord's hunting lodge.
+- **Places of today's peoples and powers** (all 44 approved 23 October; `poi/volken.md`), fixed in the wild:
+  the realms (a boundary stone moved at night, a lone inn on a long road, a mill, a bridge chapel, lime kilns); the
+  Church (a pilgrims' chapel up a rock, a tithe barn, a holy well, a plague cross); the Watch, companies, revolt and
+  pretender (a blockhouse with wanted posters, a company's winter quarters, an outlaws' clearing, the pretender's
+  hiding place); the witches (a cottage that heals and curses for a price that is not money, a hanging tree); raiders
+  and riders (Fjordmen's boat-sheds, a jarl's ship-setting, a desert well, a pass cairn, a wreckers' false light to put
+  out, cliff ladders, stone rows through the mist, star-path cairns); dwarves (an air shaft, a dwarf road through a
+  mountain beside the pass, a grudge stone, a sealed door); elves (a watch tree, the burned grove, a grave tree);
+  halflings (a hedge gate, a party field, pipeweed fields); gnomes (a bee garden, a lookout stump with a bell); orcs and
+  the tribes (a duel ring, a warlord's cairn, a goblin midden, a rope bridge, a kobold lure, a gnoll bone yard,
+  lizardfolk egg mounds); and for all (a shrine of a people long gone from there, a wayside market once a month).
 
 ## Feast days, the light-feast and the great fair (built 30 October 2026; the spec)
 

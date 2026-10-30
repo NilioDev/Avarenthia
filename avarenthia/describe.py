@@ -261,6 +261,9 @@ def over(game, x, y):
         from . import oldplaces as OP
         if OP.is_old(site):
             return site.name, site.glyph[1], [OP.DESC[site.kind]]
+        from . import landmarks as LM
+        if LM.is_mark(site):
+            return site.name, site.glyph[1], [LM.describe(game, site)]
         from . import varnish as VN
         if VN.is_varnish(site):
             return site.name, site.glyph[1], [VN.DESC[site.kind]]

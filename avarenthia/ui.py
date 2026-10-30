@@ -36,6 +36,7 @@ from .canvas import scale, mix, wrap_text, TallCanvas
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
 from .folk import unfound as FKunfound
+from .landmarks import glyph as LMglyph
 from .tribes import LOOK as TRglow
 
 W, H = 110, 60          # square 8x8 cells: 880 x 480 pixels before scaling
@@ -1110,10 +1111,10 @@ class GameScreen(Screen):
         om = g.map
         night = TW.is_night(g)
         for st in getattr(w, 'sites', ()):
-            if om.seen[st.y * om.w + st.x] and not FKunfound(st):
+            if om.seen[st.y * om.w + st.x] and not FKunfound(st) and not getattr(st, 'gone', False):
                 vx, vy = st.x - ox, st.y - oy
                 if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (st.x, st.y) != (p.x, p.y):
-                    ch, col = st.glyph
+                    ch, col = st.glyph if st.kind != 'beacon' else LMglyph(st, g)
                     bg = (40, 34, 26)
                     if night and st.kind in TRglow and g.vis[st.y * om.w + st.x]:
                         bg = AN.camp_glow(time.monotonic(), st.x, st.y)     # their fires, seen from afar
@@ -4474,7 +4475,7 @@ class WorldMapScreen(Modal):
         def inview(px, py):
             return ox <= px < ox + vw and oy <= py < oy + vh
         for st in getattr(w, 'sites', ()):
-            if om.seen[st.y * om.w + st.x] and inview(st.x, st.y) and not FKunfound(st):
+            if om.seen[st.y * om.w + st.x] and inview(st.x, st.y) and not FKunfound(st) and not getattr(st, 'gone', False):
                 cv.put(bx + st.x - ox, by + st.y - oy, st.glyph[0], st.glyph[1], (40, 34, 26))
         for poi in w.pois:
             if poi.found and inview(poi.x, poi.y):

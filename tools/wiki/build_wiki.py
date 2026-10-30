@@ -33,6 +33,7 @@ try:                                # the Varnish and the old places (round 10-1
     import avarenthia.varnishtexts as VT
     import avarenthia.varnish as VA
     import avarenthia.oldplaces as OP
+    import avarenthia.landmarks as LM
 except ImportError:
     VT = VA = OP = None
 import avarenthia.handbook as HB
@@ -228,6 +229,9 @@ if VT:
     op = ''.join(f'<dt>{e(OP.NAMED.get(k, k))}</dt><dd>{e(v)}</dd>' for k, v in OP.DESC.items())
     add('oldplaces', 'Lore', 'Old places', f'<p>Places left by history on the land (oldplaces.py). {badge("built")}</p>',
         entry('Old places on the land', f'<dl class="kv">{op}</dl><p class="meta">Small sights: {e(", ".join(OP.POI_NAMED.values()))}</p>', 'built'))
+    lm = ''.join(f'<dt>{e(k)} {e(LM.LOOK[k][0])}</dt><dd>{e(LM.DESC[k])}</dd>' for k in LM.KINDS)
+    add('landmarks', 'Lore', 'Places of today', f'<p>Places of the peoples and powers on the land (landmarks.py). {badge("built")}</p>',
+        entry('Places of today', f'<dl class="kv">{lm}</dl>', 'built'))
 
 # ---------------------------------------------------------------- peoples and gods
 peo = ''

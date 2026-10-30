@@ -8468,6 +8468,103 @@ def feasts():
     print('feasts ok:', done, 'feasts walked into;', 'kept nowhere in this world:', nowhere)
 
 
+def landmarks():
+    """Round 29: the places of today (part B, the peoples and the powers, the caravanserai): placed by rule, every map
+    walkable to every telling thing, each thing answers a bump and each keeper a talk; the toll bridge, the serai
+    against robbers, a lit beacon in a war, the war camp, the refugees and the prospectors come and go."""
+    import pickle
+    from avarenthia import landmarks as LM, events as EV, realms as RL, caravan as CV
+    from collections import Counter
+    print('== landmarks')
+    random.seed(29)
+    app = new_app('soft', 2929)
+    g = app.game
+    p = g.player
+    w = g.world
+    kinds = Counter(s.kind for s in w.sites if LM.is_mark(s))
+    for k in ('beacon', 'serai', 'mill', 'hwell', 'loneinn', 'tollbridge', 'othershrine', 'blockhouse', 'lighthouse'):
+        assert kinds[k], (k, kinds)
+    assert len(kinds) >= 30, kinds
+    walked = 0
+    for k in LM.KINDS:
+        for st in [s for s in w.sites if s.kind == k][:1]:
+            for ci in range(2):
+                p.gold = 10 ** 6
+                p.life = g.stats()['max_life']
+                to_over(g)
+                p.x, p.y = st.x, st.y
+                g.enter_site(st.id)
+                m = g.map
+                assert m.lm == k, k
+                assert all(m.tells[i] in LM.THINGS for i in m.tells)
+                acts = [('bump', i) for i in list(m.tells)] + [('talk', o) for o in m.mons if o.role == 'landmark']
+                for what, a in acts:
+                    if g.cur != m.key or g.dead:
+                        break
+                    g.pending = None
+                    if what == 'bump':
+                        LM.bump(g, a % m.w, a // m.w)
+                    elif a in m.mons:
+                        LM.talk(g, a)
+                    if g.pending:
+                        opts = [v for _l, v in g.pending['options'] if v not in (None, 'bye', 'leave')]
+                        if opts:
+                            EV.resolve(g, opts[ci % len(opts)])
+                        g.pending = None
+                g.dead = False
+                walked += 1
+    # the toll bridge takes its toll and puts you on the far bank
+    tb = next(s for s in w.sites if s.kind == 'tollbridge')
+    to_over(g)
+    p.x, p.y = tb.x, tb.y
+    g.enter_site(tb.id)
+    keeper = next(o for o in g.map.mons if o.role == 'landmark')
+    gold = p.gold
+    LM.talk(g, keeper)
+    EV.resolve(g, 'pay')
+    assert g.cur == 'over' and (p.x, p.y) == tuple(tb.far) and p.gold == gold - tb.toll
+    # no robber near a caravanserai
+    sr = next(s for s in w.sites if s.kind == 'serai')
+    to_over(g)
+    p.x, p.y = sr.x, sr.y
+    assert CV.raid_chance(g, D.ROAD) == 0
+    # a war: the beacons burn at night, a realm's camp stands; peace takes it down
+    R = RL.get(g)
+    a = next(b for b in R.baronies.values() if any(o in R.baronies and R.baronies[o].kingdom != b.kingdom
+                                                     for o in R.adj.get(b.rid, ())))
+    o = next(o for o in R.adj[a.rid] if o in R.baronies and R.baronies[o].kingdom != a.kingdom)
+    R.wars[:] = []
+    RL.start_war(g, R.kingdoms[a.kingdom], R.kingdoms[R.baronies[o].kingdom], 'a test')
+    LM.realm_camps(g)
+    camp = [s for s in w.sites if s.kind == 'realmcamp' and not getattr(s, 'gone', False)]
+    assert camp
+    g.turn = (g.day - 1) * D.DAY_LEN + D.DAY_LEN - 10
+    bc = next(s for s in w.sites if s.kind == 'beacon')
+    assert LM.lit(g, bc) and LM.glyph(bc, g)[1] != LM.LOOK['beacon'][1]
+    R.wars[:] = []
+    LM.realm_camps(g)
+    assert all(s.gone for s in camp)
+    # a plundered village sends its people to a camp, for a while
+    v = next(s for s in w.settlements if not s.is_city and s.id)
+    v.plundered = g.day + 20
+    LM.refugee_camps(g)
+    rf = next(s for s in w.sites if s.kind == 'refugees' and s.village == v.id)
+    to_over(g)
+    p.x, p.y = rf.x, rf.y
+    g.enter_site(rf.id)
+    assert g.map.lm == 'refugees'
+    # a fallen star draws prospectors
+    g.star = dict(x=w.settlements[0].x + 8, y=w.settlements[0].y, day=g.day)
+    LM.prospectors(g)
+    assert any(s.kind == 'prospect' and not getattr(s, 'gone', False) for s in w.sites)
+    from avarenthia import debug as DBG
+    DBG.force_event(g, 'star')
+    DBG.force_event(g, 'realmwar')
+    assert R.wars
+    pickle.dumps(g)
+    print('landmarks ok:', walked, 'maps walked;', len(kinds), 'kinds in this world')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8477,7 +8574,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -757,7 +757,8 @@ EVENTS = [('pirates', 'A pirate ship sets sail'), ('ship', 'A merchant ship sets
           ('raid', 'A war party of the raiders sets out'), ('rivals', 'Rival adventurers set out'),
           ('warband', 'A warband marches on a hold'), ('wagons', 'Three wagons of your own join you'),
           ('wagonraid', 'Robbers fall on your wagons'), ('league', 'A League caravan races you'),
-          ('happening', 'Something happens in this town'), ('lotus', 'Five black lotus in your cargo')]
+          ('happening', 'Something happens in this town'), ('lotus', 'Five black lotus in your cargo'),
+          ('realmwar', 'Two realms go to war'), ('star', 'A star falls')]
 
 
 def force_event(game, kind):
@@ -805,6 +806,24 @@ def force_event(game, kind):
         s = game.here
         got = TL.happening(game, game.map, s) if s is not None else None
         game.msg(f'Debug: {got}.' if got else 'Debug: not in a town.', 'info')
+        return None
+    elif kind == 'realmwar':
+        from . import realms as RL, landmarks as LM
+        R = RL.get(game)
+        pairs = [(b, o) for b in R.baronies.values() for o in R.adj.get(b.rid, ())
+                 if o in R.baronies and R.baronies[o].kingdom != b.kingdom]
+        if pairs:
+            b, o = random.choice(pairs)
+            RL.start_war(game, R.kingdoms[b.kingdom], R.kingdoms[R.baronies[o].kingdom], 'a debug quarrel')
+            LM.realm_camps(game)
+        game.msg('Debug: war.' if pairs else 'Debug: no realms side by side.', 'info')
+        return None
+    elif kind == 'star':
+        from . import jobs as JB, landmarks as LM
+        JB.fall(game)
+        LM.prospectors(game)
+        st = getattr(game, 'star', None)
+        game.msg(f'Debug: a star at {st["x"]},{st["y"]}.' if st else 'Debug: no star.', 'info')
         return None
     elif kind == 'lotus':
         game.player.cargo['lotus'] = game.player.cargo.get('lotus', 0) + 5

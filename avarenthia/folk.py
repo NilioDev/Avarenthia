@@ -123,9 +123,10 @@ def on_step(game):
     """Walking in the deep woods: come close enough to a glade and you see its lanterns between the trees.
     Elves hear the singing from further off."""
     from .varnish import is_varnish
+    from .landmarks import is_mark
     p = game.player
     for st in getattr(game.world, 'sites', ()):
-        if unfound(st) and not is_varnish(st) and st.kind not in ('teacher', 'den', 'master', 'lostshop'):
+        if unfound(st) and not is_varnish(st) and st.kind not in ('teacher', 'den', 'master', 'lostshop') and not is_mark(st):
             d = cheb(st.x, st.y, p.x, p.y)
             gnomes = st.kind == 'gnomes'
             if d <= 1:
