@@ -290,6 +290,16 @@ def camp(kind):
     return 'The Camp'
 
 
+ORC_A = ['Gor', 'Ugh', 'Kar', 'Mog', 'Thra', 'Zug', 'Dur', 'Ruk', 'Nag', 'Bol', 'Skar', 'Grash', 'Ur', 'Lug']
+ORC_B = ['mar', 'gash', 'thak', 'dush', 'zog', 'kul', 'rak', 'burz', 'grat', 'ok', 'nar', 'mosh']
+ORC_C = ['', '', '', ' Stand', ' Ring', ' Hold', "'s Pit", ' Stakes']
+
+
+def orc_town():
+    """A half-orc town: a hard old name, sometimes with what it is."""
+    return pick(ORC_A) + pick(ORC_B) + pick(ORC_C)
+
+
 # ------------------------------------------------------------------ one name, never twice
 def make(world, people, kind='village', land=(), region='heart'):
     """A new name for a place of this people and kind, fitting the land, not yet used in this world."""
@@ -337,6 +347,8 @@ def _one(people, kind, land, region):
         return halfling(land, kind)
     if people in ('warcamp', 'ravine', 'kobolds', 'gnolls', 'stilts'):
         return camp(people)
+    if people == 'orc':
+        return orc_town()
     if kind in ('city', 'metropolis') and fixed:
         return pick(CITY_FIXED)
     return human(land, region, kind)
@@ -358,5 +370,9 @@ def name_settlements(m, world):
             s.name = make(world, 'elf', 'city', land)
         elif s.race == 'halfling':
             s.name = make(world, 'halfling', s.kind, land)
+        elif s.race == 'orc':
+            s.name = make(world, 'orc', s.kind, land)
+        elif s.race == 'dwarf':
+            s.name = make(world, 'dwarf', 'hold', land)
         else:
             s.name = make(world, 'human', s.kind, land, dialect(m, s.x, s.y))

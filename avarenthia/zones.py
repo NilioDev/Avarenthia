@@ -271,9 +271,12 @@ def make(game, cx0, cy0, nx=3, ny=3):
     t[shallow] = D.SHALLOW
     t[deep & ~ford] = D.WATER
     wetnow = (t == D.WATER) | (t == D.SHALLOW)
+    before = t.copy()
     t[path & ~wetnow] = D.PATH
     t[lane & ~wetnow] = D.ROAD
     t[lane & wetnow] = D.BRIDGE
+    from . import folktowns as FT
+    FT.dress_bridges(game, t, wetnow, before, ox, oy, ZW, ZH, s)
     from . import varnish as VN
     VN.paint(game, t, cx0, cy0, nx, ny, ox, oy)
     # what stands in the middle of its cell

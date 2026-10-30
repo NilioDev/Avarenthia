@@ -673,11 +673,16 @@ def ch_land(g):
               'brighter and restless, and they come for you.'),
         ('p', 'All ghostly things carry that cold light about them; fiends a faint red glow, like embers.'),
         ('h', 'Their own lands'),
-        ('l', ['Halflings keep a green country of hills and hedges.',
+        ('l', ['Halflings keep a green country of hills and hedges. Their towns ramble inside a hedge ring, with homes '
+               'dug into the hills, little houses with vegetable patches, and the green with its party tree, the '
+               'Keepsake Hall and the inn at its side.',
                'Elven glades {♠} hide deep in the woods, off the map until you are close enough to see their lanterns. '
                'An elder knows the next glade, and the way to the elven city under the Elder Tree.',
                'Dwarves live in deepholds cut into the mountains, with mines below, and in villages in the hills '
-               'before them.',
+               'before them. A dwarf city is built to a plan below the gate of its hold: terraces in half rings like '
+               'the rows of a theatre, joined by the Great Stair, with the forge square half way down.',
+               'Half-orcs have towns of their own in the outer lands: rings of round huts behind a palisade and sharp '
+               'stakes, round the chief\'s longhouse and the fighting pit.',
                'Gnomes live in hamlets under the roots of great trees.']),
     ]
 
@@ -733,6 +738,10 @@ def ch_travel(g):
               'fields round a village, the hill a dungeon mouth is cut into. Walk into a town, a site or a keep in '
               'the middle of its stretch and you are in; leave it by any edge and you come out on that side. Travellers '
               'and caravans on the road stand there too; bump them to talk.'),
+        ('p', 'A bridge shows who built it. Humans lay stone with thin parapets, or a timber bridge on a lesser road, '
+              'and now and then an old one has lost a span: wade at the ford. Dwarves build of dark granite with a '
+              'brazier at each end, elves grow theirs of living roots, halflings set flower boxes on the parapets, '
+              'gnomes raise copper bridges, the tribes lash logs together, lizardfolk lay reeds over the swamp.'),
         ('p', 'An ambush on the world map is fought down in the land where it falls on you. Win, and walk on. Or get '
               'away into the next stretch with no foe beside you, and they stay behind. Snow, ice and autumn leaves '
               'come and go there with the seasons, and what you leave lying stays where you left it.'),

@@ -7961,6 +7961,7 @@ def city_rules():
     Nilio set on the mock-ups, on several draws; in the game each human city is walled, peopled and can be walked
     from its gates to its market."""
     import pickle
+    import numpy as np
     from avarenthia import citygrow as CG, towns as TW
     print('== city_rules')
     kinds = [('grown', 'cathedral', False, True, 0), ('grown', 'castle', False, True, 0),
@@ -7979,9 +7980,25 @@ def city_rules():
                 assert any(g[0] == {'cathedral': 'cathedral', 'castle': 'keep', 'palace': 'keep'}[k[1]] or
                            k[1] == 'cathedral' for g in c.great), (seed, k, c.great)
             assert len(c.exits) >= 2 and len(c.stalls) >= 6, (seed, k)
+    # the other peoples' towns keep the rules that are theirs too
+    from avarenthia import folktowns as FT, zones as Z
+    for seed in (1, 2, 3):
+        for k in ('dwarf', 'dwarf_big', 'halfling', 'orc'):
+            random.seed(seed)
+            roads = [(random.uniform(-3, 3), 'a'), (random.uniform(-3, 3), 'b')]
+            c, sq = CG.grow('x', 'X', k, roads=roads, top=18 if seed == 3 and k != 'dwarf_big' else 0)
+            bad = {r: n for r, n in CG.rules(c, folk=True).items() if n}
+            assert not bad, (seed, k, bad)
+            assert len(c.exits) == 2 and c.stalls and len(c.houses) > 40, (seed, k)
+            if k.startswith('dwarf'):
+                assert sum(1 for i in range(c.W * c.H) if c.m.t[i] == D.STEPS) > 20 and c.great[0][0] == 'keep'
+            if k == 'halfling':
+                assert {g[0] for g in c.great} == {'keepsake', 'inn'}
     app = new_app('soft', seed=24)
     g = app.game
-    cities = [s for s in g.world.settlements if s.is_city and s.race == 'human' and not getattr(s, 'elder', False)]
+    assert any(s.race == 'orc' for s in g.world.settlements), 'no half-orc towns'
+    cities = [s for s in g.world.settlements if (s.is_city and s.race == 'human' and not getattr(s, 'elder', False))
+              or FT.maker_for(s)]
     assert cities
     seen = set()
     for s in cities:
@@ -8005,6 +8022,27 @@ def city_rules():
         stall = next(o for o in m.mons if o.is_npc and o.role == 'market')
         assert any((stall.x + dx, stall.y + dy) in reach for dx in (-1, 0, 1) for dy in (-1, 0, 1)), s.name
     print('kinds in this world:', sorted(seen))
+    assert {'orc', 'grown'} <= seen
+    # bridges on the land: laid straight from bank to bank, in the style of whose land it is
+    tt, cfeel, cground, criv = Z._cells(g)
+    om = g.maps['over']
+    cross = [(x, y) for y in range(1, om.h - 1) for x in range(1, om.w - 1) if criv[y, x] and tt[y, x] in Z.ROADS]
+    decks = {v[0] for v in FT.STYLE_TILES.values()}
+    styled = set()
+    for (x, y) in cross[:30]:
+        t, marks = Z.make(g, x - 1, y - 1)
+        assert not (t == D.BRIDGE).any(), (x, y)
+        st = FT.people_at(g, x, y)
+        styled.add(st)
+        for par in (D.PARAPET, D.GPARAPET, D.LEAFRAIL, D.FLOWERBOX):
+            ys, xs = np.nonzero(t == par)
+            for py, px in zip(ys.tolist(), xs.tolist()):
+                assert any(int(t[py + b, px + a]) in decks for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1),
+                           (1, 1), (-1, -1), (1, -1), (-1, 1)) if 0 <= py + b < t.shape[0] and 0 <= px + a < t.shape[1])
+    assert cross and 'human' in styled
+    assert FT.people_at(g, g.world.settlements[0].x, g.world.settlements[0].y) == 'human'
+    dw = next(s for s in g.world.settlements if s.kind == 'deephold')
+    assert FT.people_at(g, dw.x, dw.y) == 'dwarf'
     pickle.dumps(g)
     print('city_rules ok')
 

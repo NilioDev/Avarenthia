@@ -41,6 +41,17 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Who lives where** - guild halls by the market, the secret ones down a lane, inns by the gates, the watch by the
   wall; the lamplighters at dusk. Debug: Teleport, Time (dusk).
 
+## Cities that grew, part 2 (built 30 October 2026)
+
+- **Dwarf cities** - the terraces under the gate of the hold, the Great Stair and its steps, the forge square, the
+  cart line, the lord in the hall of the gate. Debug: Teleport (a dwarf city, kind city or metropolis).
+- **Halfling towns** - the hedge ring, the green with the party tree, the Keepsake Hall, hill homes, the pond.
+  Debug: Teleport to a halfling town.
+- **Half-orc towns** - palisade and stakes, the chief's longhouse and the pit, rings of huts. Debug: Teleport (the
+  outer towns).
+- **Bridges on the land** - each people's look where a road crosses a river; a human bridge with a fallen span and
+  its ford. Debug: Teleport near a river crossing, then [>] into the land.
+
 ## Boss fights part C: the boss maker (built 30 October 2026)
 
 - **Job bosses** - "A price on a head" on a town board or from the captain, the rumour in the job, the fight with

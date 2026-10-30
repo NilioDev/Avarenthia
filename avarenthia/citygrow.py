@@ -1996,10 +1996,18 @@ def ruler(game, s):
 
 def plan(game, s):
     """What kind of city this is and how it lies: (maker, heart, fortress, frame, river)."""
-    from . import towns as TW
+    from . import towns as TW, folktowns as FT
     big = s.kind == 'metropolis'
     heart, border = ruler(game, s)
     harbour = getattr(s, 'harbour', False)
+    folk = FT.maker_for(s)
+    if folk:
+        if folk == 'dwarf':                           # the mountain behind it, the sea (if any) before it
+            back = {'N': 'S', 'S': 'N', 'W': 'E', 'E': 'W'}
+            frame = back[s.sea_side] if harbour else mountain_side(game, s)
+        else:
+            frame = s.sea_side if harbour else 'N'
+        return folk + ('_big' if folk == 'dwarf' and big else ''), heart, False, frame, False
     W, H = (360, 220) if big else (240, 140)
     probe = GameMap('probe', 'town', '', W, H, G)
     course = TW.river_course(game, s, probe, 14)
@@ -2022,10 +2030,19 @@ def plan(game, s):
 
 def grow(key, name, maker, heart='cathedral', fortress=False, river=True, roads=((math.pi / 2, None),), top=0):
     """The city itself, in its own frame, before it is turned and peopled: (City, the market's middle)."""
-    W, H = (360, 220) if maker == 'metropolis' else (240, 140)
+    from . import folktowns as FT
+    W, H = FT.SIZE.get(maker) or ((360, 220) if maker == 'metropolis' else (240, 140))
+    if maker in FT.SIZE:
+        H += top
     c = City(key, name, W, H)
     roads = spread(list(roads))
-    if maker == 'metropolis':
+    if maker in ('dwarf', 'dwarf_big'):
+        sq = FT.dwarf_city(c, roads, maker == 'dwarf_big')
+    elif maker == 'halfling':
+        sq = FT.halfling_town(c, roads, top)
+    elif maker == 'orc':
+        sq = FT.orc_town(c, roads, top)
+    elif maker == 'metropolis':
         sq = metropolis(c, heart, roads, top)
     elif maker == 'canal':
         sq = canal_city(c, roads, top)
@@ -2078,10 +2095,13 @@ def crumbs(c, most=6):
                 c.level.pop(n, None)
 
 
-def rules(c):
-    """The rules Nilio set while looking at the mock-ups, each counted: every count must be 0."""
+def rules(c, folk=False):
+    """The rules Nilio set while looking at the mock-ups, each counted: every count must be 0. The other peoples'
+    towns (folk) keep only those that are theirs too: nothing built over water, every street joins the rest."""
     W, H = c.W, c.H
     out = {}
+    if folk:
+        return _joined(c, lambda x, y: D.TILES[c.t(x, y)].walk, out)
     river, deck = c.river, c.deck
     quay = {(x, y) for (x, y) in c.level if c.t(x, y) == STREET and
             any((x + ex, y + ey) in river for ex in range(-2, 3) for ey in range(-2, 3))}
@@ -2117,6 +2137,12 @@ def rules(c):
     gb = [b['mid'] for b in c.planned if b['kind'] == 'gate']
     out['gate without a bridge'] = sum(1 for (gx, gy) in c.gates
                                        if not any(math.hypot(mx - gx, my - gy) < 18 for mx, my in gb))
+    return _joined(c, lambda x, y: c.t(x, y) in STREETS, out)
+
+
+def _joined(c, way, out):
+    """Nothing built over the water; every street inside the walls reached from the market along `way`."""
+    W, H = c.W, c.H
     out['building in the water'] = sum(
         1 for y in range(H) for x in range(W) if c.t(x, y) in (PLANK, FLOOR) and
         any(c.ok(x + ex, y + ey) and c.t(x + ex, y + ey) in (WATER, D.SHALLOW) for ex in (-1, 0, 1) for ey in (-1, 0, 1)))
@@ -2125,7 +2151,7 @@ def rules(c):
     while q:
         x, y = q.pop()
         for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
-            if (nx, ny) not in seen and c.ok(nx, ny) and c.t(nx, ny) in STREETS:
+            if (nx, ny) not in seen and c.ok(nx, ny) and way(nx, ny):
                 seen.add((nx, ny))
                 q.append((nx, ny))
     out['loose piece of street'] = sum(1 for (x, y) in c.level if c.t(x, y) in (STREET, LANE) and c.inside[y * W + x]
@@ -2133,21 +2159,37 @@ def rules(c):
     return out
 
 
+def mountain_side(game, s, r=8):
+    """Which side of a place the high ground lies on the world map: N, S, W or E."""
+    om = game.maps['over']
+    sx = sy = 0
+    for y in range(s.y - r, s.y + r + 1):
+        for x in range(s.x - r, s.x + r + 1):
+            if om.inb(x, y) and om.tile(x, y) in (D.MOUNTAIN, D.HILLS):
+                sx, sy = sx + x - s.x, sy + y - s.y
+    if not sx and not sy:
+        return 'N'
+    if abs(sx) > abs(sy):
+        return 'E' if sx > 0 else 'W'
+    return 'S' if sy > 0 else 'N'
+
+
 def make(game, s):
     """The map of a human city or the metropolis, grown as old towns grew (see docs/built.md, Cities that grew)."""
     from . import towns as TW, harbour as HB, guilds as GU
+    from . import folktowns as FT
     maker, heart, fortress, frame, river = plan(game, s)
-    big = maker == 'metropolis'
-    W, H = (360, 220) if big else (240, 140)
+    big = maker in ('metropolis', 'dwarf_big')
     top = HB.depth_for(s) if getattr(s, 'harbour', False) else 0
     roads = []
     for dx, dy, other in (TW.road_dirs(game, s) or [(0, 1, None)]):
         cdx, cdy = _dir_in(frame, dx, dy)
         roads.append((math.atan2(cdy, cdx), other))
-    if top:
-        roads.append((-math.pi / 2, 'harbour'))      # a way down to the harbour
+    if top:                                           # a way down to the harbour
+        roads.append((math.pi / 2 if maker.startswith('dwarf') else -math.pi / 2, 'harbour'))
     roads.sort(key=lambda r: r[1] is None or r[1] == 'harbour')
     c, sq = grow(s.map_key, s.name, maker, heart, fortress, river, roads, top)
+    W, H = c.W, c.H
     to = _to(frame, W, H)
     mw, mh = (W, H) if frame in ('N', 'S') else (H, W)
     m = GameMap(s.map_key, 'town', s.name, mw, mh, G)
@@ -2160,6 +2202,9 @@ def make(game, s):
     m.radius, m.sid, m.hid, m.signs = 60, s.id, None, []
     m.stone_bridges = True
     m.grown = maker
+    if maker == 'halfling':
+        m.round_doors = True
+        m.wall_fg = (186, 140, 90)                    # timber and plaster
     m.exits = []
     for edge, other in c.exits:
         if edge is not None and other != 'harbour':
@@ -2181,7 +2226,8 @@ def make(game, s):
     walk = (STREET, LANE)
     streets = [to(*q) for q, l in c.level.items() if l <= 1 and c.t(*q) in walk and c.inside[q[1] * W + q[0]]]
     names = TW.town_names(getattr(s, 'race', 'human'))
-    TW.people_city(game, m, s, buildings, names, px, py, stalls or [(px + 2, py)], streets, 14 if big else 9)
+    guards, gname = FT.WATCH.get(maker, (14 if big else 9, None))
+    TW.people_city(game, m, s, buildings, names, px, py, stalls or [(px + 2, py)], streets, guards, gname)
     m.entry = m.exits[0][:2]
     for i in range(len(m.seen)):
         m.seen[i] = 1
@@ -2238,14 +2284,18 @@ def _buildings(game, m, s, c, to, big, plots):
         pl.inside = [(x, y) for y in range(pl.y + 1, pl.y + pl.h - 1) for x in range(pl.x + 1, pl.x + pl.w - 1)]
         pl.annex = None
         return pl
+    from . import folktowns as FT
     out = []
     for kind, (x, y, w, h), door in c.great:
-        pl = plot('temple' if kind in ('temple', 'chapel') else 'keep', x, y, x + w - 1, y + h - 1, door)
+        own = 'temple' if kind in ('temple', 'chapel') else kind if kind in ('keepsake', 'inn') else 'keep'
+        pl = plot(own, x, y, x + w - 1, y + h - 1, door)
+        if own in ('keepsake', 'inn'):
+            TW.furnish(m, pl)
         pl.inside = [q for q in pl.inside if m.tile(*q) in (D.FLOOR, D.PLANK)]
         pl.great = kind
         out.append(pl)
-        if pl.kind == 'temple' and pl.door:
-            TW.add_sign(m, pl, TW.SIGN['temple'])
+        if pl.kind in ('temple', 'keepsake', 'inn') and pl.door:
+            TW.add_sign(m, pl, TW.SIGN[pl.kind])
     if out and any(p.great == 'keep' for p in out):
         m.seat = next(p for p in out if p.great == 'keep')
     houses = [h for h in c.houses if h[4] and (h[2] - h[0] - 1) * (h[3] - h[1] - 1) >= 4]
@@ -2273,18 +2323,24 @@ def _buildings(game, m, s, c, to, big, plots):
         else:
             for h in pick(1, lambda h: dist(h, (mx, my)) - area(h) * .8, 20):
                 want.append(('keep', h, k))
-    for i in range(5 if big else 3):
+    n_inn, n_shop, n_stab, n_bar = FT.HOUSES.get(m.grown, (5, 3, 1, 3) if big else (3, 2, 1, 2))
+    folk = m.grown in FT.HOUSES
+    if folk:                                   # a town has what its services say
+        sv = s.services
+        n_inn, n_shop, n_stab = (n_inn if 'inn' in sv else 0), (n_shop if 'shop' in sv else 0), \
+            (n_stab if 'stables' in sv else 0)
+    for i in range(n_inn):
         g = gates[i % len(gates)]
         for h in pick(1, lambda h: dist(h, g), 20, 4):
             want.append(('inn', h, None))
-    for h in pick(3 if big else 2, lambda h: dist(h, (mx, my)), 16):
+    for h in pick(n_shop, lambda h: dist(h, (mx, my)), 12 if folk else 16):
         want.append(('shop', h, None))
-    if not any(p.kind == 'temple' for p in out):
-        for h in pick(1, lambda h: dist(h, (mx, my)) - area(h), 24):
+    if not any(p.kind == 'temple' for p in out) and (not folk or 'temple' in s.services):
+        for h in pick(1, lambda h: dist(h, (mx, my)) - area(h), 12 if folk else 24):
             want.append(('temple', h, None))
-    for h in pick(1, lambda h: dist(h, gates[0]), 16):
+    for h in pick(n_stab, lambda h: dist(h, gates[0]), 12 if folk else 16):
         want.append(('stables', h, None))
-    for i in range(3 if big else 2):
+    for i in range(n_bar):
         g = gates[(i + 1) % len(gates)]
         for h in pick(1, lambda h: dist(h, g), 16):
             want.append(('barracks', h, None))

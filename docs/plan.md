@@ -16,7 +16,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
-| **Approved: cities that grew** | Part 1 built 30 October 2026: the human cities and the metropolis grew like old towns (see `docs/built.md`). Not built: part 2, each other people's own way (dwarves plan, halflings ramble, orcs grow rings of huts) and bridges on the open land in each people's style |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026), archaeology too (30 October 2026); the rest is not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
 | **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026, part 2, goods and ways, built 30 October 2026; not built: round 26 and the great fair with the feast days in 28 |
@@ -63,7 +62,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 23. **Boss fights part C** (L). Built 30 October 2026 (see `docs/built.md`). Pause after 19, 20, 21 and 22, merge
     after 23.
 24. **Cities that grew, part 1** (XL). Built 30 October 2026 (see `docs/built.md`).
-25. **Part 2** (L): dwarf, halfling and orc towns, bridges on the open land. 26. **Trade part 3: caravans** (L): your
+25. **Part 2** (L). Built 30 October 2026 (see `docs/built.md`). 26. **Trade part 3: caravans** (L): your
     own caravan (wagons, crew, the road, raids, stables in the grown cities) and the NPC caravans' new parts (travel
     along, trade on the road, League rivals, robbing has weight). 27. **Round 6** (L): it lives in the new city maps,
     and refugees from the great evils fill them. 28. **Feast days** (L), with the light-feast (northern villages keep the first night of the lights: news, cheaper beds, a blessing at their shrine; its spec stayed with the northern lights in `built.md`) and trade's great fair. Pause after 24, 26 and 27, merge after 28.
@@ -152,40 +151,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
-
-## Cities that grew, part 2 (approved 22 October 2026; part 1, the human cities, built 30 October 2026)
-
-The human cities, the metropolis, canal and fortress towns and the machine-checked city rules are built (see
-`docs/built.md`, "Cities that grew, part 1"). Left for round 25: the other peoples' towns and the bridges on the
-open land. The mockups are in the project files under `steden/` (`mockup_volken.py`). The city rules of part 1
-hold here too and the test part `city_rules` grows to check these towns.
-
-**The other peoples** each build their own way (mockups shown 22 October 2026, Nilio said "doe maar"):
-- **Dwarf cities:** built to a plan, the only straight city: the gate of the hold carved in the mountain face, below
-  it terraces in rounded half rings like the rows of a theatre, a ledge and a street on each, rows of alike stone
-  houses, the Great Stair on the axis with four lesser stairs, the forge square half way down (the great forge hall,
-  the smiths' guild hall, the founder in stone), the cart line on the lowest terrace, a wall with square towers.
-- **Halfling towns:** a hedge ring, no wall; paths that ramble; hills with homes dug into their south faces (round
-  door, round windows); little houses with vegetable gardens; the green with the party tree and lanterns, the
-  Keepsake Hall and the inn at its side; orchards and a pond.
-- **Orc towns:** a palisade with sharpened stakes before it and watch platforms at the gates; the chief's longhouse
-  in the middle with the fighting pit before it and totems round it; round huts of hide and timber in rings along
-  mud paths, door to the path; fire pits, drying racks, middens, pens, the smith's open forge.
-- The city under the Elder Tree, gnome hamlets, dwarf holds and villages, and the hostile camps stay as they are.
-
-**Bridges in the open world, in each people's style** (Nilio, 22 October 2026): the same rules hold outside the
-towns. Where a road crosses a river on a land map, the bridge is laid first, straight or at 45 degrees, and the road
-runs over it in line. Who built it shows:
-- **Humans:** stone arches with a flagstone deck and thin parapets; on lesser roads a timber trestle bridge; now
-  and then an old stone bridge with a span fallen in (a ford nearby).
-- **Dwarves:** dark granite, massive square piers, a low solid parapet, a brazier at each end; they also span chasms.
-- **Elves:** a bridge grown of living roots and branches, leafy rails, glowmoss lanterns.
-- **Halflings:** small humpbacked stone bridges over brooks, flower boxes on the parapets.
-- **Gnomes:** a copper bascule bridge that lifts with a whirr of gears when a boat comes.
-- **Orcs, goblins and other tribes:** logs lashed with rope, stakes at the ends; rope bridges over ravines.
-- **Lizardfolk:** reed walkways on stilts across the swamp.
-
----
 
 ## Old places on the land (approved 23 October 2026, not built)
 

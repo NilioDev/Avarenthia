@@ -273,6 +273,20 @@ TILES = [
     Tile('¥', '#ffd860', False, False, 'lit beacon', bg='#3a2a08'),
     Tile('Π', '#d8c890', False, False, 'throne of star-iron', bg='#201c10'),
     Tile('÷', '#d6b06e', False, False, 'dig spot', bg='#241c12'),
+    Tile('=', '#b8b0a0', True, False, 'stone steps', bg='#2a2824'),
+    Tile('·', '#968f84', True, False, 'stone bridge', bg='#3a3834'),
+    Tile('▪', '#d8d0c0', False, False, 'parapet', bg='#12284a'),
+    Tile('=', '#a8783c', True, False, 'timber bridge', bg='#1c140c'),
+    Tile('·', '#7a7680', True, False, 'granite bridge', bg='#24222a'),
+    Tile('█', '#4a4852', False, False, 'granite parapet', bg='#12284a'),
+    Tile('Ω', '#ff9a40', False, False, 'brazier', bg='#2a1a0c'),
+    Tile('%', '#8aa060', True, False, 'bridge of living roots', bg='#1a2010'),
+    Tile('♣', '#5aa04a', False, False, 'leafy rail', bg='#12284a'),
+    Tile('°', '#80e0c0', False, False, 'glowmoss lantern', bg='#0c2018'),
+    Tile('*', '#e888b0', False, False, 'flower box', bg='#12284a'),
+    Tile('=', '#d0884a', True, False, 'copper bascule bridge', bg='#2a1810'),
+    Tile('=', '#7a5a34', True, False, 'bridge of lashed logs', bg='#16100a'),
+    Tile('░', '#c8b070', True, False, 'reed walkway', bg='#1a1a0c'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -299,6 +313,8 @@ RATHOLE, PROP, WEBS, EGGS, LIGHTSTONE, BCHAIN, BLEDGE, BANNER = range(218, 226) 
 JAR, HCAIRN = 226, 227          # the Lich's phylactery, a fallen hero's cairn (shadow.py)
 STARLINK, WEAKLINK, GLASS, CRACKGLASS, BEACON, LITBEACON, THRONE = range(228, 235)     # the Sky-Seat (skyseat.py)
 DIGSPOT = 235                   # archaeology (archaeology.py)
+(STEPS, SDECK, PARAPET, TRESTLE, GDECK, GPARAPET, BRAZIER, ROOTDECK, LEAFRAIL, GLOWMOSS, FLOWERBOX, COPPERDECK, LOGDECK,
+ REEDS) = range(236, 250)        # the peoples' towns and their bridges on the land (folktowns.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

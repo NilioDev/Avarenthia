@@ -1308,7 +1308,8 @@ def gen_settlement_map(game, s):
         from .folk import gen_elder_city
         m = gen_elder_city(game, s)
     else:
-        m = gen_city(game, s) if s.is_city else gen_village(game, s)
+        from .folktowns import maker_for
+        m = gen_city(game, s) if s.is_city or maker_for(s) else gen_village(game, s)
     from . import hunting as HT
     HT.furnish(game, m, s)
     from . import realms as RL

@@ -751,9 +751,61 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   in a metropolis). Bridges, quay walls and gate bridges have their own look (`m.over`, drawn by `look.py` on
   streets of non-world maps). `rules(c)` counts each city rule. Handbook: Towns, Cities. Test `city_rules` (eight
   kinds on three draws, and every human city of a world: gates and market walkable). SAVE_VERSION 55.
+- **Round 25: cities that grew, part 2** (30 October 2026; `folktowns.py`). `maker_for` sends a dwarf city or
+  metropolis, a halfling town and a half-orc town to their own maker, built in its own frame by `citygrow.grow`
+  and peopled the same way (`WATCH`: the shirriffs, the chief's guard; `HOUSES`: what a town has by its services).
+  Dwarf city: the mountain on the side of the high ground (`citygrow.mountain_side`), the sea before it; the gate
+  of the hold is the lord's hall (`m.seat`), terraces with ledges, the Great Stair and four lesser stairs of stone
+  steps (tile STEPS; `_steps_join` cuts steps to cut-off terrace ends, the rest goes back to rock), the forge square
+  with stalls, the forge hall and the smiths' guild hall, the cart line, one gate below; roads out along the foot
+  of the mountain (`_side_way`). Halfling town: the hedge ring, the green with the party tree and lanterns, the
+  Keepsake Hall and inn on the green (great buildings, furnished), hill homes dug in, row cottages with vegetable
+  patches, orchards, a pond. Half-orc town: palisade and stakes, the chief's longhouse (`m.seat`), the fighting pit,
+  three mud rings, longhouses for inn and trader, round huts with doors to the path, pens, the open forge. Half-orcs
+  now have towns: `settle_orcs` gives the towns furthest from Thornfield (`scaled(2)`) to them, with names of their
+  own (`names.orc_town`); dwarf cities get dwarven names. Bridges on the land (`dress_bridges`, from `zones.make`):
+  each road crossing is laid straight or at 45 degrees from bank to bank, the road in line at both ends, in the style
+  of `people_at` (nearest people's place): human stone with parapets, a timber trestle, sometimes a fallen span;
+  dwarf granite with braziers; elven roots, leafy rails, glowmoss lanterns; halfling flower boxes; gnome copper;
+  logs and stakes of the tribes; lizardfolk reeds. Tiles 236-249. `rules(c, folk=True)` keeps their own rules.
+  Handbook: The peoples, Their own lands; The land, Walking the land. Test `city_rules` grows. SAVE_VERSION 56.
+  Not built: the gnome bascule lifting for boats (it is only drawn); chasm bridges.
 - **The Rogue a little stronger** (30 October 2026, Nilio's wish after block 4). The pure Rogue's rule (`trees.RULES`)
   also gives 20% more weapon damage to a poisoned foe (`wvs` 'poisoned'), so Envenom feeds it. The balance test: the
   Rogue went from 22 to 24 of 24 waves, on the test's draw and on another.
+
+## Cities that grew, part 2 (built 30 October 2026; the spec)
+
+
+The human cities, the metropolis, canal and fortress towns and the machine-checked city rules are built (see
+`docs/built.md`, "Cities that grew, part 1"). Left for round 25: the other peoples' towns and the bridges on the
+open land. The mockups are in the project files under `steden/` (`mockup_volken.py`). The city rules of part 1
+hold here too and the test part `city_rules` grows to check these towns.
+
+**The other peoples** each build their own way (mockups shown 22 October 2026, Nilio said "doe maar"):
+- **Dwarf cities:** built to a plan, the only straight city: the gate of the hold carved in the mountain face, below
+  it terraces in rounded half rings like the rows of a theatre, a ledge and a street on each, rows of alike stone
+  houses, the Great Stair on the axis with four lesser stairs, the forge square half way down (the great forge hall,
+  the smiths' guild hall, the founder in stone), the cart line on the lowest terrace, a wall with square towers.
+- **Halfling towns:** a hedge ring, no wall; paths that ramble; hills with homes dug into their south faces (round
+  door, round windows); little houses with vegetable gardens; the green with the party tree and lanterns, the
+  Keepsake Hall and the inn at its side; orchards and a pond.
+- **Orc towns:** a palisade with sharpened stakes before it and watch platforms at the gates; the chief's longhouse
+  in the middle with the fighting pit before it and totems round it; round huts of hide and timber in rings along
+  mud paths, door to the path; fire pits, drying racks, middens, pens, the smith's open forge.
+- The city under the Elder Tree, gnome hamlets, dwarf holds and villages, and the hostile camps stay as they are.
+
+**Bridges in the open world, in each people's style** (Nilio, 22 October 2026): the same rules hold outside the
+towns. Where a road crosses a river on a land map, the bridge is laid first, straight or at 45 degrees, and the road
+runs over it in line. Who built it shows:
+- **Humans:** stone arches with a flagstone deck and thin parapets; on lesser roads a timber trestle bridge; now
+  and then an old stone bridge with a span fallen in (a ford nearby).
+- **Dwarves:** dark granite, massive square piers, a low solid parapet, a brazier at each end; they also span chasms.
+- **Elves:** a bridge grown of living roots and branches, leafy rails, glowmoss lanterns.
+- **Halflings:** small humpbacked stone bridges over brooks, flower boxes on the parapets.
+- **Gnomes:** a copper bascule bridge that lifts with a whirr of gears when a boat comes.
+- **Orcs, goblins and other tribes:** logs lashed with rope, stakes at the ends; rope bridges over ravines.
+- **Lizardfolk:** reed walkways on stilts across the swamp.
 
 ## Cities that grew, part 1 (built 30 October 2026; the spec)
 

@@ -358,6 +358,8 @@ def gen_world(game):
         _assign_factions(m, world, start)
         from .folk import settle_peoples, place_glades
         settle_peoples(m, world)
+        from .folktowns import settle_orcs
+        settle_orcs(m, world, start)
         from . import names as NM
         NM.name_settlements(m, world)
         for s in world.settlements:
