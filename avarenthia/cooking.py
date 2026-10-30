@@ -297,6 +297,9 @@ def at_fire(game, where='camp'):
     opts = [(DISHES[k][0], f'cook:{k}') for k, _take in cookable(game)][:18]
     if pot_items(game):
         opts.append(('Try something new', 'try'))
+    from . import brewing as BR
+    if BR.round_ok(game):
+        opts.append(('Pour a round for the company', 'round'))
     opts.append(('Leave the fire', 'leave'))
     text = {'camp': 'Your fire crackles. ', 'hearth': 'The hearth is warm and the pot is clean. ',
             'pit': 'Coals glow in the pit. '}.get(where, '')
@@ -315,6 +318,10 @@ def at_fire(game, where='camp'):
 def r_cook(game, choice, ctx):
     if choice == 'try':
         return ask_pick(game, [])
+    if choice == 'round':
+        from . import brewing as BR
+        game.end_turn(BR.round_for_company(game))
+        return
     if not choice or not choice.startswith('cook:'):
         return
     key = choice[5:]

@@ -736,6 +736,7 @@ class GameScreen(Screen):
                  and not getattr(o, 'lurk', False)]
         birds = {(x, y): (ch, col) for x, y, ch, col in TOW.sky(m, t, night)} if sky else None
         aura, wisps = AUR.auras(g, m, t)            # the wan glow of the ghostly, the faint fire of fiends
+        seeall = any(b[0] == 'seeall' for b in g.player.buffs)
         if aura:
             self.moving = True
         bmarks = BS.marks(g) if m.kind != 'over' else None      # the red ground of a great blow (bosses.py)
@@ -854,8 +855,8 @@ class GameScreen(Screen):
                     if o and getattr(o, 'lurk', False) and o.tpl.get('disguise'):
                         ch, fg = o.tpl['disguise'][0], D.hexrgb(o.tpl['disguise'][1])     # a chest, a statue, a stone
                         o = None
-                    if o and (getattr(o, 'lurk', False) or getattr(o, 'invis', 0)):
-                        o = None                    # something waits there, unseen
+                    if o and (getattr(o, 'lurk', False) or getattr(o, 'invis', 0) and not seeall):
+                        o = None                    # something waits there, unseen (a draught of True Sight shows it)
                     if o:
                         ch, fg = o.ch, o.fg
                         if aura and AUR.aura_of(o):
@@ -1900,6 +1901,13 @@ class InventoryScreen(Modal):
             if used:
                 g.end_turn(used)
             return
+        if it.k == 'tool' and it.t in ('bandage', 'net'):
+            from . import lifeskills as LSM
+            app.pop()
+            used = LSM.net(g) if it.t == 'net' else LSM.bandage(g, it)
+            if used:
+                g.end_turn(used)
+            return
         if it.k == 'tool' and it.t == 'kit':
             app.pop()
             used = g.use_kit(it)
@@ -1928,6 +1936,13 @@ class InventoryScreen(Modal):
             app.pop()
             if FGM.eat_plant(g, it):
                 g.end_turn(1)
+            return
+        if it.k in ('draught', 'mat'):
+            from . import alchemy as ALM, crafts as CRM
+            app.pop()
+            used = ALM.use(g, it) if it.k == 'draught' else CRM.use(g, it)
+            if used and not g.dead:
+                g.end_turn(used)
             return
         if it.k not in ('potion', 'scroll'):
             return
@@ -2574,8 +2589,11 @@ class FishingScreen(Modal):
 
     def start_reel(self):
         f = self.pl
+        if f['kind'] == 'big':                         # too strong for your line yet: it snaps at once
+            self.finish(True, 'The line snaps!', BAD)
+            return
         lvl = self.LS.FISH[f['fish']][1] if f['kind'] == 'fish' else 0
-        self.dif = min(1.0, lvl / 18 + (.15 if f['kind'] == 'fish' else 0))
+        self.dif = min(1.0, max(0, lvl - f['rank'] * .5) / 20 + (.15 if f['kind'] == 'fish' else 0))
         self.state = 'reel'
         self.fish_x = self.TRACK / 2
         self.fish_to = self.fish_x
@@ -3388,11 +3406,12 @@ class ChoiceScreen(Modal):
         for i, ln in enumerate(lines):
             cv.text(x + 3, y + 2 + i, ln, FG, PANEL)
         yy = y + 3 + len(lines)
+        cols = ev['ctx'].get('colours') or []            # a craft list: each name in the colour of what it teaches
         for i, lb in enumerate(labels):
             off = ev['options'][i][1] is None
             cv.text(x + 3, yy, LETTERS[i], DIM if off else GOLD, PANEL)
             for ln in lb:
-                cv.text(x + 5, yy, ln, DIM if off else FG, PANEL)
+                cv.text(x + 5, yy, ln, DIM if off else (cols[i] if i < len(cols) and cols[i] else FG), PANEL)
                 yy += 1
         cv.text_center(W // 2, y + h - 1, ' press a letter to choose ', DIM, PANEL)
 
@@ -4802,8 +4821,8 @@ class MenuScreen(Modal):
     Each item also shows its own shortcut key, for those who like them."""
     GROUPS = [
         ('Hero', [('i', 'Inventory', 'what you carry and wear'), ('c', 'Character', 'who you are, attributes and numbers'),
-                  ('C', 'Life skills', 'fishing, foraging, herbalism, alchemy, brewing, mining, hunting, skinning, cooking, '
-                                                  'leatherworking'),
+                  ('C', 'Life skills', 'fishing, foraging, alchemy, brewing, mining, smithing, hunting, skinning, cooking, '
+                                                  'leatherworking, tailoring'),
                   ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
                   ('v', 'Bestiary', 'the creatures you have met')]),
         ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'jobs, the road, standing, lore and every sign, the log'),
@@ -5070,68 +5089,125 @@ class ConfirmScreen(Modal):
 
 
 class BrewScreen(Modal):
-    """Crafting: alchemy (potions from herbs) and brewing (ale, wine and mead, at an inn or a cellar)."""
+    """[P]: alchemy (pick two or three herbs: what they share becomes the brew) and, with Tab, brewing (the drinks, at
+    an inn or a monastery cellar)."""
 
-    def entries(self):
-        from . import foraging as FGM
+    def __init__(self, app):
+        super().__init__(app)
+        self.page = 0
+        self.picks = []
+        self.spirit = False
+
+    def herbs(self):
+        from . import alchemy as ALM
+        return ALM.herbs(self.game)
+
+    def drinks(self):
         from . import brewing as BR
-        g = self.game
-        return [('alchemy', k, v) for k, v in FGM.recipes(g)] + [('brewing', k, v) for k, v in BR.recipes(g)]
+        return BR.recipes(self.game)
 
     def render(self, cv):
         from . import foraging as FGM
+        from . import alchemy as ALM
         from . import brewing as BR
         from . import lifeskills as LS
         from . import hunger as HU
         g = self.game
-        x, y = self.box(cv, 80, 22, ' Alchemy & Brewing ')
-        ents = self.entries()
-        al = [e for e in ents if e[0] == 'alchemy']
-        br = [e for e in ents if e[0] == 'brewing']
-        yy = y + 1
-        cv.text(x + 3, yy, f'ALCHEMY {LS.rank(g, "alchemy")}', GOLD, PANEL)
-        cv.text(x + 18, yy, 'potions from herbs, anywhere', DIM, PANEL)
-        yy += 2
-        if not al:
-            yy += cv.wrap(x + 3, yy, 72, 'You know no recipes yet. The herbalist monks in the monasteries teach the basics '
-                          'to those who ask.', DIM, PANEL) + 1
-        i = 0
-        for _kind, k, (name, rank, ing, res) in al:
-            ok = FGM.can_brew(g, k)
-            cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
-            cv.text(x + 5, yy, name, FG if ok else DIM, PANEL)
-            cv.text(x + 26, yy, ' + '.join(f'{n} {FGM.PLANTS[h][0]}' for h, n in ing.items()), GOOD if ok else DIM, PANEL, maxw=50)
-            cv.text(x + 5, yy + 1, f"makes: {D.POTIONS[res]['name']}", scale(DIM, .85), PANEL)
-            yy += 2
-            i += 1
-        yy += 1
-        here = BR.where_ok(g)
-        cv.text(x + 3, yy, f'BREWING {LS.rank(g, "brewing")}', GOLD, PANEL)
-        cv.text(x + 18, yy, 'ale, wine and mead' + ('' if here else ': only at an inn or a monastery cellar'),
-                DIM if here else BAD, PANEL)
-        yy += 2
-        for _kind, k, (name, rank, ing, res, n) in br:
-            ok = BR.can_brew(g, k) and here
-            cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
-            cv.text(x + 5, yy, name, FG if ok else DIM, PANEL)
-            cv.text(x + 26, yy, ' + '.join(f'{c} {BR.ing_name(kd, kk)}' for (kd, kk), c in ing.items()),
-                    GOOD if BR.can_brew(g, k) else DIM, PANEL, maxw=50)
-            cv.text(x + 5, yy + 1, f"makes: {n}x {HU.FOODS[res][0]}", scale(DIM, .85), PANEL)
-            yy += 2
-            i += 1
-        cv.text_center(W // 2, y + 21, ' letter: brew · Esc: close ', DIM, PANEL)
+        x, y = self.box(cv, 86, 34, ' Alchemy & Brewing ')
+        tabs = [('ALCHEMY', LS.rank(g, 'alchemy')), ('BREWING', LS.rank(g, 'brewing'))]
+        xx = x + 3
+        for i, (t, r) in enumerate(tabs):
+            lab = f' {t} {r} '
+            cv.text(xx, y + 1, lab, GOLD if i == self.page else DIM, scale(PANEL, 1.6) if i == self.page else PANEL)
+            xx += len(lab) + 2
+        yy = y + 3
+        if self.page == 0:
+            hs = self.herbs()
+            if not hs:
+                cv.wrap(x + 3, yy, 80, 'You carry no herbs of alchemy. Forage for them in the wild; the herbalist monks in '
+                        'the monasteries tell you what you have found.', DIM, PANEL)
+            ra = LS.rank(g, 'alchemy')
+            for i, it in enumerate(hs[:20]):
+                k = it.t
+                on = self.picks.count(k)
+                at = ALM.herb_rank(k)
+                cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
+                cv.text(x + 5, yy, '*' if on else ' ', GOOD, PANEL)
+                name = FGM.plant_name(g, k)
+                cv.text(x + 7, yy, (name[0].upper() + name[1:])[:30], LS.colour_of(g, 'alchemy', at) if at <= ra else BAD, PANEL)
+                cv.text(x + 39, yy, f'{it.n}', DIM, PANEL)
+                cv.text(x + 44, yy, ', '.join(FGM.props_known(g, k)), FG if FGM.known(g, k) else DIM, PANEL, maxw=40)
+                yy += 1
+            sp = ALM.spirit(g)
+            if sp:
+                yy += 1
+                cv.text(x + 3, yy, LETTERS[min(len(hs), 20)], GOLD, PANEL)
+                cv.text(x + 5, yy, '*' if self.spirit else ' ', GOOD, PANEL)
+                cv.text(x + 7, yy, f'{HU.FOODS[sp.t][0]} as the base: a tincture lasts twice as long', FG, PANEL)
+                yy += 1
+            yy = y + 27
+            if self.picks:
+                names = ' + '.join(FGM.PLANTS[k][0] if FGM.known(g, k) else FGM.plant_name(g, k) for k in self.picks)
+                cv.text(x + 3, yy, 'In the kettle: ' + names, FG, PANEL, maxw=80)
+                pv = ALM.preview(g, self.picks)
+                if pv:
+                    cv.text(x + 3, yy + 1, pv, GOOD if pv.startswith('shares ') and 'nothing' not in pv or pv.startswith('Star')
+                            else DIM, PANEL, maxw=80)
+            else:
+                cv.wrap(x + 3, yy, 80, 'Pick two or three herbs: what they share becomes the brew.', DIM, PANEL)
+            hint = ' letter: pick a herb · Enter: brew · Tab: brewing · Esc: close '
+        else:
+            here = BR.where_ok(g)
+            if not here:
+                cv.text(x + 3, yy, 'You need the kettles of an inn or a monastery cellar to brew.', BAD, PANEL)
+                yy += 2
+            rb = LS.rank(g, 'brewing')
+            for i, (k, (name, rank, ing, res, n, _who, _st)) in enumerate(self.drinks()):
+                ok = BR.can_brew(g, k) and here
+                cv.text(x + 3, yy, LETTERS[i], GOLD, PANEL)
+                cv.text(x + 5, yy, name, (LS.colour_of(g, 'brewing', rank) if ok else DIM) if rank <= rb else BAD, PANEL)
+                cv.text(x + 24, yy, ' + '.join(f'{c} {BR.ing_name(kd, kk)}' for (kd, kk), c in ing.items()),
+                        GOOD if BR.can_brew(g, k) else DIM, PANEL, maxw=58)
+                cv.text(x + 5, yy + 1, f"makes: {n}x {HU.FOODS[res][0]}" + (f'   (Brewing {rank})' if rank > rb else ''),
+                        scale(DIM, .85), PANEL)
+                yy += 2
+            hint = ' letter: brew · Tab: alchemy · Esc: close '
+        cv.text_center(W // 2, y + 33, hint, DIM, PANEL)
 
     def on_key(self, tok, shift):
-        from . import foraging as FGM
+        from . import alchemy as ALM
         from . import brewing as BR
         g = self.game
-        ents = self.entries()
         if tok == 'esc':
             self.app.pop()
-        elif len(tok) == 1 and tok in LETTERS[:len(ents)]:
+            return
+        if tok == 'tab':
+            self.page = 1 - self.page
+            return
+        if self.page == 0:
+            hs = self.herbs()[:20]
+            if tok in ('enter', 'np_enter') and self.picks:
+                g.log_mark = len(g.log)
+                used = ALM.brew(g, list(self.picks), self.spirit)
+                self.picks, self.spirit = [], False
+                if used:
+                    g.end_turn(used, True)
+                return
+            if len(tok) == 1 and tok in LETTERS:
+                i = LETTERS.index(tok)
+                if i < len(hs):
+                    k = hs[i].t
+                    if k in self.picks:
+                        self.picks.remove(k)
+                    elif len(self.picks) < 3:
+                        self.picks.append(k)
+                elif i == len(hs) and ALM.spirit(g):
+                    self.spirit = not self.spirit
+            return
+        ds = self.drinks()
+        if len(tok) == 1 and tok in LETTERS[:len(ds)]:
             g.log_mark = len(g.log)
-            kind, k, _v = ents[LETTERS.index(tok)]
-            used = FGM.brew(g, k) if kind == 'alchemy' else BR.brew(g, k)
+            used = BR.brew(g, ds[LETTERS.index(tok)][0])
             if used:
                 g.end_turn(used, True)
 

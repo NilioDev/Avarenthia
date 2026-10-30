@@ -236,13 +236,14 @@ def ch_hero(g):
         ('l', ['Fishing: by water, with a pole: [a]. Strike when the float plunges, then keep the fish in the green '
                'while the line holds.',
                'Foraging: search the wild for food and herbs: [F].',
-               'Herbalism: picking herbs and knowing them.',
-               'Alchemy and brewing: potions, ale, wine and mead: [P].',
+               'Alchemy and brewing: draughts and oils from herbs, and drinks: [P].',
                'Mining: walk into an ore vein with a pick to dig it.',
+               'Smithing: walk into an anvil.',
                'Hunting: reading tracks and stalking herds.',
                'Skinning: [Enter] on a carcass, with a knife or a dagger.',
                'Cooking: walk into a fire or a hearth.',
-               'Leatherworking: at a workbench, and tanning with oak bark.']),
+               'Leatherworking and Tailoring: walk into a workbench.']),
+        ('p', 'The chapter Crafts tells how they grow and what they make.'),
     ]
 
 
@@ -737,6 +738,8 @@ def ch_hunt(g):
         ('p', 'A few great herds of reindeer, aurochs or wildebeest travel with the seasons: north and up to the high '
               'pastures in summer, south and down in winter. Wolves and gnolls follow them.'),
         ('p', 'Walk onto tracks and you may read them: how fresh, which animal, which way.'),
+        ('p', 'Elk, ibex and their like want Hunting 10, aurochs and wild horses 20: below that a herd is too wary '
+              'for you yet, and you cannot get close.'),
         ('h', 'The hunt'),
         ('p', 'Walk into a herd on the world map and you stand at the edge of its grazing ground. The leader, the '
               'sign {Q}, keeps watch. The wind is named in the log, and an arrow on the edge of the map shows where it '
@@ -759,7 +762,8 @@ def ch_hunt(g):
                'A tanner in a village or town tans it for a fee; come back for the leather three days later. Or rub '
                'oak bark into a salted hide and it tans in your pack in five days.',
                'Work the leather at a workbench in the tanner\'s shop: leather armour, gloves, boots, a belt, a '
-               'waterskin. Better Leatherworking, sturdier work.']),
+               'waterskin. A hide gives the leather of its beast: a deer plain leather, an elk sturdy leather, a '
+               'wolf warm fur, a crocodile a hide that turns blows.']),
         ('p', 'Plain hides sell for little. Fine fur, fox, ermine, bear, fetches much more in the cities and the cold '
               'north.'),
         ('h', 'Cooking'),
@@ -778,6 +782,71 @@ def ch_hunt(g):
         ('p', 'Every land has its own herbs, fruit and catch: foraging there finds them, and its village outfitter '
               'sells some. Salt, eggs, milk and butter come from the villages.'),
         ('p', 'Hang meat or fish on a drying rack overnight: Dried Meat and Smoked Fish keep, longer with salt.'),
+    ]
+
+
+def ch_crafts(g):
+    return [
+        ('h', 'How a craft grows'),
+        ('p', 'A life skill grows slowly, by doing, up to 50. Work far below your rank teaches nothing, a little below '
+              'it little, at or above it most. In a craft list the colour of a name says which: grey nothing, green '
+              'little, yellow good, orange the most. The first time you make or catch something counts double.'),
+        ('p', 'Everything you gather has a rank: herbs, ore, fish, game. Above your rank it is too hard for you yet. '
+              'The better things lie where the land is more dangerous: far from the roads, in the wild country, '
+              'deeper under the earth. So you go further out as you grow.'),
+        ('p', 'Foes far below you teach your weapons and schools little too.'),
+        ('h', 'Herbs'),
+        ('p', 'Every herb has two properties: Heal, Mana, Stamina, Regen, Cure, Staunch, Ward Fire, Ward Cold, Ward '
+              'Poison, Sight, Calm, Swift, Strength, Sleep, Venom, Flame or Silver. Taste a herb to learn its first; '
+              'from Foraging 15 you see the second when you pick it; a brew that works teaches both. What you do not '
+              'know shows as ?. The herbalist monks in the monasteries name what you bring them.'),
+        ('p', 'Each land has its herbs: arnica on the mountains, bloodmoss in the marsh, myrrh in the desert, '
+              'ghostcap in old forest only at night. Starmoss grows only by the wonders and in the elven glades.'),
+        ('h', 'Alchemy'),
+        ('p', '[P] shows the herbs you carry. Pick two or three: what they share becomes the brew. Three that share one '
+              'property make it stronger; nothing shared is a ruined brew. Better herbs and a higher rank make '
+              'stronger brews.'),
+        ('l', ['A shared Venom, Flame or Silver makes an oil: use it on your weapon and your blows poison, burn or '
+               'sear the dead for a while.',
+               'A shared Sleep makes a flask: throw it at a foe within six steps and it sleeps a few turns.',
+               'Starmoss in a brew doubles it. Alone it makes the Starlight Elixir: +5 life for good, once in a '
+               'hero\'s life.',
+               'Brewed on strong spirits, a draught is a tincture: it lasts twice as long.']),
+        ('h', 'Brewing'),
+        ('p', 'At an inn or in a monastery cellar, [P] and then [Tab]: ale, berry wine and mead at first. Each people '
+              'has its drink: halfling cider, dwarf stout, gnome cordial, elven wine; the north its juniper spirits, '
+              'the south spiced spirits. Taste one, or hear it from an innkeeper there, and you can brew it once your '
+              'rank allows. Royal mead nobody teaches.'),
+        ('p', 'A drink sells best far from where it was brewed. From Brewing 30 every batch also fills a barrel for '
+              'your cart. At a fire or a hearth you can pour a round for the company: your companions take heart. '
+              'Bring a people their own drink and their innkeeper will remember you, and tell you of a place.'),
+        ('p', 'Strong spirits warm you and give you courage. A third cup in a short while, or a second of spirits, '
+              'and your aim goes.'),
+        ('h', 'Mining and smithing'),
+        ('p', 'An ore vein holds iron, or better ore where the land allows: silver in the hills, bog iron in the '
+              'marsh, deepiron four floors down, bloodstone in the canyons, frostvein in the cold mountains, '
+              'moonsilver in karst caves, sunstone in the desert, adamant in the deepest tunnels. Iron goes on your '
+              'cart; the rest in your pack. A star that fell from the sky is star-iron.'),
+        ('p', 'Walk into an anvil to smelt ore into bars, to forge, to mend your metal gear for a bar or a load of ore, '
+              'or to hone your blade for a while. Smithing makes every metal weapon, mail and plate, helms, shields, '
+              'gauntlets and greaves, and tools: a pick, a skinning knife, fish hooks.'),
+        ('h', 'Tailoring and leather'),
+        ('p', 'At a workbench, Tailoring makes quilted armour, robes, caps, hoods, sashes, wraps and soft shoes, '
+              'each warm or cool as you choose; and bandages, rope and a fishing net. Warm clothes keep the cold '
+              'from eating your food, cool ones the heat. Cloth comes from the villages: linen from the farms, wool '
+              'from the herders, cotton in the south; spider silk from spiders, Fey Silk at night by the wisp fens.'),
+        ('p', 'Leatherworking makes leather armour, gloves, boots, a belt and a waterskin from the leather of the '
+              'beasts you hunt.'),
+        ('h', 'What you make'),
+        ('p', 'The material decides the grade: the first two tiers make normal pieces, the middle two exceptional, '
+              'the highest elite. It adds a property of its own: silver sears the dead, deepiron wears slower, '
+              'moonsilver is lighter, sunstone wards fire, spider silk holds mana, snakeskin wards poison. Your rank '
+              'decides the work: crude, fine or masterwork.'),
+        ('h', 'Fish'),
+        ('p', 'Fresh and salt water hold different fish. The big ones want their own water: grayling in mountain '
+              'streams, sturgeon in broad rivers, ice char in the northern lakes, ghost pike in forest lakes at '
+              'night, the thunderfin only in a storm at sea. A fish too strong for you yet snaps your line. A net '
+              'takes small fish from shallow water without a cast; fish hooks land more.'),
     ]
 
 
@@ -1068,7 +1137,7 @@ CHAPTERS = [
     ('First steps', ch_first_steps), ('Moving and looking', ch_moving), ('Fighting', ch_fighting),
     ('Your hero', ch_hero), ('Who you become', ch_who), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Dungeons', ch_dungeons), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
-    ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Your company', ch_company),
+    ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Crafts', ch_crafts), ('Your company', ch_company),
     ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms), ('The shadow', ch_shadow),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
     ('All the keys', ch_keys),

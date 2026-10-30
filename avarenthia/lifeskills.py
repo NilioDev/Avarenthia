@@ -1,5 +1,6 @@
-"""Life skills: crafts and pastimes that grow by doing them, each with its own rewards along the way
-(in the spirit of Project Gorgon). Fishing is the first; more will follow."""
+"""Life skills: crafts and pastimes that grow slowly by doing them, up to rank 50.
+Work far below your rank teaches nothing, a first make or catch counts double, and what you gather has a tier that
+follows the danger of the land. Fishing lives here; the others in foraging, alchemy, brewing, crafts, hunting, cooking."""
 import random
 
 from . import data as D
@@ -9,19 +10,21 @@ LIFE = {
                     perks={3: 'Trout and carp start to bite', 5: 'Casts take less time', 8: 'Pike bite in deep water',
                            12: 'Salmon run in the rivers', 15: 'Casts take much less time',
                            18: 'The legendary golden carp may bite', 25: 'Master angler: almost every cast lands a fish'}),
-    'foraging': dict(name='Foraging', desc='Search the wild for food (F). Taste strange plants with care.',
-                     perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once', 8: 'Poisonous plants make you uneasy',
-                            10: 'Searching takes less time', 15: 'You rarely come back empty-handed'}),
-    'herbalism': dict(name='Herbalism', desc='Picking herbs and knowing them; grows as you pick and learn.',
-                      perks={3: 'You often recognise the herbs you pick', 5: 'You gather more herbs at once',
-                             8: 'Kingsfoil and other rare herbs turn up more often', 12: 'You can tell a herb at a glance'}),
-    'alchemy': dict(name='Alchemy', desc='Potions from herbs (P). Monastery herbalists teach the basics.',
-                    perks={3: 'Recipe: Antidote', 5: 'Fewer ruined potions', 8: 'Recipe: Kingsfoil Elixir', 10: 'Potions rarely fail'}),
-    'brewing': dict(name='Brewing', desc='Ale, mead and wine (P), at an inn or in a monastery cellar.',
-                    perks={3: 'Recipe: Berry Wine', 5: 'Fewer spoiled batches', 6: 'Recipe: Mead', 10: 'You brew an extra mug now and then'}),
+    'foraging': dict(name='Foraging', desc='Food and herbs from the wild (F). Taste strange plants warily.',
+                     perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once',
+                            8: 'Poisonous plants make you uneasy; rare herbs turn up more often',
+                            10: 'Searching takes less time', 12: 'You can tell a herb at a glance',
+                            15: 'You see a herb\'s second property when you pick it; you rarely come back empty-handed'}),
+    'alchemy': dict(name='Alchemy', desc='Draughts and oils from herbs (P): what two or three herbs share.',
+                    perks={5: 'Fewer ruined brews', 10: 'Brews rarely fail', 20: 'Stronger brews'}),
+    'brewing': dict(name='Brewing', desc='Ale, cider, wine, mead and spirits (P), at an inn or a cellar.',
+                    perks={5: 'Fewer spoiled batches', 10: 'You brew an extra mug now and then',
+                           30: 'A barrel with every batch, when your cart has room'}),
     'mining': dict(name='Mining', desc='Dig ore and gems from veins (walk into one, with a pick).',
                    perks={3: 'You dig a little faster', 6: 'You dig faster', 10: 'Now and then a gem among the ore',
                           15: 'You dig much faster'}),
+    'smithing': dict(name='Smithing', desc='At an anvil: smelt ore, forge arms and armour, mend, hone.',
+                     perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
     'hunting': dict(name='Hunting', desc='Tracks and herds: walk into a herd on the world map.',
                     perks={3: 'You read how old tracks are', 6: 'Game notices you a little later',
                            10: 'You see herds from further off', 15: 'You snare small game more often'}),
@@ -32,38 +35,102 @@ LIFE = {
                     perks={5: 'Fewer burnt dishes', 10: 'An extra portion from every pot',
                            15: 'You taste what is in the inn\'s stew', 20: 'Another portion, and stronger dishes'}),
     'leatherworking': dict(name='Leatherworking', desc='Leather goods at a workbench; oak bark tans a salted hide.',
-                           perks={5: 'Sturdier work', 15: 'Fine work: better armour'}),
+                           perks={5: 'Sturdier work', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
+    'tailoring': dict(name='Tailoring', desc='Cloth at a workbench: robes, hoods, wraps; bandages, rope.',
+                      perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
 }
-LIFE_ORDER = ['fishing', 'foraging', 'herbalism', 'alchemy', 'brewing', 'mining', 'hunting', 'skinning', 'cooking',
-              'leatherworking']
+LIFE_ORDER = ['fishing', 'foraging', 'alchemy', 'brewing', 'mining', 'smithing', 'hunting', 'skinning', 'cooking',
+              'leatherworking', 'tailoring']
 
-# key: name, minimum rank, waters, weight, value, healing
+# the steps of a life skill: what each lets you work, and how dangerous the land must be for it to lie there
+TIERS = 'ABCDE'
+TIER_RANK = {'A': 0, 'B': 10, 'C': 20, 'D': 30, 'E': 40, 'T': 30}
+TIER_DANGER = {'A': 0, 'B': 4, 'C': 6, 'D': 8, 'E': 10, 'T': 0}
+
+# key: name, rank, waters, weight, value, healing, tier, where else (night, storm, north, south, mountain, broad,
+#      deep, deepest, forest, star: see fish_cond)
 FISH = {
-    'minnow': ('Minnow', 0, 'river lake sea swamp cave', 10, 2, 3),
-    'perch': ('River Perch', 0, 'river lake', 8, 5, 6),
-    'herring': ('Herring', 0, 'sea', 9, 4, 5),
-    'carp': ('Mud Carp', 3, 'lake swamp', 7, 8, 8),
-    'trout': ('Brown Trout', 3, 'river', 7, 10, 10),
-    'cavefish': ('Blind Cavefish', 2, 'cave', 7, 16, 9),
-    'eel': ('Marsh Eel', 5, 'swamp river', 5, 14, 12),
-    'mackerel': ('Mackerel', 4, 'sea', 6, 12, 10),
-    'pike': ('Pike', 8, 'lake river', 4, 24, 16),
-    'salmon': ('Silver Salmon', 12, 'river', 4, 32, 20),
-    'tuna': ('Bluefin', 12, 'sea', 3, 36, 22),
-    'golden': ('Golden Carp', 18, 'lake river swamp', 1, 140, 30),
-    'legend': ('Legendary Fish', 16, '', 0, 0, 0),           # the big one of a Brotherhood job: never caught by chance
+    # A, fresh water
+    'minnow': ('Minnow', 0, 'river lake swamp cave', 10, 2, 3, 'A', ''),
+    'perch': ('River Perch', 0, 'river lake', 8, 5, 6, 'A', ''),
+    'carp': ('Mud Carp', 2, 'lake swamp', 7, 8, 8, 'A', ''),
+    'trout': ('Brown Trout', 3, 'river', 7, 10, 10, 'A', ''),
+    'cavefish': ('Blind Cavefish', 2, 'cave', 7, 16, 9, 'A', ''),
+    'eel': ('Marsh Eel', 5, 'swamp river', 5, 14, 12, 'A', ''),
+    'pike': ('Pike', 7, 'lake river', 4, 24, 16, 'A', ''),
+    # A, salt water
+    'sprat': ('Sprat', 0, 'sea', 10, 2, 3, 'A', ''),
+    'herring': ('Herring', 0, 'sea', 9, 4, 5, 'A', ''),
+    'flounder': ('Flounder', 2, 'sea', 7, 8, 8, 'A', ''),
+    'mackerel': ('Mackerel', 4, 'sea', 6, 12, 10, 'A', ''),
+    'cod': ('Cod', 6, 'sea', 5, 18, 14, 'A', ''),
+    # B
+    'salmon': ('Silver Salmon', 10, 'river', 4, 32, 20, 'B', ''),
+    'tuna': ('Bluefin', 12, 'sea', 3, 36, 22, 'B', ''),
+    'catfish': ('Catfish', 11, 'swamp', 4, 30, 20, 'B', ''),
+    'grayling': ('Grayling', 13, 'river', 4, 34, 20, 'B', 'mountain'),
+    # C
+    'sturgeon': ('Great Sturgeon', 20, 'river', 3, 70, 28, 'C', 'broad'),
+    'swordfish': ('Swordfish', 22, 'sea', 3, 75, 30, 'C', ''),
+    'ice_char': ('Ice Char', 24, 'lake', 3, 70, 28, 'C', 'north'),
+    'deep_eel': ('Deep Eel', 23, 'cave', 3, 72, 28, 'C', 'deep'),
+    # D
+    'ghost_pike': ('Ghost Pike', 30, 'lake', 2, 120, 36, 'D', 'night forest'),
+    'sailfish': ('Sailfish', 32, 'sea', 2, 125, 38, 'D', 'south'),
+    'whitefish': ('Blind Whitefish', 34, 'cave', 2, 120, 36, 'D', 'deep'),
+    # E
+    'thunderfin': ('Thunderfin', 40, 'sea', 2, 200, 44, 'E', 'storm'),
+    'abyss_eel': ('Abyss Eel', 42, 'cave', 2, 210, 44, 'E', 'deepest'),
+    'elder_sturgeon': ('Elder Sturgeon', 45, 'river', 1, 240, 50, 'E', 'broad'),
+    # the top: luck, and the crafts' own rares
+    'golden': ('Golden Carp', 15, 'lake river swamp', 1, 140, 30, 'T', ''),
+    'moonfish': ('Moonfish', 35, 'lake', 1, 260, 40, 'T', 'star night'),
+    'legend': ('Legendary Fish', 16, '', 0, 0, 0, 'T', ''),  # the big one of a Brotherhood job: never caught by chance
 }
 JUNK = ['an old boot', 'a tangle of weed', 'a rusty helmet', 'a waterlogged branch']
 
 
 def need_for(r):
-    return 20 + r * 6
+    """Slow, like the long road beside the fighting: rank 10 in about an hour, 50 in sixty hours or more."""
+    return round(20 + 4 * r + .35 * r * r)
 
 
-def gain(game, key, amount):
+# how much a piece of work teaches, by its rank against yours
+COLOURS = {'grey': ((128, 128, 128), 0), 'green': ((110, 200, 100), .35), 'yellow': ((236, 210, 90), 1),
+           'orange': ((240, 150, 60), 1.3)}
+
+
+def colour(r, at):
+    """The colour of a piece of work in a craft list: grey teaches nothing, green little, yellow and orange most."""
+    d = r - at
+    return 'grey' if d >= 10 else 'green' if d >= 5 else 'yellow' if d >= -2 else 'orange'
+
+
+def colour_of(game, key, at):
+    return COLOURS[colour(rank(game, key), at)][0]
+
+
+def first_time(game, key, what):
+    """True the first time you make or catch this: it counts double."""
+    done = game.player.__dict__.setdefault('life_firsts', set())
+    if (key, what) in done:
+        return False
+    done.add((key, what))
+    return True
+
+
+def gain(game, key, amount, at=None, what=None):
+    """Learning by doing. With `at` (the rank of the work) the work far below you teaches nothing; with `what` the
+    first time you make or catch it counts double."""
     from .races import RACES
     p = game.player
     sk = p.life_sk.setdefault(key, [0, 0])
+    if at is not None:
+        amount *= COLOURS[colour(sk[0], at)][1]
+    if what is not None and first_time(game, key, what):
+        amount *= 2
+    if amount <= 0:
+        return
     rc = RACES.get(getattr(p, 'race', 'human'), RACES['human'])
     from .guilds import life_bonus
     sk[1] += amount * rc['learn'].get(key, 1.1 if p.race == 'human' else 1) * life_bonus(game, key)
@@ -74,6 +141,25 @@ def gain(game, key, amount):
         perk = LIFE[key]['perks'].get(sk[0])
         if perk:
             game.msg(f'New at {LIFE[key]["name"]} {sk[0]}: {perk}.', 'gold')
+
+
+def place_danger(game):
+    """How dangerous the land is where you stand: the danger of the country, and each floor down counts one more."""
+    x, y = game.world_pos()
+    d = game.world.danger_at(x, y) if game.maps['over'].inb(x, y) else 1
+    m = game.map
+    if m.kind == 'dungeon':
+        d += max(0, (getattr(m, 'depth', 1) or 1) - 1) + 2
+    return d
+
+
+def tier_open(game, tier):
+    """Does the land here hold work of this tier?"""
+    return place_danger(game) >= TIER_DANGER[tier]
+
+
+def too_hard(game, key, at, name):
+    game.msg(f'{name}: too hard for you yet ({LIFE[key]["name"]} {at}).', 'info')
 
 
 def rank(game, key):
@@ -158,7 +244,7 @@ def plan(game, water):
         chance = min(.95, chance + .2)                # cast where the rings are
         game.msg('Fish are rising here.', 'info')
     from .nature import fish_bonus
-    chance = min(.95, chance + fish_bonus(game))
+    chance = min(.95, chance + fish_bonus(game) + (.08 if any(i.k == 'tool' and i.t == 'hooks' for i in p.inv) else 0))
     out = dict(water=water, rank=r, turns=turns, kind='none', fish=None, weight=0)
     from .evils import taint_at
     ev = taint_at(game, p.x, p.y) if over else None
@@ -180,22 +266,85 @@ def plan(game, water):
         else:
             out.update(kind='junk', junk=random.choice(JUNK), weight=2)
         return out
-    cands = [(k, f) for k, f in FISH.items() if f[1] <= r and water in f[2].split()]
+    here = [(k, f) for k, f in FISH.items() if water in f[2].split() and fish_cond(game, f[7]) and tier_open(game, f[6])]
+    if r >= 25:
+        here = [(k, f) for k, f in here if f[1] >= 5] or here      # a master's hook is too big for a minnow
+    cands = [(k, f) for k, f in here if f[1] <= r]
+    big = [(k, f) for k, f in here if f[1] > r]
+    if big and random.random() < .12:
+        k, f = random.choice(big)
+        out.update(kind='big', fish=k)                # something too strong for your line yet
+        return out
     if not cands:
-        cands = [('minnow', FISH['minnow'])]
+        cands = [('sprat' if water == 'sea' else 'minnow', FISH['sprat' if water == 'sea' else 'minnow'])]
     k, f = random.choices(cands, [f[3] * (1 + (f[1] / 10)) for _k, f in cands])[0]
     out.update(kind='fish', fish=k, weight=1 + f[1] // 3)
     return out
 
 
+def fish_cond(game, cond):
+    """Where else a fish wants to be: at night, in a storm, in the north or the south, in a mountain stream, in a
+    broad river, deep under the earth, by a forest, at the Starwater."""
+    if not cond:
+        return True
+    from . import towns as TW
+    m = game.map
+    for c in cond.split():
+        if c == 'night' and not TW.is_night(game):
+            return False
+        if c == 'storm':
+            from . import weather as WX
+            if WX.current(game) != 'storm':
+                return False
+        if c in ('north', 'south'):
+            from .weather import climate
+            x, y = game.world_pos()
+            cl = climate(game.world, game.world.region_at(x, y).id)
+            from .world import WORLD_H
+            south = cl in ('arid', 'hot', 'tropical') or y > WORLD_H * .7
+            if (c == 'north' and cl != 'cold') or (c == 'south' and not south):
+                return False
+        if c in ('mountain', 'forest'):
+            from . import cooking as CK
+            lands = CK.here_lands(game)
+            if c not in lands:
+                return False
+        if c == 'broad' and not _broad(game):
+            return False
+        if c in ('deep', 'deepest'):
+            depth = (getattr(m, 'depth', 0) or 0) if m.kind == 'dungeon' else 0
+            if depth < (4 if c == 'deep' else 6):
+                return False
+        if c == 'star' and not near_site(game, ('starwater', 'starwell'), 6):
+            return False
+    return True
+
+
+def _broad(game):
+    """A broad river: three or more river cells across, where you stand."""
+    m, p = game.map, game.player
+    n = sum(1 for dx in range(-3, 4) for dy in range(-3, 4) if m.inb(p.x + dx, p.y + dy) and m.tile(p.x + dx, p.y + dy) == D.RIVER)
+    return n >= 12
+
+
+def near_site(game, kinds, r):
+    from .worldgen import cheb
+    x, y = game.world_pos()
+    return any(q.kind in kinds and cheb(q.x, q.y, x, y) <= r for q in game.world.sites)
+
+
 def land(game, pl, ok):
     """How it ends: ok is whether you struck in time and brought it in. Returns the turns it took."""
-    gain(game, 'fishing', .5)
     kind = pl['kind']
+    gain(game, 'fishing', .5, at=FISH[pl['fish']][1] if pl.get('fish') else best_here(game, pl['water']))
     if kind == 'monster':
         game.msg('Something huge takes the bait and pulls. Then it comes out of the water after you!', 'bad')
         game.start_encounter(None, game.map.tile(game.player.x, game.player.y), pl['lvl'], pl['keys'])
         return 1
+    if kind == 'big':
+        game.msg(f'Something heavy takes the hook and snaps your line at once. A {FISH[pl["fish"]][0]}? Too strong for '
+                 f'you yet (Fishing {FISH[pl["fish"]][1]}).', 'info')
+        return pl['turns']
     if kind == 'none':
         game.msg(random.choice(['Nothing bites.', 'A nibble... and it is gone.', 'The float bobs, then lies still.',
                                 'Something steals your bait.']))
@@ -221,14 +370,16 @@ def land(game, pl, ok):
     f = FISH[k]
     it = make_fish(game, k)
     if game.add_to_inv(it):
-        game.msg(f'You catch a {f[0]}!', 'gold' if f[1] >= 12 else 'good')
+        game.msg(f'You catch a {f[0]}!', 'gold' if f[1] >= 10 else 'good')
     else:
         game.msg(f'You catch a {f[0]}, but your pack is full. You let it go.')
-    gain(game, 'fishing', 1 + f[1] // 6)
+    gain(game, 'fishing', 1 + f[1] // 6, at=f[1], what=k)
     from .gods import on_craft
     on_craft(game, 'fish')
     if k == 'golden':
         game.msg('A golden carp! Fishermen will talk about this for years.', 'unique')
+    elif k == 'moonfish':
+        game.msg('A moonfish, pale as the moon on the water. A cook would give much for it.', 'unique')
     return pl['turns']
 
 
@@ -238,6 +389,42 @@ def fish(game):
     if not water:
         return 0
     return land(game, plan(game, water), True)
+
+
+def best_here(game, water):
+    """The rank of the best fish you can catch in this water: what a cast that brings nothing teaches by."""
+    rs = [f[1] for f in FISH.values() if water in f[2].split() and f[1] <= rank(game, 'fishing')
+          and fish_cond(game, f[7]) and tier_open(game, f[6])]
+    return max(rs) if rs else 0
+
+
+def bandage(game, it):
+    """A bandage (Tailoring): it stops the bleeding and a little life comes back."""
+    p = game.player
+    game.remove_one(it)
+    p.poison = None
+    game.heal(8 + rank(game, 'tailoring') // 2, True)
+    game.msg('You bind the wound tight. The bleeding stops.', 'good')
+    return 3
+
+
+def net(game):
+    """A fishing net (Tailoring): small fish from shallow water, without a cast. Returns the turns it took."""
+    water = water_here(game)
+    if not water or game.hostile_visible():
+        game.msg('Cast the net beside shallow water, with no enemies about.', 'info')
+        return 0
+    small = [k for k, f in FISH.items() if water in f[2].split() and f[1] <= 3 and f[6] == 'A' and not f[7]]
+    if not small or random.random() < .35:
+        game.msg('You haul the net in: weed and mud.')
+        return 20
+    k = random.choice(small)
+    n = random.randint(1, 3)
+    it = make_fish(game, k, n)
+    game.add_to_inv(it) or game.spill(game.map, game.player.x, game.player.y, it)
+    game.msg(f'You haul the net in: {n} {FISH[k][0].lower()}{"" if n == 1 else "s"}.', 'good')
+    gain(game, 'fishing', .3, at=FISH[k][1])
+    return 20
 
 
 def place_name(game):

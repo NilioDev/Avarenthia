@@ -528,7 +528,13 @@ def dig(game, x, y):
         game.msg('Not with enemies about!', 'bad')
         return 0
     good = 'gems' if t == GEMS else 'ore'
-    if ECO.cargo_weight(p) + D.GOODS[good]['w'] > ECO.cargo_capacity(p):
+    metal = 'iron'
+    if good == 'ore':
+        from . import crafts as CRF
+        metal = CRF.dig_vein(game, x, y)
+        if metal is None:
+            return 0
+    if metal == 'iron' and ECO.cargo_weight(p) + D.GOODS[good]['w'] > ECO.cargo_capacity(p):
         game.msg(f'You have no room for {D.GOODS[good]["name"].lower()}. Sell some cargo, or bring a mule or a cart.', 'bad')
         return 0
     if getattr(m, 'tribe', None) == 'kobolds':
@@ -543,11 +549,17 @@ def dig(game, x, y):
     r = LS.rank(game, 'mining')
     turns = max(6, 22 - r)
     m.set(x, y, FLOOR)
-    p.cargo[good] = p.cargo.get(good, 0) + 1
-    LS.gain(game, 'mining', 3 if good == 'gems' else 1)
-    if good == 'gems':
+    from . import crafts as CRF
+    at = CRF.METALS[metal][2] if good == 'ore' else 10
+    LS.gain(game, 'mining', 3 if good == 'gems' else 1 + at / 10, at=at, what=metal if good == 'ore' else 'gems')
+    if metal != 'iron':
+        CRF.give(game, 'ore_' + metal, 1 + (1 if random.random() < .3 else 0))
+        game.msg(f'You break {CRF.ORE_NAME[metal].lower()} out of the vein!', 'gold')
+    elif good == 'gems':
+        p.cargo[good] = p.cargo.get(good, 0) + 1
         game.msg('You prise a fist of rough gems out of the rock!', 'gold')
     else:
+        p.cargo[good] = p.cargo.get(good, 0) + 1
         game.msg(random.choice(['You dig out a load of iron ore.', 'Chunks of ore come loose under your pick.',
                                 'You break the vein out of the rock: a good load of ore.']), 'good')
     if r >= 10 and good == 'ore' and random.random() < .08:

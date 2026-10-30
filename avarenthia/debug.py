@@ -616,6 +616,14 @@ def item_list():
         out.append(('plant', v[0], ('plant', k)))
     for k, v in LS.FISH.items():
         out.append(('fish', v[0], ('fish', k)))
+    from . import crafts as CRF
+    for m in CRF.METALS:
+        out.append(('ore', CRF.ORE_NAME[m], ('mat', 'ore_' + m)))
+        out.append(('bar', CRF.mat_name('bar_' + m), ('mat', 'bar_' + m)))
+    for c in CRF.CLOTHS:
+        out.append(('cloth', CRF.CLOTHS[c][0], ('mat', 'cloth_' + c)))
+    for k, v in CRF.LEATHERS.items():
+        out.append(('leather', v[0], ('leather', k)))
     return out
 
 
@@ -642,6 +650,11 @@ def give(game, recipe, rar='normal'):
         it = HU.make_food(game, recipe[1], 5)
     elif kind == 'plant':
         it = FG.make_plant(game, recipe[1], 5)
+    elif kind == 'mat':
+        from . import crafts as CRF
+        it = CRF.make_mat(game, recipe[1], 8)
+    elif kind == 'leather':
+        it = EN.Item(game.new_id(), 'leather', recipe[1], 8)
     else:
         it = LS.make_fish(game, recipe[1], 3)
     if it.k == 'gear':

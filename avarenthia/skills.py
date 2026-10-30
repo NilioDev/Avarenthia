@@ -624,9 +624,13 @@ def describe(sk, r):
 
 
 # ------------------------------------------------------------------ learning
-def gain(game, line, amount):
+def gain(game, line, amount, foe=None):
+    """Practice. A foe far below you teaches little: five levels under you less than half, ten under you a tenth."""
     p = game.player
     d = p.disc[line]
+    if foe is not None and not foe.is_npc:
+        below = p.lvl - getattr(foe, 'lvl', p.lvl)
+        amount *= .1 if below >= 10 else .4 if below >= 5 else 1
     from .races import RACES
     rc = RACES.get(getattr(p, 'race', 'human'), RACES['human'])
     amount = amount * rc['learn'].get(line, 1.1 if p.race == 'human' else 1)
@@ -779,7 +783,8 @@ def use(game, slot):
         p.mana -= cost
     p.cooldowns[sid] = sk.cd
     TT.on_cast(game, sk)
-    gain(game, sk.line, 3)
+    foes = game.visible_hostiles()
+    gain(game, sk.line, 3, max(foes, key=lambda o: o.lvl) if foes else None)
     if getattr(sk, 'quick', False):                 # half a turn: every second one costs none
         p.quick = not getattr(p, 'quick', False)
         if not p.quick:

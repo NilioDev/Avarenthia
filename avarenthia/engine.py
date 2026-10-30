@@ -31,6 +31,8 @@ from . import hunger as HU
 from . import gods as GD
 from . import lore as LORE
 from . import lifeskills as LS
+from . import alchemy as AL
+from . import crafts as CRF
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -79,7 +81,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 49
+SAVE_VERSION = 50
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -424,9 +426,12 @@ class Game:
                 s['regen'] += v
             elif k == 'dr':
                 s['dr'] = max(s['dr'], v)
-            elif k == 'dmg':
+            elif k in ('dmg', 'courage', 'honed'):
                 buff_dmg += v
-            elif k in ('res_fire', 'res_poison'):
+            elif k == 'tipsy':                      # too much to drink: your aim is gone
+                s['hit'] += v
+            elif k in ('res_fire', 'res_poison', 'res_cold', 'res_light', 'str', 'dex', 'hit', 'sight', 'fire_dmg', 'undead',
+                       'crit'):
                 s[k] += v
             elif k == 'frail':                      # back from the dead, and not yet yourself
                 buff_dmg -= v
@@ -445,6 +450,8 @@ class Game:
             s['res_poison'] += 20                    # dwarves shrug off venom
         for r in ('res_fire', 'res_cold', 'res_light', 'res_poison'):
             s[r] = min(D.RES_CAP, s[r] + s['res_all'])
+        if getattr(p, 'starlight', False):
+            s['life'] += 5                           # the Starlight Elixir
         s['max_life'] = int((20 + s['vit'] * 2 + (p.lvl - 1) * 3 + s['life']) * TT.life_mult(self))
         if s.get('frail'):
             s['max_life'] = max(5, round(s['max_life'] * (1 - s['frail'] / 100)))
@@ -585,8 +592,9 @@ class Game:
         return m.inb(x, y) and self.vis[y * m.w + x]
 
     def visible_hostiles(self):
+        seeall = any(b[0] == 'seeall' for b in self.player.buffs)
         return [o for o in self.map.mons if not o.is_npc and self.visible(o.x, o.y) and not getattr(o, 'lurk', False)
-                and not getattr(o, 'invis', 0)]
+                and (not getattr(o, 'invis', 0) or seeall)]
 
     def hostile_visible(self):
         return bool(self.visible_hostiles())
@@ -826,7 +834,7 @@ class Game:
             self.shops[sid] = W.gen_shop(self, s.is_city)
             if not s.is_city:
                 del self.shops[sid][6:]
-            self.shops[sid] += CK.shop_stock(self, s)
+            self.shops[sid] += CK.shop_stock(self, s) + CRF.shop_cloth(self, s)
         MS.refresh_board(self, s)
         esc = MS.escort_wanderer(self)
         if esc:
@@ -1160,7 +1168,10 @@ class Game:
             if t == D.FRAME:
                 return HT.frame(self, nx, ny)
             if t == D.BENCH:
-                HT.bench(self, nx, ny)
+                CRF.bench(self)
+                return 0
+            if t == D.ANVIL and not (getattr(m, 'tribe', None) and not getattr(m, 'friendly', False)):
+                CRF.anvil(self)
                 return 0
             if getattr(m, 'rift', False):
                 got = RF.bump(self, nx, ny, t)
@@ -1991,6 +2002,7 @@ class Game:
         if weapon:
             TT.on_weapon_hit(self, mon, False)
             ART.envenom_hit(self, mon)
+            AL.oil_hit(self, mon)
         return False
 
     def melee(self, mon):
@@ -2008,7 +2020,7 @@ class Game:
             return
         crit = random.random() < self.crit_vs(mon, s) / 100
         if s['line'] and not s['ranged']:
-            SK.gain(self, s['line'], 1)
+            SK.gain(self, s['line'], 1, mon)
         k = WP.on_melee(self, mon, s)
         p = self.player
         if crit:
@@ -2215,6 +2227,7 @@ class Game:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'gold', 'gold', purse(lvl, 8 if boss else 2.5 if mon.elite else 1)))
         if special or random.random() < .16:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
+        CRF.on_kill(self, mon)
         if HT.carcass(self, mon):
             pass                                    # a carcass to skin: meat, a hide, sometimes horn
         elif mon.k in HU.BEASTS and random.random() < .35:
@@ -2844,7 +2857,7 @@ class Game:
         p.last_target = t.id
         p.strained = self.turn
         if fam == 'spear':
-            SK.gain(self, 'spears', 1)
+            SK.gain(self, 'spears', 1, t)
             return WP.throw_spear(self, t, s)
         ch = '*' if fam == 'sling' else '-'
         self.fx('bolt', cells=self.path_to(t), src=(p.x, p.y), col=(216, 208, 176), ch=ch)
@@ -2857,7 +2870,7 @@ class Game:
         crit = random.random() < self.crit_vs(t, s) / 100
         WP.after_shot(self, t, True)
         self.damage_mon(t, random.randint(*s['dmg']) + self.weapon_extra(t, s), crit, weapon=True, ranged=True)
-        SK.gain(self, s['line'], 1)
+        SK.gain(self, s['line'], 1, t)
         return 1
 
     def path_to(self, mon):
@@ -3277,6 +3290,8 @@ class Game:
         if role in ('market', 'inn', 'stables'):
             if role == 'inn' and here is not None:
                 CK.at_inn(self, here, npc)
+                from . import brewing as BRW
+                BRW.at_inn(self, here, npc)
             self.request = (role, here.id if here else 0)
             return
         if role == 'tanner':

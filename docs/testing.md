@@ -26,6 +26,26 @@ Each line: **what** - what to check - what the debug menu should offer.
   end, the swap. Debug: "Epics: rank 40, teachers, deeds" (E), Teleport to the hut, "Rested here", Weather (a storm
   for the bell), Time (a winter night).
 
+
+## Life skills part 1 (built 30 October 2026)
+
+- **The curve and the colours** - a craft list's names in grey, green, yellow and orange; grey work teaching nothing,
+  the first make or catch double; a rat teaching a sword little at level 20. Debug: Ranks (life skills and
+  disciplines), Give item.
+- **Herbs and alchemy** - the herbs of each land and tier, "too hard for you yet", tasting for the first property,
+  the second at Foraging 15, `?` in the [P] list; two or three herbs, a ruined brew, three on one property, an oil on
+  the blade, a sleeping flask thrown, Starmoss alone (once only), a tincture on spirits. Debug: Give item (plants,
+  the spirits), Ranks (Foraging, Alchemy), Teleport to a land, Time (night, winter).
+- **Brewing** - the ten drinks with their ranks, tasting one to learn it, an innkeeper of that people telling it, a
+  barrel at 30, a round for the company at a fire, the gift at a people's inn, tipsy after three cups, a drink sold
+  far away. Debug: Give item (food: the drinks, honey, barley, apples), Ranks (Brewing), Teleport.
+- **Fish by tier** - fresh and salt fish apart, a big fish snapping the line, grayling, sturgeon, ice char, the
+  thunderfin in a storm, the net, the hooks. Debug: Ranks (Fishing), Teleport, Weather (a storm), Time (night).
+- **Smithing and Tailoring** - veins of each metal by land and depth, smelting, forging every piece and tool, the
+  grade and property per material, crude/fine/masterwork, mending and honing; cloth from the outfitters, spiders, a
+  mammoth, Fey Silk at night by the wisps; warm or cool pieces in the cold and the heat; leather by its beast; a herd
+  too wary for you yet. Debug: Give item (ore, bars, cloth, leather), Ranks, Teleport, Spawn (spiders).
+
 ## The K5 maker (built 24 October 2026)
 
 - **Theme rooms** - each of the 38 rooms, its mood line, its telling thing (pray, search, drink, the vault and its key,

@@ -282,6 +282,12 @@ def on_step(game):
 def hunt(game, h):
     """Walking into a herd on the world map: its zone becomes the hunting ground."""
     from . import zones as ZN
+    from . import lifeskills as LS
+    at = LS.TIER_RANK[GAME_TIER.get(h.kind, 'A')]
+    if at > LS.rank(game, 'hunting'):
+        game.msg(f'The {D.MONSTERS[h.kind]["name"].lower()} lift their heads long before you are near: too wary for '
+                 f'you yet (Hunting {at}).', 'info')
+        return 0
     from .worldgen import cheb
     p = game.player
     dx, dy = h.x - p.x, h.y - p.y
@@ -501,6 +507,7 @@ SKINS = {
     'sabretooth': ('meat', (2, 3), 'Sabretooth Pelt', 20, [('fangs', .8)], True, 2),
     'snow_ape': ('meat', (2, 3), 'Snow Ape Fur', 12, [], True, 2),
     'mammoth': ('meat', (5, 7), 'Mammoth Hide', 10, [('ivory', .8)], False, 5),
+    'drake': ('meat', (2, 3), 'Drake Hide', 25, [], False, 3),
     'rhino': ('meat', (4, 5), 'Rhino Hide', 8, [('horn', .7)], False, 4),
     'hyena': ('meat', (1, 2), 'Hyena Pelt', 2, [], False, 1),
     'jackal': ('meat', (1, 1), 'Jackal Pelt', 1, [], False, 0),
@@ -511,6 +518,20 @@ SKINS = {
     'drake': ('meat', (2, 3), 'Drake Hide', 25, [('claws', .5), ('drake_egg', .1)], False, 2),
     'frost_drake': ('meat', (2, 3), 'Frost Drake Hide', 28, [('claws', .5), ('drake_egg', .1)], False, 2),
     'swamp_drake': ('meat', (2, 3), 'Swamp Drake Hide', 22, [('claws', .5), ('drake_egg', .1)], False, 2),
+}
+# the leather a hide tans into (crafts.LEATHERS): its tier and what it adds to what is made of it
+LEATHER_OF = {
+    'elk': 'sturdy', 'reindeer': 'sturdy', 'ibex': 'sturdy', 'gazelle': 'sturdy', 'bighorn': 'sturdy', 'wildebeest': 'sturdy',
+    'wolf': 'fur', 'worg': 'fur', 'fox': 'fur', 'ermine': 'fur', 'badger': 'fur', 'snow_hare': 'fur',
+    'constrictor': 'snake', 'cobra': 'snake', 'aurochs': 'thick', 'wild_horse': 'thick', 'brown_bear': 'bearfur',
+    'winter_wolf': 'bearfur', 'panther': 'panther', 'crocodile': 'croc', 'cave_bear': 'cavefur', 'snow_ape': 'cavefur',
+    'sabretooth': 'sabre', 'mammoth': 'mammothhide', 'rhino': 'rhino', 'drake': 'drake',
+}
+# the game by its tier: a herd above your Hunting is too wary for you yet; parts tear more often below Skinning
+GAME_TIER = {
+    'elk': 'B', 'reindeer': 'B', 'ibex': 'B', 'gazelle': 'B', 'bighorn': 'B', 'wildebeest': 'B', 'wolf': 'B', 'worg': 'B',
+    'constrictor': 'B', 'cobra': 'B', 'aurochs': 'C', 'wild_horse': 'C', 'brown_bear': 'C', 'winter_wolf': 'C', 'panther': 'C',
+    'crocodile': 'C', 'cave_bear': 'D', 'snow_ape': 'D', 'sabretooth': 'D', 'mammoth': 'D', 'rhino': 'D', 'drake': 'E',
 }
 PARTS = {'antlers': ('Antlers', 4), 'horn': ('Horn', 3), 'tusks': ('Tusks', 4), 'feathers': ('Bunch of Feathers', .5),
          'claws': ('Claws', 3), 'fangs': ('Fangs', 3), 'ivory': ('Ivory', 30)}
@@ -526,6 +547,8 @@ def carcass(game, mon):
     from .entities import Item
     it = Item(game.new_id(), 'carcass', mon.k)
     it.fg = mon.tpl['fg']
+    from . import lifeskills as LS
+    LS.gain(game, 'hunting', 1 + SKINS[mon.k][6] * .5, at=LS.TIER_RANK[GAME_TIER.get(mon.k, 'A')], what=mon.k)
     game.spill(game.map, mon.x, mon.y, it)
     it.x, it.y = mon.x, mon.y
     return True
@@ -580,8 +603,14 @@ def skin(game, it):
         h.q, h.state, h.until = q, 'fresh', game.day + 2
         add(game, h)
         got.append(display(game, h))
+    tier = GAME_TIER.get(it.t, 'A')
+    tear = .5 if r < LS.TIER_RANK[tier] else 1          # below the beast's tier in Skinning, parts tear more often
+    if it.t == 'mammoth' and LS.tier_open(game, 'D'):
+        from . import crafts as CRF
+        CRF.give(game, 'cloth_mammoth', 2)
+        got.append('Mammoth Wool')
     for part, ch in parts:
-        if random.random() < ch + r * .01:
+        if random.random() < (ch + r * .01) * tear:
             if part == 'drake_egg':
                 add(game, make_food(game, 'drake_egg'))
                 got.append('a Drake Egg')
@@ -589,7 +618,7 @@ def skin(game, it):
                 pt = Item(game.new_id(), 'part', part)
                 add(game, pt)
                 got.append(PARTS[part][0])
-    LS.gain(game, 'skinning', 1 + size * .5)
+    LS.gain(game, 'skinning', 1 + size * .5, at=LS.TIER_RANK[tier], what=it.t)
     game.msg(f'You skin the {name}: ' + ', '.join(got) + '.' if got else f'There is nothing worth taking on the {name}.', 'good')
     return 10 + size * 5
 
@@ -611,7 +640,7 @@ def spoil(game):
             n = pieces(it)
             from .entities import Item
             if n:
-                add(game, Item(game.new_id(), 'leather', 'leather', n))
+                add(game, Item(game.new_id(), 'leather', LEATHER_OF.get(it.t, 'leather'), n))
             game.msg(f'The {SKINS[it.t][2].lower()} has tanned: {n} pieces of leather.' if n else
                      f'The {SKINS[it.t][2].lower()} was too torn: it tans into nothing worth having.', 'good')
         elif until is not None and game.day >= until and it.k in ('hide', 'dish', 'food'):
@@ -635,7 +664,9 @@ def display(game, it):
     if it.k == 'part':
         return (f'{it.n}x ' if it.n > 1 else '') + PARTS[it.t][0]
     if it.k == 'leather':
-        return f'{it.n} pieces of Leather' if it.n > 1 else 'Piece of Leather'
+        from .crafts import LEATHERS
+        nm = LEATHERS.get(it.t, LEATHERS['leather'])[0]
+        return f'{it.n} pieces of {nm}' if it.n > 1 else f'Piece of {nm}'
     name = SKINS[it.t][2]
     q = QUALITY[it.q]
     if it.state == 'salted':
@@ -653,7 +684,9 @@ def lines(game, it):
     if it.k == 'part':
         return ['Traders buy it.']
     if it.k == 'leather':
-        return ['Leather, tanned and ready. Work it at a workbench: armour, gloves, boots, a belt, a waterskin.']
+        from .crafts import LEATHERS
+        tier = LEATHERS.get(it.t, LEATHERS['leather'])[1]
+        return [f'Leather, tier {tier}, tanned and ready. Work it at a workbench: armour, gloves, boots, a belt, a waterskin.']
     out = []
     if it.state == 'fresh':
         out.append('A fresh hide rots in two days. Salt it on a stretching frame to keep it, or bring it to a tanner.')
@@ -673,7 +706,8 @@ def value(game, it):
     if it.k == 'part':
         return PARTS[it.t][1]
     if it.k == 'leather':
-        return 1.5
+        from .crafts import LEATHERS, TIER_VAL
+        return 1.5 * TIER_VAL[LEATHERS.get(it.t, LEATHERS['leather'])[1]]
     v = SKINS[it.t][3] * Q_MULT[it.q] * (1.25 if it.state == 'salted' else 1)
     if SKINS[it.t][5] and game is not None:
         here = game.here
@@ -813,8 +847,9 @@ def r_tanner(game, choice, ctx):
         ready = [w for w in waiting if w[0] <= game.day]
         n = sum(w[1] for w in ready)
         tan[sid] = [w for w in waiting if w[0] > game.day]
-        if n:
-            add(game, Item(game.new_id(), 'leather', 'leather', n))
+        for w in ready:
+            if w[1]:
+                add(game, Item(game.new_id(), 'leather', w[2] if len(w) > 2 else 'leather', w[1]))
         game.msg(f'The tanner hands you {n} pieces of good leather.' if n else 'The hides were too torn: nothing came of them.',
                  'good')
     elif choice == 'tan':
@@ -823,73 +858,10 @@ def r_tanner(game, choice, ctx):
         if p.gold < fee or not hides:
             return
         p.gold -= fee
-        n = sum(pieces(h) for h in hides)
         for h in hides:
             p.inv.remove(h)
-        tan.setdefault(sid, []).append((game.day + 3, n))
+            tan.setdefault(sid, []).append((game.day + 3, pieces(h), LEATHER_OF.get(h.t, 'leather')))
         game.msg(f'You pay {fmt(fee)}. "Three days. Come back for it; I do not keep it forever."', 'gold')
-
-
-# what the bench makes: key -> (name, leather, kind, base or tool)
-MAKE = {
-    'armour': ('Leather Armor', 4, 'gear', 'leather'), 'gloves': ('Leather Gloves', 1, 'gear', 'gloves'),
-    'boots': ('Leather Boots', 2, 'gear', 'boots'), 'belt': ('Belt', 1, 'gear', 'belt'),
-    'waterskin': ('Waterskin', 1, 'tool', 'waterskin'),
-}
-BENCH_FEE = 20
-
-
-def bench(game, x, y):
-    from . import events as EV
-    from . import lifeskills as LS
-    from .money import fmt
-    p = game.player
-    have = sum(i.n for i in p.inv if i.k == 'leather')
-    opts = []
-    for k, (name, need, kind, base) in MAKE.items():
-        ok = have >= need and p.gold >= BENCH_FEE
-        if kind == 'tool' and any(i.k == 'tool' and i.t == base for i in p.inv):
-            continue
-        opts.append((f'{name}: {need} leather', f'make:{k}') if ok else (f'{name}: {need} leather (you have {have})', None))
-    opts.append(('Leave', 'leave'))
-    r = LS.rank(game, 'leatherworking')
-    EV.ask(game, 'bench', 'The workbench', f'Awls, needles, waxed thread and a heavy knife. The use of the bench costs '
-           f'{fmt(BENCH_FEE)}.' + (f'\n\nLeatherworking {r}.' if r else ''), opts)
-
-
-def r_bench(game, choice, ctx):
-    from . import lifeskills as LS
-    from .entities import Item, make_gear
-    if not choice or not choice.startswith('make:'):
-        return
-    p = game.player
-    name, need, kind, base = MAKE[choice[5:]]
-    leather = [i for i in p.inv if i.k == 'leather']
-    if sum(i.n for i in leather) < need or p.gold < BENCH_FEE:
-        return
-    p.gold -= BENCH_FEE
-    left = need
-    for it in leather:
-        take = min(it.n, left)
-        it.n -= take
-        left -= take
-        if it.n <= 0:
-            p.inv.remove(it)
-    r = LS.rank(game, 'leatherworking')
-    if kind == 'tool':
-        add(game, Item(game.new_id(), 'tool', base))
-        game.msg(f'You stitch a {name.lower()}.', 'good')
-    else:
-        it = make_gear(game, base, 'normal', max(1, game.player.lvl))
-        if it.arm:
-            it.arm = round(it.arm * (1 + r * .02))
-        if getattr(it, 'mdur', 0):
-            it.mdur = it.dur = round(it.mdur * (1 + r * .02))
-        it.name = ('Fine ' if r >= 15 else '') + it.name
-        add(game, it)
-        game.msg(f'You cut, stitch and rivet: {it.name}.', 'good')
-    LS.gain(game, 'leatherworking', 2 + need)
-    game.end_turn(30 + need * 10)
 
 
 def furnish(game, m, s):
@@ -925,7 +897,6 @@ def furnish(game, m, s):
 def register():
     from . import events as EV
     EV.RESOLVERS['tanner'] = r_tanner
-    EV.RESOLVERS['bench'] = r_bench
 
 
 register()

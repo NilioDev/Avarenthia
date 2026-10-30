@@ -63,8 +63,10 @@ FAMILIES = {
     'skullcap': ('helm', ('Skull Cap', 'Sallet', 'Armet'), 4, (5, 8), 35, (.5, 0), {}),
     'fullhelm': ('helm', ('Full Helm', 'Basinet', 'Spired Helm'), 8, (9, 13), 80, (.8, 0), {}),
     'greathelm': ('helm', ('Great Helm', 'Winged Helm', 'Guardian Crown'), 12, (14, 20), 150, (1, 0), {}),
+    'hood': ('helm', ('Hood', 'Cowl', 'Shadow Cowl'), 2, (1, 3), 12, (0, 0), dict(mana=6)),
     # body armor
     'quilted': ('armor', ('Quilted Armor', 'Ghost Armor', 'Dusk Shroud'), 1, (4, 7), 15, (.3, 0), {}),
+    'robe': ('armor', ('Robe', 'Mage Robe', 'Starweave Robe'), 2, (2, 4), 20, (0, 0), dict(mana=15)),
     'leather': ('armor', ('Leather Armor', 'Serpentskin Armor', 'Wyrmhide'), 3, (8, 12), 35, (.4, 0), {}),
     'ringmail': ('armor', ('Ring Mail', 'Linked Mail', 'Diamond Mail'), 5, (13, 19), 70, (.7, 0), {}),
     'chainmail': ('armor', ('Chain Mail', 'Mesh Armor', 'Boneweave'), 8, (19, 27), 120, (.9, 0), {}),
@@ -77,6 +79,7 @@ FAMILIES = {
     'grimoire': ('shield', ('Grimoire', 'Codex', 'Varnish Codex'), 3, None, 50, (0, 0), dict(mana=15)),
     # hands, waist and feet
     'gloves': ('gloves', ('Leather Gloves', 'Demonhide Gloves', 'Bramble Mitts'), 1, (1, 3), 10, (0, 0), {}),
+    'wraps': ('gloves', ('Wraps', 'Silk Wraps', 'Spellweave Wraps'), 2, (1, 2), 10, (0, 0), dict(mana=5)),
     'hgloves': ('gloves', ('Heavy Gloves', 'Sharkskin Gloves', 'Vampirebone Gloves'), 4, (2, 4), 25, (.3, 0), {}),
     'gauntlets': ('gloves', ('Gauntlets', 'War Gauntlets', 'Ogre Gauntlets'), 10, (4, 7), 70, (.8, 0), {}),
     # fist weapons: worn on the hands, they strike while the weapon hand is empty (Unarmed)
@@ -86,6 +89,7 @@ FAMILIES = {
     'belt': ('belt', ('Belt', 'Mesh Belt', 'Mithril Coil'), 5, (3, 5), 35, (.4, 0), {}),
     'platedbelt': ('belt', ('Plated Belt', 'War Belt', 'Colossus Girdle'), 10, (5, 8), 80, (.8, 0), {}),
     'boots': ('boots', ('Boots', 'Demonhide Boots', 'Wyrmhide Boots'), 1, (1, 3), 10, (0, 0), {}),
+    'softshoes': ('boots', ('Soft Shoes', 'Silk Slippers', 'Wayfarer Shoes'), 1, (1, 2), 10, (0, 0), dict(mana=4)),
     'hboots': ('boots', ('Heavy Boots', 'Sharkskin Boots', 'Scarabshell Boots'), 4, (3, 5), 25, (.3, 0), {}),
     'greaves': ('boots', ('Greaves', 'War Boots', 'Myrmidon Greaves'), 10, (6, 9), 75, (.8, 0), {}),
 }

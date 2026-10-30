@@ -1,13 +1,14 @@
-"""Foraging and herbalism.
+"""Foraging, with the herbs of alchemy in it (Herbalism was its own skill once; it joined Foraging).
 
 Foraging is finding food in the wild, by trial and error. Every world has its own look for each plant:
 the red berries that fed you last time might be nightshade in the next world. Until you know a plant
 you see only what it looks like; eat it to find out. Most are harmless, some feed you, a few will kill
 you. The more you forage, the more often you recognise what you pick.
 
-Herbalism is gathering herbs and knowing them. Alchemy is brewing them into potions (P), in the spirit of
-World of Warcraft; the herbalist monks in the monasteries teach the basics. Brewing (ale, mead, wine) is a
-craft of its own, done at the kettles of an inn or a monastery cellar."""
+The herbs (HERBS) each have a tier and two properties, and grow in their own land; the better ones lie where the land
+is more dangerous, and above your rank they are "too hard for you yet". Tasting a herb teaches its first property,
+Foraging 15 shows the second when you pick it, a brew that works teaches both. Alchemy (alchemy.py) brews what two or
+three herbs share. Brewing (ale, cider, wine, mead, spirits) is a craft of its own, at the kettles of an inn."""
 import random
 
 from . import data as D
@@ -46,7 +47,70 @@ PLANTS = {
     'wild_pepper': ('Wild Pepper', 'seed', 5, None, 0), 'vanilla': ('Vanilla Pods', 'seed', 5, None, 0),
     'mango': ('Mango', 'fruit', 100, None, 0), 'cave_mushroom': ('Cave Mushrooms', 'mushroom', 70, None, 0),
 }
-ALCHEMY = {'yarrow', 'moonpetal', 'feverfew', 'kingsfoil', 'everbloom'}
+# the herbs of alchemy that plain foraging never finds: each lives where HERBS says (rarity 0)
+for _k, _n, _g, _f in [
+        ('nettle', 'Nettle', 'herb', 20), ('plantain', 'Plantain', 'herb', 10), ('chamomile', 'Chamomile', 'herb', 5),
+        ('elderflower', 'Elderflower', 'herb', 10), ('dandelion', 'Dandelion', 'herb', 20), ('mint', 'Mint', 'herb', 5),
+        ('bloodmoss', 'Bloodmoss', 'herb', 5), ('wolfsbane', 'Wolfsbane', 'herb', 0), ('saltwort', 'Saltwort', 'herb', 10),
+        ('comfrey', 'Comfrey', 'herb', 10), ('valerian', 'Valerian', 'root', 10), ('st_johns_wort', "St John's Wort", 'herb', 5),
+        ('willow_bark', 'Willow Bark', 'bark', 0), ('mugwort', 'Mugwort', 'herb', 5), ('sundew', 'Sundew', 'herb', 0),
+        ('ghostcap', 'Ghostcap', 'mushroom', 5), ('emberleaf', 'Emberleaf', 'herb', 0), ('frostbloom', 'Frostbloom', 'herb', 5),
+        ('silverreed', 'Silverreed', 'herb', 5), ('arnica', 'Arnica', 'herb', 5), ('edelweiss', 'Edelweiss', 'herb', 5),
+        ('mandrake', 'Mandrake', 'root', 0), ('aloe', 'Aloe', 'herb', 10), ('dragons_tongue', "Dragon's Tongue", 'herb', 0),
+        ('duskthorn', 'Duskthorn', 'herb', 0), ('deeproot', 'Deeproot', 'root', 20), ('mountain_heart', 'Mountain Heart', 'herb', 10),
+        ('hemlock', 'Hemlock', 'herb', 0), ('myrrh', 'Myrrh', 'resin', 0), ('lotus', 'Lotus', 'herb', 10),
+        ('vervain', 'Vervain', 'herb', 5), ('witchbloom', 'Witchbloom', 'herb', 0), ('sunpetal', 'Sunpetal', 'herb', 10),
+        ('elder_moss', 'Elder Moss', 'herb', 10), ('frankincense', 'Frankincense', 'resin', 0),
+        ('hellebore', 'Black Hellebore', 'herb', 0), ('saffron', 'Saffron Crocus', 'herb', 10), ('starmoss', 'Starmoss', 'herb', 10)]:
+    PLANTS[_k] = (_n, _g, _f, None, 0)
+PLANTS['hemlock'] = ('Hemlock', 'herb', 0, 'deadly', 0)
+PLANTS['wolfsbane'] = ('Wolfsbane', 'herb', 0, 'poison', 0)
+PLANTS['hellebore'] = ('Black Hellebore', 'herb', 0, 'poison', 0)
+PLANTS['duskthorn'] = ('Duskthorn', 'herb', 0, 'poison', 0)
+PLANTS['mandrake'] = ('Mandrake', 'root', 0, 'sleep', 0)
+PLANTS['valerian'] = ('Valerian', 'root', 10, 'sleep', 0)
+
+# the 17 properties of alchemy
+PROPS = ['Heal', 'Mana', 'Stamina', 'Regen', 'Cure', 'Staunch', 'Ward Fire', 'Ward Cold', 'Ward Poison', 'Sight', 'Calm',
+         'Swift', 'Strength', 'Sleep', 'Venom', 'Flame', 'Silver']
+# herb: tier, its two properties, where it grows (lands, biomes, or: any, cave, deep, night, winter, cursed, wonder)
+HERBS = {
+    # A: around your first villages
+    'yarrow': ('A', ('Heal', 'Staunch'), 'any'), 'moonpetal': ('A', ('Mana', 'Sleep'), 'any'),
+    'feverfew': ('A', ('Cure', 'Regen'), 'any'), 'sleepcap': ('A', ('Sleep', 'Mana'), 'forest birch taiga'),
+    'nettle': ('A', ('Stamina', 'Regen'), 'any'), 'plantain': ('A', ('Staunch', 'Cure'), 'farm steppe moor'),
+    'chamomile': ('A', ('Calm', 'Regen'), 'farm steppe'), 'wild_thyme': ('A', ('Ward Cold', 'Cure'), 'forest canyon'),
+    'wild_sage': ('A', ('Mana', 'Sight'), 'canyon steppe'), 'wild_garlic': ('A', ('Ward Poison', 'Stamina'), 'mountain forest'),
+    'elderflower': ('A', ('Ward Cold', 'Heal'), 'forest farm birch'), 'dandelion': ('A', ('Heal', 'Stamina'), 'farm steppe'),
+    'mint': ('A', ('Swift', 'Calm'), 'water marsh'), 'fly_agaric': ('A', ('Venom', 'Sight'), 'forest birch taiga'),
+    # B: further from the road, the first rough country
+    'kingsfoil': ('B', ('Heal', 'Regen'), 'forest'), 'bloodmoss': ('B', ('Staunch', 'Regen'), 'marsh'),
+    'wolfsbane': ('B', ('Venom', 'Silver'), 'mountain taiga tundra'), 'saltwort': ('B', ('Ward Fire', 'Staunch'), 'coast desert'),
+    'comfrey': ('B', ('Heal', 'Strength'), 'water farm'), 'valerian': ('B', ('Sleep', 'Calm'), 'marsh water farm'),
+    'st_johns_wort': ('B', ('Sight', 'Cure'), 'steppe forest'), 'juniper': ('B', ('Ward Poison', 'Ward Cold'), 'taiga moor'),
+    'gentian': ('B', ('Cure', 'Stamina'), 'mountain'), 'willow_bark': ('B', ('Regen', 'Calm'), 'water'),
+    'mugwort': ('B', ('Sight', 'Swift'), 'steppe moor'), 'sundew': ('B', ('Staunch', 'Sight'), 'moor marsh'),
+    # C: the wild
+    'ghostcap': ('C', ('Sight', 'Sleep'), 'deep_forest night'), 'emberleaf': ('C', ('Flame', 'Ward Cold'), 'canyon'),
+    'frostbloom': ('C', ('Ward Fire', 'Mana'), 'mountain winter'), 'silverreed': ('C', ('Silver', 'Mana'), 'water'),
+    'arnica': ('C', ('Heal', 'Stamina'), 'mountain'), 'edelweiss': ('C', ('Ward Cold', 'Regen'), 'alpine peak'),
+    'nightshade': ('C', ('Venom', 'Sight'), 'forest jungle'), 'mandrake': ('C', ('Sleep', 'Strength'), 'moor steppe night'),
+    'aloe': ('C', ('Ward Fire', 'Heal'), 'desert savanna'),
+    # D: far country, deep dungeons
+    'dragons_tongue': ('D', ('Ward Fire', 'Flame'), 'canyon mountain'), 'duskthorn': ('D', ('Venom', 'Swift'), 'mangrove jungle'),
+    'deeproot': ('D', ('Stamina', 'Strength'), 'deep'), 'mountain_heart': ('D', ('Regen', 'Stamina'), 'peak alpine'),
+    'hemlock': ('D', ('Venom', 'Sleep'), 'floodplain marsh'), 'myrrh': ('D', ('Heal', 'Ward Poison'), 'desert'),
+    'lotus': ('D', ('Mana', 'Calm'), 'oasis jungle'), 'vervain': ('D', ('Silver', 'Sight'), 'moor steppe'),
+    # E: the worst land
+    'witchbloom': ('E', ('Strength', 'Regen'), 'cursed'), 'sunpetal': ('E', ('Ward Fire', 'Heal'), 'oasis desert'),
+    'elder_moss': ('E', ('Mana', 'Regen'), 'deep_forest'), 'frankincense': ('E', ('Silver', 'Heal'), 'desert'),
+    'hellebore': ('E', ('Venom', 'Strength'), 'cursed marsh'), 'saffron': ('E', ('Swift', 'Mana'), 'mesa canyon'),
+    # the top: the crafts' own rares
+    'starmoss': ('T', ('Star', 'Star'), 'wonder'), 'everbloom': ('T', ('Heal', 'Regen'), 'never'),
+}
+TIER_VALUE = {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'T': 5}
+TIER_WEIGHT = {'A': 10, 'B': 6, 'C': 4, 'D': 3, 'E': 2, 'T': .6}
+ALCHEMY = set(HERBS)
 LOOKS = {
     'berry': ['red berries', 'black berries', 'purple berries', 'orange berries', 'pale berries', 'blue berries',
               'dark red berries', 'tiny red berries', 'glossy black berries'],
@@ -54,15 +118,25 @@ LOOKS = {
     'mushroom': ['a white mushroom', 'a speckled red mushroom', 'a pale brown mushroom', 'a grey mushroom', 'a yellow mushroom',
                  'a fat brown-capped mushroom', 'a pale mushroom from the dark', 'a frilled orange mushroom'],
     'root': ['a thick root', 'a knobbly white root', 'a red root', 'a bulb with broad leaves', 'a thin orange root',
-             'a fragrant reed root'],
+             'a fragrant reed root', 'a forked man-shaped root', 'a gnarled black root'],
     'herb': ['a feathery herb', 'a blue flower', 'a silvery leaf', 'a yellow flower', 'a broad green leaf', 'a star-shaped flower',
              'a tiny grey-leaved herb', 'soft green shoots', 'a crust of pale growth', 'a cluster of purple bells',
-             'a spiky blue-grey herb', 'round peppery leaves', 'a fleshy green stalk', 'a ribbon of dark green weed'],
+             'a spiky blue-grey herb', 'round peppery leaves', 'a fleshy green stalk', 'a ribbon of dark green weed',
+             'a stinging leaf', 'a ribbed broad leaf', 'a white daisy', 'a flat white umbel', 'a yellow clock flower',
+             'a fragrant square stem', 'a red-tipped moss', 'a hooded purple flower', 'a grey salty stalk',
+             'a hairy broad leaf', 'a star of golden petals', 'a silver-grey bush', 'a sticky red rosette',
+             'a pale glowing cap', 'a leaf with glowing red veins', 'a white frost-rimmed flower', 'a silvery reed',
+             'a yellow mountain daisy', 'a woolly white star', 'a thick spiked leaf', 'a forked red tongue of a leaf',
+             'a black thorny sprig', 'a red-hearted mountain herb', 'a spotted hollow stalk', 'a floating white flower',
+             'a thin blue spike', 'a black-petalled bloom', 'a golden sun-shaped flower', 'a beard of ancient moss',
+             'a dark green bloom', 'a purple crocus with red threads', 'a moss that glitters like stars', 'a pale blue bell',
+             'a fern with curled tips', 'a bitter grey herb'],
     'fruit': ['a hard-shelled fruit', 'a soft purple fruit', 'a spiny red fruit', 'a heavy brown fruit', 'a sweet yellow fruit',
               'a green-skinned fruit'],
     'seed': ['tiny yellow seeds', 'a head of wild grain', 'small hot red pods', 'long dark pods', 'a pinch of black seeds'],
     'sap': ['a pale sap', 'a sweet clear sap'],
-    'bark': ['rough grey bark', 'dark furrowed bark'],
+    'bark': ['rough grey bark', 'dark furrowed bark', 'a strip of pale bark'],
+    'resin': ['a lump of golden resin', 'tears of pale resin'],
 }
 # where things grow: terrain -> groups and weights
 WHERE = {
@@ -74,15 +148,6 @@ WHERE = {
     D.TREE: {'berry': 5, 'nut': 3, 'mushroom': 6, 'herb': 3},
     D.FLOOR: {'mushroom': 1},
 }
-# alchemy recipes: key -> (name, rank needed, ingredients, result potion)
-RECIPES = {
-    'healing': ('Healing Draught', 0, {'yarrow': 2}, 'hp'),
-    'mana': ('Mana Tonic', 0, {'moonpetal': 2}, 'mp'),
-    'antidote': ('Antidote', 3, {'feverfew': 1, 'yarrow': 1}, 'cure'),
-    'elixir': ('Kingsfoil Elixir', 8, {'kingsfoil': 1, 'yarrow': 1, 'moonpetal': 1}, 'rejuv'),
-}
-
-
 def setup_world(world):
     """Decide what each plant looks like in this world."""
     looks = {g: random.sample(v, len(v)) for g, v in LOOKS.items()}
@@ -154,36 +219,140 @@ def forage(game):
         return round(turns)
     if m.kind in ('over', 'wild'):
         from . import cooking as CK
+        from . import crafts as CRF
+        if CRF.fey_silk(game):
+            return round(turns)
+        if 'marsh' in CK.here_lands(game) and any(i.k == 'tool' and i.t == 'pick' for i in p.inv) \
+                and random.random() < .15 and LS.tier_open(game, 'B'):
+            if LS.rank(game, 'mining') >= CRF.METALS['bog'][2]:
+                CRF.give(game, 'ore_bog', 1)
+                game.msg('Under the turf your pick strikes a crust of rusty bog iron. You cut it out.', 'good')
+                LS.gain(game, 'mining', 1, at=CRF.METALS['bog'][2], what='bog')
+                return round(turns)
         if CK.forage_local(game):
             return round(turns)
     grp = random.choices(list(where), list(where.values()))[0]
-    cands = [k for k, v in PLANTS.items() if v[1] == grp]
-    rare = (3 if LS.rank(game, 'herbalism') >= 8 else 1) * boost
-    key = random.choices(cands, [PLANTS[k][4] * (rare if PLANTS[k][4] <= 2 else 1) for k in cands])[0]
+    key = None
+    if grp == 'herb' or random.random() < .25:
+        key = draw_herb(game, boost)
+        if key == 'hard':
+            return round(turns)
+    if key is None:
+        cands = [k for k, v in PLANTS.items() if v[1] == grp and k not in HERBS or k in ('fly_agaric', 'sleepcap', 'nightshade')
+                 and v[1] == grp and HERBS[k][0] == 'A']
+        if not cands:
+            cands = [k for k, v in PLANTS.items() if v[1] == grp and v[4]]
+        key = random.choices(cands, [PLANTS[k][4] for k in cands])[0]
     n = random.randint(1, 2 + r // 6)
     it = make_plant(game, key, n)
     if not game.add_to_inv(it):
         game.msg('Your pack is full.', 'bad')
         return round(turns)
-    LS.gain(game, 'foraging', 1)
+    at = LS.TIER_RANK[HERBS[key][0]] if key in HERBS else 0
+    LS.gain(game, 'foraging', 1.5 if key in HERBS else 1, at=at, what=key)
     from .gods import on_craft
     on_craft(game, 'forage')
-    hr = LS.rank(game, 'herbalism')
-    if PLANTS[key][1] == 'herb':
-        LS.gain(game, 'herbalism', 1.5)
-        if hr >= 5:
-            extra = random.randint(0, 1 + hr // 6)
-            if extra:
-                it.n += extra
-                n += extra
-    if not known(game, key) and (random.random() < r * .05 or (PLANTS[key][1] == 'herb' and random.random() < hr * .07)):
+    if key in HERBS and r >= 5:
+        extra = random.randint(0, 1 + r // 8)
+        if extra:
+            it.n += extra
+            n += extra
+    if not known(game, key) and random.random() < r * (.07 if key in HERBS else .05):
         learn(game, key, 'you recognise it from experience')
-        if PLANTS[key][1] == 'herb':
-            LS.gain(game, 'herbalism', 3)
+        LS.gain(game, 'foraging', 3, at=at)
+    if key in HERBS and known(game, key) and r >= 15:
+        learn_prop(game, key, 1)
     game.msg(f'You find {n} {plant_name(game, key)}.' if known(game, key) else f'You find {plant_name(game, key)} ({n}).', 'good')
     if not known(game, key) and PLANTS[key][3] in ('deadly', 'poison') and random.random() < r * .06:
         game.msg('Something about it makes you uneasy.', 'info')
     return round(turns)
+
+
+def here_tokens(game):
+    """What the land here is, in the words of HERBS: its lands and biome, and night, winter, cave, deep, cursed."""
+    from . import cooking as CK
+    from . import towns as TW
+    from .calendar import season
+    m, w = game.map, game.world
+    toks = {'any'} | set(CK.here_lands(game)) | {CK.here_biome(game)}
+    if m.kind == 'dungeon':
+        toks = {'cave'} | ({'deep'} if (getattr(m, 'depth', 0) or 0) >= 4 else set())
+    if TW.is_night(game):
+        toks.add('night')
+    if season(game.day) == 'winter':
+        toks.add('winter')
+    x, y = game.world_pos()
+    bl = getattr(w, 'blight', None)
+    from .world import WORLD_W
+    if (bl and bl[y * WORLD_W + x]) or _tainted(game, x, y):
+        toks.add('cursed')
+    from . import lifeskills as LS
+    if LS.near_site(game, ('starwater', 'starwell', 'wisps', 'stones', 'unwintering', 'mound'), 4) or \
+            getattr(m, 'folk', None) == 'elf' or getattr(m, 'glade', False):
+        toks.add('wonder')
+    return toks
+
+
+def _tainted(game, x, y):
+    try:
+        from .evils import taint_at
+        return bool(taint_at(game, x, y))
+    except Exception:
+        return False
+
+
+def herb_here(game, key, toks=None):
+    """Does this herb grow here? Its land, and the land's danger for its tier."""
+    from . import lifeskills as LS
+    tier, _pr, where = HERBS[key]
+    toks = toks if toks is not None else here_tokens(game)
+    need = where.split()
+    if 'night' in need and 'night' not in toks or 'winter' in need and 'winter' not in toks:
+        return False
+    lands = [w for w in need if w not in ('night', 'winter')]
+    return any(w in toks for w in lands) and LS.tier_open(game, tier)
+
+
+def draw_herb(game, boost=1):
+    """A herb that grows here, by its rarity. Above your rank it is too hard for you yet ('hard'); None if none grow."""
+    from . import lifeskills as LS
+    toks = here_tokens(game)
+    if game.map.kind == 'dungeon' and 'deep' not in toks and random.random() < .7:
+        return None
+    cands = [k for k in HERBS if herb_here(game, k, toks)]
+    if not cands:
+        return None
+    r = LS.rank(game, 'foraging')
+    k = random.choices(cands, [TIER_WEIGHT[HERBS[c][0]] * (boost * (2 if r >= 8 else 1) if HERBS[c][0] != 'A' else 1)
+                               for c in cands])[0]
+    at = LS.TIER_RANK[HERBS[k][0]]
+    if at > r:
+        LS.too_hard(game, 'foraging', at, plant_name(game, k)[0].upper() + plant_name(game, k)[1:])
+        return 'hard'
+    return k
+
+
+# ------------------------------------------------------------------ what you know of a herb
+def props_known(game, key):
+    """The properties of a herb you know: the names, '?' for what you have not learnt yet."""
+    kn = game.player.__dict__.setdefault('herb_props', {}).get(key, set())
+    pr = HERBS[key][1]
+    if key == 'starmoss':
+        return ['Star' if 0 in kn else '?']
+    return [pr[i] if i in kn else '?' for i in (0, 1)]
+
+
+def learn_prop(game, key, i, quiet=False):
+    if key not in HERBS:
+        return False
+    kn = game.player.__dict__.setdefault('herb_props', {}).setdefault(key, set())
+    if i in kn:
+        return False
+    kn.add(i)
+    if not quiet:
+        what = 'it strengthens any brew' if key == 'starmoss' else HERBS[key][1][i]
+        game.msg(f'{PLANTS[key][0]}: {what}.', 'info')
+    return True
 
 
 def pick_season(game, grp):
@@ -242,81 +411,47 @@ def eat_plant(game, it):
     else:
         game.msg(f'You eat the {plant_name(game, key)}. Good, honest food.', 'good')
     if not was_known:
-        LS.gain(game, 'foraging', 3)
-        if grp == 'herb':
-            LS.gain(game, 'herbalism', 2)
+        LS.gain(game, 'foraging', 3, at=LS.TIER_RANK[HERBS[key][0]] if key in HERBS else 0)
         learn(game, key, 'the hard way' if effect in ('deadly', 'poison', 'sick', 'sleep') else 'by tasting it')
+    if key in HERBS:
+        learn_prop(game, key, 0)                    # tasting teaches what it does first
     return 1
-
-
-# ------------------------------------------------------------------ alchemy
-def recipes(game):
-    from . import lifeskills as LS
-    r = LS.rank(game, 'alchemy')
-    taught = game.player.recipes
-    return [(k, v) for k, v in RECIPES.items() if k in taught or (k not in ('healing', 'mana') and r >= v[1] and taught)]
-
-
-def can_brew(game, key):
-    _n, rank, ing, _res = RECIPES[key]
-    p = game.player
-    for k, n in ing.items():
-        have = sum(i.n for i in p.inv if i.k == 'plant' and i.t == k)
-        if have < n or not known(game, k):
-            return False
-    return True
-
-
-def brew(game, key):
-    from . import lifeskills as LS
-    from .entities import Item
-    name, rank, ing, res = RECIPES[key]
-    if not can_brew(game, key):
-        game.msg(f'You lack the herbs for a {name}: ' + ', '.join(f'{n} {PLANTS[k][0]}' for k, n in ing.items()) + '.', 'bad')
-        return 0
-    p = game.player
-    for k, n in ing.items():
-        for _ in range(n):
-            it = next(i for i in p.inv if i.k == 'plant' and i.t == k)
-            game.remove_one(it)
-    r = LS.rank(game, 'alchemy')
-    if random.random() < max(.05, .3 - r * .03):
-        game.msg(f'The brew curdles and turns black. Your {name} is ruined.', 'bad')
-        LS.gain(game, 'alchemy', 1)
-        return 10
-    game.add_to_inv(Item(game.new_id(), 'potion', res))
-    game.msg(f'You brew a {name}.', 'good')
-    LS.gain(game, 'alchemy', 2 + rank // 2)
-    return 10
 
 
 def herbalist_talk(game, npc):
     p = game.player
+    from . import lifeskills as LS
     if not p.recipes:
-        p.recipes.update({'healing', 'mana'})
-        for k in ('yarrow', 'moonpetal'):
+        p.recipes.update({'taught'})
+        for k in ('yarrow', 'moonpetal', 'dandelion'):
             p.known_plants.add(k)
+            learn_prop(game, k, 0, True)
+        learn_prop(game, 'yarrow', 1, True)
         game.request = ('dialog', npc.name,
                         f'"A forager, are you? Then listen, before you poison yourself. This one, {game.world.plant_look["yarrow"]}, '
-                        f'is yarrow: two of them steeped make a healing draught. And {game.world.plant_look["moonpetal"]}, '
-                        'moonpetal, clears the mind; two make a mana tonic.\\n\\n'
-                        'Never eat a mushroom you do not know. Never. Bring me what you find and I will tell you what it is."\\n\\n'
-                        '(You learn two alchemy recipes. Press P to brew.)')
-        from . import lifeskills as LS
+                        f'is yarrow: it heals, and it stops bleeding. And {game.world.plant_look["moonpetal"]}, moonpetal, '
+                        f'clears the mind. {game.world.plant_look["dandelion"][0].upper() + game.world.plant_look["dandelion"][1:]} '
+                        'is dandelion: it heals too.\n\n'
+                        'Every herb has two virtues. Steep two or three herbs together and what they share comes out in '
+                        'the brew: yarrow and dandelion both heal, so together they make a healing draught. Share '
+                        'nothing, and you have boiled weeds.\n\n'
+                        'Never eat a mushroom you do not know. Never. Bring me what you find and I will tell you what it is."')
         LS.gain(game, 'alchemy', 3)
-        LS.gain(game, 'herbalism', 2)
+        LS.gain(game, 'foraging', 2)
         return
     unknown = sorted({i.t for i in p.inv if i.k == 'plant' and not known(game, i.t)})
     if unknown:
         lines = []
         for k in unknown:
             lines.append(f'{game.world.plant_look[k]}: {PLANTS[k][0]}' + {'deadly': ' (deadly! throw it away)', 'poison': ' (poisonous)',
-                                                                          'sick': ' (makes you sick)', 'sleep': ' (puts you to sleep)'}.get(PLANTS[k][3], ''))
+                                                                          'sick': ' (makes you sick)', 'sleep': ' (puts you to sleep)'}.get(PLANTS[k][3], '')
+                         + (f'; it gives {HERBS[k][1][0]}' if k in HERBS and k != 'starmoss' else ''))
             p.known_plants.add(k)
-        from . import lifeskills as LS
-        LS.gain(game, 'herbalism', len(unknown))
-        game.request = ('dialog', npc.name, '"Let me see what you have there... "\\n\\n' + '\\n'.join(lines))
+            learn_prop(game, k, 0, True)
+        LS.gain(game, 'foraging', len(unknown))
+        game.request = ('dialog', npc.name, '"Let me see what you have there... "\n\n' + '\n'.join(lines))
         return
     game.say(npc, random.choice(['Yarrow for wounds, moonpetal for the mind, feverfew for the belly.',
                                  'The deathcap looks like any other mushroom. That is what makes it so good at killing.',
+                                 'Three herbs that share one virtue make a strong brew.',
                                  'Come back when you have found something new.']))

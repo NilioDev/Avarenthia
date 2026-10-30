@@ -19,6 +19,13 @@ FOODS = {
     'ale': ('Mug of Ale', 90, 70, (210, 150, 60)),
     'wine': ('Bottle of Berry Wine', 80, 260, (170, 50, 90)),
     'mead': ('Bottle of Mead', 120, 300, (240, 200, 90)),
+    'cider': ('Jug of Halfling Cider', 100, 120, (230, 200, 110)),
+    'stout': ('Mug of Dwarf Stout', 140, 160, (90, 60, 40)),
+    'cordial': ('Flask of Gnome Cordial', 60, 220, (150, 110, 200)),
+    'elven_wine': ('Bottle of Elven Wine', 80, 450, (230, 236, 190)),
+    'juniper_spirits': ('Flask of Juniper Spirits', 30, 380, (200, 220, 230)),
+    'spiced_spirits': ('Flask of Spiced Spirits', 30, 420, (220, 130, 60)),
+    'royal_mead': ('Bottle of Royal Mead', 150, 900, (250, 200, 60)),
     'valley_cheese': ('Valley Goat Cheese', 600, 400, (250, 236, 180)),
     'goat_cheese': ('Goat Cheese', 350, 60, (246, 232, 190)),
     'dates': ('Dried Dates', 200, 15, (170, 100, 50)),
@@ -46,7 +53,8 @@ FOODS = {
 RAW = {'meat', 'venison', 'boar_meat', 'hare_meat', 'grouse', 'elk_meat', 'reindeer_meat', 'ptarmigan', 'mutton',
        'ibex_meat', 'aurochs_meat', 'horse_meat', 'quail', 'gazelle_meat', 'wildebeest_meat', 'guinea_fowl',
        'bighorn_meat', 'duck', 'hog_meat', 'frog_legs'}
-DRINKS = {'ale', 'wine', 'mead'}
+DRINKS = {'ale', 'wine', 'mead', 'cider', 'stout', 'cordial', 'elven_wine', 'juniper_spirits', 'spiced_spirits',
+          'royal_mead'}
 BEASTS = {'wolf', 'jackal', 'bat', 'rat', 'spider', 'drake', 'troll', 'ogre'}
 from .creatures import BEASTS as _NEW_BEASTS
 BEASTS |= _NEW_BEASTS
@@ -122,16 +130,14 @@ def eat(game, it):
     if it.k == 'dish':
         from . import cooking as CK
         return CK.eat(game, it)
+    if it.k == 'food' and it.t in DRINKS:
+        from . import brewing as BR
+        return BR.drink(game, it)
     game.remove_one(it)
     p.food = min(MAX, p.food + v)
     if it.k == 'fish':
         from .lifeskills import FISH
         game.heal(FISH[it.t][5], True)
-    if it.k == 'food' and it.t in DRINKS:
-        game.heal(6 if it.t == 'ale' else 12, True)
-        game.msg({'ale': 'You down the ale. Warm, bitter and good.', 'wine': 'Sweet, dark berry wine. Your cheeks glow.',
-                  'mead': 'Golden mead, thick with honey. You feel like singing.'}[it.t], 'good')
-        return 1
     if it.k == 'food' and it.t in RAW and random.random() < .15:
         p.poison = [4, 1]
         game.msg(f'You eat the {FOODS[it.t][0].lower()} raw. Your stomach does not like it.', 'bad')

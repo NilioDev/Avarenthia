@@ -810,7 +810,7 @@ def countryside():
     g.talk(herb)
     app.after_action()
     app.key('esc')
-    assert 'healing' in p.recipes
+    assert p.recipes and FG.props_known(g, 'yarrow') == ['Heal', 'Staunch']
     tower = next(st for st in g.world.sites if st.kind == 'tower' and st.people == 'human' and getattr(st, 'state', 'whole') == 'whole')
     om = g.maps['over']
     before = sum(om.seen)
@@ -835,10 +835,12 @@ def countryside():
         p.life = g.stats()['max_life']
         FG.eat_plant(g, it)
     print('known plants:', sorted(p.known_plants))
-    # brew a healing draught
+    # brew a healing draught: yarrow and dandelion both heal
+    from avarenthia import alchemy as AL
     p.inv.append(FG.make_plant(g, 'yarrow', 2))
-    n0 = g.count('potion')
-    FG.brew(g, 'healing')
+    p.inv.append(FG.make_plant(g, 'dandelion', 2))
+    random.seed(3)
+    AL.brew(g, ['yarrow', 'dandelion'])
     app.screens = [ui.GameScreen(app), ui.BrewScreen(app)]
     app.render()
     app.screens = [ui.GameScreen(app), ui.CharacterScreen(app)]
@@ -3387,6 +3389,7 @@ def herds_and_cooking():
     g.compute_fov()
     hd = HT.Herd(g.new_id(), HT.prey_for(g, spot[0] + 1, spot[1])[0], spot[0] + 1, spot[1], 5)
     HT.herds(g).append(hd)
+    p.life_sk['hunting'] = [30, 0]                  # no herd too wary for this hunter
     assert HT.herd_at(g, spot[0], spot[1]) is None and HT.herd_at(g, spot[0] + 1, spot[1]) is hd, 'you see the herd beside you'
     g.try_move(1, 0)
     m = g.map
@@ -3446,8 +3449,10 @@ def herds_and_cooking():
     p.gold += 1000
     leather_it = next(i for i in p.inv if i.k == 'leather')
     leather_it.n = 6
-    HT.r_bench(g, 'make:armour', {})
-    assert any(i.k == 'gear' and i.base == 'leather' for i in p.inv), 'leather armour from the bench'
+    from avarenthia import crafts as CRF
+    p.life_sk['leatherworking'] = [30, 0]
+    CRF.make(g, 'leatherworking', 'leather', leather_it.t)
+    assert any(i.k == 'gear' and CRF.D.BASES[i.base]['family'] == 'leather' for i in p.inv), 'leather armour from the bench'
     # the tanner in town
     tan = 0
     for st in g.world.settlements[:12]:
@@ -7542,6 +7547,216 @@ def skyseat():
     print('skyseat ok')
 
 
+def crafts():
+    """Life skills part 1: the curve and the colours, herbs with properties and alchemy without recipes, the ten drinks,
+    fish and ore and cloth by tier, Smithing at the anvil and Tailoring at the bench, the game too wary for you."""
+    from avarenthia import lifeskills as LS, foraging as FG, alchemy as AL, brewing as BR, crafts as CRF, hunting as HT
+    from avarenthia import hunger as HU, skills as SKL
+    from avarenthia.entities import make_monster
+    import pickle
+    print('== crafts')
+    random.seed(19)
+    app = new_app('soft', 1919)
+    g = app.game
+    p = g.player
+    p.gold = 10 ** 6
+    # the curve: slow, and work far below you teaches nothing
+    assert LS.need_for(0) == 20 and LS.need_for(10) == 95 and LS.need_for(49) > 1000
+    assert LS.colour(20, 5) == 'grey' and LS.colour(20, 14) == 'green' and LS.colour(20, 20) == 'yellow' \
+        and LS.colour(20, 30) == 'orange'
+    p.life_sk['fishing'] = [20, 0]
+    LS.gain(g, 'fishing', 5, at=0)
+    assert p.life_sk['fishing'][1] == 0, 'grey work teaches nothing'
+    LS.gain(g, 'fishing', 5, at=20, what='trout')
+    first = p.life_sk['fishing'][1]
+    LS.gain(g, 'fishing', 5, at=20, what='trout')
+    assert first > p.life_sk['fishing'][1] - first > 0, 'the first time counts double'
+    assert 'herbalism' not in LS.LIFE and {'smithing', 'tailoring'} <= set(LS.LIFE_ORDER)
+    # foes far below you teach a discipline little
+    line = 'swords'
+    p.disc.setdefault(line, [0, 0])
+    p.lvl = 20
+    weak = make_monster(g, 'rat', p.x, p.y, 1, 1)
+    p.disc[line] = [0, 0]
+    SKL.gain(g, line, 1, weak)
+    low = p.disc[line][1]
+    p.disc[line] = [0, 0]
+    SKL.gain(g, line, 1)
+    assert p.disc[line][0] == 0 and low < p.disc[line][1] / 5, (low, p.disc[line])
+    # herbs: 51, each with two properties, almost every property in every tier
+    assert len(FG.HERBS) >= 49 and all(len(v[1]) == 2 for v in FG.HERBS.values())
+    for tier in 'ABCD':
+        props = {pr for v in FG.HERBS.values() if v[0] == tier for pr in v[1]}
+        assert len(props) >= 12, (tier, props)
+    assert FG.props_known(g, 'arnica') == ['?', '?']
+    p.inv.append(FG.make_plant(g, 'arnica', 1))
+    p.food = 0
+    FG.eat_plant(g, next(i for i in p.inv if i.t == 'arnica'))
+    assert FG.props_known(g, 'arnica') == ['Heal', '?'], 'tasting teaches the first property'
+    # foraging finds only what grows here, and the better herbs are too hard for a beginner
+    to_over(g, 0)
+    om = g.maps['over']
+    found, hard = set(), 0
+    forest = [k for k, t in enumerate(om.t) if t == D.FOREST]
+    for _ in range(300):
+        k = random.choice(forest)
+        p.x, p.y = k % om.w, k // om.w
+        key = FG.draw_herb(g)
+        if key == 'hard':
+            hard += 1
+        elif key:
+            found.add(key)
+            assert FG.herb_here(g, key)
+    print('herbs in the woods:', sorted(found), 'too hard', hard)
+    assert found and all(FG.HERBS[k][0] == 'A' for k in found)
+    # alchemy: what two herbs share
+    p.inv = [i for i in p.inv if i.k != 'plant']
+    for k in ('yarrow', 'dandelion', 'elderflower', 'wolfsbane', 'fly_agaric', 'nightshade', 'moonpetal', 'valerian',
+              'starmoss', 'kingsfoil', 'feverfew'):
+        p.inv.append(FG.make_plant(g, k, 3))
+    p.life_sk['alchemy'] = [25, 0]
+    random.seed(4)
+    assert AL.shared(['yarrow', 'dandelion']) == (['Heal'], False)
+    assert AL.shared(['yarrow', 'dandelion', 'elderflower'])[1], 'three that share one property'
+    n0 = len([i for i in p.inv if i.k == 'draught'])
+    for _ in range(3):
+        AL.brew(g, ['yarrow', 'dandelion', 'elderflower'])
+    drs = [i for i in p.inv if i.k == 'draught']
+    assert len(drs) > n0 and drs[0].props == ['Heal'] and drs[0].t == 'draught'
+    assert FG.props_known(g, 'elderflower') == ['Ward Cold', 'Heal'], 'a brew that works teaches both'
+    assert AL.form_of(AL.shared(['wolfsbane', 'fly_agaric'])[0])[0] == 'oil'
+    assert AL.form_of(AL.shared(['moonpetal', 'valerian'])[0])[0] == 'flask'
+    p.life = 1
+    AL.use(g, drs[0])
+    assert p.life > 1
+    # a ruined brew: nothing shared
+    before = sum(i.n for i in p.inv if i.k == 'plant')
+    AL.brew(g, ['kingsfoil', 'wolfsbane'])
+    assert sum(i.n for i in p.inv if i.k == 'plant') == before - 2
+    # the oil on a blade, the flask thrown
+    from avarenthia.entities import make_gear
+    w = make_gear(g, 'longsword', 'normal', 1)
+    p.inv.append(w)
+    p.str = p.dex = 200
+    p.eq.pop('weapon', None)
+    p.eq.pop('shield', None)
+    g.equip(w)
+    assert g.eq_item('weapon') is w
+    for _ in range(4):
+        AL.brew(g, ['wolfsbane', 'fly_agaric'])
+    oil = next((i for i in p.inv if i.k == 'draught' and i.t == 'oil'), None)
+    if oil:
+        AL.use(g, oil)
+        assert any(b[0] == 'oil_venom' for b in p.buffs)
+    # Starmoss alone: +5 life, once in a life
+    life0 = g.stats()['max_life']
+    AL.brew(g, ['starmoss'])
+    star = next(i for i in p.inv if i.k == 'draught' and i.t == 'starlight')
+    AL.use(g, star)
+    assert g.stats()['max_life'] == life0 + 5
+    AL.brew(g, ['starmoss'])
+    star = next(i for i in p.inv if i.k == 'draught' and i.t == 'starlight')
+    assert AL.use(g, star) == 0 and g.stats()['max_life'] == life0 + 5
+    app.screens = [ui.GameScreen(app), ui.BrewScreen(app)]
+    app.render()
+    app.key('a')
+    app.key('b')
+    app.render()
+    app.key('tab')
+    app.render()
+    app.key('esc')
+    # brewing: ten drinks, learnt per people; tasting teaches; far away they sell better
+    assert len(BR.RECIPES) == 10
+    assert 'cider' not in BR.known(g)
+    p.inv.append(HU.make_food(g, 'cider', 1))
+    HU.eat(g, next(i for i in p.inv if i.t == 'cider'))
+    assert 'cider' in BR.known(g)
+    g.enter_town(0)
+    p.life_sk['brewing'] = [12, 0]
+    p.inv.append(HU.make_food(g, 'apple', 6))
+    random.seed(1)
+    BR.brew(g, 'cider')
+    BR.brew(g, 'cider')
+    jug = next(i for i in p.inv if i.k == 'food' and i.t == 'cider')
+    assert jug.origin is not None
+    near = jug.value()
+    jug.origin = (jug.origin[0] + 200, jug.origin[1])
+    assert jug.value() > near, 'a drink sells best far from where it was brewed'
+    p.life_sk['brewing'] = [0, 0]
+    assert BR.brew(g, 'cider') == 0, 'too hard for you yet'
+    # fish by tier: fresh and salt apart, the big ones in their own water
+    assert 'minnow' in LS.FISH and 'sea' not in LS.FISH['minnow'][2] and 'sea' in LS.FISH['sprat'][2]
+    assert LS.fish_cond(g, '') and not LS.fish_cond(g, 'deepest')
+    # smithing: ore by depth, bars, a piece with grade and quality from the metal and your rank
+    p.cargo['ore'] = 6
+    CRF.give(g, 'ore_deepiron', 4)
+    p.life_sk['smithing'] = [25, 0]
+    CRF.smelt(g, 'iron')
+    CRF.smelt(g, 'deepiron')
+    CRF.smelt(g, 'deepiron')
+    assert CRF.count(g, 'bar_iron') == 1 and CRF.count(g, 'bar_deepiron') == 2
+    CRF.give(g, 'bar_deepiron', 4)
+    n_gear = len([i for i in p.inv if i.k == 'gear'])
+    CRF.make(g, 'smithing', 'chainmail', 'deepiron')
+    mail = [i for i in p.inv if i.k == 'gear'][-1]
+    assert len([i for i in p.inv if i.k == 'gear']) == n_gear + 1
+    assert mail.base == 'chainmail_x' and 'Deepiron' in mail.name and mail.made[2] in CRF.QUALITY, mail.name
+    print('forged:', mail.name, mail.arm, mail.mdur)
+    p.life_sk['smithing'] = [0, 0]
+    CRF.give(g, 'bar_adamant', 8)
+    CRF.r_craft_item(g, 'make:platemail', {'craft': 'smithing'})
+    assert not any('Adamant' in i.name for i in p.inv if i.k == 'gear'), 'adamant is too hard for you yet'
+    # mending and honing at the anvil
+    mail.dur = 1
+    CRF.give(g, 'bar_iron', 1)
+    CRF.mend(g, mail.id)
+    assert mail.dur == mail.mdur
+    CRF.hone(g)
+    assert any(b[0] == 'honed' for b in p.buffs)
+    # a vein: iron near the surface, its metal kept once struck
+    mm = g.maps[g.cur]
+    assert CRF.vein(g, 1, 1) == CRF.vein(g, 1, 1)
+    # tailoring: a warm robe of wool, and warm clothes keep the cold from eating your food
+    CRF.give(g, 'cloth_wool', 6)
+    p.life_sk['tailoring'] = [5, 0]
+    CRF.make(g, 'tailoring', 'robe', 'wool', 'warm')
+    robe = [i for i in p.inv if i.k == 'gear'][-1]
+    assert robe.base == 'robe' and robe.feel == 'warm'
+    g.equip(robe)
+    assert CRF.feel_count(g, 'warm') == 1
+    CRF.make(g, 'tailoring', 'bandages', 'wool')
+    assert any(i.k == 'tool' and i.t == 'bandage' and i.n == 3 for i in p.inv)
+    # leather by its beast
+    assert HT.LEATHER_OF['wolf'] == 'fur' and CRF.LEATHERS['croc'][1] == 'C'
+    p.inv.append(__import__('avarenthia.entities', fromlist=['Item']).Item(g.new_id(), 'leather', 'snake', 4))
+    p.life_sk['leatherworking'] = [15, 0]
+    CRF.make(g, 'leatherworking', 'boots', 'snake')
+    boots = [i for i in p.inv if i.k == 'gear'][-1]
+    assert ['res_poison', 15] in boots.aff, boots.aff
+    # the shops sell cloth of their land
+    s0 = g.world.settlements[0]
+    stock = CRF.shop_cloth(g, s0)
+    assert all(it.k == 'mat' and it.t.startswith('cloth_') for it in stock)
+    # a herd above your tier is too wary for you yet
+    h = HT.Herd(g.new_id(), 'aurochs', 5, 5, 6)
+    to_over(g, 0)
+    p.life_sk['hunting'] = [0, 0]
+    assert HT.hunt(g, h) == 0 and g.cur == 'over'
+    # spiders leave silk
+    random.seed(2)
+    spun = 0
+    for _ in range(30):
+        o = make_monster(g, 'spider', p.x, p.y, 4, 1)
+        g.map.mons.append(o)
+        before = len(g.map.items)
+        CRF.on_kill(g, o)
+        spun += len(g.map.items) > before
+        g.map.mons.remove(o)
+    assert spun
+    pickle.dumps(g)
+    print('crafts ok')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -7551,7 +7766,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

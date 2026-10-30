@@ -921,7 +921,9 @@ def lay_bridges(m, pts, crossed, width):
             continue
         lo = min(ends[0] for _x, _y, ends in rows)
         hi = max(ends[1] for _x, _y, ends in rows)
-        if getattr(m, 'ferry_ok', False) and not group & getattr(m, 'main_roads', set()):
+        ox_, oy_, _e = rows[len(rows) // 2]
+        banks = [(ox_ + across[0] * j, oy_ + across[1] * j) for j in (lo - 1, hi + 1)]
+        if getattr(m, 'ferry_ok', False) and not group & getattr(m, 'main_roads', set()) and all(m.inb(*b) for b in banks):
             # a lane over a broad or wild river: a ferry on a rope instead of a bridge
             from . import ferries as FY
             ox, oy, _e = rows[len(rows) // 2]

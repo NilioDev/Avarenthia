@@ -526,6 +526,27 @@ add('items', 'Gear', 'Items and gear', f'<p>Base items, uniques, sets and affixe
     f'<h3 class="gh">Affixes</h3><div class="tw"><table><tr><th>Stat</th><th>Kind</th><th>Slots</th><th>Tiers</th></tr>{af}</table></div>'
     f'<h3 class="gh">Potions</h3><ul>{pot}</ul>')
 
+# ---------------------------------------------------------------- the life skills: herbs, drinks, fish, materials
+import avarenthia.foraging as FGW
+import avarenthia.brewing as BRW
+import avarenthia.lifeskills as LSW
+import avarenthia.crafts as CRW
+hb_rows = ''.join(f'<tr class="entry"><td>{e(FGW.PLANTS[k][0])}</td><td>{v[0]}</td><td>{e(", ".join(dict.fromkeys(v[1])))}</td>'
+                  f'<td>{e(v[2])}</td></tr>' for k, v in sorted(FGW.HERBS.items(), key=lambda kv: ('ABCDET'.index(kv[1][0]), kv[0])))
+dr_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[1]}</td><td>{e(", ".join(f"{c} {BRW.ing_name(kd, kk)}" for (kd, kk), c in v[2].items()))}</td>'
+                  f'<td>{e(v[5] or "")}</td></tr>' for v in BRW.RECIPES.values())
+fi_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[6]}</td><td>{v[1]}</td><td>{e(v[2])}</td><td>{e(v[7])}</td></tr>'
+                  for k, v in LSW.FISH.items() if k != 'legend')
+mt_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[1]}</td><td>{v[2]}</td></tr>'
+                  for tab in (CRW.METALS, CRW.CLOTHS, CRW.LEATHERS) for v in tab.values())
+add('lifeskills', 'Skills', 'Life skills: herbs, drinks, fish, materials',
+    f'<p>{e(LSW.__doc__.strip().splitlines()[0])} Tiers A-E and the top; the rank each tier needs: '
+    f'{e(", ".join(f"{t} {r}" for t, r in LSW.TIER_RANK.items()))}. {badge("built")}</p>',
+    f'<h3 class="gh">Herbs ({len(FGW.HERBS)})</h3><div class="tw"><table><tr><th>Herb</th><th>Tier</th><th>Properties</th><th>Where</th></tr>{hb_rows}</table></div>'
+    f'<h3 class="gh">Drinks</h3><div class="tw"><table><tr><th>Drink</th><th>Rank</th><th>Made of</th><th>Whose</th></tr>{dr_rows}</table></div>'
+    f'<h3 class="gh">Fish</h3><div class="tw"><table><tr><th>Fish</th><th>Tier</th><th>Rank</th><th>Water</th><th>Also</th></tr>{fi_rows}</table></div>'
+    f'<h3 class="gh">Metals, cloth and leather</h3><div class="tw"><table><tr><th>Material</th><th>Tier</th><th>Rank</th></tr>{mt_rows}</table></div>')
+
 # ---------------------------------------------------------------- the handbook, from a real game
 with contextlib.redirect_stdout(io.StringIO()):
     g = E.Game('Wiki', False, 1)

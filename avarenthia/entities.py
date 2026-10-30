@@ -6,7 +6,7 @@ from . import data as D
 
 # kinds kept by their own module: display(game, it), lines(game, it), value(game, it), glyph(it), color(it)
 CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'hunting', 'carcass': 'hunting',
-         'leather': 'hunting', 'ammo': 'weapons'}
+         'leather': 'hunting', 'ammo': 'weapons', 'draught': 'alchemy', 'mat': 'crafts'}
 
 
 def _craft(it):
@@ -73,8 +73,11 @@ class Item:
                 return 'Tent and Bedroll'
             if self.t == 'pick':
                 return 'Miner\'s Pick'
-            if self.t in ('knife', 'frame', 'waterskin'):
-                return {'knife': 'Skinning Knife', 'frame': 'Stretching Frame', 'waterskin': 'Waterskin'}[self.t]
+            if self.t in ('knife', 'frame', 'waterskin', 'hooks', 'rope', 'net'):
+                return {'knife': 'Skinning Knife', 'frame': 'Stretching Frame', 'waterskin': 'Waterskin', 'hooks': 'Fish Hooks',
+                        'rope': 'Coil of Rope', 'net': 'Fishing Net'}[self.t]
+            if self.t == 'bandage':
+                return (f'{self.n}x ' if self.n > 1 else '') + 'Bandage'
             return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
@@ -159,7 +162,8 @@ class Item:
         if self.k == 'tool':
             return '/'
         if self.k == 'food':
-            return '¡' if self.t in ('ale', 'wine', 'mead') else '%'
+            from .hunger import DRINKS
+            return '¡' if self.t in DRINKS else '%'
         if self.k == 'plant':
             return '"'
         if self.k == 'fish':
@@ -216,8 +220,8 @@ class Item:
                     out.append({'deadly': 'Deadly poison. Do not eat.', 'poison': 'Poisonous.', 'sick': 'Makes you sick.',
                                 'sleep': 'Puts you to sleep.', 'heal': 'A healing herb.', 'heal2': 'A strong healing herb.',
                                 'mana': 'Restores a little mana.', 'cure': 'Settles the stomach and cures poison.'}.get(eff, 'Edible.'))
-                    if self.t in FG.ALCHEMY:
-                        out.append('Used in alchemy (P to brew potions).')
+                    if self.t in FG.HERBS:
+                        out.append('A herb of alchemy: ' + ', '.join(FG.props_known(FG.GAME, self.t)) + '. Brew it with [P].')
                     if self.t == 'oak_bark':
                         out.append('Tanners use it: rub it into a salted hide and the hide tans in your pack.')
                     if self.t == 'blackberry':
@@ -226,14 +230,25 @@ class Item:
                     out.append('You do not know what this is. Eat it to find out, or show it to a herbalist.')
             elif self.k == 'food':
                 from .hunger import FOODS
-                out.append(f'Food. Eat it to still your hunger (+{FOODS[self.t][1]}).' if self.t not in ('ale', 'wine', 'mead')
-                           else 'A drink. Cheers you up and heals a little; sells well.')
+                from .hunger import DRINKS
+                out.append(f'Food. Eat it to still your hunger (+{FOODS[self.t][1]}).' if self.t not in DRINKS
+                           else 'A drink. Cheers you up and heals a little; sells best far from where it was brewed.')
+                if self.t in ('juniper_spirits', 'spiced_spirits'):
+                    out.append('Strong spirits: they warm you, and alchemy makes a tincture with them that lasts twice as long.')
                 if self.t in ('barley', 'honey'):
                     out.append('Brewers use it (P, at an inn or a monastery cellar).')
             elif self.k == 'tool' and self.t == 'tent':
                 out.append('Sleep dry in the wild, and a little safer: rest (R) out in the open to make camp.')
             elif self.k == 'tool' and self.t == 'kit':
                 out.append('Needle, thread, rivets and oil. Use it to mend all your gear a little, anywhere.')
+            elif self.k == 'tool' and self.t == 'bandage':
+                out.append('Use it to bind a wound: it stops bleeding and poison running, and heals a little.')
+            elif self.k == 'tool' and self.t == 'hooks':
+                out.append('Good steel hooks: more of your casts land a fish.')
+            elif self.k == 'tool' and self.t == 'net':
+                out.append('Use it beside shallow water to take small fish without a cast.')
+            elif self.k == 'tool' and self.t == 'rope':
+                out.append('Strong rope. Climbers and trappers find a use for it.')
             elif self.k == 'tool' and self.t == 'knife':
                 out.append('A short, curved blade. Stand on a carcass and press Enter to skin it.')
             elif self.k == 'tool' and self.t == 'frame':
@@ -310,9 +325,14 @@ class Item:
             from .skills import SKILLS
             return 90 + round(SKILLS[self.t].step * 110)
         if self.k == 'tool':
-            return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4}.get(self.t, 8)
+            return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4, 'hooks': 6, 'rope': 3, 'net': 10,
+                    'bandage': 1}.get(self.t, 8)
         if self.k == 'food':
             from .hunger import FOODS
+            if getattr(self, 'origin', None) is not None:
+                from .brewing import far_value
+                from . import foraging as FG
+                return far_value(getattr(FG, 'GAME', None), self, FOODS[self.t][2] / 100)
             return FOODS[self.t][2] / 100
         if self.k == 'plant':
             from .foraging import PLANTS
@@ -348,8 +368,8 @@ class Item:
 
     @property
     def stackable(self):
-        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant', 'dish', 'part', 'leather', 'ammo') or \
-            (self.k == 'tool' and self.t == 'kit')
+        return self.k in ('potion', 'scroll', 'fish', 'food', 'plant', 'dish', 'part', 'leather', 'ammo', 'mat') or \
+            (self.k == 'tool' and self.t in ('kit', 'bandage'))
 
 
 class Monster:

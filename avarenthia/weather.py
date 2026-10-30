@@ -1023,14 +1023,17 @@ def food_factor(game):
     f = eff[3] if eff else 1.0
     p = game.player
     hot = current(game) in ('heat', 'sandstorm', 'haboob')
+    from .crafts import feel_count
     if f > 1 and hot:
-        if any(b[0] == 'cool' for b in p.buffs):
-            return 1.0                               # a desert plate: the heat costs nothing
+        if any(b[0] == 'cool' for b in p.buffs) or feel_count(game, 'cool') >= 3:
+            return 1.0                               # a desert plate, or cool clothes: the heat costs nothing
         if any(it.k == 'tool' and it.t == 'waterskin' for it in p.inv):
-            return 1 + (f - 1) / 2
-        return f
+            f = 1 + (f - 1) / 2
+        return 1 + (f - 1) * max(0, 1 - feel_count(game, 'cool') / 3)
     if f > 1 and any(b[0] == 'warm' for b in p.buffs):
         return 1.0                                   # warmed through by a hot spring or a hot stew: the cold costs nothing
+    if f > 1:
+        return 1 + (f - 1) * max(0, 1 - feel_count(game, 'warm') / 3)    # warm clothes: each piece a third of the cold
     return f
 
 

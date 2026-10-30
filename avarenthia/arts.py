@@ -79,11 +79,12 @@ def notice(game, mon):
     ec = EP.notice(game, mon)                        # the Eclipse: it sees only the tile beside it
     if ec is not None:
         return ec
+    calm = .5 if buff(game, 'calm') and 'wild' in mon.tpl.get('tags', '') else 1     # a draught of Calm: beasts notice you later
     if not buff(game, 'sneak'):
-        return .65
+        return .65 * calm
     TT = _tt()
     near = cheb(mon.x, mon.y, game.player.x, game.player.y) <= 1
-    return (.45 if near else STEALTH_NOTICE) * max(.2, 1 - TT.total(game, 'sneak') / 100)
+    return (.45 if near else STEALTH_NOTICE) * max(.2, 1 - TT.total(game, 'sneak') / 100) * calm
 
 
 def lose_you(game, mons):

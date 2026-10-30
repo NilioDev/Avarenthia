@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: life skills part 1 (30 Oct)** | Slow crafts that teach only work at your height (grey, green, yellow, orange), the first time double; Herbalism in Foraging; 51 herbs with two properties each and alchemy without recipes (draughts, oils, a sleeping flask, the Starlight Elixir, tinctures); ten drinks, learnt per people, dearer far away, a barrel, a round, a gift; fish, ore, cloth, leather and game by tier; Smithing at the anvil and Tailoring at the bench, the material sets the grade and a property, the work crude, fine or masterwork |
 | **Built: the great evils part 2, the quest and the Sky-Seat (29 Oct)** | Mist over the Sky-Seat until you know the truth or a seal breaks; relics as keys (and the Star-Iron Key for all five riddles); no travelling by road through his coast; one skipper who dares the whirlpool; the star-iron chain with gusts, handholds and broken links, the glass underside; five floors with beacons; the Hollow King in three phases, one lighter per relic; your shade where the dead are bound, a double fee in his city; the Long Night; the end and a healing world |
 | **Built: the great evils part 1, the frame (29 Oct)** | The Hollow King's coast facing the Sky-Seat; three servants per world, one light, one middle, one heavy, from eight kinds (three new: the Wendigo, the Great Wolf, the Fallen Mage), on their own slow clock and his attention clock; levers on the realms (war, tribute, webs, the Gorvash, floods, hunger, wolves, swayed barons), held baronies, the realms pushing back; seals; lieutenants in forts, camps and towers; a weakness from two sources; relics; heroes who ride out and their cairns; the Shadow tab and map layer [7] |
 | **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
@@ -613,6 +614,109 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   its door to the moonwell; a ladder is never set on the one below it (an orc fort's tower lost its way down); a roaming boss's stair check survives a level already gone; the Sky-Seat's chain map has
   its own flag (`skychain`). The balance test draws anew (`world * 7 + 1`): the Rogue stands near the edge, and on
   some draws it lost a few of its 24 waves, before the great evils as well.
+- **Round 19: life skills part 1** (30 October 2026; `lifeskills.py`, `foraging.py`, `alchemy.py`, `brewing.py`,
+  `crafts.py`). The curve `20 + 4r + .35r²` (`need_for`); `gain(..., at=, what=)`: work far below your rank teaches
+  nothing (grey, 10 under), little (green, 5 under), most at or above (yellow, orange), the first make or catch double
+  (`p.life_firsts`); `colour_of` colours the craft lists. Foes five or ten levels under you teach a discipline less
+  (`skills.gain(..., foe)`). Tiers A-E and the top (`TIER_RANK`, `TIER_DANGER`, `place_danger`): what lies where
+  follows the danger of the land and the depth; above your rank "too hard for you yet" (`too_hard`). Herbalism is
+  gone into Foraging. 51 herbs (`foraging.HERBS`: tier, two of 17 properties, where: lands, biomes, night, winter,
+  cave, deep, cursed, wonder); `draw_herb`, `herb_here`; properties known per herb in `p.herb_props` (taste the
+  first, Foraging 15 the second, a brew both; `props_known` shows `?`). Alchemy without recipes (`alchemy.py`): two or
+  three herbs, what they share; three on one stronger; oils (Venom, Flame, Silver: `oil_venom`, `fire_dmg`, `undead`
+  buffs), the sleeping flask (`hold`), Starmoss doubles, alone the Starlight Elixir (`p.starlight`, +5 life once);
+  spirits as the base: a tincture, twice as long. Items 'draught'. The `[P]` screen: herbs with letters, Enter brews,
+  Tab to brewing. Brewing: ten drinks (`RECIPES`; `p.drinks`, learnt by tasting or from an innkeeper of that people
+  or climate, royal mead at 45 by yourself), `it.origin` and `far_value`, a barrel for the cart from 30, a round for the
+  company at a fire (`round_for_company`, morale +15), a people's own drink as a gift at their inn (rep, a place told),
+  strong spirits warm and give courage, the third cup makes you tipsy (`tipsy`). Fish by tier (`FISH` with tier and
+  where: night, storm, north, south, mountain, broad, deep, deepest, forest, star), fresh and salt apart; a fish too
+  strong snaps the line; fish hooks, the net (`net`), bandages (`bandage`). Smithing at the anvil (`crafts.anvil`):
+  ore veins hold a metal by land and depth (`vein`, kept in `m.veins`; iron on the cart, the rest items 'mat'
+  `ore_<metal>`), smelting into `bar_<metal>`, forging every metal weapon, mail, plate, helms, shields, gloves,
+  belts, boots and tools (`SMITH`), mending for a bar, honing (`honed`). Tailoring and Leatherworking at the bench
+  (`crafts.bench`): cloth `cloth_<cloth>` from outfitters by land (`shop_cloth`), spiders (`on_kill`), mammoths, the
+  wisp fens at night (`fey_silk`); leather by its beast (`hunting.LEATHER_OF`); new bases Robe, Hood, Wraps, Soft
+  Shoes; warm or cool (`it.feel`, `feel_count` in `weather.food_factor`). Grade by the material's tier, its property
+  (`props`), quality crude, fine, masterwork (`quality`). Herds above your Hunting tier are too wary for you yet
+  (`GAME_TIER`); parts tear below it in Skinning. Handbook chapter Crafts. Test `crafts`. SAVE_VERSION 50.
+  Not built from the spec: the road goods of Leatherworking, Lockpicks, the master perks, orders and mending for others
+  (left for round 20); gifts go to the innkeeper of a people, not to a king or a guard.
+
+## Life skills part 1 (built 30 October 2026; the spec)
+Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md` and
+`content.md`.
+- **Slow, like an MMO, without grinding.** Work far below your rank teaches nothing, close below it little, at or above
+  it most; the colour of a name in the craft list shows which (grey, green, yellow, orange). The first time you make
+  or catch something counts double. Steeper curve: `20 + 4r + 0.35r²` (rank 10 in about an hour, 25 in 12-15 hours of
+  play, 50 in 60+ hours: one skill per hero).
+- **The same rule for the disciplines** (weapons and schools): foes far below you teach little. Their pace stays
+  (rank 100 in about 30 hours of play); a life skill is the long road beside the fighting.
+- **Herbalism joins Foraging** (its perks move along). **New: Smithing** (an anvil; ore becomes bars; mend your own
+  metal gear for ore and time; weapons and metal armour) **and Tailoring** (cloth: light, mana and resistance, warm or
+  cool). With Leatherworking every kind of armour is made by someone.
+- **Each craft its own field, beyond armour** (19 October): Smithing is the fight (metal armour, every metal weapon,
+  tools: pick, skinning knife, lockpicks, fish hooks; honing a blade at the anvil, a short buff). Leatherworking is the
+  road (leather armour; marsh, mountain, snow and sand boots that make travel over that land quicker; waterskin, tent
+  and bedroll; barding for your beast; a quiver once arrows exist). Tailoring is the weather (cloth pieces, each warm
+  or cool: Quilted Armor, Robe, Cap, Hood, Sash, Wraps, Soft Shoes; bandages, rope, a fishing net). New cloth bases
+  come in three grades like the rest. Lists in `/mnt/project-files/lifeskills/content.md`.
+- **Alchemy without fixed recipes** (19 October), like cooking: every herb has two properties; pick two or three herbs
+  at `[P]` and what they share becomes the draught; three sharing one property make it stronger; nothing shared, a
+  ruined brew. Strength = the herbs' tier and your rank. A shared Venom, Flame or Silver makes a blade oil (a short
+  buff), a shared Sleep a flask to throw. You learn a herb's first property by tasting it, its second at Foraging 15
+  when you pick it, both from a brew that works; unknown ones show as `?`. 17 properties (Heal, Mana, Stamina, Regen,
+  Cure, Staunch, Ward Fire, Ward Cold, Ward Poison, Sight, Calm, Swift, Strength, Sleep, Venom, Flame, Silver) and 49
+  herbs, most of them real (Nettle, Valerian, Arnica, Comfrey, Mandrake, Myrrh...), cooking herbs among them, spread
+  so that almost every property grows in every tier. Top: Starmoss (doubles a brew; alone, the Starlight Elixir: +5
+  life for good, once per hero). The list: `/mnt/project-files/lifeskills/content.md`.
+- **Brewing, the craft of trade and company** (19 October): ten drinks (Ale, Berry Wine, Mead; Halfling Cider, Dwarf
+  Stout, Gnome Cordial, Elven Wine, Juniper Spirits, Spiced Spirits, Royal Mead), learnt per people by tasting or from
+  an innkeeper. A drink sells best far from where it comes from; from rank 30 a barrel, trade goods for a caravan. "A
+  round for the company" at an inn or a campfire raises the hirelings' morale. A drink of their own people as a gift
+  (the dwarf king, an elven guard, the kobolds) earns better prices, a rumour or a job. Strong spirits as the base of a
+  draught make a tincture that lasts twice as long. Strong drink warms and gives courage; too much spoils your aim.
+- **Fishing by tier** (19 October), fresh and salt water apart: A fresh Minnow (no longer at sea), Perch, Carp, Trout,
+  Eel, Pike, Cavefish; A salt Herring, Mackerel, Sprat, Flounder, Cod. B Salmon, Bluefin, Catfish (marsh), Grayling
+  (mountain streams). C Great Sturgeon (broad rivers; its roe is caviar), Swordfish (deep sea; its sword is a part: to
+  hit), Ice Char (northern lakes, through a hole in winter), Deep Eel (underground lakes). D Ghost Pike (forest lakes,
+  at night), Sailfish (warm seas; its fin: lighter), Blind Whitefish (caves, level 4 and down). E Thunderfin (at sea,
+  in storms only; its scale: lightning resistance), Abyss Eel (deepest caves; its skin makes leather with poison
+  resistance), Elder Sturgeon (the greatest rivers). Top: Golden Carp, Moonfish (starwater at night; doubles a dish),
+  the legendary fish. The fishing net (Tailoring) takes small fish from shallow water without a cast.
+- **Mining and Smithing by tier** (19 October): ore veins lie in every deep cave system (cave dungeons, karst
+  sinkholes, the deeper levels of old mines), the tier rising with depth; the dwarves' mines are one place among
+  them (digging there unasked stays a crime), so a bad name with the dwarves never shuts you out. A Iron (no
+  property). B Silver Ore (hills far from the road, caves from level 2; strong against the dead), Bog Iron (cut from
+  a marsh; cheap, wears faster). C Deepiron (caves and mines from level 4; wears slower), Bloodstone (canyons and
+  mesas; some life), Frostvein (high mountains; cold resistance). D Blackiron (dangerous hills, orc country; more
+  armour), Moonsilver (karst caves; lighter), Sunstone (desert; fire resistance). E Adamant (the deepest tunnels of
+  any system; much armour), Wyrmstone (by drakes' lairs; fire and cold resistance). Top: Star-iron (the fallen star
+  only; light and strong, with one special power). Gems as now, from Mining 10. Grade: A-B normal, C-D exceptional,
+  E elite.
+- **Tailoring by tier** (19 October; warm or cool is the maker's choice, the cloth adds its own property). A Linen
+  (farm villages; cool; also bandages), Wool (herders; warm), Hemp (river farms; strong; rope and nets). B Felt (wool
+  felted at a fulling mill; warm, sturdy), Cotton (southern farms; cool), Mohair (goat herders on alpine meadows; warm,
+  light). C Spider Silk (spider caves; light, some mana), Highland Wool (far mountain herders; very warm), Sandsilk
+  (oasis caravans; cool, fire resistance). D Shadowsilk (deep spider nests; foes see you later), Mammoth Wool (from a
+  mammoth you hunted; cold resistance), Seasilk (giant shells on far coasts; lightning resistance). E Queen's Silk (a
+  spider queen; much mana), Emberthread (fire beetles in volcanic land; strong fire resistance). Top: Fey Silk (light,
+  one special power), never tied to one people: gathered at night by fairy rings and wisp marshes (wonders, several
+  per world), from a legendary spider's den, or as an elven gift after a job.
+- **Hunting, Skinning and Leatherworking by tier** (19 October; the game is all there already). A hare, grouse, deer,
+  goat, sheep, wild boar (plain leather). B elk, reindeer, ibex, gazelle (sturdy leather), wolf (warm fur), snake
+  (poison resistance). C aurochs, wild horse (sturdy), bear, winter wolf (warm), panther (lighter), crocodile (more
+  armour). D cave bear, snow ape (very warm), sabretooth (lighter), mammoth, rhino (wears slower, much armour). E
+  drake (fire resistance), frost drake (cold), swamp drake (poison). Top: the parts of named beasts and of dragons. A
+  herd above your tier is "too wary for you yet": you cannot get close.
+- **Every rank opens something:** veins, herbs, fish and game have a rank; below it they are "too hard for you yet".
+  Grades follow the rank (exceptional from about 20-25, elite from about 40-45), with the matching material.
+- **No grinding in one place** (19 October): the rank of a vein, herb, fish or beast follows the danger of the land
+  (the danger layer) and the depth of a mine or dungeon, never one spot; each step has three or four options in
+  different lands (Fishing 35: Great Sturgeon in broad rivers, Swordfish at deep sea, Ice Char in northern lakes, Deep
+  Eel in underground lakes). The top finds (Moonfish, Star-iron, elven thread, dragon hide) are the crafts' own rares:
+  scarce, one special property, never needed for a rank. Xp without gathering too: orders at your own height in every
+  town, masterwork tries, mending for others.
 
 ## Trade part 1: the money fixes (built 29 October 2026; the spec)
 
