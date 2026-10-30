@@ -164,7 +164,8 @@ def plan(site, cx, cy, people, storeys, state='whole', seed=None):
     if STYLE[people]['ladder'] or state == 'half':
         last = None
         for _k in range(n - 1):
-            pool = [c for c in opts if last is None or cheb(c[0], c[1], *last) >= 4] or opts
+            pool = [c for c in opts if last is None or cheb(c[0], c[1], *last) >= 4] \
+                or [c for c in opts if c != last] or opts          # never the ladder below: it would hide the way down
             last = rnd.choice(pool)
             stairs.append(last)
     else:
