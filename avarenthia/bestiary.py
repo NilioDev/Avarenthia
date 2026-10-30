@@ -90,7 +90,8 @@ def carries(k):
     sk = HT.SKINS.get(k)
     if sk:
         what = [sk[2].lower()] if sk[2] else []
-        what += [HT.PARTS[p][0].lower() for p, _c in sk[4] if p in HT.PARTS]
+        from .beastparts import PART
+        what += [PART[p][0].lower() for p, _c in sk[4] if p in PART]
         if sk[0]:
             what.append('meat')
         out.append('skinned: ' + ', '.join(what))
