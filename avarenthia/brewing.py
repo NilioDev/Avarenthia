@@ -150,7 +150,8 @@ def far_value(game, it, v):
         return v
     from .worldgen import cheb
     x, y = game.world_pos()
-    return round(v * (1 + min(1.0, cheb(x, y, o[0], o[1]) / 120)), 2)
+    master = 1.2 if LS.rank(game, 'brewing') >= 40 else 1          # a master brewer's drinks sell better
+    return round(v * master * (1 + min(1.0, cheb(x, y, o[0], o[1]) / 120)), 2)
 
 
 # ------------------------------------------------------------------ inns, gifts and the company
@@ -177,6 +178,27 @@ def at_inn(game, s, keeper):
     if k and k not in known(game) and ((s.id + game.seed) % 2 == 0 or getattr(s, 'rep', 0) >= 10):
         learn(game, k, f'{who} tells you how their {{name}} is brewed.')
     gift(game, s, keeper)
+    label(game, s, who)
+    from . import mastery as MA
+    MA.rumour(game, who)
+
+
+def label(game, s, who):
+    """Brewing 50: your name on the label. The inn buys a few of your drinks, once a day, at a good price."""
+    from .money import fmt
+    p = game.player
+    if LS.rank(game, 'brewing') < 50 or p.__dict__.get('label_day', {}).get(s.id) == game.day:
+        return
+    mine = [i for i in drinks_in_pack(game) if getattr(i, 'origin', None) is not None][:3]
+    if not mine:
+        return
+    p.__dict__.setdefault('label_day', {})[s.id] = game.day
+    total = 0
+    for it in mine:
+        total += round(it.value() * 1.5)                 # its worth, half again
+        game.remove_one(it)
+    p.gold += total
+    game.msg(f'{who} knows your name on the label, and takes {len(mine)} of your drinks for the cellar: {fmt(total)}.', 'gold')
 
 
 def gift(game, s, keeper):

@@ -125,7 +125,7 @@ def on_step(game):
     from .varnish import is_varnish
     p = game.player
     for st in getattr(game.world, 'sites', ()):
-        if unfound(st) and not is_varnish(st) and st.kind != 'teacher':
+        if unfound(st) and not is_varnish(st) and st.kind not in ('teacher', 'den', 'master', 'lostshop'):
             d = cheb(st.x, st.y, p.x, p.y)
             gnomes = st.kind == 'gnomes'
             if d <= 1:

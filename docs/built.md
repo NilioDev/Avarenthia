@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: life skills part 2 (30 Oct)** | Every beast gives parts, and a part is the power a maker chooses (two from rank 40), better from stronger beasts; parts broken off big beasts; named beasts give parts of their own nature and keep a den; catching one alive for a lord, a cage in his yard; Unmake from rank 40; a master's test at 25 and 40; orders on the boards; perks at 30, 40 and 50; the three great masters and their test; mending for your hireling and the town; boots for the road, a bedroll, barding |
 | **Built: life skills part 1 (30 Oct)** | Slow crafts that teach only work at your height (grey, green, yellow, orange), the first time double; Herbalism in Foraging; 51 herbs with two properties each and alchemy without recipes (draughts, oils, a sleeping flask, the Starlight Elixir, tinctures); ten drinks, learnt per people, dearer far away, a barrel, a round, a gift; fish, ore, cloth, leather and game by tier; Smithing at the anvil and Tailoring at the bench, the material sets the grade and a property, the work crude, fine or masterwork |
 | **Built: the great evils part 2, the quest and the Sky-Seat (29 Oct)** | Mist over the Sky-Seat until you know the truth or a seal breaks; relics as keys (and the Star-Iron Key for all five riddles); no travelling by road through his coast; one skipper who dares the whirlpool; the star-iron chain with gusts, handholds and broken links, the glass underside; five floors with beacons; the Hollow King in three phases, one lighter per relic; your shade where the dead are bound, a double fee in his city; the Long Night; the end and a healing world |
 | **Built: the great evils part 1, the frame (29 Oct)** | The Hollow King's coast facing the Sky-Seat; three servants per world, one light, one middle, one heavy, from eight kinds (three new: the Wendigo, the Great Wolf, the Fallen Mage), on their own slow clock and his attention clock; levers on the realms (war, tribute, webs, the Gorvash, floods, hunger, wolves, swayed barons), held baronies, the realms pushing back; seals; lieutenants in forts, camps and towers; a weakness from two sources; relics; heroes who ride out and their cairns; the Shadow tab and map layer [7] |
@@ -642,6 +643,95 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   (`GAME_TIER`); parts tear below it in Skinning. Handbook chapter Crafts. Test `crafts`. SAVE_VERSION 50.
   Not built from the spec: the road goods of Leatherworking, Lockpicks, the master perks, orders and mending for others
   (left for round 20); gifts go to the innkeeper of a people, not to a king or a guard.
+- **Round 20: life skills part 2** (30 October 2026; `beastparts.py`, `mastery.py`, `crafts.py`). Parts by their
+  beast (`Item('part', '<part>:<beast>')`, `beastparts.PART`, the ladder `STEP` by the beast's tier: wolf fangs +5,
+  winter wolf +10, sabretooth +15); spiders and beetles leave chitin (`on_kill`); scales and frost scales on snakes,
+  crocodiles and drakes. Making asks for a part after the material (`crafts.ask_part`, `r_craft_part`; two from rank
+  40); `fits` keeps fangs on weapons, helms, gloves and rings, claws on weapons and gloves, the rest on armour,
+  antlers and feathers anywhere. A critical blow on a big beast below half its life breaks a part off, once
+  (`on_blow`). Named beasts (beast and crawler kinds) give one or two `npart` items with a trait's power of found gear
+  (`TRAIT_POWER`, by rank), whole only with a knife and Skinning 15/30/45 (`named_parts`); a piece made of one bears
+  the beast's name. Dens: a hidden site 'den' near the home of every named beast but the legends (`make_den`, the
+  sign δ), found by walking up to it (`on_step`), Hunting 50 on its track (`reveal`); a small map of the land's kind
+  (hollow tree, thicket, cave, wallow, ledge, burrow, webbed hollow) with bones and now and then a shed part; the
+  beast is home when it fled there or one day in three (`home`); `den_gone` on its death or capture (`site.gone`,
+  `site_at` skips it). Catching alive: the lord's realm job 'catch' (`realmjobs.make_catch`); a sleeping flask marks
+  `slept`, below a quarter of its life a rope binds it (`try_bind`, in `melee`); waking first makes it furious
+  (`wake`); a cage in the lord's seat yard (`world.cages`, `sync_cages`, `at_cage`); a dead beast fails the job.
+  Unmake (`crafts.found_pieces`, `own_pieces`, `unmake_chance`: 40 at rank 40 rising 3 a rank, cap 80, a strong power
+  15 less; two thirds of the value, all of it at 50; the found piece lost either way, one failure in four breaks or
+  curses yours; `it.moved`). Mending at the bench for leather and cloth, your hireling's gear at both
+  (`worn(game, craft)`), mending on the road from rank 30 by using a bar, bolt or leather, mending for the townsfolk
+  once a day (`mend_others`). Road goods: marsh, sand, snow and mountain boots (`ROAD`, `road_boots`, a quarter off
+  a world-map step), bedroll and tent (a better night in the open), light and mail barding (`it.bard`, `mc.barding`).
+  Master's tests (`mastery.held` in `lifeskills.gain`, `need_test`, `wants`, `hand_in`; a 'mastertest' job in a far
+  town; `p.life_tests`). Orders on the boards (`make_order`, kind 'order', your best craft at your tier). Perks at 30,
+  40 and 50 for every skill (in `LIFE`; ice fishing, storm bites, two fish; rare herbs twice, no poison by mistake,
+  herbs in passing; veins through a wall, cave-in warning, one more ore; tracks last, stalking close, dens on the
+  track; trophies, no tearing, fine hides; a feast for the company, dishes keep, effects last; two brews, oils last,
+  never fail; drinks sell better, the inn buys yours; road mending, two parts, masterwork and full Unmake). The great
+  masters (`mastery.ensure`: a smith, a leatherworker and a tailor far from the roads, each with a lost workshop;
+  rumours at inns and tanners; the test in three parts in `p.masters`; one Unmake a visit for 3 gold at 50%).
+  Handbook: Hunting and cooking (parts, named beasts), Crafts (powers, mending, Unmake, masters). Test `masters`.
+  SAVE_VERSION 51. Not built: Lockpicks (there are no locks yet) and the quiver (bows use no arrows): both wait for
+  what they need.
+
+## Life skills part 2 (built 30 October 2026; the spec)
+Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md`. Part 1
+(the curve, the herbs and alchemy, brewing, Smithing and Tailoring, the materials by tier) is built: see `docs/built.md`.
+Left from part 1 for round 20: the road goods of Leatherworking (marsh, mountain, snow and sand boots that make travel
+over that land quicker; tent and bedroll; barding for your beast; a quiver), Lockpicks from the anvil (once there is a
+lock to pick), the master perks at 30, 40 and 50, and xp without gathering (orders at your own height in every town,
+mending for others).
+- **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
+  property) plus one beast part of the maker's choice, which gives the power; two parts from rank 40.
+- **Every beast gives parts, from the first wolf on** (Monster Hunter's way, 19 October): fangs (to hit), claws
+  (damage), horn and tusks (armour), antlers (stamina), feathers (lighter), chitin (poison resistance), scales (fire or
+  cold resistance), ivory (life). The same part from a stronger beast gives more (wolf fangs +5, winter wolf +10,
+  sabretooth +15), so better gear means hunting stronger beasts; old parts are sold. Big beasts (bear, aurochs,
+  mammoth, drake) can have a part broken off too. Below the beast's tier in Skinning, parts tear more often.
+- **Special powers** (+ranks in a school, leech, life or mana on a kill, crits, all resistances, thorns, less damage,
+  Strength or Dexterity) exist only on found gear and on the parts of named beasts, so rares stay what players hunt
+  for.
+- **Unmake** (rank 40 in the craft, at its own bench): one power of an identified found piece moves onto a piece you
+  made; the found piece is destroyed; one moved power per piece, at about two thirds of its value (full at 50). Uniques
+  and sets cannot be unmade. It can always fail: about 40% success at rank 40, 55% at 45, 70% at 50, never above 80%;
+  a strong power costs 15%. A failure loses the found piece; one failure in four also wears your own piece to broken or
+  curses it. The chance shows before you confirm.
+- **Master tests at 25 and 40:** one job from a master somewhere in the world before the skill goes on.
+- **Perks up to 50** (19 October): every skill gets master perks at 30, 40 and 50 (Fishing 30: ice fishing through a
+  hole in winter; Mining 30: you see a vein through one wall; the crafts at 30: mend on the road with a kit, at 40 two
+  chosen powers and Unmake, at 50 masterwork more often and Unmake at full value). The full list is in
+  `/mnt/project-files/lifeskills/content.md`.
+- **Gear for your hirelings:** crafted gear can be handed to hirelings (weapon, armour, helm, shield), and you mend
+  theirs with your craft: the thrifty way to fit out a company.
+- **Hunting the named beasts, Monster Hunter's way** (19 October; builds on `named.py`):
+  - **Parts:** beside its trophy a named beast gives one or two materials (pelt, horn, scale, venom gland) that carry
+    one of its traits (Frost-touched: cold resistance; Venomous: poison resistance or a venom oil; Stone Skin: more
+    armour; Swift: lighter). A piece made of them bears the beast's name ("Old Greyback's Hide Armor"): the crafts'
+    rares. No set bonuses (they would clash with the class trees).
+  - **Breaking a part:** a critical hit while it is below half its life breaks off a horn or tail: one more material.
+  - **Skinning counts:** taking the parts off whole needs rank 15 (notable), 30 (notorious), 45 (legendary).
+  - **A den of its own:** every named beast gets a den when it is made, near its home, of the land's kind: a hollow
+    tree or thorn thicket in a wood, a cave in the hills, a mud wallow in a marsh, a ledge high in the mountains. A
+    real den, not a dungeon: one small map with bones, the leavings of its prey, now and then a shed scale. One sign on
+    the world map, shown only once you have found it; `>` goes in. Out of its den it roams the world and the play maps
+    as now; beaten, it flees there, leaving a blood trail.
+  - **The den goes with the beast:** when it dies its den is gone; a new beast brings a new den. So the number of
+    dens never grows past the number of named beasts (the cap that is there now: about 9, rising to 18).
+  - **Legendary beasts** keep a place of their own: the deepest level of a dungeon, a dragon's nest, or old ruins.
+  - **Catching one alive** (a job kind: a baron wants the beast alive): below a quarter of its life, throw a sleeping
+    draught (Alchemy); it sleeps a few turns; bump it with a rope to bind it; men with a cart come for it. If it wakes
+    first it is furious. More coin, no parts. No zoo to build: the baron keeps it in a cage in his seat's yard
+    (one cage tile per beast you brought), so you see your catches when you visit.
+- **The great masters** (22 October): one master per craft in the whole world (a smith, a leatherworker, a
+  tailor), far from the roads. They unmake for a hero who lacks the craft, but only after a real quest: first find
+  them (no marker; rumours, a book in a library, an old craftsman who knew them), then their test in three parts:
+  bring a top find of their craft (Star-iron, the parts of a named beast or a dragon, Fey Silk), bring the part of a
+  notorious or legendary named beast, and win back what they lost (an old forge, a workshop or a hall overrun by
+  whatever lives there now). After that they work for you: one Unmake per visit, for a high price (gold, not silver),
+  at a 50% chance (less than a master player at rank 50), with the same bad failure. Your own craft stays the better
+  road.
 
 ## Life skills part 1 (built 30 October 2026; the spec)
 Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md` and

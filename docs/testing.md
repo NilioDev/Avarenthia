@@ -27,6 +27,26 @@ Each line: **what** - what to check - what the debug menu should offer.
   for the bell), Time (a winter night).
 
 
+## Life skills part 2 (built 30 October 2026)
+
+- **Parts and powers** - skinning parts of every beast, the ladder (wolf, winter wolf, sabretooth fangs), chitin from
+  spiders, a part broken off a bear below half life by a critical blow; choosing a part when you make a piece, two
+  from rank 40, which parts fit which pieces. Debug: Give item (parts, leather, bars), Ranks, Spawn (a bear).
+- **Named beasts** - their own parts at Skinning 15/30/45 and the piece named after them; the den, found by walking
+  up to it or at Hunting 50 on a track, the beast at home after it fled; the den gone when it dies. Debug: Give item
+  (named parts), Ranks (Skinning, Hunting), the named enemies in the World section, Teleport.
+- **Catching alive** - a lord's "alive" job, a sleeping flask, a rope, the furious waking, the cage in his yard.
+  Debug: Give item (rope, herbs for a flask), Ranks (Alchemy), Teleport to the seat.
+- **Unmake and mending** - Unmake at 40, 45 and 50 (the chance, the two thirds, a failure), mending yours and your
+  hireling's at the anvil and the bench, on the road from 30, for the townsfolk. Debug: Give item (magic gear),
+  Ranks.
+- **Masters** - the test at 25 and 40 and its job, an order on a board, every perk at 30, 40 and 50 (ice fishing in
+  winter, a storm, veins through a wall, a cave-in, a feast); the three great masters heard of at an inn or a tanner,
+  their three-part test, the won-back workshop, Unmake for gold once a visit. Debug: Ranks (a rank set past 25 or 40
+  counts the test as passed), Give item (Fey Silk, star-iron, drake leather), Time (winter), Weather (a storm).
+- **The road** - marsh, sand, snow and mountain boots on their land, a bedroll at camp, barding on your beast.
+  Debug: Give item (leather), Ranks (Leatherworking), Teleport to a marsh or desert.
+
 ## Life skills part 1 (built 30 October 2026)
 
 - **The curve and the colours** - a craft list's names in grey, green, yellow and orange; grey work teaching nothing,

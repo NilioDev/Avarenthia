@@ -146,7 +146,7 @@ def brew(game, keys, use_spirit=False):
         game.msg('The herbs share nothing. The brew turns to a brown sludge: ruined.', 'bad')
         LS.gain(game, 'alchemy', .5, at=at)
         return 10
-    if random.random() < max(.03, .22 - r * .02):
+    if r < 50 and random.random() < max(.03, .22 - r * .02):         # a master's brews never fail
         game.msg('The brew boils over and blackens. Ruined.', 'bad')
         LS.gain(game, 'alchemy', 1, at=at)
         return 10
@@ -158,6 +158,11 @@ def brew(game, keys, use_spirit=False):
         FG.learn_prop(game, k, 1, True)
     game.add_to_inv(out) or game.spill(game.map, p.x, p.y, out)
     game.msg(f'You brew {name_of(out)}.', 'good')
+    if r >= 30 and random.random() < .25:           # now and then a master gets two from one brew
+        two = Item(game.new_id(), 'draught', form)
+        two.props, two.q, two.long = list(props), out.q, out.long
+        game.add_to_inv(two) or game.spill(game.map, p.x, p.y, two)
+        game.msg('There is enough in the kettle for a second.', 'good')
     LS.gain(game, 'alchemy', 2 + at / 10, at=at, what=form + ':' + '+'.join(props))
     from .gods import on_craft
     on_craft(game, 'brew')
@@ -194,6 +199,7 @@ def use(game, it):
         game.remove_one(it)
         o.hold = max(getattr(o, 'hold', 0), 2 + s // 2)
         o.frozen = False
+        o.slept = True                       # a named beast that wakes before it is bound is furious (beastparts)
         game.flash([(o.x, o.y)], (150, 160, 230), '*', .2)
         game.msg(f'The flask bursts on {o.the()} in a pale cloud. It sinks down, asleep.', 'good')
         return 1
@@ -204,7 +210,8 @@ def use(game, it):
         game.remove_one(it)
         for pr in it.props:
             k, v = {'Venom': ('oil_venom', 2 + s), 'Flame': ('fire_dmg', 2 * s + 2), 'Silver': ('undead', 15 + 8 * s)}[pr]
-            p.buffs = [b for b in p.buffs if b[0] != k] + [[k, v, turns(it, 80), f'{WORD[pr]} Oil']]
+            p.buffs = [b for b in p.buffs if b[0] != k] + [[k, v, round(turns(it, 80) * (1.5 if LS.rank(game, 'alchemy') >= 40
+                                                                                          else 1)), f'{WORD[pr]} Oil']]
         game.msg('You work the oil into the edge of your weapon.', 'good')
         return 3
     game.remove_one(it)

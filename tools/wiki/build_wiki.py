@@ -539,13 +539,19 @@ fi_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[6]}</td><td>{v[1]
                   for k, v in LSW.FISH.items() if k != 'legend')
 mt_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{v[1]}</td><td>{v[2]}</td></tr>'
                   for tab in (CRW.METALS, CRW.CLOTHS, CRW.LEATHERS) for v in tab.values())
+import avarenthia.beastparts as BPW
+bp_rows = ''.join(f'<tr class="entry"><td>{e(v[0])}</td><td>{e(str(v[1]))} {e(str(v[2]))}</td><td>{e(v[3])}</td></tr>'
+                  for v in BPW.PART.values())
+tp_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(str(v))}</td></tr>' for k, v in BPW.TRAIT_POWER.items())
 add('lifeskills', 'Skills', 'Life skills: herbs, drinks, fish, materials',
     f'<p>{e(LSW.__doc__.strip().splitlines()[0])} Tiers A-E and the top; the rank each tier needs: '
     f'{e(", ".join(f"{t} {r}" for t, r in LSW.TIER_RANK.items()))}. {badge("built")}</p>',
     f'<h3 class="gh">Herbs ({len(FGW.HERBS)})</h3><div class="tw"><table><tr><th>Herb</th><th>Tier</th><th>Properties</th><th>Where</th></tr>{hb_rows}</table></div>'
     f'<h3 class="gh">Drinks</h3><div class="tw"><table><tr><th>Drink</th><th>Rank</th><th>Made of</th><th>Whose</th></tr>{dr_rows}</table></div>'
     f'<h3 class="gh">Fish</h3><div class="tw"><table><tr><th>Fish</th><th>Tier</th><th>Rank</th><th>Water</th><th>Also</th></tr>{fi_rows}</table></div>'
-    f'<h3 class="gh">Metals, cloth and leather</h3><div class="tw"><table><tr><th>Material</th><th>Tier</th><th>Rank</th></tr>{mt_rows}</table></div>')
+    f'<h3 class="gh">Metals, cloth and leather</h3><div class="tw"><table><tr><th>Material</th><th>Tier</th><th>Rank</th></tr>{mt_rows}</table></div>'
+    f'<h3 class="gh">Beast parts</h3><div class="tw"><table><tr><th>Part</th><th>Gives</th><th>On</th></tr>{bp_rows}</table></div>'
+    f'<h3 class="gh">Named beasts\' parts</h3><div class="tw"><table><tr><th>Trait</th><th>Gives</th></tr>{tp_rows}</table></div>')
 
 # ---------------------------------------------------------------- the handbook, from a real game
 with contextlib.redirect_stdout(io.StringIO()):

@@ -310,6 +310,8 @@ def make(game, x=None, y=None, prey=None, rank=None, boss=None, k=None):
     if rank == 'legendary':
         lair(game, n)
     store(game)[n.id] = n
+    from . import beastparts as BP
+    BP.make_den(game, n)                    # a den of its own near its home, hidden until found
     # the big ones have lieutenants: hunt them first, then where the boss hides
     if rank in ('notorious', 'legendary') and k in RACE and boss is None and random.random() < .6:
         for _ in range(random.randint(1, 2)):
@@ -372,7 +374,9 @@ def area(game, n):
     if n.area is None:
         report(game, n, age=random.randint(1, 4))
     x, y, r, day = n.area
-    return x, y, int(min(24, r + max(0, game.day - day) * GROW.get(n.habit, 1)))
+    from . import lifeskills as LS
+    slow = .5 if LS.rank(game, 'hunting') >= 30 else 1          # a master hunter reads old tracks
+    return x, y, int(min(24, r + max(0, game.day - day) * GROW.get(n.habit, 1) * slow))
 
 
 def report(game, n, age=0, r=None):
@@ -519,6 +523,10 @@ def sign(game, n, night=False):
     r2 = max(3, int(r * .6))
     n.area = [(n.x + p.x) // 2 + random.randint(-1, 1), (n.y + p.y) // 2 + random.randint(-1, 1), r2, game.day]
     n.sign_day = game.day
+    from . import lifeskills as LS
+    if LS.rank(game, 'hunting') >= 50:
+        from . import beastparts as BP
+        BP.reveal(game, n)
 
 
 def meet(game, n, surprise=None):
@@ -592,6 +600,8 @@ def mon_turn(game, mon, df):
     p, m = game.player, game.map
     from .behave import The
     from .worldgen import free_around
+    from . import beastparts as BP
+    BP.wake(game, mon)
     if game.visible(mon.x, mon.y):
         on_seen(game, mon)
         for t in mon.mods:
@@ -636,7 +646,9 @@ def flee(game, mon, n):
     from .dress import add_blood
     m = game.map
     add_blood(m, mon.x, mon.y, 3)
-    game.msg(f'{The(mon)} breaks away and flees, leaving a trail of blood!', 'gold')
+    from . import beastparts as BP
+    den = BP.den_of(game, n)
+    game.msg(f'{The(mon)} breaks away and flees, leaving a trail of blood!' + (' It runs for its den.' if den else ''), 'gold')
     if mon in m.mons:
         m.mons.remove(mon)
     n.back = game.day + random.randint(5, 10)
@@ -669,6 +681,9 @@ def on_kill(game, mon):
     ox, oy = game.over_pos if game.cur != 'over' else (game.player.x, game.player.y)
     NW.post(game, 'danger', f'{n.Full} is dead. Someone brought down {n.his()} {n.rank} hide at last.', ox, oy)
     game.msg(f'You take {t.name}. Anyone who posted a bounty on {n.his()} head will pay for it.', 'gold')
+    from . import beastparts as BP
+    BP.named_parts(game, mon, n)
+    BP.den_gone(game, n)
     from . import chronicle as CH
     CH.deed(game, f'{n.Full} slain', f'You brought down {n.Full}, the {n.rank} {D.MONSTERS[mon.k]["name"].lower()}, '
                                      f'in {m.name}.', (ox, oy))

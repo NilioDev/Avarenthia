@@ -9,35 +9,53 @@ LIFE = {
     'fishing': dict(name='Fishing', desc='Cast a line by any shore, river or pool (a, with a pole).',
                     perks={3: 'Trout and carp start to bite', 5: 'Casts take less time', 8: 'Pike bite in deep water',
                            12: 'Salmon run in the rivers', 15: 'Casts take much less time',
-                           18: 'The legendary golden carp may bite', 25: 'Master angler: almost every cast lands a fish'}),
+                           18: 'The legendary golden carp may bite', 25: 'Master angler: almost every cast lands a fish',
+                           30: 'You cut a hole in the ice and fish through it in winter',
+                           40: 'In a storm the big ones bite', 50: 'Now and then two fish on one line'}),
     'foraging': dict(name='Foraging', desc='Food and herbs from the wild (F). Taste strange plants warily.',
                      perks={3: 'You sometimes recognise what you pick', 5: 'You find more at once',
                             8: 'Poisonous plants make you uneasy; rare herbs turn up more often',
                             10: 'Searching takes less time', 12: 'You can tell a herb at a glance',
-                            15: 'You see a herb\'s second property when you pick it; you rarely come back empty-handed'}),
+                            15: 'You see a herb\'s second property when you pick it; you rarely come back empty-handed',
+                            30: 'Rare herbs turn up twice as often', 40: 'You never eat a poisonous plant by mistake',
+                            50: 'A herb you know catches your eye as you pass'}),
     'alchemy': dict(name='Alchemy', desc='Draughts and oils from herbs (P): what two or three herbs share.',
-                    perks={5: 'Fewer ruined brews', 10: 'Brews rarely fail', 20: 'Stronger brews'}),
+                    perks={5: 'Fewer ruined brews', 10: 'Brews rarely fail', 20: 'Stronger brews',
+                           30: 'Now and then two from one brew', 40: 'Oils last longer', 50: 'Your brews never fail'}),
     'brewing': dict(name='Brewing', desc='Ale, cider, wine, mead and spirits (P), at an inn or a cellar.',
                     perks={5: 'Fewer spoiled batches', 10: 'You brew an extra mug now and then',
-                           30: 'A barrel with every batch, when your cart has room'}),
+                           30: 'A barrel with every batch, when your cart has room', 40: 'Your drinks sell better',
+                           50: 'Your name on the label: inns buy what you brew'}),
     'mining': dict(name='Mining', desc='Dig ore and gems from veins (walk into one, with a pick).',
                    perks={3: 'You dig a little faster', 6: 'You dig faster', 10: 'Now and then a gem among the ore',
-                          15: 'You dig much faster'}),
+                          15: 'You dig much faster', 30: 'You see a vein through one wall',
+                          40: 'You hear a cave-in coming and are out from under it', 50: 'Every vein gives one more'}),
     'smithing': dict(name='Smithing', desc='At an anvil: smelt ore, forge arms and armour, mend, hone.',
-                     perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
+                     perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then',
+                            30: 'You mend on the road with a bar from your pack', 40: 'Two parts in a piece, and Unmake',
+                            50: 'Masterwork more often; Unmake at full value'}),
     'hunting': dict(name='Hunting', desc='Tracks and herds: walk into a herd on the world map.',
                     perks={3: 'You read how old tracks are', 6: 'Game notices you a little later',
-                           10: 'You see herds from further off', 15: 'You snare small game more often'}),
+                           10: 'You see herds from further off', 15: 'You snare small game more often',
+                           30: 'The tracks of named beasts stay readable twice as long',
+                           40: 'You stalk a herd to striking distance', 50: 'A beast\'s den shows as soon as you find its track'}),
     'skinning': dict(name='Skinning', desc='Stand on a carcass and press Enter, with a knife or a dagger.',
                      perks={3: 'Fewer torn hides', 8: 'Good hides more often', 15: 'An extra cut of meat',
-                            20: 'Fine hides more often'}),
+                            20: 'Fine hides more often', 30: 'Trophies of big game', 40: 'Parts never tear',
+                            50: 'Fine hides of common game'}),
     'cooking': dict(name='Cooking', desc='Walk into a fire or a hearth. No recipes: try things in the pot.',
                     perks={5: 'Fewer burnt dishes', 10: 'An extra portion from every pot',
-                           15: 'You taste what is in the inn\'s stew', 20: 'Another portion, and stronger dishes'}),
+                           15: 'You taste what is in the inn\'s stew', 20: 'Another portion, and stronger dishes',
+                           30: 'A feast: one dish feeds your whole company', 40: 'Your dishes keep twice as long',
+                           50: 'What a dish does lasts longer'}),
     'leatherworking': dict(name='Leatherworking', desc='Leather goods at a workbench; oak bark tans a salted hide.',
-                           perks={5: 'Sturdier work', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
+                           perks={5: 'Sturdier work', 15: 'Fine work more often', 25: 'Masterwork now and then',
+                                  30: 'You mend on the road with leather from your pack',
+                                  40: 'Two parts in a piece, and Unmake', 50: 'Masterwork more often; Unmake at full value'}),
     'tailoring': dict(name='Tailoring', desc='Cloth at a workbench: robes, hoods, wraps; bandages, rope.',
-                      perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then'}),
+                      perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then',
+                             30: 'You mend on the road with cloth from your pack', 40: 'Two parts in a piece, and Unmake',
+                             50: 'Masterwork more often; Unmake at full value'}),
 }
 LIFE_ORDER = ['fishing', 'foraging', 'alchemy', 'brewing', 'mining', 'smithing', 'hunting', 'skinning', 'cooking',
               'leatherworking', 'tailoring']
@@ -135,6 +153,10 @@ def gain(game, key, amount, at=None, what=None):
     from .guilds import life_bonus
     sk[1] += amount * rc['learn'].get(key, 1.1 if p.race == 'human' else 1) * life_bonus(game, key)
     while sk[0] < 50 and sk[1] >= need_for(sk[0]):
+        from . import mastery as MA
+        if MA.held(game, key, sk[0]):                   # 25 and 40: a master's test first
+            sk[1] = need_for(sk[0])
+            break
         sk[1] -= need_for(sk[0])
         sk[0] += 1
         game.msg(f"Your {LIFE[key]['name']} rises to {sk[0]}.", 'good')
@@ -229,7 +251,24 @@ def can_fish(game):
     if not water:
         game.msg('There is no water here to fish in. Stand next to a river, lake, pool or the sea.')
         return None
+    if all_frozen(game):
+        if rank(game, 'fishing') < 30:
+            game.msg('The water is frozen hard. Cutting a hole for a line is a master\'s trick (Fishing 30).', 'info')
+            return None
+        game.msg('You cut a hole in the ice and let your line down into the dark water.', 'info')
     return water
+
+
+def all_frozen(game):
+    """On the world map in deep winter: is every water beside you frozen?"""
+    m, p = game.map, game.player
+    if m.kind != 'over':
+        return False
+    from . import seasons as SE
+    st = SE.Now(game)
+    cells = [(p.x + dx, p.y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1) if m.inb(p.x + dx, p.y + dy)
+             and m.tile(p.x + dx, p.y + dy) in (D.WATER, D.RIVER, D.SHALLOW)]
+    return bool(cells) and all(SE.frozen(m, y * m.w + x, st) for x, y in cells)
 
 
 def plan(game, water):
@@ -277,7 +316,8 @@ def plan(game, water):
         return out
     if not cands:
         cands = [('sprat' if water == 'sea' else 'minnow', FISH['sprat' if water == 'sea' else 'minnow'])]
-    k, f = random.choices(cands, [f[3] * (1 + (f[1] / 10)) for _k, f in cands])[0]
+    storm = r >= 40 and fish_cond(game, 'storm')          # a master knows the big ones bite in a storm
+    k, f = random.choices(cands, [f[3] * (1 + (f[1] / 10)) * (2.5 if storm and f[6] in 'CDE' else 1) for _k, f in cands])[0]
     out.update(kind='fish', fish=k, weight=1 + f[1] // 3)
     return out
 
@@ -374,6 +414,10 @@ def land(game, pl, ok):
     else:
         game.msg(f'You catch a {f[0]}, but your pack is full. You let it go.')
     gain(game, 'fishing', 1 + f[1] // 6, at=f[1], what=k)
+    if rank(game, 'fishing') >= 50 and f[6] != 'T' and random.random() < .15:
+        two = make_fish(game, k)
+        if game.add_to_inv(two):
+            game.msg(f'A second {f[0]} comes up on the same line!', 'good')
     from .gods import on_craft
     on_craft(game, 'fish')
     if k == 'golden':

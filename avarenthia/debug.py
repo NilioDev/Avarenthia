@@ -585,7 +585,12 @@ def set_rank(game, key, kind, rank):
     if kind == 'disc':
         p.disc.setdefault(key, [0, 0])[:] = [rank, 0]
     else:
+        rank = min(50, rank)
         p.life_sk.setdefault(key, [0, 0])[:] = [rank, 0]
+        tests = p.__dict__.setdefault('life_tests', set())
+        for lvl in (25, 40):                          # a rank set past a master's test counts the test as passed
+            if rank > lvl:
+                tests.add((key, lvl))
     game.msg(f'Debug: {key} rank {rank}.', 'info')
 
 
@@ -624,6 +629,16 @@ def item_list():
         out.append(('cloth', CRF.CLOTHS[c][0], ('mat', 'cloth_' + c)))
     for k, v in CRF.LEATHERS.items():
         out.append(('leather', v[0], ('leather', k)))
+    from . import beastparts as BP
+    from .hunting import SKINS
+    for beast, row in SKINS.items():
+        for part, _c in row[4]:
+            if part in BP.PART:
+                out.append(('part', BP.part_name(f'{part}:{beast}'), ('part', f'{part}:{beast}')))
+    for trait in BP.TRAIT_POWER:
+        out.append(('named part', f'Named beast part: {trait}', ('npart', trait)))
+    for t, nm in (('rope', 'Coil of Rope'), ('bedroll', 'Bedroll'), ('tent', 'Tent and Bedroll'), ('kit', 'Repair Kit')):
+        out.append(('tool', nm, ('tool', t)))
     return out
 
 
@@ -655,6 +670,13 @@ def give(game, recipe, rar='normal'):
         it = CRF.make_mat(game, recipe[1], 8)
     elif kind == 'leather':
         it = EN.Item(game.new_id(), 'leather', recipe[1], 8)
+    elif kind == 'part':
+        it = EN.Item(game.new_id(), 'part', recipe[1], 4)
+    elif kind == 'npart':
+        it = EN.Item(game.new_id(), 'npart', recipe[1])
+        it.beast, it.nid, it.rank, it.src, it.word = 'Old Greyback', None, 'notorious', 'wolf', 'pelt'
+    elif kind == 'tool':
+        it = EN.Item(game.new_id(), 'tool', recipe[1], 3 if recipe[1] in ('rope', 'kit') else 1)
     else:
         it = LS.make_fish(game, recipe[1], 3)
     if it.k == 'gear':

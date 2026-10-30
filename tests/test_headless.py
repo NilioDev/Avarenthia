@@ -7757,6 +7757,193 @@ def crafts():
     print('crafts ok')
 
 
+def masters():
+    """Life skills part 2: beast parts as the chosen power, the ladder, a part broken off, a named beast's own parts,
+    its den, catching one alive, Unmake, the master's tests at 25 and 40, orders, the great masters, the perks."""
+    from avarenthia import lifeskills as LS, crafts as CRF, beastparts as BP, mastery as MA, named as NM
+    from avarenthia import missions as MS, realmjobs as RJ, sites as ST, folk as FK
+    from avarenthia.entities import Item, make_monster, make_gear
+    import pickle
+    print('== masters')
+    random.seed(20)
+    app = new_app('soft', 2020)
+    g = app.game
+    p = g.player
+    p.gold = 10 ** 6
+    # the ladder: the same part from a stronger beast gives more
+    assert BP.power('fangs:wolf') == ('hit', 5) and BP.power('fangs:winter_wolf') == ('hit', 10) \
+        and BP.power('fangs:sabretooth') == ('hit', 15)
+    assert BP.power('ivory:mammoth')[0] == 'life' and BP.power('frostscale:frost_drake')[0] == 'res_cold'
+    # a part is the power you choose: wolf fangs on leather gloves
+    p.inv.append(Item(g.new_id(), 'leather', 'leather', 6))
+    p.inv.append(BP.make(g, 'fangs', 'wolf', 2))
+    p.inv.append(BP.make(g, 'horn', 'aurochs', 1))
+    p.life_sk['leatherworking'] = [10, 0]
+    CRF.make(g, 'leatherworking', 'gloves', 'leather', None, ['fangs:wolf'])
+    gl = [i for i in p.inv if i.k == 'gear'][-1]
+    assert ['hit', 5] in gl.aff, gl.aff
+    assert not BP.fits('armour', gl) or gl.slot != 'weapon'
+    # from rank 40, two parts
+    p.life_sk['leatherworking'] = [40, 0]
+    CRF.make(g, 'leatherworking', 'leather', 'leather', None, ['horn:aurochs', 'fangs:wolf'])
+    arm = [i for i in p.inv if i.k == 'gear'][-1]
+    assert any(a[0] == 'edef' for a in arm.aff) and any(a[0] == 'hit' for a in arm.aff), arm.aff
+    # road boots: a quarter quicker over their own land
+    p.inv.append(Item(g.new_id(), 'leather', 'leather', 6))
+    CRF.make(g, 'leatherworking', 'marshboots', 'leather')
+    mb = [i for i in p.inv if i.k == 'gear'][-1]
+    assert mb.road == 'marsh' and 'Marsh Boots' in mb.name, mb.name
+    p.str = p.dex = 200
+    g.equip(mb)
+    assert CRF.road_boots(g, D.SWAMP) == .75 and CRF.road_boots(g, D.GRASS) == 1
+    # a big beast below half: a critical blow breaks a part off
+    to_over(g, 0)
+    g.enter_town(0)
+    bear = make_monster(g, 'brown_bear', p.x + 1, p.y, 6)
+    g.map.mons.append(bear)
+    bear.hp = bear.maxhp // 3
+    n_items = len(g.map.items)
+    BP.on_blow(g, bear, True)
+    assert len(g.map.items) == n_items + 1 and bear.broken_part
+    BP.on_blow(g, bear, True)
+    assert len(g.map.items) == n_items + 1, 'once per beast'
+    g.map.mons.remove(bear)
+    # a named beast keeps a den near its home, hidden until found
+    to_over(g, 0)
+    n = None
+    for _ in range(20):
+        n = NM.make(g, prey='beast', rank='notable')
+        if n and getattr(n, 'den', None) is not None:
+            break
+    assert n and n.den is not None
+    den = g.world.sites[n.den]
+    assert den.kind == 'den' and FK.unfound(den) and den.nid == n.id
+    om = g.maps['over']
+    p.x, p.y = den.x + 1, den.y
+    BP.on_step(g)
+    assert not FK.unfound(den)
+    m = ST.gen_site_map(g, den)
+    assert m.nook and m.entry
+    n.back = g.day + 3
+    g.enter_site(den.id)
+    boss = next((o for o in g.map.mons if getattr(o, 'named', None) == n.id), None)
+    assert boss is not None, 'licking its wounds in its den'
+    # its own parts: Skinning by its rank, a knife
+    p.life_sk['skinning'] = [15, 0]
+    p.inv.append(Item(g.new_id(), 'tool', 'knife'))
+    before = len(g.map.items)
+    BP.named_parts(g, boss, n)
+    nparts = [i for i in g.map.items[before:] if i.k == 'npart']
+    assert nparts and nparts[0].beast == n.name, g.map.items[before:]
+    np_ = nparts[0]
+    g.map.items.remove(np_)
+    p.inv.append(np_)
+    BP.den_gone(g, n)
+    assert getattr(den, 'gone', False) and ST.site_at(g.world, den.x, den.y) is None
+    # a piece made of it bears the beast's name and carries the power of found gear
+    p.inv.append(Item(g.new_id(), 'leather', 'leather', 6))
+    CRF.make(g, 'leatherworking', 'boots', 'leather', None, [f'n{np_.id}'])
+    nb = [i for i in p.inv if i.k == 'gear'][-1]
+    assert nb.name.startswith(NM.poss(n.name)) and BP.npower(np_)[0] in [a[0] for a in nb.aff], (nb.name, nb.aff)
+    # Unmake: a found power onto your own work; the found piece is gone either way
+    p.life_sk['leatherworking'] = [45, 0]
+    found = make_gear(g, 'ring', 'magic', 10)
+    found.ided = True
+    found.aff = [['life', 12]]
+    p.inv.append(found)
+    own = next(i for i in p.inv if i.k == 'gear' and getattr(i, 'made', None) and not getattr(i, 'moved', False)
+               and not g.is_equipped(i))
+    assert CRF.unmake_pairs(g, 'leatherworking')
+    assert CRF.unmake_chance(g, 'leatherworking', 'life') == 55 and CRF.unmake_chance(g, 'leatherworking', 'leech') == 40
+    ok = CRF.do_unmake(g, 'leatherworking', found.id, 0, own.id, 8, 100)
+    assert ok and own.moved and ['life', 8] in own.aff and found not in p.inv
+    found2 = make_gear(g, 'ring', 'magic', 10)
+    found2.ided = True
+    found2.aff = [['life', 12]]
+    p.inv.append(found2)
+    own2 = next(i for i in p.inv if i.k == 'gear' and getattr(i, 'made', None) and not getattr(i, 'moved', False)
+                and not g.is_equipped(i))
+    assert not CRF.do_unmake(g, 'leatherworking', found2.id, 0, own2.id, 8, 0) and found2 not in p.inv
+    # the master's test at 25: the skill stops until a master has seen your work
+    p.life_sk['fishing'] = [25, 0]
+    LS.gain(g, 'fishing', 10 ** 4, at=30)
+    assert p.life_sk['fishing'][0] == 25
+    mt = next(mi for mi in g.missions if mi.kind == 'mastertest' and mi.data['key'] == 'fishing')
+    assert MA.line(g, mt)
+    p.inv.append(LS.make_fish(g, 'sturgeon'))
+    MA.hand_in(g, mt, mt.giver)
+    assert mt.state == 'done' and MA.passed(g, 'fishing', 25)
+    LS.gain(g, 'fishing', 10 ** 4, at=40)
+    assert 25 < p.life_sk['fishing'][0] <= 40
+    # an order at your own height, from a town board
+    p.life_sk['smithing'] = [22, 0]
+    p.life_sk['leatherworking'] = [0, 0]
+    s0 = g.world.settlements[0]
+    od = MA.make_order(g, s0)
+    assert od and od.kind == 'order' and od.data['key'] == 'smithing' and od.data['tier'] == 'C'
+    od.state = 'active'
+    g.missions.append(od)
+    CRF.give(g, 'bar_deepiron', 10)
+    for _ in range(od.data['n']):
+        CRF.make(g, 'smithing', 'dagger', 'deepiron')
+    sk0 = p.life_sk['smithing'][:]
+    MA.hand_in(g, od, s0.id)
+    assert od.state == 'done' and p.life_sk['smithing'] != sk0
+    # the three great masters: far from the roads, found by rumour, a test in three parts
+    ms = MA.ensure(g)
+    assert set(ms) == {'smithing', 'leatherworking', 'tailoring'}
+    random.seed(3)
+    for _ in range(40):
+        MA.rumour(g, 'The innkeeper')
+    assert p.masters_heard == set(ms)
+    site = g.world.sites[ms['tailoring']['site']]
+    g.enter_site(site.id)
+    master = next(o for o in g.map.mons if getattr(o, 'role', '') == 'master')
+    MA.talk(g, master)
+    assert MA.stage(g, 'tailoring') == 1
+    CRF.give(g, 'cloth_feysilk', 1)
+    MA.talk(g, master)
+    assert MA.stage(g, 'tailoring') == 2
+    np2 = Item(g.new_id(), 'npart', 'Swift')
+    np2.beast, np2.nid, np2.rank, np2.src, np2.word = 'the Widow', None, 'notorious', 'wolf_spider', 'chitin'
+    p.inv.append(np2)
+    MA.talk(g, master)
+    assert MA.stage(g, 'tailoring') == 3
+    lost = g.world.sites[ms['tailoring']['lost']]
+    assert not FK.unfound(lost)
+    g.enter_site(lost.id)
+    for o in [o for o in g.map.mons if not o.is_npc]:
+        g.kill(o)
+    assert MA.stage(g, 'tailoring') == 4
+    # catching one alive: a lord's job, a sleeping draught, a rope
+    to_over(g, 0)
+    R = g.world.realm
+    lo = next(o for o in R.lords.values() if o.alive and R.houses[o.house].seat)
+    nb2 = NM.make(g, g.world.settlements[0].x, g.world.settlements[0].y, prey='beast', rank='notable')
+    gd = dict(kind='lord', lid=lo.id, house=lo.house, name='the lord')
+    job = RJ.make_catch(g, gd)
+    if job:
+        job.state = 'active'
+        g.missions.append(job)
+        nb3 = NM.get(g, job.data['nid'])
+        g.enter_town(0)
+        beast = make_monster(g, nb3.k, p.x + 1, p.y, nb3.lvl)
+        NM.apply(g, beast, nb3)
+        g.map.mons.append(beast)
+        assert not BP.try_bind(g, beast), 'awake: no rope holds it'
+        beast.hold, beast.slept = 5, True
+        beast.hp = beast.maxhp // 5
+        p.inv.append(Item(g.new_id(), 'tool', 'rope'))
+        assert BP.try_bind(g, beast) and job.state == 'turnin' and getattr(nb3, 'caught', False)
+        assert beast not in g.map.mons
+    print('caught alive:', bool(job), nb2 is not None)
+    # perks: a master's dishes keep, a master's veins give more
+    assert 30 in LS.LIFE['fishing']['perks'] and 50 in LS.LIFE['tailoring']['perks']
+    assert all({30, 40, 50} <= set(v['perks']) for v in LS.LIFE.values())
+    pickle.dumps(g)
+    print('masters ok')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -7766,7 +7953,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

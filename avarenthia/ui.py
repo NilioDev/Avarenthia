@@ -1908,6 +1908,13 @@ class InventoryScreen(Modal):
             if used:
                 g.end_turn(used)
             return
+        if it.k in ('part', 'npart', 'leather') or (it.k == 'tool' and it.t in ('barding', 'bedroll')):
+            from . import beastparts as BPM, crafts as CRM
+            app.pop()
+            used = BPM.use(g, it) if it.k in ('part', 'npart') else CRM.use(g, it)
+            if used:
+                g.end_turn(used)
+            return
         if it.k == 'tool' and it.t == 'kit':
             app.pop()
             used = g.use_kit(it)

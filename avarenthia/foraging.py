@@ -176,6 +176,18 @@ def learn(game, key, how=''):
     game.msg(f'You now know {plant_name(game, key)} when you see it' + (f' ({how}).' if how else '.'), 'info')
 
 
+def on_walk(game):
+    """Foraging 50: walking the wild, a herb you know catches your eye and you pick it in passing."""
+    from . import lifeskills as LS
+    if LS.rank(game, 'foraging') < 50 or random.random() > .02 or game.map.tile(game.player.x, game.player.y) == D.ROAD:
+        return
+    k = draw_herb(game)
+    if k and k != 'hard' and known(game, k):
+        it = make_plant(game, k, 1)
+        if game.add_to_inv(it):
+            game.msg(f'By the way a {plant_name(game, k)} catches your eye. You pick it in passing.', 'good')
+
+
 def make_plant(game, key, n=1):
     from .entities import Item
     it = Item(game.new_id(), 'plant', key, n)
@@ -324,7 +336,7 @@ def draw_herb(game, boost=1):
         return None
     r = LS.rank(game, 'foraging')
     k = random.choices(cands, [TIER_WEIGHT[HERBS[c][0]] * (boost * (2 if r >= 8 else 1) if HERBS[c][0] != 'A' else 1)
-                               for c in cands])[0]
+                               * (2 if r >= 30 and HERBS[c][0] in 'CDET' else 1) for c in cands])[0]
     at = LS.TIER_RANK[HERBS[k][0]]
     if at > r:
         LS.too_hard(game, 'foraging', at, plant_name(game, k)[0].upper() + plant_name(game, k)[1:])
@@ -378,6 +390,10 @@ def eat_plant(game, it):
     key = it.t
     name, grp, food, effect, _w = PLANTS[key]
     was_known = known(game, key)
+    if effect in ('deadly', 'poison') and LS.rank(game, 'foraging') >= 40:
+        game.msg(f'You know better than to eat {plant_name(game, key)}: it is poison.', 'info')
+        learn(game, key, 'a forager knows poison')
+        return False
     game.remove_one(it)
     p.food = min(MAX, p.food + food)
     s = game.stats()

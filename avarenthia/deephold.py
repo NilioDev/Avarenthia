@@ -496,6 +496,20 @@ def on_step(game):
         cave_in(game, *near[0])
 
 
+def see_veins(game):
+    """Mining 30: a master sees a vein through one wall."""
+    from . import lifeskills as LS
+    m, p = game.map, game.player
+    if LS.rank(game, 'mining') < 30 or game.turn % 3:
+        return
+    for y in range(max(0, p.y - 6), min(m.h, p.y + 7)):
+        for x in range(max(0, p.x - 6), min(m.w, p.x + 7)):
+            i = y * m.w + x
+            if m.t[i] in (ORE, GEMS) and not m.seen[i] and any(
+                    m.inb(x + dx, y + dy) and game.visible(x + dx, y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                m.seen[i] = 1
+
+
 def has_pick(game):
     return any(i.k == 'tool' and i.t == 'pick' for i in game.player.inv)
 
@@ -552,14 +566,15 @@ def dig(game, x, y):
     from . import crafts as CRF
     at = CRF.METALS[metal][2] if good == 'ore' else 10
     LS.gain(game, 'mining', 3 if good == 'gems' else 1 + at / 10, at=at, what=metal if good == 'ore' else 'gems')
+    more = 1 if r >= 50 else 0                         # a master gets one more out of every vein
     if metal != 'iron':
-        CRF.give(game, 'ore_' + metal, 1 + (1 if random.random() < .3 else 0))
+        CRF.give(game, 'ore_' + metal, 1 + more + (1 if random.random() < .3 else 0))
         game.msg(f'You break {CRF.ORE_NAME[metal].lower()} out of the vein!', 'gold')
     elif good == 'gems':
-        p.cargo[good] = p.cargo.get(good, 0) + 1
+        p.cargo[good] = p.cargo.get(good, 0) + 1 + more
         game.msg('You prise a fist of rough gems out of the rock!', 'gold')
     else:
-        p.cargo[good] = p.cargo.get(good, 0) + 1
+        p.cargo[good] = p.cargo.get(good, 0) + 1 + more
         game.msg(random.choice(['You dig out a load of iron ore.', 'Chunks of ore come loose under your pick.',
                                 'You break the vein out of the rock: a good load of ore.']), 'good')
     if r >= 10 and good == 'ore' and random.random() < .08:
@@ -575,7 +590,13 @@ def dig(game, x, y):
 def cave_in(game, x, y):
     """The prop gives way and the roof comes down around it."""
     m, p = game.map, game.player
-    game.msg('The cracked prop splits with a crack like thunder. The roof comes down!', 'bad')
+    from . import lifeskills as LS
+    if LS.rank(game, 'mining') >= 40 and cheb(p.x, p.y, x, y) <= 2:
+        game.msg('The prop groans, and you know that sound: you are out from under it before the roof comes down.', 'good')
+        p_safe = True
+    else:
+        p_safe = False
+        game.msg('The cracked prop splits with a crack like thunder. The roof comes down!', 'bad')
     m.set(x, y, RUBBLE)
     hit = False
     for dy in range(-2, 3):
@@ -589,7 +610,7 @@ def cave_in(game, x, y):
             if m.mon_at(cx, cy) or random.random() < .45:
                 continue
             m.set(cx, cy, RUBBLE)
-    if hit or cheb(p.x, p.y, x, y) <= 2:
+    if (hit or cheb(p.x, p.y, x, y) <= 2) and not p_safe:
         dmg = max(3, round(game.stats()['max_life'] * random.uniform(.15, .3)))
         game.hurt(dmg, 'a cave-in')
     game.events.append(('shake',))

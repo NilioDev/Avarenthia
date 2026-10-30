@@ -204,7 +204,7 @@ AFFTXT = {
     'fire_dmg': '+{} fire damage', 'cold_dmg': '+{} cold damage', 'light_dmg': '+{} lightning damage',
     'sight': '+{} to light radius', 'undead': '+{}% damage to the undead', 'thorns': 'Attackers take {} damage',
     'lpk': '+{} life after each kill', 'mpk': '+{} mana after each kill', 'mf': '{}% better chance of finding magic items',
-    'dr': 'Damage taken reduced by {}%',
+    'dr': 'Damage taken reduced by {}%', 'stamina': '+{} to stamina',
 }
 for _l in SKILL_PREFIX:
     AFFTXT['skill_' + _l] = '+{} to %s (3 ranks each)' % {'fire': 'Fire Magic', 'frost': 'Frost Magic', 'storm': 'Storm Magic',

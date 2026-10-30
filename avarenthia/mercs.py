@@ -216,7 +216,7 @@ def beast_stats(game, mc, lvl):
     sp = TAME[mc.species]
     craft = game.player.disc.get('beastcraft', [0, 0])[0]
     k = 1 + craft / 100                                    # a beastmaster's beast grows with the craft
-    s = dict(max_hp=round((30 + lvl * 9) * sp['hp'] * k), armour=sp['armour'] + lvl // 2)
+    s = dict(max_hp=round((30 + lvl * 9) * sp['hp'] * k), armour=sp['armour'] + lvl // 2 + getattr(mc, 'barding', 0))
     s['dr'] = min(45, round(s['armour'] * 100 / (s['armour'] + 40 + lvl * 6)))
     s['df'] = s['armour'] + 8 + lvl * 3
     lo, hi = (2 + lvl // 2) * sp['dmg'] * k, (5 + lvl) * sp['dmg'] * k

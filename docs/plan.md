@@ -14,7 +14,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
-| **Approved: life skills** | Slow like an MMO but worth it: you learn only from work at your own height, better materials lie further out, crafted gear has chosen powers, masters can move a found power onto their own work (and may fail). Herbalism joins Foraging; new Smithing and Tailoring; named beasts give parts and keep dens (Monster Hunter's way). Part 1 built 30 October 2026 (the curve, herbs and alchemy, brewing, Smithing, Tailoring, materials by tier); part 2 in round 20 |
 | **Next: round 6 (on hold)** | Livelier settlements, each people in its own rhythm; the half-orc and goblin quarters. Waits until Nilio says go |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
@@ -58,7 +57,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     epics, in parts).
 19. **Life skills part 1** (XL): the curve, Herbalism into Foraging, Smithing and Tailoring, the materials by tier,
     alchemy, brewing. Built 30 October 2026 (see `docs/built.md`). 20. **Part 2** (XL): beast parts, crafted powers, Unmake,
-    master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters.
+    master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters. Built 30 October 2026
+    (see `docs/built.md`).
 21. **Archaeology** (M): needs the old places and Smithing; also a source for the servants' weaknesses.
 22. **Trade part 2: goods and ways** (L): named goods of a region with good and bad years, master makers, barter,
     monster goods, spoiling, need far away, far goods, contraband, war trade, market news, rank with the Merchant
@@ -132,63 +132,6 @@ made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's ef
   blood on Sever Artery and claws, and a bleeding foe leaves a red trail `,` for a few turns (Nilio, 22 October).
 
 ---
-
-## Life skills part 2 (approved; part 1 built 30 October 2026, part 2 not built: round 20)
-Worked out with Nilio on 19 October 2026; details and tables in `/mnt/project-files/lifeskills/overzicht.md`. Part 1
-(the curve, the herbs and alchemy, brewing, Smithing and Tailoring, the materials by tier) is built: see `docs/built.md`.
-Left from part 1 for round 20: the road goods of Leatherworking (marsh, mountain, snow and sand boots that make travel
-over that land quicker; tent and bedroll; barding for your beast; a quiver), Lockpicks from the anvil (once there is a
-lock to pick), the master perks at 30, 40 and 50, and xp without gathering (orders at your own height in every town,
-mending for others).
-- **Crafted gear:** quality (crude, fine, masterwork); a base material (hide, metal or cloth: the grade and its own
-  property) plus one beast part of the maker's choice, which gives the power; two parts from rank 40.
-- **Every beast gives parts, from the first wolf on** (Monster Hunter's way, 19 October): fangs (to hit), claws
-  (damage), horn and tusks (armour), antlers (stamina), feathers (lighter), chitin (poison resistance), scales (fire or
-  cold resistance), ivory (life). The same part from a stronger beast gives more (wolf fangs +5, winter wolf +10,
-  sabretooth +15), so better gear means hunting stronger beasts; old parts are sold. Big beasts (bear, aurochs,
-  mammoth, drake) can have a part broken off too. Below the beast's tier in Skinning, parts tear more often.
-- **Special powers** (+ranks in a school, leech, life or mana on a kill, crits, all resistances, thorns, less damage,
-  Strength or Dexterity) exist only on found gear and on the parts of named beasts, so rares stay what players hunt
-  for.
-- **Unmake** (rank 40 in the craft, at its own bench): one power of an identified found piece moves onto a piece you
-  made; the found piece is destroyed; one moved power per piece, at about two thirds of its value (full at 50). Uniques
-  and sets cannot be unmade. It can always fail: about 40% success at rank 40, 55% at 45, 70% at 50, never above 80%;
-  a strong power costs 15%. A failure loses the found piece; one failure in four also wears your own piece to broken or
-  curses it. The chance shows before you confirm.
-- **Master tests at 25 and 40:** one job from a master somewhere in the world before the skill goes on.
-- **Perks up to 50** (19 October): every skill gets master perks at 30, 40 and 50 (Fishing 30: ice fishing through a
-  hole in winter; Mining 30: you see a vein through one wall; the crafts at 30: mend on the road with a kit, at 40 two
-  chosen powers and Unmake, at 50 masterwork more often and Unmake at full value). The full list is in
-  `/mnt/project-files/lifeskills/content.md`.
-- **Gear for your hirelings:** crafted gear can be handed to hirelings (weapon, armour, helm, shield), and you mend
-  theirs with your craft: the thrifty way to fit out a company.
-- **Hunting the named beasts, Monster Hunter's way** (19 October; builds on `named.py`):
-  - **Parts:** beside its trophy a named beast gives one or two materials (pelt, horn, scale, venom gland) that carry
-    one of its traits (Frost-touched: cold resistance; Venomous: poison resistance or a venom oil; Stone Skin: more
-    armour; Swift: lighter). A piece made of them bears the beast's name ("Old Greyback's Hide Armor"): the crafts'
-    rares. No set bonuses (they would clash with the class trees).
-  - **Breaking a part:** a critical hit while it is below half its life breaks off a horn or tail: one more material.
-  - **Skinning counts:** taking the parts off whole needs rank 15 (notable), 30 (notorious), 45 (legendary).
-  - **A den of its own:** every named beast gets a den when it is made, near its home, of the land's kind: a hollow
-    tree or thorn thicket in a wood, a cave in the hills, a mud wallow in a marsh, a ledge high in the mountains. A
-    real den, not a dungeon: one small map with bones, the leavings of its prey, now and then a shed scale. One sign on
-    the world map, shown only once you have found it; `>` goes in. Out of its den it roams the world and the play maps
-    as now; beaten, it flees there, leaving a blood trail.
-  - **The den goes with the beast:** when it dies its den is gone; a new beast brings a new den. So the number of
-    dens never grows past the number of named beasts (the cap that is there now: about 9, rising to 18).
-  - **Legendary beasts** keep a place of their own: the deepest level of a dungeon, a dragon's nest, or old ruins.
-  - **Catching one alive** (a job kind: a baron wants the beast alive): below a quarter of its life, throw a sleeping
-    draught (Alchemy); it sleeps a few turns; bump it with a rope to bind it; men with a cart come for it. If it wakes
-    first it is furious. More coin, no parts. No zoo to build: the baron keeps it in a cage in his seat's yard
-    (one cage tile per beast you brought), so you see your catches when you visit.
-- **The great masters** (22 October): one master per craft in the whole world (a smith, a leatherworker, a
-  tailor), far from the roads. They unmake for a hero who lacks the craft, but only after a real quest: first find
-  them (no marker; rumours, a book in a library, an old craftsman who knew them), then their test in three parts:
-  bring a top find of their craft (Star-iron, the parts of a named beast or a dragon, Fey Silk), bring the part of a
-  notorious or legendary named beast, and win back what they lost (an old forge, a workshop or a hall overrun by
-  whatever lives there now). After that they work for you: one Unmake per visit, for a high price (gold, not silver),
-  at a 50% chance (less than a master player at rank 50), with the same bad failure. Your own craft stays the better
-  road.
 
 ## Dungeons on their own land (approved 22 October 2026, not built)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).

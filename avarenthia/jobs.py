@@ -1371,6 +1371,10 @@ def on_enter(game, sid):
     w = game.world
     s = w.settlements[sid]
     for m in MS.active(game):
+        if m.kind in ('mastertest', 'order'):
+            from . import mastery as MA
+            MA.hand_in(game, m, sid)
+            continue
         if m.kind not in KINDS:
             continue
         d = m.data
@@ -1947,6 +1951,9 @@ def line(game, m):
     d = m.data
     if m.state == 'turnin':
         return 'Return for your reward.'
+    if m.kind in ('mastertest', 'order'):
+        from . import mastery as MA
+        return MA.line(game, m)
     if m.kind == 'missing':
         ax, ay, r = d['area']
         return f'Last seen near {_region(game, ax, ay)} ({r} leagues around). Look for tracks.'

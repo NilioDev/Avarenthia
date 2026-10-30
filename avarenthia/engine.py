@@ -33,6 +33,9 @@ from . import lore as LORE
 from . import lifeskills as LS
 from . import alchemy as AL
 from . import crafts as CRF
+from . import beastparts as BP
+from . import foraging as FG
+from . import mastery as MA
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -81,7 +84,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 50
+SAVE_VERSION = 51
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -888,6 +891,10 @@ class Game:
             SH.on_enter(self, site, m)
         if PL.is_place(site):
             PL.on_enter(self, site, m)
+        BP.on_enter(self, site, m)
+        MA.on_enter(self, site, m)
+        if ST._SEATS.is_seat(site):
+            BP.sync_cages(self, site, m)
         self.compute_fov()
         self.request = ('save',)
 
@@ -1180,6 +1187,8 @@ class Game:
             if t == D.CAGE and getattr(m, 'tribe', None):
                 TR.cage(self)
                 return 0
+            if t == D.CAGE and BP.at_cage(self, m, nx, ny):
+                return 0
             if t == D.CHEST and getattr(m, 'tribe', None):
                 TR.theft(self)
             if t == WATER:
@@ -1225,6 +1234,8 @@ class Game:
             RF.on_step(self)
         if getattr(m, 'mine', None) is not None:
             DH.on_step(self)
+        if m.kind == 'dungeon':
+            DH.see_veins(self)
         if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
             TH.on_step(self)
         if m.kind == 'dungeon' and m.t[ny * m.w + nx] == D.LOOSE:
@@ -1303,6 +1314,8 @@ class Game:
         from . import hidden as HP
         HP.on_step(self)
         FK.on_step(self)
+        BP.on_step(self)
+        FG.on_walk(self)
         VN.over_step(self)
         EP.over_step(self)
         LN.on_step(self)
@@ -1312,7 +1325,7 @@ class Game:
             return 10
         old_way = HP.on_way(self, p.x, p.y)
         cost = round(SE.cost(self, LN.cost(self, min(D.TILES[t].cost, HP.WAY_COST) if old_way else D.TILES[t].cost))
-                     * WX.travel_factor(self) * (.8 if any(b[0] == 'swift' for b in p.buffs) else 1))
+                     * WX.travel_factor(self) * (.8 if any(b[0] == 'swift' for b in p.buffs) else 1) * CRF.road_boots(self, t))
         WX.strike(self)
         if self.dead:
             return cost
@@ -2006,6 +2019,8 @@ class Game:
         return False
 
     def melee(self, mon):
+        if BP.try_bind(self, mon):
+            return
         s = self.stats()
         self.player.last_target = mon.id
         self.player.strained = self.turn
@@ -2033,6 +2048,7 @@ class Game:
         finally:
             self._unblockable = False
         WP.after_melee(self, mon, s, crit, True)
+        BP.on_blow(self, mon, crit)
         if mon in self.map.mons:
             WS.on_blow(self, mon, s)
 
@@ -2228,6 +2244,8 @@ class Game:
         if special or random.random() < .16:
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'orb', 'orb'))
         CRF.on_kill(self, mon)
+        BP.on_kill(self, mon)
+        MA.after_kill(self)
         if HT.carcass(self, mon):
             pass                                    # a carcass to skin: meat, a hide, sometimes horn
         elif mon.k in HU.BEASTS and random.random() < .35:
@@ -3046,6 +3064,10 @@ class Game:
             beasts = robbers = 0
         r = random.random()
         rested = self.rest_here(quiet=True)
+        if any(it.k == 'tool' and it.t in ('bedroll', 'tent') for it in p.inv):
+            s_ = self.stats()                            # a bedroll: a night in the open rests you better
+            p.life = min(s_['max_life'], p.life + s_['max_life'] // 6)
+            p.stamina = min(s_['max_stamina'], getattr(p, 'stamina', 0) + s_['max_stamina'] // 4)
         TT.rested(self)
         if night:
             self.end_turn(max(0, D.DAY_LEN // 3 - rested), True)
@@ -3272,6 +3294,9 @@ class Game:
             return
         if role == 'teacher':
             EP.talk(self, npc)
+            return
+        if role == 'master':
+            MA.talk(self, npc)
             return
         if role == 'leper':
             self.say(npc, random.choice(['Keep back, friend. For your own sake.', 'Bless you for stopping. Most do not.',

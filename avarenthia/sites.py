@@ -27,6 +27,10 @@ from .epics import LOOK as _EP_LOOK  # noqa: E402
 SITE_LOOK.update(_EP_LOOK)
 from .shadow import LOOK as _SH_LOOK  # noqa: E402
 SITE_LOOK.update(_SH_LOOK)
+from .beastparts import LOOK as _BP_LOOK  # noqa: E402
+SITE_LOOK.update(_BP_LOOK)
+from .mastery import LOOK as _MA_LOOK  # noqa: E402
+SITE_LOOK.update(_MA_LOOK)
 ROADINN_NAMES = ["The Wayfarer's Rest", 'The Crossed Keys', 'The Drowsy Mule', 'The Last Lantern', 'The Weary Boot',
                  'The Green Man', 'The Hanged Fiddler', 'The Three Crowns', 'The Broken Wheel', 'The Milestone',
                  'The Sleeping Dog', 'The Pilgrim\'s Staff', 'The Black Kettle']
@@ -155,7 +159,7 @@ def gen_sites(game, m, world):
 
 def site_at(world, x, y):
     for s in getattr(world, 'sites', ()):
-        if s.x == x and s.y == y:
+        if s.x == x and s.y == y and not getattr(s, 'gone', False):
             return s
     return None
 
@@ -188,6 +192,12 @@ def gen_site_map(game, site):
     if site.kind == 'valley':
         from .hidden import valley_map
         return valley_map(game, site)
+    if site.kind == 'den':
+        from .beastparts import site_map as den_map
+        return den_map(game, site)
+    if site.kind in ('master', 'lostshop'):
+        from .mastery import site_map as master_map
+        return master_map(game, site)
     if site.kind == 'glade':
         from .folk import glade_map
         return glade_map(game, site)

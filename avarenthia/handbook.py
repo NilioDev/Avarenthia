@@ -755,6 +755,21 @@ def ch_hunt(g):
               'a hide, and sometimes antlers, horn or tusks; without one, only some raw meat. Beasts you fight can be '
               'skinned too: a wolf pelt, a bear fur, a crocodile hide. The better your Skinning, the fewer torn '
               'hides.'),
+        ('p', 'Every beast gives parts: fangs, claws, horn, tusks, antlers, feathers, scales, ivory; spiders and '
+              'beetles leave chitin. A crafter sets them in a piece for its power. Below the beast\'s tier in '
+              'Skinning they tear more often. A critical blow while a big beast, a bear, an aurochs, a mammoth or a '
+              'drake, is below half its life breaks a part off.'),
+        ('h', 'Named beasts'),
+        ('p', 'A named beast gives one or two parts of its own, besides its trophy. They carry its nature, a frost '
+              'touch, a stone skin, a venom, and a piece made of them bears its name: the rares of the crafts. '
+              'Taking them off whole wants Skinning 15 for a notable beast, 30 for a notorious one, 45 for a legend.'),
+        ('p', 'Every named beast but the legends keeps a den near where it lives: a hollow tree, a thorn thicket, a '
+              'cave, a mud wallow, a ledge, a burrow. You find it only by walking right up to it; then it is on your '
+              'map, the sign {δ|196,120,90}. [>] goes in. Beaten, a beast runs for its den to lick its wounds. When it '
+              'dies, its den is empty for good.'),
+        ('p', 'Now and then a lord wants one alive. Wear it down below a quarter of its life, put it to sleep with a '
+              'flask, and walk into it with a rope in your pack. If it wakes first, it is furious. The lord keeps it '
+              'in a cage in his yard, and you can see it there.'),
         ('h', 'Hides and leather'),
         ('o', ['A fresh hide rots in two days. Its name says how long it has left.',
                'Set up a stretching frame out in the land and walk into it with salt in your pack: an hour of '
@@ -836,12 +851,36 @@ def ch_crafts(g):
               'from eating your food, cool ones the heat. Cloth comes from the villages: linen from the farms, wool '
               'from the herders, cotton in the south; spider silk from spiders, Fey Silk at night by the wisp fens.'),
         ('p', 'Leatherworking makes leather armour, gloves, boots, a belt and a waterskin from the leather of the '
-              'beasts you hunt.'),
+              'beasts you hunt; and goods for the road: marsh, sand, snow and mountain boots that make the world map '
+              'quicker over their own land, a bedroll and a tent for nights in the open, and barding for your beast. '
+              'Use barding from your pack to buckle it on. Smithing makes mail barding.'),
         ('h', 'What you make'),
         ('p', 'The material decides the grade: the first two tiers make normal pieces, the middle two exceptional, '
               'the highest elite. It adds a property of its own: silver sears the dead, deepiron wears slower, '
               'moonsilver is lighter, sunstone wards fire, spider silk holds mana, snakeskin wards poison. Your rank '
               'decides the work: crude, fine or masterwork.'),
+        ('p', 'The power of a piece is yours to choose: a part of a beast. Fangs to hit, claws for damage, horn and '
+              'tusks for armour, antlers for stamina, feathers make it lighter, chitin wards poison, scales fire or '
+              'cold, ivory gives life. The same part from a stronger beast gives more: wolf fangs +5, winter wolf +10, '
+              'sabretooth +15. From rank 40 a piece takes two parts.'),
+        ('p', 'Mend at the anvil or the bench for a bar, a bolt or a piece of leather: your own gear and your '
+              'hireling\'s. You can hand a hireling what you make. In a town you can spend a morning mending for the '
+              'townsfolk, for a few coins.'),
+        ('h', 'Unmake'),
+        ('p', 'From rank 40, at the anvil or the bench: take a found piece apart and move one of its powers onto a '
+              'piece you made. The found piece is lost whatever happens. One moved power per piece, at two thirds of '
+              'its worth; at 50 the whole of it. It can always fail: about 40 in 100 at rank 40, 70 at 50, never more '
+              'than 80, and less for a strong power. One failure in four ruins or curses your own piece too. The '
+              'chance shows before you choose. Uniques and pieces of a set cannot be unmade.'),
+        ('h', 'Masters'),
+        ('p', 'At rank 25 and again at 40 a life skill stops until a master has seen your work. A job in your journal '
+              'tells you who and where, and what to bring. Town boards ask for orders at your own height too: they pay '
+              'little and teach well. From rank 30 every skill has a master\'s perk at 30, 40 and 50; [C] shows them.'),
+        ('p', 'Somewhere far from the roads live the three great masters: a smith, a leatherworker and a tailor. '
+              'Nobody marks them on a map, but an innkeeper or a tanner may have heard of one, and then the hut is on '
+              'yours, the sign {Φ|232,196,120}. Their test has three '
+              'parts: a top find of their craft, a part of a notorious or legendary named beast, and the workshop they '
+              'lost, won back. Then they unmake for you, one power a visit, for gold, half the time.'),
         ('h', 'Fish'),
         ('p', 'Fresh and salt water hold different fish. The big ones want their own water: grayling in mountain '
               'streams, sturgeon in broad rivers, ice char in the northern lakes, ghost pike in forest lakes at '

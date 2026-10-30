@@ -1895,6 +1895,30 @@ def won_levy(game, m):
 SCENES['levy'] = (arrive_levy, do_levy, won_levy)
 
 
+# ------------------------------------------------------------------ a beast for the yard (beastparts.py)
+@task('catch', 'lord', 'A beast for the yard')
+def make_catch(game, g):
+    from . import realms as RL
+    from . import named as NM
+    lo = R(game).lord(g['lid'])
+    if not lo:
+        return None
+    lx, ly = RL.place_of(game, lo)
+    beasts = [n for n in NM.alive(game) if NM.kind_of(n.k) in ('beast', 'crawler') and n.rank != 'legendary'
+              and n.did is None and n.boss is None and cheb(n.x, n.y, lx, ly) <= 70]
+    if not beasts:
+        return None
+    n = min(beasts, key=lambda n: cheb(n.x, n.y, lx, ly))
+    seat = R(game).houses[lo.house].seat
+    ax, ay, _r = NM.area(game, n)
+    return mission(game, g, 'catch', f'{n.Full}, alive',
+                   f'{RL.style(R(game), lo, False)} wants {n.full}, the {D.MONSTERS[n.k]["name"].lower()} that '
+                   f'{n.past}, brought in alive for {lo.his} yard. Wear it down, put it to sleep with a draught, and bind it '
+                   f'with a rope. It was last seen to the {dirto((lx, ly), ax, ay)}.',
+                   40 + n.lvl * 5, 30, None, spot=[ax, ay], reach=0, where='where it was seen', nid=n.id, nomark=False,
+                   seat=list(seat) if seat else None)
+
+
 def on_fail(game, m):
     """A levy not answered: the oath wears thin."""
     if m.kind == 'realm' and m.data.get('task') == 'levy':

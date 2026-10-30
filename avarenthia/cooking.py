@@ -433,7 +433,7 @@ def serve(game, key, n_ing, learned=False):
     it.q = r                                        # how well it was made: stronger and longer effects
     keep = effects(key)
     if 'keeps_long' not in keep:
-        it.until = game.day + (20 if 'keeps' in keep else 5)
+        it.until = game.day + (20 if 'keeps' in keep else 5) * (2 if r >= 40 else 1)    # a master's dishes keep
     if not game.add_to_inv(it):
         game.spill(game.map, game.player.x, game.player.y, it)
     LS.gain(game, 'cooking', 1 + (DISHES[key][1] != 'simple'))
@@ -465,6 +465,7 @@ def eat(game, it):
     from .hunger import MAX
     from . import mercs as MC
     from . import behave as BH
+    from . import lifeskills as LS
     p = game.player
     v = food_value(it)
     if p.food >= MAX - 30:
@@ -478,8 +479,16 @@ def eat(game, it):
         game.msg('Camp Mush. You have eaten worse. Not often.', 'info')
         return 1
     k = 1 + q * .03
-    long_ = 1 + q * .04
+    long_ = (1 + q * .04) * (1.5 if LS.rank(game, 'cooking') >= 50 else 1)
     day = D.DAY_LEN
+    if LS.rank(game, 'cooking') >= 30:                # a feast: one dish for the whole company
+        company = [mc for mc in MC.party(game) if mc.state == 'alive']
+        for mc in company:
+            mc.morale = min(100, getattr(mc, 'morale', 70) + 8)
+            if mc.body is not None:
+                mc.body.hp = min(mc.body.maxhp, mc.body.hp + mc.body.maxhp // 4)
+        if company:
+            game.msg('You share the dish round the company. There is enough for everyone: a feast.', 'good')
 
     def buff(kind, val, turns, label):
         p.buffs = [b for b in p.buffs if b[0] != kind] + [[kind, val, round(turns * long_), label]]

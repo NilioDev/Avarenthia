@@ -5,7 +5,7 @@ from . import data as D
 
 
 # kinds kept by their own module: display(game, it), lines(game, it), value(game, it), glyph(it), color(it)
-CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'hunting', 'carcass': 'hunting',
+CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'beastparts', 'npart': 'beastparts', 'carcass': 'hunting',
          'leather': 'hunting', 'ammo': 'weapons', 'draught': 'alchemy', 'mat': 'crafts'}
 
 
@@ -78,6 +78,8 @@ class Item:
                         'rope': 'Coil of Rope', 'net': 'Fishing Net'}[self.t]
             if self.t == 'bandage':
                 return (f'{self.n}x ' if self.n > 1 else '') + 'Bandage'
+            if self.t in ('barding', 'bedroll'):
+                return getattr(self, 'name', None) or {'barding': 'Barding', 'bedroll': 'Bedroll'}[self.t]
             return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
@@ -248,7 +250,11 @@ class Item:
             elif self.k == 'tool' and self.t == 'net':
                 out.append('Use it beside shallow water to take small fish without a cast.')
             elif self.k == 'tool' and self.t == 'rope':
-                out.append('Strong rope. Climbers and trappers find a use for it.')
+                out.append('Strong rope. Walk into a sleeping beast with it to bind it, when a lord wants one alive.')
+            elif self.k == 'tool' and self.t == 'barding':
+                out.append(f'Armour for your beast: +{getattr(self, "bard", 3)} armour. Use it to put it on your companion.')
+            elif self.k == 'tool' and self.t == 'bedroll':
+                out.append('A warm roll of hide and wool: a night in the open rests you better.')
             elif self.k == 'tool' and self.t == 'knife':
                 out.append('A short, curved blade. Stand on a carcass and press Enter to skin it.')
             elif self.k == 'tool' and self.t == 'frame':
@@ -326,7 +332,7 @@ class Item:
             return 90 + round(SKILLS[self.t].step * 110)
         if self.k == 'tool':
             return {'kit': 25, 'tent': 60, 'pick': 15, 'knife': 3, 'frame': 6, 'waterskin': 4, 'hooks': 6, 'rope': 3, 'net': 10,
-                    'bandage': 1}.get(self.t, 8)
+                    'bandage': 1, 'bedroll': 8, 'barding': 4 * getattr(self, 'bard', 3)}.get(self.t, 8)
         if self.k == 'food':
             from .hunger import FOODS
             if getattr(self, 'origin', None) is not None:
@@ -348,7 +354,7 @@ class Item:
             from .nature import CURIO
             return CURIO[self.t][1]
         if self.k == 'trophy':
-            return 4
+            return getattr(self, 'worth', 4)
         if self.k == 'star':
             return 60
         if self.k != 'gear':

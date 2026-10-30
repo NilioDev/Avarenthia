@@ -294,11 +294,12 @@ def hunt(game, h):
     m = ZN.enter(game, (h.x, h.y), near=(-dx * 30, -dy * 18))
     m.hunt = h.id
     mx, my = ZN.local_mid(game, m)
+    lo, want = (4, 6) if LS.rank(game, 'hunting') >= 40 else (11, 14)     # a master stalks to striking distance
     spots = [(x, y) for y in range(my - 8, my + 9) for x in range(mx - 10, mx + 11)
-             if m.inb(x, y) and D.TILES[m.tile(x, y)].walk and not m.mon_at(x, y) and 11 <= cheb(x, y, p.x, p.y)]
+             if m.inb(x, y) and D.TILES[m.tile(x, y)].walk and not m.mon_at(x, y) and lo <= cheb(x, y, p.x, p.y)]
     if not spots:
         spots = [ZN.free_near(game, m, mx, my)]
-    c = min(spots, key=lambda s: abs(cheb(s[0], s[1], p.x, p.y) - 14) + random.random() * 3)
+    c = min(spots, key=lambda s: abs(cheb(s[0], s[1], p.x, p.y) - want) + random.random() * 3)
     from .worldgen import free_around
     near = [c] + free_around(game, m, c[0], c[1], 4)
     lvl = max(1, game.world.danger_at(h.x, h.y))
@@ -498,26 +499,25 @@ SKINS = {
     # the beasts you fight: a beast has a hide, not a sword
     'boar': ('boar_meat', (2, 3), 'Boar Hide', 3, [('tusks', .5)], False, 2),
     'wolf': ('meat', (1, 2), 'Wolf Pelt', 6, [('fangs', .3)], True, 1),
-    'winter_wolf': ('meat', (1, 2), 'Winter Wolf Pelt', 15, [('fangs', .3)], True, 1),
+    'winter_wolf': ('meat', (1, 2), 'Winter Wolf Pelt', 15, [('fangs', .4)], True, 1),
     'worg': ('meat', (1, 2), 'Worg Pelt', 6, [('fangs', .4)], True, 2),
     'brown_bear': ('meat', (3, 4), 'Bear Fur', 18, [('claws', .5)], True, 3),
     'cave_bear': ('meat', (3, 5), 'Cave Bear Fur', 20, [('claws', .6)], True, 4),
-    'crocodile': ('meat', (2, 3), 'Crocodile Hide', 14, [('fangs', .3)], False, 2),
+    'crocodile': ('meat', (2, 3), 'Crocodile Hide', 14, [('fangs', .3), ('scales', .4)], False, 2),
     'panther': ('meat', (1, 2), 'Panther Pelt', 14, [('claws', .4)], True, 1),
     'sabretooth': ('meat', (2, 3), 'Sabretooth Pelt', 20, [('fangs', .8)], True, 2),
     'snow_ape': ('meat', (2, 3), 'Snow Ape Fur', 12, [], True, 2),
-    'mammoth': ('meat', (5, 7), 'Mammoth Hide', 10, [('ivory', .8)], False, 5),
-    'drake': ('meat', (2, 3), 'Drake Hide', 25, [], False, 3),
+    'mammoth': ('meat', (5, 7), 'Mammoth Hide', 10, [('ivory', .8), ('tusks', .3)], False, 5),
     'rhino': ('meat', (4, 5), 'Rhino Hide', 8, [('horn', .7)], False, 4),
     'hyena': ('meat', (1, 2), 'Hyena Pelt', 2, [], False, 1),
     'jackal': ('meat', (1, 1), 'Jackal Pelt', 1, [], False, 0),
     'badger': ('meat', (1, 1), 'Badger Pelt', 3, [], True, 0),
-    'constrictor': ('meat', (1, 2), 'Snakeskin', 6, [], False, 1),
-    'cobra': (None, (0, 0), 'Snakeskin', 4, [('fangs', .5)], False, 0),
+    'constrictor': ('meat', (1, 2), 'Snakeskin', 6, [('scales', .3)], False, 1),
+    'cobra': (None, (0, 0), 'Snakeskin', 4, [('fangs', .5), ('scales', .3)], False, 0),
     'giant_frog': ('frog_legs', (2, 2), None, 0, [], False, 0),
-    'drake': ('meat', (2, 3), 'Drake Hide', 25, [('claws', .5), ('drake_egg', .1)], False, 2),
-    'frost_drake': ('meat', (2, 3), 'Frost Drake Hide', 28, [('claws', .5), ('drake_egg', .1)], False, 2),
-    'swamp_drake': ('meat', (2, 3), 'Swamp Drake Hide', 22, [('claws', .5), ('drake_egg', .1)], False, 2),
+    'drake': ('meat', (2, 3), 'Drake Hide', 25, [('claws', .5), ('scales', .5), ('drake_egg', .1)], False, 2),
+    'frost_drake': ('meat', (2, 3), 'Frost Drake Hide', 28, [('claws', .5), ('frostscale', .5), ('drake_egg', .1)], False, 2),
+    'swamp_drake': ('meat', (2, 3), 'Swamp Drake Hide', 22, [('claws', .5), ('scales', .5), ('drake_egg', .1)], False, 2),
 }
 # the leather a hide tans into (crafts.LEATHERS): its tier and what it adds to what is made of it
 LEATHER_OF = {
@@ -532,9 +532,8 @@ GAME_TIER = {
     'elk': 'B', 'reindeer': 'B', 'ibex': 'B', 'gazelle': 'B', 'bighorn': 'B', 'wildebeest': 'B', 'wolf': 'B', 'worg': 'B',
     'constrictor': 'B', 'cobra': 'B', 'aurochs': 'C', 'wild_horse': 'C', 'brown_bear': 'C', 'winter_wolf': 'C', 'panther': 'C',
     'crocodile': 'C', 'cave_bear': 'D', 'snow_ape': 'D', 'sabretooth': 'D', 'mammoth': 'D', 'rhino': 'D', 'drake': 'E',
+    'frost_drake': 'E', 'swamp_drake': 'E',
 }
-PARTS = {'antlers': ('Antlers', 4), 'horn': ('Horn', 3), 'tusks': ('Tusks', 4), 'feathers': ('Bunch of Feathers', .5),
-         'claws': ('Claws', 3), 'fangs': ('Fangs', 3), 'ivory': ('Ivory', 30)}
 QUALITY = ['Torn', 'Rough', 'Good', 'Fine']
 Q_MULT = [.3, .6, 1, 1.5]
 CARCASS_COL = (190, 120, 100)
@@ -597,14 +596,24 @@ def skin(game, it):
         f = make_food(game, meat, n)
         add(game, f)
         got.append(f.display_name())
+    tier = GAME_TIER.get(it.t, 'A')
     if hide:
         q = max(0, min(3, int(random.random() * 2 + r / 7 + (.6 if r >= 3 else 0))))
+        if r >= 50 and tier in ('A', 'B'):
+            q = 3                                       # a master's hand: fine hides of common game
         h = Item(game.new_id(), 'hide', it.t)
         h.q, h.state, h.until = q, 'fresh', game.day + 2
         add(game, h)
         got.append(display(game, h))
-    tier = GAME_TIER.get(it.t, 'A')
     tear = .5 if r < LS.TIER_RANK[tier] else 1          # below the beast's tier in Skinning, parts tear more often
+    if r >= 40:
+        tear = 1.3                                      # a master's parts never tear
+    if r >= 30 and tier in ('C', 'D', 'E') and random.random() < .3:
+        tr = Item(game.new_id(), 'trophy', 'antlers' if any(p == 'antlers' for p, _c in parts) else 'head')
+        tr.name = f'{D.MONSTERS[it.t]["name"]} Trophy'
+        tr.worth = {'C': 15, 'D': 30, 'E': 60}[tier]
+        add(game, tr)
+        got.append(tr.name)
     if it.t == 'mammoth' and LS.tier_open(game, 'D'):
         from . import crafts as CRF
         CRF.give(game, 'cloth_mammoth', 2)
@@ -615,9 +624,10 @@ def skin(game, it):
                 add(game, make_food(game, 'drake_egg'))
                 got.append('a Drake Egg')
             else:
-                pt = Item(game.new_id(), 'part', part)
+                from . import beastparts as BP
+                pt = BP.make(game, part, it.t)
                 add(game, pt)
-                got.append(PARTS[part][0])
+                got.append(BP.part_name(pt.t))
     LS.gain(game, 'skinning', 1 + size * .5, at=LS.TIER_RANK[tier], what=it.t)
     game.msg(f'You skin the {name}: ' + ', '.join(got) + '.' if got else f'There is nothing worth taking on the {name}.', 'good')
     return 10 + size * 5
@@ -661,8 +671,6 @@ def pieces(it):
 def display(game, it):
     if it.k == 'carcass':
         return f'Carcass of a {D.MONSTERS[it.t]["name"]}'
-    if it.k == 'part':
-        return (f'{it.n}x ' if it.n > 1 else '') + PARTS[it.t][0]
     if it.k == 'leather':
         from .crafts import LEATHERS
         nm = LEATHERS.get(it.t, LEATHERS['leather'])[0]
@@ -681,8 +689,6 @@ def display(game, it):
 def lines(game, it):
     if it.k == 'carcass':
         return ['Stand on it and press Enter to skin it. A knife or a dagger gives the hide as well as the meat.']
-    if it.k == 'part':
-        return ['Traders buy it.']
     if it.k == 'leather':
         from .crafts import LEATHERS
         tier = LEATHERS.get(it.t, LEATHERS['leather'])[1]
@@ -703,8 +709,6 @@ def value(game, it):
     """In silver."""
     if it.k == 'carcass':
         return 0
-    if it.k == 'part':
-        return PARTS[it.t][1]
     if it.k == 'leather':
         from .crafts import LEATHERS, TIER_VAL
         return 1.5 * TIER_VAL[LEATHERS.get(it.t, LEATHERS['leather'])[1]]
@@ -724,14 +728,12 @@ def value(game, it):
 
 
 def glyph(it):
-    return {'carcass': '%', 'part': '\'', 'leather': '=', 'hide': '='}[it.k]
+    return {'carcass': '%', 'leather': '=', 'hide': '='}[it.k]
 
 
 def color(it):
     if it.k == 'carcass':
         return getattr(it, 'fg', CARCASS_COL)
-    if it.k == 'part':
-        return (226, 214, 180)
     if it.k == 'leather':
         return (176, 120, 70)
     return {'fresh': (200, 140, 110), 'salted': (220, 200, 170), 'tanning': (170, 120, 80)}.get(it.state, (190, 150, 110))
@@ -817,6 +819,8 @@ def talk_tanner(game, npc):
     from .money import fmt
     p, s = game.player, game.here
     sid = s.id if s else 0
+    from . import mastery as MA
+    MA.rumour(game, npc.name)                          # an old craftsman who knew the great masters
     waiting = game.world.__dict__.setdefault('tanning', {}).get(sid, [])
     ready = [w for w in waiting if w[0] <= game.day]
     hides = [i for i in p.inv if i.k == 'hide' and i.state in ('fresh', 'salted')]
