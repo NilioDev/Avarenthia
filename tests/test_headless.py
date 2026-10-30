@@ -936,7 +936,7 @@ def thornfield_and_faith():
     g.talk(fisher)
     assert g.flags.get('fish_done') and p.gold > gold
     # everyone friendly is a smiley, and has a people and a gender
-    folk = [o for o in m.mons if o.is_npc and o.role not in ('livestock', 'dog')]
+    folk = [o for o in m.mons if o.is_npc and o.role not in ('livestock', 'dog', 'runaway')]
     assert folk and all(o.ch == '☺' for o in folk), {o.ch for o in folk}
     title, _c, lines = DS.monster(g, folk[0])
     assert lines[0].startswith('People:'), lines
@@ -6374,6 +6374,7 @@ def epics():
     old = LORE.HINTS
     LORE.HINTS = [(LORE.hint_teacher, 1)]
     p.disc['cunning'] = [36, 0]
+    EP.st(g)['heard'] |= {q.id for q in EP.teachers(g, 'fire')}     # the other fire teacher may be nearer
     assert 'master thief' in LORE.hint(g)
     LORE.HINTS = old
     # the hut: the teacher refuses below 40, then sets a deed

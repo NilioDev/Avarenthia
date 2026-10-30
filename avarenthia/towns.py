@@ -737,14 +737,22 @@ def edge_point(m, cx, cy, dx, dy):
     return best
 
 
-def dry_exits(m, cx, cy):
+def dry_exits(m, cx, cy, before=None):
     """A road that leaves along the coast may have its way out drowned by the sea: move it to the nearest dry spot
-    on the edge, and lay the road there anew."""
+    on the edge, and lay the road there anew. before: the ways out before the harbour was carved, to bring back
+    those that ended in it."""
     edge = [(x, y) for x in range(m.w) for y in (0, m.h - 1)] + [(x, y) for y in range(1, m.h - 1) for x in (0, m.w - 1)]
     dry = [c for c in edge if m.tile(*c) in (GRASS, PATH)]
     moved = {}
+    lost = set()
+    if before is not None:                      # a road whose way out the harbour took leaves beside it instead
+        from . import harbour as HB
+        dry = [c for c in dry if not HB.band_has(m, *c)]
+        lost = {e[:2] for e in before if e not in m.exits}
+        if dry:
+            m.exits = list(before)
     for k, (ex, ey, other) in enumerate(m.exits):
-        if m.tile(ex, ey) in (GRASS, PATH) or not dry:
+        if (m.tile(ex, ey) in (GRASS, PATH) and (ex, ey) not in lost) or not dry:
             continue
         if (ex, ey) not in moved:
             nx, ny = min(dry, key=lambda c: abs(c[0] - ex) + abs(c[1] - ey))
@@ -1065,8 +1073,9 @@ def gen_village(game, s):
         FY.settle(game, m, s, plots, names)
     from . import harbour as HB
     if getattr(s, 'harbour', False):
+        before = list(m.exits)
         plots.append(HB.carve(m, s))
-        dry_exits(m, cx, cy)
+        dry_exits(m, cx, cy, before)
     if s.id == 0 or (tier != 'hamlet' and random.random() < .3 and not wet):
         pond = fishing_pond(game, m, plots, cy, names, fisher=s.id == 0)
         if pond:
