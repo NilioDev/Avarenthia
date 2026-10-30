@@ -216,7 +216,8 @@ class Lay:
     def __init__(self, game, m, world, reach_set):
         self.game, self.m, self.w, self.reach = game, m, world, reach_set
         self.taken = [(s.x, s.y) for s in world.settlements] + [(q.x, q.y) for q in world.sites] + \
-                     [(d.x, d.y) for d in world.dungeons.values()] + [(h.x, h.y) for h in world.holds]
+                     [(d.x, d.y) for d in world.dungeons.values()] + [(h.x, h.y) for h in world.holds] + \
+                     [(q.x, q.y) for q in getattr(world, 'pois', ())]
         self.used = {s.name for s in world.sites}
         self.riv = getattr(m, 'river', None) or bytearray(m.w * m.h)
 
