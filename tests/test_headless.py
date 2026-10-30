@@ -12,7 +12,7 @@ from avarenthia import engine as E, data as D, ui, economy as ECO, missions as M
 from avarenthia.canvas import FakeCanvas  # noqa: E402
 from avarenthia.worldgen import cheb  # noqa: E402
 
-E.save_path = lambda: os.path.join(tempfile.gettempdir(), 'avarenthia_test.dat')
+E.save_path = lambda: os.path.join(tempfile.gettempdir(), f'avarenthia_test_{os.getpid()}.dat')    # runs side by side keep apart
 
 TOKENS = ['up', 'down', 'left', 'right', 'np7', 'np9', 'np1', 'np3', 'h', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',

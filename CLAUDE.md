@@ -86,7 +86,7 @@ jobs, what they know, what they were told, where they are) lives on the player, 
 
 ## Tests and CI
 - `python tests/test_headless.py` (no tcod needed). Parts: `TEST_ONLY=part1,part2`, seed: `TEST_SEED=n`.
-  Run seeds one after another (they share a save file). A full seed takes ~23 minutes (`smoke` ~9 of them);
+  Each test run keeps its own save file, so seeds may run side by side. A full seed takes ~23 minutes (`smoke` ~9 of them);
   almost every part spends ~17 s making a fresh world.
 - How much to test (Nilio, 18 Oct 2026; saves his usage limit):
   - After each round: only that round's own part (`TEST_ONLY=<part>`), plus `text_fits` when text changed.
