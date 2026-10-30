@@ -8285,6 +8285,10 @@ def boss_maker():
     n = len(g.map.items)
     MK.felled(g, b)
     assert any(i.k == 'part' for i in g.map.items[n:])
+    # a twinned boss brings its Shadow beside it, and the survivor takes all
+    tw = MK.twin(g, b, dict(sp, traits=['twinned']))
+    assert tw and tw in g.map.mons and cheb(tw.x, tw.y, b.x, b.y) <= 2 and tw.name.endswith("'s Shadow")
+    g.map.mons.remove(tw)
     # a regenerating boss closes its wounds
     b.regen, b.hp = True, b.maxhp // 2
     hp = b.hp

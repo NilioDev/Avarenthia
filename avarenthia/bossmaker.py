@@ -241,9 +241,11 @@ def twin(game, mon, spec):
     from . import bosses as BS
     from .entities import make_monster
     from .worldgen import free_around
-    c = free_around(game.map, mon.x, mon.y)
-    if not c:
+    cs = [c for c in free_around(game, game.map, mon.x, mon.y, 2) if c != (mon.x, mon.y)
+          and not game.occupied(game.map, *c)]
+    if not cs:
         return None
+    c = cs[0]
     o = make_monster(game, mon.k, c[0], c[1], spec['lvl'])
     sp = dict(spec, traits=[t for t in spec['traits'] if t != 'twinned'], name=spec['name'] + "'s twin")
     apply(game, o, sp)
@@ -434,7 +436,6 @@ def on_level(game, m, dg, depth):
         m.boon_set = True
         weak = kt.get('weak', ('fire',))[0]
         from .entities import Item
-        from .worldgen import free_around
         ar = m.__dict__.get('arena')
         cells = set(map(tuple, ar['cells'])) if ar else set()
         spots = [(x, y) for y in range(1, m.h - 1) for x in range(1, m.w - 1) if m.tile(x, y) == D.FLOOR
