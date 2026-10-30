@@ -677,6 +677,31 @@ def ch_land(g):
               'bridges over gorges, kobolds hang out lures, gnolls keep a bone yard and lizardfolk their egg mounds. '
               'On the fifteenth day of each month all peoples meet at the moot stones where the roads cross, the '
               'sign {○|230,200,120}, and trade in peace.'),
+        ('h', 'Odd corners'),
+        ('p', 'The land keeps its own marks: a dragon\'s scorch of black glass, where now and then a scale lies among '
+              'the bones; a lightning oak, where a billet of storm wood is worth cutting, but not in a thunderstorm; a '
+              'clear lake with a sunken boat to dive to; an old mine of men with a last thin vein; a cart under an '
+              'avalanche that the spring thaw lays bare; flood marks on a village wall.'),
+        ('p', 'Some live apart: a hedge wizard who sells scrolls and knows the old empire, and wants a frog; a charcoal '
+              'family that sees all that comes through the wood; a ferryman who rows you over where there is no '
+              'bridge; a beekeeper; a shepherd\'s bothy where you sleep warm and dry, the sign {⌂|180,170,150}; and a '
+              'hamlet of exiles who talk to no one else. Where the peoples meet stand an old peace stone, where '
+              'blood spilt angers both sides; a graveyard of all peoples; a bridge half built by men and half by '
+              'dwarves; an orc farm that sells good cheese. A milestone that points the wrong way leads to a robber\'s '
+              'cache. Look for the lovers\' tree, and for a still in a gully that the baron has forbidden.'),
+        ('h', 'Places of the seasons'),
+        ('p', 'Many places do their thing only in their season. In spring the salmon leap below the falls and the bears '
+              'come, a water meadow floods round a farm with a family on its roof, the shepherd needs a hand at '
+              'lambing, the bird cliffs are full of eggs and the orchards of blossom. In summer the lists open by the '
+              'cities, the harvest camps pay a day\'s wage, a travelling fair moves on each week, and in a dry summer a '
+              'lake shrinks back from a drowned village. In autumn the stags fight in the rutting glades, the oak '
+              'woods fill with mushrooms, geese crowd the marshes, the vineyards want pickers, the swineherds know '
+              'the woods, and the first sheaf lies on Thessa\'s stone: lay a gift beside it. In winter a frost fair '
+              'stands on a city\'s frozen river, an ice road crosses a lake, the herders who stay behind sell furs, in '
+              'a hard winter wolves den by a village that pays for their pelts, and the inn under a shut pass fills '
+              'with stranded travellers.'),
+        ('p', 'Two old feasts still work. On the longest night the bound dead on their old road all turn their heads '
+              'the same way. On the day of the Loosing in spring, every wind tower whistles at once.'),
         ('h', 'The Varnish'),
         ('p', 'The empire before the Ruin built in iron and to the stars, and measured everything in leagues. Its '
               'ruins are on no map. You find a city by walking its land: columns between the trees, old paving under '

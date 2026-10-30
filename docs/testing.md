@@ -382,3 +382,12 @@ three things. Test part `boss_moves`.
   night in a war. Debug: Teleport, Force an event ("Two realms go to war"), Time (night).
 - **Coming and going** - a realm's war camp in a war, refugees by a plundered village, prospectors after the
   Starfall. Debug: Force an event ("Two realms go to war", "A star falls"), and plunder a village with a raid.
+
+## Odd corners and the seasons' places (built 30 October 2026)
+
+- **Each place** - its map, its telling things and keepers, in every season. Debug: Teleport, Time (months ahead).
+- **Part of the year** - the drought's village in a dry summer, the fair moving each week of summer, the frost fair
+  in deep winter, the wolf den in a hard winter. Debug: Time (months, weeks), Teleport.
+- **The cache** - bump the wrong milestone, the robber's stone appears on the map. Debug: Teleport to the milestone.
+- **The Standing Night, the Loosing** - 21 Longnight by night beside the road of the bound dead; 14 Seedwake inside
+  a wind tower. Debug: Time, Teleport.

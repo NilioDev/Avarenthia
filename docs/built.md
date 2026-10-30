@@ -36,6 +36,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
 | **Built: boss fights part A, the kit (29 Oct)** | Great blows marked red on the ground with a count, purple ones you can break; a rhythm from a deck per phase; phases at two thirds and one third that stop a blow; spent after the heaviest blow, three dots to a stagger, resolve; helpers with a job; twins; a boss bar in IN SIGHT; the end-boss room behind a veil that shuts until it falls, one rotten wall out; Snagtooth, the Lich and the Dragon |
 | **Built: the money fixes (29 Oct)** | A dear good moves its market further and bends the price harder, a town holds only a few dear goods, stock comes back over weeks, and the same good sold to the same town fetches less until the market forgets |
+| **Built: odd corners and the seasons' places (30 Oct)** | A dragon's scorch, a lightning oak, a sunken boat, an old mine of men, an avalanche cart, flood marks; a hedge wizard, colliers, a ferryman, a beekeeper, a bothy, exiles; a peace stone, a graveyard of all peoples, a two-halves bridge, an orc farm; a robber's cache and the wrong milestone, a lovers' tree, a still; 22 places of spring, summer, autumn and winter; the Standing Night and the Loosing |
 | **Built: places of today (30 Oct)** | Part B and the 44 places of the peoples and powers, each a site with its own small map: logging camps, burners, peat, salt, lime kilns, beacon chains that burn in a war, lighthouses, toll bridges, caravanserais that keep robbers off your wagons, prospectors after the Starfall, hunting lodges; the realms', the Church's, the Watch's, the witches', the raiders' and every people's own places; the moot stones' market once a month |
 | **Built: the epics (29 Oct)** | 22 epics, two per class, on key 6 in the elite's place, once per rest and free (Phoenix once a day); two hidden teachers of every class in their huts far apart, heard of from rank 35, teaching from 40 after a deed of their own |
 | **Built: the Varnish (25 Oct)** | Ruined Varnish cities found only by walking their zones, the Sky Court and a hidden deep below with a guardian of its own; the Northern Wall and its towers, wind towers, the road of the standing dead, a star-iron forge, Gates of Leagues, a sluice hall, the fallen sky, star houses, a sunken harbour; league stones; the chapter The Varnish, eight books in pieces bound by a scribe, and five riddles in The Old Days that point to five deep places |
@@ -801,6 +802,30 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   The crown's towns are human even when the crown was first drawn as dwarves or elves (`world.py`; the realm
   makes it the human empire later), so Thornfield never keeps dwarf shifts; a rival hunting with you finds room
   near you when you are hemmed in.
+- **Round 30: more places and the places of the seasons** (30 October 2026; `yearplaces.py`). 40 kinds on
+  landmarks' frame (their sign, words and play in landmarks' tables; only where they lie in `yearplaces.PLACE`, placed
+  after round 29's). The land: dragon's scorch (the dragon's name and fate in the chronicle, a scale in half the
+  worlds), lightning oak (storm wood every 60 days; a thunderstorm strikes you, `STEP`), sunken boat (three dives),
+  old mine of men (a load of ore or a copper every 30 days; a beast inside), avalanche cart (spring once a year),
+  flood wall (years in the chronicle, a brass marker). People apart: hedge wizard (scrolls and potions, Varnish lore
+  monthly, a scroll for frog legs), charcoal family (a lead every 14 days), ferryman (8c over the river), beekeeper
+  (honey, a load for 40c), bothy (sleep, heal, once a day), exiles' hamlet (a tale, a stall). Peoples meeting: peace
+  stone (a kill there costs both sides 2), mixed graveyard (epitaphs, a small blessing monthly), trade bridge (free
+  crossing), orc farm (cheese). Secrets: robber's cache (hidden; the wrong milestone shows it), lovers' tree (Varnish
+  names, carve your own), hidden still (spirits, warn him). Seasons: salmon leap (spring and autumn, bears), flood
+  lake (rescue the family once a spring), lambing fold, bird cliffs (eggs, a fall), orchard, the drought's drowned
+  village (only in a dry summer, one in three: the mill's rule), tournament (one bout a day in summer, 3s and crown
+  favour), harvest camp (Goldfield and Harvestmoon), travelling fair (summer only, one of its stops each week:
+  `daily`), rutting glade, mushroom wood, goose marsh, vineyard (the new wine at the end of Leaffall), pannage wood,
+  frost fair (Longnight and Deepfrost; the ice cracks late), ice road (winter, thin near the thaw), herders' winter
+  camp (furs, where the ice raiders rode), wolf winter (a hard winter, one in two: 40c a pelt), snowed-in inn (a thief
+  among the guests, or not), Thessa's harvest stone. The Standing Night (21 Longnight, by night near the road of the
+  bound dead: they turn to the Sky-Seat) and the Loosing (14 Seedwake, inside a wind tower: a Varnish fragment) are
+  days, not places (`old_feasts`). Handbook: The land, Odd corners and Places of the seasons. Test `year_places`.
+  SAVE_VERSION 60.
+  Not as the spec: the old mine's beast is a bear, bats or wolves, not a dungeon; the hedge wizard wants frog legs
+  only (no wind in a pot); the cache shows by its milestone, not by a map from a robbers' den; the frost fair keeps
+  every deep winter, not one in ten; the tournament's knight is an ordinary fight in a ring of fence, not a joust.
 - **Round 29: old places part B and the places of the peoples and powers** (30 October 2026; `landmarks.py`, the
   frame for round 30 in `yearplaces.py`). 56 kinds of site (`KINDS`, `LOOK`), placed after the shanty camps by
   `place` with dice of its own (`Lay`: free cells with a shrinking gap, cells by a road, near a people's land or a
@@ -862,7 +887,28 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
   line move as before; the hoard grows in glitter, not in coin you could take.
 
+## More places and the places of the seasons (built 30 October 2026; the spec)
+
+From "Old places on the land" in `plan.md` (approved 23 October 2026; `poi/volken.md` 45-86):
+- **More places** (45-64 approved 23 October; `poi/volken.md`): the land itself (a dragon's scorch, a lightning tree,
+  a sunken boat in a clear lake, an old human mine, an avalanche field, flood lines on a village wall); people who live
+  apart (a hedge wizard's tower, a charcoal family, a ferryman with a boat, a beekeeper's hill, a shepherd's bothy, an
+  exiles' hamlet); where peoples meet (an old peace stone, a graveyard of all peoples, a trade bridge half human half
+  dwarf, an orc farmstead); small secrets (a buried cache, a lovers' tree, a hidden still, the wrong milestone).
+- **Seasonal places** (65-86 approved 23 October; `poi/volken.md`): spring (a salmon leap with bears, a flood lake with
+  a family on a roof, a lambing fold, bird cliffs, a blossom orchard); summer (what the drought shows in a sunken lake,
+  a tournament field, a harvest camp, a travelling fair that moves on); autumn (a rutting ground, a mushroom wood, a
+  goose marsh, vineyard slopes, a pannage wood); winter (a frost fair on the river, an ice road over a lake, the
+  herders' winter camp, a wolf winter, a snowed-in inn on a pass); old feasts that still work (on the longest night the
+  standing dead turn to the Sky-Seat, on one spring day all wind towers whistle, Thessa's harvest stone).
+
 ## Old places part B and the places of the peoples and powers (built 30 October 2026; the spec)
+
+The section "Old places on the land" (approved 23 October 2026, all built by 30 October 2026): More points of interest, so the world looks old and lived in. Approved in the thread on points of interest: "we gaan
+eerst A doen, alle ideeen klinken goed". Details and the full list (also the newer places, part B): project files
+`poi/ideeen.md`. Each place is one world cell with its own play map (as the wonders and oases), and what matters is a
+tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
+`living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
 
 From "Old places on the land" in `plan.md` (approved 23 October 2026; `poi/ideeen.md` part B, `poi/volken.md` 1-44):
 - **Then part B** (also approved, after A): logging camp at the elven forest's edge, charcoal burners, peat cutters and

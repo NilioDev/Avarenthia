@@ -614,6 +614,7 @@ def on_kill(game, mon):
     if getattr(m, 'lm', None) == 'lodge' and mon.k in GAME_BEASTS:
         _poached(game, m)
     duel_won(game, mon)
+    YP.on_kill(game, mon)
 
 
 # ------------------------------------------------------------------ small helpers for the effects
@@ -1552,13 +1553,15 @@ def _p_bstone(lay):
     m, w = lay.m, lay.w
     R = w.realm
     made = 0
-    for _ in range(4000):
+    edge = [(x, y) for y in range(4, m.h - 4) for x in range(4, m.w - 5)
+            if w.region_of[y * m.w + x] != w.region_of[y * m.w + x + 1] and w.road_dist[y * m.w + x] <= 4]
+    random.shuffle(edge)
+    for x, y in edge:
         if made >= scaled(3):
             break
-        x, y = random.randint(4, m.w - 5), random.randint(4, m.h - 5)
         r0 = w.region_of[y * m.w + x]
-        r1 = w.region_of[y * m.w + x + 1] if x + 1 < m.w else r0
-        if r0 == r1 or r0 not in R.baronies or r1 not in R.baronies or not lay.free(x, y, 4) or lay.road(x, y) > 4:
+        r1 = w.region_of[y * m.w + x + 1]
+        if r0 not in R.baronies or r1 not in R.baronies or not lay.free(x, y, 3):
             continue
         lay.add('bstone', (x, y), f'The Stone of {R.baronies[r0].name} and {R.baronies[r1].name}', sides=(r0, r1))
         made += 1
@@ -3315,3 +3318,5 @@ def daily(game):
 
 
 register()
+
+from . import yearplaces as YP  # noqa: E402  (round 30 sets its kinds down in these tables)

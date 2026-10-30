@@ -15,7 +15,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: spell effects** | Parts 1 and 2 built 19 and 22 October 2026 (the toolkit, status colours, Wild Shape colours, the option, each school's own hand, the storm's white frame; see `docs/built.md`). Left: the weapon skills' effects, with the weapon skills |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
-| **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026), archaeology too (30 October 2026); the rest is not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -64,7 +63,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     October 2026 (see `docs/built.md`). 27. **Round 6** (L). Built 30 October 2026 (see
     `docs/built.md`). 28. **Feast days** (L). Built 30 October 2026 (see `docs/built.md`). Pause after 24, 26 and 27, merge after 28.
 29. **Old places part B and the 44 places of the peoples and powers** (XL), with the caravanserai for the caravans.
-    Built 30 October 2026 (see `docs/built.md`). 30. **Places 45-64 and the seasonal places** (L). Merge after 30.
+    Built 30 October 2026 (see `docs/built.md`). 30. **Places 45-64 and the seasonal places** (L). Built 30 October
+    2026 (see `docs/built.md`). Merge after 30.
 31. **The great evils, part 3: the other sixteen servants** (XL), each with its lieutenants, weakness, relic and lair;
     late, because many of them live in what comes before (the Rat King in the grown cities, the Lindworm under the
     dwarves, the Wild Hunt and the Hag with the feast days). 32. **Part 4** (XL) if one round is not enough for
@@ -148,31 +148,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
-
-## Old places on the land (approved 23 October 2026, not built)
-
-More points of interest, so the world looks old and lived in. Approved in the thread on points of interest: "we gaan
-eerst A doen, alle ideeen klinken goed". Details and the full list (also the newer places, part B): project files
-`poi/ideeen.md`. Each place is one world cell with its own play map (as the wonders and oases), and what matters is a
-tile used with one key or a bump. Not the same as what exists: the fresh battlefields and plundered villages of
-`living.py`, the hidden places of `hidden.py`, the planned temples, forts and barrows.
-- Part A's old places (battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages,
-  leper colonies, the peoples' marks) are built (24 October 2026), part B and the 44 places of the peoples and powers
-  (30 October 2026), and so are the Varnish: their cities, places,
-  hidden dungeons, lore, books and riddles (25 October 2026), and archaeology (30 October 2026); specs in
-  `docs/built.md`. Still to build here:
-- **Where it goes in the build order:** see "The build order" at the top (rounds 11, 12, 21, 28, 29, 30).
-- **More places** (45-64 approved 23 October; `poi/volken.md`): the land itself (a dragon's scorch, a lightning tree,
-  a sunken boat in a clear lake, an old human mine, an avalanche field, flood lines on a village wall); people who live
-  apart (a hedge wizard's tower, a charcoal family, a ferryman with a boat, a beekeeper's hill, a shepherd's bothy, an
-  exiles' hamlet); where peoples meet (an old peace stone, a graveyard of all peoples, a trade bridge half human half
-  dwarf, an orc farmstead); small secrets (a buried cache, a lovers' tree, a hidden still, the wrong milestone).
-- **Seasonal places** (65-86 approved 23 October; `poi/volken.md`): spring (a salmon leap with bears, a flood lake with
-  a family on a roof, a lambing fold, bird cliffs, a blossom orchard); summer (what the drought shows in a sunken lake,
-  a tournament field, a harvest camp, a travelling fair that moves on); autumn (a rutting ground, a mushroom wood, a
-  goose marsh, vineyard slopes, a pannage wood); winter (a frost fair on the river, an ice road over a lake, the
-  herders' winter camp, a wolf winter, a snowed-in inn on a pass); old feasts that still work (on the longest night the
-  standing dead turn to the Sky-Seat, on one spring day all wind towers whistle, Thessa's harvest stone).
 
 ## The great evils as storyteller (approved 25 October 2026; parts 1 and 2 built 29 October 2026, not built: rounds 31-32)
 

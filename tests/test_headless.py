@@ -8565,6 +8565,96 @@ def landmarks():
     print('landmarks ok:', walked, 'maps walked;', len(kinds), 'kinds in this world')
 
 
+def year_places():
+    """Round 30: the land's own places, people apart, where peoples meet, small secrets, and the seasonal places: each
+    map walked in every season with every thing bumped and every keeper asked; places that live part of the year come
+    and go; the fair moves on; the wrong milestone shows the cache; the Standing Night and the Loosing."""
+    import pickle
+    from avarenthia import landmarks as LM, yearplaces as YP, events as EV, calendar as CAL
+    from collections import Counter
+    print('== year places')
+    random.seed(30)
+    app = new_app('soft', 3030)
+    g = app.game
+    p = g.player
+    w = g.world
+    ours = [k for k in LM.KINDS if k in YP.PLACE]
+    kinds = Counter(s.kind for s in w.sites if s.kind in ours)
+    assert len(ours) == 40, len(ours)          # 42 ideas: two of them are days, not places
+    for k in ('ltree', 'oldmine', 'bothy', 'orchard', 'harvest', 'mushwood', 'harvstone', 'cache', 'wrongmile'):
+        assert kinds[k], (k, kinds)
+    assert len(kinds) >= 34, (len(kinds), [k for k in ours if not kinds[k]])
+
+    def on(mo, d, hour=12):
+        day = next(x for x in range(1, 800) if CAL._split(x)[1:3] == (mo, d))
+        g.turn = (day - 1) * D.DAY_LEN + D.DAY_LEN * hour // 24
+
+    walked = 0
+    for mo in (3, 6, 9, 11):                    # spring, summer, autumn, winter
+        on(mo, 26)
+        LM.daily(g)
+        for k in ours:
+            for st in [s for s in w.sites if s.kind == k][:1]:
+                p.gold = 10 ** 6
+                p.life = g.stats()['max_life']
+                g.dead = False
+                to_over(g)
+                p.x, p.y = st.x, st.y
+                g.enter_site(st.id)
+                m = g.map
+                assert m.lm == k, k
+                acts = [('bump', i) for i in list(m.tells)] + [('talk', o) for o in m.mons if o.role in ('landmark', 'roadinn')]
+                for what, a in acts:
+                    if g.cur != m.key or g.dead:
+                        break
+                    g.pending = None
+                    if what == 'bump':
+                        LM.bump(g, a % m.w, a // m.w)
+                    elif a in m.mons:
+                        LM.talk(g, a)
+                    if g.pending:
+                        opts = [v for _l, v in g.pending['options'] if v not in (None, 'bye', 'leave')]
+                        if opts:
+                            EV.resolve(g, opts[walked % len(opts)])
+                        g.pending = None
+                walked += 1
+    g.dead = False
+    # part of the year: the frost fair in deep winter, the fair in summer and on the move
+    ff = [s for s in w.sites if s.kind == 'frostfair']
+    fair = [s for s in w.sites if s.kind == 'fair']
+    on(11, 26)
+    LM.daily(g)
+    assert all(not s.gone for s in ff) and all(s.gone for s in fair)
+    on(6, 3)
+    LM.daily(g)
+    assert all(s.gone for s in ff) and all(not s.gone for s in fair)
+    if fair:
+        at = (fair[0].x, fair[0].y)
+        g.turn += 7 * D.DAY_LEN
+        LM.daily(g)
+        assert (fair[0].x, fair[0].y) != at and (fair[0].x, fair[0].y) in [tuple(c) for c in fair[0].stops]
+    # the wrong milestone shows the robber's stone
+    mile = next(s for s in w.sites if s.kind == 'wrongmile')
+    cache = w.sites[mile.cache]
+    cache.found = False
+    to_over(g)
+    p.x, p.y = mile.x, mile.y
+    g.enter_site(mile.id)
+    i = next(iter(g.map.tells))
+    LM.bump(g, i % g.map.w, i // g.map.w)
+    assert cache.found
+    # the Standing Night by the road of the bound dead
+    road = next((s for s in w.sites if s.kind == 'deadroad'), None)
+    if road:
+        on(*YP.STANDING, 23)
+        to_over(g)
+        p.x, p.y = road.x, road.y + 1
+        YP.old_feasts(g)
+        assert LM.done(g, f'standing:{CAL._split(g.day)[0]}')
+    pickle.dumps(g)
+    print('year places ok:', walked, 'maps walked;', len(kinds), 'kinds in this world')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8574,7 +8664,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

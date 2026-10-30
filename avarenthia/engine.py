@@ -91,7 +91,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 59
+SAVE_VERSION = 60
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1284,6 +1284,8 @@ class Game:
             OP.on_step(self)
         if getattr(m, 'lm', None):
             LM.on_step(self)
+        if getattr(m, 'site', None) is not None:
+            LM.YP.old_feasts(self)
         if getattr(m, 'vn', None):
             VN.on_step(self)
         if getattr(m, 'digs', None):
@@ -1356,6 +1358,7 @@ class Game:
         from . import hidden as HP
         HP.on_step(self)
         FK.on_step(self)
+        LM.YP.old_feasts(self)
         BP.on_step(self)
         FG.on_walk(self)
         VN.over_step(self)
