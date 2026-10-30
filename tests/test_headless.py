@@ -7228,13 +7228,17 @@ def boss_moves():
     r = DBG.boss(g, 'roam:troll')
     assert r is not None and r.roam
     n0 = len(g.log)
+    walked = 0
     for _ in range(300):
         if BS.hunting(g, r):
             break
+        at = (r.x, r.y)
         g.end_turn(1)
+        walked += (r.x, r.y) != at
         p.life = g.stats()['max_life']
     assert r.roam['heard'] > 0 and any('of you' in ln[0] or 'somewhere' in ln[0] for ln in g.log[-80:]), 'heard'
-    assert m.deco and D.MONSTERS and sum(1 for v in m.deco if v == 16) >= 5, 'tracks'
+    tracks = sum(1 for v in m.deco if v == 16) if m.deco else 0
+    assert tracks >= min(5, walked // 5), ('tracks', tracks, walked)   # it may find you before it has walked far
     r.roam['seen'] = g.turn
     i = m.t.index(D.DOWN)
     p.x, p.y = i % m.w, i // m.w
