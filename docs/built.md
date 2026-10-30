@@ -797,6 +797,9 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   lacks (a crash at such a bridge); two bug reports in one second now get folders of their own; the creatures test
   puts the shrieker in sight. A harbour town no longer loses a road whose way out fell inside the harbour: the road
   now leaves the map beside it (`towns.dry_exits`, an old fault: 8 of 81 harbour towns in three worlds).
+  The crown's towns are human even when the crown was first drawn as dwarves or elves (`world.py`; the realm
+  makes it the human empire later), so Thornfield never keeps dwarf shifts; a rival hunting with you finds room
+  near you when you are hemmed in.
 - **Round 28: feast days, the light-feast and the great fair** (30 October 2026; `feasts.py`). `FEASTS` holds 35
   feasts, each with its dates, who keeps it (`keeps`: all humans, the heartland, west or north by `names.dialect`,
   the fjords, northern villages, river towns, ports, the great city, the steppe, savanna, desert, jungle and canyons

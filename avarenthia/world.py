@@ -904,8 +904,9 @@ def _assign_factions(m, world, start):
     for st in world.settlements:
         st.faction = regs[st.region].faction
     world.settlements[0].faction = 'crown'
-    for st in world.settlements:
-        st.race = D.FACTIONS[st.faction].get('race', 'human') if random.random() < .8 or st.id == 0 else \
+    for st in world.settlements:                 # the crown is human whoever founded it: realms.py makes it the empire
+        folk = 'human' if st.faction == 'crown' else D.FACTIONS[st.faction].get('race', 'human')
+        st.race = folk if random.random() < .8 or st.id == 0 else \
             random.choice(['human', 'human', 'halfling', 'dwarf', 'elf'])
         if st.kind == 'deephold' or getattr(st, 'dwarven', False):
             st.race = 'dwarf'
