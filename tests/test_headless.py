@@ -923,6 +923,7 @@ def thornfield_and_faith():
             g.compute_fov()
             assert inn not in g.nearby_people(), 'but not through a wall'
     g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + D.DAY_LEN // 2
+    m.mood = None                                # a town in fear keeps half its folk indoors
     fisher = next(o for o in m.mons if o.role == 'fisher')
     wx, wy = fisher.work_pos                     # his place by day is out by the water; at night he goes home
     assert any(m.tile(wx + dx, wy + dy) in (D.WATER, D.SHALLOW) for dx in (-1, 0, 1) for dy in (-1, 0, 1))
