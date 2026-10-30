@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: boss fights part C (30 Oct)** | The boss maker: 15 bases, decks drawn by rules from the library, up to two of 18 traits, a name, title, deed and rumour; "A price on a head"; bosses at the end of nest, shrine, boats, missing and deserter jobs; a boss of the people may yield; beasts leave parts; floors above a fixed boss foretell it, and its floor hides the thing that eases the fight |
 | **Built: trade part 2, goods and ways (30 Oct)** | Named goods of a region (12-15 per world) with good and bad years and three or four master works; far goods by sea and the south; barter with kobolds, orcs and elves; beast parts to a city's alchemists; spoiling; need far away; black lotus and the Watch at the gates; war trade; market news at the inn; rank with the Merchant League |
 | **Built: archaeology (30 Oct)** | A twelfth life skill: dig spots at old places and Varnish ruins, seen by rank and dug with a trowel; you learn only at places of your own height; lore and riddle pieces, a source of the servants' weaknesses, old pieces a smith mends into gear with an old power (Varnish work wants star-iron), finds a city library buys |
 | **Built: life skills part 2 (30 Oct)** | Every beast gives parts, and a part is the power a maker chooses (two from rank 40), better from stronger beasts; parts broken off big beasts; named beasts give parts of their own nature and keep a den; catching one alive for a lord, a cage in his yard; Unmake from rank 40; a master's test at 25 and 40; orders on the boards; perks at 30, 40 and 50; the three great masters and their test; mending for your hireling and the town; boots for the road, a bedroll, barding |
@@ -717,6 +718,102 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   here, in your cargo or needed (`rows`), marked * or ×, a note on the selected good; the screen is 110 wide.
   Handbook: Jobs and money, Trade. Test `trade_goods`. SAVE_VERSION 53. Not built here: the great fair (with the
   feast days) and the ladder's small supply orders (with the caravans).
+- **Round 23: boss fights part C, the boss maker** (30 October 2026; `bossmaker.py`). Fifteen bases (`BASES`: mage
+  of fire, cold or storm (`SCHOOLS`), necromancer, cult leader, witch, druid, champion, band leader, assassin, hunter,
+  great beast of a body and a stuff (`BODIES`, `STUFF`), dead lord, golem, chief of a hostile people, pirate captain,
+  fey lord), each with pools per role from the move library. `draw` builds the kit by rules: two small moves, one
+  set-up and great pair, the heaviest blow only from level 8, three phases (.66, .33) from level 10 and else two
+  (.5), a summons trick when it has helpers, no move that needs a roof out in the open (`ROOF`), one weakness, up to
+  two traits (`TRAITS`: those with a card add it, `TRAIT_CARD`; armoured counts for the war hammer and raises its
+  defence, warded adds 30 to its resistances but its weakness, unbroken has resolve 4, regenerating heals 2% a turn
+  unless it burns, twinned brings its Shadow, linked 'survivor', grudge has more life, hoarder leaves coin), a name
+  (men and women by the gender drawn), a title, a deed and one rumour (its weakness or a great blow). `apply` puts
+  it on a monster (`mon.kit_over`, `mon.bs`, `mon.maker`, life x3.5 and a tenth a level). Jobs: 'head' ("A price on
+  a head", town and city boards and the captain; pays by level and traits; won like a bounty), and `wrap` gives the
+  nest, shrine, boats, missing and deserter jobs a boss and its rumour (`m.data['bspec']`, put on the leader in
+  `jobs.fight`). A boss of the people that would die at its last threshold yields three times in five (`yields`):
+  kill, let go, or hand over (the reward a quarter more). A beast leaves parts of its body (`felled`), a chronicle
+  line names the deed. Fixed bosses: the floor above foretells it (`FORETELL`), its own floor hides the thing it
+  cannot abide (`BOON`, an item 'boon'); carried into the fight it fills two dots (`boon_edge`). Handbook: Fighting,
+  Bosses. Test `boss_maker`. SAVE_VERSION 54. Not built (still in `docs/plan.md`): arenas dressed per place, other
+  ways out, the place that wakes or falls in, fights won another way, bosses for the big one and the relic.
+
+## Boss fights (approved 26 October 2026; built 29-30 October 2026; the spec)
+
+**Parts A and B:** built 29 October 2026 (rounds 15 and 16, see `docs/built.md`). Still to build here: part C, the
+boss maker and the job bosses; the arenas dressed per place (tower top, temple nave and the rest), the ways out
+other than the rotten wall, the one thing a place hides that eases its fight, floors above that foretell the boss,
+and the place that wakes or falls in after a few bosses (these four were not in part B and wait for part C).
+
+Bosses now are sacks of life that roll a die each turn (summon, nova, leap), and their worst moves come without the
+warning that a common spider gives. Only the Lord of Cinders in the Rift has real mechanics. This replaces the boss
+rules in `engine.mon_turn` with one system. Worked out with Nilio in the thread "Bazen spannender maken"; the Dutch
+working-out with every move, base, boss and game it learnt from: project files `bazen/uitwerking.md`.
+- **Ground rule**: it stays roguelike combat. Strategy is rewarded, chance stays (hit or miss, damage, which move,
+  when the rhythm breaks, where helpers come). What is marked on the ground is always true: chance is in what comes,
+  never a false warning. No facing (a glyph shows no direction), no bosses bigger than one tile, no taunts.
+- **Marked blows**: a great blow is announced in the log and its tiles get a dark red background; blows that take 2-3
+  turns show a counting number on each tile. The number's colour says what to do: red step out, purple can be broken,
+  gold stand in it (or the whole room is struck). Shapes: line, cone, ring, cross, a circle on you, the room save
+  behind cover, a wave that sweeps, a circle that follows you until the last turn. Every marked blow leaves at least
+  one free tile you can reach in time (checked when it loads). Small blows come unmarked, as now.
+- **Hard to dodge by overlap, not by one blow**: two threats at once (the safe tile lies in burning ground or the next
+  ring), set-ups before the blow (web, slow, ice walls, a pull), interrupt-or-step-away choices, a room that shrinks
+  each phase, ground that fills up with what blows leave (a soft clock instead of an enrage timer).
+- **Rhythm from a deck** (Gloomhaven): each phase has a deck of 6-8 moves by beat kind (small, set-up, great,
+  heaviest, move, summon, rest, and the room's own beat); one is drawn per beat, a shuffle card puts all back; great
+  moves keep their place so the skeleton holds (say every fourth beat). About one in five the rhythm breaks. The player
+  learns it himself: the bestiary never tells the next move; a line in `l` about its stance changes with the next beat.
+- **Phases** at 66% and 33% (two phases at 50% for roaming and theme bosses): new deck, often a changed room, new
+  helpers; one log line and a short shake. A blow stops at a threshold, except a critical hit while it is spent or
+  staggered: it breaks through (gold line and flash, the skipped phase's room trick does not come, a chronicle line,
+  a small job bonus); never two phases at once, never the last threshold of a great evil.
+- **Spent and staggered**: after its heaviest blow it stands spent a turn (more damage, more crits). Breaking a blow or
+  hitting its weakness fills three dots; full, it staggers two turns. **Breaking**: 2-3 turn blows break by a stunning
+  or silencing skill (Shield Bash, Knock Out, Skull Crack, Throat Punch, Cheap Shot, Stunning Stone, Push Back,
+  Counterspell, Garrote) or by a tenth of its life in damage while it loads.
+- **Resolve and the action count** (D&D): it shrugs off the first two holds, sleeps, paralyses or charms (two ◆ in IN
+  SIGHT); it gets one extra small move per ally beside you.
+- **Helpers with a job**, on fixed beats: warder (half damage to the boss while it lives), mender, channeler (feeds the
+  next heaviest blow), guard, swarm, bearer. Its great blows hit its own helpers too: push them into the red.
+- **Twins**: six kinds (shared life; the survivor takes all; opposites; swap; bound together; master and beast).
+- **Threat**: small moves follow the threat of `mercs.py`; great blows aim at the highest threat but strike everyone
+  in the red; marks and curses follow threat too; threat resets each phase. Hirelings and pets play the fight like a
+  player (step out of the red, handle a mark, break a cast, stand in gold, warder first), better as they rank up;
+  the orders of `h` count. A marked blow never kills anyone from full life.
+- **End bosses**: a veil of mist at the door asks once; then the room shuts until it falls, with one hard way out (a
+  rotten wall, a drop to the level below, a chain to climb, a rare scroll). No resting inside. Fled from, it heals and
+  prepares against what you did (burnt: resists fire; broken often: Unbroken), up to four times. Arenas fit the place
+  (tower top with edges, temple nave, cave lake, crypt, fort yard, throne hall, forge, library, bridge, flooded
+  cellar, glade, ship's deck) and change by phase (collapse, rising water, lights out, burning floor, falling
+  ceiling, crumbling edge, webs, wind, rising dead, ice floor, thorns, fog). Ground effects combine (water and storm,
+  oil and fire, poison and fire, ice and fire, web and fire). Some places hide one thing that eases the fight
+  (holy water, the chain key); floors above foretell the boss. After a few bosses the place wakes or falls in as you
+  leave.
+- **Roaming bosses** walk a level with their band, are heard ("Heavy steps, somewhere east of you."), leave tracks,
+  use the terrain, grow by killing other monsters; flee and they follow, up the stairs too, and do not heal while they
+  hunt.
+- **Move library**: ~100 moves by role, shape, element and counter, from our own spells, weapon skills and monster
+  habits (what you can learn, they can do). Each fixed boss gets its own set (worked out for Snagtooth as the teaching
+  boss, the Rat King, Grolm, the Lich, the four great evils, the Lord of Cinders, the theme bosses).
+- **The boss maker** for jobs (not the Hollow King's servants, who use the same kit): 15 bases (mage per school,
+  necromancer, cult leader, witch, wild druid, champion per weapon, band leader, assassin, hunter, great beast in the
+  Dwarf Fortress way of body, stuff and attack, dead lord, golem, chief of a hostile people, pirate captain, fey lord),
+  a draw in steps with rules (one set-up and blow pair, one weakness, weight by level, fits the arena, fairness check),
+  traits (armoured, warded, regenerating, twinned, unbroken, vengeful, swift, mirrored, bloodbound, commanding,
+  haunting, hoarder, grudge-bearer, waller, arcane sentry, vortex, watchful, anchored), a name, title, deed and one
+  rumour of a move or the weakness. Jobs: a new "A price on a head", and bosses for nest, shrine, missing, boats,
+  big one, deserter, relic; harder contracts pay more. Some fights are won another way (hold out, rescue, break it,
+  escape); human bosses may yield (kill, let go, hand over).
+- **Loot**: each fixed boss has three named items (a weapon, an armour piece, a jewel or focus); after it falls you
+  choose one, the other two broke (grades by the loot rule). Beasts drop materials of their body or stuff at random,
+  the same for every class.
+- **Where it shows**: a boss bar at the top of IN SIGHT (name, bar with thresholds, phase, what it does, helpers with
+  their job), the gold name across the map at the first blow and "FOE FELLED" at the end, new tiles named by `guide.py`,
+  first-time tips for the red ground and the shut room. No new key. Handbook: a part "Bosses" in the fighting chapter.
+- **Build in three parts**: A the kit (marks, deck, phases, spent, breaking, helpers, bar, arena) with Snagtooth, the
+  Lich and the Dragon; B the whole library, the other fixed bosses, roaming bosses; C the maker and the job bosses.
+  The great evils' servants then use it.
 
 ## Trade part 2: goods and ways (built 30 October 2026; the spec)
 From "Trade as a way to play" (approved 25 October 2026; the caravans and the great fair are still in `docs/plan.md`):

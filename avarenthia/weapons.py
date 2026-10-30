@@ -62,7 +62,7 @@ def fist(game):
 
 
 def armoured(mon):
-    return not mon.is_npc and (mon.k in ARMOURED or mon.tpl.get('family') == 'construct')
+    return not mon.is_npc and (mon.k in ARMOURED or mon.tpl.get('family') == 'construct' or mon.__dict__.get('armoured', False))
 
 
 def bleeds(mon):

@@ -942,6 +942,8 @@ def fight(game, m, keys, lvl, elite=0, intro=None, then=None, terrain=None):
         boss = next((o for o in wild.mons if not o.is_npc), None)
         if boss:
             boss.name, boss.fg = leader, D.UNIQUE_FG
+    from . import bossmaker as MK
+    MK.on_fight(game, m, wild)
     if intro:
         game.msg(intro, 'bad')
     game.msg(game.escape_hint())

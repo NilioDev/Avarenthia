@@ -38,6 +38,7 @@ from . import foraging as FG
 from . import mastery as MA
 from . import archaeology as AR
 from . import tradegoods as TG
+from . import bossmaker as MK  # noqa: F401  (registers the job bosses)
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -86,7 +87,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 53
+SAVE_VERSION = 54
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)

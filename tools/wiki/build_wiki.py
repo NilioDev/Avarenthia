@@ -572,6 +572,17 @@ add('trade', 'Skills', 'Trade: named goods, far goods, barter',
     f'<h3 class="gh">Far, bartered and forbidden goods</h3><div class="tw"><table><tr><th>Good</th><th>Base (silver)</th>'
     f'<th>Kind</th></tr>{ex_rows}</table></div>')
 
+# ---------------------------------------------------------------- the boss maker
+import avarenthia.bossmaker as MKW
+bm_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(", ".join(v["mon"] or list(MKW.BODIES)))}</td>'
+                  f'<td>{e(", ".join(c for r in "kVGZOBR" for c in v.get(r, [])) or "by school")}</td>'
+                  f'<td>{e(", ".join(v["weak"] or ("by stuff",)))}</td></tr>' for k, v in MKW.BASES.items())
+add('bossmaker', 'Creatures', 'The boss maker: job bosses',
+    f'<p>{e(MKW.__doc__.strip().splitlines()[0])} {badge("built")}</p>',
+    f'<h3 class="gh">Bases</h3><div class="tw"><table><tr><th>Base</th><th>Monsters</th><th>Moves</th><th>Weak to</th></tr>'
+    f'{bm_rows}</table></div><h3 class="gh">Traits</h3><ul>'
+    + ''.join(f'<li>{e(t)}: {e(MKW.TRAIT_WORD[t])}</li>' for t in MKW.TRAITS) + '</ul>')
+
 # ---------------------------------------------------------------- the handbook, from a real game
 with contextlib.redirect_stdout(io.StringIO()):
     g = E.Game('Wiki', False, 1)

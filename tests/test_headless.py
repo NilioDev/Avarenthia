@@ -3814,7 +3814,8 @@ def prep_skill(g, sid):
     from avarenthia.worldgen import free_around
     m, p = g.map, g.player
     sk = SK.SKILLS[sid]
-    spots = [c for c in free_around(g, m, p.x, p.y, 3) if c != (p.x, p.y)]
+    g.compute_fov()
+    spots = [c for c in free_around(g, m, p.x, p.y, 3) if c != (p.x, p.y) and g.visible(*c)]    # not behind a wall a spell left
     m.slain = []
     for x, y in spots[-6:]:
         m.slain.append(('goblin', x, y, 5))
@@ -6841,6 +6842,9 @@ def bosses():
     lich3 = BS.spawn(g, 'lich')
     lich3.x, lich3.y = next(cc for cc in free_around(g, m, p.x, p.y, 2) if g.visible(*cc))
     BS.call(g, lich3, (('wraith', 'warder'),), '')
+    wd = next(o for o in m.mons if getattr(o, 'job', None) == 'warder' and o.boss_of == lich3.id)
+    if not g.visible(wd.x, wd.y):            # where you can see it, so that IN SIGHT names it
+        wd.x, wd.y = next(cc for cc in free_around(g, m, p.x, p.y, 3) if g.visible(*cc) and not g.occupied(m, *cc))
     hp = lich3.hp
     g.damage_mon(lich3, 40)
     assert BS.warded(g, lich3) and hp - lich3.hp == 20, hp - lich3.hp
@@ -7959,7 +7963,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
@@ -8196,6 +8200,112 @@ def trade_goods():
     g2.hook()
     assert all(k2 in D.GOODS for k2 in TG.st(g2.world)['named'])
     print('trade_goods ok')
+
+
+def boss_maker():
+    """Boss fights part C: the boss maker (bases, rules, traits, names, rumours), a price on a head, bosses at the end of
+    other jobs, yielding, a beast's parts, the floors that foretell a fixed boss and the thing that eases its fight."""
+    from avarenthia import bossmaker as MK, bosses as BS, jobs as JB, missions as MS
+    print('== boss_maker')
+    random.seed(23)
+    app = new_app('soft', 2323)
+    g = app.game
+    p = g.player
+    p.gold = 10 ** 6
+    rnd = random.Random(5)
+    for lvl in (2, 6, 12):
+        for base in MK.BASES:
+            if lvl < 4 and base in ('deadlord', 'golem', 'fey'):
+                continue
+            sp = MK.draw(g, lvl, base=base, rnd=rnd)
+            kt = sp['kit']
+            assert len(kt['phases']) == (3 if lvl >= 10 else 2), (base, lvl)
+            cards = [c for ph in kt['phases'] for cs in ph['cards'].values() for c in cs]
+            assert all(c in BS.MOVES for c in cards), (base, cards)
+            assert any(BS.MOVES[c]['role'] == 'G' for c in cards)
+            assert lvl >= 8 or not any(BS.MOVES[c]['role'] == 'Z' for c in cards), (base, lvl, cards)
+            assert not any(c in MK.ROOF for c in cards), 'nothing that needs a roof out in the open'
+            assert len(kt['weak']) == 1 and sp['rumour'] and sp['name'] and sp['deed']
+            for ph in kt['phases']:
+                for r in ph['beat']:
+                    assert r in ph['cards'], (base, ph['beat'], ph['cards'])
+    # a price on a head: on the boards, a fight with a kit boss
+    to_over(g, 0)
+    town = next(s for s in g.world.settlements if s.kind in ('town', 'city'))
+    m = None
+    for _ in range(20):
+        m = MK.make_head(g, town)
+        if m:
+            break
+    assert m and m.kind == 'head' and m.data['bspec']['rumour'] in m.desc
+    print('head:', m.title, '|', m.desc)
+    town.board.append(m)
+    MS.accept(g, town, m)
+    g.cur = 'over'
+    p.x, p.y = m.data['spot']
+    assert JB.ARRIVE['head'](g, m)
+    boss = next(o for o in g.map.mons if o.__dict__.get('maker'))
+    assert BS.kit(boss) and BS.st(boss) and boss.name == m.data['leader']
+    # it stops at its thresholds; at the end a man may yield, or it dies
+    boss.hp = 1
+    hold = [boss.maxhp]
+    for _ in range(4):
+        if boss not in g.map.mons:
+            break
+        boss.hp = 0
+        g.kill(boss)
+        if boss.__dict__.get('yielded'):
+            MK.r_yield(g, 'law', {'mon': boss.id})
+            break
+        BS.st(boss)['pending'] = None if BS.st(boss).get('pending') is None else BS.st(boss)['pending']
+        if BS.st(boss).get('pending') is not None:
+            BS.st(boss)['phase'] = BS.st(boss)['pending']
+            BS.st(boss)['pending'] = None
+    for o in [o for o in g.map.mons if not o.is_npc]:
+        g.map.mons.remove(o)
+    JB.after_fight(g, g.map)
+    assert m.state == 'turnin', m.state
+    # other jobs get a boss and its rumour
+    vil = next(s for s in g.world.settlements if s.kind == 'village')
+    got = 0
+    for k in MK.BOSS_JOBS:
+        for _ in range(15):
+            mj = JB.MAKE[k](g, vil) if k != 'deserter' else JB.MAKE[k](g, vil)
+            if mj:
+                assert mj.data.get('bspec') and mj.data['bspec']['rumour'] in mj.desc, k
+                got += 1
+                break
+    assert got >= 2, got
+    # a great beast leaves parts of its body
+    from avarenthia.entities import make_monster
+    sp = MK.draw(g, 6, base='beast', rnd=random.Random(2))
+    b = make_monster(g, sp['mon'], p.x, p.y, 6)
+    g.map.mons.append(b)
+    MK.apply(g, b, sp)
+    n = len(g.map.items)
+    MK.felled(g, b)
+    assert any(i.k == 'part' for i in g.map.items[n:])
+    # a regenerating boss closes its wounds
+    b.regen, b.hp = True, b.maxhp // 2
+    hp = b.hp
+    MK.on_turn(g, b)
+    assert b.hp > hp
+    # the floor above a fixed boss foretells it; its own floor hides the thing that eases the fight
+    dg = next((d for d in g.world.dungeons.values() if getattr(d, 'boss', None) in MK.FORETELL and d.depth >= 2), None)
+    if dg:
+        g.enter_dungeon(dg.id, dg.depth - 1, 'down')
+        assert (dg.id, dg.depth - 1) in p.foretold
+        g.enter_dungeon(dg.id, dg.depth, 'down')
+        boons = [i for i in g.map.items if i.k == 'boon']
+        assert boons, 'the thing that eases the fight'
+        p.inv.append(boons[0])
+        g.map.items.remove(boons[0])
+        kb = next((o for o in g.map.mons if BS.st(o) is not None), None)
+        if kb:
+            BS.st(kb)['engaged'] = False
+            BS.engage(g, kb)
+            assert BS.st(kb)['dots'] >= 2 and not any(i.k == 'boon' for i in p.inv)
+    print('boss_maker ok')
 
 
 if __name__ == '__main__':

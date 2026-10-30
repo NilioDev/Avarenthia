@@ -27,6 +27,16 @@ Each line: **what** - what to check - what the debug menu should offer.
   for the bell), Time (a winter night).
 
 
+## Boss fights part C: the boss maker (built 30 October 2026)
+
+- **Job bosses** - "A price on a head" on a town board or from the captain, the rumour in the job, the fight with
+  its rhythm, phases and traits (a twin, wounds that close); a nest, shrine, boats, missing or deserter job ends in
+  a boss. Debug: Jobs (make one), Teleport, Level.
+- **The end of it** - a man or woman who yields (kill, let go, hand over), a beast's parts, the chronicle line.
+- **Fixed bosses** - the line on the floor above, the thing on the boss's floor, carried into the fight. Debug:
+  Teleport to a dungeon with a boss, its depth.
+
+
 ## Trade part 2: goods and ways (built 30 October 2026)
 
 - **Named goods and master works** - the market list's * goods at their maker and far away, the note at the foot,

@@ -1141,6 +1141,9 @@ def pre(game, mon):
     bs = st(mon)
     if bs is None:
         return False
+    if mon.__dict__.get('maker'):
+        from . import bossmaker as MK
+        MK.on_turn(game, mon)
     c = mon.__dict__.get('cast')
     if mon.hold > bs['seen_hold']:
         if c and c['brk']:
@@ -1204,6 +1207,8 @@ def engage(game, mon):
         return
     bs['engaged'] = True
     game.banner = [mon.name.upper(), None]
+    from . import bossmaker as MK
+    MK.boon_edge(game, mon)
     ar = arena_of(game, mon)
     if ar:
         if 'helper' in bs['prep'] and not helpers(game, mon):
@@ -1335,6 +1340,10 @@ def spare(game, mon):
         mon.hp = max(1, round(mon.maxhp * ph[cur + 1]['at']))
         bs['pending'] = cur + 1
         return True
+    if mon.__dict__.get('maker'):
+        from . import bossmaker as MK
+        if MK.yields(game, mon):
+            return True
     ar = arena_of(game, mon)
     if ar and any(game.map.tile(*c) == D.SHARD for c in ar.get('shards', ())):
         m = game.map
@@ -1368,6 +1377,9 @@ def felled(game, mon):
     if st(mon) is None:
         return
     game.banner = ['FOE FELLED', None]
+    if mon.__dict__.get('maker'):
+        from . import bossmaker as MK
+        MK.felled(game, mon)
     ar = game.map.__dict__.get('arena')
     if ar and ar.get('boss') == mon.id:
         open_up(game, ar, True)

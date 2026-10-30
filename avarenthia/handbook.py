@@ -167,6 +167,15 @@ def ch_fighting(g):
               'the stair, and it does not heal while it hunts.'),
         ('p', 'When a great boss falls, three of its things lie there: a weapon, a piece of armour and a jewel. Take '
               'one; the other two break as you lift it.'),
+        ('p', 'Jobs have bosses too, each one made for its world: a mage of a school, a necromancer, a witch, a '
+              'champion, a band leader, a hunter, a great beast, a dead lord and more. Each has a name, a deed and '
+              'one rumour, written in the job: a move to watch for, or what it cannot abide. Some have something '
+              'more: armour, a ward against spells, wounds that close unless they burn, a twin. A town or the captain '
+              'may put a price on a head. A boss of the people may yield at the end: kill, let go, or hand over to '
+              'the law, which pays a quarter more. A beast leaves parts of its body; men leave what they carried.'),
+        ('p', 'The floor above a great boss tells of it, if you look. Its own floor hides one thing it cannot '
+              'abide, a flask of holy water or the like. Carry it into the fight, and it starts a step from '
+              'staggering.'),
         ('h', 'Running away'),
         ('p', 'Wolves are fast; bandits are not. Walk off the edge of the field to get away, or onto a road: the '
               'patrols are there.'),

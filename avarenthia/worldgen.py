@@ -344,6 +344,8 @@ def gen_dungeon(game, did, depth):
     if last:
         from . import bosses as BS
         BS.on_level(game, m)                    # the boss's room behind its veil of mist
+    from . import bossmaker as MK
+    MK.on_level(game, m, d, depth)              # the floor above tells of it; its floor hides what eases it
     return m
 
 

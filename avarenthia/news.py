@@ -200,7 +200,7 @@ def r_captain(game, choice, ctx):
     elif choice == 'work':
         here = game.here
         extra = ['boats'] if here is not None and getattr(here, 'harbour', False) else []
-        offer(game, npc, 'captain', ['hunt', 'hunt', 'bounty', 'escort', 'defend', 'deserter', 'rescue'] + extra, 1.1,
+        offer(game, npc, 'captain', ['hunt', 'hunt', 'bounty', 'head', 'escort', 'defend', 'deserter', 'rescue'] + extra, 1.1,
               '"The garrison pays for these:"')
 
 
