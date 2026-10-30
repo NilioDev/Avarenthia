@@ -558,6 +558,20 @@ add('lifeskills', 'Skills', 'Life skills: herbs, drinks, fish, materials',
     f'<h3 class="gh">Archaeology: finds</h3><p>{e(ARW.__doc__.strip().splitlines()[0])}</p>'
     f'<div class="tw"><table><tr><th>Find</th><th>Worth (silver)</th><th>Tiers</th></tr>{ar_rows}</table></div>')
 
+# ---------------------------------------------------------------- trade: the goods beyond the plain ones
+import avarenthia.tradegoods as TGW
+nm_rows = ''.join(f'<tr class="entry"><td>{e(pat.replace("{a}", "(area)").replace("{s}", "(town)"))}</td>'
+                  f'<td>{e(D.GOODS[good]["name"])}</td><td>{e(cond)}</td><td>x{mult}</td><td>{"yes" if per else ""}</td></tr>'
+                  for good, pat, cond, mult, per in TGW.NAMED)
+ex_rows = ''.join(f'<tr class="entry"><td>{e(v["name"])}</td><td>{v["base"]}</td><td>{e(kind)}</td></tr>'
+                  for kind, tab in (('far', TGW.FAR), ('barter', TGW.BARTERED), ('contraband', TGW.CONTRA)) for v in tab.values())
+add('trade', 'Skills', 'Trade: named goods, far goods, barter',
+    f'<p>{e(TGW.__doc__.strip().splitlines()[0])} {badge("built")}</p>',
+    f'<h3 class="gh">Named goods (12-15 per world)</h3><div class="tw"><table><tr><th>Name</th><th>Good</th><th>Where</th>'
+    f'<th>Dearer</th><th>Spoils</th></tr>{nm_rows}</table></div>'
+    f'<h3 class="gh">Far, bartered and forbidden goods</h3><div class="tw"><table><tr><th>Good</th><th>Base (silver)</th>'
+    f'<th>Kind</th></tr>{ex_rows}</table></div>')
+
 # ---------------------------------------------------------------- the handbook, from a real game
 with contextlib.redirect_stdout(io.StringIO()):
     g = E.Game('Wiki', False, 1)

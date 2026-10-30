@@ -895,11 +895,12 @@ def talk(game, npc):
 
 def trader(game, npc, site):
     from . import events as EV
+    from . import tradegoods as TG
     if site.kind == 'kobolds':
         EV.ask(game, 'tribe', npc.name, '"Friend of the caves! Ore, cheap, cheap. A guide to the deep holes. '
                'Or something shiny for us? We pay well for shiny."',
                [(f'Buy iron ore ({fmt(ORE_PRICE)} a load)', 'ore'), (f'Ask for a guide ({fmt(GUIDE)})', 'guide'),
-                ('Sell them something shiny', 'shiny'), ('Goodbye', 'bye')], npc=npc.id)
+                ('Sell them something shiny', 'shiny')] + TG.barter_opts(game, 'kobolds') + [('Goodbye', 'bye')], npc=npc.id)
         return
     key = f'tribe{site.id}'
     if game.day - getattr(site, 'stock_day', -99) >= 5 or key not in game.shops:
@@ -911,6 +912,8 @@ def trader(game, npc, site):
     opts = [('See the goods', 'shop')]
     if site.kind == 'warcamp' and any(o.is_npc and getattr(o, 'tjob', '') == 'captive' for o in game.map.mons):
         opts.append((f'Buy a captive\'s freedom ({fmt(RANSOM)})', 'ransom'))
+    if site.kind == 'warcamp':
+        opts += TG.barter_opts(game, 'warcamp')
     opts.append(('Goodbye', 'bye'))
     EV.ask(game, 'tribe', npc.name, text, opts, npc=npc.id)
 
@@ -939,6 +942,10 @@ def r_tribe(game, choice, ctx):
     site = game.world.sites[m.site]
     npc = next((o for o in m.mons if o.id == ctx.get('npc')), None)
     p = game.player
+    if choice and choice.startswith('barter:'):
+        from . import tradegoods as TG
+        TG.barter(game, choice[7:])
+        return
     if choice == 'attack':
         rouse(game, m, 'attack')
     elif choice == 'toll':

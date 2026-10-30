@@ -37,6 +37,7 @@ from . import beastparts as BP
 from . import foraging as FG
 from . import mastery as MA
 from . import archaeology as AR
+from . import tradegoods as TG
 from . import ai as AI
 from . import weather as WX
 from . import dress as DR
@@ -85,7 +86,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 52
+SAVE_VERSION = 53
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -230,6 +231,7 @@ class Game:
             st.services = WO.settlement_services(st)
         GU.setup(world)
         ECO.init_markets(world)
+        TG.init(world, self.seed)
         home = world.settlements[0]
         self.over_pos = (home.x, home.y)
         # you know nothing of the land: only where Thornfield lies, a short walk from the temple
@@ -281,6 +283,9 @@ class Game:
         ECO.faction_rep = lambda st: self.player.rep.get(st.faction, 0)
         ECO.race_factor = lambda st: RC.price_factor(self, getattr(st, 'race', 'human'))
         ECO.today = lambda: SE.doy(self.day)
+        ECO.league = lambda: TG.league_discount(self)
+        TG.WORLD[0] = self.world
+        TG.install(self.world)
 
     def new_id(self):
         self._next_id += 1
@@ -845,6 +850,7 @@ class Game:
         if esc:
             esc.x, esc.y = s.x, s.y
         self.msg(f'You enter {s.name}.', 'info')
+        TG.at_gate(self, s)
         LV.on_enter_town(self, s, m)
         MC.restock(self)
         MS.on_enter(self, sid)
@@ -3324,6 +3330,7 @@ class Game:
                 CK.at_inn(self, here, npc)
                 from . import brewing as BRW
                 BRW.at_inn(self, here, npc)
+                TG.inn_news(self, here, npc)
             self.request = (role, here.id if here else 0)
             return
         if role == 'tanner':
@@ -3491,7 +3498,8 @@ class Game:
             return
         if role == 'herbalist':
             from . import foraging as FG
-            FG.herbalist_talk(self, npc)
+            if not TG.alchemist(self, npc):
+                FG.herbalist_talk(self, npc)
             return
         if role == 'fisher':
             self.fisher_talk(npc)

@@ -352,6 +352,7 @@ def cove_map(game, site):
 def cove_talk(game, npc, site):
     """The tavern, the fence and the captain. True if handled."""
     from . import events as EV
+    from . import tradegoods as TG
     job = getattr(npc, 'tjob', '')
     if job == 'tavern':
         EV.ask(game, 'cove', npc.name, '"Rum, and a bed in the back. Nobody asks your name; nobody tells it."',
@@ -359,8 +360,8 @@ def cove_talk(game, npc, site):
         return True
     if job == 'trader':
         EV.ask(game, 'cove', npc.name, '"Anything that fell off a ship, I buy. Anything that never paid a toll, I sell."',
-               [('See the goods', 'shop'), (f'Buy a load of smuggled spice ({fmt(CONTRABAND_PRICE)})', 'spice'),
-                ('Goodbye', 'bye')], npc=npc.id)
+               [('See the goods', 'shop'), (f'Buy a load of smuggled spice ({fmt(CONTRABAND_PRICE)})', 'spice')] +
+               TG.cove_opts(game) + [('Goodbye', 'bye')], npc=npc.id)
         return True
     if job == 'chief':
         EV.ask(game, 'cove', npc.name, '"Drink, trade, and keep your blade in its sheath. The cove is free to anyone who '
@@ -375,6 +376,10 @@ def r_cove(game, choice, ctx):
     from . import economy as ECO
     p, m = game.player, game.map
     site = game.world.sites[m.site]
+    if choice == 'lotus':
+        from . import tradegoods as TG
+        TG.cove_sell(game)
+        return
     if choice == 'attack':
         TR.rouse(game, m, 'attack')
     elif choice == 'shop':

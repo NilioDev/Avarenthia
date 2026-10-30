@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: cities that grew** | Cities and the metropolis are no longer a grid: they grow like old European towns round a heart that fits the ruler (cathedral and great market, a burgh, or an emperor's walled palace), with winding streets, row houses that share their walls, the line of an old wall as a ring street, a wall with towers and a moat. Flat harbour towns get canal rings. Bigger: a metropolis 360x220, a city 240x140. Each other people builds its own way (dwarves plan, halflings ramble, orcs grow rings of huts). Not built yet |
 | **Approved: old places on the land** | More points of interest born from the made history: old battlefields, deserted villages, broken bridges, memorials, quarries, wrecks, hermitages, leper colonies, marks of the peoples; overgrown Varnish cities found only by walking, with hidden dungeons beneath. Then newer places (logging camps, war camps, beacons, lighthouses...). The old places of part A are built (24 October 2026), the Varnish too (25 October 2026), archaeology too (30 October 2026); the rest is not |
 | **Approved: the great evils as storyteller** | One ultimate evil, the Hollow King, the old shadow of the Varnish in the hidden Sky-Seat; under him three servants per world (one light, one middle, one heavy, from 24 kinds), each pushing the realms and powers with its own goal; a slow clock and a clock of his attention; one long quest with relics, the chains and the Sky-Seat's five floors. Replaces `evils.py`'s growth. Parts 1 and 2 built 29 October 2026 (`shadow.py`, `skyseat.py`, eight kinds). Not built: the other sixteen servants in rounds 31-32 |
-| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026; not built: rounds 22, 26, and the great fair with the feast days in 28 |
+| **Approved: trade as a way to play** | Fairer money (dear goods bend harder, routes tire), famous goods of a region with good and bad years, master makers, contraband, barter, monster goods, spoiling, far goods, war trade, market news, the great fair, League rank; your own caravan of up to 3 wagons with crew; travel with, trade with and race the NPC caravans. Part 1, the money fixes, built 29 October 2026, part 2, goods and ways, built 30 October 2026; not built: round 26 and the great fair with the feast days in 28 |
 | **Approved: boss fights** | Bosses fight like a turn-based soulslike: great blows marked on the ground with a countdown, a rhythm drawn from a deck, phases at two thirds and one third, a spent moment after the heaviest blow, breaking casts, helpers with a job, twins, sealed arenas with one hard way out, roaming bosses. A move library from our own spells and weapon skills, and a maker of bosses for jobs ("kill the mage in the tower"). Parts A and B, the kit and the library with every fixed boss and the roaming bosses, built 29 October 2026; not built: the maker and the job bosses in 23 |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
@@ -60,9 +60,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     master tests, perks, hirelings' gear, named beasts' dens, catching alive, the great masters. Built 30 October 2026
     (see `docs/built.md`).
 21. **Archaeology** (M). Built 30 October 2026 (see `docs/built.md`).
-22. **Trade part 2: goods and ways** (L): named goods of a region with good and bad years, master makers, barter,
-    monster goods, spoiling, need far away, far goods, contraband, war trade, market news, rank with the Merchant
-    League; after the life skills, because it leans on brewing, Skinning, Smithing and the named beasts.
+22. **Trade part 2: goods and ways** (L). Built 30 October 2026 (see `docs/built.md`).
 23. **Boss fights part C: the boss maker and the job bosses** (L): the 15 bases, traits, names and rumours, "A price
     on a head" and bosses for the other jobs; after the life skills, so that beasts drop materials of their body for
     the crafts. Pause after 19, 20, 21 and 22, merge after 23.
@@ -399,7 +397,7 @@ its blight, hunters and whispers stay (the whispers go over the rule "no taunts"
 
 ---
 
-## Trade as a way to play (approved 25 October 2026, not built; rounds 14, 22, 26 and the great fair in 28)
+## Trade as a way to play (approved 25 October 2026; rounds 14 and 22 built, not built: 26 and the great fair in 28)
 
 Nilio (thread "Handelssysteem en waren doorlichten"): trade should be a full way to play the game, for players who
 want to play it differently. Builds on `economy.py` (19 goods, stock-driven prices, NPC caravans in `wanderers.py`).
@@ -413,32 +411,9 @@ rank; at the top the dear goods, named goods, masterworks and far goods. The roa
 cost too much to buy in bulk early, and small towns hold only a few of them. Neighbouring villages differ enough that
 the first short trips always pay a little.
 
-**Goods with a name.** Each world picks 12-15 famous goods of a region (`world.areas`), named after it: Amber Coast
-Wine, Thornwood Mead, Highfells Wool, halfling pipe-weed, one dwarf hold's stout. Dearer than the plain good, best sold
-far from home, made known by rumours and news ("the duke drinks only Amber Coast"). The maker has only a few each
-season. Good and bad years: a hail summer spoils a region's harvest (dearer), a good year makes a sought-after vintage.
-Every kind comes from several regions and peoples (the rule: never one people or one place).
-
-**Master makers.** In some towns a master smith, weaver, brewer or goldsmith makes a few masterworks a season (a
-dress sword, a tapestry, a silver cup). Trade goods, not gear: no loot. Brought to a baron, a temple or a rich town that
-asks; sometimes as an order ("bring me an Ironhills cup before winter").
-
-**More ways to trade.**
-- Contraband: a realm or the church bans a good (black lotus, untaxed salt, stolen relics); the Watch searches you at a
-  city gate; Cunning hides it; a fence or the pirate cove pays well.
-- Barter with peoples without coin: kobolds want shiny things, orcs salt and arms, elves only barter; what they give is
-  sold nowhere else.
-- Monster goods: troll fat, dragon scale, spider silk, sold to alchemists in the cities (ties into Skinning and the
-  named beasts).
-- Spoiling: fish, fruit and milk go off on the way, like ice melts; speed or salt wins.
-- Need far away: a snowed-in pass village or a besieged city pays three times as much, if you get there.
-- Far goods: silk, incense, porcelain and dyes come only by the big merchant ship or the oasis caravans.
-- War trade: arms to both sides pays a fortune; when it comes out, it costs standing.
-- Market news: a traveller or innkeeper tells what is dear far away; news a few days old, so it may have changed.
-- The great fair: once a year one city's fair wants everything (with the feast days).
-- Merchant rank with the Merchant League (the faction exists): better prices and the best orders; at the top a title
-  and a League caravan to escort.
-Left out on purpose (they do not come across in a roguelike): a shop of your own, a bank, shares.
+**Goods and ways:** built 30 October 2026 (round 22, see `docs/built.md`): named goods, master makers, far goods,
+barter, monster goods, spoiling, need far away, contraband, war trade, market news, rank with the Merchant League. Still
+here for later: the great fair (with the feast days, round 28).
 
 **Your own caravan.**
 - Buy a wagon at a wagonmaker: up to 3 (more with League rank), ~150 cargo each, each needs a mule or an ox (the ox

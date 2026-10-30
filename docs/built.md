@@ -23,6 +23,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: magic schools** | Each school one role and one rule on the map (fire burns, frost walls, storm through water, shadow costs life, necromancy uses corpses, nature makes root and thorn tiles, beastcraft works through the beast); eight tome skills per school and Warcraft (72); guild techniques adjusted; Packmaster lets you keep two beasts |
 | **Built: debug menu and test build (23 Oct)** | Two downloads from every CI build, the game and "Avarenthia (test)"; F12 opens the debug menu there (or `--debug` from the source): snapshots, a bug report, the world, the player and the rest; its own `debug.sav` |
 | **Built: temples, towers and barrows (24 Oct)** | Every people's temple, tower and barrow on its own land; tower floors with the land below in a haze and a lookout on top; edges and falls; a deep place below each temple, some over something older; wardens by standing; the bier wakes its king |
+| **Built: trade part 2, goods and ways (30 Oct)** | Named goods of a region (12-15 per world) with good and bad years and three or four master works; far goods by sea and the south; barter with kobolds, orcs and elves; beast parts to a city's alchemists; spoiling; need far away; black lotus and the Watch at the gates; war trade; market news at the inn; rank with the Merchant League |
 | **Built: archaeology (30 Oct)** | A twelfth life skill: dig spots at old places and Varnish ruins, seen by rank and dug with a trowel; you learn only at places of your own height; lore and riddle pieces, a source of the servants' weaknesses, old pieces a smith mends into gear with an old power (Varnish work wants star-iron), finds a city library buys |
 | **Built: life skills part 2 (30 Oct)** | Every beast gives parts, and a part is the power a maker chooses (two from rank 40), better from stronger beasts; parts broken off big beasts; named beasts give parts of their own nature and keep a den; catching one alive for a lord, a cage in his yard; Unmake from rank 40; a master's test at 25 and 40; orders on the boards; perks at 30, 40 and 50; the three great masters and their test; mending for your hireling and the town; boots for the road, a bedroll, barding |
 | **Built: life skills part 1 (30 Oct)** | Slow crafts that teach only work at your height (grey, green, yellow, orange), the first time double; Herbalism in Foraging; 51 herbs with two properties each and alchemy without recipes (draughts, oils, a sleeping flask, the Starlight Elixir, tinctures); ten drinks, learnt per people, dearer far away, a barrel, a round, a gift; fish, ore, cloth, leather and game by tier; Smithing at the anvil and Tailoring at the bench, the material sets the grade and a property, the work crude, fine or masterwork |
@@ -692,6 +693,60 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   buys at half again their value (`scribe_opts`). Debug: the flag "Old finds" keeps finds whole; Give item (trowel,
   old pieces). Handbook: Your hero (life skills list), Crafts (Archaeology), the Varnish forge line, Weaknesses.
   Test `archaeology`. SAVE_VERSION 52.
+
+- **Round 22: trade part 2, goods and ways** (30 October 2026; `tradegoods.py`). Extra goods beyond the nineteen
+  (`D.GOODS` keys not in `GOOD_ORDER`, put in by `install` after making or loading a world): 12-15 named goods per
+  world (`NAMED`: good, name after the area or town, where it can be made, how much dearer, spoils), one maker town
+  each; three or four master works (`MASTER`: cup, tapestry, dress sword, brooch); far goods (`FAR`: silk, incense,
+  porcelain, dyes, stocked only in harbour cities and the far south); barter goods (`BARTERED`, `BARTER`: kobolds give
+  glowcaps for gems, orcs hides for salt, elves moonsilk for salt); contraband (`CONTRA`: black lotus, stocked in swamp
+  towns). An extra good has its own reference stock (`ref` = three of it): a few at the maker, almost none elsewhere,
+  so it is cheap at home and dear far off, plus up to 40% more by the road from home (`factor`). Each new year a
+  named good has a plain, bad (x1.4, less made) or famous year (x1.25, more made; `years`, news). Every day
+  (`daily`): spoiling of fruit, fish and perishable named goods (5% a day in summer, 1.5% in winter, less with salt
+  in the cargo); now and then a need (`world.trade['need']`): a cold or hill village snowed in in winter wants grain,
+  a city of a realm at war under siege wants medicine, at three times the price with none to buy. Arms cost 1.6 times
+  in a realm at war; selling them to both sides (`p.arms_to`) comes out one time in three: favour -15 with both
+  crowns, League -5. Markets will not deal in lotus (`refuse`, except buying it in a swamp town); the Watch searches
+  at the gate of towns and cities (`at_gate`, 30%, half for Cunning): lotus taken, a fine, a crime; the cove's fence
+  pays twice its base (`cove_sell`). A city's herbalist buys beast parts at twice their worth (`alchemist`). An inn
+  now and then has a carter's prices from a far town, a few days old, put into the market list (`inn_news`). League
+  rank by profit (`p.league_profit`; Associate 5g, Member 25g, Master Trader 100g, Merchant Prince 300g): 2% better
+  prices a step (`ECO.league`), better paid factor's work, a League caravan to guard at the top; the factor tells
+  your standing. Cities ask for a master work on their boards (job 'masterwork'). Market list: extra goods that are
+  here, in your cargo or needed (`rows`), marked * or ×, a note on the selected good; the screen is 110 wide.
+  Handbook: Jobs and money, Trade. Test `trade_goods`. SAVE_VERSION 53. Not built here: the great fair (with the
+  feast days) and the ladder's small supply orders (with the caravans).
+
+## Trade part 2: goods and ways (built 30 October 2026; the spec)
+From "Trade as a way to play" (approved 25 October 2026; the caravans and the great fair are still in `docs/plan.md`):
+
+**Goods with a name.** Each world picks 12-15 famous goods of a region (`world.areas`), named after it: Amber Coast
+Wine, Thornwood Mead, Highfells Wool, halfling pipe-weed, one dwarf hold's stout. Dearer than the plain good, best sold
+far from home, made known by rumours and news ("the duke drinks only Amber Coast"). The maker has only a few each
+season. Good and bad years: a hail summer spoils a region's harvest (dearer), a good year makes a sought-after vintage.
+Every kind comes from several regions and peoples (the rule: never one people or one place).
+
+**Master makers.** In some towns a master smith, weaver, brewer or goldsmith makes a few masterworks a season (a
+dress sword, a tapestry, a silver cup). Trade goods, not gear: no loot. Brought to a baron, a temple or a rich town that
+asks; sometimes as an order ("bring me an Ironhills cup before winter").
+
+**More ways to trade.**
+- Contraband: a realm or the church bans a good (black lotus, untaxed salt, stolen relics); the Watch searches you at a
+  city gate; Cunning hides it; a fence or the pirate cove pays well.
+- Barter with peoples without coin: kobolds want shiny things, orcs salt and arms, elves only barter; what they give is
+  sold nowhere else.
+- Monster goods: troll fat, dragon scale, spider silk, sold to alchemists in the cities (ties into Skinning and the
+  named beasts).
+- Spoiling: fish, fruit and milk go off on the way, like ice melts; speed or salt wins.
+- Need far away: a snowed-in pass village or a besieged city pays three times as much, if you get there.
+- Far goods: silk, incense, porcelain and dyes come only by the big merchant ship or the oasis caravans.
+- War trade: arms to both sides pays a fortune; when it comes out, it costs standing.
+- Market news: a traveller or innkeeper tells what is dear far away; news a few days old, so it may have changed.
+- The great fair: once a year one city's fair wants everything (with the feast days).
+- Merchant rank with the Merchant League (the faction exists): better prices and the best orders; at the top a title
+  and a League caravan to escort.
+Left out on purpose (they do not come across in a roguelike): a shop of your own, a bank, shares.
 
 ## Archaeology (built 30 October 2026; the spec)
 From "Old places on the land" (approved 23 October 2026):

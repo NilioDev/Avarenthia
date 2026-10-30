@@ -163,17 +163,23 @@ def r_newsjob(game, choice, ctx):
 
 def talk_factor(game, npc):
     from . import events as EV
+    from . import tradegoods as TG
     EV.ask(game, 'factor', npc.name, '"The Merchants\' Guild has goods to move and letters to carry, and pays those who '
            'move them. And if you trade on your own account, I can tell you what I hear."',
-           [('Ask for trade work', 'work'), ('What is selling where?', 'prices'), ('Goodbye', 'bye')], npc=npc.id)
+           [('Ask for trade work', 'work'), ('What is selling where?', 'prices')] + TG.factor_opts(game) +
+           [('Goodbye', 'bye')], npc=npc.id)
 
 
 def r_factor(game, choice, ctx):
     npc = next((o for o in game.map.mons if o.id == ctx.get('npc')), None)
     if not npc:
         return
+    from . import tradegoods as TG
+    if TG.r_factor(game, npc, choice):
+        return
     if choice == 'work':
-        offer(game, npc, 'factor', ['freight', 'courier', 'rush', 'debt', 'cargo'], 1.2, '"Here is what the Guild needs done:"')
+        offer(game, npc, 'factor', ['freight', 'courier', 'rush', 'debt', 'cargo'], 1.2 + .1 * TG.rank(game),
+              '"Here is what the Guild needs done:"')
     elif choice == 'prices':
         game.say(npc, trade_gossip(game))
 

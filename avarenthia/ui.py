@@ -3718,7 +3718,7 @@ def _stock_word(s, g):
 
 
 class MarketScreen(Modal):
-    BOX_W, BOX_H = 104, 30
+    BOX_W, BOX_H = 110, 30
 
     def __init__(self, app, sid):
         super().__init__(app)
@@ -3730,10 +3730,18 @@ class MarketScreen(Modal):
     def settlement(self):
         return self.game.world.settlements[self.sid]
 
+    def goods(self):
+        from . import tradegoods as TG
+        return TG.rows(self.game, self.settlement)
+
     def render(self, cv):
+        from . import tradegoods as TG
         g = self.game
         s = self.settlement
         p = g.player
+        rows = self.goods()
+        self.sel = min(self.sel, len(rows) - 1)
+        self.BOX_H = MarketScreen.BOX_H + max(0, len(rows) - len(D.GOOD_ORDER))
         x, y = self.box(cv, self.BOX_W, self.BOX_H, f'{s.name} market')
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
         cv.text(x + 2, y + 1, f'Purse {fmt(p.gold)}', GOLD, PANEL)
@@ -3742,51 +3750,57 @@ class MarketScreen(Modal):
         if s.event:
             cv.wrap(x + 56, y + 1, self.BOX_W - 58, D.EVENTS[s.event[0]]['text'].format(town=s.name), INFO, PANEL, 2)
         hdr = y + 3
-        cols = [(4, 'Good'), (22, 'Buy'), (29, 'Sell'), (36, 'Stock'), (45, 'Yours'), (53, 'Paid'), (60, 'Best known sale elsewhere')]
+        cols = [(4, 'Good'), (30, 'Buy'), (37, 'Sell'), (44, 'Stock'), (53, 'Yours'), (61, 'Paid'), (68, 'Best known sale elsewhere')]
         for cx, t in cols:
             cv.text(x + cx, hdr, t, DIM, PANEL)
-        for i, gk in enumerate(D.GOOD_ORDER):
+        for i, gk in enumerate(rows):
             yy = hdr + 1 + i
             sel = i == self.sel
             bg = (52, 40, 28) if sel else PANEL
             cv.fill(x + 2, yy, self.BOX_W - 4, 1, ' ', FG, bg)
-            mark = '+' if gk in s.produce else '!' if gk in s.demand else ' '
-            cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark == '!' else DIM, bg)
+            mark = TG.mark(g, s, gk) or ('+' if gk in s.produce else '!' if gk in s.demand else ' ')
+            cv.text(x + 2, yy, mark, GOOD if mark == '+' else BAD if mark in ('!', '×') else GOLD if mark == '*' else DIM, bg)
             cv.text(x + 4, yy, D.GOODS[gk]['name'], FG, bg)
-            cv.text(x + 22, yy, fmt(ECO.buy_price(s, gk), True), FG, bg)
-            cv.text(x + 29, yy, fmt(ECO.sell_price(s, gk, ECO.fair_day(g, s), ECO.tired(g, s, gk)), True), FG, bg)
+            cv.text(x + 30, yy, fmt(ECO.buy_price(s, gk), True), FG, bg)
+            cv.text(x + 37, yy, fmt(ECO.sell_price(s, gk, ECO.fair_day(g, s), ECO.tired(g, s, gk)), True), FG, bg)
             sw = _stock_word(s, gk)
-            cv.text(x + 36, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
+            cv.text(x + 44, yy, sw, {'none': BAD, 'scarce': BAD, 'some': FG, 'plenty': GOOD}[sw], bg)
             have = p.cargo.get(gk, 0)
-            cv.text(x + 45, yy, str(have) if have else '-', GOLD if have else DIM, bg)
+            cv.text(x + 53, yy, str(have) if have else '-', GOLD if have else DIM, bg)
             if have and gk in p.cost_basis:
-                cv.text(x + 53, yy, fmt(p.cost_basis[gk], True), DIM, bg)
+                cv.text(x + 61, yy, fmt(p.cost_basis[gk], True), DIM, bg)
             best = ECO.best_known_sale(g, gk, s.id)
             if best:
                 v, bsid, day = best
                 age = g.day - day
                 col = GOOD if v > ECO.buy_price(s, gk) else DIM
-                cv.text(x + 60, yy, f"{fmt(v, True)} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
+                cv.text(x + 68, yy, f"{fmt(v, True)} in {g.world.settlements[bsid].name} ({'today' if age == 0 else f'{age}d ago'})", col, bg, maxw=42)
         cheap, dear = ECO.in_season(SE.doy(g.day))
         names = lambda gs: ', '.join(D.GOODS[k]['name'] for k in gs) or 'nothing'
         cv.text(x + 2, y + self.BOX_H - 5, f'In season, cheap now: {names(cheap)}.', GOOD, PANEL, maxw=self.BOX_W - 4)
         cv.text(x + 2, y + self.BOX_H - 4, f'Out of season, dear now: {names(dear)}.', BAD, PANEL, maxw=self.BOX_W - 4)
+        sg = rows[self.sel]
         cv.text(x + 2, y + self.BOX_H - 3, '+ made here (cheap)   ! wanted here (sells high)   weight: ' +
-                f"{D.GOODS[D.GOOD_ORDER[self.sel]]['name']} {D.GOODS[D.GOOD_ORDER[self.sel]]['w']} per unit", DIM, PANEL)
+                f"{D.GOODS[sg]['name']} {D.GOODS[sg]['w']} per unit", DIM, PANEL, maxw=self.BOX_W - 4)
+        nt = TG.note(g, s, sg)
+        if nt:
+            cv.text(x + 2, y + self.BOX_H - 6, f"{D.GOODS[sg]['name']}: {nt}.", GOLD, PANEL, maxw=self.BOX_W - 4)
         cv.text_center(W // 2, y + self.BOX_H - 1, ' ↑↓ select · b/s buy or sell 1 · B/S buy or sell 10 · A sell all · Esc leave ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         g = self.game
         s = self.settlement
-        gk = D.GOOD_ORDER[self.sel]
+        rows = self.goods()
+        self.sel = min(self.sel, len(rows) - 1)
+        gk = rows[self.sel]
         if tok == 'esc':
             ECO.record_prices(g, s)
             self.app.pop()
             return
         if tok in ('up', 'np8', 'k'):
-            self.sel = (self.sel - 1) % len(D.GOOD_ORDER)
+            self.sel = (self.sel - 1) % len(rows)
         elif tok in ('down', 'np2', 'j'):
-            self.sel = (self.sel + 1) % len(D.GOOD_ORDER)
+            self.sel = (self.sel + 1) % len(rows)
         elif tok in ('b', 'B', 's', 'S', 'A'):
             g.log_mark = len(g.log)
             if tok in ('b', 'B'):

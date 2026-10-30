@@ -441,6 +441,24 @@ def ch_jobs(g):
               'out comes back slowly, over weeks. A market also remembers you: sell the same good in the same town '
               'again and again, and it pays less each time, until it forgets. Trade pays well, but never for '
               'ever on one road.'),
+        ('p', 'Some goods have a name: a region\'s wine, a hold\'s stout, the mead of a forest. The maker has only a '
+              'few, cheap at home and dear far away. Each new year brings a plain, a bad or a famous year for them. '
+              'In a few towns a master makes a cup, a tapestry or a dress sword a season; cities ask for them on '
+              'their boards. In the market list a good with a name has the mark * before it, and a line at the foot '
+              'tells where it is made.'),
+        ('p', 'Silk, incense, porcelain and dyes come only by sea to the harbour cities and with the caravans of the '
+              'far south. Kobolds, orcs and elves keep no coin: their traders barter gems, salt or arms for goods no '
+              'market sells. In a city the herbalist buys beast parts for the alchemists, at twice their worth.'),
+        ('p', 'Fruit and fish go off on the road, faster in summer; salt in your cargo slows it. A village snowed in, '
+              'or a city under siege, pays three times over for what it lacks, if you get through. In a realm at war '
+              'arms are dear. Sell them to both sides, and when it comes out neither crown forgives you.'),
+        ('p', 'Black lotus grows in the swamps. No market buys it in the open, the mark ×, and the Watch searches '
+              'cargo at the gates of towns and cities; Cunning makes you harder to search. The fence at the pirate '
+              'cove pays well for it.'),
+        ('p', 'Carters at the inn bring prices from far towns, a few days old: the market list remembers them. The '
+              'factor of the Merchant League keeps count of the profit you make. Enough of it, and the League gives '
+              'you a name: Associate, Member, Master Trader, Merchant Prince. Each step makes every market a little '
+              'kinder to you and the League\'s work better paid; a Merchant Prince may guard a League caravan.'),
     ]
 
 

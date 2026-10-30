@@ -378,6 +378,8 @@ def glade_talk(game, npc):
     opts = [('Ask about the Elder Tree', 'tree')]
     if not cold:
         opts.append(('Ask whether there are other glades', 'glades'))
+        from . import tradegoods as TG
+        opts += TG.barter_opts(game, 'glade')
     opts.append(('Take your leave', 'bye'))
     ask(game, 'glade', npc.name, text, opts, site=site.id)
 
@@ -385,6 +387,10 @@ def glade_talk(game, npc):
 def r_glade(game, choice, ctx):
     from .engine import dir_name
     site = game.world.sites[ctx['site']]
+    if choice and choice.startswith('barter:'):
+        from . import tradegoods as TG
+        TG.barter(game, choice[7:])
+        return
     if choice == 'tree':
         city = next((s for s in game.world.settlements if getattr(s, 'elder', False)), None)
         if city:

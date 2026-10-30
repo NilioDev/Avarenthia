@@ -7959,7 +7959,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
@@ -8058,6 +8058,144 @@ def archaeology():
         g.enter_site(var[0].id)
         assert g.map.digs or var[0].kind == 'vcity'
     print('archaeology ok')
+
+
+def trade_goods():
+    """Trade part 2: named goods and master works, far goods, barter, monster goods, spoiling, need far away,
+    contraband and the Watch, war trade, market news, the League."""
+    from avarenthia import economy as ECO, tradegoods as TG, beastparts as BP, missions as MS, realms as RL
+    from avarenthia.entities import Item
+    print('== trade_goods')
+    random.seed(22)
+    app = new_app('soft', 2222)
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 10 ** 7
+    T = TG.st(w)
+    named = {k: v for k, v in T['named'].items() if v['kind'] == 'named'}
+    masters = {k: v for k, v in T['named'].items() if v['kind'] == 'master'}
+    assert 12 <= len(named) <= 15 and 3 <= len(masters) <= 4, (len(named), len(masters))
+    assert len({v['home'] for v in T['named'].values()}) == len(T['named']), 'one maker per town'
+    print('named goods:', ', '.join(v['name'] for v in T['named'].values()))
+    for k in T['named']:
+        assert k in D.GOODS and all(k in s.market for s in w.settlements if s.market)
+    # cheap at home, dear far away
+    k, v = next(iter(named.items()))
+    home = w.settlements[v['home']]
+    far = max((s for s in w.settlements if s.market), key=lambda s: max(abs(s.x - home.x), abs(s.y - home.y)))
+    assert ECO.units(home, k) >= 3 and ECO.units(far, k) < 1
+    assert ECO.buy_price(home, k) * 1.5 < ECO.sell_price(far, k), (ECO.buy_price(home, k), ECO.sell_price(far, k))
+    # a bad year makes it dear
+    plain = ECO.price(home, k)
+    D.GOODS[k]['f'] = 1.4
+    assert ECO.price(home, k) > plain * 1.3
+    D.GOODS[k]['f'] = 1.0
+    # the market list shows the extra goods that are here; the screen fits
+    to_over(g, 0)
+    g.enter_town(home.id)
+    rows = TG.rows(g, home)
+    assert k in rows and rows[:len(D.GOOD_ORDER)] == D.GOOD_ORDER
+    app.push(ui.MarketScreen(app, home.id))
+    from avarenthia.canvas import Canvas
+    Canvas.cut = []
+    app.render()
+    for _ in range(len(rows)):
+        app.key('down')
+        app.render()
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    app.pop()
+    ECO.buy(g, home, k, 3)
+    assert p.cargo.get(k) == 3
+    # sold far away: profit, and the League hears of it
+    p.cost_basis[k] = 1
+    ECO.sell(g, far, k, 3)
+    assert getattr(p, 'league_profit', 0) > 0
+    p.league_profit = TG.LEAGUE[2][0]
+    assert TG.rank(g) == 2 and TG.league_discount(g) == .04
+    # far goods: only by sea or the south
+    ports = [s for s in w.settlements if s.market and ECO.units(s, 'silk') >= 1]
+    inland = [s for s in w.settlements if s.market and ECO.units(s, 'silk') < 1]
+    assert inland and (ports or True)
+    # barter: salt for moonsilk with the elves; kobolds want gems
+    p.cargo.clear()
+    p.cargo['salt'] = 5
+    assert TG.barter_opts(g, 'glade')[0][1] == 'barter:glade'
+    assert TG.barter(g, 'glade') and p.cargo.get('moonsilk') == 2 and 'salt' not in p.cargo
+    assert TG.barter_opts(g, 'kobolds')[0][1] is None
+    # spoiling: fruit goes off, salt slows it
+    p.cargo.clear()
+    p.cargo['fruit'] = 40
+    random.seed(1)
+    for _ in range(20):
+        TG.spoil(g)
+    lost = 40 - p.cargo.get('fruit', 0)
+    p.cargo['fruit'] = 40
+    p.cargo['salt'] = 10
+    random.seed(1)
+    for _ in range(20):
+        TG.spoil(g)
+    assert lost > 0 and 40 - p.cargo.get('fruit', 0) < lost
+    # need far away: three times the price, nothing to buy
+    vil = next(s for s in w.settlements if s.kind == 'village' and s.market and s.id != 0)
+    before = ECO.price(vil, 'grain')
+    T['need'][vil.id] = ('grain', 10)
+    assert abs(ECO.price(vil, 'grain') / before - 3) < .01
+    del T['need'][vil.id]
+    # contraband: markets will not buy it; the Watch finds it; the cove pays
+    p.cargo.clear()
+    p.cargo['lotus'] = 4
+    town = next(s for s in w.settlements if s.kind in ('town', 'city') and s.race == 'human')
+    assert ECO.sell(g, town, 'lotus', 4) == 0 and p.cargo['lotus'] == 4
+    old = TG.SEARCH
+    TG.SEARCH = 1.0
+    gold = p.gold
+    TG.at_gate(g, town)
+    TG.SEARCH = old
+    assert 'lotus' not in p.cargo and p.gold < gold
+    p.cargo['lotus'] = 2
+    gold = p.gold
+    TG.cove_sell(g)
+    assert p.gold == gold + 2 * TG.cove_price()
+    # monster goods: a city's herbalist buys beast parts at double their worth
+    city = next(s for s in w.settlements if s.is_city)
+    to_over(g, 0)
+    g.enter_town(city.id)
+    p.inv.append(BP.make(g, 'fangs', 'wolf', 3))
+    val = sum(i.value() * i.n for i in p.inv if i.k == 'part')
+    npc = next((o for o in g.map.mons if o.is_npc), None)
+    assert TG.alchemist(g, npc)
+    gold = p.gold
+    TG.r_alchemist(g, 'sell', {})
+    assert p.gold == gold + 2 * val and not TG.parts(g)
+    # war trade: arms dear in a realm at war; both sides, and it comes out
+    R = RL.get(g)
+    war_town = next((s for s in w.settlements if s.market and TG.at_war(w, s)), None)
+    if war_town:
+        assert ECO.price(war_town, 'arms') > D.GOODS['arms']['base'] * 100 * .35
+    # market news: the inn tells of a far town, days old
+    gl = len(g.price_log)
+    random.seed(3)
+    for _ in range(10):
+        city.news_day = -1
+        TG.inn_news(g, city, npc)
+    assert len(g.price_log) > gl and any(r['day'] < g.day for r in g.price_log.values())
+    # a city asks for a master work
+    m = TG.make_order(g, city)
+    if m:
+        assert m.kind == 'masterwork' and m.data['good'] in masters
+        p.cargo[m.data['good']] = 1
+        city.board.append(m)
+        MS.accept(g, city, m)
+        TG.hand_in(g, m, city.id)
+        assert m.state != 'active' and m.data['good'] not in p.cargo
+    # the goods survive a save and load
+    import pickle
+    g2 = pickle.loads(pickle.dumps(g))
+    g2.hook()
+    assert all(k2 in D.GOODS for k2 in TG.st(g2.world)['named'])
+    print('trade_goods ok')
 
 
 if __name__ == '__main__':

@@ -27,6 +27,20 @@ Each line: **what** - what to check - what the debug menu should offer.
   for the bell), Time (a winter night).
 
 
+## Trade part 2: goods and ways (built 30 October 2026)
+
+- **Named goods and master works** - the market list's * goods at their maker and far away, the note at the foot,
+  a bad or famous year (news at the new year), a city's board asking for a master work. Debug: Gold, Teleport to a
+  town, Time (to the new year).
+- **Far goods, barter, monster goods** - silk in a harbour city; barter at a kobold or orc trader and with an elven
+  elder; beast parts sold to a city herbalist. Debug: Teleport, Give item (parts), Gold.
+- **Spoiling, need, war, contraband** - fruit going off with and without salt; a snowed-in village or a besieged
+  city; arms dear in a war and sold to both sides; black lotus from a swamp town, the Watch at a gate (try with a
+  Cunning hero), the cove's fence. Debug: Time (winter), Teleport, the Realms section (a war).
+- **News and the League** - a carter at the inn, the factor's "Your standing with the League", better prices with
+  rank. Debug: Gold.
+
+
 ## Archaeology (built 30 October 2026)
 
 - **Dig spots** - at an old battlefield, a deserted village or a Varnish place: no spot without a trowel or rank,

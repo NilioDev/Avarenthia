@@ -1375,6 +1375,10 @@ def on_enter(game, sid):
             from . import mastery as MA
             MA.hand_in(game, m, sid)
             continue
+        if m.kind == 'masterwork':
+            from . import tradegoods as TG
+            TG.hand_in(game, m, sid)
+            continue
         if m.kind not in KINDS:
             continue
         d = m.data
@@ -1954,6 +1958,9 @@ def line(game, m):
     if m.kind in ('mastertest', 'order'):
         from . import mastery as MA
         return MA.line(game, m)
+    if m.kind == 'masterwork':
+        from . import tradegoods as TG
+        return TG.line(game, m)
     if m.kind == 'missing':
         ax, ay, r = d['area']
         return f'Last seen near {_region(game, ax, ay)} ({r} leagues around). Look for tracks.'

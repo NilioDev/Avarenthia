@@ -14,10 +14,11 @@ TIRE_HALF = 90.0             # this much sold (in stock) and a market pays you o
 faction_rep = lambda s: 0    # set by the game: the player's standing with a settlement's faction
 race_factor = lambda s: 1.0  # set by the game: how the townsfolk's race feels about yours
 today = lambda: 0            # set by the game: the day of the year, for the prices of the season
+league = lambda: 0           # set by the game: what your rank in the Merchant League takes off
 
 
 def _discount(s):
-    return max(-.2, min(.3, min(s.rep, 100) / 400 + faction_rep(s) / 500))
+    return max(-.2, min(.3, min(s.rep, 100) / 400 + faction_rep(s) / 500 + league()))
 
 
 def init_markets(world):
@@ -98,9 +99,10 @@ NIGHT = [1.0]           # the Long Night: everything a fifth dearer (skyseat.py 
 
 
 def price(s, g):
+    from . import tradegoods as TG
     stock = max(1.0, s.market[g][0])
-    f = (REF / stock) ** bend(g)
-    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100 * NIGHT[0]     # copper
+    f = (D.GOODS[g].get('ref', REF) / stock) ** bend(g)
+    return D.GOODS[g]['base'] * max(.35, min(3.2, f)) * season_factor(g) * 100 * NIGHT[0] * TG.factor(s, g)    # copper
 
 
 def buy_price(s, g):
@@ -142,7 +144,12 @@ def free_cargo(p):
 
 
 def buy(game, s, g, n=1):
+    from . import tradegoods as TG
     p = game.player
+    no = TG.refuse(game, s, g, False)
+    if no:
+        game.msg(no, 'bad')
+        return 0
     done = spent = 0
     for _ in range(n):
         pr = buy_price(s, g)
@@ -168,7 +175,12 @@ def buy(game, s, g, n=1):
 
 
 def sell(game, s, g, n=1):
+    from . import tradegoods as TG
     p = game.player
+    no = TG.refuse(game, s, g, True)
+    if no:
+        game.msg(no, 'bad')
+        return 0
     done = got = 0
     if not hasattr(p, 'tired'):
         p.tired = {}
@@ -190,18 +202,21 @@ def sell(game, s, g, n=1):
         on_craft(game, 'trade')
         cost = p.cost_basis.get(g)
         note = ''
+        profit = None
         if cost:
             profit = got - round(cost * done)
             note = f" ({'+' if profit >= 0 else '-'}{fmt(abs(profit))} profit)"
             if g not in p.cargo:
                 p.cost_basis.pop(g, None)
         game.msg(f"You sell {done} {D.GOODS[g]['name']} for {fmt(got)}{note}.", 'gold')
+        TG.after_sell(game, s, g, done, got, profit)
     return done
 
 
 def record_prices(game, s):
-    game.price_log[s.id] = {'day': game.day, 'buy': {g: buy_price(s, g) for g in D.GOOD_ORDER},
-                            'sell': {g: sell_price(s, g) for g in D.GOOD_ORDER}}
+    gs = [g for g in s.market if g in D.GOODS]
+    game.price_log[s.id] = {'day': game.day, 'buy': {g: buy_price(s, g) for g in gs},
+                            'sell': {g: sell_price(s, g) for g in gs}}
 
 
 def best_known_sale(game, g, exclude):
@@ -209,7 +224,9 @@ def best_known_sale(game, g, exclude):
     for sid, rec in game.price_log.items():
         if sid == exclude:
             continue
-        v = rec['sell'][g]
+        v = rec['sell'].get(g)
+        if v is None:
+            continue
         if not best or v > best[0]:
             best = (v, sid, rec['day'])
     return best
@@ -235,6 +252,8 @@ def melt(game):
 def daily(game):
     w = game.world
     melt(game)
+    from . import tradegoods as TG
+    TG.daily(game)
     p = game.player
     t = getattr(p, 'tired', None)
     if t:
