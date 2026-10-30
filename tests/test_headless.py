@@ -5091,8 +5091,7 @@ def debug_menu():
         menu('r')
         typed('the rat bit me')
         app.key('enter')
-        reports = os.path.join(os.path.dirname(E.save_path()), 'bug-reports')
-        last = os.path.join(reports, sorted(os.listdir(reports))[-1])
+        last = os.path.dirname(app.shot)                # this report's own folder (other runs may write theirs)
         for fn in ('report.txt', 'log.txt', 'keys.txt', 'screen.txt', 'save.dat'):
             assert os.path.exists(os.path.join(last, fn)), fn
         assert 'the rat bit me' in open(os.path.join(last, 'report.txt'), encoding='utf-8').read()

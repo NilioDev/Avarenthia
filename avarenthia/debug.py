@@ -124,8 +124,15 @@ def bug_report(app, note=''):
     from . import calendar as CAL
     game = app.game
     stamp = time.strftime('%Y%m%d-%H%M%S')
-    path = os.path.join(folder(), 'bug-reports', stamp)
-    os.makedirs(path, exist_ok=True)
+    base = os.path.join(folder(), 'bug-reports', stamp)
+    path, k = base, 1
+    while True:                                     # two reports in one second each get a folder of their own
+        try:
+            os.makedirs(path)
+            break
+        except FileExistsError:
+            k += 1
+            path = f'{base}-{k}'
     p = game.player
     lines = [f'What went wrong: {note or "(nothing written)"}',
              f'When: {time.strftime("%Y-%m-%d %H:%M:%S")}',
