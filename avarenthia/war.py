@@ -32,9 +32,9 @@ def standing(rep):
 
 
 def change_rep(game, f, amount, quiet=False):
-    if f is None or f == 'cult':
-        return
     p = game.player
+    if f is None or f == 'cult' or f not in p.rep:       # a power this world does not have
+        return
     before = is_hostile(game, f)
     p.rep[f] = max(-100, min(100, p.rep[f] + amount))
     after = is_hostile(game, f)
