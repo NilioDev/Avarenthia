@@ -56,7 +56,7 @@ LIFE = {
                       perks={5: 'Fewer crude pieces', 15: 'Fine work more often', 25: 'Masterwork now and then',
                              30: 'You mend on the road with cloth from your pack', 40: 'Two parts in a piece, and Unmake',
                              50: 'Masterwork more often; Unmake at full value'}),
-    'archaeology': dict(name='Archaeology', desc='Dig spots at old places and ruins (walk into one, with a trowel).',
+    'archaeology': dict(name='Archaeology', desc='Walk into a dig spot at an old place or a ruin, with a trowel.',
                         perks={3: 'You break fewer finds', 8: 'You see spots a little deeper down',
                                15: 'Old pieces turn up more often',
                                20: 'Old warnings of the great evils, among the bones',

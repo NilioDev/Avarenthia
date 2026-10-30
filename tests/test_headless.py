@@ -3048,7 +3048,7 @@ def nature_sites():
     from avarenthia import nature as NT, events as EV
     print('== nature and wonders')
     seen = set()
-    for seed in (12, 1, 5, 2):
+    for seed in (12, 1, 5, 2, 9):
         g = E.Game('Nature', False, seed=seed, race='human', gender='male')
         p = g.player
         p.gold = 5000
