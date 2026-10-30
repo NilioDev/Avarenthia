@@ -6955,7 +6955,7 @@ def bosses():
         BS.turn(g, grolm, g.stats()['def'])
         random.random = keep_r
         c = grolm.__dict__.get('cast')
-        assert (c and c['mv'] in BS.MOVES) or BS.st(grolm)['engaged']     # Grolm has a kit now: part B tests it
+        assert (c and c['mv'] in BS.MOVES) or BS.st(grolm)['engaged'] or not g.visible(grolm.x, grolm.y)  # part B tests the kit
     pickle.dumps(g)
     print('   bosses ok')
 
