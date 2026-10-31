@@ -400,3 +400,14 @@ three things. Test part `boss_moves`.
 - **The cache** - bump the wrong milestone, the robber's stone appears on the map. Debug: Teleport to the milestone.
 - **The Standing Night, the Loosing** - 21 Longnight by night beside the road of the bound dead; 14 Seedwake inside
   a wind tower. Debug: Time, Teleport.
+
+## A finer look, not busier (approved 31 October 2026)
+
+- **Remembered land and roads** - the world map out of sight in its own dull colours, roads calmer than towns. Debug:
+  reveal the map (Teleport far, or a reveal-map option).
+- **Each level's tint** - a den, an ice cave, a fire level, a drowned level, a crypt each remember in their own tint;
+  a mine with a fire or ice level below. Debug: Teleport to each kind, reveal the level.
+- **Fade-in** - stairs, gates and entrances, with effects full, short and off. Debug: none needed.
+- **Names and panel** - a name next to a sign and at the edge of the view; a target at full and low life; a long
+  name in IN SIGHT. Debug: Teleport, spawn a champion with a long name.
+
