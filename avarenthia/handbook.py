@@ -527,7 +527,8 @@ def ch_dungeons(g):
         ('p', 'Two or three rooms on a level hold one telling thing: an altar to pray at, shelves to search, a '
               'fountain, an anvil, a well, a gong, a mirror, a lever, a dice table. Walk into it to use it; a thing '
               'you can stand on, such as a summoning circle, the sign {·|224,72,72}, works when you step on it. Most '
-              'give only once, and some are better left alone.'),
+              'give only once, and some are better left alone. A lever or a stone in the floor may work something '
+              'else in the room: bars that lift, and drop again after a while.'),
         ('p', 'Some rooms keep their find: a vault behind a locked door, the sign {+|224,176,64}, whose key lies '
               'elsewhere on the level, often with a guard; a hidden door, which you notice as you pass; three '
               'plinths, the sign {º|200,192,176}, where you may take one thing and the rest sink away. Among warding '

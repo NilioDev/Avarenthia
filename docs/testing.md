@@ -407,6 +407,10 @@ three things. Test part `boss_moves`.
   test download; Try opens the game with the debug menu on.
 - **Puzzle things** - each of the 44 answers a bump or a step, resets with its lever, keeps its state when you come
   back. Debug: Teleport to an example puzzle room (one of each), "Reset this room".
-- **Creatures from lists, dressing in the game** - a room filled anew. Debug: Regenerate this level.
+- **Creatures from lists, dressing in the game** - a room filled anew. Debug: Theme room or river (a fresh level
+  round the piece), or F5 Try in the editor.
+- **Switches, counters, timers, "back as drawn"** - a lever works bars, a timer shuts them, the room goes back.
+  Debug: F5 Try in the editor on a room with them.
+- **Own tiles and things** - made with Ctrl+T, they show in the game with their own sign and look line. Debug: F5 Try.
 - **Whole places** - each lies in the world, its floors, its rumour and job. Debug: Teleport (drawn places in the
   list), Reveal map.

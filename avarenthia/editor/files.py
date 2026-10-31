@@ -114,3 +114,62 @@ def forget_cache():
     global _CACHE
     _CACHE = None
     P.load(force=True)
+
+
+# ------------------------------------------------------------------ own tiles and things (Ctrl+T)
+MY_TILES = 'my tiles.des'
+
+
+def own_spans(text):
+    """[(name, start line, end line)] of every TILE / OBJECT block in a file's text (end is the END line)."""
+    out, cur, start = [], None, 0
+    for i, line in enumerate(text.split('\n')):
+        st = line.strip()
+        head = st.split(':', 1)[0].strip().upper() if ':' in st else ''
+        if head in ('TILE', 'OBJECT') and cur is None:
+            cur, start = st.split(':', 1)[1].strip(), i
+        elif st == 'END' and cur is not None:
+            out.append((cur, start, i))
+            cur = None
+    return out
+
+
+def save_own(o, old_name=None, path=None):
+    """Write an own tile or thing into my tiles.des (its block replaced, or added) and make it in the game's list."""
+    from .. import owntiles as OT
+    path = path or os.path.join(home(), MY_TILES)
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    text = ''
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            text = f.read()
+    lines = text.split('\n')
+    for name, a, b in own_spans(text):
+        if name == (old_name or o.name):
+            text = '\n'.join(lines[:a] + o.text().rstrip('\n').split('\n') + lines[b + 1:])
+            break
+    else:
+        text = text + ('\n' if text.strip() and not text.endswith('\n\n') else '') + o.text()
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(text)
+    o.file = path
+    OT.register(o)
+    return path
+
+
+def own_things():
+    """Every own tile and thing the editor knows: the game's and those in your folder, made in the game's list."""
+    from .. import owntiles as OT
+    P.load()
+    h = home()
+    if os.path.isdir(h):
+        for f in sorted(os.listdir(h)):
+            if f.endswith('.des'):
+                try:
+                    with open(os.path.join(h, f), encoding='utf-8') as fh:
+                        for o in P.own_blocks(fh.read(), f):
+                            o.file = os.path.join(h, f)
+                            OT.register(o)
+                except (OSError, ValueError):
+                    pass
+    return list(OT.OWN.values())

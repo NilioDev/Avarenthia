@@ -56,8 +56,11 @@ def here():
 
 
 def load_tileset():
+    from .. import owntiles
     path = os.path.join(here(), 'assets', glyphs.SHEET)
-    return tcod.tileset.load_tilesheet(path, glyphs.COLUMNS, glyphs.ROWS, glyphs.CHARMAP)
+    ts = tcod.tileset.load_tilesheet(path, glyphs.COLUMNS, glyphs.ROWS, glyphs.CHARMAP)
+    owntiles.add_signs(ts)
+    return ts
 
 
 class View:
@@ -132,6 +135,8 @@ def main(room=None):
     with tcod.context.new(columns=S.W, rows=S.H, width=S.W * glyphs.TILE_W * k, height=S.H * glyphs.TILE_H * k,
                           tileset=tileset, title=TITLE, vsync=True, sdl_window_flags=flags) as ctx:
         view = View(ctx, tileset)
+        from .. import owntiles
+        ed.on_signs = lambda: owntiles.add_signs(tileset)
         try:
             ctx.sdl_window.start_text_input()
         except Exception:
@@ -142,6 +147,15 @@ def main(room=None):
                 handle(ed, view, ctx, ev)
                 if not ed.running:
                     break
+            if ed.want_try:
+                ed.want_try = False
+                from . import trying
+
+                def say(s):
+                    ed.say(s)
+                    view.draw(ed)
+                say('Opening the game on the piece...')
+                ed.say(trying.run(ctx, tileset, ed.room, say))
     return 0
 
 

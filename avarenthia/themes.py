@@ -100,8 +100,10 @@ def lay(m, plan, room_ids, piece_of):
         st = state(m, rid)
         if pc.switches:
             st['sw'] = {k: v[0] for k, v in pc.switches.items()}
+            st['states'] = {k: list(v) for k, v in pc.switches.items()}
         if pc.counters:
             st['ct'] = dict(pc.counters)
+            st['ct0'] = dict(pc.counters)
         for i, r in enumerate(m.room_of):
             if r == rid:
                 m.theme_cells.add(i)
@@ -266,12 +268,10 @@ def creatures(game, m, lvl):
 # ------------------------------------------------------------------ switches, counters, timers (the editor's script)
 def set_switch(game, rid, name, to=None):
     """A switch of a room to a state (or on to its next one); the events that wait for it answer."""
-    from . import pieces as PC
     m = game.map
     st = state(m, rid)
     sw = st.setdefault('sw', {})
-    pc = PC.by_name(m.rooms[rid][2]) if m.rooms[rid][2] else None
-    states = (pc.switches.get(name) if pc else None) or ['off', 'on']
+    states = st.get('states', {}).get(name) or ['off', 'on']
     now = sw.get(name, states[0])
     if to is None:
         to = states[(states.index(now) + 1) % len(states)] if now in states else states[0]
@@ -290,17 +290,14 @@ def add_count(game, rid, name, n):
 
 def back_as_drawn(game, rid):
     """The room as it was drawn: its marked tiles, switches and counters back, the timers gone."""
-    from . import pieces as PC
     m = game.map
     inside = set(cells_of(m, rid))
     for c, t in getattr(m, 'laid', {}).items():
         if c in inside and not game.occupied(m, *c):
             m.set(c[0], c[1], t)
-    pc = PC.by_name(m.rooms[rid][2]) if m.rooms[rid][2] else None
     st = state(m, rid)
-    if pc:
-        st['sw'] = {k: v[0] for k, v in pc.switches.items()}
-        st['ct'] = dict(pc.counters)
+    st['sw'] = {k: v[0] for k, v in st.get('states', {}).items()}
+    st['ct'] = dict(st.get('ct0', {}))
     m.timers = [t for t in getattr(m, 'timers', []) if t[2] != rid]
 
 
@@ -355,6 +352,10 @@ def bump(game, x, y):
     th = getattr(m, 'things', {}).get((x, y))
     fire(game, 'bump', cell=(x, y))
     if not th:
+        from .owntiles import LOOKS
+        if t in LOOKS:                                  # an own thing of Nilio's: its look line
+            game.msg(LOOKS[t], 'info')
+            return 0
         return None
     return ACTIONS[th[0]](game, x, y, th[1], state(m, th[1])) or 0
 

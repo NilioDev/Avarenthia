@@ -8900,11 +8900,250 @@ def editor():
         Canvas.cut = None
         e.dialog = None
         assert 'Avarenthia Editor' in ''.join(cv.ch[:ES.W])
+        editor_b1(home)
     finally:
         EF.home = real_home
         Canvas.cut = None
         EF.forget_cache()
     print('editor ok:', len(PC.load()), 'pieces read and written again')
+
+
+TRY_PIECE = '''NAME: try piece
+MOOD: A test room.
+SWITCH: gate = shut open
+COUNTER: plates 0
+LIST: band = skeleton:3 zombie:1
+CREATURE: skeleton at 2,2
+CREATURE: list:band at 3,2
+MORE: ? 1-2
+DRESS: crypt 4
+THING: A = lever
+THING: Q = bars
+EVENT: when=bump at=A then=flip:gate
+EVENT: when=switch:gate:open then=open:Q then=after:5:set:gate:shut again=yes
+EVENT: when=switch:gate:shut then=reset again=yes
+MAP
+#############
+#...........#
+#...........#
+#.....A.....#
+#...........#
+#....QQQ....#
+#...........#
+######+######
+ENDMAP
+'''
+
+
+def editor_b1(home):
+    """Round B1 in the editor: the new lines read and written again; creatures, lists and more; events made by
+    clicks, wires and the then-pickers; variety; dressing that never cuts the way; rolling; an own tile made with
+    Ctrl+T and a save moved to new tile numbers; every new dialog drawn whole."""
+    import random as _r
+    from avarenthia import pieces as PC, dressing as DR, owntiles as OT
+    from avarenthia.canvas import FakeCanvas, Canvas
+    from avarenthia.editor import screen as ES, files as EF
+    from avarenthia.editor.model import Room
+    DR.check_sets()
+    p = PC.parse(TRY_PIECE, 'x')[0]
+    q = PC.parse(Room.from_piece(p).text(), 'x')[0]
+    for k in ('spots', 'lists', 'more', 'switches', 'counters', 'dress', 'events', 'things', 'rows'):
+        assert getattr(p, k) == getattr(q, k), k
+    # a mistake in the script is named
+    bad = PC.parse(TRY_PIECE.replace('then=flip:gate', 'then=flip:door'), 'x', checked=False)[0]
+    assert any('switch "door"' in m for m, _c in PC.problems(bad))
+    # dressing: every walkable cell still reached from the way in, nothing on or beside what must stay free
+    for seed in range(30):
+        _r.seed(seed)
+        d = PC.drawn(p)[0]
+        gate = next(c for c, ch in d.items() if ch == '+')
+        laid = [c for c, ch in d.items() if PC.dressed_tile(ch) is not None]
+        assert laid, 'nothing dressed'
+        walk = {c for c, ch in d.items() if ch not in '#+' and (PC.dressed_tile(ch) is None or
+                D.TILES[PC.dressed_tile(ch)].walk) and ch not in 'AQ'}
+        start = next(c for c in ((gate[0] + 1, gate[1]), (gate[0] - 1, gate[1]), (gate[0], gate[1] + 1),
+                                 (gate[0], gate[1] - 1)) if c in walk)
+        seen, todo = {start}, [start]
+        while todo:
+            x, y = todo.pop()
+            for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if n in walk and n not in seen:
+                    seen.add(n)
+                    todo.append(n)
+        assert seen == walk, ('dressing cut the room', seed)
+        keep = {c for c, ch in d.items() if ch in 'AQ'} | set(d.spots)
+        assert not keep & set(laid)
+    e = ES.Editor()
+    r = e.room
+
+    def at(c):
+        return ES.AX + (c[0] - e.view[0]) * e.zoom + .5, ES.AY + (c[1] - e.view[1]) * e.zoom + .5
+
+    def click(c, b=1):
+        e.mouse('down', *at(c), b)
+        e.mouse('up', *at(c), b)
+    # creatures: drawn, of the place, from a list; right mouse takes away
+    e.layer = 'Creatures'
+    click((3, 3))
+    e.pick['Creatures'] = ES.Item('spot', 'skeleton')
+    click((4, 3))
+    click((3, 3), 3)
+    assert r.spots == {(4, 3): 'skeleton'}, r.spots
+    e.lists_dialog()
+    e._new_list('band')
+    i = LY_mons(r).index('zombie')
+    e.dialog[1]['scroll'] = i
+    e.dialog_click(66, 8, 1)
+    assert r.lists['band'] == [('zombie', 1)], r.lists
+    e.dialog = None
+    e.key('1')
+    click((5, 5))
+    assert r.spots[(5, 5)] == 'list:band'
+    # events: a lever, bars, a wire between them; a mark on the floor; then-pickers down to a timer
+    e.layer = 'Things'
+    e.pick['Things'] = ES.Item('thing', name='lever')
+    click((2, 2))
+    e.pick['Things'] = ES.Item('thing', name='bars')
+    click((6, 6))
+    e.layer = 'Events'
+    e.mouse('down', *at((2, 2)))
+    e.mouse('move', *at((6, 6)))
+    e.mouse('up', *at((6, 6)))
+    lever, bars = r.get(2, 2), r.get(6, 6)
+    assert r.events[-1] == {'when': 'bump', 'at': lever, 'if': [], 'then': [f'open:{bars}'], 'again': True}
+    assert e.wires() == [((2, 2), (6, 6))]
+    e._add_switch('gate = shut open')
+    e.event_act(('then+', 0, 0), 1)
+
+    def choose(v):
+        vals = [val for _l, val in e.dialog[1]['options']]
+        e.dialog_click(21, 8 + vals.index(v), 1)
+    choose('after')
+    choose(5)
+    choose('set')
+    choose('gate:open')
+    assert r.events[0]['then'][-1] == 'after:5:set:gate:open', r.events[0]
+    click((8, 8))
+    assert r.events[-1]['when'] == 'step' and not r.events[-1]['then']
+    assert any('needs a THEN' in m for o, m, _c in e.problems() if o is False)
+    e.event_act(('del', len(r.events) - 1, 0), 1)
+    # variety: a group painted
+    e.key('v')
+    e.palette_click(ES.Item('action', name='group+'), 1)
+    e.dialog = None
+    click((9, 3))
+    assert r.get(9, 3) == '1' and r.subst['1']
+    # dressing now and in the game; rolling
+    e.key('d', ctrl=True)
+    e.dialog[1]['sets'] = {'library': 4}
+    e.key('n')
+    assert e.dressed and all(r.get(*c) in 'kt' or r.get(*c) in r.things for c in e.dressed), e.dressed
+    e.key('g')
+    assert r.dress == [('library', 4)]
+    e.key('r', ctrl=True)
+    assert e.dialog[0] == 'roll' and len(e.dialog[1]['draws']) == 2
+    e.dialog = None
+    assert e.can_save(), [m for o, m, _c in e.problems() if o is False]
+    q = PC.parse(r.text(), 'x')[0]
+    assert q.spots and q.lists and q.switches and q.dress and q.subst
+    # an own thing, made with Ctrl+T
+    e.key('t', ctrl=True)
+    o = e.dialog[1]['own']
+    e.maker_click(10, 10, 1)
+    e.dialog[1]['text'] = 'test stone'
+    e.key('enter')
+    assert e.dialog[0] == 'maker' and o.name == 'test stone'
+    e.maker_click(15, 8, 1)
+    e.maker_click(10, 12, 1)
+    e.maker_click(6, 29, 1)
+    e.key('enter')
+    assert 'test stone' in OT.IDS and D.TILES[OT.IDS['test stone']].ch == chr(OT.sign_cp('test stone'))
+    assert 'OBJECT: test stone' in open(os.path.join(home, EF.MY_TILES), encoding='utf-8').read()
+    assert any(h == 'MY THINGS' for h, _i in ES.palette('Things'))
+    # a save made with other tile numbers is moved to these
+    class _M:
+        pass
+    g, m = _M(), _M()
+    i = OT.IDS['test stone']
+    m.t = [1, i + 4, i + 5]
+    g.maps, g.map = {'a': m}, m
+    OT.remap(g, (OT.BASE, [('test stone', i + 4, D.FLOOR), ('gone', i + 5, D.WALL)]))
+    assert m.t == [1, i, D.WALL], m.t
+    # every new dialog drawn whole
+    Canvas.cut = []
+    cv = FakeCanvas(ES.W, ES.H)
+    for opener in (lambda: e.lists_dialog(), lambda: e.more_pick(), lambda: e.variety_dialog('1'),
+                   lambda: e.dress_dialog(), lambda: e.roll_dialog(), lambda: e.maker_dialog(),
+                   lambda: e.ask_line('A line', 'x', lambda s: None), lambda: e.pick_then(lambda v: None)):
+        e.dialog = None
+        opener()
+        for lay in ES.LAYERS:
+            e.layer = lay
+            e.render(cv)
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    e.dialog = None
+
+
+def LY_mons(r):
+    from avarenthia.editor import layers as LY
+    return LY.creatures_for(r.kinds)
+
+
+def pieces():
+    """The drawn pieces in a level (editor round B1): creatures drawn, from a list and more; a room dressed by its
+    DRESS line; a lever with a switch, bars that open, a timer that shuts them, the room back as drawn; Try's level,
+    made in a kept test world and never in your own save."""
+    import tempfile
+    from avarenthia import pieces as PC, themes as TH, engine as E
+    from avarenthia.editor import files as EF, trying as TR
+    from avarenthia.editor.model import Room
+    print('== pieces')
+    home = tempfile.mkdtemp()
+    real_home = EF.home
+    EF.home = lambda: home
+    try:
+        room = Room.from_piece(PC.parse(TRY_PIECE, 'x')[0])
+        before = E.save_path()
+        with TR.SaveElsewhere():
+            assert E.save_path() != before
+            g, why = TR.start(room)
+        assert E.save_path() == before
+        assert g is not None, why
+        assert os.path.exists(os.path.join(home, TR.WORLD))
+        m = g.map
+        rid = next(i for i, x in enumerate(m.rooms) if x[2] == 'try piece')
+        cells = set(TH.cells_of(m, rid))
+        mons = [o for o in m.mons if (o.x, o.y) in cells]
+        assert len(mons) >= 3, mons                           # the skeleton, one of the band, and more
+        assert any(o.name == 'Skeleton' for o in mons)
+        assert sum(1 for c in cells if m.tile(*c) not in (D.FLOOR, D.BARS, D.LEVER)) >= 3, 'not dressed'
+        marks = {c: ch for c, ch in m.marks.items() if c in cells}
+        lever = next(c for c, ch in marks.items() if ch == 'A')
+        bars = [c for c, ch in marks.items() if ch == 'Q']
+        assert all(m.tile(*c) == D.BARS for c in bars)
+        TH.bump(g, *lever)
+        assert TH.state(m, rid)['sw']['gate'] == 'open'
+        assert all(m.tile(*c) == D.FLOOR for c in bars if not g.occupied(m, *c))
+        for _ in range(6):
+            TH.tick(g)
+        assert TH.state(m, rid)['sw']['gate'] == 'shut'
+        assert all(m.tile(*c) == D.BARS for c in bars if not g.occupied(m, *c)), 'the room did not go back'
+        # a counter and the IF on it
+        TH.add_count(g, rid, 'plates', 2)
+        assert TH._holds(g, 'count:plates:2', rid) and not TH._holds(g, 'count:plates:3', rid)
+        # Try's game shows: the game screen drawn on the level
+        from avarenthia import ui as U
+        from avarenthia.canvas import FakeCanvas
+        app = U.App(FakeCanvas(U.W, U.H))
+        with TR.SaveElsewhere():
+            app.start_game(g)
+            app.render()
+        assert not os.path.exists(before) or os.path.getmtime(before) < os.path.getmtime(os.path.join(home, TR.PLAY))
+    finally:
+        EF.home = real_home
+        PC.load(force=True)
+    print('pieces ok')
 
 
 def BS_KIT_BEAT():
@@ -8916,7 +9155,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -19,7 +19,11 @@ HERE = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
 
 def load_tileset():
     path = os.path.join(HERE, 'assets', glyphs.SHEET)
-    return tcod.tileset.load_tilesheet(path, glyphs.COLUMNS, glyphs.ROWS, glyphs.CHARMAP)
+    ts = tcod.tileset.load_tilesheet(path, glyphs.COLUMNS, glyphs.ROWS, glyphs.CHARMAP)
+    from avarenthia import owntiles, pieces
+    pieces.load()                       # Nilio's own tiles and things, with their own signs
+    owntiles.add_signs(ts)
+    return ts
 
 
 # ------------------------------------------------------------------ keyboard

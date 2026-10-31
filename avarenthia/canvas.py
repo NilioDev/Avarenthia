@@ -176,7 +176,7 @@ class FakeCanvas(Canvas):
         self.clear()
 
     def put(self, x, y, ch, fg=None, bg=None):
-        if ch not in _GLYPHS:
+        if ch not in _GLYPHS and not ('\ue000' <= ch <= '\uf8ff'):      # or an own 8 x 8 sign (owntiles.py)
             raise ValueError(f'character {ch!r} is not in the tileset')
         if 0 <= x < self.w and 0 <= y < self.h:
             i = y * self.w + x

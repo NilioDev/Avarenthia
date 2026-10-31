@@ -17,6 +17,7 @@ import sys
 import zlib
 
 from . import data as D
+from . import owntiles as OT
 
 PARTS = ('entrance', 'arrival', 'middle', 'bottom')
 # the glyphs every piece may use; the uppercase letters are the piece's own telling things (THING lines)
@@ -77,6 +78,9 @@ class Bad(ValueError):
     pass
 
 
+OT.Bad = Bad
+
+
 def _event(text, where):
     """when=bump at=A if=night,chance:50 then=msg:"..." then=wake: one rule of a piece."""
     ev = {'when': None, 'at': None, 'if': [], 'then': [], 'again': False}
@@ -115,10 +119,19 @@ def _event(text, where):
 def parse(text, file='', checked=True):
     """Read the pieces in one file. Raises Bad with the line when something is wrong. checked=False leaves out the
     check of each map (the editor reads a piece still being drawn and lists its problems itself)."""
-    out, cur, in_map = [], None, False
+    out, cur, in_map, own = [], None, False, None
     for n, line in enumerate(text.split('\n'), 1):
         where = f'{file}:{n}'
         line = line.rstrip('\r')
+        if own is not None:                     # an own tile or thing (owntiles.py), up to END
+            if line.strip() == 'END':
+                o = OT.read(own[0], own[1], own[2], own[3])
+                o.file = file
+                OT.register(o)
+                own = None
+            elif line.strip() and not line.strip().startswith(';'):
+                own[2].append(line.strip())
+            continue
         if in_map:
             if line.strip() == 'ENDMAP':
                 in_map = False
@@ -137,6 +150,9 @@ def parse(text, file='', checked=True):
             raise Bad(f'{where}: cannot read "{st}"')
         key, val = st.split(':', 1)
         key, val = key.strip().upper(), val.strip()
+        if key in ('TILE', 'OBJECT'):
+            own, cur = (key, val, [], where), None
+            continue
         if key == 'NAME':
             cur = Piece(val)
             cur.file = file
@@ -456,9 +472,32 @@ def load(force=False):
         except OSError:
             texts = None
     out = []
+    for f, t in sorted((texts or {}).items()):        # the own tiles and things first: any piece may use them
+        for o in own_blocks(t, f):
+            OT.register(o)
     for f, t in sorted((texts or {}).items()):
         out += parse(t, f)
     _ALL = out
+    return out
+
+
+def own_blocks(text, file=''):
+    """The own tiles and things (TILE / OBJECT blocks) of one file, read but not made."""
+    out, own = [], None
+    for n, line in enumerate(text.split('\n'), 1):
+        st = line.strip()
+        if own is not None:
+            if st == 'END':
+                o = OT.read(*own)
+                o.file = file
+                out.append(o)
+                own = None
+            elif st and not st.startswith(';'):
+                own[2].append(st)
+            continue
+        if ':' in st and st.split(':', 1)[0].strip().upper() in ('TILE', 'OBJECT'):
+            k, v = st.split(':', 1)
+            own = (k.strip().upper(), v.strip(), [], f'{file}:{n}')
     return out
 
 

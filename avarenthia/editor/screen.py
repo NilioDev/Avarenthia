@@ -12,6 +12,7 @@ from .. import pieces as P
 from ..canvas import scale, wrap_text
 from . import files as F
 from . import layers as LY
+from . import maker as MK
 from . import tools as T
 from .model import Room, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, tile_of
 
@@ -70,12 +71,15 @@ class Item:
 
 def palette(layer):
     """[(header, [Item])] for a layer."""
+    from .. import owntiles as OT
+    mine = sorted(OT.OWN.values(), key=lambda o: o.name)
     if layer == 'Ground':
+        own = [Item('thing', name=o.name, label=o.name) for o in mine if o.kind == 'TILE']
         return [('GROUND', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in GROUND[:5]]),
                 ('WATER AND FIRE', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in GROUND[5:]]),
                 ('WAYS', [Item('sign', '+', label='the way in'), Item('sign', 'n', label='a hidden door'),
                           Item('sign', '<', label='stairs up'), Item('sign', '>', label='stairs down')]),
-                ('ROCK', [Item('sign', ' ', label='rock (rubber)')])]
+                ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else [])
     telling = [Item('thing', name=DOES[a], act=a, label=f'{a}') for a in sorted(DOES)]
     named = set(P.TILE_NAMES)
     seen = {D.TILES[v].name for v in P.LEGEND.values()} | {D.TILES[v].name for v in P.TILE_NAMES.values()}
@@ -85,19 +89,24 @@ def palette(layer):
         if t.name not in seen and t.name not in named:
             seen.add(t.name)
             more.append(Item('thing', name=t.name, label=t.name))
-    return [('THINGS', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in FURNITURE]),
-            ('TELLING THINGS', telling),
-            ('MORE: EVERY TILE', more)]
+    own = [Item('thing', name=o.name, act=o.does, label=o.name) for o in mine if o.kind == 'OBJECT']
+    more = [it for it in more if it.name not in OT.OWN]
+    return [('THINGS', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in FURNITURE])] + \
+        ([('MY THINGS', own)] if own else []) + [('TELLING THINGS', telling), ('MORE: EVERY TILE', more)]
 
 
 def _is_ground(ch):
     return ch in GROUND or ch in WAYS or ch == ' '
 
 
-class Editor(LY.LayerTools):
+class Editor(MK.Maker, LY.LayerTools):
     _Item = Item
 
     def __init__(self, room=None):
+        try:
+            F.own_things()            # your own tiles and things, made in the game's list of tiles
+        except (P.Bad, OSError, ValueError):
+            pass
         self.room = room or self.blank()
         self.tool = 'Draw'
         self.layer = 'Ground'
@@ -105,6 +114,7 @@ class Editor(LY.LayerTools):
                      'Creatures': Item('spot', '?', label='one of the place'), 'Events': Item('none'),
                      'Variety': None}
         self.pal_scroll = {k: 0 for k in self.pick}
+        self.want_try = False         # F5: run.py opens the game on the piece
         self.ev_sel = None            # the event picked on the Events layer
         self.ev_scroll = 0
         self.dressed = set()          # cells just dressed (Ctrl+D, now): light green until the next stroke
@@ -284,6 +294,8 @@ class Editor(LY.LayerTools):
                 self.say('Click where its top left corner goes; Esc to stop.')
             elif tok == 'd':
                 self.dress_dialog()
+            elif tok == 't':
+                self.maker_dialog()
             elif tok == 'r':
                 self.roll_dialog()
             return
@@ -301,6 +313,12 @@ class Editor(LY.LayerTools):
             return
         if tok == 'space':
             self.space = True
+            return
+        if tok == 'f5':
+            if self.can_save():
+                self.want_try = True
+            else:
+                self.say('Try waits until the game takes it: fix the red lines first.', True)
             return
         if self.layer == 'Creatures' and self.creature_key(tok):
             return
@@ -705,6 +723,11 @@ class Editor(LY.LayerTools):
             elif tok in ('enter', 'np_enter'):
                 self.dialog = None
                 st['done'](st['text'])
+            self.after_small_dialog()
+            return
+        if kind == 'maker' and tok in ('enter', 'np_enter'):
+            if self.maker_save() and getattr(self, 'on_signs', None):
+                self.on_signs()
             return
         if kind == 'dress' and tok in ('n', 'g', 'r'):
             if tok == 'n':
@@ -722,6 +745,8 @@ class Editor(LY.LayerTools):
                 st['typing'] = False
             else:
                 self.dialog = None
+                if kind == 'pick':
+                    self.after_small_dialog()
             return
         if kind == 'new':
             if st.get('typing'):
@@ -752,7 +777,10 @@ class Editor(LY.LayerTools):
             if 20 <= x < 90 and 8 <= y < 52 and 0 <= i < len(st['options']):
                 self.dialog = None
                 st['done'](st['options'][i][1])
+                self.after_small_dialog()
             return
+        if kind == 'maker':
+            return self.maker_click(x, y, button)
         if kind == 'lists':
             return self.lists_click(x, y, button)
         if kind == 'variety':
@@ -842,7 +870,7 @@ class Editor(LY.LayerTools):
         if self.dialog:
             {'open': self.render_open, 'new': self.render_new, 'kinds': self.render_kinds, 'line': self.render_line,
              'pick': self.render_pick, 'lists': self.render_lists, 'variety': self.render_variety,
-             'dress': self.render_dress, 'roll': self.render_roll}[self.dialog[0]](cv)
+             'dress': self.render_dress, 'roll': self.render_roll, 'maker': self.render_maker}[self.dialog[0]](cv)
 
     def render_top(self, cv):
         cv.fill(0, 0, W, 1, ' ', FG, BAR)

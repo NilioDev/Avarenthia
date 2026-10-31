@@ -61,7 +61,7 @@ jobs:
           echo "The test build: the debug menu (F12) is on." > TESTBUILD
           pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." main.py
       - name: Build the editor (only in the test download)
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaEditor --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaEditor --hidden-import main --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
       - uses: actions/upload-artifact@v4
         with:
           name: Avarenthia (test)-${{ matrix.os }}

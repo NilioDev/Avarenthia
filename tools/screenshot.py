@@ -4,6 +4,7 @@ import os
 from PIL import Image
 
 from avarenthia.glyphs import CHARS, COLUMNS, TILE_W, TILE_H, SHEET
+from avarenthia.owntiles import SIGNS as OWN_SIGNS
 
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,6 +19,10 @@ def save(cv, path, scale=1):
         out.paste(bg, (x * TILE_W, y * TILE_H, (x + 1) * TILE_W, (y + 1) * TILE_H))
         if ch == ' ':
             continue
+        if ch not in cache and ord(ch) in OWN_SIGNS:        # an own 8 x 8 sign (owntiles.py)
+            a = Image.new('L', (TILE_W, TILE_H))
+            a.putdata([255 if c == '#' else 0 for r in OWN_SIGNS[ord(ch)] for c in r])
+            cache[ch] = a
         if ch not in cache:
             j = CHARS.index(ch)
             cache[ch] = sheet.crop(((j % COLUMNS) * TILE_W, (j // COLUMNS) * TILE_H,

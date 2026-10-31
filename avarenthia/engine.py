@@ -91,7 +91,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 61
+SAVE_VERSION = 62
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -3822,6 +3822,8 @@ def save_game(game):
     if game is None or game.dead:
         return
     game.last_save = game.turn
+    from . import owntiles as OT
+    game.own_tiles = OT.signature()             # the own tiles' names, so a later game finds them again
     try:
         with open(save_path() + '.tmp', 'wb') as f:
             f.write(SAVE_MAGIC + zlib.compress(pickle.dumps(game, protocol=pickle.HIGHEST_PROTOCOL), 6))
@@ -3836,6 +3838,9 @@ def load_game():
             raw = f.read()
         g = pickle.loads(zlib.decompress(raw[len(SAVE_MAGIC):]) if raw.startswith(SAVE_MAGIC) else raw)
         if getattr(g, 'version', 0) == SAVE_VERSION and not g.dead:
+            from . import owntiles as OT, pieces as PC
+            PC.load()
+            OT.remap(g, getattr(g, 'own_tiles', None))
             g.events, g.request = [], None
             g.hook()
             g.compute_fov()
