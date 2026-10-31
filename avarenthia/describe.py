@@ -336,7 +336,8 @@ def over(game, x, y):
                       'web': 'Webs hang from every branch.', 'warpath': 'Trampled, burned and bloodied ground.',
                       'mire': 'The ground is turning to bog.', 'hunger': 'No birds, no tracks: the woods are empty.',
                       'wolfland': 'Wolf tracks everywhere, and bones in the grass.',
-                      'sway': 'Fresh notices on every post, all sealed with the same black wax.'}[ev.d['taint']])
+                      'sway': 'Fresh notices on every post, all sealed with the same black wax.'}.get(ev.d['taint'])
+                     or ev.d.get('here', 'Something is wrong with the land here.'))
     from . import seasons as SE
     note = SE.describe(game, x, y)
     if note:

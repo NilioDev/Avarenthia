@@ -325,6 +325,15 @@ the chain, to the underside, to the first and third floor, to the throne, let hi
 end). Climb the chain and wait for a gust beside and away from a handhold; stand on a broken link; light a beacon;
 die on a floor and beat your shade; ask the skipper nearest his coast with and without a relic. Test part `skyseat`.
 
+Built in part 3 (31 October 2026, rounds 31-32): the other sixteen kinds (`servants.py`). The shadow (S): every lair
+on your map; heavy, middle, light one: the next kind (8, 9, 0 swap a servant for the next of its weight, in the same
+lair). For each kind: its mark on the land and the line under the map; a month goes by (its lever: news, a struck
+village, a held barony); its lieutenants' places; its lair and boss (the deck's three phases); its weakness known
+(know every weakness) and the edge in the fight; its relic and what it gives. Camp in the Nightmare's land (no rest);
+watch the Hag's hut move after a month. A struck village sends refugees on the road (walk into them). Let a hireling
+fall in a barrow or crypt: the shade, no raising until it is beaten. Kill a servant that holds a barony: a real war
+over the freed lands. Break the Rift's burning gate: the Cinder Key. Test part `servants`.
+
 - **The quest** - the mist parting, the relics, the road, the chain climb, the five floors, the beacons, the last
   fight's three phases. Debug: break a seal; give a relic; teleport to the chain, to each floor, to the throne.
 - **Dying there** - the dearer raising, the shade with your backpack, what stays open. Debug: kill the player there;

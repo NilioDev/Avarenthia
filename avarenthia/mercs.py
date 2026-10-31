@@ -155,9 +155,16 @@ def fallen(game):
     """The first of your companions who lies dead and can still be raised."""
     for slot in COMPANY:
         mc = get(game, slot)
-        if mc and mc.state == 'fallen':
+        if mc and mc.state == 'fallen' and not bound(game, mc):
             return mc
     return None
+
+
+def bound(game, mc):
+    """His shade still walks where he fell (skyseat.merc_shade): no temple raises him until it is beaten, or a
+    month has gone by."""
+    b = getattr(mc, 'bound', None)
+    return b is not None and game.day < b
 
 
 def drop(game, mc):
@@ -578,8 +585,11 @@ def fall(game, mc, cause):
     """Down. In hardcore, dead: his gear lies with his body. In softcore, a temple can raise him."""
     from .entities import Item
     from . import epics as EP
+    from . import skyseat as SKY
     b = mc.body
     m = game.map
+    bound = b is not None and mc.kind != 'beast' and SKY.binds(game)    # where the dead are bound, he rises
+    full = stats(game, mc)['max_hp'] if bound else 0
     mc.fell_turn = game.turn                          # for Return, the restorer's epic
     EP.st(game)['fell'] = (getattr(mc, 'slot', 'merc'), mc)
     if b is not None and b in m.mons:
@@ -597,6 +607,9 @@ def fall(game, mc, cause):
         game.msg(f'{mc.name} falls, slain by {cause}. A temple can raise {mc.him()}.', 'bad')
         mc.state = 'fallen'
         mc.hp = 0
+    if bound:
+        body = next((it for it in m.items if it.k == 'corpse' and it.name == f'the body of {mc.name}'), None)
+        SKY.merc_shade(game, mc, b.x, b.y, full, body)
     mc.body = None
 
 
@@ -624,7 +637,7 @@ def raise_fee(game, mc=None):
 
 def raise_up(game, mc=None, free=False):
     mc = mc or fallen(game)
-    if not mc or mc.state != 'fallen':
+    if not mc or mc.state != 'fallen' or bound(game, mc):
         return False
     fee = 0 if free else raise_fee(game, mc)
     if game.player.gold < fee:

@@ -8655,6 +8655,151 @@ def year_places():
     print('year places ok:', walked, 'maps walked;', len(kinds), 'kinds in this world')
 
 
+def servants():
+    """The great evils part 3: the sixteen other servants. Every kind is whole (its boss, deck, mark, lever, refugee
+    tale, relic, lair folk); worlds made with each kind find it a lair in its own land and three lieutenants; each lever
+    pulls once without harm; the boss waits at the bottom of its lair and leaves its relic; the Hag's hut walks; no
+    rest is rest in the Nightmare's land."""
+    import pickle
+    from avarenthia import shadow as SH, evils as EVL, servants as SV, bosses as BS, look as LK, townlife as TL
+    print('== servants')
+    assert len(EVL.EVIL_KEYS) == 24 and set(SV.KINDS) <= set(SH.SERVANT) and len(SV.KINDS) == 16
+    stats = {'str', 'dex', 'life', 'mana', 'hit', 'crit', 'regen', 'armor', 'res_fire', 'res_cold', 'res_light',
+             'res_poison', 'sight', 'mf'}
+    tricks = {None, 'call', 'water', 'ceiling', 'collapse', 'webs', 'wind', 'fog', 'enrage', 'banner', 'duel', 'rise',
+              'dark', 'roar', 'burn'}
+    for k, d0 in SV.KINDS.items():
+        d, s = EVL.EVILS[k], SH.SERVANT[k]
+        b = d['boss']
+        assert b in D.MONSTERS and D.MONSTERS[b]['boss'] and b in BS.KITS and b in D.LORE, k
+        assert d['taint'] in LK.TAINT and d['taint'] in EVL.SIGNS and s['lever'] in SH.LEVERS, k
+        assert s['lever'] in TL.REFUGEE_TALE and d['event'] in D.EVENTS and EVL.WEIGHT[k] == d0['weight'], k
+        assert len(s['lts']) >= 3 and all(lt[1] in D.MONSTERS and lt[2] in SH.PLACE_NOUN for lt in s['lts']), k
+        assert any(d['tag'] in m['tags'].split() for m in D.MONSTERS.values()), (k, d['tag'])
+        for ph in BS.KITS[b]['phases']:
+            assert all(c in ph['beat'] for c in ph['cards']), (k, ph['beat'])
+            assert all(mv in BS.MOVES for cs in ph['cards'].values() for mv in cs), (k, ph['cards'])
+            assert ph.get('trick') in tricks, (k, ph.get('trick'))
+        assert s['relic'][1] in stats, (k, s['relic'][1])
+    # worlds made with the new kinds: one heavy, one middle, one light each
+    by = {wt: [k for k in SV.KINDS if SV.WEIGHT[k] == wt] for wt in ('heavy', 'middle', 'light')}
+    trios = [(by['heavy'][n % 5], by['middle'][n], by['light'][n % 5]) for n in range(6)]
+    keep = EVL.choose
+    seen, walked = set(), 0
+    try:
+        for n, trio in enumerate(trios):
+            EVL.choose = lambda n_=None, trio=trio: [EVL.make(k) for k in trio]
+            random.seed(310 + n)
+            g = E.Game('Servant', False, 3100 + n)
+            app = ui.App(FakeCanvas(ui.W, ui.H))
+            app.start_game(g)
+            p = g.player
+            w = g.world
+            for a in w.evils:
+                assert a.did in w.dungeons and len(a.lts) == 3, a.key
+                for b_ in w.evils:
+                    if a is not b_:
+                        assert cheb(a.x, a.y, b_.x, b_.y) >= 30, (a.key, b_.key)
+            to_over(g, 0)
+            for idx, e in enumerate(w.evils):
+                seen.add(e.key)
+                e.awake, e.lvl = True, 4
+            EVL.update(g)
+            for idx, e in enumerate(w.evils):
+                if e.key not in SV.KINDS:
+                    continue
+                rids = SH.regions_of(g, idx)
+                assert rids, e.key
+                for _ in range(3):
+                    SH.LEVERS[SH.SERVANT[e.key]['lever']](g, idx, e, rids)
+                ev = EVL.taint_at(g, e.x, e.y)
+                assert ev is e, (e.key, ev and ev.key)
+            # the Hag's hut walks; the Nightmare's land gives no rest
+            hag = next((e for e in w.evils if e.key == 'hag'), None)
+            if hag:
+                x0 = (hag.x, hag.y)
+                assert any(SV.walk(g, hag) for _ in range(5)) and (hag.x, hag.y) != x0
+                assert (w.dungeons[hag.did].x, w.dungeons[hag.did].y) == (hag.x, hag.y)
+                walked += 1
+            mare = next((e for e in w.evils if e.key == 'mare'), None)
+            if mare:
+                p.x, p.y = mare.x, mare.y
+                assert SV.sleepless(g)
+                to_over(g, 0)
+            # one boss: at the bottom of its lair, with its deck; it leaves its relic
+            e = next(e for e in w.evils if e.key in SV.KINDS)
+            dg = w.dungeons[e.did]
+            g.enter_dungeon(e.did, dg.depth, 'up')
+            boss = next(x for x in g.map.mons if x.k == e.d['boss'])
+            assert BS.kit(boss) is BS.KITS[e.d['boss']]
+            g.kill(boss)
+            assert e.defeated and any(it.k == 'relic' and it.t == e.key for it in p.inv), e.key
+            pickle.dumps(g)
+    finally:
+        EVL.choose = keep
+    assert set(SV.KINDS) - seen <= {'giantking'}, set(SV.KINDS) - seen
+    # the loose ends, in the last world: a hireling who falls where the dead are bound rises as his shade
+    from avarenthia import mercs as MC, skyseat as SKY, townlife as TLF, events as EV, realms as RL
+    p, w = g.player, g.world
+    p.gold = 10 ** 6
+    to_over(g, 0)
+    mc = MC.Merc('archer', 'Test Archer', 5)
+    MC.outfit(g, mc)
+    g.merc = mc
+    did = next(d for d in w.dungeons if not d.startswith('lair_') and d != 'crypt')
+    g.enter_dungeon(did, 1, 'up')
+    g.map.barrow = 'test'
+    assert SKY.binds(g) and mc.body is not None
+    MC.hurt(g, mc, 9999)
+    shade = next(o for o in g.map.mons if o.__dict__.get('merc_of') == 'merc')
+    assert mc.state == 'fallen' and MC.bound(g, mc) and not MC.raise_up(g, mc) and MC.fallen(g) is None
+    g.kill(shade)
+    assert not MC.bound(g, mc) and MC.raise_up(g, mc) and mc.state == 'alive'
+    to_over(g, 0)
+    # refugees take the road from a struck village, and talk as those in the towns do
+    idx, ev = next((i, e) for i, e in enumerate(w.evils) if SH._villages(g, SH.regions_of(g, i)))
+    vil = SH._villages(g, SH.regions_of(g, idx))[0]
+    before = [x for x in w.wanderers if getattr(x, 'refugee', None) is not None]
+    SH._strike(g, vil, 'famine', 'A test strike on {v}.')
+    road = [x for x in w.wanderers if getattr(x, 'refugee', None) is not None and x not in before]
+    if road:
+        wd = road[0]
+        assert wd.name.endswith(vil.name) and w.settlements[wd.dest].kind in ('town', 'city', 'metropolis') or \
+            w.settlements[wd.dest].is_city
+        EV.talk_traveller(g, wd)
+        gold = p.gold
+        TLF.r_road_refugee(g, 'give', dict(npc=wd.id))
+        assert p.gold == gold - 100 and wd.given
+    # the freed lands are fought over for real
+    R = w.realm
+    R.wars.clear()
+    rid = next(r for r, b in R.baronies.items() if b.kingdom is not None and b.kingdom >= 0)
+    n = len(R.wars)
+    assert SH.freed_war(g, [rid]) and len(R.wars) == n + 1 and R.wars[-1]['rid'] == rid
+    # a relic won elsewhere: the Cinder Key from the Ashen Deep's broken gate
+    s0 = g.stats()
+    assert SKY.cinder_key(g) and SKY.cinder_key(g) is None
+    assert sum(1 for it in p.inv if it.k == 'relic' and it.t == 'cinderkey') == 1
+    assert g.stats()['res_fire'] >= s0['res_fire'] + 5
+    it = next(it for it in p.inv if it.t == 'cinderkey')
+    assert SH.lines(g, it)[1].startswith('While you carry it')
+    for e in w.evils:
+        if e.key in SV.KINDS and not e.defeated:
+            assert SH.lines(g, type('R', (), dict(t=e.key))())[1].startswith('While you carry it')
+    # the debug menu swaps a servant for the next kind of its weight, in the same lair
+    from avarenthia import debug as DBG
+    to_over(g, 0)
+    for i in range(3):
+        k0, xy = w.evils[i].key, (w.evils[i].x, w.evils[i].y)
+        DBG.shadow(g, f'swap{i}')
+        ne = w.evils[i]
+        assert ne.key != k0 and (ne.x, ne.y) == xy and ne.did in w.dungeons and len(ne.lts) == 3
+        assert w.dungeons[ne.did].boss == ne.d['boss']
+    DBG.shadow(g, 'lairs')
+    pickle.dumps(g)
+    print('servants ok:', len(seen & set(SV.KINDS)), 'of 16 kinds in', len(trios), 'worlds; the hut walked', walked)
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8664,7 +8809,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

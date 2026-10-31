@@ -511,6 +511,8 @@ def bump(game, x, y, t):
         game.msg('The gate breaks with a sound like a bell cracking. The fire in it goes out, the whole Deep shudders, '
                  'and far above, the rift closes.', 'unique')
         close(game)
+        from . import skyseat as SKY
+        SKY.cinder_key(game)
         return 1
     if t == D.CAGE:
         who = getattr(m, 'cages', {}).pop((x, y), 'nobody')

@@ -42,6 +42,8 @@ GENDERED = {'rat', 'kobold', 'goblin', 'gobarcher', 'jackal', 'wolf', 'bandit', 
             'huntsman', 'deputy', 'sheriff', 'merchant', 'drake', 'clansman', 'thunderer', 'bat'}
 FIXED_GENDER = {'ice_witch': 'f', 'broodmother': 'f', 'warlord': 'm', 'drowned_king': 'm', 'lich': 'f', 'snagtooth': 'm',
                 'ratking': 'm', 'grolm': 'm'}
+from . import servants as _SV  # noqa: E402
+FIXED_GENDER.update({k: ('f' if k in _SV.FEMALE else 'm') for k in _SV.BOSSES if k not in ('ifrit', 'thunderbird', 'lindworm')})
 PRON = {'f': ('she', 'her', 'her', 'female'), 'm': ('he', 'his', 'him', 'male'), None: ('it', 'its', 'it', '')}
 
 

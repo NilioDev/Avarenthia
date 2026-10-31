@@ -18,6 +18,7 @@ the lairs: now and then one kills a lieutenant; most do not come back, and their
 State: world.shadow (the world's), p.shadow (what you know)."""
 import math
 import random
+import sys
 
 from . import data as D
 from . import evils as EVL
@@ -134,11 +135,29 @@ def place_lairs(m, world, reach, dist, choose, Dungeon):
            (sky is None or math.hypot(i % w - sky[0], i // w - sky[1]) > 60)] or reach
     taken = []
 
+    from .servants import DESERT
+    dry = {k for k, n in enumerate(names) if n in DESERT}
+    sett = getattr(world, 'settlements', [])
+    cities = [(s.x, s.y) for s in sett if s.is_city]
+    holds = [(s.x, s.y) for s in sett if s.kind == 'deephold']
+    away = [i for i in reach if dist[i] >= 20 * LINEAR and (sky is None or math.hypot(i % w - sky[0], i // w - sky[1]) > 50)]
+
+    def near(i, spots, lo, hi):
+        x, y = i % w, i // w
+        return any(lo <= cheb(x, y, a, b) <= hi for a, b in spots)
+
     def fits(k):
         d = EVL.EVILS[k]
-        want = {t for key in d['terrain'] if key != 'cold' for t in terr[key]}
-        if 'cold' in d['terrain']:
+        tr = d['terrain']
+        if 'cold' in tr:
             return [i for i in far if m.biome[i] in cold and m.t[i] in (D.FOREST, D.GRASS, D.HILLS, D.SNOW)]
+        if 'desert' in tr:          # the Ifrit: the dry lands
+            return [i for i in far if m.biome[i] in dry and m.t[i] in (D.SAND, D.GRASS, D.HILLS)]
+        if 'city' in tr:            # the Rat King: under the cities, so just outside their walls
+            return [i for i in away if m.t[i] in (D.GRASS, D.HILLS, D.FOREST, D.SWAMP) and near(i, cities, 4, 9)]
+        if 'dwarf' in tr:           # the Lindworm: in the hills over the dwarf holds' deep galleries
+            return [i for i in away if m.t[i] in (D.HILLS, D.FOREST, D.GRASS) and near(i, holds, 4, 12)]
+        want = {t for key in tr for t in terr[key]}
         return [i for i in far if m.t[i] in want]
 
     for e in world.evils:
@@ -407,6 +426,9 @@ def _strike(game, s, key, text):
             s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
     from . import news as NW
     NW.post(game, 'danger', text, s.x, s.y)
+    if not s.is_city:
+        from . import townlife as TL
+        TL.road_refugees(game, s)                       # its folk take the road to the nearest town
 
 
 # ------------------------------------------------------------------ the levers: once a month
@@ -845,6 +867,7 @@ def fallen(game, e):
         RL.refresh(w)
         rg = w.regions[held[0]]
         _news(game, f'The lands {e.name} held are free, and the barons are already fighting over them.', rg.cx, rg.cy)
+        freed_war(game, held)
     if e.key == 'warlord':
         from . import powers as PW
         if PW.P(w).get('gorvash') and PW.P(w)['gorvash'].get('servant') == idx:
@@ -852,6 +875,30 @@ def fallen(game, e):
     w.wanderers = [x for x in w.wanderers if not (x.kind == 'hunt' and getattr(x, 'evil', None) == idx)]
     give_relic(game, e)
     meddle(game, 3, e, 'servant')
+
+
+def freed_war(game, rids):
+    """The freed lands are fought over for real: the kingdom they belong to and a neighbour not yet at war go to war
+    over them (realms.start_war), with hosts on the roads and villages burned."""
+    from . import realms as RL
+    R = getattr(game.world, 'realm', None)
+    if R is None:
+        return None
+    at_war = {k for wr in R.wars for k in (wr['a'], wr['b'])}
+    for rid in rids:
+        b = R.baronies.get(rid)
+        if not b or b.kingdom is None or b.kingdom < 0 or b.kingdom in at_war:
+            continue
+        own = R.kingdoms[b.kingdom]
+        nbs = {R.baronies[n].kingdom for n in R.adj.get(rid, ()) if n in R.baronies}
+        nbs = [R.kingdoms[k] for k in sorted(k for k in nbs if k is not None and k >= 0 and k != own.id and
+                                             k not in at_war)]
+        if not nbs:
+            nbs = [k for k in R.kingdoms if k.id != own.id and k.id not in at_war]
+        if nbs:
+            war = RL.start_war(game, random.choice(nbs), own, f'the freed lands of the {b.name}', rid=rid)
+            return war if war is not None else True
+    return None
 
 
 def give_relic(game, e):
@@ -1154,9 +1201,9 @@ def stats(game, s):
 
 
 def relic_of(t):
-    if t == 'starkey':
-        from .skyseat import STARKEY
-        return STARKEY
+    from .skyseat import KEYS
+    if t in KEYS:
+        return KEYS[t]
     return SERVANT[t]['relic']
 
 
@@ -1195,9 +1242,11 @@ def display(game, it):
 def lines(game, it):
     name, stat, v, text = relic_of(it.t)
     word = {'res_all': 'to all resistances', 'res_cold': 'resist cold', 'res_fire': 'resist fire', 'res_poison': 'resist poison',
-            'res_light': 'resist lightning', 'str': 'strength', 'dex': 'dexterity', 'mana': 'mana'}[stat]
-    return [text, f'While you carry it: +{v}{"%" if stat.startswith("res") else ""} {word}.',
-            'One of the keys through the mist round the Sky-Seat, the old letters say.' if it.t == 'starkey' else
+            'res_light': 'resist lightning', 'str': 'strength', 'dex': 'dexterity', 'mana': 'mana', 'sight': 'sight',
+            'armor': 'armour', 'mf': 'better finds', 'life': 'life'}[stat]
+    from .skyseat import KEYS
+    return [text, f'While you carry it: +{v}{"%" if stat.startswith("res") or stat == "mf" else ""} {word}.',
+            'One of the keys through the mist round the Sky-Seat, the old letters say.' if it.t in KEYS else
             'A relic of a fallen servant of the Hollow King: one of the keys through the mist, the old letters say.']
 
 
@@ -1226,3 +1275,6 @@ def register():
 
 
 register()
+
+from . import servants as _SV  # noqa: E402
+_SV.into_shadow(sys.modules[__name__])

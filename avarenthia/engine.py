@@ -91,7 +91,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 60
+SAVE_VERSION = 61
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -2221,7 +2221,8 @@ class Game:
         elif mon.k == 'grolm':
             self.flags['grolm'] = True
             self.msg('The Lost Mine falls silent.', 'gold')
-        if mon.tpl.get('boss') or mon.__dict__.get('lt') or mon.__dict__.get('my_body') is not None:
+        if mon.tpl.get('boss') or mon.__dict__.get('lt') or mon.__dict__.get('my_body') is not None or \
+                mon.__dict__.get('merc_of'):
             EVL.on_kill(self, mon)
         BS.felled(self, mon)                             # FOE FELLED, the room opens; or its twin lives on
         JB.on_kill(self, mon)
@@ -3119,6 +3120,14 @@ class Game:
         if self.cur not in ('over', ZN.KEY):
             beasts = robbers = 0
         r = random.random()
+        from . import servants as SVT
+        if SVT.sleepless(self):                          # the Nightmare's land: no rest is rest
+            self.end_turn(D.DAY_LEN // 3 if night else 20, True)
+            if not self.dead:
+                p.stamina = max(0, getattr(p, 'stamina', 0) - self.stats()['max_stamina'] // 5)
+                self.msg('Bad dreams, all night long, and hoofbeats in them. You wake more tired than you lay down.',
+                         'bad')
+            return
         rested = self.rest_here(quiet=True)
         if any(it.k == 'tool' and it.t in ('bedroll', 'tent') for it in p.inv):
             s_ = self.stats()                            # a bedroll: a night in the open rests you better

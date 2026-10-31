@@ -40,6 +40,8 @@ REFUGEE_TALE = {
     'hunger': 'Folk went missing at {place} all winter. Then we heard it, out in the snow, calling with their voices.',
     'wolves': 'The wolves came off the plain into {place}, in packs as big as a war-band.',
     'sway': 'The new master of {place} hangs those who speak his name. We left in the night with what we could carry.'}
+from . import servants as _SV  # noqa: E402
+REFUGEE_TALE.update(_SV.TALES)
 SHANTY_NAMES = ['Mudside', 'Rag Row', 'the Ditch', 'the Lean-tos', 'Tanners\' Bottom', 'the Gutter Camp', 'Ashpit Lane',
                 'the Low Fields']
 SLUM_FG = {'orc': '#96b46e', 'goblin': '#86b45a'}
@@ -382,7 +384,41 @@ def refugees(game, m, s):
         game.msg(f'Refugees sleep in the square of {s.name}, with what they could carry.', 'info')
 
 
-def talk_refugee(game, npc):
+ROAD_REFUGEES = 6              # at most this many bands on the roads at once (scaled)
+
+
+def road_refugees(game, s):
+    """A village struck by a servant: a band of its folk takes the road to the nearest town or city (great evils
+    part 3). Met on the road they talk as the refugees in the towns do."""
+    from . import evils as EVL
+    from .wanderers import Wanderer, road_path
+    from .world import scaled
+    w = game.world
+    e = EVL.taint_at(game, s.x, s.y)
+    if e is None or sum(1 for x in w.wanderers if getattr(x, 'refugee', None) is not None) >= scaled(ROAD_REFUGEES):
+        return None
+    to = sorted((t for t in w.settlements if t.id != s.id and (t.is_city or t.kind == 'town')),
+                key=lambda t: cheb(t.x, t.y, s.x, s.y))
+    for t in to[:3]:
+        path = road_path(game, s.id, t.id)
+        if path and len(path) > 3:
+            break
+    else:
+        return None
+    wd = Wanderer(game.new_id(), 'traveler', s.x, s.y)
+    wd.ch, wd.fg = '☺', (154, 150, 160)
+    wd.name = f'Refugees from {s.name}'
+    wd.race = getattr(s, 'race', 'human')
+    wd.origin, wd.dest = s.id, t.id
+    wd.path, wd.path_i = list(path), 0
+    wd.speed = 16
+    wd.offer = None
+    wd.refugee, wd.evil, wd.place = w.evils.index(e), w.evils.index(e), s.name
+    w.wanderers.append(wd)
+    return wd
+
+
+def talk_refugee(game, npc, key='refugee'):
     from . import events as EV
     from . import shadow as SH
     from .money import fmt
@@ -394,21 +430,29 @@ def talk_refugee(game, npc):
         opts.append((f'Give a silver ({fmt(100)})' if p.gold >= 100 else 'Give a silver (you have not got it)',
                      'give' if p.gold >= 100 else None))
     opts += [('Ask what drove them out', 'tale'), ('Go on', 'bye')]
-    EV.ask(game, 'refugee', npc.name, f'"{REFUGEE_TALE[lever].format(place=npc.place)}"', opts, npc=npc.id)
+    EV.ask(game, key, npc.name, f'"{REFUGEE_TALE[lever].format(place=npc.place)}"', opts, npc=npc.id)
 
 
-def r_refugee(game, choice, ctx):
+def r_road_refugee(game, choice, ctx):
+    """Refugees met on the road: the same talk, said to the road."""
+    wd = next((x for x in game.world.wanderers if x.id == ctx.get('npc')), None)
+    if wd is not None:
+        r_refugee(game, choice, ctx, wd)
+
+
+def r_refugee(game, choice, ctx, who=None):
     from . import shadow as SH
     from . import gods as GD
-    npc = next((o for o in game.map.mons if o.id == ctx.get('npc')), None)
+    npc = who or next((o for o in game.map.mons if o.id == ctx.get('npc')), None)
     if npc is None or choice == 'bye':
         return
     p = game.player
+    say = (lambda t: game.msg(f'{npc.name}: "{t}"', 'info')) if who is not None else (lambda t: game.say(npc, t))
     if choice == 'give' and p.gold >= 100:
         p.gold -= 100
         npc.given = True
-        game.say(npc, random.choice(['The gods keep you. They have not kept us.', 'Bread for the little ones. Thank you.',
-                                     'You are kind. Not many are, this far from home.']))
+        say(random.choice(['The gods keep you. They have not kept us.', 'Bread for the little ones. Thank you.',
+                           'You are kind. Not many are, this far from home.']))
         if getattr(p, 'god', None) == 'solmara':
             GD.gain(game, 1)
         return
@@ -422,10 +466,10 @@ def r_refugee(game, choice, ctx):
             lt = random.choice(lts)
             k['lts'].add(lt)
             title = e.lts[lt[1]]['name']
-            game.say(npc, f'We passed the stronghold of {title} on the way. Its servants were on the walls. Keep away from it.')
+            say(f'We passed the stronghold of {title} on the way. Its servants were on the walls. Keep away from it.')
             game.msg(f'You know where {title}, a lieutenant of {e.name}, keeps. It is marked on your map.', 'gold')
         else:
-            game.say(npc, f'{e.name}. That is what they call it. I hope I never hear the name again.')
+            say(f'{e.name}. That is what they call it. I hope I never hear the name again.')
 
 
 # ------------------------------------------------------------------ small happenings
@@ -965,6 +1009,7 @@ def talk(game, npc):
 def _register():
     from . import events as EV
     EV.RESOLVERS['refugee'] = r_refugee
+    EV.RESOLVERS['roadrefugee'] = r_road_refugee
     EV.RESOLVERS['slum'] = r_slum
 
 

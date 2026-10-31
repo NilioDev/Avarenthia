@@ -27,6 +27,8 @@ FARE = 2000                 # copper: twenty silver for a skipper who dares the 
 CHAIN = 'skyseat:chain'
 MIST = [('░', (150, 160, 176)), ('▒', (120, 130, 150)), ('░', (176, 184, 196)), ('~', (110, 126, 150))]
 STARKEY = ('The Star-Iron Key', 'res_all', 2, 'A key of star-iron as long as your forearm, from the riddles\' answer.')
+CINDERKEY = ('The Cinder Key', 'res_fire', 5, 'A key of black iron from the broken gate of the Ashen Deep, still warm.')
+KEYS = {'starkey': STARKEY, 'cinderkey': CINDERKEY}       # the keys through the mist that no servant leaves
 LIGHT_TEXT = ['The winds falter round him: one of your relics is cold as ice.',
               'The bound dead hang back from you: a relic in your pack holds them.',
               'He is less than he was: the last relic you carry burns in your pack.']
@@ -120,6 +122,23 @@ def star_key(game):
         game.spill(game.map, game.player.x, game.player.y, it)
     game.msg('The answer to the last riddle is a place in an old vault, and in it lies a key of star-iron. You take '
              'it: it opens the mist as well as any relic.', 'unique')
+
+
+def cinder_key(game):
+    """The burning gate of the Ashen Deep broken: in its ashes, a key that opens the mist (once; great evils part 3:
+    a relic won elsewhere, harder than a lair)."""
+    p = game.player
+    if p.__dict__.get('cinderkey'):
+        return None
+    from .entities import Item
+    p.cinderkey = True
+    it = Item(game.new_id(), 'relic', 'cinderkey')
+    it.name = CINDERKEY[0]
+    if not game.add_to_inv(it):
+        game.spill(game.map, p.x, p.y, it)
+    game.msg('In the ashes of the gate lies a key of black iron, still warm. Something in you knows it: it opens the '
+             'mist round the Sky-Seat as well as any relic.', 'unique')
+    return it
 
 
 def dares(game, here):
@@ -487,6 +506,27 @@ def shade(game, key, corpse):
     return o
 
 
+def merc_shade(game, mc, x, y, full, body=None):
+    """A hireling who falls where the dead are bound rises as his shade. No temple raises him while it walks; beat
+    it, and he is free (in hardcore his body and gear lie where it fell)."""
+    from .entities import make_monster
+    m = game.map
+    o = make_monster(game, 'shade', x, y, max(1, mc.lvl))
+    o.name = f'The shade of {mc.name}'
+    o.maxhp = o.hp = max(o.maxhp, full * 2 // 3)
+    o.regen = False
+    o.merc_of = getattr(mc, 'slot', 'merc')
+    if body is not None:
+        if body in m.items:
+            m.items.remove(body)
+        o.merc_body = body
+    mc.bound = game.day + 30            # after a month the shade fades on its own
+    m.mons.append(o)
+    game.msg(f'{mc.name} does not lie still. Something gets up out of {mc.his()} body, and it is not {mc.him()}.',
+             'bad')
+    return o
+
+
 def more_dead(game):
     """You fell in his city: he sends a few new bound dead to the floors whose beacon is not lit."""
     from .entities import make_monster
@@ -508,6 +548,19 @@ def on_kill(game, mon):
         body.x, body.y = mon.x, mon.y
         game.map.items.append(body)
         game.msg('Your shade comes apart like smoke, and leaves your backpack where it stood.', 'good')
+        return True
+    slot = mon.__dict__.get('merc_of')
+    if slot:
+        mc = getattr(game, slot, None)
+        if mc is not None:
+            mc.bound = None
+        body = mon.__dict__.get('merc_body')
+        if body is not None:
+            body.x, body.y = mon.x, mon.y
+            game.map.items.append(body)
+        who = mc.name if mc is not None else 'your companion'
+        game.msg(f'The shade of {who} comes apart like smoke.' +
+                 (f' A temple can raise {mc.him()} now.' if mc is not None and mc.state == 'fallen' else ''), 'good')
         return True
     if mon.k == 'hollow_king':
         won(game)
@@ -564,6 +617,8 @@ def won(game):
         rg = w.regions[rid]
         RL.news(game, 'With the Hollow King gone the lost baronies are free, and every baron in the empire has a '
                       'claim on them.', rg.cx, rg.cy, 'The Shadow')
+        from . import shadow as SH
+        SH.freed_war(game, [rid])
     game.flags['saved'] = True
     game.request = ('win',)
 

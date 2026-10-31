@@ -5,6 +5,7 @@ you, sends hunters after you. Destroy one and its mark fades. How they grow, pus
 is shadow.py."""
 import math
 import random
+import sys
 
 from . import data as D
 from .worldgen import cheb
@@ -454,3 +455,7 @@ def describe(game, e):
             2: 'Restless. The villages near its lair suffer.',
             3: 'Watching you.',
             4: 'Searching for you. Its servants roam the land.'}.get(e.lvl, 'Hunting you, and swallowing the land.')
+
+
+from . import servants as _SV  # noqa: E402  (great evils part 3: the sixteen other kinds)
+_SV.into_evils(sys.modules[__name__])

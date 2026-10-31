@@ -68,7 +68,7 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `delves.py` the underground kinds' own plans (rooms by use, folk where they belong, the goblin hole's watch and
   snares); `gobvillage.py` the goblin village behind the ravine and its deep halls;
   `shadow.py` the Hollow King and his three servants (great evils: the clocks, levers on the realms, lieutenants,
-  weaknesses, relics, heroes; state on `world.shadow` and `p.shadow`); `evils.py` the servants' kinds, marks and hunters;
+  weaknesses, relics, heroes; state on `world.shadow` and `p.shadow`); `evils.py` the servants' kinds, marks and hunters; `servants.py` the sixteen later kinds (rounds 31-32: data, levers, bosses and their decks, hooked into evils, shadow, data and bosses; a hireling's shade and the Cinder Key live in `skyseat.py`);
   `skyseat.py` the quest: the mist, the skipper, the chain climb, the five floors and beacons, the last fight, the
   shade, the Long Night and the end;
   `bosses.py` boss fights (marked blows, the deck, phases, arenas, roaming bosses, the three things); `bossmoves.py` the

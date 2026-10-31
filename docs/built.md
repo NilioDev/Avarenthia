@@ -31,6 +31,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: archaeology (30 Oct)** | A twelfth life skill: dig spots at old places and Varnish ruins, seen by rank and dug with a trowel; you learn only at places of your own height; lore and riddle pieces, a source of the servants' weaknesses, old pieces a smith mends into gear with an old power (Varnish work wants star-iron), finds a city library buys |
 | **Built: life skills part 2 (30 Oct)** | Every beast gives parts, and a part is the power a maker chooses (two from rank 40), better from stronger beasts; parts broken off big beasts; named beasts give parts of their own nature and keep a den; catching one alive for a lord, a cage in his yard; Unmake from rank 40; a master's test at 25 and 40; orders on the boards; perks at 30, 40 and 50; the three great masters and their test; mending for your hireling and the town; boots for the road, a bedroll, barding |
 | **Built: life skills part 1 (30 Oct)** | Slow crafts that teach only work at your height (grey, green, yellow, orange), the first time double; Herbalism in Foraging; 51 herbs with two properties each and alchemy without recipes (draughts, oils, a sleeping flask, the Starlight Elixir, tinctures); ten drinks, learnt per people, dearer far away, a barrel, a round, a gift; fish, ore, cloth, leather and game by tier; Smithing at the anvil and Tailoring at the bench, the material sets the grade and a property, the work crude, fine or masterwork |
+| **Built: the great evils parts 3 and 4, the other sixteen servants (31 Oct)** | The Ifrit, the Nightmare, the Gorgon, the Wild Hunt and the Hag in her walking hut; the Rat King, the Queen under the Hill, the Vampire Count, the Keening Woman, the Thunderbird and the Lindworm; the Sold King, the False Prophet, the Debt Lord, the Giant King and the Demon Prince: each its land, mark, lever, lieutenants, weakness, relic, lair folk and boss deck. A hireling's shade where the dead are bound; refugees on the roads; real wars over freed lands; the Cinder Key from the Ashen Deep |
 | **Built: the great evils part 2, the quest and the Sky-Seat (29 Oct)** | Mist over the Sky-Seat until you know the truth or a seal breaks; relics as keys (and the Star-Iron Key for all five riddles); no travelling by road through his coast; one skipper who dares the whirlpool; the star-iron chain with gusts, handholds and broken links, the glass underside; five floors with beacons; the Hollow King in three phases, one lighter per relic; your shade where the dead are bound, a double fee in his city; the Long Night; the end and a healing world |
 | **Built: the great evils part 1, the frame (29 Oct)** | The Hollow King's coast facing the Sky-Seat; three servants per world, one light, one middle, one heavy, from eight kinds (three new: the Wendigo, the Great Wolf, the Fallen Mage), on their own slow clock and his attention clock; levers on the realms (war, tribute, webs, the Gorvash, floods, hunger, wolves, swayed barons), held baronies, the realms pushing back; seals; lieutenants in forts, camps and towers; a weakness from two sources; relics; heroes who ride out and their cairns; the Shadow tab and map layer [7] |
 | **Built: boss fights part B, the library (29 Oct)** | A library of about 130 moves from our own spells, weapon skills and beasts; kits for the Rat King, Grolm, the Brood Mother, the Warlord, the Drowned King, the Lord of Cinders, eight theme bosses and nine Varnish guardians, each with its room and tricks; stances and images; roaming bosses that walk a level with their band and follow you up and down the stair; three named things per fixed boss, take one |
@@ -802,6 +803,30 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   The crown's towns are human even when the crown was first drawn as dwarves or elves (`world.py`; the realm
   makes it the human empire later), so Thornfield never keeps dwarf shifts; a rival hunting with you finds room
   near you when you are hemmed in.
+- **Rounds 31-32: the great evils parts 3 and 4, the other sixteen servants** (31 October 2026, one round;
+  `servants.py`, hooked into `evils.py`, `shadow.py`, `data.py`, `bosses.py`, `look.py`, `townlife.py`). The 24 kinds
+  are whole: light the Ifrit (desert, wells and caravans), the Nightmare (no rest in the open), the Gorgon (villages
+  turned to stone), the Wild Hunt (travellers gone on the night roads), the Hag (sour milk; her hut walks a little each
+  month, `walk`); middle the Rat King (plague in a city, its lair just outside one), the Queen under the Hill (the
+  wood takes villages), the Vampire Count (marries into a barony and holds it), the Keening Woman (a lord dies,
+  `realms.die`), the Thunderbird (burnt fields, ships lost), the Lindworm (a dwarf hold's deep galleries fall in; its
+  lair over the holds); heavy the Sold King (a king takes the black banner and makes war, `start_war`), the False
+  Prophet (villages follow him, the Church splits), the Debt Lord (a kingdom's burden grows, a barony pledged), the
+  Giant King (winter stays, the ice raiders ride), the Demon Prince (cults in the cities, the Church burns them).
+  Each: names, mark (`look.TAINT`, signs, a line on the look), four lieutenants (three drawn), a weakness (fire or
+  frost half again, blows a quarter harder, no calls, a quarter weaker), a relic with one small power (new words:
+  sight, armour, better finds), lair folk by tag, a boss with resistances, lore and a deck of three phases.
+  `place_lairs` knows 'desert' (the dry biomes), 'city' (4-9 from a city, away from home) and 'dwarf' (4-12 from a
+  dwarf hold); a light or middle kind without its land gives way, as before. The loose ends of parts 1 and 2: a
+  hireling who falls where the dead are bound rises as his shade (`skyseat.merc_shade`; no raising while it walks,
+  `mercs.bound`, a month at most; in hardcore it holds his body); a village struck by a servant sends a band of
+  refugees on the road to the nearest town (`townlife.road_refugees`, at most 6 scaled, talk as in the towns); a
+  fallen servant's held baronies start a real war between their kingdom and a neighbour (`shadow.freed_war`, also at
+  the end); the Cinder Key, a relic from the Ashen Deep's broken gate (`skyseat.cinder_key`, once). Debug: The shadow
+  (S): every lair on your map; 8, 9, 0 swap the heavy, middle or light servant for the next kind of its weight
+  (`debug.swap_servant`). Test `servants`. SAVE_VERSION 61.
+  Not as the spec: the new bosses have no named sets of three (as the eight of part 1); the Rat King's lair stands
+  outside a city, not under its streets; the Giant King, being heavy, keeps his lair when a world has no cold land.
 - **Round 30: more places and the places of the seasons** (30 October 2026; `yearplaces.py`). 40 kinds on
   landmarks' frame (their sign, words and play in landmarks' tables; only where they lie in `yearplaces.PLACE`, placed
   after round 29's). The land: dragon's scorch (the dragon's name and fate in the chronicle, a scale in half the
@@ -886,6 +911,79 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   woodpiles and fields, A town that lives, The week); The peoples (each people's day). Test `town_life`.
   SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
   line move as before; the hoard grows in glitter, not in coin you could take.
+
+## The great evils as storyteller (built 29-31 October 2026; the spec)
+
+The great evils become the world's storyteller, as in RimWorld: one shadow with a goal, and the world lives round it
+whether the player joins in or not. Worked out with Nilio in the thread "Grote kwaden als verteller"; the Dutch
+proposal with every servant: project files `kwaden/voorstel.md`. Replaces the growth with your level in `evils.py`;
+its blight, hunters and whispers stay (the whispers go over the rule "no taunts" again).
+- **The Hollow King** (from the riddles: made by the Varnish mages of star-iron, the winds and the bound dead) is the
+  one ultimate evil, in every world. He sits in the piece of the Sky-Seat that never fell, a scar of the Varnish
+  times that nobody remembers: bound winds keep it hidden in mist and storm; at sea you see a whirlpool and hear bells.
+  His goal is to return. Only he is of the Varnish; the servants are of after them.
+- **His land** is the coast facing the Sky-Seat (its place differs per world). As he wakes it turns his: blight, the
+  bound dead, cults, empty fishing villages. Above it the sky darkens; the glow and the storm round the Sky-Seat grow
+  with every broken seal, seen from the coast.
+- **Three servants per world**, from 24 kinds, one of each weight, each in its own part of the world and on its own
+  land (no Ifrit without desert, no Lindworm without dwarves); never two that want the same.
+  - **Light**, awake from the start, only in its own land: Brood Mother, Wendigo, Ifrit, Nightmare (the Mare), Great
+    Wolf, Gorgon, Wild Hunt, the Hag in the walking hut.
+  - **Middle**, wakes halfway, a few baronies or a coast: Dragon, Drowned One, Rat King, Queen under the Hill (fey,
+    not elven), Vampire Count, Keening Woman (banshee), Thunderbird, Lindworm.
+  - **Heavy**, wakes late, a whole realm or more: Lich, Warlord, Fallen Mage, Sold King, False Prophet, Debt Lord,
+    Giant King, Demon Prince.
+  Each has the same set: one goal with one lever in the world, three lieutenants, one weakness, one relic. Only the
+  reach differs, and everything grows from its own land, barony by barony. No people is wholly evil: some orc tribes
+  refuse the Warlord, most glades fight the Queen under the Hill, part of the Church stays true.
+- **The levers are the existing systems** (`realms.py`, `powers.py`, `seasons.py`, the economy, the news): a claim,
+  a revolt, a war, hunger, debt, plague. At most one push per realm per month; the realms push back (an alliance, a
+  levy, the Church's order). No doubled systems: the Warlord becomes the Gorvash, the Sold King is one of the kings
+  who turns. New: a barony can be held by a servant, with its own colour on the realms layer.
+- **Two clocks.** A slow one always runs (over years the servants grow a little, a village falls now and then, the
+  news travels). The attention clock runs only when the player meddles (a lieutenant killed, a lair entered, a
+  weakness learnt, a battle fought against him): hunters, faster plans, the next servant wakes sooner. It cools when
+  you leave him alone and has a ceiling (each step up after a pause). Attention belongs to the world, not the player
+  (in co-op he notices the group). Meddling pays: lieutenants' gear, standing with the realms, knowledge.
+- **Only the player** can kill a servant or the Hollow King; the world can hold him back, never stop him. Named NPC
+  heroes ride to the lairs: now and then they kill a lieutenant (heard through the news), never a servant; their grave
+  becomes a place and their journal tells what they knew. Battles become places on the map (fight in them, or plunder
+  them after). Refugees walk the roads, cities fill up, prices rise.
+- **Lieutenants**: three per servant, drawn from a pool per kind, each with a place of its own in its servant's land
+  (a fort, a camp, a tower). Not needed, but each one dead weakens its servant (fewer hunters, a weaker lair). One who
+  survives you comes back scarred and promoted; he does not talk.
+- **Weakness and relic**: one fixed weakness per kind, found from two or three sources (the riddles, libraries,
+  Archaeology, a dying hero), with a real edge (the Lich's phylactery: leave it, and she comes back). The relic a slain
+  servant leaves is a key with at most one small power (the loot rule holds); one can also be won elsewhere, harder.
+- **The quest**, one heavy road as in The Lord of the Rings. The mist parts and the Sky-Seat comes on the world map
+  when you know the truth or the first servant breaks a seal (each servant that reaches its goal breaks one). The
+  relics let you through the mist. A long road through his land to the coast, no quick travel, a skipper who dares the
+  whirlpool, your hirelings as the company. The Varnish chained the city down with star-iron chains to sea rocks and
+  the cliff: you climb one (its own map: gusts, broken links, things that hang there), then the underside (breaking
+  glass, wind that throws you off the edge, falls to the sea as in `towers.py`). The Sky-Seat is five floors of glass
+  and bronze, from the under-city through the hall of the winds and the halls of the dead to the throne; a beacon on
+  each floor. The last fight has three phases (the winds, the dead, himself); each relic you bring makes one lighter.
+- **Dying there** (no point of no return): he keeps those who die in the Sky-Seat, so the priests' raising costs more
+  and you wake on the mainland. Your body rises as your **shade** with your backpack (what you wear stays with you, as
+  now): an echo, weaker than you, that does not heal; beat it for your things. What you opened stays open (mist,
+  seals, chains), the slain stay dead, he sends a few new bound dead, a floor with its beacon lit stays calm. A shade
+  rises only where the dead are bound: his land, a Lich's land, barrows, crypts, the Rift; a fallen hireling too.
+- **If he wins**: the Long Night. The sky goes dark, his coast spreads, cities become strongholds, prices climb; he can
+  still be beaten, only harder. You play on. **If you win**: one closing screen, then you play on in a world that
+  heals: the blight lifts, the chronicle names you, the barons fight over the freed lands. No new ultimate evil. After
+  a servant falls: a scramble for its baronies, its lair a ruin, your name in the chronicle.
+- **Where it shows** (the UI rule): a journal tab "The Shadow" (what you know of him, the servants and lieutenants,
+  kept on the player), a world-map layer (blight, lairs, hosts, seals), the line under the map in his land, a handbook
+  chapter. No new key. `history.py` writes his first rising and fall so the chronicle and the lore agree.
+- **Built in part 1** (round 17, `shadow.py`): the coast, the three weights, both clocks, the levers, held baronies,
+  lieutenants, weaknesses, relics, heroes and their cairns, the Shadow tab and layer, for eight kinds (Brood Mother,
+  Wendigo, Great Wolf, Dragon, Drowned One, Lich, Warlord, Fallen Mage). Left for part 2: the mist and the Sky-Seat
+  on the map, the relics as keys, the road, the skipper, the climb, the five floors, the last fight, the shade, the
+  Long Night and the healing world; `history.py`'s first rising. All built in part 2 (round 18, `skyseat.py`).
+- **Left for rounds 31-32 besides the sixteen kinds**: a fallen hireling rising where the dead are bound, refugees on
+  the roads, the barons' wars over freed lands as real wars (now news), the relic won elsewhere besides the Star-Iron
+  Key.
+- **Still to write while building**: the climb's map; the other sixteen kinds' pools, weaknesses and relics.
 
 ## More places and the places of the seasons (built 30 October 2026; the spec)
 

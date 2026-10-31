@@ -616,6 +616,10 @@ def make_personal_offer(game, wd):
 
 
 def talk_traveller(game, wd):
+    if getattr(wd, 'refugee', None) is not None:
+        from . import townlife as TL
+        wd.wait = 4
+        return TL.talk_refugee(game, wd, 'roadrefugee')
     opts = [('Ask for news', 'news')]
     if getattr(wd, 'offer', None):
         opts.append(('Ask if they need help', 'help'))

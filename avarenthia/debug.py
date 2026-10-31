@@ -973,12 +973,61 @@ def shadow(game, what):
         game.msg('Debug: a hero rode out, and the news will come.', 'info')
     elif what in ('reveal', 'relic', 'chain', 'under', 'f1', 'f3', 'f5', 'night', 'won'):
         _skyseat(game, what)
+    elif what in ('swap0', 'swap1', 'swap2'):
+        e = swap_servant(game, int(what[-1]))
+        game.msg(f'Debug: the {e.weight} servant is now {e.name}, {e.d["title"]}.', 'info')
+    elif what == 'lairs':
+        om = game.maps['over']
+        for e in w.evils:
+            EVL.learn(game, e)
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    if om.inb(e.x + dx, e.y + dy):
+                        om.seen[(e.y + dy) * om.w + e.x + dx] = 1
+        game.msg('Debug: every lair is on your map.', 'info')
     elif what == 'month':
         for _ in range(30):
             SH.daily(game)
         SH.monthly(game)
         EVL.compute_taint(game)
         game.msg('Debug: a month went by for the servants.', 'info')
+
+
+def swap_servant(game, i):
+    """Debug: the servant in slot i becomes the next kind of its weight, in the same lair and on the same clocks; its
+    lair and lieutenants take the new kind's (for testing the 24 kinds in one world)."""
+    import random
+    from . import shadow as SH
+    from . import evils as EVL
+    from .world import Dungeon
+    w = game.world
+    e = w.evils[i]
+    pool = [k for k in EVL.EVIL_KEYS if EVL.WEIGHT[k] == e.weight]
+    k = pool[(pool.index(e.key) + 1) % len(pool)]
+    ne = EVL.make(k)
+    for a in ('x', 'y', 'pace', 'lvl', 'defeated', 'known', 'awake', 'wake_day', 'goal', 'sealed'):
+        setattr(ne, a, getattr(e, a))
+    old = w.dungeons.pop(e.did, None)
+    for key in [q for q in game.maps if q.startswith(f'{e.did}:')]:
+        del game.maps[key]
+    d = ne.d
+    did = 'crypt' if k == 'lich' else f'lair_{k}'
+    w.dungeons[did] = Dungeon(did, d['lair'].format(short=ne.short), d['depth'], d['base'], d['style'], d['tag'], d['boss'],
+                              D.hexrgb(d['wall']), old.x if old else e.x, old.y if old else e.y, True)
+    ne.did = did
+    pool_lts = random.sample(SH.SERVANT[k]['lts'], 3)
+    ne.lts = []
+    for lt, (title, mk, place, person) in zip(e.lts, pool_lts):
+        nl = dict(lt, title=title, k=mk, place=place, person=person, name=SH._lt_name(ne, title, person))
+        ne.lts.append(nl)
+        if nl['site'] is not None:
+            s = w.sites[nl['site']]
+            s.name = f"{nl['name']}'s {SH.PLACE_NOUN[place]}"
+            game.maps.pop(getattr(s, 'map_key', None), None)
+    w.evils[i] = ne
+    EVL.compute_taint(game)
+    game.maps['over']._look = None
+    return ne
 
 
 def _skyseat(game, what):

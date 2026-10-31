@@ -1,4 +1,5 @@
 """Static game data: tiles, classes, skills, items, monsters, dungeons."""
+import sys
 
 
 def hexrgb(h):
@@ -503,6 +504,8 @@ for _k, _extra in (('kobold', 'den'),
                    ('goblin', 'lair_orc'), ('gobarcher', 'lair_orc'), ('ogre', 'lair_orc'), ('zombie', 'lair_drowned'),
                    ('ghost', 'lair_drowned')):
     MONSTERS[_k]['tags'] += ' ' + _extra
+from . import servants as _SV  # noqa: E402  (the sixteen other servants' bosses, great evils part 3)
+_SV.into_data(sys.modules[__name__])
 for _m in MONSTERS.values():
     _m['fg'] = hexrgb(_m['fg'])
     for _k in ('boss', 'erratic', 'fast', 'ranged', 'poison', 'slow', 'caster', 'regen', 'leech', 'leap', 'nova'):
@@ -745,3 +748,4 @@ for _k, _d in _CR.NEW.items():
     _look = _look.replace('{sex} ', '').format(he=_p[0], his=_p[1], him=_p[2])
     LORE[_k] = (_look, _d.get('home', 'Unknown.'), _d.get('weak', 'No advice yet.'))
     DOES[_k] = _d.get('does', '')
+_SV.into_world(sys.modules[__name__])

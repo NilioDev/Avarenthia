@@ -287,6 +287,8 @@ KITS = {
                                               Z=['meteor']), trick='dark',
              say='{name} tears a page from the air. The lamps go out.')]),
 }
+from . import servants as _SV  # noqa: E402  (the decks of the sixteen other servants)
+KITS.update(_SV.KITS)
 ROAMERS = {'dungeon': ['troll', 'ogre'], 'deep': ['troll', 'ogre'], 'cave': ['troll', 'ogre'], 'wild': ['ogre'],
            'orccamp': ['orc_chief', 'hob_captain'], 'lair_orc': ['orc_chief', 'ogre'], 'warren': ['hob_captain'],
            'burrow': ['gnoll_packlord'], 'crypt': ['ghast_lord'], 'barrow': ['ghast_lord']}

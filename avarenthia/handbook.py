@@ -1184,6 +1184,18 @@ def ch_shadow(g):
               'whatever he is given. A barony a servant holds takes its colour on the Realms layer. The realms push back '
               'with levies and the Church\'s order; that holds a servant back, but never stops it. Only you can kill one. '
               'When a servant has what it wants, a seal breaks, and the sky over the sea glows at night.'),
+        ('p', 'There are twenty-four kinds of servant, and a world draws three. Each lives where its land is: no Ifrit '
+              'without a desert, no Lindworm without dwarves under the hills, no Rat King without a city above it.'),
+        ('l', ['Lesser: the Brood Mother, the Wendigo, the Great Wolf, the Ifrit, the Nightmare, the Gorgon, the Wild '
+               'Hunt, and the Hag in her walking hut.',
+               'Greater: the Dragon, the Drowned One, the Rat King, the Queen under the Hill, the Vampire Count, the '
+               'Keening Woman, the Thunderbird and the Lindworm.',
+               'His right hand: the Lich, the Warlord, the Fallen Mage, the Sold King, the False Prophet, the Debt '
+               'Lord, the Giant King and the Demon Prince.']),
+        ('p', 'Some of them you notice on the land itself. In the Nightmare\'s country no night in the open is rest: '
+              'you wake more tired than you lay down. The Hag\'s hut walks, and is never quite where it was. When a '
+              'servant strikes a village, its folk take the road to the nearest town; walk into them to hear what drove '
+              'them out.'),
         ('h', 'His attention'),
         ('p', 'The Hollow King does not notice you until you meddle: kill a lieutenant, go into a lair, learn a '
               'weakness, beat his hunters. Then his attention grows, one step at a time. With it come hunters, faster '
@@ -1199,10 +1211,13 @@ def ch_shadow(g):
               'walk into it to read what they knew. Once you know a weakness, it changes the fight in the lair. The '
               'Lich keeps her life in a black jar beside her, the sign {Φ|196,134,255}: break it, or she rises again.'),
         ('p', 'A fallen servant leaves a relic. Carried, it gives one small power; the old letters call the relics keys.'),
+        ('p', 'When a servant falls, the lands it held are free, and the kingdom they belong to goes to war with a '
+              'neighbour over them, with hosts on the roads and villages burned.'),
         ('h', 'The Sky-Seat'),
         ('p', 'Mist and storm hide the Sky-Seat out over the sea. The mist tears when you know the truth of the '
               'Hollow King, from the riddle of his name, or when the first seal breaks. The relics are the keys '
-              'through it; whoever makes all five riddles whole finds the Star-Iron Key as well.'),
+              'through it; whoever makes all five riddles whole finds the Star-Iron Key as well, and whoever breaks the '
+              'burning gate at the bottom of the Ashen Deep finds the Cinder Key in its ashes.'),
         ('p', 'No road you can travel by goes through his coast: you walk it, and his hunters find you there. One '
               'skipper, on the harbour nearest his coast, dares the whirlpool, for twenty silver and a relic to show '
               'the mist. Your company cannot come in a boat that small.'),
@@ -1220,7 +1235,8 @@ def ch_shadow(g):
         ('p', 'He keeps those who die in his city: the priests must fight for you, the raising costs twice as much, '
               'and you wake on the mainland. Your body rises as your shade, with your backpack: weaker than you, and it '
               'does not heal. Beat it to get your things back. The same happens in the barrows, the crypts and the '
-              'Rift. What you opened stays open and the slain stay dead, but on every floor without a lit beacon he '
+              'Rift, and to a hireling who falls there: no temple raises them while their shade walks, so beat it, or '
+              'wait a month for it to fade. What you opened stays open and the slain stay dead, but on every floor without a lit beacon he '
               'sends new bound dead.'),
         ('h', 'The ends'),
         ('p', 'If three seals break, the Long Night comes: the sky stays dark, his coast spreads, the cities shut their '
