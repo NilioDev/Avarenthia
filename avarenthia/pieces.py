@@ -40,18 +40,30 @@ TILE_NAMES = {
 }
 GATES = ('door', 'open', 'secret', 'vault')
 WHEN = ('enter', 'step', 'bump', 'take', 'clear', 'night')
+# whens with a name: a switch comes to a state, a counter comes to a number (the editor's switches and counters)
+WHEN_NAMED = ('switch', 'count')
+LISTS = {}                       # the lists of creatures every piece may use (LIST lines before the first NAME)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(os.path.dirname(HERE), 'pieces')
 
 
 class Piece:
     __slots__ = ('name', 'part', 'kinds', 'depth', 'weight', 'moods', 'rows', 'subst', 'things', 'events', 'shape',
-                 'gate', 'file')
+                 'gate', 'file', 'spots', 'lists', 'more', 'switches', 'counters', 'dress')
 
     def __init__(self, name):
         self.name, self.part, self.kinds, self.depth, self.weight = name, 'middle', ['any'], 0, 10
         self.moods, self.rows, self.subst, self.things, self.events = [], [], {}, {}, []
         self.shape, self.gate, self.file = '', 'door', ''
+        self.spots = {}          # (x, y) -> a creature key, '?' (one of the place) or 'list:<name>'
+        self.lists = {}          # name -> [(creature key, weight)]
+        self.more = None         # (what, least, most): extra creatures where there is room
+        self.switches = {}       # name -> [states], the first is how it starts
+        self.counters = {}       # name -> start
+        self.dress = []          # [(set, how full 1-5)]: dressed anew in every world
+
+    def list_of(self, name):
+        return self.lists.get(name) or LISTS.get(name)
 
     def suits(self, tag, depth):
         if depth < self.depth:
@@ -82,7 +94,7 @@ def _event(text, where):
             v, _, rest = rest.partition(' ')
             rest = rest.strip()
         if k == 'when':
-            if v not in WHEN:
+            if v not in WHEN and v.split(':')[0] not in WHEN_NAMED:
                 raise Bad(f'{where}: no such "when": {v}')
             ev['when'] = v
         elif k == 'at':
@@ -130,6 +142,10 @@ def parse(text, file='', checked=True):
             cur.file = file
             out.append(cur)
             continue
+        if cur is None and key == 'LIST':
+            name, opts = _list(val, where)
+            LISTS[name] = opts
+            continue
         if cur is None:
             raise Bad(f'{where}: {key} before NAME')
         if key == 'PART':
@@ -170,12 +186,58 @@ def parse(text, file='', checked=True):
             cur.things[g.strip()] = (tile, act)
         elif key == 'EVENT':
             cur.events.append(_event(val, where))
+        elif key == 'CREATURE':                 # CREATURE: skeleton at 4,2   (or ? or list:<name>)
+            what, _, at = val.rpartition(' at ')
+            try:
+                x, y = (int(v) for v in at.split(','))
+            except ValueError:
+                raise Bad(f'{where}: write a creature as "skeleton at 4,2"')
+            cur.spots[(x, y)] = what.strip()
+        elif key == 'LIST':                     # LIST: war band = orc:6 orc_shaman:1
+            name, opts = _list(val, where)
+            cur.lists[name] = opts
+        elif key == 'MORE':                     # MORE: list:war band 0-2
+            what, _, span = val.rpartition(' ')
+            try:
+                lo, hi = (int(v) for v in span.split('-'))
+            except ValueError:
+                raise Bad(f'{where}: write MORE as "? 0-2" or "list:war band 1-3"')
+            cur.more = (what.strip(), lo, hi)
+        elif key == 'SWITCH':                   # SWITCH: gate = shut open
+            name, _, states = val.partition('=')
+            cur.switches[name.strip()] = states.split() or ['off', 'on']
+        elif key == 'COUNTER':                  # COUNTER: plates 0
+            name, _, start = val.rpartition(' ')
+            if not name:
+                name, start = start, '0'
+            try:
+                cur.counters[name.strip()] = int(start)
+            except ValueError:
+                cur.counters[val.strip()] = 0
+        elif key == 'DRESS':                    # DRESS: hall 3
+            name, _, full = val.rpartition(' ')
+            try:
+                cur.dress.append((name.strip(), int(full)))
+            except ValueError:
+                cur.dress.append((val.strip(), 3))
         else:
             raise Bad(f'{where}: no such word: {key}')
     if checked:
         for p in out:
             check(p)
     return out
+
+
+def _list(val, where):
+    name, _, opts = val.partition('=')
+    out = []
+    for o in opts.split():
+        k, _, w = o.rpartition(':')
+        try:
+            out.append((k or o, int(w) if k else 1))
+        except ValueError:
+            raise Bad(f'{where}: write a list as "war band = orc:6 ogre:1"')
+    return name.strip(), out
 
 
 def tile_named(name):
@@ -227,6 +289,34 @@ def problems(p):
     for m in sorted(marks):
         if not any(m in row for row in p.rows) and m not in p.things:
             out.append((f'an event is at {m}, which the map does not have', []))
+    for (x, y), what in sorted(p.spots.items()):
+        if (x, y) not in floor:
+            out.append((f'a creature stands in the rock at row {y + 1}, column {x + 1}', [(x, y)]))
+        if what != '?' and not (what.startswith('list:') and p.list_of(what[5:])) and what not in D.MONSTERS:
+            out.append((f'no such creature or list: {what}', [(x, y)]))
+    for name, opts in p.lists.items():
+        for k, _w in opts:
+            if k not in D.MONSTERS:
+                out.append((f'the list {name} has a creature the game does not know: {k}', []))
+    if p.more and p.more[0] != '?' and not (p.more[0].startswith('list:') and p.list_of(p.more[0][5:])) \
+            and p.more[0] not in D.MONSTERS:
+        out.append((f'no such creature or list: {p.more[0]}', []))
+    from . import dressing as DR
+    for name, _n in p.dress:
+        if name not in DR.SETS:
+            out.append((f'no such set to dress the room with: {name}', []))
+    for e in p.events:
+        words = [e['when']] + e['if'] + list(e['then'])
+        words += [t.split(':', 2)[2] for t in e['then'] if t.startswith('after:') and t.count(':') >= 2]
+        for word in words:
+            verb, _, rest = word.partition(':')
+            if verb in ('switch', 'set', 'flip') and rest.split(':')[0] not in p.switches:
+                out.append((f'an event uses the switch "{rest.split(":")[0]}", which the piece does not have', []))
+            if verb in ('switch', 'set') and rest.count(':') and rest.split(':')[0] in p.switches \
+                    and rest.split(':')[1] not in p.switches[rest.split(':')[0]]:
+                out.append((f'the switch "{rest.split(":")[0]}" has no state "{rest.split(":")[1]}"', []))
+            if verb in ('count', 'add', 'sub') and rest.split(':')[0] not in p.counters:
+                out.append((f'an event uses the counter "{rest.split(":")[0]}", which the piece does not have', []))
     return out
 
 
@@ -235,6 +325,14 @@ def check(p):
     bad = problems(p)
     if bad:
         raise Bad(f'{p.file}: {p.name}: {bad[0][0]}')
+
+
+class Drawing(dict):
+    """One drawing of a piece: {(x, y): sign}, with .spots {(x, y): creature} turned along with it."""
+
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.spots = {}
 
 
 def drawn(p):
@@ -252,19 +350,59 @@ def drawn(p):
                     continue
             cells[(x, y)] = ch
     k, flip = random.randint(0, 3), random.random() < .5
-    out = {}
-    for (x, y), ch in cells.items():
+
+    def turn(x, y):
         if flip:
             x = -x
         for _ in range(k):
             x, y = -y, x
-        out[(x, y)] = ch
+        return x, y
+    out = {turn(x, y): ch for (x, y), ch in cells.items()}
     mx, my = min(c[0] for c in out), min(c[1] for c in out)
-    out = {(x - mx, y - my): ch for (x, y), ch in out.items()}
+    out = Drawing({(x - mx, y - my): ch for (x, y), ch in out.items()})
+    for c, what in p.spots.items():
+        tx, ty = turn(*c)
+        out.spots[(tx - mx, ty - my)] = what
     gate = next(c for c, ch in out.items() if ch == '+')
     step = next(((-dx, -dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
                  if out.get((gate[0] + dx, gate[1] + dy), '#') not in '#+'), (0, 1))
+    if p.dress:
+        dress_drawing(p, out, gate)
     return out, gate, step
+
+
+DRESSED = 0x100000          # a dressed thing rides in a drawing as chr(DRESSED + its tile)
+
+
+def dressed_tile(ch):
+    """The tile of a dressed thing's sign in a drawing, or None."""
+    return ord(ch) - DRESSED if len(ch) == 1 and ord(ch) >= DRESSED else None
+
+
+def dress_drawing(p, out, gate, rng=None):
+    """Dress a drawing by the piece's DRESS lines (dressing.py): the things laid ride in it as signs of their own."""
+    from . import dressing as DR
+    walk = {c for c, ch in out.items() if ch not in '#+' and _walks(ch, p)}
+    free = {c for c, ch in out.items() if ch == '.'}
+    wall = {(x + dx, y + dy) for x, y in out for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+            if out.get((x + dx, y + dy), '#') == '#'}
+    start = next((c for c in ((gate[0] + dx, gate[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+                  if c in walk), None)
+    if start is None:
+        return []
+    marks = {e['at'] for e in p.events if e['at']}
+    keep = {c for c, ch in out.items() if ch in p.things or ch in '<>' or ch in marks} | set(out.spots)
+    laid = DR.dress(free, walk, wall, start, p.dress, rng or random, keep)
+    for c, name in laid:
+        out[c] = chr(DRESSED + DR.tile(name))
+    return laid
+
+
+def _walks(ch, p):
+    if ch in p.things:
+        return D.TILES[p.things[ch][0]].walk
+    t = LEGEND.get(ch)
+    return t is None or D.TILES[t].walk
 
 
 # ------------------------------------------------------------------ the pack and its seal

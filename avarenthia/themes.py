@@ -86,9 +86,22 @@ def lay(m, plan, room_ids, piece_of):
                 m.things[(x, y)] = (act, rid)
         elif ch in PC.LEGEND:
             m.set(x, y, PC.LEGEND[ch])
+        elif PC.dressed_tile(ch) is not None:
+            m.set(x, y, PC.dressed_tile(ch))
+            continue                                    # a dressed thing is no mark
         m.__dict__.setdefault('marks', {})[(x, y)] = ch
+        m.__dict__.setdefault('laid', {})[(x, y)] = m.tile(x, y)     # as drawn, for "back as drawn"
+    m.spots = {}
+    for c, what in getattr(plan, 'spots', {}).items():
+        if c in room_ids and room_ids[c] in piece_of:
+            m.spots[c] = (what, room_ids[c])
     for rid, pc in piece_of.items():
         m.rooms[rid][2] = pc.name
+        st = state(m, rid)
+        if pc.switches:
+            st['sw'] = {k: v[0] for k, v in pc.switches.items()}
+        if pc.counters:
+            st['ct'] = dict(pc.counters)
         for i, r in enumerate(m.room_of):
             if r == rid:
                 m.theme_cells.add(i)
@@ -211,6 +224,86 @@ def setup(game, m, lvl):
                         m.mons.append(make_monster(game, k, sp[0][0], sp[0][1], lvl + 1, 1))
 
 
+def creatures(game, m, lvl):
+    """The creatures the drawn pieces place (CREATURE lines and MORE): drawn ones always, '?' one of the place, a
+    list's own kinds only where they may live (else one of the place)."""
+    from . import pieces as PC
+    from .entities import make_monster
+    from .worldgen import choose_monster
+    tag = getattr(m, 'dtag', 'crypt')
+
+    def kind(what, pc):
+        if what == '?':
+            return choose_monster(lvl, tag)
+        if what.startswith('list:'):
+            opts = pc.list_of(what[5:]) if pc else None
+            ok = [(k, w) for k, w in (opts or ()) if k in D.MONSTERS and tag in D.MONSTERS[k]['tags'].split()]
+            if not ok:
+                return choose_monster(lvl, tag)
+            return random.choices([k for k, _w in ok], [w for _k, w in ok])[0]
+        return what if what in D.MONSTERS else choose_monster(lvl, tag)
+
+    def put(k, c):
+        o = make_monster(game, k, c[0], c[1], lvl)
+        o.awake = False
+        m.mons.append(o)
+    for c, (what, rid) in getattr(m, 'spots', {}).items():
+        pc = PC.by_name(m.rooms[rid][2]) if m.rooms[rid][2] else None
+        if not game.occupied(m, *c) and D.TILES[m.tile(*c)].walk:
+            put(kind(what, pc), c)
+    for rid, (_shape, _kind, name) in enumerate(getattr(m, 'rooms', [])):
+        pc = PC.by_name(name) if name else None
+        if not pc or not pc.more:
+            continue
+        what, lo, hi = pc.more
+        free = [c for c in cells_of(m, rid) if D.TILES[m.tile(*c)].walk and not game.occupied(m, *c)
+                and c not in m.things]
+        random.shuffle(free)
+        for c in free[:random.randint(lo, hi)]:
+            put(kind(what, pc), c)
+
+
+# ------------------------------------------------------------------ switches, counters, timers (the editor's script)
+def set_switch(game, rid, name, to=None):
+    """A switch of a room to a state (or on to its next one); the events that wait for it answer."""
+    from . import pieces as PC
+    m = game.map
+    st = state(m, rid)
+    sw = st.setdefault('sw', {})
+    pc = PC.by_name(m.rooms[rid][2]) if m.rooms[rid][2] else None
+    states = (pc.switches.get(name) if pc else None) or ['off', 'on']
+    now = sw.get(name, states[0])
+    if to is None:
+        to = states[(states.index(now) + 1) % len(states)] if now in states else states[0]
+    if to == now:
+        return
+    sw[name] = to
+    fire(game, f'switch:{name}:{to}', room=rid)
+
+
+def add_count(game, rid, name, n):
+    m = game.map
+    ct = state(m, rid).setdefault('ct', {})
+    ct[name] = ct.get(name, 0) + n
+    fire(game, f'count:{name}:{ct[name]}', room=rid)
+
+
+def back_as_drawn(game, rid):
+    """The room as it was drawn: its marked tiles, switches and counters back, the timers gone."""
+    from . import pieces as PC
+    m = game.map
+    inside = set(cells_of(m, rid))
+    for c, t in getattr(m, 'laid', {}).items():
+        if c in inside and not game.occupied(m, *c):
+            m.set(c[0], c[1], t)
+    pc = PC.by_name(m.rooms[rid][2]) if m.rooms[rid][2] else None
+    st = state(m, rid)
+    if pc:
+        st['sw'] = {k: v[0] for k, v in pc.switches.items()}
+        st['ct'] = dict(pc.counters)
+    m.timers = [t for t in getattr(m, 'timers', []) if t[2] != rid]
+
+
 # ------------------------------------------------------------------ while you are there
 def on_step(game):
     """Called after each step on a dungeon level: the mood line of a new room, and things you step on."""
@@ -276,7 +369,7 @@ def fire(game, when, room=None, cell=None):
             continue
         if cell is not None and (not ev['at'] or cell not in ev['at']):
             continue
-        if not all(_holds(game, c) for c in ev['cond']):
+        if not all(_holds(game, c, ev['room']) for c in ev['cond']):
             continue
         if not ev['again']:
             ev['done'] = True
@@ -284,8 +377,14 @@ def fire(game, when, room=None, cell=None):
             _then(game, th, ev['room'])
 
 
-def _holds(game, c):
+def _holds(game, c, rid=None):
     from . import towns as TW
+    if c.startswith('switch:') and rid is not None:            # switch:gate:open
+        _v, name, want = (c.split(':', 2) + [''])[:3]
+        return state(game.map, rid).get('sw', {}).get(name) == want
+    if c.startswith('count:') and rid is not None:             # count:plates:3 (at least)
+        _v, name, n = (c.split(':', 2) + ['0'])[:3]
+        return state(game.map, rid).get('ct', {}).get(name, 0) >= int(n or 0)
     if c == 'night':
         return TW.is_night(game)
     if c == 'day':
@@ -334,6 +433,17 @@ def _then(game, th, rid):
                 m.set(c[0], c[1], tile)
     elif verb == 'reveal':
         reveal(game)
+    elif verb in ('set', 'flip'):                               # set:gate:open   flip:gate
+        name, _, to = arg.partition(':')
+        set_switch(game, rid, name, to or None)
+    elif verb in ('add', 'sub'):                                # add:plates   sub:plates:2
+        name, _, n = arg.partition(':')
+        add_count(game, rid, name, (int(n or 1)) * (1 if verb == 'add' else -1))
+    elif verb == 'after':                                       # after:10:shut:Q   (in ten turns)
+        n, _, th2 = arg.partition(':')
+        m.__dict__.setdefault('timers', []).append([int(n or 1), th2, rid])
+    elif verb == 'reset':
+        back_as_drawn(game, rid)
 
 
 def wake_all(game):
@@ -354,6 +464,15 @@ def reveal(game):
 def tick(game):
     """Each turn on a level with theme rooms: the moving parts."""
     m, p = game.map, game.player
+    if getattr(m, 'timers', None):
+        due = []
+        for t in m.timers:
+            t[0] -= 1
+            if t[0] <= 0:
+                due.append(t)
+        m.timers = [t for t in m.timers if t[0] > 0]
+        for _n, th, rid in due:
+            _then(game, th, rid)
     if not getattr(m, 'things', None) and not getattr(m, 'theme_cells', None):
         return
     for o in list(m.mons):

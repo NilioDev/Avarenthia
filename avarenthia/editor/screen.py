@@ -5,11 +5,13 @@ Pure: it draws on any canvas (the tests use FakeCanvas) and takes input as calls
 text(s), mouse(kind, x, y, button) with x, y in screen cells (floats), wheel(dy, x, y). run.py feeds it from tcod
 and draws the drawing zoomed in."""
 import os
+import re
 
 from .. import data as D
 from .. import pieces as P
 from ..canvas import scale, wrap_text
 from . import files as F
+from . import layers as LY
 from . import tools as T
 from .model import Room, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, tile_of
 
@@ -34,8 +36,8 @@ AX, AY, AW, AH = 25, 3, 53, 42            # the drawing area
 RX = 80                                   # the right column
 PAL_Y0, PAL_Y1 = 11, H - 3                # the palette's lines
 
-TOOLS = [('d', 'Draw'), ('l', 'Line'), ('r', 'Rectangle'), ('f', 'Fill'), ('s', 'Select')]
-LAYERS = ('Ground', 'Things')
+TOOLS = [('d', 'Draw'), ('l', 'Line'), ('r', 'Rectangle'), ('f', 'Fill'), ('s', 'Select'), ('v', 'Variety')]
+LAYERS = ('Ground', 'Things', 'Creatures', 'Events')
 GROUND = ['.', '#', '"', 'r', 'v', '~', ',', 'L', '=', 'i']
 WAYS = ['+', 'n', '<', '>']
 FURNITURE = [c for c in P.LEGEND if c not in GROUND and c not in WAYS and c != 'n']
@@ -92,13 +94,20 @@ def _is_ground(ch):
     return ch in GROUND or ch in WAYS or ch == ' '
 
 
-class Editor:
+class Editor(LY.LayerTools):
+    _Item = Item
+
     def __init__(self, room=None):
         self.room = room or self.blank()
         self.tool = 'Draw'
         self.layer = 'Ground'
-        self.pick = {'Ground': Item('sign', '.', label='floor'), 'Things': Item('sign', 's', label='statue')}
-        self.pal_scroll = {'Ground': 0, 'Things': 0}
+        self.pick = {'Ground': Item('sign', '.', label='floor'), 'Things': Item('sign', 's', label='statue'),
+                     'Creatures': Item('spot', '?', label='one of the place'), 'Events': Item('none'),
+                     'Variety': None}
+        self.pal_scroll = {k: 0 for k in self.pick}
+        self.ev_sel = None            # the event picked on the Events layer
+        self.ev_scroll = 0
+        self.dressed = set()          # cells just dressed (Ctrl+D, now): light green until the next stroke
         self.zoom = 2
         self.view = [0, 0]
         self.center()
@@ -156,10 +165,14 @@ class Editor:
         return self._probs
 
     def _problems(self):
+        empty = [i + 1 for i, e in enumerate(self.room.events) if not e['then']]
+        if empty:
+            return [(False, f'Event {n} needs a THEN: click its + to give it one, or × to take it away.', [])
+                    for n in empty]
         try:
             p = self.piece()
         except P.Bad as e:
-            return [(False, str(e).split(': ', 1)[-1], [])]
+            return [(False, re.sub(r'^[^:]*:\d+: ', '', str(e)), [])]
         out = [(False, m[0].upper() + m[1:] + '.', cells) for m, cells in P.problems(p)]
         if not out:
             out.append((True, 'One way in, in a straight wall, two cells of room on each side.', []))
@@ -172,6 +185,15 @@ class Editor:
         for g, (name, act) in sorted(self.room.things.items()):
             if act and any(g in row for row in self.room.grid):
                 out.append((True, f'The {name} does: {act}.', []))
+        r = self.room
+        if r.spots or r.more:
+            n = len(r.spots)
+            out.append((True, f"{n} creature{'s' if n != 1 else ''} drawn" +
+                        (f', and {r.more[1]} to {r.more[2]} more.' if r.more else '.'), []))
+        if r.events:
+            out.append((True, f"{len(r.events)} event{'s' if len(r.events) > 1 else ''}.", []))
+        if r.dress:
+            out.append((True, 'Dressed in the game: ' + ', '.join(f'{n} {k}' for n, k in r.dress) + '.', []))
         if not self.room.moods:
             out.append((None, 'No mood line yet: write one, or the game says nothing when you step in.', []))
         else:
@@ -192,11 +214,29 @@ class Editor:
             self.say('All 26 letters for things are in use in this piece.', True)
         return g
 
+    def pal(self):
+        """[(header, [Item])] of the palette as it stands: the Variety groups while that tool is picked."""
+        if self.tool == 'Variety':
+            return self.variety_palette()
+        if self.layer == 'Creatures':
+            return self.creature_palette()
+        if self.layer == 'Events':
+            return self.event_palette()
+        return palette(self.layer)
+
+    def _pal_key(self):
+        return 'Variety' if self.tool == 'Variety' else self.layer
+
     def apply(self, cells, ch=None):
+        self.dressed = set()
+        if self.tool == 'Variety' and ch is None:
+            self.variety_paint(cells)
+            return
         ch = self.current() if ch is None else ch
         if ch is None:
             return
         T.paint(self.room, cells, ch)
+        self.room.spots = {c: v for c, v in self.room.spots.items() if self.room.get(*c) not in ' #+'}
         self.room.tidy()
 
     def pick_under(self, c):
@@ -242,6 +282,10 @@ class Editor:
             elif tok == 'v' and self.clip:
                 self.pasting = True
                 self.say('Click where its top left corner goes; Esc to stop.')
+            elif tok == 'd':
+                self.dress_dialog()
+            elif tok == 'r':
+                self.roll_dialog()
             return
         if tok == 'esc':
             if self.pasting or self.sel:
@@ -258,9 +302,13 @@ class Editor:
         if tok == 'space':
             self.space = True
             return
+        if self.layer == 'Creatures' and self.creature_key(tok):
+            return
         for k, name in TOOLS:
             if tok == k:
                 self.tool = name
+                if self.layer in ('Creatures', 'Events'):
+                    self.layer = 'Ground'
                 if name != 'Select':
                     self.sel = None
                 return
@@ -294,8 +342,11 @@ class Editor:
                 st['scroll'] = max(0, st.get('scroll', 0) - dy * 3)
             return
         if x < 24 and y >= PAL_Y0:
-            n = sum(1 + len(items) + 1 for _h, items in palette(self.layer))
-            self.pal_scroll[self.layer] = max(0, min(n - (PAL_Y1 - PAL_Y0), self.pal_scroll[self.layer] - dy * 3))
+            n = sum(1 + len(items) + 1 for _h, items in self.pal())
+            k = self._pal_key()
+            self.pal_scroll[k] = max(0, min(n - (PAL_Y1 - PAL_Y0), self.pal_scroll[k] - dy * 3))
+        elif self.layer == 'Events' and y >= AY + AH + 1:
+            self.ev_scroll = max(0, min(len(self.room.events) - 1, self.ev_scroll - dy))
         elif self.cell_at(x, y) is not None:
             self.set_zoom(self.zoom + (1 if dy > 0 else -1), self.cell_at(x, y))
 
@@ -336,6 +387,13 @@ class Editor:
                         if what == 'select':
                             self.sel = (self.drag[1], c)
             elif kind == 'up':
+                if what == 'wire':
+                    if c is not None and c != self.drag[1] and self.wire(self.drag[1], c):
+                        self.say('A wire: an event is made. Change what it does in the list below.')
+                    elif c == self.drag[1]:
+                        self.event_click(c, 1)
+                    self.drag = None
+                    return
                 if what in ('line', 'rect'):
                     a, b = self.drag[1], self.drag[2]
                     cells = T.line_cells(a, b) if what == 'line' else T.rect_cells(a, b, filled=self.drag[3] if len(self.drag) > 3 else False)
@@ -364,19 +422,32 @@ class Editor:
                 r.tidy()
                 self.pasting = False
                 return
+            if r.inb(*c) and self.layer == 'Creatures':
+                self.creature_click(c, button)
+                return
+            if r.inb(*c) and self.layer == 'Events':
+                if button == 1 and r.get(*c) in r.things:
+                    self.drag = ('wire', c)
+                else:
+                    self.event_click(c, button)
+                return
             if button == 3:
                 if r.inb(*c):
                     self.pick_under(c)
                 return
             if not r.inb(*c):
                 return
-            if self.tool == 'Draw':
+            if self.tool in ('Draw', 'Variety'):
                 r.change()
                 self.apply([c])
                 self.drag = ('paint', c)
             elif self.tool == 'Fill':
                 r.change()
                 self.apply(T.fill_cells(r, c))
+            elif self.tool == 'Variety':
+                r.change()
+                self.apply([c])
+                self.drag = ('paint', c)
             elif self.tool in ('Line', 'Rectangle'):
                 r.change()
                 self.drag = ('line' if self.tool == 'Line' else 'rect', c, c, self._shift)
@@ -389,7 +460,7 @@ class Editor:
         if x >= RX:
             return self.right_click(x, y, button)
         if y >= AY + AH:
-            return self.bottom_click(x, y)
+            return self.bottom_click(x, y, button)
 
     _shift = False
 
@@ -417,20 +488,22 @@ class Editor:
 
     def left_click(self, x, y, button):
         if 2 <= y < 2 + len(TOOLS):
-            self.tool = TOOLS[y - 2 if isinstance(y, int) else int(y) - 2][1]
+            self.tool = TOOLS[int(y) - 2][1]
+            if self.layer in ('Creatures', 'Events'):
+                self.layer = 'Ground'
             return
         if PAL_Y0 <= y < PAL_Y1:
-            line = int(y) - PAL_Y0 + self.pal_scroll[self.layer]
+            line = int(y) - PAL_Y0 + self.pal_scroll[self._pal_key()]
             for kind, it in self._pal_lines():
                 if line == 0:
-                    if kind == 'item':
-                        self.pick[self.layer] = it
+                    if kind == 'item' and not self.palette_click(it, button):
+                        self.pick[self._pal_key()] = it
                     return
                 line -= 1
 
     def _pal_lines(self):
         out = []
-        for head, items in palette(self.layer):
+        for head, items in self.pal():
             out.append(('head', head))
             out += [('item', it) for it in items]
             out.append(('gap', None))
@@ -444,6 +517,8 @@ class Editor:
         for i, lay in enumerate(LAYERS):
             if y == 24 + i:
                 self.layer = lay
+                if self.tool == 'Variety' and lay in ('Creatures', 'Events'):
+                    self.tool = 'Draw'
                 return
         for ok, msg, cells, yy, n in self._check_rows():
             if yy <= y < yy + n and cells:
@@ -452,8 +527,16 @@ class Editor:
                 self.view = [cx - vw // 2, cy - vh // 2]
                 return
 
-    def bottom_click(self, x, y):
-        pass
+    def bottom_click(self, x, y, button=1):
+        if self.layer != 'Events':
+            return
+        for bx, by, s, _k, act, _i in self.event_rows(AX + 1, AY + AH + 2, AW - 2, H - AY - AH - 4):
+            if by == int(y) and bx <= x < bx + len(s) and act:
+                if act[0] == 'sel':
+                    self.ev_sel = act[1]
+                else:
+                    self.event_act(act, button)
+                return
 
     # ------------------------------------------------------------ fields of the piece
     def _field_rows(self):
@@ -496,6 +579,10 @@ class Editor:
         return x >= RX and any(int(y) == yy and n == self.field[0] for n, yy in self._field_rows())
 
     def text(self, s):
+        if self.dialog and self.dialog[0] == 'line':
+            st = self.dialog[1]
+            st['text'] = (st['text'] + s)[:120]
+            return
         if self.field:
             name, val = self.field
             limit = 120 if name.startswith('mood') else 40
@@ -610,6 +697,26 @@ class Editor:
     # ------------------------------------------------------------ dialogs
     def dialog_key(self, tok, shift, ctrl):
         kind, st = self.dialog[0], self.dialog[1] if len(self.dialog) > 1 else {}
+        if kind == 'line':
+            if tok == 'backspace':
+                st['text'] = st['text'][:-1]
+            elif tok == 'esc':
+                self.dialog = None
+            elif tok in ('enter', 'np_enter'):
+                self.dialog = None
+                st['done'](st['text'])
+            return
+        if kind == 'dress' and tok in ('n', 'g', 'r'):
+            if tok == 'n':
+                self.dress_now()
+            elif tok == 'g':
+                self.dress_in_game()
+            elif st.get('laid'):
+                self.dress_now(again=True)
+            return
+        if kind == 'roll' and tok == 'r':
+            self.roll_dialog()
+            return
         if tok == 'esc':
             if kind == 'new' and st.get('typing'):
                 st['typing'] = False
@@ -640,6 +747,20 @@ class Editor:
     def dialog_click(self, x, y, button):
         kind, st = self.dialog[0], self.dialog[1] if len(self.dialog) > 1 else {}
         y = int(y)
+        if kind == 'pick':
+            i = y - 8 + st.get('scroll', 0)
+            if 20 <= x < 90 and 8 <= y < 52 and 0 <= i < len(st['options']):
+                self.dialog = None
+                st['done'](st['options'][i][1])
+            return
+        if kind == 'lists':
+            return self.lists_click(x, y, button)
+        if kind == 'variety':
+            return self.variety_click(x, y, button)
+        if kind == 'dress':
+            return self.dress_click(x, y, button)
+        if kind in ('line', 'roll'):
+            return
         if kind == 'open':
             fx0, rx0, y0 = 6, 34, 8
             if fx0 <= x < rx0 - 1 and y0 <= y < y0 + len(st['files']):
@@ -719,7 +840,9 @@ class Editor:
         self.render_bottom(cv)
         self.render_status(cv)
         if self.dialog:
-            {'open': self.render_open, 'new': self.render_new, 'kinds': self.render_kinds}[self.dialog[0]](cv)
+            {'open': self.render_open, 'new': self.render_new, 'kinds': self.render_kinds, 'line': self.render_line,
+             'pick': self.render_pick, 'lists': self.render_lists, 'variety': self.render_variety,
+             'dress': self.render_dress, 'roll': self.render_roll}[self.dialog[0]](cv)
 
     def render_top(self, cv):
         cv.fill(0, 0, W, 1, ' ', FG, BAR)
@@ -743,8 +866,8 @@ class Editor:
             cv.text(4, 2 + i, lab, GOLD if on else FG, bg)
         cv.text(2, 2 + len(TOOLS), 'Ctrl+Z undo · Ctrl+Y', DIM, PANEL)
         cv.frame(0, PAL_Y0 - 1, 24, H - PAL_Y0, LINE, PANEL, 'Palette', GOLD)
-        lines = self._pal_lines()[self.pal_scroll[self.layer]:]
-        pick = self.pick[self.layer]
+        lines = self._pal_lines()[self.pal_scroll[self._pal_key()]:]
+        pick = self.pick[self._pal_key()] or Item('none')
         for i, (kind, it) in enumerate(lines[:PAL_Y1 - PAL_Y0]):
             y = PAL_Y0 + i
             if kind == 'head':
@@ -753,9 +876,16 @@ class Editor:
                 on = it.kind == pick.kind and it.ch == pick.ch and it.name == pick.name and it.act == pick.act
                 bg = SEL if on else PANEL
                 cv.fill(1, y, 22, 1, ' ', FG, bg)
-                t = it.tile()
+                t = it.tile() if it.kind in ('sign', 'thing') else None
                 if it.kind == 'sign' and it.ch == ' ':
                     cv.put(2, y, '·', DIM, ROCK)
+                elif it.kind == 'spot':
+                    ch, fg = self.spot_look(it.ch)
+                    cv.put(2, y, ch, fg, bg)
+                elif it.kind == 'mark':
+                    cv.put(2, y, it.ch, GOLD, bg)
+                elif it.kind == 'group':
+                    cv.put(2, y, it.ch, (120, 200, 220), (16, 34, 40))
                 elif t:
                     cv.put(2, y, t.ch, t.fg, t.bg or bg)
                 cv.text(4, y, it.label[:19], GOLD if on else FG, bg)
@@ -804,7 +934,8 @@ class Editor:
                     else:
                         cv.put(i, j, '·' if (x % 2 == 0 and y % 2 == 0) else ' ', (44, 40, 36), ROCK)
                 elif ch in r.subst:
-                    cv.put(i, j, ch, (120, 200, 220), (16, 34, 40))
+                    dim = .45 if self.layer in ('Creatures', 'Events') else 1
+                    cv.put(i, j, ch, scale((120, 200, 220), dim), scale((16, 34, 40), dim))
                 else:
                     t = _tile(ch, r.things)
                     if t is None:
@@ -813,11 +944,25 @@ class Editor:
                         fg, bg = t.fg, t.bg or (20, 18, 16)
                         if self.layer == 'Ground' and not _is_ground(ch):
                             fg = scale(fg, .7)
-                        cv.put(i, j, t.ch, fg, bg)
+                        elif self.layer in ('Creatures', 'Events'):
+                            fg, bg = scale(fg, .45), scale(bg, .6)
+                        if self.layer == 'Events' and ch in r.things:
+                            on = self.ev_sel is not None and self.ev_sel < len(r.events) and \
+                                r.events[self.ev_sel]['at'] == ch
+                            cv.put(i, j, ch, (255, 220, 120) if on else GOLD, (70, 50, 16) if on else (40, 30, 12))
+                        else:
+                            cv.put(i, j, t.ch, fg, bg)
+                if c in r.spots and ch not in ' #+':
+                    sch, sfg = self.spot_look(r.spots[c])
+                    cv.put(i, j, sch, sfg if self.layer == 'Creatures' else scale(sfg, .6), None)
+                if c in self.dressed:
+                    cv.put_bg(i, j, (40, 70, 34))
                 if c in bad:
                     cv.put_bg(i, j, WARN_BG)
                 if self.sel and _in_rect(c, *self.sel):
                     cv.put_bg(i, j, (60, 60, 90))
+        if self.layer == 'Events':
+            LY.draw_wires(cv, self, vw, vh, GOLD)
         # the size handles
         for (hx, hy) in ((r.w, r.h), (r.w, r.h // 2), (r.w // 2, r.h)):
             i, j = hx - self.view[0], hy - self.view[1]
@@ -866,22 +1011,25 @@ class Editor:
             i = int(name[4:])
             s = (self.field[1] + '_') if typing else '"' + r.moods[i] + '"'
             cv.wrap(x + 2, y, W - x - 4, s, FG, SEL if typing else PANEL, 4)
-        cv.frame(x, 23, W - x, 6, LINE, PANEL, 'Layers', GOLD)
+        cv.frame(x, 23, W - x, 7, LINE, PANEL, 'Layers', GOLD)
+        counts = {'Creatures': len(r.spots), 'Events': len(r.events)}
         for i, lay in enumerate(LAYERS):
             on = lay == self.layer
             bg = SEL if on else PANEL
             cv.fill(x + 1, 24 + i, W - x - 2, 1, ' ', FG, bg)
             cv.text(x + 2, 24 + i, '√', GOOD, bg)
             cv.text(x + 4, 24 + i, lay, GOLD if on else FG, bg)
-        cv.text(x + 2, 27, 'Tab: next layer', DIM, PANEL)
-        cv.frame(x, 29, W - x, H - 31, LINE, PANEL, 'Will the game take it?', GOLD)
+            if counts.get(lay):
+                cv.text(x + 15, 24 + i, str(counts[lay]), DIM, bg)
+        cv.text(x + 2, 28, 'Tab: next layer', DIM, PANEL)
+        cv.frame(x, 30, W - x, H - 32, LINE, PANEL, 'Will the game take it?', GOLD)
         for ok, msg, cells, y, n in self._check_rows():
             sign, col = ('√', GOOD) if ok else ('×', BAD) if ok is False else ('!', GOLD)
             cv.put(x + 2, y, sign, col, PANEL)
             cv.wrap(x + 4, y, W - x - 6, msg, FG if ok else BAD if ok is False else GOLD, PANEL, n)
 
     def _check_rows(self):
-        out, y = [], 30
+        out, y = [], 31
         for ok, msg, cells in self.problems():
             n = len(wrap_text(msg, W - RX - 6))
             if y + n > H - 3:
@@ -891,7 +1039,8 @@ class Editor:
         return out
 
     def render_bottom(self, cv):
-        cv.frame(AX - 1, AY + AH + 1, AW + 2, H - AY - AH - 2, LINE, BG, 'Hints', DIM)
+        cv.frame(AX - 1, AY + AH + 1, AW + 2, H - AY - AH - 2, LINE, BG,
+                 'Events' if self.layer == 'Events' and not self.field else 'Hints', DIM)
         y = AY + AH + 2
         if self.field:
             lines = ['Type, then Enter. Esc leaves it as it was.']
@@ -902,6 +1051,17 @@ class Editor:
             lines = ['Click where the top left corner of what you copied goes. Esc stops.']
         elif self.tool == 'Select':
             lines = ['Drag to choose. Ctrl+C copies, Ctrl+X cuts, Ctrl+V sets it down, Delete makes it rock.']
+        elif self.layer == 'Events':
+            return self.render_events(cv)
+        elif self.tool == 'Variety':
+            lines = ['Paint cells with a group: in every world the game picks one of its signs, by weight.',
+                     'Right mouse on a group in the palette changes its signs and weights.']
+        elif self.layer == 'Creatures':
+            more = self.room.more
+            lines = ['Left mouse sets the picked creature down, right mouse takes it away. ? is one of the place; '
+                     '1-9 one from your own lists.',
+                     'And more: ' + (f'{more[0]}, {more[1]} to {more[2]}, where there is room.' if more else
+                                     'none. Set it under + lists, and more.')]
         elif self.layer == 'Things':
             lines = ['A telling thing does something when you walk into it; pick what it does under TELLING THINGS. '
                      'MORE has every tile of the game.', HINTS[0]]
@@ -913,6 +1073,19 @@ class Editor:
             if y >= H - 2:
                 break
 
+    def render_events(self, cv):
+        y0 = AY + AH + 2
+        cols = {'n': DIM, 'k': DIM, 'v': FG, 'g': GOLD, 'b': BAD}
+        for x, y, s, kind, _act, i in self.event_rows(AX + 1, y0, AW - 2, H - AY - AH - 4):
+            on = i == self.ev_sel and i >= 0
+            col = cols[kind]
+            if on and kind == 'n':
+                col = GOLD
+            cv.text(x, y, s, col, SEL if (on and kind == 'v') else BG)
+        if not self.room.events:
+            cv.wrap(AX + 1, y0 + 2, AW - 2, 'Click a thing to give it an event, click the floor to make a mark, or '
+                    'drag from one mark to another for a wire.', DIM, BG, 3)
+
     def render_status(self, cv):
         cv.fill(0, H - 1, W, 1, ' ', FG, BAR)
         if self.msg:
@@ -923,7 +1096,11 @@ class Editor:
             ch = self.room.get(*self.hover)
             t = _tile(ch, self.room.things)
             bits.append(f'x {self.hover[0]} y {self.hover[1]}')
-            bits.append('rock' if ch == ' ' else t.name if t else '?')
+            bits.append('rock' if ch == ' ' else t.name if t else f'variety group {ch}' if ch in self.room.subst else '?')
+            what = self.room.spots.get(tuple(self.hover))
+            if what:
+                bits.append('one of the place' if what == '?' else f'one of {what[5:]}' if what.startswith('list:')
+                            else D.MONSTERS.get(what, {}).get('name', what))
         bits += [self.tool, f'layer {self.layer}', f'zoom {self.zoom}', f'{self.room.w} x {self.room.h}',
                  'not saved' if self.room.dirty else 'saved']
         cv.text(1, H - 1, ' · '.join(bits), DIM, BAR, maxw=W - 2)
@@ -980,6 +1157,112 @@ class Editor:
         cv.text(nx + 8, ny + 15, 'make it', FG, PANEL)
         cv.text(nx + 16, ny + 15, 'Esc', GOLD, PANEL)
         cv.text(nx + 20, ny + 15, 'back', FG, PANEL)
+
+    def render_line(self, cv):
+        st = self.dialog[1]
+        cv.frame(20, 24, 70, 7, GOLD, PANEL, st['title'], GOLD)
+        cv.fill(22, 26, 66, 1, ' ', FG, SEL)
+        cv.text(22, 26, (st['text'] + '_')[-66:], FG, SEL)
+        cv.text(22, 28, 'Enter: done. Esc: back.', DIM, PANEL)
+
+    def render_pick(self, cv):
+        st = self.dialog[1]
+        cv.frame(18, 5, 74, 50, GOLD, PANEL, st['title'], GOLD)
+        opts = st['options'][st.get('scroll', 0):]
+        for i, (label, _v) in enumerate(opts[:44]):
+            cv.text(20, 8 + i, label[:70], FG, PANEL)
+        if len(opts) > 44:
+            cv.text(20, 52, 'wheel: more', DIM, PANEL)
+        cv.text(20, 53, 'Click one. Esc: back.', DIM, PANEL)
+
+    def render_lists(self, cv):
+        st = self.dialog[1]
+        r = self.room
+        cv.frame(4, 5, 102, 50, GOLD, PANEL, 'My lists of creatures, and more', GOLD)
+        cv.text(6, 7, 'MY LISTS (KEYS 1-9)', DIM, PANEL)
+        names = list(r.lists)
+        for i, n in enumerate(names):
+            on = n == st.get('list')
+            cv.fill(5, 8 + i, 25, 1, ' ', FG, SEL if on else PANEL)
+            cv.text(6, 8 + i, f'{i + 1} {n}'[:23], GOLD if on else FG, SEL if on else PANEL)
+        if len(names) < 9:
+            cv.text(6, 8 + len(names), '+ a new list', GOLD, PANEL)
+        cv.text(6, 47, 'AND MORE, WHERE THERE IS ROOM', DIM, PANEL)
+        m = r.more
+        cv.text(6, 48, (f'{m[0]}, {m[1]} to {m[2]}' if m else 'none')[:23], GOLD, PANEL)
+        cur = st.get('list')
+        cv.text(32, 7, 'IN THE LIST: LEFT +1, RIGHT -1', DIM, PANEL)
+        if cur in r.lists:
+            for i, (k, w) in enumerate(r.lists[cur][:40]):
+                d = D.MONSTERS.get(k)
+                cv.put(32, 8 + i, d['ch'] if d else '?', d['fg'] if d else BAD, PANEL)
+                cv.text(34, 8 + i, (d['name'] if d else k)[:22], FG, PANEL)
+                cv.text(58, 8 + i, f'{w:>3}', GOLD, PANEL)
+            cv.text(64, 7, 'MAY LIVE HERE: CLICK TO ADD', DIM, PANEL)
+            mons = LY.creatures_for(r.kinds)[st.get('scroll', 0):]
+            for i, k in enumerate(mons[:44]):
+                d = D.MONSTERS[k]
+                cv.put(64, 8 + i, d['ch'], d['fg'], PANEL)
+                cv.text(66, 8 + i, d['name'][:36], FG, PANEL)
+        cv.text(6, 52, 'Right mouse on a list takes it away. Esc: back.', DIM, PANEL)
+        cv.text(6, 53, 'Only kinds that may live in the place come; the others become one of the place.', DIM, PANEL)
+
+    def render_variety(self, cv):
+        st = self.dialog[1]
+        g = st['group']
+        opts = self.room.subst.get(g, [])
+        h = len(opts) + len(self._variety_adds()) + 8
+        cv.frame(28, 14, 56, h, GOLD, PANEL, f'Variety group {g}', GOLD)
+        cv.text(30, 16, 'ONE OF THESE, BY WEIGHT: LEFT +1, RIGHT -1', DIM, PANEL)
+        for i, (c, w) in enumerate(opts):
+            cv.text(30, 18 + i, self._sign_name(c)[:40], FG, PANEL)
+            cv.text(76, 18 + i, f'{w:>3}', GOLD, PANEL)
+        for j, (label, _c) in enumerate(self._variety_adds()):
+            cv.text(30, 19 + len(opts) + j, label[:52], GOLD, PANEL)
+        cv.text(30, 14 + h - 2, 'Esc: back.', DIM, PANEL)
+
+    def render_dress(self, cv):
+        st = self.dialog[1]
+        names = list(LY.DR.SETS)
+        x0, y0 = 30, 16
+        cv.frame(28, 13, 56, len(names) + 9, GOLD, PANEL, 'Ctrl+D: dress the room', GOLD)
+        cv.text(x0, 14, 'SETS AND HOW FULL', DIM, PANEL)
+        for i, n in enumerate(names):
+            on = n in st['sets']
+            cv.text(x0, y0 + i, ('■ ' if on else '□ ') + n, GOLD if on else FG, PANEL)
+            if on:
+                for k in range(5):
+                    cv.put(x0 + 22 + k * 2, y0 + i, '■' if k < st['sets'][n] else '□', GOLD, PANEL)
+        y = y0 + len(names) + 2
+        cv.text(x0, y, 'N', GOLD, PANEL)
+        cv.text(x0 + 2, y, 'Now', FG, PANEL)
+        cv.text(x0 + 12, y, 'G', GOLD, PANEL)
+        cv.text(x0 + 14, y, 'In the game', FG, PANEL)
+        if st.get('laid'):
+            cv.text(x0 + 30, y, 'R', GOLD, PANEL)
+            cv.text(x0 + 32, y, 'Roll again', FG, PANEL)
+        cv.text(x0, y + 1, 'Now draws it in, light green. In the game: anew in every world.', DIM, PANEL)
+
+    def render_roll(self, cv):
+        st = self.dialog[1]
+        cv.frame(4, 5, 102, 50, GOLD, PANEL, 'Ctrl+R: as the game draws it', GOLD)
+        for n, dr in enumerate(st['draws']):
+            ox, oy = 6 + n * 50, 8
+            for (x, y), ch in dr.items():
+                if x >= 48 or y >= 44:
+                    continue
+                t = P.dressed_tile(ch)
+                t = D.TILES[t] if t is not None else _tile(ch, self.room.things)
+                if t is None:
+                    cv.put(ox + x, oy + y, '?', BAD, PANEL)
+                else:
+                    cv.put(ox + x, oy + y, t.ch, t.fg, t.bg or (20, 18, 16))
+            for (x, y), what in dr.spots.items():
+                if x < 48 and y < 44:
+                    ch, fg = self.spot_look(what)
+                    cv.put(ox + x, oy + y, ch, fg, None)
+        cv.text(6, 53, 'Turned, mirrored, variety picked and dressed, as in a world. R rolls again. Esc: back.',
+                DIM, PANEL)
 
     def render_kinds(self, cv):
         kx, ky = RX + 2, 5

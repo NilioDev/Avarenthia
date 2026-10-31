@@ -66,3 +66,26 @@ Events
             wake (every creature on the level)   open:<mark> (bars, rubble or a door there give way)
             shut:<mark> (bars drop there)   cavein:<mark> (rubble there)   flood:<mark> (water there)   reveal (the level)
     again=yes   the event can happen more than once (by default once)
+
+Creatures, lists and more (the editor's Creatures layer)
+--------------------------------------------------------
+    CREATURE: skeleton at 4,2       this one, here, always (x and y count from 0, the top left of the MAP)
+    CREATURE: ? at 6,3              one of the place, by its kind and level
+    CREATURE: list:war band at 5,5  one from a list; a kind that may not live in the place becomes one of the place
+    LIST:     war band = orc:6 orc_shaman:1 ogre:1     a list of the piece (before the first NAME: for every piece)
+    MORE:     list:war band 0-2     0 to 2 more where there is room (also "? 1-3" or a creature key)
+
+Switches, counters and timers (the editor's Events layer)
+---------------------------------------------------------
+    SWITCH:   gate = shut open      a switch and its states; the first is how it starts (on its own: off on)
+    COUNTER:  plates 0              a counter and where it starts
+    when=     switch:gate:open (the switch comes to that state)   count:plates:3 (the counter comes to 3)
+    if=       switch:gate:open      count:plates:3 (at least 3)
+    then=     set:gate:open   flip:gate (to its next state)   add:plates   sub:plates:2
+              after:10:shut:Q (in ten turns, the rest is one more then)   reset (the room back as drawn)
+    A wire in the editor is one of these events: when you bump A, flip the gate.
+
+Dressing (Ctrl+D in the editor)
+-------------------------------
+    DRESS:    hall 3                dressed anew in every world from a set, how full 1 to 5 (dressing.py has the
+                                    sets: war camp hall ruin library crypt cave storeroom forge temple barracks den)

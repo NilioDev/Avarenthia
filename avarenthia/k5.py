@@ -56,6 +56,7 @@ class Plan:
         self.bad_doors = self.double = 0
         self.themes = []            # rooms behind a single entrance, kept for theme rooms
         self.marks = {}             # what the drawn pieces put in their rooms: {cell: glyph}
+        self.spots = {}             # the creatures they place: {cell: creature key, '?' or 'list:<name>'}
         self.bottom = None          # the room of the bottom piece, when there is one
 
 
@@ -412,6 +413,8 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
         for (x, y), ch in arrival[1][0].items():
             if ch not in '#+.':
                 marks[(x + ox, y + oy)] = ch
+        for (x, y), what in getattr(arrival[1][0], 'spots', {}).items():
+            plan.spots[(x + ox, y + oy)] = what
     misses = 0
     piece_of = {}
     for _attempt in range(700):
@@ -491,6 +494,8 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
             for (x, y), ch in theme[0][1][0].items():
                 if ch not in '#+.':
                     marks[(x + ox, y + oy)] = ch
+            for (x, y), what in getattr(theme[0][1][0], 'spots', {}).items():
+                plan.spots[(x + ox, y + oy)] = what
         open_ends.discard((wx, wy))
         if kind == 'hall':
             arms_of.append((me, [{(x + ox, y + oy) for x, y in a} for a, _e in arms]))
@@ -549,6 +554,7 @@ def _centre(plan):
         r.cells = {mv(c) for c in r.cells}
     plan.up, plan.down = mv(plan.up), mv(plan.down)
     plan.marks = {mv(c): ch for c, ch in plan.marks.items()}
+    plan.spots = {mv(c): what for c, what in plan.spots.items()}
 
 
 def _prune(lv, arms_of, doors, rooms):

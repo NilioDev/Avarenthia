@@ -41,6 +41,12 @@ class Room:
         self.things = {}                  # letter -> (tile name, action or None)
         self.subst = {}                   # digit -> [(sign, weight)]
         self.events = []                  # as pieces._event makes them
+        self.spots = {}                   # (x, y) -> creature key, '?' or 'list:<name>'
+        self.lists = {}                   # name -> [(creature key, weight)]
+        self.more = None                  # (what, least, most)
+        self.switches = {}                # name -> [states]
+        self.counters = {}                # name -> start
+        self.dress = []                   # [(set, fullness)]: dressed in the game
         self.file = ''
         self.undo, self.redo = [], []
         self.dirty = False
@@ -69,6 +75,7 @@ class Room:
         w, h = max(3, min(MAX_W, w)), max(3, min(MAX_H, h))
         g = [[self.get(x, y) for x in range(w)] for y in range(h)]
         self.grid = g
+        self.spots = {c: v for c, v in self.spots.items() if self.inb(*c)}
         return w, h
 
     def shift(self, dx, dy):
@@ -80,17 +87,20 @@ class Room:
                 if 0 <= nx < self.w and 0 <= ny < self.h:
                     g[ny][nx] = self.grid[y][x]
         self.grid = g
+        self.spots = {(x + dx, y + dy): v for (x, y), v in self.spots.items() if self.inb(x + dx, y + dy)}
 
     # ------------------------------------------------------------ undo
     def _state(self):
         return (copy.deepcopy(self.grid), dict(self.things), copy.deepcopy(self.subst), copy.deepcopy(self.events),
-                (self.name, self.part, list(self.kinds), self.depth, self.weight, self.shape, self.gate, list(self.moods)))
+                (self.name, self.part, list(self.kinds), self.depth, self.weight, self.shape, self.gate, list(self.moods)),
+                copy.deepcopy((self.spots, self.lists, self.more, self.switches, self.counters, self.dress)))
 
     def _put_state(self, st):
         self.grid, self.things, self.subst, self.events = copy.deepcopy(st[0]), dict(st[1]), copy.deepcopy(st[2]), \
             copy.deepcopy(st[3])
         (self.name, self.part, kinds, self.depth, self.weight, self.shape, self.gate, moods) = st[4]
         self.kinds, self.moods = list(kinds), list(moods)
+        self.spots, self.lists, self.more, self.switches, self.counters, self.dress = copy.deepcopy(st[5])
 
     def change(self):
         """Call before a change (one stroke, one field): the state before it goes on the undo stack."""
@@ -152,6 +162,8 @@ class Room:
         r.things = names
         r.subst = {g: list(opts) for g, opts in p.subst.items()}
         r.events = copy.deepcopy(p.events)
+        r.spots, r.lists, r.more = dict(p.spots), copy.deepcopy(p.lists), p.more
+        r.switches, r.counters, r.dress = copy.deepcopy(p.switches), dict(p.counters), list(p.dress)
         r.file = p.file
         return r
 
@@ -164,6 +176,13 @@ class Room:
         while rows and not rows[0]:
             rows.pop(0)
         return rows
+
+    def top(self):
+        """How many empty rows rows() cuts at the top (the creatures' y counts from the first row written)."""
+        n = 0
+        while n < self.h and not ''.join(self.grid[n]).strip():
+            n += 1
+        return n if n < self.h else 0
 
     def to_piece(self):
         """A pieces.Piece of what is drawn now (not checked)."""
@@ -210,7 +229,19 @@ def _text(self):
         out.append(f"SUBST:  {g} = " + ' '.join(f"{'none' if c == ' ' else c}:{w}" for c, w in opts))
     for g, (name, act) in self.things.items():
         out.append(f'THING:  {g} = {name}' + (f' do:{act}' if act else ''))
+    for name, states in self.switches.items():
+        out.append(f"SWITCH: {name} = {' '.join(states)}")
+    for name, n in self.counters.items():
+        out.append(f'COUNTER: {name} {n}')
     out += [f'EVENT:  {_ev_text(e)}' for e in self.events]
+    for name, opts in self.lists.items():
+        out.append(f'LIST:   {name} = ' + ' '.join(f'{k}:{w}' for k, w in opts))
+    top = self.top()
+    for (x, y), what in sorted(self.spots.items(), key=lambda kv: (kv[0][1], kv[0][0])):
+        out.append(f'CREATURE: {what} at {x},{y - top}')
+    if self.more:
+        out.append(f'MORE:   {self.more[0]} {self.more[1]}-{self.more[2]}')
+    out += [f'DRESS:  {name} {n}' for name, n in self.dress]
     out.append('MAP')
     out += self.rows()
     out.append('ENDMAP')
