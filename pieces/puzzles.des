@@ -1,0 +1,322 @@
+; Puzzle rooms: examples of the puzzle things (puzzles.py, the editor's round B2, approved 31 October 2026).
+; Each is a side room with a find behind bars or water; the way on never hangs on one. A room with blocks has a
+; lever that sets it back as drawn. The format: README.txt.
+
+; ================================================================== plates and blocks
+NAME:   weighing hall
+SHAPE:  a hall with plates in the floor
+DEPTH:  1
+WEIGHT: 4
+MOOD:   Two worn plates are set in the floor, and two blocks of stone stand near them. Behind bars, a chest.
+MOOD:   A weighing hall. The plates in the floor sit a finger proud, waiting for a load.
+THING:  P = pressure plate do:pressure
+THING:  B = stone block do:block
+THING:  Q = bars
+THING:  R = lever do:lever
+COUNTER: plates 0
+EVENT:  when=press at=P then=add:plates again=yes
+EVENT:  when=release at=P then=sub:plates again=yes
+EVENT:  when=count:plates:2 then=open:Q then=msg:"Both plates are down. With a long grinding, the bars sink into the floor."
+EVENT:  when=bump at=R then=reset then=msg:"Chains rattle in the walls: the blocks are hauled back where they stood." again=yes
+MAP
+      c
+      Q
+ ...........
+ ...........
+ ...B...B...
+ ...........
+ ...P...P...
+ ...........
+ R..........
+      +
+ENDMAP
+
+; ================================================================== braziers
+NAME:   brazier hall
+SHAPE:  a hall of fire bowls
+DEPTH:  1
+WEIGHT: 4
+MOOD:   One brazier burns. Three stand cold, full of old pitch. Behind bars, something glints.
+MOOD:   A hall of fire bowls, all but one gone cold. The bars across the far alcove are black with soot.
+THING:  F = fire bowl do:brazier
+THING:  O = cold fire bowl do:brazier
+THING:  Q = bars
+COUNTER: fires 0
+EVENT:  when=lit at=O then=add:fires again=yes
+EVENT:  when=count:fires:3 then=open:Q then=msg:"The last brazier roars up. The bars glow red, and draw back into the stone."
+MAP
+     c
+     Q
+ .........
+ .O.....O.
+ .........
+ ....F....
+ .........
+ .O.......
+ .........
+     +
+ENDMAP
+
+; ================================================================== mirrors and the sun
+NAME:   mirror hall
+SHAPE:  a hall with a shaft of daylight
+DEPTH:  2
+WEIGHT: 4
+MOOD:   Daylight falls in through a shaft in the roof. Mirrors stand on swivels, and a golden disc waits in the dark.
+MOOD:   A hall of mirrors and one shaft of sun. Someone built this to carry the light.
+THING:  S = shaft of daylight do:shaft
+THING:  M = mirror on a swivel do:swivel
+THING:  D = sun disc do:sundisc
+THING:  Q = bars
+EVENT:  when=sun at=D then=open:Q then=msg:"Light pours off the disc. The bars on the alcove slide up into the roof."
+MAP
+   S     c
+ ........Q..
+ ...........
+ ...........
+ ..M.....M..
+ ...........
+ ...........
+ ........D..
+ ...........
+      +
+ENDMAP
+
+; ================================================================== crystal switches
+NAME:   crystal vault
+SHAPE:  a vault of red and blue blocks
+DEPTH:  2
+WEIGHT: 4
+MOOD:   A crystal hums on a stand. Red blocks shut an alcove; blue ones lie sunk in the floor.
+MOOD:   Red and blue stone, set in the floor like a game. A crystal glows red in the middle.
+THING:  X = red crystal switch do:crystal
+THING:  E = red block
+THING:  U = sunk blue block
+MAP
+     c
+     E
+ .........
+ ..U.U.U..
+ .........
+ ....X....
+ .........
+     +
+ENDMAP
+
+; ================================================================== bells in order
+NAME:   bell chamber
+SHAPE:  a chamber of three bells
+DEPTH:  1
+WEIGHT: 4
+MOOD:   Three bells hang in a row. Behind bars, a chest. Notches are cut in the stone under each bell.
+MOOD:   A bell chamber. The ropes are long gone; you would have to strike them by hand.
+THING:  A = bell do:bell
+THING:  B = bell do:bell
+THING:  C = bell do:bell
+THING:  Q = bars
+EVENT:  when=bump at=C then=msg:"Under this bell, one notch is cut." again=yes
+EVENT:  when=bump at=A then=msg:"Under this bell, two notches are cut." again=yes
+EVENT:  when=bump at=B then=msg:"Under this bell, three notches are cut." again=yes
+EVENT:  when=order:CAB then=open:Q then=msg:"The last note hangs in the air. The bars lift away."
+MAP
+     c
+     Q
+ .........
+ .A..B..C.
+ .........
+ .........
+     +
+ENDMAP
+
+; ================================================================== water and the sluice
+NAME:   flooded cellar
+SHAPE:  a cellar under water
+DEPTH:  2
+WEIGHT: 4
+MOOD:   A flooded cellar. Something lies on a dry stone in the middle, out of reach. A sluice gate is set in the wall.
+MOOD:   Dark water fills the cellar. A rusted sluice gate stands shut.
+THING:  G = sluice gate do:sluice
+MAP
+       G
+ .............
+ .~~~~~~~~~~~.
+ .~~~~,,,~~~~.
+ .~~~~,c,~~~~.
+ .~~~~,,,~~~~.
+ .~~~~~~~~~~~.
+ .............
+       +
+ENDMAP
+
+; ================================================================== the riddle stone
+NAME:   riddle stone
+SHAPE:  a hall with a lettered stone
+DEPTH:  1
+WEIGHT: 4
+MOOD:   A tall stone stands before a barred alcove, cut deep with letters.
+MOOD:   A riddle stone. The old builders liked their games.
+THING:  T = riddle stone do:riddle
+THING:  Q = bars
+EVENT:  when=solved at=T then=open:Q
+MAP
+     c
+     Q
+ .........
+ .........
+ ....T....
+ .........
+     +
+ENDMAP
+
+; ================================================================== the keyhole
+NAME:   key vault
+SHAPE:  a vault with a keyhole
+DEPTH:  2
+WEIGHT: 4
+MOOD:   A keyhole is set in the stone beside a barred alcove. Its key must lie somewhere in this place.
+THING:  K = keyhole do:keyhole
+THING:  Q = bars
+EVENT:  when=unlock at=K then=open:Q
+MAP
+     c
+ K   Q
+ .........
+ .........
+ .........
+     +
+ENDMAP
+
+; ================================================================== the idol
+NAME:   idol shrine
+SHAPE:  a shrine with a golden idol
+DEPTH:  3
+WEIGHT: 3
+MOOD:   A golden idol stands alone on a plinth. The ceiling above it is cracked.
+MOOD:   A small shrine, and a god of gold on a plinth. Too easy.
+THING:  I = golden idol on a plinth do:idol
+THING:  Z = sarcophagus do:sarcophagus
+MAP
+ ...........
+ .Z.......Z.
+ ...........
+ .....I.....
+ ...........
+ .Z.......Z.
+ ...........
+      +
+ENDMAP
+
+; ================================================================== ice
+NAME:   ice hall
+SHAPE:  a hall floored with ice
+DEPTH:  2
+WEIGHT: 4
+MOOD:   The floor is ice, smooth as glass. On the far side, a chest.
+MOOD:   Frost on every wall, and ice underfoot. Once you start, you will not stop until something stops you.
+THING:  I = slick ice do:ice
+MAP
+ ..c..
+ .....
+ IIIII
+ II#II
+ IIIII
+ IIIII
+ #IIII
+ .....
+   +
+ENDMAP
+
+; ================================================================== spikes
+NAME:   spike walk
+SHAPE:  a walk of spike holes
+DEPTH:  2
+WEIGHT: 4
+MOOD:   The floor is pocked with holes. As you watch, spikes drive up out of them, and sink back.
+MOOD:   A walk of spike holes. They keep a rhythm; you could learn it.
+THING:  Z = spike holes do:spikes
+MAP
+ ...c...
+ .......
+ ZZZZZZZ
+ ZZZZZZZ
+ ZZZZZZZ
+ .......
+    +
+ENDMAP
+
+; ================================================================== arrows
+NAME:   arrow hall
+SHAPE:  a hall with arrow slits
+DEPTH:  2
+WEIGHT: 3
+MOOD:   Arrow slits line the walls. A plate lies in the middle of the floor, and a chest beyond it.
+MOOD:   A hall of slits in the stone. Whoever guarded this did not need to be here.
+THING:  P = pressure plate do:pressure
+THING:  S = arrow slit
+EVENT:  when=press at=P then=arrows:S again=yes
+MAP
+  .......
+  ...c...
+  .......
+ S...P...S
+  .......
+  .......
+     +
+ENDMAP
+
+; ================================================================== the crumbling bridge
+NAME:   crumbling bridge
+SHAPE:  a chasm with a bridge of old stone
+DEPTH:  3
+WEIGHT: 3
+MOOD:   A chasm splits the room. A bridge of old stone crosses it, already crumbling. On the far side, a chest and a rope.
+MOOD:   The bridge will bear you once. The rope on the far side goes down.
+THING:  K = crumbling floor do:crumble
+THING:  W = rope down do:rope
+MAP
+ ..c..W..
+ ........
+ vvvvKvvv
+ vvvvKvvv
+ ........
+ ........
+    +
+ENDMAP
+
+; ================================================================== the cracked wall
+NAME:   cracked wall
+SHAPE:  a hall with a cracked wall
+DEPTH:  1
+WEIGHT: 3
+MOOD:   One wall of this hall is cracked right through. Cold air breathes out of the crack.
+THING:  W = cracked wall do:cracked
+MAP
+ ....c....
+ ....W....
+ .........
+ .........
+     +
+ENDMAP
+
+; ================================================================== the old god's niche
+NAME:   old gods niche
+SHAPE:  a hall of an old god
+DEPTH:  2
+WEIGHT: 3
+MOOD:   An old god's hall. An idol with gem eyes stares from its niche; a bowl of coins lies before it.
+MOOD:   A shrine to a god no one names now. A still pool, a chained book, a stone coffin.
+THING:  G = idol with gem eyes do:eyes
+THING:  O = offering bowl do:offering
+THING:  Y = scrying pool do:scrying
+THING:  H = chained book do:book
+THING:  Z = sarcophagus do:sarcophagus
+MAP
+     G
+ .........
+ ....O....
+ .Y.....H.
+ .........
+ .Z.....Z.
+ .........
+     +
+ENDMAP

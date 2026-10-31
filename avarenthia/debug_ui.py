@@ -187,6 +187,7 @@ class DebugScreen(Modal):
                            ('w', 'Weather...', self.weather_page),
                            ('s', 'Spawn a creature...', self.spawn_page),
                            ('z', 'Theme room or river...', self.theme_page),
+                           ('Z', 'Set this room back as drawn', self.do(lambda: DBG.reset_room(g()), True)),
                            ('T', 'Hear the tale of an older place', self.do(lambda: DBG.old_tale(g()), True)),
                            ('F', 'Change who holds this fort', self.do(lambda: DBG.fort_holder(g()), True)),
                            ('N', self.flag('aurora'), self.do(lambda: DBG.toggle(g(), 'aurora'))),

@@ -55,6 +55,14 @@ What a thing can do (do:...)
 ----------------------------
 shrine library fountain forge cook alchemy fungus larder wishing training maptable wine choice armoury adventurer
 circle statues bier nest gong cell mirror menagerie sanctuary arch gears dice herbs collapse plate echo
+and the puzzle things' (puzzles.py; pieces/puzzles.des has an example room of each):
+    pressure (a pressure plate)   block (a stone block, pushed)   lever   crystal (a red crystal switch)
+    brazier (a cold fire bowl, or one that burns)   swivel (a mirror on a swivel)   shaft (a shaft of daylight)
+    sundisc   bell   cracked (a cracked wall)   crumble (crumbling floor)   ice (slick ice)   spikes (spike holes)
+    portal (two portal stones in a room)   idol (golden idol on a plinth)   keyhole (its key lies on the level)
+    sluice (sluice gate)   riddle (riddle stone)   sarcophagus   offering (offering bowl)   scrying (scrying pool)
+    book (chained book)   eyes (idol with gem eyes)   rope (rope down)   ladder (ladder up)
+Things without a do: that the events work: red block, sunk red block, blue block, sunk blue block, arrow slit.
 
 Events
 ------
@@ -66,6 +74,15 @@ Events
             wake (every creature on the level)   open:<mark> (bars, rubble or a door there give way)
             shut:<mark> (bars drop there)   cavein:<mark> (rubble there)   flood:<mark> (water there)   reveal (the level)
     again=yes   the event can happen more than once (by default once)
+
+Puzzle events
+-------------
+    when=   press / release (a pressure plate at=, under anything that stands on it)   lit (a brazier)
+            sun (the sunbeam reaches a disc)   hit (a crystal)   break (a cracked wall)   solved (a riddle stone)
+            unlock (a keyhole)   order:CAB (the bells marked C, A and B struck in that order)
+    then=   arrows:<mark> (the slits there shoot along their line)   raise:red / raise:blue (that colour of blocks
+            stands up, the other sinks)   water:down / water:up (the room's water)   become:<mark>:<tile name>
+    A room with blocks needs a lever that sets it back: EVENT: when=bump at=R then=reset again=yes
 
 Creatures, lists and more (the editor's Creatures layer)
 --------------------------------------------------------

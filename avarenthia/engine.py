@@ -91,7 +91,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 62
+SAVE_VERSION = 63
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1802,6 +1802,9 @@ class Game:
             self.msg(f'Identifying everything costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
+        if idol:
+            self.player.buffs = [b for b in self.player.buffs if len(b) < 4 or b[3] != CURSE]
+            self.msg("The priest lifts the idol's curse from you.", 'good')
         for it in its:
             it.ided = True
             if it.cursed:
@@ -1814,15 +1817,21 @@ class Game:
     def uncurse_all(self, dry=False):
         its = [it for it in self.player.inv if it.k == 'gear' and it.cursed and (it.curse_known or self.is_equipped(it))]
         cost = sum(it.uncurse_cost() for it in its)
+        from .puzzles import CURSE
+        idol = [b for b in self.player.buffs if len(b) > 3 and b[3] == CURSE]       # the gem-eyed idol's curse (puzzles.py)
+        cost += 300 if idol else 0
         if dry:
-            return len(its), cost
-        if not its:
+            return len(its) + len(idol), cost
+        if not its and not idol:
             self.msg('You carry nothing known to be cursed.')
             return
         if self.player.gold < cost:
             self.msg(f'Lifting the curses costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
+        if idol:
+            self.player.buffs = [b for b in self.player.buffs if len(b) < 4 or b[3] != CURSE]
+            self.msg("The priest lifts the idol's curse from you.", 'good')
         for it in its:
             it.curse = []
             it.curse_known = False
@@ -1993,6 +2002,9 @@ class Game:
             self.msg(f'Mending all your gear costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
+        if idol:
+            self.player.buffs = [b for b in self.player.buffs if len(b) < 4 or b[3] != CURSE]
+            self.msg("The priest lifts the idol's curse from you.", 'good')
         for it in its:
             it.dur = it.mdur
         self.clamp_vitals()

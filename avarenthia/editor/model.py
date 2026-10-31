@@ -18,6 +18,17 @@ DOES = {'shrine': 'altar', 'library': 'shelves', 'fountain': 'fountain', 'forge'
         'mirror': 'mirror', 'menagerie': 'cage', 'sanctuary': 'ward', 'arch': 'arch', 'collapse': 'floor',
         'herbs': 'grass', 'gears': 'gears', 'dice': 'dice', 'plate': 'floor', 'echo': 'floor'}
 WALKABLE_THINGS = {'floor', 'grass', 'shallow', 'hallowed'}
+# the puzzle things (puzzles.py): (what it does, its tile); None does nothing itself, the room's events work it
+PUZZLE_THINGS = [('pressure', 'pressure plate'), ('block', 'stone block'), ('lever', 'lever'),
+                 ('crystal', 'red crystal switch'), (None, 'red block'), (None, 'sunk red block'), (None, 'blue block'),
+                 (None, 'sunk blue block'), ('brazier', 'cold fire bowl'), ('brazier', 'fire bowl'),
+                 ('swivel', 'mirror on a swivel'), ('shaft', 'shaft of daylight'), ('sundisc', 'sun disc'),
+                 ('bell', 'bell'), ('cracked', 'cracked wall'), ('crumble', 'crumbling floor'), ('ice', 'slick ice'),
+                 ('spikes', 'spike holes'), ('portal', 'portal stone'), ('idol', 'golden idol on a plinth'),
+                 ('keyhole', 'keyhole'), ('sluice', 'sluice gate'), (None, 'arrow slit'), ('riddle', 'riddle stone'),
+                 ('sarcophagus', 'sarcophagus'), ('offering', 'offering bowl'), ('scrying', 'scrying pool'),
+                 ('book', 'chained book'), ('eyes', 'idol with gem eyes'), ('rope', 'rope down'),
+                 ('ladder', 'ladder up')]
 
 
 def tile_of(ch, things):

@@ -332,6 +332,7 @@ def gen_dungeon(game, did, depth):
     if getattr(m, 'things', None) is not None:
         from . import themes as TH
         TH.setup(game, m, lvl)
+        TH.PZ.setup(game, m, lvl)
         TH.creatures(game, m, lvl)
     if last and getattr(d, 'rift_below', None):
         from . import rift as RF

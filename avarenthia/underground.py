@@ -76,7 +76,7 @@ def add_river(m, depth, keep=(), fire=None, bridge=None, swallow=10):
     if fire is None:
         fire = depth >= FIRE_FROM and random.random() < FIRE_SHARE
     tile = D.LAVA if fire else D.WATER
-    old = bytearray(m.t)
+    old = list(m.t)
     line, across_y = _course(m.w, m.h)
     flow = {}
     half = 1

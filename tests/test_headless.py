@@ -9187,6 +9187,257 @@ def pieces():
     print('pieces ok')
 
 
+def puzzles():
+    """The puzzle things (editor round B2): each example room of pieces/puzzles.des is set in a level and solved by a
+    small solver (blocks onto plates by search, braziers, mirrors, crystals, bells in order, the sluice, the riddle,
+    the keyhole, the idol, ice, spikes, arrows, the crumbling bridge, the cracked wall, the old god's niche); the
+    weighing hall's lever sets it back as drawn."""
+    import tempfile
+    from collections import deque
+    from itertools import product
+    from avarenthia import themes as TH, puzzles as PZ, debug as DBG, events as EV
+    from avarenthia.editor import files as EF, trying as TR
+    print('== puzzles')
+    home = tempfile.mkdtemp()
+    real_home = EF.home
+    EF.home = lambda: home
+    try:
+        g = TR.world()
+    finally:
+        EF.home = real_home
+    g.hook()
+    DBG.ON = True
+    p = g.player
+    NB4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+    def room(name):
+        DBG.theme_level(g, name)
+        m = g.map
+        rid = next(i for i, r in enumerate(m.rooms) if r[2] == name)
+        m.mons[:] = []
+        cells = set(TH.cells_of(m, rid))
+        marks = {}
+        for c, ch in m.marks.items():
+            if c in cells:
+                marks.setdefault(ch, []).append(c)
+        g.pending = g.request = None
+        p.life = 10 ** 6
+        return m, rid, cells, marks
+
+    def beside(m, c, orth=False):
+        for dx, dy in (NB4 if orth else NB4 + ((1, 1), (1, -1), (-1, 1), (-1, -1))):
+            n = (c[0] + dx, c[1] + dy)
+            if D.TILES[m.tile(*n)].walk and not g.occupied(m, *n):
+                return n
+        raise AssertionError(f'nothing free beside {c}')
+
+    def bump(m, c):
+        p.x, p.y = beside(m, c)
+        TH.bump(g, *c)
+        TH.tick(g)
+
+    def opened(m, marks, ch='Q'):
+        return all(D.TILES[m.tile(*c)].walk for c in marks[ch])
+
+    # -- the weighing hall: a Sokoban search on the real (turned) map, played with bumps
+    m, rid, cells, marks = room('weighing hall')
+    plates, blocks0 = set(marks['P']), frozenset(marks['B'])
+    assert all(m.tile(*c) == D.SBLOCK for c in blocks0) and not opened(m, marks)
+    free = {c for c in cells if D.TILES[m.tile(*c)].walk or c in blocks0}
+    start = beside(m, next(iter(cells & set(marks['R']))))
+    seen, todo, way = {(start, blocks0)}, deque([(start, blocks0)]), {}
+    goal = None
+    while todo:
+        pos, bl = todo.popleft()
+        if plates <= bl:
+            goal = (pos, bl)
+            break
+        for d in NB4:
+            n = (pos[0] + d[0], pos[1] + d[1])
+            if n not in free:
+                continue
+            nb = bl
+            if n in bl:
+                t = (n[0] + d[0], n[1] + d[1])
+                if t not in free or t in bl:
+                    continue
+                nb = (bl - {n}) | {t}
+            st = (n, nb)
+            if st not in seen:
+                seen.add(st)
+                way[st] = ((pos, bl), d)
+                todo.append(st)
+    assert goal, 'the weighing hall cannot be solved'
+    moves = []
+    st = goal
+    while st in way:
+        st, d = way[st]
+        moves.append(d)
+    p.x, p.y = start
+    for d in reversed(moves):
+        n = (p.x + d[0], p.y + d[1])
+        if m.tile(*n) == D.SBLOCK:
+            TH.bump(g, *n)
+        else:
+            p.x, p.y = n
+            TH.on_step(g)
+        TH.tick(g)
+    assert all(m.tile(*c) == D.SBLOCK for c in plates), 'the blocks are not on the plates'
+    assert opened(m, marks), 'the bars did not open'
+    bump(m, marks['R'][0])
+    assert all(m.tile(*c) == D.SBLOCK for c in blocks0), 'the lever did not set the blocks back'
+    assert all(m.tile(*c) == D.PLATE for c in plates) and not opened(m, marks)
+    assert all(m.things.get(c, ('',))[0] == 'block' for c in blocks0)
+
+    # -- the brazier hall: a brand from the one that burns to each cold one
+    m, rid, cells, marks = room('brazier hall')
+    for c in marks['O']:
+        bump(m, marks['F'][0])
+        assert any(b[0] == 'brand' for b in p.buffs)
+        bump(m, c)
+        assert m.tile(*c) == D.FIREBOWL
+    assert opened(m, marks), 'the braziers did not open the bars'
+
+    # -- the mirror hall: try the mirrors' turns until the beam finds the disc
+    m, rid, cells, marks = room('mirror hall')
+    assert m.sunbeam, 'no sunbeam'
+    TH.tick(g)
+    assert not opened(m, marks), 'the mirror hall came out solved'
+    for want in product((D.SWIVEL, D.SWIVEL2), repeat=len(marks['M'])):
+        for c, w in zip(marks['M'], want):
+            if m.tile(*c) != w:
+                bump(m, c)
+        TH.tick(g)
+        if opened(m, marks):
+            break
+    assert opened(m, marks), 'the mirrors never brought the sun to the disc'
+
+    # -- the crystal vault
+    m, rid, cells, marks = room('crystal vault')
+    assert m.tile(*marks['E'][0]) == D.REDUP
+    bump(m, marks['X'][0])
+    assert m.tile(*marks['E'][0]) == D.REDDOWN and all(m.tile(*c) == D.BLUEUP for c in marks['U'])
+    bump(m, marks['X'][0])
+    assert m.tile(*marks['E'][0]) == D.REDUP
+
+    # -- the bells: a wrong order does nothing, the right one opens
+    m, rid, cells, marks = room('bell chamber')
+    for ch in 'ABC':
+        bump(m, marks[ch][0])
+    assert not opened(m, marks)
+    for ch in 'CAB':
+        bump(m, marks[ch][0])
+    assert opened(m, marks), 'the bells in order did not open the bars'
+
+    # -- the flooded cellar
+    m, rid, cells, marks = room('flooded cellar')
+    deep = [c for c in cells if m.tile(*c) == D.WATER]
+    assert deep
+    bump(m, marks['G'][0])
+    assert all(m.tile(*c) == D.SHALLOW for c in deep)
+
+    # -- the riddle stone
+    m, rid, cells, marks = room('riddle stone')
+    bump(m, marks['T'][0])
+    assert g.pending and g.pending['key'] == 'pz_riddle'
+    i = TH.state(m, rid)['riddle']
+    EV.resolve(g, PZ.RIDDLES[i][2])
+    assert opened(m, marks), 'the answered riddle did not open the bars'
+
+    # -- the key vault: the key lies on the level
+    m, rid, cells, marks = room('key vault')
+    k = marks['K'][0]
+    key = next(it for it in m.items if it.k == 'vkey' and getattr(it, 'door', None) == (m.key, ('hole', k[0], k[1])))
+    m.items.remove(key)
+    p.inv.append(key)
+    bump(m, k)
+    assert opened(m, marks) and key not in p.inv
+
+    # -- the idol: taken bare, the roof comes down
+    m, rid, cells, marks = room('idol shrine')
+    p.life = 10 ** 6
+    bump(m, marks['I'][0])
+    EV.resolve(g, 'take')
+    assert any(it.t == 'idol' for it in p.inv) and m.tile(*marks['I'][0]) == D.PLINTH
+    assert any(m.tile(*c) == D.RUBBLE for c in cells)
+    bump(m, marks['Z'][0])
+    assert m.tile(*marks['Z'][0]) == D.SARCOOPEN
+
+    # -- ice: you slide on
+    m, rid, cells, marks = room('ice hall')
+    ice = set(marks['I'])
+    go = next((f, d) for f in cells if m.tile(*f) == D.FLOOR for d in NB4
+              if (f[0] + d[0], f[1] + d[1]) in ice and (f[0] + 2 * d[0], f[1] + 2 * d[1]) in ice)
+    f, d = go
+    p.x, p.y = f
+    TH.tick(g)
+    p.x, p.y = f[0] + d[0], f[1] + d[1]
+    TH.on_step(g)
+    assert (p.x, p.y) != (f[0] + d[0], f[1] + d[1]), 'no slide on the ice'
+
+    # -- spikes keep a rhythm
+    m, rid, cells, marks = room('spike walk')
+    z = marks['Z'][0]
+    looks = set()
+    for _ in range(4):
+        g.turn += 1
+        TH.tick(g)
+        looks.add(m.tile(*z))
+    assert looks == {D.SPIKEHOLES, D.SPIKESUP}
+
+    # -- arrows from the slits when the plate goes down
+    m, rid, cells, marks = room('arrow hall')
+    p.life = before = 10 ** 6
+    p.x, p.y = marks['P'][0]
+    TH.on_step(g)
+    TH.tick(g)
+    assert m.tile(*marks['P'][0]) == D.PLATEDOWN and p.life < before, 'no arrows'
+
+    # -- the crumbling bridge falls behind you
+    m, rid, cells, marks = room('crumbling bridge')
+    k = marks['K'][0]
+    p.x, p.y = k
+    TH.on_step(g)
+    TH.tick(g)
+    p.x, p.y = beside(m, k, orth=True)
+    TH.on_step(g)
+    TH.tick(g)
+    assert m.tile(*k) == D.CHASM, 'the bridge did not fall'
+
+    # -- the cracked wall gives under a strong blow
+    m, rid, cells, marks = room('cracked wall')
+    w = marks['W'][0]
+    bump(m, w)
+    assert m.tile(*w) == D.CRACKWALL
+    p.buffs.append(['str', 100, 5, 'test'])
+    bump(m, w)
+    assert m.tile(*w) == D.FLOOR, 'the wall did not fall'
+
+    # -- the old god's niche: the eyes, the curse and its end; the bowl; the pool
+    m, rid, cells, marks = room('old gods niche')
+    gc = marks['G'][0]
+    bump(m, gc)
+    EV.resolve(g, 'take')
+    assert any(len(b) > 3 and b[3] == PZ.CURSE for b in p.buffs) and m.tile(*gc) == D.BLINDIDOL
+    bump(m, gc)
+    assert not any(len(b) > 3 and b[3] == PZ.CURSE for b in p.buffs) and m.tile(*gc) == D.GEMIDOL
+    p.gold += 200
+    bump(m, marks['O'][0])
+    EV.resolve(g, 'give')
+    assert any(b[0] == 'luck' for b in p.buffs)
+    bump(m, marks['Y'][0])
+    assert TH.state(m, rid).get('seen')
+    # the curse again, lifted at a temple
+    bump(m, gc)
+    EV.resolve(g, 'take')
+    n, cost = g.uncurse_all(dry=True)
+    assert n >= 1 and cost >= 300
+    p.gold += cost
+    g.uncurse_all()
+    assert not any(len(b) > 3 and b[3] == PZ.CURSE for b in p.buffs)
+    print('puzzles ok')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -9196,7 +9447,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

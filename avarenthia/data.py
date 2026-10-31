@@ -291,6 +291,38 @@ TILES = [
     Tile('≡', '#a87846', False, False, 'woodpile', bg='#28180c'),
     Tile('○', '#e0c070', False, False, 'archery butt', bg='#22300e'),
     Tile('■', '#d0c8b0', False, False, 'telling thing'),       # named and drawn by the place (landmarks.py)
+    # puzzle things (puzzles.py, the editor's round B2)
+    Tile('▫', '#c8c0b0', True, False, 'pressure plate', bg='#24221e'),
+    Tile('▪', '#8a8478', True, False, 'pressed plate', bg='#1a1816'),
+    Tile('■', '#b8b0a0', False, False, 'stone block', bg='#3a362e'),
+    Tile('¬', '#e0c080', False, False, 'thrown lever'),
+    Tile('♦', '#ff6a5a', False, False, 'red crystal switch', bg='#2a1010'),
+    Tile('♦', '#6aa0ff', False, False, 'blue crystal switch', bg='#10182a'),
+    Tile('▓', '#d05a4a', False, False, 'red block', bg='#3a1410'),
+    Tile('░', '#7a3a32', True, False, 'sunk red block'),
+    Tile('▓', '#5a7ad0', False, False, 'blue block', bg='#141c3a'),
+    Tile('░', '#34407a', True, False, 'sunk blue block'),
+    Tile('/', '#e8f0ff', False, False, 'mirror on a swivel', bg='#1a2230'),
+    Tile('\\', '#e8f0ff', False, False, 'mirror on a swivel, turned', bg='#1a2230'),
+    Tile('☼', '#ffd860', False, False, 'sun disc', bg='#2a2410'),
+    Tile('*', '#fff0a0', False, True, 'shaft of daylight', bg='#3a3418'),
+    Tile('#', '#c8b8a0', False, True, 'cracked wall', bg='#2e2a24'),
+    Tile(':', '#a09680', True, False, 'crumbling floor', bg='#1e1a14'),
+    Tile('▒', '#c8ecff', True, False, 'slick ice', bg='#2a4a66'),
+    Tile('·', '#8a8a92', True, False, 'spike holes'),
+    Tile('^', '#e0e0e8', True, False, 'spikes', bg='#3a1a1a'),
+    Tile('◊', '#d08aff', True, False, 'portal stone', bg='#24123a'),
+    Tile('¥', '#ffd860', False, False, 'golden idol on a plinth', bg='#24221e'),
+    Tile('•', '#ffd060', False, True, 'keyhole', bg='#2a2620'),
+    Tile('Θ', '#d8c8a0', False, False, 'riddle stone', bg='#2a2418'),
+    Tile('▬', '#b0a890', False, False, 'sarcophagus', bg='#22201c'),
+    Tile('=', '#7a7468', False, False, 'open sarcophagus', bg='#1a1816'),
+    Tile('ω', '#e0c070', False, False, 'offering bowl', bg='#2a2010'),
+    Tile('≈', '#a080e0', False, False, 'scrying pool', bg='#160e2a'),
+    Tile('¶', '#d0a070', False, False, 'chained book', bg='#2a1c10'),
+    Tile('¥', '#9ae0a0', False, False, 'idol with gem eyes', bg='#1a2a1a'),
+    Tile('¥', '#8a8478', False, False, 'blind idol', bg='#1a1a1a'),
+    Tile('‡', '#c8a878', False, False, 'ladder up'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -321,6 +353,9 @@ DIGSPOT = 235                   # archaeology (archaeology.py)
  RWALK) = range(236, 250)        # the peoples' towns and their bridges on the land (folktowns.py)
 WOODPILE, BUTTS = 250, 251       # livelier settlements (townlife.py)
 MARK = 252                       # a telling thing of a place of today (landmarks.py, yearplaces.py)
+(PLATE, PLATEDOWN, SBLOCK, LEVERON, REDCRYSTAL, BLUECRYSTAL, REDUP, REDDOWN, BLUEUP, BLUEDOWN, SWIVEL, SWIVEL2, SUNDISC,
+ SUNSHAFT, CRACKWALL, CRUMBLE, SLICK, SPIKEHOLES, SPIKESUP, PORTAL, IDOLPLINTH, KEYHOLE, RIDDLE, SARCO, SARCOOPEN, BOWL,
+ SCRY, CHAINBOOK, GEMIDOL, BLINDIDOL, LADDER) = range(253, 284)      # puzzle things (puzzles.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

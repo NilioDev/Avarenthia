@@ -292,6 +292,7 @@ def back_as_drawn(game, rid):
     """The room as it was drawn: its marked tiles, switches and counters back, the timers gone."""
     m = game.map
     inside = set(cells_of(m, rid))
+    PZ.reset(game, rid)
     for c, t in getattr(m, 'laid', {}).items():
         if c in inside and not game.occupied(m, *c):
             m.set(c[0], c[1], t)
@@ -299,6 +300,7 @@ def back_as_drawn(game, rid):
     st['sw'] = {k: v[0] for k, v in st.get('states', {}).items()}
     st['ct'] = dict(st.get('ct0', {}))
     m.timers = [t for t in getattr(m, 'timers', []) if t[2] != rid]
+    PZ.reset(game, rid, after=True)
 
 
 # ------------------------------------------------------------------ while you are there
@@ -445,6 +447,8 @@ def _then(game, th, rid):
         m.__dict__.setdefault('timers', []).append([int(n or 1), th2, rid])
     elif verb == 'reset':
         back_as_drawn(game, rid)
+    else:
+        PZ.then(game, verb, arg, rid)                           # the puzzle things' own (puzzles.py)
 
 
 def wake_all(game):
@@ -476,6 +480,7 @@ def tick(game):
             _then(game, th, rid)
     if not getattr(m, 'things', None) and not getattr(m, 'theme_cells', None):
         return
+    PZ.tick(game)
     for o in list(m.mons):
         if getattr(o, 'still', False) and cheb(o.x, o.y, p.x, p.y) <= 1:
             o.still, o.awake = False, True
@@ -1129,3 +1134,6 @@ ACTIONS = {
 }
 EV.RESOLVERS.update({'k5_wish': r_wish, 'k5_choice': r_choice, 'k5_circle': r_circle, 'k5_nest': r_nest,
                      'k5_gong': r_gong, 'k5_cell': r_cell, 'k5_lever': r_lever, 'k5_arch': r_arch, 'k5_dice': r_dice})
+
+from . import puzzles as PZ                    # noqa: E402  the puzzle things (the editor's round B2)
+ACTIONS.update(PZ.ACTS)

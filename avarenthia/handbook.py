@@ -529,6 +529,17 @@ def ch_dungeons(g):
               'you can stand on, such as a summoning circle, the sign {·|224,72,72}, works when you step on it. Most '
               'give only once, and some are better left alone. A lever or a stone in the floor may work something '
               'else in the room: bars that lift, and drop again after a while.'),
+        ('p', 'Some rooms are puzzles, and the find waits behind bars or water until you work them out. A plate in '
+              'the floor, the sign {▫|200,192,176}, goes down under anything that stands on it; a stone block slides '
+              'a step when you walk into it. A cold brazier takes fire from a brand of one that burns, or from a fire '
+              'spell. A crystal, struck, raises one colour of blocks and sinks the other. A mirror on a swivel turns '
+              'when you walk into it, to carry a shaft of daylight to a golden disc. Bells may want to be struck in '
+              'an order, a riddle stone an answer, a keyhole its key from elsewhere on the level. Where blocks can '
+              'stick, a lever in the room sets it all back as it was.'),
+        ('p', 'Ice slides you on until something stops you. A crumbling floor bears you once. Spikes keep a rhythm '
+              'you can learn. A cracked wall gives to a war hammer, a mace or a strong arm. Lift a golden idol bare '
+              'and the roof answers; take the gems from an idol\'s eyes and its curse is on you until they go back, '
+              'or a priest in a temple lifts it.'),
         ('p', 'Some rooms keep their find: a vault behind a locked door, the sign {+|224,176,64}, whose key lies '
               'elsewhere on the level, often with a guard; a hidden door, which you notice as you pass; three '
               'plinths, the sign {º|200,192,176}, where you may take one thing and the rest sink away. Among warding '

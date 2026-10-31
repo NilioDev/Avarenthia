@@ -40,9 +40,10 @@ TILE_NAMES = {
     'bones': D.BONEWALL, 'hallowed': D.HALLOWED, 'grass': D.GRASS,
 }
 GATES = ('door', 'open', 'secret', 'vault')
-WHEN = ('enter', 'step', 'bump', 'take', 'clear', 'night')
+WHEN = ('enter', 'step', 'bump', 'take', 'clear', 'night',
+        'press', 'release', 'lit', 'sun', 'hit', 'break', 'solved', 'unlock')      # the last ones: puzzles.py
 # whens with a name: a switch comes to a state, a counter comes to a number (the editor's switches and counters)
-WHEN_NAMED = ('switch', 'count')
+WHEN_NAMED = ('switch', 'count', 'order')      # order:ABC  bells struck in this order
 LISTS = {}                       # the lists of creatures every piece may use (LIST lines before the first NAME)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = os.path.join(os.path.dirname(HERE), 'pieces')

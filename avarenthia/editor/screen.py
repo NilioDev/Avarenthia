@@ -14,7 +14,7 @@ from . import files as F
 from . import layers as LY
 from . import maker as MK
 from . import tools as T
-from .model import Room, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, tile_of
+from .model import Room, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, PUZZLE_THINGS, tile_of
 
 W, H = 110, 60
 BG = (13, 11, 10)
@@ -82,10 +82,12 @@ def palette(layer):
                           Item('sign', '<', label='stairs up'), Item('sign', '>', label='stairs down')]),
                 ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else [])
     telling = [Item('thing', name=DOES[a], act=a, label=f'{a}') for a in sorted(DOES)]
+    puzzle = [Item('thing', name=t, act=a, label=t) for a, t in PUZZLE_THINGS]
     named = set(P.TILE_NAMES)
     seen = {D.TILES[v].name for v in P.LEGEND.values()} | {D.TILES[v].name for v in P.TILE_NAMES.values()}
     more = [Item('thing', name=k, label=D.TILES[v].name) for k, v in sorted(P.TILE_NAMES.items())
             if v not in P.LEGEND.values()]
+    seen |= {t for _a, t in PUZZLE_THINGS}
     for t in D.TILES:
         if t.name not in seen and t.name not in named:
             seen.add(t.name)
@@ -93,7 +95,8 @@ def palette(layer):
     own = [Item('thing', name=o.name, act=o.does, label=o.name) for o in mine if o.kind == 'OBJECT']
     more = [it for it in more if it.name not in OT.OWN]
     return [('THINGS', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in FURNITURE])] + \
-        ([('MY THINGS', own)] if own else []) + [('TELLING THINGS', telling), ('MORE: EVERY TILE', more)]
+        ([('MY THINGS', own)] if own else []) + [('TELLING THINGS', telling), ('PUZZLE THINGS', puzzle),
+                                                 ('MORE: EVERY TILE', more)]
 
 
 def _is_ground(ch):

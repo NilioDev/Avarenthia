@@ -15,14 +15,20 @@ from .model import DOES
 # then-verbs as the pickers offer them: (verb, what it asks for next)
 THEN_VERBS = [('msg', 'text'), ('do', 'does'), ('spawn', 'spawn'), ('wake', None), ('open', 'mark'), ('shut', 'mark'),
               ('cavein', 'mark'), ('flood', 'mark'), ('reveal', None), ('set', 'state'), ('flip', 'switch'),
-              ('add', 'counter'), ('sub', 'counter'), ('after', 'turns'), ('reset', None)]
+              ('add', 'counter'), ('sub', 'counter'), ('after', 'turns'), ('reset', None),
+              ('arrows', 'mark'), ('raise', 'colour'), ('water', 'way'), ('become', 'become')]
 THEN_SAYS = {'msg': 'a line in the messages', 'do': 'what a thing can do', 'spawn': 'creatures come',
              'wake': 'every creature wakes', 'open': 'bars, rubble or a door give way', 'shut': 'bars drop',
              'cavein': 'rubble falls', 'flood': 'water comes', 'reveal': 'the level is known',
              'set': 'a switch to a state', 'flip': 'a switch to its next state', 'add': 'a counter one up',
-             'sub': 'a counter one down', 'after': 'in some turns, one more then', 'reset': 'the room back as drawn'}
+             'sub': 'a counter one down', 'after': 'in some turns, one more then', 'reset': 'the room back as drawn',
+             'arrows': 'the arrow slits at a mark shoot', 'raise': 'red or blue blocks stand up',
+             'water': "the room's water goes down or up", 'become': 'a mark becomes another tile'}
 WHEN_SAYS = {'enter': 'you step in, the first time', 'step': 'you step on the mark', 'bump': 'you walk into the mark',
-             'take': 'you take a find', 'clear': 'the last foe falls', 'night': 'night falls'}
+             'take': 'you take a find', 'clear': 'the last foe falls', 'night': 'night falls',
+             'press': 'a plate goes down', 'release': 'a plate comes up', 'lit': 'a brazier catches fire',
+             'sun': 'the sunbeam reaches a sun disc', 'hit': 'a crystal is struck', 'break': 'a cracked wall falls',
+             'solved': 'a riddle stone is answered', 'unlock': 'the key turns in a keyhole'}
 SPAWNS = ('pack', 'undead', 'beasts', 'fire', 'vermin')
 OPENS = {D.BARS, D.RUBBLE, D.DOOR, D.VAULTDOOR, D.SECRET}
 
@@ -429,7 +435,14 @@ class LayerTools:
                 opts += [(f'switch:{n}:{s}: the switch {n} comes to {s}', f'switch:{n}:{s}') for s in states]
             for n in r.counters:
                 opts += [(f'count:{n}:{k}: the counter {n} comes to {k}', f'count:{n}:{k}') for k in range(1, 7)]
-            self.ask_pick('WHEN', opts, lambda v: self._set_ev(i, 'when', v))
+            opts.append(('order: bells struck in an order (type their marks)', 'order:'))
+
+            def when(v):
+                if v == 'order:':
+                    return self.ask_line('The marks of the bells, in order', 'CAB', lambda s: self._set_ev(
+                        i, 'when', 'order:' + ''.join(ch for ch in s.upper() if ch.isalpha())))
+                self._set_ev(i, 'when', v)
+            self.ask_pick('WHEN', opts, when)
         elif kind == 'at':
             opts = [('- no mark', None)] + [(f'{g} {r.things[g][0]}', g) for g in sorted(marks_of(r))]
             self.ask_pick('AT which mark', opts, lambda v: self._set_ev(i, 'at', v))
@@ -514,6 +527,17 @@ class LayerTools:
                     return self.say('Make a counter first, under COUNTERS.', True)
                 return self.ask_pick('Which counter', [(n, n) for n in r.counters],
                                      lambda n: done(prefix + f'{v}:{n}'))
+            if ask == 'colour':
+                return self.ask_pick('Which colour stands up', [('red', 'red'), ('blue', 'blue')],
+                                     lambda c: done(prefix + f'raise:{c}'))
+            if ask == 'way':
+                return self.ask_pick('The water', [('goes down', 'down'), ('comes up', 'up')],
+                                     lambda w: done(prefix + f'water:{w}'))
+            if ask == 'become':
+                if not mk:
+                    return self.say('Draw a mark first (a thing, or click the floor on this layer).', True)
+                return self.ask_pick('Which mark', [(f'{g} {r.things[g][0]}', g) for g in mk], lambda g: self.ask_line(
+                    'Becomes which tile (its name)', 'floor', lambda t: done(prefix + f'become:{g}:{t.strip()}')))
             if ask == 'turns':
                 return self.ask_pick('In how many turns', [(str(n), n) for n in (2, 3, 5, 10, 20, 50)],
                                      lambda n: self.pick_then(done, prefix + f'after:{n}:'))

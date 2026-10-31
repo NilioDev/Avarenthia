@@ -740,6 +740,7 @@ class GameScreen(Screen):
         way_of = getattr(g.world, 'way_of', {})
         ways_seen = g.__dict__.get('ways_seen', set())
         traps = getattr(m, 'known_traps', None)
+        sunbeam = getattr(m, 'sunbeam', None)          # a shaft of daylight turned by mirrors (puzzles.py)
         nat = getattr(m, 'nature', None)
         # fire beetles and ember spiders light the dark around them
         glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
@@ -857,6 +858,10 @@ class GameScreen(Screen):
                             self.moving = True
                     if traps and (mx, my) in traps:
                         ch, fg = '^', (220, 190, 110)
+                    if sunbeam and (mx, my) in sunbeam:
+                        bg = mix(bg, (200, 170, 70), .35)
+                        if (mx, my) not in items and sunbeam[(mx, my)] != '+':
+                            ch, fg = sunbeam[(mx, my)], (255, 230, 140)
                     if aura and (mx, my) in aura:
                         ac, ak = aura[(mx, my)]
                         fg, bg = mix(fg, ac, ak * .6), mix(bg, ac, ak * .55)

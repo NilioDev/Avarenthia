@@ -480,6 +480,18 @@ def theme_level(game, what):
     game.compute_fov()
 
 
+def reset_room(game):
+    """The drawn room you stand in, back as drawn: its blocks, bars, switches, counters and puzzle things."""
+    from . import themes as TH
+    m, p = game.map, game.player
+    rid = TH.room_at(m, p.x, p.y) if getattr(m, 'rooms', None) else None
+    if rid is None or not m.rooms[rid][2]:
+        game.msg('Debug: you stand in no drawn room.', 'bad')
+        return
+    TH.back_as_drawn(game, rid)
+    game.msg(f'Debug: "{m.rooms[rid][2]}" is back as drawn.', 'info')
+
+
 def days_ahead(game, n):
     """Time runs on n days (a fraction for hours); the days pass as they would (markets, news, seasons)."""
     game.turn += round(n * D.DAY_LEN)
