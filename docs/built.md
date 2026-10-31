@@ -912,6 +912,42 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
   line move as before; the hoard grows in glitter, not in coin you could take.
 
+## Spell effects (built 19-23 October 2026; the spec)
+
+**Part 1 built 19 October 2026 as a quick win, part 2 on 22 October** (see `docs/built.md`): the toolkit (bolts with
+a tail, bursts, drain, rising crosses, the zigzag), status colours on creatures, Wild Shape's colours, monsters'
+arrows and spells, the option full/short/off; each school its own hand (rings and waves, Meteor's shadow and slanting
+fall, the corpse that greys and rises, Morrak's Bargain, walls one stone at a time) and the one white frame of Call
+the Storm. The weapon skills' effects came with the weapon skills (23 October 2026: the swing arc on skills and critical
+hits, blood on the cut, a bleeding foe's trail; proposal in the project files, `magie/wapeneffecten/voorstel.md`). The spec below is the whole plan.
+
+Approved by Nilio on 17 October 2026 after two rounds of animated mockups (project files `magie/effecten/`, 17 GIFs,
+made by `magie/effecten_mockups.py` and `effecten_mockups2.py`; every spell's effect in `magie/effecten.md` and
+`magie/effecten_rest.md`). Today a spell flashes once for ~0.2 s (`engine.py` `flash`).
+
+- **A small toolkit every school shares:** bolts that fly cell by cell with a fading tail; impacts that open out in
+  three or four frames (`*` `+` `·`); particles flying back to you (life drain); rising `+` (heals); rings and
+  waves; lasting colour on a creature (burning flickers orange, frozen has a pale blue ground, poisoned pulses
+  green, weakened is dimmed); living tiles (burning ground, ice walls, roots, thorns, bone walls, Ball Lightning).
+  Big spells draw light in for a frame before they strike.
+- **Each school its own hand:** Meteor throws its shadow first and falls in at a slant; lightning is a white zigzag
+  that fades to yellow and hops target to target; a corpse `%` greys and rises as `z`; Morrak's Bargain pulls your
+  own life out in red first. Monsters' spells use the same effects, so you see what is coming.
+- **Small areas.** Ordinary area spells (tome rank 0-30) have radius 1, a 3x3; big ones (42 and up) and the guilds'
+  top techniques radius 2; never more than 3, and 3 only for the heaviest (Morrak's Bargain, Army of the Dead).
+  Spells that pick targets (Chain Lightning, Call the Storm, Tempest) are not areas. Firebolt hits only its target;
+  Grasping Roots and Entangle make a 3x3 of roots.
+- **Wild Shape stays `@`.** You keep your sign and take the beast's colours (bear: orange-brown on dark brown, wolf:
+  white on slate grey), so you never lose yourself on the map; the shape and its turns show with your buffs.
+- **Calm:** no effect lasts longer than ~0.4 s, a key skips it, the game never waits for one; no screen shake, no
+  flashing screen except one frame for a great lightning stroke; colours from the school (`DISC_COLOR`). An option:
+  effects full, short or off.
+- **In the code:** a small queue of effect frames in `anim.py`, drawn over the map in the existing draw loop and its
+  timer (`GameScreen.moving`); `flash()` becomes a one-frame effect, so all that flashes today keeps working.
+- **Weapon skills' effects** (proposal with GIFs in `magie/wapeneffecten/`; built with the weapon skills): steel and
+  dust, no school colour; a swing arc only on skills and critical hits (an ordinary bump stays the short flash);
+  blood on Sever Artery and claws, and a bleeding foe leaves a red trail `,` for a few turns (Nilio, 22 October).
+
 ## The great evils as storyteller (built 29-31 October 2026; the spec)
 
 The great evils become the world's storyteller, as in RimWorld: one shadow with a goal, and the world lives round it
