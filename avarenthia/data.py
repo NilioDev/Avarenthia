@@ -166,7 +166,7 @@ TILES = [
     Tile('º', '#c8c0b0', False, False, 'plinth', bg='#24221e'),
     Tile('▐', '#d8e4f0', False, False, 'tall mirror', bg='#1a2230'),
     Tile('φ', '#d8a040', False, False, 'gong', bg='#2a1e0c'),
-    Tile('/', '#c0a070', False, False, 'lever'),
+    Tile('⌐', '#c0a070', False, False, 'lever'),
     Tile('†', '#d8c070', False, False, 'straw dummy'),
     Tile('·', '#e04848', True, False, 'summoning circle', bg='#2a0c10'),
     Tile('∞', '#f0e0a0', True, False, 'warding sign', bg='#2a2614'),

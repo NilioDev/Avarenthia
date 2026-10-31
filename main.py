@@ -125,6 +125,9 @@ def window_scale():
 
 
 def main():
+    if '--editor' in sys.argv[1:]:          # the Avarenthia Editor, from the source (the test download has its own)
+        from avarenthia.editor.run import main as editor
+        return editor()
     # the debug menu (F12): only in the test build, or from the source with --debug
     DBG.turn_on(sys.argv[1:], here=HERE, frozen=getattr(sys, 'frozen', False))
     tileset = load_tileset()

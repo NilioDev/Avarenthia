@@ -1,5 +1,5 @@
 # Builds standalone executables for Windows, macOS and Linux on every push, twice: the game for players, and
-# "Avarenthia (test)" with the debug menu (F12) switched on, for testers.
+# "Avarenthia (test)" with the debug menu (F12) switched on, for testers, and beside it the Avarenthia Editor.
 # Download them from the run's "Artifacts" section on the Actions tab. The Linux job also builds the wiki
 # (tools/wiki/build_wiki.py): lore, monsters, skills, items and the handbook in one HTML page.
 name: Build executables
@@ -18,14 +18,17 @@ jobs:
             sep: ';'
             file: dist/Avarenthia.exe
             test: dist/AvarenthiaTest.exe
+            editor: dist/AvarenthiaEditor.exe
           - os: macos-latest
             sep: ':'
             file: dist/Avarenthia
             test: dist/AvarenthiaTest
+            editor: dist/AvarenthiaEditor
           - os: ubuntu-latest
             sep: ':'
             file: dist/Avarenthia
             test: dist/AvarenthiaTest
+            editor: dist/AvarenthiaEditor
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +60,11 @@ jobs:
         run: |
           echo "The test build: the debug menu (F12) is on." > TESTBUILD
           pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." main.py
+      - name: Build the editor (only in the test download)
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaEditor --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
       - uses: actions/upload-artifact@v4
         with:
           name: Avarenthia (test)-${{ matrix.os }}
-          path: ${{ matrix.test }}
+          path: |
+            ${{ matrix.test }}
+            ${{ matrix.editor }}

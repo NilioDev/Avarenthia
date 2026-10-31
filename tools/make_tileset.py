@@ -11,9 +11,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 sys.path.insert(0, ROOT)
-from avarenthia.glyphs import CHARS, COLUMNS, ROWS, TILE_W, TILE_H, SHEET  # noqa: E402
+from avarenthia.glyphs import CHARS, WIDE, COLUMNS, ROWS, TILE_W, TILE_H, SHEET  # noqa: E402
 
 FONT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'assets', 'fonts', 'Px437_IBM_CGA.ttf')
+# the larger cut of the same font: only for WIDE, so the signs the game already uses keep their look
+PLUS = os.path.join(ROOT, 'assets', 'fonts', 'PxPlus_IBM_CGA.ttf')
 OUT = os.path.join(ROOT, 'assets', SHEET)
 GRID = 8
 
@@ -52,13 +54,15 @@ def glyph(font, ch):
 def main():
     from fontTools.ttLib import TTFont
     have = TTFont(FONT).getBestCmap()
-    missing = [c for c in CHARS if ord(c) not in have and c not in HAND and c != ' ']
+    plus = TTFont(PLUS).getBestCmap()
+    missing = [c for c in CHARS if c not in HAND and c != ' ' and ord(c) not in (plus if c in WIDE else have)]
     if missing:
         print('warning: not in the font and not drawn by hand:', ''.join(missing))
     font = ImageFont.truetype(FONT, GRID)
+    font_plus = ImageFont.truetype(PLUS, GRID)
     sheet = Image.new('RGBA', (COLUMNS * TILE_W, ROWS * TILE_H), (0, 0, 0, 0))
     for i, ch in enumerate(CHARS):
-        g = glyph(font, ch)
+        g = glyph(font_plus if ch in WIDE else font, ch)
         tile = Image.new('RGBA', (TILE_W, TILE_H), (255, 255, 255, 0))
         tile.putalpha(g)
         sheet.paste(tile, ((i % COLUMNS) * TILE_W, (i // COLUMNS) * TILE_H))

@@ -1,6 +1,8 @@
 The drawn pieces of Avarenthia
 ==============================
 
+Draw them in the Avarenthia Editor (python main.py --editor, or the editor in the test download), or by hand here.
+
 Every *.des file here holds pieces, one after another. A piece is a small map of one room (a theme room, the
 arrival room, the bottom room) that the dungeon makers set into a level. The game reads these files when it runs
 from the source; a build carries them packed and sealed (tools/pack_pieces.py) and ignores a pack that was changed.
@@ -47,6 +49,7 @@ Things a THING line can name
 altar statue shelves fountain anvil hearth well barrel chest mushrooms eggs rack cage rubble chasm grave secret,
 vault door, plinth mirror gong lever dummy circle ward bier remains dice gears bars map web arch alchemy floor roots
 water shallow fire table bones hallowed
+and besides these, any tile of the game by its own name ("ivy on old stone", "Varnish wall"): it is that tile.
 
 What a thing can do (do:...)
 ----------------------------

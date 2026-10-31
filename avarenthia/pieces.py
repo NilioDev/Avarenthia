@@ -100,8 +100,9 @@ def _event(text, where):
     return ev
 
 
-def parse(text, file=''):
-    """Read the pieces in one file. Raises Bad with the line when something is wrong."""
+def parse(text, file='', checked=True):
+    """Read the pieces in one file. Raises Bad with the line when something is wrong. checked=False leaves out the
+    check of each map (the editor reads a piece still being drawn and lists its problems itself)."""
     out, cur, in_map = [], None, False
     for n, line in enumerate(text.split('\n'), 1):
         where = f'{file}:{n}'
@@ -163,56 +164,77 @@ def parse(text, file=''):
             words = rest.split()
             act = next((w[3:] for w in words if w.startswith('do:')), None)
             name = ' '.join(w for w in words if not w.startswith('do:'))
-            if name not in TILE_NAMES:
+            tile = tile_named(name)
+            if tile is None:
                 raise Bad(f'{where}: no such thing: {name}')
-            cur.things[g.strip()] = (TILE_NAMES[name], act)
+            cur.things[g.strip()] = (tile, act)
         elif key == 'EVENT':
             cur.events.append(_event(val, where))
         else:
             raise Bad(f'{where}: no such word: {key}')
-    for p in out:
-        check(p)
+    if checked:
+        for p in out:
+            check(p)
+    return out
+
+
+def tile_named(name):
+    """The tile a THING line names: one of TILE_NAMES, or any tile of the game by its own name (the editor's More)."""
+    if name in TILE_NAMES:
+        return TILE_NAMES[name]
+    return next((i for i, t in enumerate(D.TILES) if t.name == name), None)
+
+
+def problems(p):
+    """Everything wrong with a piece, in plain words: [(message, [cells])], cells (x, y) in the drawing. The editor
+    shows them all; check() raises the first."""
+    out = []
+    if not p.rows:
+        return [('no MAP', [])]
+    gates = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch == '+']
+
+    def inside(x, y):
+        return 0 <= y < len(p.rows) and 0 <= x < len(p.rows[y]) and p.rows[y][x] not in ' +#'
+    if len(gates) != 1:
+        out.append((f'a piece needs exactly one + (its way in), it has {len(gates)}', gates))
+    else:
+        gx, gy = gates[0]
+        ins = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if inside(gx + dx, gy + dy)]
+        if len(ins) != 1:
+            out.append(('the way in must have the room on one side only', gates))
+        else:
+            dx, dy = ins[0]
+            side = (dy, dx)
+            for k in (-2, -1, 1, 2):
+                if not inside(gx + dx + k * side[0], gy + dy + k * side[1]) or inside(gx + k * side[0], gy + k * side[1]):
+                    out.append(('the way in must sit in a straight wall, two cells of room on each side of it', gates))
+                    break
+    bad = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row)
+           if not (ch in ' +<>' or ch in LEGEND or ch in p.things or ch in p.subst)]
+    for x, y in bad:
+        out.append((f'unknown glyph {p.rows[y][x]!r} in row {y + 1}', [(x, y)]))
+    for opts in p.subst.values():
+        for ch, _w in opts:
+            if ch not in LEGEND and ch not in p.things and ch != ' ':
+                out.append((f'unknown glyph {ch!r} in a SUBST', []))
+    floor = {(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch not in ' +#'}
+    for x, y in sorted(floor, key=lambda c: (c[1], c[0])):
+        for dx, dy in ((1, 0), (0, 1)):
+            if (x + dx, y + dy) not in floor and (x + 2 * dx, y + 2 * dy) not in floor and (x + 3 * dx, y + 3 * dy) in floor:
+                out.append((f'two walls side by side at row {y + 1}, column {x + 1}: make it one or three',
+                            [(x + dx, y + dy), (x + 2 * dx, y + 2 * dy)]))
+    marks = {e['at'] for e in p.events if e['at']}
+    for m in sorted(marks):
+        if not any(m in row for row in p.rows) and m not in p.things:
+            out.append((f'an event is at {m}, which the map does not have', []))
     return out
 
 
 def check(p):
     """A piece must have a map with exactly one way in on its edge, and use only known glyphs."""
-    where = f'{p.file}: {p.name}'
-    if not p.rows:
-        raise Bad(f'{where}: no MAP')
-    gates = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch == '+']
-    if len(gates) != 1:
-        raise Bad(f'{where}: a piece needs exactly one + (its way in), it has {len(gates)}')
-    gx, gy = gates[0]
-
-    def inside(x, y):
-        return 0 <= y < len(p.rows) and 0 <= x < len(p.rows[y]) and p.rows[y][x] not in ' +#'
-    ins = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if inside(gx + dx, gy + dy)]
-    if len(ins) != 1:
-        raise Bad(f'{where}: the way in must have the room on one side only')
-    dx, dy = ins[0]
-    side = (dy, dx)
-    for k in (-2, -1, 1, 2):
-        if not inside(gx + dx + k * side[0], gy + dy + k * side[1]) or inside(gx + k * side[0], gy + k * side[1]):
-            raise Bad(f'{where}: the way in must sit in a straight wall, two cells of room on each side of it')
-    for y, row in enumerate(p.rows):
-        for x, ch in enumerate(row):
-            if ch in ' +<>' or ch in LEGEND or ch in p.things or ch in p.subst:
-                continue
-            raise Bad(f'{where}: unknown glyph {ch!r} in row {y + 1}')
-    for opts in p.subst.values():
-        for ch, _w in opts:
-            if ch not in LEGEND and ch not in p.things and ch != ' ':
-                raise Bad(f'{where}: unknown glyph {ch!r} in a SUBST')
-    floor = {(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch not in ' +#'}
-    for x, y in floor:
-        for dx, dy in ((1, 0), (0, 1)):
-            if (x + dx, y + dy) not in floor and (x + 2 * dx, y + 2 * dy) not in floor and (x + 3 * dx, y + 3 * dy) in floor:
-                raise Bad(f'{where}: two walls side by side at row {y + 1}, column {x + 1}: make it one or three')
-    marks = {e['at'] for e in p.events if e['at']}
-    for m in marks:
-        if not any(m in row for row in p.rows) and m not in p.things:
-            raise Bad(f'{where}: an event is at {m}, which the map does not have')
+    bad = problems(p)
+    if bad:
+        raise Bad(f'{p.file}: {p.name}: {bad[0][0]}')
 
 
 def drawn(p):

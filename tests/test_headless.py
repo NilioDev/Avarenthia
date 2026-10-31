@@ -8803,6 +8803,110 @@ def servants():
     print('servants ok:', len(seen & set(SV.KINDS)), 'of 16 kinds in', len(trios), 'worlds; the hut walked', walked)
 
 
+def editor():
+    """The Avarenthia Editor (round A): every drawn piece read, written and read again unchanged; saving changes only
+    its own block; the tools; the check with its red cells; size, undo, a new piece; the screen drawn whole."""
+    import tempfile
+    from avarenthia import pieces as PC
+    from avarenthia.canvas import FakeCanvas, Canvas
+    from avarenthia.editor import files as EF, tools as ET, screen as ES
+    from avarenthia.editor.model import Room, MAX_W, MAX_H
+    print('== editor')
+    keys = ('name', 'part', 'kinds', 'depth', 'weight', 'moods', 'rows', 'subst', 'things', 'events', 'shape', 'gate')
+    for pc in PC.load(force=True):
+        q = PC.parse(Room.from_piece(pc).text(), 'x')[0]
+        for k in keys:
+            assert getattr(pc, k) == getattr(q, k), (pc.name, k)
+    text = open(os.path.join(PC.SOURCE, 'theme.des'), encoding='utf-8').read()
+    again = text
+    for pc in [pc for pc in PC.load() if pc.file == 'theme.des']:
+        again = EF.replace(again, pc.name, Room.from_piece(pc).text())
+    assert [(n) for n, _a, _b in EF.blocks(again)] == [n for n, _a, _b in EF.blocks(text)]
+    import difflib
+    changed = [ln for ln in difflib.unified_diff(text.split('\n'), again.split('\n'), lineterm='', n=0)
+               if ln[:1] in '+-' and ln[:3] not in ('+++', '---')]
+    assert len(changed) < 12, ('saving rewrites too much', changed)
+    # any tile of the game by its own name
+    assert PC.tile_named('Varnish wall') is not None and PC.tile_named('altar') == D.ALTAR
+    # the tools
+    assert ET.line_cells((0, 0), (3, 1)) == [(0, 0), (1, 0), (2, 1), (3, 1)]
+    assert len(ET.rect_cells((0, 0), (2, 2))) == 8 and len(ET.rect_cells((0, 0), (2, 2), True)) == 9
+    home = tempfile.mkdtemp()
+    real_home = EF.home
+    EF.home = lambda: home
+    try:
+        r = Room.from_piece(PC.by_name('shrine'))
+        r.name, r.file = 'test shrine', os.path.join(home, 'test.des')
+        e = ES.Editor(r)
+        ok = e.problems()
+        assert all(o is not False for o, _m, _c in ok), ok
+        assert len(ET.fill_cells(r, (6, 6))) > 60
+
+        def at(c):
+            return ES.AX + (c[0] - e.view[0]) * e.zoom + .5, ES.AY + (c[1] - e.view[1]) * e.zoom + .5
+        e.layer = 'Things'
+        e.mouse('down', *at((3, 3)))
+        e.mouse('move', *at((6, 3)))
+        e.mouse('up', *at((6, 3)))
+        assert r.rows()[3][3:7] == 'ssss', r.rows()[3]
+        e.key('z', ctrl=True)
+        assert 's' not in r.rows()[3]
+        e.key('y', ctrl=True)
+        assert 'ssss' in r.rows()[3]
+        e.key('z', ctrl=True)
+        # a telling thing gets a letter of its own
+        e.pick['Things'] = ES.Item('thing', name='gong', act='gong')
+        e.mouse('down', *at((4, 4)))
+        e.mouse('up', *at((4, 4)))
+        g = r.get(4, 4)
+        assert r.things[g] == ('gong', 'gong')
+        # a second way in is red, and saving waits
+        e.layer = 'Ground'
+        e.pick['Ground'] = ES.Item('sign', '+')
+        e.mouse('down', *at((2, 11)))
+        e.mouse('up', *at((2, 11)))
+        bad = [m for o, m, c in e.problems() if o is False]
+        assert bad and 'exactly one +' in bad[0], bad
+        assert not e.save() and not os.path.exists(r.file)
+        e.key('z', ctrl=True)
+        assert e.save(), e.msg
+        assert PC.parse(open(r.file, encoding='utf-8').read(), 'test.des')[0].things[g] == (D.GONG, 'gong')
+        # the size: never more than 40 x 30
+        assert r.resize(60, 50) == (MAX_W, MAX_H) and r.w == MAX_W
+        # a new piece
+        e.key('n', ctrl=True)
+        assert e.dialog[0] == 'new'
+        e.key('enter')
+        assert e.room.name.startswith('new room') and e.field
+        e.text(' x')
+        e.key('enter')
+        assert e.room.name.endswith(' x') and e.save(), e.msg
+        assert any(q.name == e.room.name for q in EF.read(os.path.join(home, EF.MINE)))
+        # the screen, drawn whole, with every dialog
+        Canvas.cut = []
+        cv = FakeCanvas(ES.W, ES.H)
+        for d in (None, 'open', 'new', 'kinds'):
+            e.dialog = None
+            if d == 'open':
+                e.open_dialog()
+            elif d == 'new':
+                e.new_dialog()
+            elif d == 'kinds':
+                e.dialog = ('kinds', {})
+            for lay in ES.LAYERS:
+                e.layer = lay
+                e.render(cv)
+        assert not Canvas.cut, Canvas.cut
+        Canvas.cut = None
+        e.dialog = None
+        assert 'Avarenthia Editor' in ''.join(cv.ch[:ES.W])
+    finally:
+        EF.home = real_home
+        Canvas.cut = None
+        EF.forget_cache()
+    print('editor ok:', len(PC.load()), 'pieces read and written again')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -8812,7 +8916,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -68,7 +68,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     (see `docs/built.md`). Merge after it.
 32b. **The Avarenthia Editor** (approved 31 October 2026, thread "Editor voor speciale kamers ontwerpen"; Nilio's
     "ga" the same evening). 33. **Round A** (XL): the PxPlus tileset, the editor's screen, drawing and saving rooms,
-    the check. 34. **Round B1** (XL): events with switches, counters and wires, variety, creatures and lists,
+    the check. Built 31 October 2026 (`avarenthia/editor/`, `editor.py`, test part `editor`). 34. **Round B1** (XL): events with switches, counters and wires, variety, creatures and lists,
     dressing, own tiles and things, Ctrl+R, Try. Pause after it. 35. **Round B2** (XL): puzzle things 1-26 in the
     game. 36. **Round C** (XL): whole places, puzzle things 27-44. Merge after 36.
 After that: Multiplayer (parked).
