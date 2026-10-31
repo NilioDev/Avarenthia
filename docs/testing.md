@@ -400,3 +400,13 @@ three things. Test part `boss_moves`.
 - **The cache** - bump the wrong milestone, the robber's stone appears on the map. Debug: Teleport to the milestone.
 - **The Standing Night, the Loosing** - 21 Longnight by night beside the road of the bound dead; 14 Seedwake inside
   a wind tower. Debug: Time, Teleport.
+
+## The Avarenthia Editor (approved 31 October 2026)
+
+- **The editor itself** - draws, saves, checks, Try. Nothing needed in the debug menu: it is its own program in the
+  test download; Try opens the game with the debug menu on.
+- **Puzzle things** - each of the 44 answers a bump or a step, resets with its lever, keeps its state when you come
+  back. Debug: Teleport to an example puzzle room (one of each), "Reset this room".
+- **Creatures from lists, dressing in the game** - a room filled anew. Debug: Regenerate this level.
+- **Whole places** - each lies in the world, its floors, its rumour and job. Debug: Teleport (drawn places in the
+  list), Reveal map.
