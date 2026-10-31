@@ -115,7 +115,9 @@ Only colour, brightness and tidiness: no new signs, animations or keys. Dutch pr
    always red; a long name in IN SIGHT wraps or is shortened, never cut ("Champion Blac").
 7. **Names in the log in their own colour.** Only the name of a creature or an item takes the colour it has on the
    map (the goblin green, the fire beetle orange, a potion red); the rest of the line keeps its colour now. In a fight
-   you see at once which line belongs to which sign. Mockup `M5_log.png`.
+   you see at once which line belongs to which sign. Gear takes its grade's colour, the one it already has on the map
+   and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
+   shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
 Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
 
 ---
