@@ -24,7 +24,7 @@ def tile_of(ch, things):
     """The game's tile for one sign of the drawing (None for rock and unknown signs)."""
     if ch in things:
         return P.tile_named(things[ch][0])
-    if ch == '+':
+    if ch in "+'":
         return D.DOOR
     if ch == '<':
         return D.UP
@@ -47,6 +47,7 @@ class Room:
         self.switches = {}                # name -> [states]
         self.counters = {}                # name -> start
         self.dress = []                   # [(set, fullness)]: dressed in the game
+        self.doors = ''                   # DOORS: how many ways in the game opens ('' = each +)
         self.file = ''
         self.undo, self.redo = [], []
         self.dirty = False
@@ -93,7 +94,8 @@ class Room:
     def _state(self):
         return (copy.deepcopy(self.grid), dict(self.things), copy.deepcopy(self.subst), copy.deepcopy(self.events),
                 (self.name, self.part, list(self.kinds), self.depth, self.weight, self.shape, self.gate, list(self.moods)),
-                copy.deepcopy((self.spots, self.lists, self.more, self.switches, self.counters, self.dress)))
+                copy.deepcopy((self.spots, self.lists, self.more, self.switches, self.counters, self.dress)),
+                self.doors)
 
     def _put_state(self, st):
         self.grid, self.things, self.subst, self.events = copy.deepcopy(st[0]), dict(st[1]), copy.deepcopy(st[2]), \
@@ -101,6 +103,7 @@ class Room:
         (self.name, self.part, kinds, self.depth, self.weight, self.shape, self.gate, moods) = st[4]
         self.kinds, self.moods = list(kinds), list(moods)
         self.spots, self.lists, self.more, self.switches, self.counters, self.dress = copy.deepcopy(st[5])
+        self.doors = st[6]
 
     def change(self):
         """Call before a change (one stroke, one field): the state before it goes on the undo stack."""
@@ -164,6 +167,7 @@ class Room:
         r.events = copy.deepcopy(p.events)
         r.spots, r.lists, r.more = dict(p.spots), copy.deepcopy(p.lists), p.more
         r.switches, r.counters, r.dress = copy.deepcopy(p.switches), dict(p.counters), list(p.dress)
+        r.doors = p.doors
         r.file = p.file
         return r
 
@@ -224,6 +228,8 @@ def _text(self):
         out.append(f'SHAPE:  {self.shape}')
     if self.gate != 'door':
         out.append(f'GATE:   {self.gate}')
+    if self.doors:
+        out.append(f'DOORS:  {self.doors}')
     out += [f'MOOD:   {m}' for m in self.moods]
     for g, opts in self.subst.items():
         out.append(f"SUBST:  {g} = " + ' '.join(f"{'none' if c == ' ' else c}:{w}" for c, w in opts))

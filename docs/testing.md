@@ -412,5 +412,7 @@ three things. Test part `boss_moves`.
 - **Switches, counters, timers, "back as drawn"** - a lever works bars, a timer shuts them, the room goes back.
   Debug: F5 Try in the editor on a room with them.
 - **Own tiles and things** - made with Ctrl+T, they show in the game with their own sign and look line. Debug: F5 Try.
+- **More doors** - a room with `'` doors opens a different one or two in every world and the level runs through it.
+  Debug: Theme room or river (several times), Reveal map; F5 Try in the editor.
 - **Whole places** - each lies in the world, its floors, its rumour and job. Debug: Teleport (drawn places in the
   list), Reveal map.

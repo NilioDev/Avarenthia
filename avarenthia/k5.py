@@ -388,6 +388,7 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
     first = None
     marks = plan.marks
     sealed = set()                          # theme rooms: nothing else may join them
+    extra = []                              # a drawn piece's other doors: (room, cell, step out), joined at the end
     pending = [(t, 'theme') for t in themes] + ([(bottom, 'bottom')] if bottom else [])
     random.shuffle(pending)
     for _ in range(50):
@@ -415,6 +416,8 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
                 marks[(x + ox, y + oy)] = ch
         for (x, y), what in getattr(arrival[1][0], 'spots', {}).items():
             plan.spots[(x + ox, y + oy)] = what
+        for (x, y), st in getattr(arrival[1][0], 'doors', ()):
+            extra.append((0, (x + ox, y + oy), st))
     misses = 0
     piece_of = {}
     for _attempt in range(700):
@@ -496,12 +499,16 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
                     marks[(x + ox, y + oy)] = ch
             for (x, y), what in getattr(theme[0][1][0], 'spots', {}).items():
                 plan.spots[(x + ox, y + oy)] = what
+            for (x, y), st in getattr(theme[0][1][0], 'doors', ()):
+                extra.append((me, (x + ox, y + oy), st))
         open_ends.discard((wx, wy))
         if kind == 'hall':
             arms_of.append((me, [{(x + ox, y + oy) for x, y in a} for a, _e in arms]))
             for _a, e in arms:
                 if (e[0] + ox, e[1] + oy) != (wx, wy):
                     open_ends.add((e[0] + ox, e[1] + oy))
+    for me, d, st in extra:
+        _join_door(lv, doors, sealed, me, d, st)
     _prune(lv, arms_of, doors, rooms)
     keep = {c for c, o in lv.owner.items() if o in sealed or (arrival and o == 0)}
     _loops(lv, doors, keep)
@@ -538,6 +545,77 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
     plan.themes = sorted(single, key=lambda r: -len(r.cells))
     _centre(plan)
     return plan
+
+
+def _join_door(lv, doors, sealed, me, d, step, longest=40):
+    """One more door of a drawn piece (the sign ' in its file): a narrow way dug from it to the nearest floor of
+    another room or passage, through rock that touches nothing else. When none is found the door stays wall."""
+    w, h, floor, near = lv.w, lv.h, lv.floor, lv.near
+    if d in floor:
+        return False
+    c0 = (d[0] + step[0], d[1] + step[1])
+
+    def inside(c):
+        return 2 <= c[0] < w - 2 and 2 <= c[1] < h - 2
+
+    def goal(c, frm=None):
+        hits = [e for e in D4 if (c[0] + e[0], c[1] + e[1]) in floor]
+        if len(hits) != 1:
+            return False
+        e = hits[0]
+        n = (c[0] + e[0], c[1] + e[1])
+        if lv.owner.get(n) == me or lv.owner.get(n) in sealed or n in doors:
+            return False
+        if frm is not None and frm != (c[0] - e[0], c[1] - e[1]):
+            return False                        # come in straight, so the door sits in a straight wall
+        p = (e[1], e[0])
+        return all((c[0] + k * p[0], c[1] + k * p[1]) not in floor and
+                   (c[0] + e[0] + k * p[0], c[1] + e[1] + k * p[1]) in floor for k in (-1, 1))
+    if not inside(c0) or c0 in floor:
+        return False
+    prev, todo = {c0: None}, [c0]
+    end = c0 if goal(c0, d) else None
+    while todo and end is None:
+        nxt = []
+        for c in todo:
+            for e in D4:
+                n = (c[0] + e[0], c[1] + e[1])
+                if n in prev or n in floor or n == d or not inside(n):
+                    continue
+                if goal(n, c):
+                    prev[n] = c
+                    end = n
+                    break
+                if near[n[1] * w + n[0]]:
+                    continue
+                prev[n] = c
+                nxt.append(n)
+            if end:
+                break
+        todo = nxt
+        if len(prev) > longest * longest:
+            break
+    if end is None:
+        return False
+    path = []
+    c = end
+    while c is not None:
+        path.append(c)
+        c = prev[c]
+    if len(path) > longest:
+        return False
+    dug = [d] + path
+    for c in dug:
+        lv.dig(c, 'hall', me)
+    area = {(c[0] + a, c[1] + b) for c in dug for a in range(-3, 4) for b in range(-3, 4)}
+    if lv.doubles(area, narrow=set(dug)):
+        for c in reversed(dug):                 # it would make two walls side by side: the door stays wall
+            lv.undig(c)
+        return False
+    lv.narrow |= set(dug)
+    doors.add(d)
+    doors.add(end)
+    return True
 
 
 def _centre(plan):

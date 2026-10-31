@@ -182,7 +182,7 @@ class LayerTools:
         it = self.pick['Creatures']
         if it.kind != 'spot':
             return
-        if r.get(*c) in ' #+':
+        if r.get(*c) in " #+'":
             self.say('A creature stands on the floor of the room.', True)
             return
         r.change()
@@ -527,7 +527,7 @@ class LayerTools:
             self.say('Pick a group under VARIETY GROUPS first (or make one).', True)
             return
         for c in cells:
-            if self.room.inb(*c) and self.room.get(*c) not in ' +':
+            if self.room.inb(*c) and self.room.get(*c) not in " +'":
                 self.room.set(c[0], c[1], g)
 
     def variety_dialog(self, g):
@@ -566,7 +566,7 @@ class LayerTools:
         for lay in ('Ground', 'Things'):
             it = self.pick[lay]
             ch = it.ch if it.kind == 'sign' else self.room.letter_for(it.name, it.act)
-            if ch and ch not in '+<>':
+            if ch and ch not in "+<>'":
                 out.append((f'+ the picked {lay.lower()} sign: {self._sign_name(ch)}', ch))
         out.append(('+ none (rock: the cell is left out)', ' '))
         return out

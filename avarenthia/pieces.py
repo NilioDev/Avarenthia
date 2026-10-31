@@ -50,7 +50,7 @@ SOURCE = os.path.join(os.path.dirname(HERE), 'pieces')
 
 class Piece:
     __slots__ = ('name', 'part', 'kinds', 'depth', 'weight', 'moods', 'rows', 'subst', 'things', 'events', 'shape',
-                 'gate', 'file', 'spots', 'lists', 'more', 'switches', 'counters', 'dress')
+                 'gate', 'file', 'spots', 'lists', 'more', 'switches', 'counters', 'dress', 'doors')
 
     def __init__(self, name):
         self.name, self.part, self.kinds, self.depth, self.weight = name, 'middle', ['any'], 0, 10
@@ -62,6 +62,19 @@ class Piece:
         self.switches = {}       # name -> [states], the first is how it starts
         self.counters = {}       # name -> start
         self.dress = []          # [(set, how full 1-5)]: dressed anew in every world
+        self.doors = ''          # DOORS: how many ways in the game opens ('1', '1-2', '2-3', 'all'); '' = each +
+
+    def door_count(self):
+        """(least, most) doors the game opens, counting every + (which always opens)."""
+        plus = sum(row.count('+') for row in self.rows)
+        maybe = sum(row.count("'") for row in self.rows)
+        if not self.doors:
+            n = max(1, plus)
+            return n, n
+        if self.doors == 'all':
+            return plus + maybe, plus + maybe
+        lo, _, hi = self.doors.partition('-')
+        return int(lo), int(hi or lo)
 
     def list_of(self, name):
         return self.lists.get(name) or LISTS.get(name)
@@ -230,6 +243,10 @@ def parse(text, file='', checked=True):
                 cur.counters[name.strip()] = int(start)
             except ValueError:
                 cur.counters[val.strip()] = 0
+        elif key == 'DOORS':                    # DOORS: 1-2   (how many of the ways in the game opens)
+            if val != 'all' and not all(v.isdigit() for v in val.split('-')):
+                raise Bad(f'{where}: DOORS is 1, 1-2, 2-3 or all')
+            cur.doors = val
         elif key == 'DRESS':                    # DRESS: hall 3
             name, _, full = val.rpartition(' ')
             try:
@@ -269,33 +286,47 @@ def problems(p):
     out = []
     if not p.rows:
         return [('no MAP', [])]
-    gates = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch == '+']
+    plus = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch == '+']
+    maybe = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch == "'"]
+    gates = plus + maybe
 
     def inside(x, y):
-        return 0 <= y < len(p.rows) and 0 <= x < len(p.rows[y]) and p.rows[y][x] not in ' +#'
-    if len(gates) != 1:
-        out.append((f'a piece needs exactly one + (its way in), it has {len(gates)}', gates))
-    else:
-        gx, gy = gates[0]
+        return 0 <= y < len(p.rows) and 0 <= x < len(p.rows[y]) and p.rows[y][x] not in " +#'"
+    if not gates:
+        out.append(("a piece needs a way in: a + (always used) or a ' (a door the game may use)", []))
+    if not maybe and not p.doors and len(plus) > 1:
+        out.append((f'a piece has one + (its way in), it has {len(plus)}: more ways in are drawn as \' with DOORS',
+                    plus))
+    for g in gates:
+        gx, gy = g
         ins = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if inside(gx + dx, gy + dy)]
         if len(ins) != 1:
-            out.append(('the way in must have the room on one side only', gates))
-        else:
-            dx, dy = ins[0]
-            side = (dy, dx)
-            for k in (-2, -1, 1, 2):
-                if not inside(gx + dx + k * side[0], gy + dy + k * side[1]) or inside(gx + k * side[0], gy + k * side[1]):
-                    out.append(('the way in must sit in a straight wall, two cells of room on each side of it', gates))
-                    break
+            out.append(('a way in must have the room on one side only', [g]))
+            continue
+        dx, dy = ins[0]
+        side = (dy, dx)
+        for k in (-2, -1, 1, 2):
+            if not inside(gx + dx + k * side[0], gy + dy + k * side[1]) or inside(gx + k * side[0], gy + k * side[1]):
+                out.append(('a way in must sit in a straight wall, two cells of room on each side of it', [g]))
+                break
+    if gates:
+        try:
+            lo, hi = p.door_count()
+        except ValueError:
+            lo, hi = 1, 1
+        if len(plus) > hi:
+            out.append((f'DOORS lets the game open {hi}, but {len(plus)} + always open', plus))
+        if hi >= 2 and len(gates) >= 2:
+            out += _through(p, gates)
     bad = [(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row)
-           if not (ch in ' +<>' or ch in LEGEND or ch in p.things or ch in p.subst)]
+           if not (ch in " +<>'" or ch in LEGEND or ch in p.things or ch in p.subst)]
     for x, y in bad:
         out.append((f'unknown glyph {p.rows[y][x]!r} in row {y + 1}', [(x, y)]))
     for opts in p.subst.values():
         for ch, _w in opts:
             if ch not in LEGEND and ch not in p.things and ch != ' ':
                 out.append((f'unknown glyph {ch!r} in a SUBST', []))
-    floor = {(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch not in ' +#'}
+    floor = {(x, y) for y, row in enumerate(p.rows) for x, ch in enumerate(row) if ch not in " +#'"}
     for x, y in sorted(floor, key=lambda c: (c[1], c[0])):
         for dx, dy in ((1, 0), (0, 1)):
             if (x + dx, y + dy) not in floor and (x + 2 * dx, y + 2 * dy) not in floor and (x + 3 * dx, y + 3 * dy) in floor:
@@ -336,6 +367,37 @@ def problems(p):
     return out
 
 
+SHUTS = ('open', 'shut', 'cavein', 'flood')
+
+
+def _through(p, gates):
+    """With two doors or more a room can be a way through: the way from door to door may not hang on anything that
+    can shut (bars, rubble, a mark an event opens or shuts)."""
+    worked = {t.split(':')[1] for e in p.events for t in e['then'] + [x.split(':', 2)[2] for x in e['then']
+              if x.startswith('after:') and x.count(':') >= 2] if t.split(':')[0] in SHUTS and ':' in t}
+    can = set()
+    for y, row in enumerate(p.rows):
+        for x, ch in enumerate(row):
+            if ch in " #":
+                continue
+            if ch in worked:
+                continue
+            if ch in "+'" or _walks(ch, p) or ch in p.subst:
+                can.add((x, y))
+    seen, todo = {gates[0]}, [gates[0]]
+    while todo:
+        x, y = todo.pop()
+        for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if n in can and n not in seen:
+                seen.add(n)
+                todo.append(n)
+    cut = [g for g in gates if g not in seen]
+    if cut:
+        return [('with two doors or more the room can be a way through: the way from door to door may not pass '
+                 'what can shut (bars, rubble, a mark an event works); set DOORS to 1', cut)]
+    return []
+
+
 def check(p):
     """A piece must have a map with exactly one way in on its edge, and use only known glyphs."""
     bad = problems(p)
@@ -349,6 +411,7 @@ class Drawing(dict):
     def __init__(self, *a):
         super().__init__(*a)
         self.spots = {}
+        self.doors = []           # the other doors this time: [(cell, step out)]; K5 joins them to the level
 
 
 def drawn(p):
@@ -379,9 +442,26 @@ def drawn(p):
     for c, what in p.spots.items():
         tx, ty = turn(*c)
         out.spots[(tx - mx, ty - my)] = what
-    gate = next(c for c, ch in out.items() if ch == '+')
-    step = next(((-dx, -dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
-                 if out.get((gate[0] + dx, gate[1] + dy), '#') not in '#+'), (0, 1))
+    plus = [c for c, ch in out.items() if ch == '+']
+    maybe = [c for c, ch in out.items() if ch == "'"]
+    chosen = plus
+    if maybe:                                   # doors the game may use (DOORS): some this time, the rest wall
+        lo, hi = p.door_count()
+        n = max(len(plus), min(len(plus) + len(maybe), random.randint(lo, hi)), 1)
+        random.shuffle(maybe)
+        chosen = plus + maybe[:n - len(plus)]
+        for c in maybe[n - len(plus):]:
+            out[c] = '#'
+        random.shuffle(chosen)
+        for c in chosen:
+            out[c] = '+'
+
+    def out_step(g):
+        return next(((-dx, -dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                     if out.get((g[0] + dx, g[1] + dy), '#') not in '#+'), (0, 1))
+    gate = chosen[0]
+    step = out_step(gate)
+    out.doors = [(g, out_step(g)) for g in chosen[1:]]
     if p.dress:
         dress_drawing(p, out, gate)
     return out, gate, step
@@ -408,6 +488,8 @@ def dress_drawing(p, out, gate, rng=None):
         return []
     marks = {e['at'] for e in p.events if e['at']}
     keep = {c for c, ch in out.items() if ch in p.things or ch in '<>' or ch in marks} | set(out.spots)
+    keep |= {(x + dx, y + dy) for (x, y), ch in out.items() if ch == '+'
+             for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if (x + dx, y + dy) in walk}
     laid = DR.dress(free, walk, wall, start, p.dress, rng or random, keep)
     for c, name in laid:
         out[c] = chr(DRESSED + DR.tile(name))

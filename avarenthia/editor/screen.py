@@ -40,7 +40,7 @@ PAL_Y0, PAL_Y1 = 11, H - 3                # the palette's lines
 TOOLS = [('d', 'Draw'), ('l', 'Line'), ('r', 'Rectangle'), ('f', 'Fill'), ('s', 'Select'), ('v', 'Variety')]
 LAYERS = ('Ground', 'Things', 'Creatures', 'Events')
 GROUND = ['.', '#', '"', 'r', 'v', '~', ',', 'L', '=', 'i']
-WAYS = ['+', 'n', '<', '>']
+WAYS = ['+', "'", 'n', '<', '>']
 FURNITURE = [c for c in P.LEGEND if c not in GROUND and c not in WAYS and c != 'n']
 HINTS = [
     'Left mouse draws with the picked sign, right mouse picks the sign under it. Wheel: zoom. Middle mouse, or '
@@ -77,7 +77,8 @@ def palette(layer):
         own = [Item('thing', name=o.name, label=o.name) for o in mine if o.kind == 'TILE']
         return [('GROUND', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in GROUND[:5]]),
                 ('WATER AND FIRE', [Item('sign', c, label=D.TILES[P.LEGEND[c]].name) for c in GROUND[5:]]),
-                ('WAYS', [Item('sign', '+', label='the way in'), Item('sign', 'n', label='a hidden door'),
+                ('WAYS', [Item('sign', '+', label='a way in, always'), Item('sign', "'", label='a door, maybe'),
+                          Item('sign', 'n', label='a hidden door'),
                           Item('sign', '<', label='stairs up'), Item('sign', '>', label='stairs down')]),
                 ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else [])
     telling = [Item('thing', name=DOES[a], act=a, label=f'{a}') for a in sorted(DOES)]
@@ -246,7 +247,7 @@ class Editor(MK.Maker, LY.LayerTools):
         if ch is None:
             return
         T.paint(self.room, cells, ch)
-        self.room.spots = {c: v for c, v in self.room.spots.items() if self.room.get(*c) not in ' #+'}
+        self.room.spots = {c: v for c, v in self.room.spots.items() if self.room.get(*c) not in " #+'"}
         self.room.tidy()
 
     def pick_under(self, c):
@@ -425,6 +426,11 @@ class Editor(MK.Maker, LY.LayerTools):
         # a click
         if y < 1:
             return self.top_click(x)
+        if 1 <= y < 2 and AX <= x < AX + AW:
+            for _lab, x0, x1, act in self._bar_buttons():
+                if x0 <= x < x1:
+                    act()
+            return
         if button == 2 or (button == 1 and self.space):
             self.drag = ('pan', x, y, self.view[0], self.view[1])
             return
@@ -504,6 +510,16 @@ class Editor(MK.Maker, LY.LayerTools):
             x += w + 2
         return out
 
+    def _bar_buttons(self):
+        """The buttons over the drawing: what Ctrl+D, Ctrl+R, Ctrl+T and F5 do, for the mouse."""
+        out, x = [], AX
+        for k, lab, act in (('Ctrl+D', 'Dress', self.dress_dialog), ('Ctrl+R', 'Roll', self.roll_dialog),
+                            ('Ctrl+T', 'Tile', self.maker_dialog), ('F5', 'Try', lambda: self.key('f5'))):
+            w = len(k) + 1 + len(lab)
+            out.append((f'{k} {lab}', x, x + w, act))
+            x += w + 2
+        return out
+
     def left_click(self, x, y, button):
         if 2 <= y < 2 + len(TOOLS):
             self.tool = TOOLS[int(y) - 2][1]
@@ -558,9 +574,9 @@ class Editor(MK.Maker, LY.LayerTools):
 
     # ------------------------------------------------------------ fields of the piece
     def _field_rows(self):
-        rows = [('name', 2), ('part', 3), ('kinds', 4), ('depth', 5), ('weight', 6), ('gate', 7), ('shape', 8),
-                ('size', 9)]
-        y = 11
+        rows = [('name', 2), ('part', 3), ('kinds', 4), ('depth', 5), ('weight', 6), ('gate', 7), ('doors', 8),
+                ('shape', 9), ('size', 10)]
+        y = 12
         for i, m in enumerate(self.room.moods):
             rows.append((f'mood{i}', y))
             y += len(wrap_text('"' + m + '"', W - RX - 4)[:4])
@@ -571,7 +587,8 @@ class Editor(MK.Maker, LY.LayerTools):
     def field_value(self, name):
         r = self.room
         return {'name': r.name, 'part': r.part, 'kinds': ' '.join(r.kinds), 'depth': str(r.depth),
-                'weight': str(r.weight), 'gate': r.gate, 'shape': r.shape, 'size': f'{r.w} x {r.h}'}.get(name, '')
+                'weight': str(r.weight), 'gate': r.gate, 'shape': r.shape, 'size': f'{r.w} x {r.h}',
+                'doors': r.doors or 'each +'}.get(name, '')
 
     def field_click(self, name, button):
         r = self.room
@@ -581,6 +598,10 @@ class Editor(MK.Maker, LY.LayerTools):
         elif name == 'gate':
             r.change()
             r.gate = GATES[(GATES.index(r.gate) + (1 if button == 1 else -1)) % len(GATES)]
+        elif name == 'doors':
+            r.change()
+            opts = ['', '1', '1-2', '2-3', 'all']
+            r.doors = opts[(opts.index(r.doors) + (1 if button == 1 else -1)) % len(opts)] if r.doors in opts else ''
         elif name == 'kinds':
             self.dialog = ('kinds', {})
         elif name.startswith('mood'):
@@ -769,9 +790,47 @@ class Editor(MK.Maker, LY.LayerTools):
         elif kind == 'kinds' and tok in ('enter', 'np_enter'):
             self.dialog = None
 
+    def _dialog_box(self):
+        """(x, y, w, h) of the open window."""
+        kind, st = self.dialog[0], self.dialog[1] if len(self.dialog) > 1 else {}
+        if kind == 'line':
+            return 20, 24, 70, 7
+        if kind == 'pick':
+            return 18, 5, 74, 50
+        if kind == 'new':
+            return 28, 14, 54, 18
+        if kind == 'kinds':
+            return RX + 1, 4, W - RX - 2, len(KINDS) + 6
+        if kind == 'variety':
+            return 28, 14, 56, len(self.room.subst.get(st['group'], [])) + len(self._variety_adds()) + 8
+        if kind == 'dress':
+            return 28, 13, 56, len(LY.DR.SETS) + 9
+        return 4, 5, 102, 50
+
     def dialog_click(self, x, y, button):
         kind, st = self.dialog[0], self.dialog[1] if len(self.dialog) > 1 else {}
         y = int(y)
+        box = self._dialog_box()
+        if box and not (box[0] <= x < box[0] + box[2] and box[1] <= y < box[1] + box[3]):
+            self.dialog = None                      # a click outside a window closes it, as Esc does
+            if kind in ('pick', 'line'):
+                self.after_small_dialog()
+            return
+        if kind == 'line' and y == 28:
+            if 22 <= x < 26:
+                self.dialog = None
+                st['done'](st['text'])
+                self.after_small_dialog()
+            elif 28 <= x < 34:
+                self.dialog = None
+                self.after_small_dialog()
+            return
+        if kind == 'roll' and y == 53:
+            self.roll_dialog()
+            return
+        if kind == 'maker' and y == 52 and 21 <= x < 30:
+            self.dialog = None
+            return
         if kind == 'pick':
             i = y - 8 + st.get('scroll', 0)
             if 20 <= x < 90 and 8 <= y < 52 and 0 <= i < len(st['options']):
@@ -856,6 +915,7 @@ class Editor(MK.Maker, LY.LayerTools):
     def render(self, cv, draw_area=True):
         cv.clear(BG)
         self.render_top(cv)
+        self.render_bar(cv)
         self.render_left(cv)
         self.render_ruler(cv)
         if draw_area:
@@ -882,6 +942,12 @@ class Editor(MK.Maker, LY.LayerTools):
             greyed = word == 'Save' and not self.can_save()
             cv.text(x0, 0, k, scale(GOLD, .5) if greyed else GOLD, BAR)
             cv.text(x0 + len(k) + 1, 0, word, DIM if greyed else FG, BAR)
+
+    def render_bar(self, cv):
+        for lab, x0, _x1, _a in self._bar_buttons():
+            k, word = lab.split(' ')
+            cv.text(x0, 1, k, GOLD, BG)
+            cv.text(x0 + len(k) + 1, 1, word, FG, BG)
 
     def render_left(self, cv):
         cv.fill(0, 1, 24, H - 2, ' ', FG, PANEL)
@@ -944,7 +1010,7 @@ class Editor(MK.Maker, LY.LayerTools):
         if self.pasting and self.clip and self.hover:
             preview.update({(self.hover[0] + dx, self.hover[1] + dy): ch for (dx, dy), ch in self.clip.items()
                             if r.inb(self.hover[0] + dx, self.hover[1] + dy)})
-        inside = {(x, y) for y in range(r.h) for x in range(r.w) if r.get(x, y) not in ' #+'}
+        inside = {(x, y) for y in range(r.h) for x in range(r.w) if r.get(x, y) not in " #+'"}
         for j in range(vh):
             for i in range(vw):
                 x, y = self.view[0] + i, self.view[1] + j
@@ -980,7 +1046,9 @@ class Editor(MK.Maker, LY.LayerTools):
                             cv.put(i, j, ch, (255, 220, 120) if on else GOLD, (70, 50, 16) if on else (40, 30, 12))
                         else:
                             cv.put(i, j, t.ch, fg, bg)
-                if c in r.spots and ch not in ' #+':
+                if ch == "'":                       # a door the game may use: a dim door
+                    cv.put(i, j, '+', scale(D.TILES[D.DOOR].fg, .55), (20, 18, 16))
+                if c in r.spots and ch not in " #+'":
                     sch, sfg = self.spot_look(r.spots[c])
                     cv.put(i, j, sch, sfg if self.layer == 'Creatures' else scale(sfg, .6), None)
                 if c in self.dressed:
@@ -1013,7 +1081,7 @@ class Editor(MK.Maker, LY.LayerTools):
         cv.fill(x, 1, W - x, H - 2, ' ', FG, PANEL)
         cv.frame(x, 1, W - x, 22, LINE, PANEL, 'The piece', GOLD)
         labels = {'name': 'Name', 'part': 'Part', 'kinds': 'Suits', 'depth': 'From level', 'weight': 'How often',
-                  'gate': 'Way in', 'shape': 'Shape', 'size': 'Size'}
+                  'gate': 'Way in', 'doors': 'Doors open', 'shape': 'Shape', 'size': 'Size'}
         for name, y in self._field_rows():
             if name.startswith('mood'):
                 continue
@@ -1023,9 +1091,9 @@ class Editor(MK.Maker, LY.LayerTools):
             bg = SEL if typing else FIELD
             cv.fill(x + 13, y, W - x - 15, 1, ' ', FG, bg)
             cv.text(x + 13, y, val[-(W - x - 15):] if typing else val[:W - x - 15], GOLD if name == 'size' else FG, bg)
-            if name in ('part', 'gate', 'kinds'):
+            if name in ('part', 'gate', 'kinds', 'doors'):
                 cv.put(W - 3, y, '▼', DIM, bg)
-        cv.text(x + 2, 10, 'MOOD LINES', DIM, PANEL)
+        cv.text(x + 2, 11, 'MOOD LINES', DIM, PANEL)
         for name, y in self._field_rows():
             if not name.startswith('mood'):
                 continue
@@ -1191,7 +1259,9 @@ class Editor(MK.Maker, LY.LayerTools):
         cv.frame(20, 24, 70, 7, GOLD, PANEL, st['title'], GOLD)
         cv.fill(22, 26, 66, 1, ' ', FG, SEL)
         cv.text(22, 26, (st['text'] + '_')[-66:], FG, SEL)
-        cv.text(22, 28, 'Enter: done. Esc: back.', DIM, PANEL)
+        cv.text(22, 28, ' OK ', BG, GOLD)
+        cv.text(28, 28, ' Back ', FG, SEL)
+        cv.text(36, 28, 'or Enter, Esc', DIM, PANEL)
 
     def render_pick(self, cv):
         st = self.dialog[1]
@@ -1289,8 +1359,8 @@ class Editor(MK.Maker, LY.LayerTools):
                 if x < 48 and y < 44:
                     ch, fg = self.spot_look(what)
                     cv.put(ox + x, oy + y, ch, fg, None)
-        cv.text(6, 53, 'Turned, mirrored, variety picked and dressed, as in a world. R rolls again. Esc: back.',
-                DIM, PANEL)
+        cv.text(6, 53, 'Turned, mirrored, variety picked and dressed, as in a world.', DIM, PANEL)
+        cv.text(70, 53, ' Roll again (R) ', BG, GOLD)
 
     def render_kinds(self, cv):
         kx, ky = RX + 2, 5

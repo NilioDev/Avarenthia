@@ -70,7 +70,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     "ga" the same evening). 33. **Round A** (XL): the PxPlus tileset, the editor's screen, drawing and saving rooms,
     the check. Built 31 October 2026 (`avarenthia/editor/`, `editor.py`, test part `editor`). 34. **Round B1** (XL): events with switches, counters and wires, variety, creatures and lists,
     dressing, own tiles and things, Ctrl+R, Try. Built 31 October 2026 (`dressing.py`, `owntiles.py`,
-    `editor/layers.py`, `maker.py`, `trying.py`; test parts `editor` and `pieces`). Pause after it. 35. **Round B2** (XL): puzzle things 1-26 in the
+    `editor/layers.py`, `maker.py`, `trying.py`; test parts `editor` and `pieces`). Pause after it. 35. **Round B2** (XL): more doors (`'`, `DOORS:`), then puzzle things 1-26 in the
     game. 36. **Round C** (XL): whole places, puzzle things 27-44. Merge after 36.
 After that: Multiplayer (parked).
 
@@ -174,6 +174,12 @@ the fonts in `editor/font/`). It edits the pieces format that is already built (
   always has another way too (one source is never the only one). Creatures and hirelings press plates too.
   New module `puzzles.py`, state per place on the map; example rooms in `pieces/` so puzzles come without Nilio's
   drawings too.
+- **More doors** (Nilio, 31 October 2026, "ga"): `+` stays the way in that is always used (it may be left out);
+  the sign `'` is a door that may be used, as many as drawn. `DOORS: 1-2` (1, 1-2, 2-3 or all) says how many the
+  generator opens; K5 joins the rest of the level at those, the others become wall, so a room differs per world and
+  can be a way through. The check: each door in a straight wall, at least one `+` or `'`; with two doors or more the
+  way from door to door may not hang on anything that can shut (bars, a lever, a puzzle): a puzzle room is set to
+  1 door. Built first in B2.
 - **Whole places** (mockup 6): a map drawn whole, one of a kind; sizes 60 x 34, 80 x 50, 100 x 60, 120 x 70; floors as
   tabs, stairs find their twin; room slots `?` where the game sets a theme room each world; people who live there;
   a find of the place or one fixed item; a boss from the boss maker. "In the world": name, sign, terrain, whose

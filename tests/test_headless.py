@@ -8863,10 +8863,10 @@ def editor():
         # a second way in is red, and saving waits
         e.layer = 'Ground'
         e.pick['Ground'] = ES.Item('sign', '+')
-        e.mouse('down', *at((2, 11)))
-        e.mouse('up', *at((2, 11)))
+        e.mouse('down', *at((6, 6)))
+        e.mouse('up', *at((6, 6)))
         bad = [m for o, m, c in e.problems() if o is False]
-        assert bad and 'exactly one +' in bad[0], bad
+        assert any('one side only' in m for m in bad), bad
         assert not e.save() and not os.path.exists(r.file)
         e.key('z', ctrl=True)
         assert e.save(), e.msg
@@ -8901,6 +8901,7 @@ def editor():
         e.dialog = None
         assert 'Avarenthia Editor' in ''.join(cv.ch[:ES.W])
         editor_b1(home)
+        editor_doors()
     finally:
         EF.home = real_home
         Canvas.cut = None
@@ -9083,6 +9084,46 @@ def editor_b1(home):
     assert not Canvas.cut, Canvas.cut
     Canvas.cut = None
     e.dialog = None
+
+
+DOORS_PIECE = '''NAME: through hall
+DOORS: 2-3
+THING: A = altar do:shrine
+MAP
+######'######
+#...........#
+#...........#
+'.....A.....'
+#...........#
+#...........#
+######+######
+ENDMAP
+'''
+
+
+def editor_doors():
+    """More doors (B2): a ' is a door the game may use, DOORS says how many; K5 joins the others to the level, the
+    unused ones are wall; a way through may not hang on bars."""
+    import random as _r
+    from avarenthia import pieces as PC, k5 as K5
+    from avarenthia.editor.model import Room
+    p = PC.parse(DOORS_PIECE, 'x')[0]
+    assert p.door_count() == (2, 3) and PC.parse(Room.from_piece(p).text(), 'x')[0].doors == '2-3'
+    shut = DOORS_PIECE.replace('#...........#\n######+', '#....QQQ....#\n######+').replace(
+        'THING: A', 'THING: Q = bars\nEVENT: when=bump at=A then=open:Q\nTHING: A')
+    assert any('way through' in m for m, _c in PC.problems(PC.parse(shut, 'x', checked=False)[0]))
+    joined = 0
+    for seed in range(12):
+        _r.seed(seed)
+        d = PC.drawn(p)
+        assert 1 <= len(d[0].doors) <= 2 and sum(1 for ch in d[0].values() if ch == "'") == 0
+        plan = K5.make(120, 70, themes=[(p, d)])
+        r = next((r for r in plan.rooms if r.theme == 'through hall'), None)
+        if r is None:
+            continue
+        ring = {(x + a, y + b) for x, y in r.cells for a, b in K5.D4} - r.cells
+        joined += sum(1 for c in ring if c in plan.floor) >= 2
+    assert joined >= 6, joined
 
 
 def LY_mons(r):
