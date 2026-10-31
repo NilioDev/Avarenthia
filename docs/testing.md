@@ -410,4 +410,6 @@ three things. Test part `boss_moves`.
 - **Fade-in** - stairs, gates and entrances, with effects full, short and off. Debug: none needed.
 - **Names and panel** - a name next to a sign and at the edge of the view; a target at full and low life; a long
   name in IN SIGHT. Debug: Teleport, spawn a champion with a long name.
+- **Names in the log** - a fight, a find, a drink: creature and item names in their map colour, the rest of the
+  line unchanged; a wrapped line keeps the colour. Debug: spawn a foe, Give item.
 

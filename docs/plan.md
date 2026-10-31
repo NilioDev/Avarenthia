@@ -14,7 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor waits until much later (`docs/open.md`) |
-| **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale. Plus the look rule. Not in the build order yet |
+| **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -113,7 +113,10 @@ Only colour, brightness and tidiness: no new signs, animations or keys. Dutch pr
    the view moves inwards instead of being cut ("cklestock").
 6. **The panel in one colour scale.** The target's life bar uses IN SIGHT's scale (green, yellow, red) instead of
    always red; a long name in IN SIGHT wraps or is shortened, never cut ("Champion Blac").
-Order: 1, 2, 5, 6 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
+7. **Names in the log in their own colour.** Only the name of a creature or an item takes the colour it has on the
+   map (the goblin green, the fire beetle orange, a potion red); the rest of the line keeps its colour now. In a fight
+   you see at once which line belongs to which sign. Mockup `M5_log.png`.
+Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
 
 ---
 
