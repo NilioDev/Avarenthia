@@ -2975,17 +2975,20 @@ def ferries():
     """Village ferries: a raft on a rope where a lane crosses a broad or wild river, a ferryman by day."""
     from avarenthia import ferries as FY, towns as TV, events as EV
     print('== ferries')
-    g = E.Game('Ferry', False, seed=7, race='human', gender='male')
     m = None
-    for s in g.world.settlements:
-        if s.is_city or s.kind == 'deephold' or getattr(s, 'dwarven', False) or getattr(s, 'elder', False):
-            continue
-        to_over(g, s.id)
-        g.enter_town(s.id)
-        if getattr(g.map, 'ferries', None):
-            m = g.map
+    for wseed in (7, 8, 9, 11):                      # a world draws its own rivers: look in a few
+        g = E.Game('Ferry', False, seed=wseed, race='human', gender='male')
+        for s in g.world.settlements:
+            if s.is_city or s.kind == 'deephold' or getattr(s, 'dwarven', False) or getattr(s, 'elder', False):
+                continue
+            to_over(g, s.id)
+            g.enter_town(s.id)
+            if getattr(g.map, 'ferries', None):
+                m = g.map
+                break
+        if m:
             break
-    assert m, 'no village ferry in seed 7'
+    assert m, 'no village ferry in worlds 7-11'
     la, lb, ra, rb = m.ferries[0]
     man = FY.ferryman(g, m, 0)
     assert man and man.job == 'ferryman', 'a ferry has its ferryman'
