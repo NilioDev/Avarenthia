@@ -462,7 +462,7 @@ class Editor:
         y = 11
         for i, m in enumerate(self.room.moods):
             rows.append((f'mood{i}', y))
-            y += len(wrap_text('"' + m + '"', W - RX - 4)[:3]) + 0
+            y += len(wrap_text('"' + m + '"', W - RX - 4)[:4])
         if len(self.room.moods) < 4:
             rows.append(('mood+', y))
         return rows
@@ -865,7 +865,7 @@ class Editor:
                 continue
             i = int(name[4:])
             s = (self.field[1] + '_') if typing else '"' + r.moods[i] + '"'
-            cv.wrap(x + 2, y, W - x - 4, s, FG, SEL if typing else PANEL, 3)
+            cv.wrap(x + 2, y, W - x - 4, s, FG, SEL if typing else PANEL, 4)
         cv.frame(x, 23, W - x, 6, LINE, PANEL, 'Layers', GOLD)
         for i, lay in enumerate(LAYERS):
             on = lay == self.layer
