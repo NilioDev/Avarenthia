@@ -450,7 +450,9 @@ three things. Test part `boss_moves`.
 
 - **Each new maker** - every kind can be reached and seen whole. Debug: Teleport (each new kind in the list), Reveal
   map, a "make again" key to roll the same kind with a new seed.
-- **States and break-ins** - one place in each state (lived in, fallen, held, overgrown) and a level that breaks into
-  another kind. Debug: choose the state when teleporting; Teleport to a level with a break-in.
+- **States and break-ins** - one place in each of the 14 states and a level that breaks into another kind. Debug:
+  choose the state when teleporting; Teleport to a level with a break-in.
+- **States shifting** - a besieged place falling, a plundered one growing over. Debug: pass days (Time), set a
+  place's state.
 - **Time and season places** - the tide cave at high and low tide, the drowned village in a dry summer, the fey
   hill's lost week. Debug: set the hour and the season (Time), Teleport.

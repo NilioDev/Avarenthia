@@ -16,7 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
 | **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Not in the build order yet |
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
-| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus states (living, fallen, held, overgrown) and levels breaking into other kinds. Not in the build order yet |
+| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -198,8 +198,15 @@ plan (like `delves.py`): you can tell from the map what the place is; what matte
 19. **A geode**: a crystal cave that breaks the light into colours, rare stones.
 20. **Termite mounds** on the savanna: climbed up from inside.
 21. **A graveyard of family vaults**: many small vaults on one map.
-Over all of them: **states** (a place lived in, fallen, held by another people or by monsters, or overgrown) and
-**break-ins** (a level that gives onto another kind: a mine into a Varnish deep, a sewer into the catacombs).
+Over all of them: **states** and **break-ins** (a level that gives onto another kind: a mine into a Varnish deep, a
+sewer into the catacombs). The states: lived in; fallen; held by another people or by monsters; overgrown; flooded
+(the low half under water, swim or find another way); just burnt (smouldering, hot floor, part fallen in); frozen
+(winter or a curse, ice floors, frozen dwellers); stricken (doors nailed shut, stay too long and you may sicken);
+haunted (still by day, the dead rise at night); besieged (an army of a war in `realms.py` before it, defenders inside;
+help, smuggle in or betray); being plundered (the plunderers still at it); settled again (refugees or new settlers in
+an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds, the worst guards); already emptied
+(grave robbers or a rival of `living.py` came first: their tracks, their snares, maybe still them).
+**States shift while you play**: a besieged place falls if you stay away too long, a plundered one is overgrown later.
 To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
