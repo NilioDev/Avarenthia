@@ -531,6 +531,14 @@ def make(w, h, mood=None, rooms_wanted=None, themes=(), arrival=None, bottom=Non
     up_room = real[0]
     plan.up = next((c for c, ch in marks.items() if ch == '<' and c in up_room.cells), None) or up_room.middle(floor)
     dist = walk(floor, plan.up)
+    for c in [c for c in floor if c not in dist]:      # a pocket a cave left cut off: rock again
+        del floor[c]
+        plan.doors.discard(c)
+        plan.arches.discard(c)
+        marks.pop(c, None)
+    for r in rooms:
+        r.cells = {c for c in r.cells if c in floor}
+    real = [r for r in real if r.cells]
     low = [r for r in real if piece_of.get(r.id) == 'bottom']
     far = low[0] if low else max([r for r in real[1:] if r.id not in sealed] or real,
                                  key=lambda r: max(dist.get(c, 0) for c in r.cells))
