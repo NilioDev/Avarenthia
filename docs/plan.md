@@ -17,6 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Not in the build order yet |
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
+| **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -210,6 +211,28 @@ an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds
 To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
+
+## Marked creatures (approved 1 November 2026, not built)
+Monsters grow more varied through one list of affixes, not through more kinds (there are 272). The full table with who,
+where and the answer for each: project files `monsters/affixen.md`.
+- **One list, 20 affixes.** The 16 traits of the named enemies (`named.TRAITS`); *Extra Strong* becomes **Brutal**
+  (hits half again as hard), *Fire Enchanted* goes into Fire-blooded, *Fast* into Swift. Three new: **Warded** (resists
+  one school of magic, the look line says which), **Ember-hearted** (burning ground 3 x 3 where it dies), **Grave-bound**
+  (undead only: rises once more unless the body is burnt or hallowed). Also new: fire or acid stops Regenerating for 3 turns.
+- **Who has how many.** A champion (blue) has 1 affix, from level 15 sometimes 2. A unique (gold) has 2 or 3 and a name in
+  the named enemies' style ("Old Greytooth"); the Diablo names (`D.UNIQUE_NAME`, "Gorefang the Wicked") go. A named
+  enemy keeps its own growing but draws its traits from this list.
+- **It must fit.** Each affix belongs to certain kinds (Multishot only archers, Splitting never a people, Warcry only
+  leaders); place, region and season make one likelier (Frost-touched in winter and the north, Fire-blooded on fire
+  levels). Frost-touched and Fire-blooded never together.
+- **Rarer.** Of the packs in dungeons about 8% champions and 3% uniques (now 12% and 7%); a little fewer in the wild.
+- **Seen on one tile.** The colour stays blue or gold; in IN SIGHT the affixes stand on their own line under the name
+  ("venomous, swift"); the look line `l` gives the sentence (`TRAIT_TEXT`). One first-time tip in `guide.TIPS`.
+- **Every affix has an answer** the player already owns (Shielded: the flail or many small blows; Stone Skin: the war
+  hammer; Thorny: a bow or reach; Splitting: fire). Dispel strips the magic ones, now also Warded, Ember-hearted and Blink.
+- **Loot unchanged:** only those who use gear drop gear. A skinned unique may give a part tied to its affix (about
+  25%, as named enemies do now, `beastparts.TRAIT_POWER`); champions nothing extra. The bestiary does not change.
+- Handbook: two or three sentences in the fighting chapter. Test part `affixes`. Bump `SAVE_VERSION`.
 
 ## Dungeons on their own land (approved 22 October 2026, not built)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).

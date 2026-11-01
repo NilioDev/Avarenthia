@@ -456,3 +456,13 @@ three things. Test part `boss_moves`.
   place's state.
 - **Time and season places** - the tide cave at high and low tide, the drowned village in a dry summer, the fey
   hill's lost week. Debug: set the hour and the season (Time), Teleport.
+
+
+## Marked creatures (approved 1 November 2026, not built)
+
+- **Each affix** - a champion and a unique with each of the 20 affixes; what it does and its answer (Dispel, fire on
+  Regenerating, burning or hallowing a Grave-bound body). Debug: spawn a champion or unique with an affix of choice.
+- **Fit and rarity** - affixes match kind, place and season; never Frost-touched with Fire-blooded; about 8% champions
+  and 3% uniques. Debug: Teleport to a fire level and a winter map, Reveal map.
+- **Seen and told** - the affix line in IN SIGHT, the look line, the first-time tip, a unique's new name. Debug: spawn
+  a unique, reset tips.
