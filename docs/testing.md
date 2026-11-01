@@ -432,3 +432,15 @@ three things. Test part `boss_moves`.
 - **Names in the log** - a fight, a find, a drink: creature and item names in their map colour, the rest of the
   line unchanged; a wrapped line keeps the colour. Debug: spawn a foe, Give item.
 
+
+## The belt and the tally (approved 1 November 2026, not built)
+
+- **Potion grades** - each grade of health and mana, what it restores, where it is sold. Debug: give potions of any
+  grade (Give item), Teleport to a village, a town, a city.
+- **The belt** - pockets by belt worn (none, sash, belt, a "+1 pocket" belt), Shift+1-5, Q and W picking the smallest
+  grade that will do, refilling once no foe is in sight, a brew or oil in a pocket, the tip. Debug: give belts and
+  potions, spawn a foe.
+- **Drinking from the pack** - three turns, broken off by a foe coming in sight, a blow or a key. Debug: spawn a foe
+  out of sight, empty the belt.
+- **The tally** - from the menu at any time, after the win, at death; every number counting. Debug: a "Fill the
+  tally" button with plausible numbers, and the win/death screens to open.
