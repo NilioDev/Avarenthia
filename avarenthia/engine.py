@@ -42,6 +42,7 @@ from . import caravan as CV
 from . import townlife as TL
 from . import feasts as FE
 from . import landmarks as LM
+from . import drawnplaces as DP
 from . import bossmaker as MK  # noqa: F401  (registers the job bosses)
 from . import ai as AI
 from . import weather as WX
@@ -91,7 +92,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 63
+SAVE_VERSION = 64
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -914,6 +915,8 @@ class Game:
             OP.on_enter(self, site, m)
         if LM.is_mark(site):
             LM.on_enter(self, site, m)
+        if site.kind == 'drawn':
+            DP.on_enter(self, site, m)
         VN.on_enter(self, site, m)
         EP.on_enter(self, site, m)
         if SH.is_shadow(site):
@@ -1274,7 +1277,7 @@ class Game:
             DH.on_step(self)
         if m.kind == 'dungeon':
             DH.see_veins(self)
-        if getattr(m, 'rooms', None) is not None and m.kind == 'dungeon':
+        if getattr(m, 'rooms', None) is not None and (m.kind == 'dungeon' or getattr(m, 'drawn', False)):
             TH.on_step(self)
         if m.kind == 'dungeon' and m.t[ny * m.w + nx] == D.LOOSE:
             PL.loose_step(self)
@@ -1554,7 +1557,9 @@ class Game:
                 return 1
             self.msg('There is nothing to enter here.')
             return 0
-        got = SKY.stairs(self, t, d) if t in (UP, DOWN) else None
+        got = DP.stairs(self, t, d) if t in (UP, DOWN) else None
+        if got is None and t in (UP, DOWN):
+            got = SKY.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
             got = VN.stairs(self, t, d)
         if got is None and t in (UP, DOWN):
@@ -3389,6 +3394,9 @@ class Game:
         if role == 'landmark':
             LM.talk(self, npc)
             return
+        if role == 'drawn':
+            DP.talk(self, npc)
+            return
         if role == 'teacher':
             EP.talk(self, npc)
             return
@@ -3789,6 +3797,10 @@ class Game:
                     f"{cheb(s.x, s.y, ox, oy)} leagues or so. {f} land.")
         if r < .45:
             line = PL.rumour(self)
+            if line:
+                return line
+        if r < .6:
+            line = DP.rumour(self)                   # a whole place drawn in the editor (drawnplaces.py)
             if line:
                 return line
         return LORE.hint(self)

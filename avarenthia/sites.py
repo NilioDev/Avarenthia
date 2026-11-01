@@ -59,6 +59,9 @@ class Site:
         from . import places as PL
         if PL.is_place(self):
             return PL.glyph(self)
+        if self.kind == 'drawn':
+            from . import drawnplaces as DP
+            return DP.glyph(self)
         return SITE_LOOK[self.kind]
 
 
@@ -203,6 +206,9 @@ def gen_site_map(game, site):
     from . import landmarks as LM
     if LM.is_mark(site):
         return LM.site_map(game, site)
+    if site.kind == 'drawn':
+        from . import drawnplaces as DP
+        return DP.site_map(game, site)
     if site.kind == 'shanty':
         from .townlife import shanty_map
         return shanty_map(game, site)

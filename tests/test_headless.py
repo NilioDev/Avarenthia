@@ -9754,6 +9754,94 @@ def puzzles():
     print('puzzles ok')
 
 
+def drawn_places():
+    """Whole places (editor round C): Saint Odo's Rest lies in the world; every floor is reached by its stairs, onto
+    the twin stair; a block through the bell tower's hole presses the plate by the altar; three shards open the seal;
+    its rumour and its book line make it known; the check finds a stair without a twin."""
+    import tempfile
+    from avarenthia import drawnplaces as DP, themes as TH, debug as DBG
+    from avarenthia.editor import files as EF, trying as TR
+    print('== drawn_places')
+    home = tempfile.mkdtemp()
+    real_home = EF.home
+    EF.home = lambda: home
+    try:
+        g = TR.world()
+    finally:
+        EF.home = real_home
+    g.hook()
+    DBG.ON = True
+    p = g.player
+    pl = DP.by_name("Saint Odo's Rest")
+    assert pl is not None and not DP.problems(pl), DP.problems(pl)
+    st = next((s for s in g.world.sites if s.kind == 'drawn' and s.place == pl.name), None)
+    assert st is not None, 'Saint Odo is not in the world'
+    assert st.glyph[0] == pl.sign
+    g.enter_site(st.id)
+    m = g.map
+    assert m.key == st.map_key and D.TILES[m.tile(p.x, p.y)].walk
+    assert any(o.name == 'Brother Anselm' for o in m.mons)
+
+    def stair(tile):
+        i = g.map.t.index(tile)
+        p.x, p.y = i % g.map.w, i // g.map.w
+        assert DP.stairs(g, tile, None) == 1
+        return g.map
+
+    def take_shard():
+        mm = g.map
+        c = next(c for c, (a, r) in mm.things.items() if a == 'shard')
+        p.x, p.y = next((c[0] + dx, c[1] + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                        if D.TILES[mm.tile(c[0] + dx, c[1] + dy)].walk)
+        TH.bump(g, *c)
+    take_shard()
+    up = stair(D.UP)                                     # the bell tower, onto its stair down
+    assert up.key.endswith('up 1') and up.tile(p.x, p.y) == D.DOWN
+    take_shard()
+    b = next(c for c, (a, r) in up.things.items() if a == 'block')
+    h = next(c for c, (a, r) in up.things.items() if a == 'hole')
+    d = ((h[0] > b[0]) - (h[0] < b[0]), (h[1] > b[1]) - (h[1] < b[1]))
+    while b != h:
+        p.x, p.y = b[0] - d[0], b[1] - d[1]
+        TH.bump(g, *b)
+        TH.tick(g)
+        b = (b[0] + d[0], b[1] + d[1])
+    ground = stair(D.DOWN)
+    assert ground.key == st.map_key and ground.tile(p.x, p.y) == D.UP
+    TH.tick(g)
+    q = [c for c, ch in ground.marks.items() if ch == 'Q']
+    assert q and all(D.TILES[ground.tile(*c)].walk for c in q), 'the block from the tower did not press the plate'
+    crypt = stair(D.DOWN)
+    assert crypt.key.endswith('down 1') and crypt.tile(p.x, p.y) == D.UP
+    assert len(crypt.rooms) == 2, 'no theme room in the slot'
+    take_shard()
+    deep = stair(D.DOWN)
+    assert deep.key.endswith('down 2') and deep.tile(p.x, p.y) == D.UP
+    seal = next(c for c, (a, r) in deep.things.items() if a == 'seal')
+    p.x, p.y = seal[0] - 1, seal[1]
+    TH.bump(g, *seal)
+    assert D.TILES[deep.tile(*seal)].walk, 'the three shards did not open the seal'
+    back = stair(D.UP)
+    assert back.key == crypt.key
+    # its rumour and its book line make it known
+    st.hidden, st.found = True, False
+    line = DP.rumour(g)
+    assert line and pl.rumour in line and st.found
+    st.found = False
+    assert DP.book(g) == pl.book and st.found
+    # the check
+    bad = DP.parse('''PLACE: Bad Place
+SIZE: 60x34
+FLOOR: ground
+MAP
+ +..>
+ENDMAP
+ENDPLACE
+''', 'x')[0]
+    assert any('no floor below' in msg for msg, _f in DP.problems(bad))
+    print('drawn_places ok')
+
+
 def BS_KIT_BEAT():
     from avarenthia import bosses as BS
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
@@ -9763,7 +9851,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

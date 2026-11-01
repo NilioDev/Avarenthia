@@ -576,7 +576,11 @@ def a_library(game, x, y, rid, st):
         return 0
     m, p = game.map, game.player
     r = random.random()
-    if r < .35 and HI.events(game.world):
+    from . import drawnplaces as DP
+    line = DP.book(game) if r < .3 else None           # a line about a whole place not found yet
+    if line:
+        game.msg(f'Among the rotten books, one can still be read: {line}', 'gold')
+    elif r < .35 and HI.events(game.world):
         e = random.choice(HI.events(game.world))
         HI.learn(game, e, 'read', 'an old chronicle')
         game.msg(f'Among the rotten books, one can still be read: {e["text"]}', 'gold')

@@ -410,6 +410,8 @@ def gen_world(game):
         TL.place_shanties(game, m, world)               # outside the human cities, with dice of their own
         from . import landmarks as LM
         LM.place(game, m, world, reach_set)             # the places of today, with dice of their own
+        from . import drawnplaces as DP
+        DP.place(game, m, world, reach_set)             # the whole places drawn in the editor, with dice of their own
         return m, world
     raise RuntimeError('World generation failed')
 

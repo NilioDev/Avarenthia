@@ -134,10 +134,16 @@ def _event(text, where):
 def parse(text, file='', checked=True):
     """Read the pieces in one file. Raises Bad with the line when something is wrong. checked=False leaves out the
     check of each map (the editor reads a piece still being drawn and lists its problems itself)."""
-    out, cur, in_map, own = [], None, False, None
+    out, cur, in_map, own, place = [], None, False, None, False
     for n, line in enumerate(text.split('\n'), 1):
         where = f'{file}:{n}'
         line = line.rstrip('\r')
+        if place:                               # a whole place (drawnplaces.py reads it), up to ENDPLACE
+            place = line.strip() != 'ENDPLACE'
+            continue
+        if not in_map and line.strip().upper().startswith('PLACE:'):
+            place, cur = True, None
+            continue
         if own is not None:                     # an own tile or thing (owntiles.py), up to END
             if line.strip() == 'END':
                 o = OT.read(own[0], own[1], own[2], own[3])
@@ -506,14 +512,43 @@ def _walks(ch, p):
 
 
 # ------------------------------------------------------------------ the pack and its seal
+PLACES = os.path.join(os.path.dirname(HERE), 'places')     # the whole places (drawnplaces.py)
+
+
 def _source_texts():
     texts = {}
-    if os.path.isdir(SOURCE):
-        for f in sorted(os.listdir(SOURCE)):
-            if f.endswith('.des'):
-                with open(os.path.join(SOURCE, f), encoding='utf-8') as fh:
-                    texts[f] = fh.read()
+    for d, pre in ((SOURCE, ''), (PLACES, 'places/')):
+        if os.path.isdir(d):
+            for f in sorted(os.listdir(d)):
+                if f.endswith('.des'):
+                    with open(os.path.join(d, f), encoding='utf-8') as fh:
+                        texts[pre + f] = fh.read()
     return texts
+
+
+_TEXTS = None
+
+
+def texts(force=False):
+    """The text of every drawn file, pieces and places: from the source, else from the sealed pack."""
+    global _TEXTS
+    if _TEXTS is not None and not force:
+        return _TEXTS
+    t = None
+    if not getattr(sys, 'frozen', False):
+        t = _source_texts() or None
+    if t is None:
+        try:
+            from .pieces_seal import SEAL
+        except ImportError:
+            SEAL = None
+        try:
+            with open(_pack_path(), 'rb') as fh:
+                t = unpack(fh.read(), SEAL)
+        except OSError:
+            t = None
+    _TEXTS = t or {}
+    return _TEXTS
 
 
 def pack(texts):
@@ -542,24 +577,12 @@ def load(force=False):
     global _ALL
     if _ALL is not None and not force:
         return _ALL
-    texts = None
-    if not getattr(sys, 'frozen', False):
-        texts = _source_texts() or None
-    if texts is None:
-        try:
-            from .pieces_seal import SEAL
-        except ImportError:
-            SEAL = None
-        try:
-            with open(_pack_path(), 'rb') as fh:
-                texts = unpack(fh.read(), SEAL)
-        except OSError:
-            texts = None
+    all_texts = texts(force=force)
     out = []
-    for f, t in sorted((texts or {}).items()):        # the own tiles and things first: any piece may use them
+    for f, t in sorted(all_texts.items()):        # the own tiles and things first: any piece may use them
         for o in own_blocks(t, f):
             OT.register(o)
-    for f, t in sorted((texts or {}).items()):
+    for f, t in sorted(all_texts.items()):
         out += parse(t, f)
     _ALL = out
     return out
@@ -596,5 +619,8 @@ def pick(part, tag, depth, n, used=()):
     return out
 
 
+EXTRA = {}           # the floors of the whole places, by name (drawnplaces.py): found by by_name too
+
+
 def by_name(name):
-    return next((p for p in load() if p.name == name), None)
+    return next((p for p in load() if p.name == name), None) or EXTRA.get(name)

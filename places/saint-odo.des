@@ -1,0 +1,150 @@
+; Whole places drawn in the editor (drawnplaces.py, the editor's round C). The format: pieces/README.txt.
+
+PLACE:  Saint Odo's Rest
+SIZE:   60x34
+SIGN:   ± #e8e0c8
+LOOK:   A chapel in ruins, its graveyard gone to grass, and a bell tower that still stands. Under it lies a crypt.
+WORLD:  land=any road=near level=2 how=one found=map,rumour,book
+RUMOUR: They say the monks of Saint Odo's Rest went down into their crypt one winter and none came up. A seal of violet stone shuts the deepest door, broken in three.
+BOOK:   "Saint Odo sealed the deep door with a disc of violet stone and broke it in three: one he kept by the altar, one in the bell tower, one with the dead."
+LAND:   fitted
+THING:  S = seal shard on a plinth do:shard
+
+FLOOR:  ground
+MOOD:   A chapel in ruins. Grass grows between the flagstones, and a bell tower stands over the east end.
+THING:  P = pressure plate do:pressure
+THING:  Q = bars
+EVENT:  when=press at=P then=open:Q then=msg:"Something heavy lands on the plate by the altar. In the east wall, bars sink away."
+PERSON: Brother Anselm at 25,15 says="The brothers went down to pray for the dead, and stayed with them. Three shards, they say. I will not go down."
+MAP
+
+
+
+
+
+
+
+
+
+
+                    #################
+                    #s.............s#
+                    #.......P.....<.#
+                    #...............#####
+                    #...............Q..c#
+                    +...............#####
+                    #...............#
+                    #......._.......#
+                    #.>.......S.....#
+                    #s.............s#
+                    #################
+
+
+      g  g   g  g
+
+      g  g   g  g
+
+      g  g   g  g
+
+       g g  g  g
+ENDMAP
+
+FLOOR:  up 1
+MOOD:   The bell tower. The bell rope is long gone; a square hole in the floor looks down on the altar.
+THING:  H = hole in the floor do:hole
+THING:  B = stone block do:block
+THING:  R = lever do:lever
+EVENT:  when=bump at=R then=reset again=yes
+MAP
+
+
+
+
+
+
+
+
+
+
+                          ###########
+                          #b.....S..#
+                          #.H.B...>.#
+                          #........R#
+                          ###########
+ENDMAP
+
+FLOOR:  down 1
+MOOD:   The crypt of the brothers. Stone coffins line the walls, and the air is cold and still.
+THING:  Z = sarcophagus do:sarcophagus
+CREATURE: ? at 18,20
+CREATURE: ? at 28,20
+MAP
+
+
+
+
+
+
+
+
+
+
+                                       ?????????????????
+                                       ?????????????????
+                                       ?????????????????
+                                       ?????????????????
+              ...................      ?????????????????
+              ...................      ?????????????????
+              ..Z...Z...Z...Z....      ?????????????????
+              ...................      ?????????????????
+              ........<................?????????????????
+              ...................      ?????????????????
+              .S.................      ?????????????????
+              ...................      ?????????????????
+              ..Z...Z...Z...Z....      ?????????????????
+              ...................      ?????????????????
+              ...................      ?????????????????
+                    ...                ?????????????????
+                    ...                ?????????????????
+                    ...
+                    .>.
+ENDMAP
+
+FLOOR:  down 2
+MOOD:   The deepest crypt. A door of violet stone shuts the far end, cut with a seal broken in three.
+THING:  X = sealed door do:seal
+CREATURE: ? at 24,27
+MAP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+               ................
+               ................ .....
+               ......<.........X...c.
+               ................ .....
+               ................
+ENDMAP
+ENDPLACE

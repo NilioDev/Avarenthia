@@ -872,6 +872,9 @@ def a_shift(game, x, y, rid, st):
 # ------------------------------------------------------------------ 32-33: blocks into chasms and holes
 def below_key(game, m):
     """The map key of the floor under this one, or None."""
+    if getattr(m, 'dp', None):
+        from .drawnplaces import below_key as dp_below
+        return dp_below(game, m)
     dg = game.world.dungeons.get(getattr(m, 'did', None)) if getattr(m, 'did', None) is not None else None
     if getattr(m, 'site', None) is not None and m.kind != 'dungeon':
         b = getattr(game.world.sites[m.site], 'below', None)
