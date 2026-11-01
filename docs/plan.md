@@ -14,6 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
+| **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -88,6 +89,45 @@ Everything new finds its place in what is there; no new screen per system, no ne
   the map. **Something in a fight** goes in IN SIGHT.
 - **A new sign** is named by the data (tile names, `guide.py`), so the look legend and the journal's Signs know it.
 - **A new key** is taught by one tip in `guide.TIPS` the first time it is useful, not by text on the screen.
+
+---
+
+## The look rule (Nilio, 31 October 2026)
+
+Prettier means using what is on the screen better, never adding to it:
+- **Three layers of brightness.** Ground and rock stay dim, built things and walls in the middle, and only what lives
+  or can be used is bright: creatures, items, doors, stairs, places.
+- **An accent colour has one meaning.** Gold is something for you (money, jobs, places, what matters in the log), red
+  is danger; the orbs' red, ochre and blue belong to life, stamina and mana. The ground does not borrow them.
+- **Movement is scarce.** Only what really moves (fire, water, spell effects); no blinking or glinting as decoration.
+
+---
+
+## A finer look, not busier (approved 31 October 2026, not built)
+
+Only colour, brightness and tidiness: no new signs, animations or keys. Dutch proposal and mockups (real tileset, seed
+7): project files `mooier/` (`voorstel.md`, `M1_wereldkaart.png`, `M2_*.png`).
+1. **Remembered land keeps a hint of its colour.** On the world map, land out of sight is now nearly grey; it becomes
+   less grey and a little darker, so forest stays dull green and water dull blue (`ui.draw_map`, the fog branch).
+2. **Calmer roads.** Roads are now the brightest thing on the world map; ochre instead of gold and a darker strip
+   (`look.ROAD_FG/MAIN_FG/ROAD_BG/MAIN_BG`), so settlements, names and places stand out.
+3. **Each kind of level its own remembered tint.** Today every level remembers in the same blue-grey. One dull tint
+   per kind of level, as data: earth (dens, warrens, mines), cold blue (ice), ash red (fire, kept dull), grey-green
+   (drowned, marsh), stone grey (crypts, towers, built places). The tint belongs to the level, not the whole place:
+   a mine that gives onto a fire or ice level shows that level's tint. No darker-per-depth (Nilio: unclear, and it
+   clashes with levels of another kind).
+4. **A soft fade-in** of about a quarter second from black when you take stairs, a gate or an entrance. Follows the
+   effects setting (off: no fade).
+5. **Names on the world map kept whole.** A sign never overwrites a name ("Stoneminst∩r"), and a name at the edge of
+   the view moves inwards instead of being cut ("cklestock").
+6. **The panel in one colour scale.** The target's life bar uses IN SIGHT's scale (green, yellow, red) instead of
+   always red; a long name in IN SIGHT wraps or is shortened, never cut ("Champion Blac").
+7. **Names in the log in their own colour.** Only the name of a creature or an item takes the colour it has on the
+   map (the goblin green, the fire beetle orange, a potion red); the rest of the line keeps its colour now. In a fight
+   you see at once which line belongs to which sign. Gear takes its grade's colour, the one it already has on the map
+   and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
+   shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
+Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
 
 ---
 

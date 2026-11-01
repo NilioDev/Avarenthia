@@ -419,3 +419,16 @@ three things. Test part `boss_moves`.
   drawn in the list), Reveal map; in the editor F5 Try on a whole place (you stand at its west edge).
 - **Whole places in the editor** - Ctrl+N "A whole place", floors with PgUp / PgDn and + up / + down, In the world,
   people and finds on the Creatures layer, a room at 40 x 30 made a whole place, saved to my places.des.
+
+## A finer look, not busier (approved 31 October 2026)
+
+- **Remembered land and roads** - the world map out of sight in its own dull colours, roads calmer than towns. Debug:
+  reveal the map (Teleport far, or a reveal-map option).
+- **Each level's tint** - a den, an ice cave, a fire level, a drowned level, a crypt each remember in their own tint;
+  a mine with a fire or ice level below. Debug: Teleport to each kind, reveal the level.
+- **Fade-in** - stairs, gates and entrances, with effects full, short and off. Debug: none needed.
+- **Names and panel** - a name next to a sign and at the edge of the view; a target at full and low life; a long
+  name in IN SIGHT. Debug: Teleport, spawn a champion with a long name.
+- **Names in the log** - a fight, a find, a drink: creature and item names in their map colour, the rest of the
+  line unchanged; a wrapped line keeps the colour. Debug: spawn a foe, Give item.
+
