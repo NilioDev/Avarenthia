@@ -484,3 +484,5 @@ three things. Test part `boss_moves`.
 - **A letter for the city** - Berend's letter and loads after Snagtooth; selling them in the city; the merchant's
   lines; the good taken home and sold; the bookseller and the stamp. Debug: set Snagtooth slain (story flags),
   Teleport to the city.
+- **The baron's word** - the messenger in the letter's city, the sealed word, the lord's seat, the realms layer opening,
+  the first realm job, the war version. Debug: set the letter done (story flags), Teleport to the city, start a war.

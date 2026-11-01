@@ -18,7 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, and a list of what you met. Not in the build order yet |
+| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -189,7 +189,15 @@ so before more systems: make playing and reporting cheap.
    - **A hook for later:** one of the three tomes from Snagtooth's hoard bears the stamp of a bookseller in this city.
      He knows the book and who bought it, and little more: a first trace of who you were, with no story forced behind it.
    Taught by the job's own lines and one first-time tip at the first market (selling cargo), not by screen text.
-6. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
+6. **The baron's word** (Nilio, 1 November 2026). The rule for first jobs: one short job per big way of playing,
+   given by someone already standing there, never forced (fighting: the den; crafts: the fisher and the herbalist;
+   road and trade: the letter; the great evils: Berend's pointer). The realms and powers had none. Now: in the city of
+   the letter, after the merchant, a messenger of the city's baron (or the ruler who holds it) stands by the gate or
+   the market with a sealed word for a lord's seat a day or two away: a knight's tower, a manor or a baron's hold.
+   Bringing it opens the realms layer of the world map for the land you crossed, shows the seat's lord, and the lord
+   offers the first realm job from `realmjobs.py`; the answer can go back for a little coin. If the city's ruler is at
+   war, the word is about that war. No more first jobs until "What you met" shows a way of playing players miss.
+7. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
    world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
    player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
    epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12
