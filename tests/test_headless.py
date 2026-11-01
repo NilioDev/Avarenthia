@@ -7099,8 +7099,8 @@ def boss_moves():
                 if mv['shape'] not in ('mark', 'self'):
                     n = BS.need(g, b, mv, set(map(tuple, c['cells'])), c['tx'], c['ty'], 5)
                     assert n is not None and n <= c['left'], (k, c['mv'], n, c['left'])
-            if t % 4 == 3:                                # a steady tenth of its life every fourth turn
-                g.damage_mon(b, b.maxhp * .1, weapon=False)
+            if t % (2 if D.MONSTERS[k].get('leech') else 4) == 1:   # a steady tenth of its life every fourth
+                g.damage_mon(b, b.maxhp * .1, weapon=False)           # turn (every second: it drinks from you)
             for o in BS.helpers(g, b):
                 if random.random() < .2:
                     g.kill(o)
