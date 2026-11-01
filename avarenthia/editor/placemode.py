@@ -11,9 +11,9 @@ from .model import PlaceDoc, tile_of
 
 FOUNDS = (['map'], ['rumour'], ['book'], ['map', 'rumour'], ['map', 'book'], ['rumour', 'book'],
           ['map', 'rumour', 'book'])
-LABELS = {'p_name': 'Name', 'p_size': 'Size', 'p_sign': 'Sign', 'p_land': 'Terrain', 'p_road': 'Near a road',
-          'p_level': 'Level', 'p_how': 'How many', 'p_found': 'Found by', 'p_round': 'Land round',
-          'p_look': 'Look', 'p_rumour': 'Rumour', 'p_book': 'Book line', 'p_mood': 'Mood'}
+LABELS = {'p_name': 'Name', 'p_size': 'Size', 'p_sign': 'Sign', 'p_land': 'Terrain', 'p_road': 'Road',
+          'p_level': 'Level', 'p_how': 'How many', 'p_found': 'Found by', 'p_round': 'Land',
+          'p_look': 'Look', 'p_rumour': 'Rumour', 'p_book': 'Book', 'p_mood': 'Mood'}
 CYCLES = ('p_size', 'p_road', 'p_level', 'p_how', 'p_found', 'p_round')
 LONG = ('p_look', 'p_rumour', 'p_book', 'p_mood')
 FLOOR_Y0, FLOOR_ROWS = 16, 5
@@ -295,12 +295,13 @@ class PlaceTools:
             typing = self.field and self.field[0] == name
             val = self.field[1] + '_' if typing else self.place_value(name)
             bg = SEL if typing else FIELD
-            cv.fill(x + 14, y, W - x - 16, 1, ' ', FG, bg)
+            vw = W - x - 14 if name in CYCLES else W - x - 13      # the value, clear of the ▼
+            cv.fill(x + 11, y, W - x - 13, 1, ' ', FG, bg)
             if name == 'p_sign' and not typing:
-                cv.put(x + 14, y, d.sign, d.fg, bg)
-                cv.text(x + 16, y, val[2:], DIM, bg)
+                cv.put(x + 11, y, d.sign, d.fg, bg)
+                cv.text(x + 13, y, val[2:], DIM, bg)
             else:
-                cv.text(x + 14, y, val[-(W - x - 16):] if typing else val[:W - x - 16],
+                cv.text(x + 11, y, val[-vw:] if typing else val[:vw],
                         GOLD if name == 'p_size' else FG, bg)
             if name in CYCLES:
                 cv.put(W - 3, y, '▼', DIM, bg)

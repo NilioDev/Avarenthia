@@ -34,9 +34,10 @@ BAD = (236, 106, 92)
 INFO = (136, 182, 220)
 WARN_BG = (110, 26, 20)
 
-AX, AY, AW, AH = 27, 3, 51, 42            # the drawing area
+LW = 27                                   # the left column (Tools, Palette), as wide as the right one
+AX, AY, AW, AH = 31, 3, 51, 42            # the drawing area (the ruler in the 4 columns before it)
 DP_SIZES = PM.DP.SIZES
-RX = 80                                   # the right column
+RX = 83                                   # the right column
 PAL_Y0, PAL_Y1 = 11, H - 3                # the palette's lines
 
 TOOLS = [('d', 'Draw'), ('l', 'Line'), ('r', 'Rectangle'), ('f', 'Fill'), ('s', 'Select'), ('v', 'Variety')]
@@ -387,7 +388,7 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             if isinstance(st, dict):
                 st['scroll'] = max(0, st.get('scroll', 0) - dy * 3)
             return
-        if x < 24 and y >= PAL_Y0:
+        if x < LW and y >= PAL_Y0:
             n = sum(1 + len(items) + 1 for _h, items in self.pal())
             k = self._pal_key()
             self.pal_scroll[k] = max(0, min(n - (PAL_Y1 - PAL_Y0), self.pal_scroll[k] - dy * 3))
@@ -508,7 +509,7 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                 self.drag = ('select', c, c)
                 self.sel = (c, c)
             return
-        if x < 24:
+        if x < LW:
             return self.left_click(x, y, button)
         if x >= RX:
             return self.right_click(x, y, button)
@@ -1046,27 +1047,27 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             cv.text(x0 + len(k) + 1, 1, word, FG, BG)
 
     def render_left(self, cv):
-        cv.fill(0, 1, 24, H - 2, ' ', FG, PANEL)
-        cv.frame(0, 1, 24, len(TOOLS) + 3, LINE, PANEL, 'Tools', GOLD)
+        cv.fill(0, 1, LW, H - 2, ' ', FG, PANEL)
+        cv.frame(0, 1, LW, len(TOOLS) + 3, LINE, PANEL, 'Tools', GOLD)
         for i, (k, lab) in enumerate(TOOLS):
             on = lab == self.tool
             bg = SEL if on else PANEL
-            cv.fill(1, 2 + i, 22, 1, ' ', FG, bg)
+            cv.fill(1, 2 + i, LW - 2, 1, ' ', FG, bg)
             cv.text(2, 2 + i, k.upper(), GOLD, bg)
             cv.text(4, 2 + i, lab, GOLD if on else FG, bg)
         cv.text(2, 2 + len(TOOLS), 'Ctrl+Z/Y', GOLD, PANEL)
         cv.text(11, 2 + len(TOOLS), 'undo/redo', DIM, PANEL)
-        cv.frame(0, PAL_Y0 - 1, 24, H - PAL_Y0, LINE, PANEL, 'Palette', GOLD)
+        cv.frame(0, PAL_Y0 - 1, LW, H - PAL_Y0, LINE, PANEL, 'Palette', GOLD)
         lines = self._pal_lines()[self.pal_scroll[self._pal_key()]:]
         pick = self.pick[self._pal_key()] or Item('none')
         for i, (kind, it) in enumerate(lines[:PAL_Y1 - PAL_Y0]):
             y = PAL_Y0 + i
             if kind == 'head':
-                cv.text(2, y, it, DIM, PANEL, maxw=21)
+                cv.text(2, y, it, DIM, PANEL, maxw=LW - 3)
             elif kind == 'item':
                 on = it.kind == pick.kind and it.ch == pick.ch and it.name == pick.name and it.act == pick.act
                 bg = SEL if on else PANEL
-                cv.fill(1, y, 22, 1, ' ', FG, bg)
+                cv.fill(1, y, LW - 2, 1, ' ', FG, bg)
                 t = it.tile() if it.kind in ('sign', 'thing') else None
                 if it.kind == 'sign' and it.ch == ' ':
                     cv.put(2, y, '·', DIM, ROCK)
@@ -1079,7 +1080,7 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                     cv.put(2, y, it.ch, (120, 200, 220), (16, 34, 40))
                 elif t:
                     cv.put(2, y, t.ch, t.fg, t.bg or bg)
-                cv.text(4, y, it.label[:19], GOLD if on else FG, bg)
+                cv.text(4, y, it.label[:LW - 5], GOLD if on else FG, bg)
         if len(lines) > PAL_Y1 - PAL_Y0:
             cv.text(2, PAL_Y1, '▼ wheel: more', DIM, PANEL)
 
@@ -1092,7 +1093,7 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
         for j in range(AH // z):
             n = self.view[1] + j
             if n % 5 == 0:
-                cv.text(AX - 3, AY + j * z, f'{n:>2}'[-2:], DIM, BG)
+                cv.text(AX - 4, AY + j * z, f'{n:>3}'[-3:], DIM, BG)
             else:
                 cv.put(AX - 2, AY + j * z, '·', scale(DIM, .5), BG)
 
@@ -1206,7 +1207,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             val = self.field[1] + '_' if typing else self.field_value(name)
             bg = SEL if typing else FIELD
             cv.fill(x + 13, y, W - x - 15, 1, ' ', FG, bg)
-            cv.text(x + 13, y, val[-(W - x - 15):] if typing else val[:W - x - 15], GOLD if name == 'size' else FG, bg)
+            vw = W - x - 16 if name in ('part', 'gate', 'kinds', 'doors') else W - x - 15
+            cv.text(x + 13, y, val[-vw:] if typing else val[:vw], GOLD if name == 'size' else FG, bg)
             if name in ('part', 'gate', 'kinds', 'doors'):
                 cv.put(W - 3, y, '▼', DIM, bg)
         cv.text(x + 2, 11, 'MOOD LINES', DIM, PANEL)
