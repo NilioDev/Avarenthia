@@ -481,3 +481,6 @@ three things. Test part `boss_moves`.
   the Hollow Den, spawn Snagtooth, give coin.
 - **The Eleven Ways** - the lectern in the start temple with all eleven classes; a guild hall selling its school's
   first tome only while you are blank. Debug: Teleport to a guild hall, give coin.
+- **A letter for the city** - Berend's letter and loads after Snagtooth; selling them in the city; the merchant's
+  lines; the good taken home and sold; the bookseller and the stamp. Debug: set Snagtooth slain (story flags),
+  Teleport to the city.

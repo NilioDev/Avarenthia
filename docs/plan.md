@@ -18,7 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, and a list of what you met. Not in the build order yet |
+| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, and a list of what you met. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -176,7 +176,20 @@ so before more systems: make playing and reporting cheap.
      be reached by walking, whatever your name is with one people.
    The opening check (with the money check, `tests/money.py --opening`) plays the first days the way a new player
    does and prints on which day the first tome was read and the first level reached, over ten worlds.
-5. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
+5. **A letter for the city** (Nilio, 1 November 2026: the first steps out into the land, and a first lesson in trade).
+   Today Elder Berend sends you to the Rat Warrens and the mine, and after them only says "the vale is wide". Instead:
+   - **Right after Snagtooth**, not after the rats or the mine: back in Thornfield, Berend gives you a letter for a
+     merchant in the nearest city and a few loads of Thornfield's own goods (grain, wool or whatever the village makes)
+     in your peddler's pack. A job in the journal, modest pay. The rats and the mine wait for when you come back.
+   - **The road** is your first real trip on the world map: the signpost, a ford or bridge, perhaps an inn.
+   - **In the city** you sell the loads at the market yourself and see they fetch more than at home. The merchant takes
+     the letter, pays you and in a few sentences tells you what a city has: the guild halls (and the first tome they sell
+     to the blank), the temple, the job board, the caravans. His answer for Berend asks for a city good back home (salt,
+     tools or cloth): buy it here, sell it in Thornfield, and you have made your first trade on your own.
+   - **A hook for later:** one of the three tomes from Snagtooth's hoard bears the stamp of a bookseller in this city.
+     He knows the book and who bought it, and little more: a first trace of who you were, with no story forced behind it.
+   Taught by the job's own lines and one first-time tip at the first market (selling cargo), not by screen text.
+6. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
    world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
    player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
    epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12
