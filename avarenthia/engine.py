@@ -1807,9 +1807,6 @@ class Game:
             self.msg(f'Identifying everything costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
-        if idol:
-            self.player.buffs = [b for b in self.player.buffs if len(b) < 4 or b[3] != CURSE]
-            self.msg("The priest lifts the idol's curse from you.", 'good')
         for it in its:
             it.ided = True
             if it.cursed:
@@ -2007,9 +2004,6 @@ class Game:
             self.msg(f'Mending all your gear costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
-        if idol:
-            self.player.buffs = [b for b in self.player.buffs if len(b) < 4 or b[3] != CURSE]
-            self.msg("The priest lifts the idol's curse from you.", 'good')
         for it in its:
             it.dur = it.mdur
         self.clamp_vitals()
