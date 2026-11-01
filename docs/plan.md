@@ -17,6 +17,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Not in the build order yet |
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
+| **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
 | **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
@@ -306,6 +307,48 @@ where and the answer for each: project files `monsters/affixen.md`.
 - **Loot unchanged:** only those who use gear drop gear. A skinned unique may give a part tied to its affix (about
   25%, as named enemies do now, `beastparts.TRAIT_POWER`); champions nothing extra. The bestiary does not change.
 - Handbook: two or three sentences in the fighting chapter. Test part `affixes`. Bump `SAVE_VERSION`.
+
+## Folk in need (approved 1 November 2026, not built)
+Quests the world makes itself, beside the boards. The Dutch proposal with examples: project files `quests/voorstel.md`
+(thread "Leukere quests laten genereren").
+- **Who.** 0 to 2 ordinary people with a need in each settlement, and on the road, by herds, in hermitages, as captives
+  in a den, among hostile peoples when your standing allows. They wear the `!` and `?` that already mark people with
+  work (`missions.py`); passing near, they say their need in the log; a bump talks (one choice window). Look names them
+  ("Maud, the miller's wife, worried"). One first-time tip; no new key. Taken needs go in the Jobs tab and layer.
+- **Need from the world.** Every need hangs on something real in this world, never made up for the quest: a monster
+  group, nest, named enemy or roaming boss on the map; the news (raid, plague, famine, fire, war, an evil's mark);
+  season and weather (a shut pass, drought, harvest, ice); caravans and goods; realms (a levy, a baron's grab); old
+  places, Varnish ruins, barrows; the giver's trade (smith, fisher, innkeeper, priest...); the giver's people, each its
+  own list (halfling, dwarf, elf, gnome, half-orc, human, and kobold, goblin, lizardfolk); feast days. No need depends
+  on one people or place.
+- **The grammar** (after Doran and Parberry's study of RPG quests): a motive (safety, health, family, knowledge,
+  property, tools, honour, peace, skill, feast), an approach, and 1-4 steps from verbs the game has: go, talk, follow
+  tracks (the named enemies' search area), find, bring, kill, drive off, guard or escort, make (a life skill), use a
+  thing at a place, keep watch a night, spy, catch alive. Mostly 1-2 steps; sometimes a journey of 3-4.
+- **Twists,** about one in three, picked at making and found on the spot (a rumour may hint): 18 kinds (the beast
+  guards its young; it was driven out by something worse; the thief is a hungry child; the missing one will not come
+  back; the giver lies; a rival; already sold; cursed; too late; the wrong one accused; a bewitched kin; the weather
+  turns; two people want the opposite; a hidden place; a captive in the den; the beast is sick; the giver in danger
+  while you are away). At most one choice, 2-4 options. The board jobs get these twists now and then too.
+- **Rewards.** Small coin (the money balance). Standing always: in the giver's town, with the giver's people if
+  another, with a temple, guild or the law where it fits; a twist's choice can also cost standing (`jobs.effects`).
+  Beside it one thing fitting the giver: a service (a free repair or sharpening, a bed, healing, a crossing), a
+  rumour that leads somewhere real (a hidden place, a herb, an epic teacher, a boss's weakness), a recipe or a
+  bestiary step, something the giver owns (only what such a person has: the loot rule), access, or a follower later.
+- **Favours.** About eight kinds, each a thing in the pack ("the ferryman's token", "Hob's carved whistle"). No key: it
+  shows as an extra option in a window that exists already (the ferry, the city gate while wanted, the lord, a guide
+  over a pass) and is gone after one use. On the player.
+- **Remembered.** Who you helped lives on the player (`p.folk`): they greet you, now and then give a small thing or a
+  rumour; sometimes a follow-up days or weeks later (up to three parts). Needs run out after some days: folk solve it
+  themselves or it goes wrong, and the news says which; left alone, the world shows it (the goat gone, the well foul,
+  the mill still, a grave with a name you know). Givers can die.
+- **Seeds.** 120 hand-written small stories beside the maker (like the Varnish books): fixed lines, 2-4 steps, one
+  twist with a choice drawn from a few, and a rule where it may fall ("The bell that rings at night": a human village
+  with a chapel). Each world gets 20 to 25 of them.
+- Code: `folkquests.py` (maker, steps) and `folkdata.py` (lists, twists, seeds); hooks in `townlife.py`, `events.py`,
+  `news.py`, `missions.py` (Mission kind 'folk' with steps). Handbook: Jobs and money, Towns and people. The wiki gets
+  the seeds' titles. Test part `folk`. Bump `SAVE_VERSION`. Size XL in two parts: A the maker, sources, steps, rewards,
+  standing, favours and UI; B the twists (also on the boards), who remembers you, follow-ups and consequences, seeds.
 
 ## Dungeons on their own land (approved 22 October 2026, not built)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).

@@ -486,3 +486,12 @@ three things. Test part `boss_moves`.
   Teleport to the city.
 - **The baron's word** - the messenger in the letter's city, the sealed word, the lord's seat, the realms layer opening,
   the first realm job, the war version. Debug: set the letter done (story flags), Teleport to the city, start a war.
+
+## Folk in need (approved 1 November 2026, not built)
+- **Folk with a need** - the `!` on them, the log line when near, the window, the Jobs tab; each source making its
+  need (a monster group, news, season, caravan, realm, old place, trade, people); a need running out and its sign in
+  the world. Debug: "Folk: make a need here" (by source and kind), Time (skip days), Teleport.
+- **Twists and seeds** - each of the 18 twists, also on a board job; each seed where it may fall; a follow-up. Debug:
+  make a need with a chosen twist or seed; "Folk: next part now".
+- **Rewards and favours** - standing in town and with the people, each reward kind, each favour showing in its window
+  (ferry, gate while wanted, lord, guide). Debug: give a favour (Give item), set wanted (crime).
