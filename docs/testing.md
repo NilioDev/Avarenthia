@@ -414,5 +414,8 @@ three things. Test part `boss_moves`.
 - **Own tiles and things** - made with Ctrl+T, they show in the game with their own sign and look line. Debug: F5 Try.
 - **More doors** - a room with `'` doors opens a different one or two in every world and the level runs through it.
   Debug: Theme room or river (several times), Reveal map; F5 Try in the editor.
-- **Whole places** - each lies in the world, its floors, its rumour and job. Debug: Teleport (drawn places in the
-  list), Reveal map.
+- **Whole places** - each lies in the world (kind "drawn"), every floor reached by its stairs onto the twin stair,
+  its people talk, its rumour at the inn and its line in a library book mark it on the map. Debug: Teleport (kind
+  drawn in the list), Reveal map; in the editor F5 Try on a whole place (you stand at its west edge).
+- **Whole places in the editor** - Ctrl+N "A whole place", floors with PgUp / PgDn and + up / + down, In the world,
+  people and finds on the Creatures layer, a room at 40 x 30 made a whole place, saved to my places.des.

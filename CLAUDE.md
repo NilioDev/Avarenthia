@@ -76,7 +76,7 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what
   you know of each creature kind (on the player); `classes.py` who you become (classes, pair names, the bar); `weaponskills.py` keys 1-2 per weapon kind and the
   family rules; `trees.py` the class trees (knots as data, `tuned` + hooks) and the 66 rules (`RULES`); `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build
-  and `--debug` only; not in the handbook); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
+  and `--debug` only; not in the handbook); `avarenthia/editor/` the Avarenthia Editor (`python main.py --editor`, test build only; `placemode.py` whole places, `trying.py` F5); `puzzles.py` the 44 puzzle things; `drawnplaces.py` whole places (`places/*.des`, PLACE blocks); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
 - World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.

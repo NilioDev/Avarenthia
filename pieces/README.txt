@@ -117,3 +117,33 @@ Dressing (Ctrl+D in the editor)
 -------------------------------
     DRESS:    hall 3                dressed anew in every world from a set, how full 1 to 5 (dressing.py has the
                                     sets: war camp hall ruin library crypt cave storeroom forge temple barracks den)
+
+Whole places (places/*.des; the editor saves yours to my places.des)
+--------------------------------------------------------------------
+A whole place is drawn whole, one of a kind in the world, with floors above and below. A pieces file skips these
+blocks; drawnplaces.py reads them.
+
+    PLACE:  Saint Odo's Rest
+    SIZE:   60x34                   60x34, 80x50, 100x60 or 120x70
+    SIGN:   ± #e8e0c8               its sign on the world map and the sign's colour
+    LOOK:   A chapel in ruins...    what the look and the map say of it
+    WORLD:  land=any road=near level=2 how=one found=map,rumour,book
+            land= the kinds of land (world map biome names, or any)   road= near, far or any   level= 1-5
+            how= one (every world) or half (one world in two)   found= map, rumour, book (with commas)
+    RUMOUR: They say...             the tale the inns tell (found=rumour)
+    BOOK:   "..."                   the line in an old book on a library shelf (found=book)
+    LAND:   drawn                   the land round it as drawn (left out: as the world has it)
+    THING / LIST                    before the first FLOOR: for every floor
+    FLOOR:  ground                  ground, up 1, up 2 ..., down 1, down 2 ...
+    MOOD / THING / EVENT / SWITCH / COUNTER / CREATURE / MORE / DRESS / SUBST    as in a piece
+    PERSON: Brother Anselm at 25,15 says="The dead sleep badly here."
+    ITEM:   tome at 30,12           one fixed find: tome, or a gear base (longsword, chain_mail...)
+    MAP
+    ... the floor, drawn as big as the place; x and y count from the top left of the MAP, rows are never cut
+    ENDMAP
+    ENDPLACE
+
+On the ground floor rock is the land round the place: draw its walls with #, and a + where the way in from the west
+edge comes to it. Under and over it rock is rock. < and > take you to the floor above or below, onto its twin stair:
+every floor but the top has a > and every floor but the bottom a <. A patch of ? is a room slot: the game sets a
+theme room in it, anew in every world (make it big enough for one). A boss is a CREATURE with a boss's key.

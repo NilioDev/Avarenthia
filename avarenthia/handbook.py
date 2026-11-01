@@ -540,10 +540,26 @@ def ch_dungeons(g):
               'you can learn. A cracked wall gives to a war hammer, a mace or a strong arm. Lift a golden idol bare '
               'and the roof answers; take the gems from an idol\'s eyes and its curse is on you until they go back, '
               'or a priest in a temple lifts it.'),
+        ('p', 'Some statues watch you. A mirror statue steps as you step, or against you; a pale statue comes nearer '
+              'only while you cannot see it. A raft takes you down a stream until it runs aground. Wind from a vent '
+              'pushes you back along a passage until a block stands in its way, and some walls shift every few '
+              'turns. A block pushed into a chasm or water fills it, and one pushed through a hole in the floor '
+              'lands on the floor below. An oil barrel, lit from a brand, bursts a cracked wall open.'),
+        ('p', 'Rune tiles want to be walked in an order cut somewhere in the place, and a wrong one bites. On a floor '
+              'of dark tiles each step turns a tile and its neighbours; light them all. A scale wants a weight of '
+              'your things. Lightning wakes an iron rod, and fire burns web and roots away, though there is always '
+              'another way. A guard may carry the key, and a gong draws the guards from their post for a while. '
+              'Three shards of a seal open a sealed door, and some discs wait for moonlight, or for the ebb.'),
         ('p', 'Some rooms keep their find: a vault behind a locked door, the sign {+|224,176,64}, whose key lies '
               'elsewhere on the level, often with a guard; a hidden door, which you notice as you pass; three '
               'plinths, the sign {º|200,192,176}, where you may take one thing and the rest sink away. Among warding '
               'signs, {∞|240,224,160}, nothing of the dark comes in, and you may rest there once.'),
+        ('h', 'Places of one kind'),
+        ('p', 'A few places are drawn by hand and stand in the world only once: a ruined chapel with a bell tower '
+              'and a crypt, and others like it. Some are on your map from the start; others you hear of at an inn or '
+              'read of in an old book on a library shelf, and then they are marked. Each has floors above and below, '
+              'joined by stairs, and in some a room is set anew in every world. People may live there, and talk to '
+              'you when you walk into them.'),
         ('h', 'Who made it'),
         ('p', 'Caves, nests and dens are shaped by whoever made them. Water grinds long halls along a stream; ants hang '
               'their chambers on tunnels like grapes; spiders fill whole halls with web; gnolls scrape round dens; '

@@ -155,13 +155,13 @@ def main(room=None):
                     ed.say(s)
                     view.draw(ed)
                 say('Opening the game on the piece...')
-                ed.say(trying.run(ctx, tileset, ed.room, say))
+                ed.say(trying.run(ctx, tileset, ed.place or ed.room, say))
     return 0
 
 
 def handle(ed, view, ctx, ev):
     if isinstance(ev, tcod.event.Quit):
-        if ed.room.dirty and not ed.quit_asked:
+        if ed.dirty() and not ed.quit_asked:
             ed.quit_asked = True
             ed.say('Not saved. Ctrl+S saves; close the window again to leave without saving.', True)
         else:

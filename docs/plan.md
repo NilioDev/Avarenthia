@@ -13,8 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is approved and in the build order (rounds 33-36, "The Avarenthia Editor" below) |
-| **Approved: the Avarenthia Editor (31 Oct)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36 |
+| **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -72,7 +71,9 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     dressing, own tiles and things, Ctrl+R, Try. Built 31 October 2026 (`dressing.py`, `owntiles.py`,
     `editor/layers.py`, `maker.py`, `trying.py`; test parts `editor` and `pieces`). Pause after it. 35. **Round B2** (XL): more doors (`'`, `DOORS:`), then puzzle things 1-26 in the
     game. Built 31 October 2026 (`puzzles.py`, `pieces/puzzles.des` with 15 example rooms, the editor's PUZZLE THINGS;
-    test part `puzzles`). 36. **Round C** (XL): whole places, puzzle things 27-44. Merge after 36.
+    test part `puzzles`). 36. **Round C** (XL): whole places, puzzle things 27-44. Built 1 November 2026
+    (`drawnplaces.py`, `places/saint-odo.des`, `editor/placemode.py`; test parts `puzzles`, `drawn_places`, `editor`).
+    Merged after 36 (see `docs/built.md`).
 After that: Multiplayer (parked).
 
 ---
@@ -114,87 +115,6 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
-
-## The Avarenthia Editor (approved 31 October 2026, not built)
-
-Nilio's own program for drawing the special rooms, whole places, tiles and things of the game. Proposal in Dutch with
-eight mockups in the project files, `editor/` (`voorstel.md`, `puzzels.md`, `1_` to `8_*.png`, `mockup_editor.py`,
-the fonts in `editor/font/`). It edits the pieces format that is already built (`pieces/README.txt`, `pieces.py`).
-
-- **What it is.** Its own program, "Avarenthia Editor": `python main.py --editor` from the source, and a third
-  PyInstaller build that goes only into the "Avarenthia (test)" download. Not in the players' download, not in the
-  handbook. Code in `avarenthia/editor/` (`model.py`, `write.py`, `tools.py`, `screen.py`, `panels.py`).
-- **The screen** (mockup 1): the game's window and tiles. Left: Tools (Draw, Line, Rectangle, Fill, Select, Variety)
-  and the Palette in groups (Ground, Water and fire, Things, Telling things, Puzzle things, My tiles, My things,
-  More = every tile of the game). Middle: the drawing with a ruler, zoom 1-4; the rock wall round a room is drawn for
-  you. Right: the piece (name, part, places it suits, from level, how often, way in, shape, size, mood lines), the
-  layers (Ground, Things, Creatures, Events; Tab), and "Will the game take it?". Bottom line: cursor, tile, tool,
-  layer, zoom, size, saved.
-- **Controls.** The mouse first: left draws, right picks the tile under it (in Creatures and Events: takes away),
-  wheel zooms, middle mouse or Space-drag moves the view. Keys: D L R F S V for the tools, Tab, Ctrl+Z / Ctrl+Y,
-  Ctrl+C / X / V, Delete, Ctrl+N / O / S, Ctrl+R (a few drawings as the game makes them: turned, mirrored, variety
-  picked), Ctrl+T (a new tile or thing), Ctrl+D (dress), F5 (Try), PgUp / PgDn (floors), Esc.
-- **No free colours** per cell: a tile carries its colour and meaning. Instead **own tiles** (name, look line,
-  "is like" floor / wall / water / shallow / chasm / fire, a sign from the tileset or an own 8 x 8 sign, two colours,
-  see-through, a preview lit and remembered) and **own things** (sign, colours, stands on, blocks the way and/or
-  sight, look line; when you bump / step / look; "it does" from lists or one of the game's existing do's).
-  A new kind of doing is not made in the editor: Nilio describes it, Claude builds it, it joins the list. Own tiles
-  take fixed places after the game's own, by name; a removed one stays as an empty place so saves do not break.
-- **The tileset** becomes PxPlus IBM CGA (same maker VileR, same licence CC BY-SA): 781 signs plus our hand-drawn
-  ones, thick only. The lever becomes ⌐ / ¬. The editor warns when an own tile uses a letter a creature has.
-- **Size.** Set in the Size field or by dragging the corner handles, up to **40 x 30** for a room; the limit shows in
-  Ctrl+N and Size, and dragging stops there with the line "40 x 30 is the most for a room; bigger: make it a whole
-  place" and a button that turns it into one.
-- **Creatures three ways**, mixed in one room: drawn (this one, here, always); `?` one of the place (by kind and
-  level, as now); `1`-`9` from Nilio's own lists (`LIST: war band = orc:6 orc_shaman:1 ogre:1 troll:1`; only kinds
-  that may live in the place are drawn, else back to `?`); plus "and more", 0-n extra where there is room.
-  Format: `CREATURE: <key> | ? | list:<name> at x,y`, `LIST:`, `MORE:`.
-- **Dressing (Ctrl+D).** Sets (war camp, hall, ruin, library, own sets) and how full; rules, not scatter (tables in
-  twos, furs round the fire, shelves on walls, barrels in corners, never on the way from the door to a way out or a
-  telling thing; the rules of `dress.py`). Both ways: now, in the editor (laid light green, R rolls again, then edit
-  by hand), or in the game (a room or area marked with a set, dressed anew in every world).
-- **Variety**: paint cells with a group (1, 2...) and weights per group ("statue 1 : floor 3"), the `SUBST` lines.
-- **Events** (mockup 2): marks drawn in gold on the Events layer; WHEN / AT / IF / THEN rows, every field a list,
-  only a line of text is typed. **Switches** (on/off or one of a few), **counters**, **wires** (click a thing, then
-  what it works on; a line is drawn), timers, "back as drawn". The game keeps each place's state.
-- **The check** runs live, in plain words, red cells and a click jumps there; Save only when all is green.
-- **Try (F5)** opens the game in test mode on one K5 level with the piece in it, the hero at its way in; Esc or
-  death goes back. If a level cannot run without a world, Try makes one small test world once and keeps it.
-- **Saving**: `My pieces.des`, `my tiles.des`, `my places.des` beside the editor; the editor rewrites only the block
-  of the piece it edits. Nilio hands the files over ("voeg toe"), they go into `pieces/`, CI packs and seals them.
-- **Puzzles** (`puzzels.md`, mockup 7): 1-19 puzzle things (pressure plate, stone block, lever, crystal switch with
-  red and blue blocks, brazier, mirror and sun disc, bells in order, gate of bars, cracked wall, crumbling floor,
-  slick ice, spikes on a rhythm, two portals, plinth, keyhole with the place's own key, sluice, arrow trap, riddle
-  stone); 20-26 dungeon things (sarcophagus, offering bowl, cell with a prisoner, scrying pool, chained book, idol
-  with gem eyes, rope down / ladder up); 27-44 more (mirror statues, the statue that comes when unseen, a raft on a
-  stream, wind in a passage, shifting walls, blocks into a chasm or through a hole, an oil barrel against a cracked
-  wall, runes in order, a light floor, a scale, spells as a key, two plates at once with the hireling, sneaking
-  past, the key on a creature, three shards of a seal, a timed run, day and night or ebb). Rules: never stuck (a
-  lever that resets every block room; the editor tries that every plate can be reached), the way on never hangs on
-  a puzzle unless a whole place sets it on purpose, hints only in the world (walls, books, rumours), a spell as key
-  always has another way too (one source is never the only one). Creatures and hirelings press plates too.
-  New module `puzzles.py`, state per place on the map; example rooms in `pieces/` so puzzles come without Nilio's
-  drawings too.
-- **More doors** (Nilio, 31 October 2026, "ga"): `+` stays the way in that is always used (it may be left out);
-  the sign `'` is a door that may be used, as many as drawn. `DOORS: 1-2` (1, 1-2, 2-3 or all) says how many the
-  generator opens; K5 joins the rest of the level at those, the others become wall, so a room differs per world and
-  can be a way through. The check: each door in a straight wall, at least one `+` or `'`; with two doors or more the
-  way from door to door may not hang on anything that can shut (bars, a lever, a puzzle): a puzzle room is set to
-  1 door. Built first in B2.
-- **Whole places** (mockup 6): a map drawn whole, one of a kind; sizes 60 x 34, 80 x 50, 100 x 60, 120 x 70; floors as
-  tabs, stairs find their twin; room slots `?` where the game sets a theme room each world; people who live there;
-  a find of the place or one fixed item; a boss from the boss maker. "In the world": name, sign, terrain, whose
-  land, zone, how many (one per world, or in some worlds), near a road, level; found on the map, by a rumour, a job,
-  a line in an old book, or only by a job; the land around as drawn or fitted. `PLACE` blocks with `FLOOR` maps and
-  `WORLD` lines in `places/*.des`; `drawnplaces.py` on the frame of `landmarks.py` (a fixed cell per seed, never on
-  another site or road), rumours by `news.py`, jobs by `jobs.py`. Example place: Saint Odo's Rest.
-- **Rounds.** A: tileset, screen, palette, tools, Ground and Things, undo, copy and paste, zoom, size, the check,
-  new / open / save, writing the format; test part `editor` (every piece of `theme.des` read, written, read again and
-  equal; the tools; the check; a screenshot). B1: events with switches, counters and wires, variety, creatures and
-  lists, dressing, own tiles and things, Ctrl+R, Try; test parts `editor` and `pieces`. B2: puzzle things 1-26 in the
-  game and example rooms; test part `puzzles` (a small solver solves each example room, the lever resets it).
-  C: whole places, puzzle things 27-44; test part `drawn_places` (Saint Odo's Rest lies in the world, every floor is
-  reached, its rumour goes round).
 
 ## Boss fights: what is left (approved 26 October 2026)
 

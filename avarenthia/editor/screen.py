@@ -13,8 +13,9 @@ from ..canvas import scale, wrap_text
 from . import files as F
 from . import layers as LY
 from . import maker as MK
+from . import placemode as PM
 from . import tools as T
-from .model import Room, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, PUZZLE_THINGS, tile_of
+from .model import Room, PlaceDoc, MAX_W, MAX_H, PARTS, GATES, KINDS, DOES, PUZZLE_THINGS, tile_of
 
 W, H = 110, 60
 BG = (13, 11, 10)
@@ -34,6 +35,7 @@ INFO = (136, 182, 220)
 WARN_BG = (110, 26, 20)
 
 AX, AY, AW, AH = 25, 3, 53, 42            # the drawing area
+DP_SIZES = PM.DP.SIZES
 RX = 80                                   # the right column
 PAL_Y0, PAL_Y1 = 11, H - 3                # the palette's lines
 
@@ -47,6 +49,13 @@ HINTS = [
     'Space and drag: move the view.',
     'The dim # round the room is the rock wall: drawn for you, never by hand. The + is the one way in.',
     'Drag the gold corner to make the room bigger or smaller, up to 40 x 30.',
+]
+PLACE_HINTS = [
+    'A whole place: every floor as big as the place. PgUp and PgDn go from floor to floor; < and > find their twin '
+    'on the floor above or below.',
+    'On the ground floor the green dots are the land round the place: draw its walls with #. The + is where the way '
+    'in from the west edge comes to it.',
+    'A patch of ? is a room slot: the game sets a theme room there, anew in every world.',
 ]
 
 
@@ -104,7 +113,7 @@ def _is_ground(ch):
     return ch in GROUND or ch in WAYS or ch == ' '
 
 
-class Editor(MK.Maker, LY.LayerTools):
+class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
     _Item = Item
 
     def __init__(self, room=None):
@@ -139,6 +148,9 @@ class Editor(MK.Maker, LY.LayerTools):
         self.quit_asked = False
         self.running = True
         self.saved_name = self.room.name
+        self.place = None             # a whole place being drawn (placemode.py); self.room is then its floor
+        self.offer_place = False      # the room met 40 x 30: the hints offer to make it a whole place
+        self._floor_of = {}
 
     @staticmethod
     def blank():
@@ -174,7 +186,7 @@ class Editor(MK.Maker, LY.LayerTools):
     def problems(self):
         """The check: [(ok, message, cells)], the game's own rules first, then the editor's warnings. Worked out
         once for each state of the room."""
-        key = (self.room.text(), self.room.file)
+        key = (self.place.text() if self.place else self.room.text(), self.room.file, self.room.name)
         if getattr(self, '_probs_key', None) != key:
             self._probs_key, self._probs = key, self._problems()
         return self._probs
@@ -184,6 +196,9 @@ class Editor(MK.Maker, LY.LayerTools):
         if empty:
             return [(False, f'Event {n} needs a THEN: click its + to give it one, or × to take it away.', [])
                     for n in empty]
+        if self.place:
+            out, self._floor_of = self.place_problems()
+            return out
         try:
             p = self.piece()
         except P.Bad as e:
@@ -215,6 +230,9 @@ class Editor(MK.Maker, LY.LayerTools):
             out.append((True, f"{len(self.room.moods)} mood line{'s' if len(self.room.moods) > 1 else ''}.", []))
         return out
 
+    def dirty(self):
+        return self.place.is_dirty if self.place else self.room.dirty
+
     def can_save(self):
         return all(ok is not False for ok, _m, _c in self.problems())
 
@@ -234,7 +252,7 @@ class Editor(MK.Maker, LY.LayerTools):
         if self.tool == 'Variety':
             return self.variety_palette()
         if self.layer == 'Creatures':
-            return self.creature_palette()
+            return (self.place_palette() if self.place else []) + self.creature_palette()
         if self.layer == 'Events':
             return self.event_palette()
         return palette(self.layer)
@@ -307,6 +325,10 @@ class Editor(MK.Maker, LY.LayerTools):
         if tok == 'esc':
             if self.pasting or self.sel:
                 self.pasting, self.sel = False, None
+            return
+        if tok in ('pageup', 'pagedown'):
+            if self.place:
+                self.go_floor(-1 if tok == 'pageup' else 1)
             return
         if tok == 'tab':
             self.layer = LAYERS[(LAYERS.index(self.layer) + (-1 if shift else 1)) % len(LAYERS)]
@@ -399,6 +421,7 @@ class Editor(MK.Maker, LY.LayerTools):
                     nh = cy if self.drag[3] in ('corner', 'bottom') else h
                     if nw > MAX_W or nh > MAX_H:
                         self.say('40 x 30 is the most for a room; bigger: make it a whole place.', True)
+                        self.offer_place = True
                     r.resize(nw, nh)
                 elif c is not None:
                     if what == 'paint':
@@ -451,7 +474,8 @@ class Editor(MK.Maker, LY.LayerTools):
                 self.pasting = False
                 return
             if r.inb(*c) and self.layer == 'Creatures':
-                self.creature_click(c, button)
+                if not (self.place and self.place_spot_click(c, button)):
+                    self.creature_click(c, button)
                 return
             if r.inb(*c) and self.layer == 'Events':
                 if button == 1 and r.get(*c) in r.things:
@@ -496,6 +520,8 @@ class Editor(MK.Maker, LY.LayerTools):
         self._shift = on
 
     def handle_at(self, c):
+        if self.place:
+            return None                  # every floor is as big as the place: Size on the right changes it
         r = self.room
         return {(r.w, r.h): 'corner', (r.w, r.h // 2): 'right', (r.w // 2, r.h): 'bottom'}.get(tuple(c))
 
@@ -552,6 +578,8 @@ class Editor(MK.Maker, LY.LayerTools):
         for name, yy in self._field_rows():
             if y == yy:
                 return self.field_click(name, button)
+        if self.place and self.floor_click(x, y, button):
+            return
         for i, lay in enumerate(LAYERS):
             if y == 24 + i:
                 self.layer = lay
@@ -559,6 +587,11 @@ class Editor(MK.Maker, LY.LayerTools):
                     self.tool = 'Draw'
                 return
         for ok, msg, cells, yy, n in self._check_rows():
+            if yy <= y < yy + n and self.place and self._floor_of.get(msg) and \
+                    self.place.floor(self._floor_of[msg]) is not self.room:
+                self.room = self.place.floor(self._floor_of[msg])
+                self.say(f'The floor {self.room.name}.')
+                return
             if yy <= y < yy + n and cells:
                 vw, vh = self.zoom_size()
                 cx, cy = cells[0]
@@ -566,6 +599,9 @@ class Editor(MK.Maker, LY.LayerTools):
                 return
 
     def bottom_click(self, x, y, button=1):
+        if self.offer_place and not self.place and int(y) == AY + AH + 2 and AX + 1 <= x < AX + 27:
+            self.make_whole()
+            return
         if self.layer != 'Events':
             return
         for bx, by, s, _k, act, _i in self.event_rows(AX + 1, AY + AH + 2, AW - 2, H - AY - AH - 4):
@@ -578,6 +614,8 @@ class Editor(MK.Maker, LY.LayerTools):
 
     # ------------------------------------------------------------ fields of the piece
     def _field_rows(self):
+        if self.place:
+            return self.place_rows()
         rows = [('name', 2), ('part', 3), ('kinds', 4), ('depth', 5), ('weight', 6), ('gate', 7), ('doors', 8),
                 ('shape', 9), ('size', 10)]
         y = 12
@@ -589,12 +627,16 @@ class Editor(MK.Maker, LY.LayerTools):
         return rows
 
     def field_value(self, name):
+        if name.startswith('p_'):
+            return self.place_value(name)
         r = self.room
         return {'name': r.name, 'part': r.part, 'kinds': ' '.join(r.kinds), 'depth': str(r.depth),
                 'weight': str(r.weight), 'gate': r.gate, 'shape': r.shape, 'size': f'{r.w} x {r.h}',
                 'doors': r.doors or 'each +'}.get(name, '')
 
     def field_click(self, name, button):
+        if name.startswith('p_'):
+            return self.place_click(name, button)
         r = self.room
         if name == 'part':
             r.change()
@@ -628,7 +670,7 @@ class Editor(MK.Maker, LY.LayerTools):
             return
         if self.field:
             name, val = self.field
-            limit = 120 if name.startswith('mood') else 40
+            limit = 200 if name in PM.LONG else 120 if name.startswith('mood') else 40
             self.field = (name, (val + s)[:limit])
         elif self.dialog and self.dialog[0] == 'new' and self.dialog[1].get('typing'):
             st = self.dialog[1]
@@ -648,6 +690,8 @@ class Editor(MK.Maker, LY.LayerTools):
         self.field = None
         r = self.room
         val = val.strip()
+        if name.startswith('p_'):
+            return self.place_done(name, val)
         r.change()
         if name == 'name' and val:
             r.name = val
@@ -682,6 +726,12 @@ class Editor(MK.Maker, LY.LayerTools):
             n = sum(1 for ok, _m, _c in self.problems() if ok is False)
             self.say(f'Not saved: {n} thing{"s" if n > 1 else ""} to fix first (the red lines).', True)
             return False
+        if self.place:
+            path = F.save_place(self.place, old_name=self.saved_name)
+            self.saved_name = self.place.name
+            F.forget_cache()
+            self.say(f'Saved in {os.path.basename(path)}.')
+            return True
         path = F.save(self.room, old_name=self.saved_name)
         self.saved_name = self.room.name
         F.forget_cache()
@@ -698,7 +748,7 @@ class Editor(MK.Maker, LY.LayerTools):
     def _load_dialog_rooms(self, st):
         label, path = st['files'][st['file']]
         try:
-            st['rooms'] = F.read(path) if path else F.game_pieces()
+            st['rooms'] = F.read(path) if path else F.game_pieces(places=True)
             st['error'] = ''
         except (P.Bad, OSError, ValueError) as e:
             st['rooms'], st['error'] = [], str(e)
@@ -707,6 +757,8 @@ class Editor(MK.Maker, LY.LayerTools):
         self.dialog = ('new', {'part': 'middle', 'kinds': ['any'], 'size': '13 x 11', 'typing': False})
 
     def make_new(self, st):
+        if st['part'] == 'place':
+            return self.make_new_place(st)
         try:
             w, h = (int(v) for v in st['size'].lower().replace('x', ' ').split())
         except ValueError:
@@ -725,10 +777,29 @@ class Editor(MK.Maker, LY.LayerTools):
         while r.name in names:
             n += 1
             r.name = f'new room {n}'
-        self.room, self.saved_name = r, r.name
+        self.room, self.saved_name, self.place = r, r.name, None
         self.center()
         self.dialog = None
         self.field = ('name', r.name)
+
+    def make_new_place(self, st):
+        try:
+            w, h = (int(v) for v in st['size'].lower().replace('x', ' ').split())
+        except ValueError:
+            w, h = DP_SIZES[0]
+        size = next((q for q in DP_SIZES if q[0] >= w and q[1] >= h), DP_SIZES[-1])
+        names = {q.name for q in PM.DP.load()}
+        name, n = 'new place', 1
+        while name in names:
+            n += 1
+            name = f'new place {n}'
+        d = PlaceDoc.new(name, size)
+        d.file = os.path.join(F.home(), F.MY_PLACES)
+        for f in d.floors:
+            f.file = d.file
+        self.open_place(d)
+        self.dialog = None
+        self.field = ('p_name', d.name)
 
     def _mine(self):
         path = os.path.join(F.home(), F.MINE)
@@ -783,7 +854,7 @@ class Editor(MK.Maker, LY.LayerTools):
             if tok in ('enter', 'np_enter'):
                 self.make_new(st)
             elif tok in ('up', 'down'):
-                parts = PARTS[1:]
+                parts = PARTS[1:] + ('place',)
                 i = parts.index(st['part']) if st['part'] in parts else 1
                 st['part'] = parts[(i + (1 if tok == 'down' else -1)) % len(parts)]
         elif kind == 'open':
@@ -802,7 +873,7 @@ class Editor(MK.Maker, LY.LayerTools):
         if kind == 'pick':
             return 18, 5, 74, 50
         if kind == 'new':
-            return 28, 14, 54, 18
+            return 24, 14, 66, 18
         if kind == 'kinds':
             return RX + 1, 4, W - RX - 2, len(KINDS) + 6
         if kind == 'variety':
@@ -862,6 +933,16 @@ class Editor(MK.Maker, LY.LayerTools):
                 i = y - y0 + st.get('scroll', 0)
                 if 0 <= i < len(st['rooms']):
                     r = st['rooms'][i]
+                    if isinstance(r, PlaceDoc):
+                        if not r.file:
+                            r.file = os.path.join(F.home(), F.MY_PLACES)
+                            for f in r.floors:
+                                f.file = r.file
+                        self.open_place(r)
+                        self.dialog = None
+                        self.say(f'Opened {r.name}, a whole place: PgUp and PgDn go from floor to floor.')
+                        return
+                    self.place = None
                     if not r.file:
                         r.file = os.path.join(F.home(), F.MINE)
                     self.room, self.saved_name = r, r.name
@@ -869,10 +950,12 @@ class Editor(MK.Maker, LY.LayerTools):
                     self.dialog = None
                     self.say(f'Opened {r.name}.')
         elif kind == 'new':
-            nx, ny = 28, 14
-            parts = PARTS[1:]
+            nx, ny = 24, 14
+            parts = PARTS[1:] + ('place',)
             for i, part in enumerate(parts):
                 if y == ny + 3 + i:
+                    if (part == 'place') != (st['part'] == 'place'):
+                        st['size'] = '60 x 34' if part == 'place' else '13 x 11'
                     st['part'] = part
             if y == ny + 9:
                 xx = nx + 2
@@ -880,7 +963,11 @@ class Editor(MK.Maker, LY.LayerTools):
                     if xx <= x < xx + len(k) + 2:
                         self._toggle_kind(st['kinds'], k)
                     xx += len(k) + 4
-            if y == ny + 12 and nx + 2 <= x < nx + 12:
+            if y == ny + 12 and nx + 2 <= x < nx + 12 and st['part'] == 'place':
+                sizes = [f'{a} x {b}' for a, b in DP_SIZES]
+                st['size'] = sizes[(sizes.index(st['size']) + (1 if button == 1 else -1)) % 4] \
+                    if st['size'] in sizes else sizes[0]
+            elif y == ny + 12 and nx + 2 <= x < nx + 12:
                 st['typing'] = True
                 st['size'] = ''
             if y == ny + 15:
@@ -940,7 +1027,11 @@ class Editor(MK.Maker, LY.LayerTools):
         cv.fill(0, 0, W, 1, ' ', FG, BAR)
         cv.text(1, 0, 'Avarenthia Editor', GOLD, BAR)
         f = os.path.basename(self.room.file) if self.room.file else F.MINE
-        cv.text(20, 0, f'{f} » {self.room.name}' + (' •' if self.room.dirty else ''), FG, BAR, maxw=37)
+        name = f'{self.place.name} » {self.room.name}' if self.place else self.room.name
+        title = f'{f} » {name}' + (' •' if self.dirty() else '')
+        if len(title) > 37:
+            title = name + (' •' if self.dirty() else '')
+        cv.text(20, 0, title, FG, BAR, maxw=37)
         for lab, x0, _x1, _a in self._top_buttons():
             k, word = lab.split(' ')
             greyed = word == 'Save' and not self.can_save()
@@ -1014,7 +1105,10 @@ class Editor(MK.Maker, LY.LayerTools):
         if self.pasting and self.clip and self.hover:
             preview.update({(self.hover[0] + dx, self.hover[1] + dy): ch for (dx, dy), ch in self.clip.items()
                             if r.inb(self.hover[0] + dx, self.hover[1] + dy)})
-        inside = {(x, y) for y in range(r.h) for x in range(r.w) if r.get(x, y) not in " #+'"}
+        land = bool(self.place) and r.name == 'ground'         # the ground floor's rock is the land round it
+        inside = set() if land else {(x, y) for y in range(r.h) for x in range(r.w) if r.get(x, y) not in " #+'"}
+        marks = {xy: '☺' for _n, xy, _s in r.persons}
+        marks.update({xy: '♦' for _w, xy in r.items})
         for j in range(vh):
             for i in range(vw):
                 x, y = self.view[0] + i, self.view[1] + j
@@ -1025,6 +1119,8 @@ class Editor(MK.Maker, LY.LayerTools):
                         cv.put(i, j, '#', scale(D.TILES[D.WALL].fg, .55), (26, 23, 20))
                     else:
                         cv.put(i, j, ' ', FG, OUTSIDE)
+                elif ch == ' ' and land:
+                    cv.put(i, j, '"' if (x * 7 + y * 3) % 11 == 0 else '·', (58, 78, 48), (20, 26, 18))
                 elif ch == ' ':
                     near = any((x + dx, y + dy) in inside for dx in (-1, 0, 1) for dy in (-1, 0, 1))
                     if near:
@@ -1057,14 +1153,17 @@ class Editor(MK.Maker, LY.LayerTools):
                     cv.put(i, j, sch, sfg if self.layer == 'Creatures' else scale(sfg, .6), None)
                 if c in self.dressed:
                     cv.put_bg(i, j, (40, 70, 34))
+                if c in marks:
+                    col = ((232, 214, 170) if marks[c] == '☺' else GOLD) if self.layer == 'Creatures' else DIM
+                    cv.put(i, j, marks[c], col, None)
                 if c in bad:
                     cv.put_bg(i, j, WARN_BG)
                 if self.sel and _in_rect(c, *self.sel):
                     cv.put_bg(i, j, (60, 60, 90))
         if self.layer == 'Events':
             LY.draw_wires(cv, self, vw, vh, GOLD)
-        # the size handles
-        for (hx, hy) in ((r.w, r.h), (r.w, r.h // 2), (r.w // 2, r.h)):
+        # the size handles (a whole place's floors take the place's size)
+        for (hx, hy) in () if self.place else ((r.w, r.h), (r.w, r.h // 2), (r.w // 2, r.h)):
             i, j = hx - self.view[0], hy - self.view[1]
             if 0 <= i < vw and 0 <= j < vh:
                 cv.put(i, j, '◘', GOLD, (60, 46, 20))
@@ -1083,6 +1182,15 @@ class Editor(MK.Maker, LY.LayerTools):
         r = self.room
         x = RX
         cv.fill(x, 1, W - x, H - 2, ' ', FG, PANEL)
+        if self.place:
+            self.render_place(cv, (FG, DIM, GOLD, PANEL, FIELD, SEL, LINE, W, RX))
+        else:
+            self.render_piece_fields(cv)
+        self.render_layers(cv)
+
+    def render_piece_fields(self, cv):
+        r = self.room
+        x = RX
         cv.frame(x, 1, W - x, 22, LINE, PANEL, 'The piece', GOLD)
         labels = {'name': 'Name', 'part': 'Part', 'kinds': 'Suits', 'depth': 'From level', 'weight': 'How often',
                   'gate': 'Way in', 'doors': 'Doors open', 'shape': 'Shape', 'size': 'Size'}
@@ -1111,8 +1219,12 @@ class Editor(MK.Maker, LY.LayerTools):
             i = int(name[4:])
             s = (self.field[1] + '_') if typing else '"' + r.moods[i] + '"'
             cv.wrap(x + 2, y, W - x - 4, s, FG, SEL if typing else PANEL, 4)
+
+    def render_layers(self, cv):
+        r = self.room
+        x = RX
         cv.frame(x, 23, W - x, 7, LINE, PANEL, 'Layers', GOLD)
-        counts = {'Creatures': len(r.spots), 'Events': len(r.events)}
+        counts = {'Creatures': len(r.spots) + len(r.persons) + len(r.items), 'Events': len(r.events)}
         for i, lay in enumerate(LAYERS):
             on = lay == self.layer
             bg = SEL if on else PANEL
@@ -1165,8 +1277,17 @@ class Editor(MK.Maker, LY.LayerTools):
         elif self.layer == 'Things':
             lines = ['A telling thing does something when you walk into it; pick what it does under TELLING THINGS. '
                      'MORE has every tile of the game.', HINTS[0]]
+        elif self.place:
+            lines = PLACE_HINTS[:1] + ([PLACE_HINTS[1]] if self.room.name == 'ground' else []) + PLACE_HINTS[2:]
         else:
             lines = HINTS
+        if self.offer_place and not self.place:
+            cv.text(AX + 1, y, ' Make it a whole place ', BG, GOLD)
+            cv.text(AX + 26, y, 'the room becomes its ground floor', DIM, BG)
+            y += 2
+        elif self.place and self.layer == 'Creatures' and not self.field:
+            lines = ['People and finds: pick one under PEOPLE AND FINDS, then click the floor. Right mouse takes '
+                     'one away.'] + lines
         for s in lines:
             n = cv.wrap(AX + 1, y, AW - 2, s, DIM, BG, 3)
             y += n + 1
@@ -1198,11 +1319,19 @@ class Editor(MK.Maker, LY.LayerTools):
             bits.append(f'x {self.hover[0]} y {self.hover[1]}')
             bits.append('rock' if ch == ' ' else t.name if t else f'variety group {ch}' if ch in self.room.subst else '?')
             what = self.room.spots.get(tuple(self.hover))
+            who = next((p for p in self.room.persons if p[1] == tuple(self.hover)), None)
+            find = next((i for i in self.room.items if i[1] == tuple(self.hover)), None)
+            if who:
+                bits.append(who[0])
+            if find:
+                bits.append('a tome' if find[0] == 'tome' else D.BASES.get(find[0], {}).get('name', find[0]))
             if what:
                 bits.append('one of the place' if what == '?' else f'one of {what[5:]}' if what.startswith('list:')
                             else D.MONSTERS.get(what, {}).get('name', what))
         bits += [self.tool, f'layer {self.layer}', f'zoom {self.zoom}', f'{self.room.w} x {self.room.h}',
-                 'not saved' if self.room.dirty else 'saved']
+                 'not saved' if self.dirty() else 'saved']
+        if self.place:
+            bits.insert(-1, f'floor {self.room.name}')
         cv.text(1, H - 1, ' · '.join(bits), DIM, BAR, maxw=W - 2)
 
     def render_open(self, cv):
@@ -1220,25 +1349,30 @@ class Editor(MK.Maker, LY.LayerTools):
         rooms = st['rooms'][st.get('scroll', 0):]
         for i, r in enumerate(rooms[:44]):
             cv.text(34, 8 + i, r.name, FG, PANEL, maxw=24)
-            extra = f"{r.part} · {' '.join(r.kinds)} · {r.w} x {r.h}"
+            if isinstance(r, PlaceDoc):
+                n = len(r.floors)
+                extra = f"a whole place · {n} floor{'s' if n != 1 else ''} · {r.size[0]} x {r.size[1]}"
+            else:
+                extra = f"{r.part} · {' '.join(r.kinds)} · {r.w} x {r.h}"
             cv.text(60, 8 + i, extra, DIM, PANEL, maxw=44)
-        if self.room.dirty:
-            cv.text(6, 53, f'Your changes to {self.room.name} are not saved; opening another piece drops them.',
+        if self.dirty():
+            cv.text(6, 53, f'Your changes to {(self.place or self.room).name} are not saved; opening another piece drops them.',
                     BAD, PANEL, maxw=96)
         else:
             cv.text(6, 53, 'Click a piece to open it. Up and Down: the files. Esc: back.', DIM, PANEL)
 
     def render_new(self, cv):
         st = self.dialog[1]
-        nx, ny = 28, 14
-        cv.frame(nx, ny, 54, 18, GOLD, PANEL, 'Ctrl+N: a new piece', GOLD)
+        nx, ny = 24, 14
+        cv.frame(nx, ny, 66, 18, GOLD, PANEL, 'Ctrl+N: a new piece or place', GOLD)
         cv.text(nx + 2, ny + 2, 'WHAT IS IT?', DIM, PANEL)
         texts = {'arrival': ('An arrival room', 'the stairs from above'), 'middle': ('A theme room', 'one telling thing'),
-                 'bottom': ('A bottom room', 'the boss, the way down')}
-        for i, part in enumerate(PARTS[1:]):
+                 'bottom': ('A bottom room', 'the boss, the way down'),
+                 'place': ('A whole place', 'floors, its own spot in the world')}
+        for i, part in enumerate(PARTS[1:] + ('place',)):
             on = st['part'] == part
             bg = SEL if on else PANEL
-            cv.fill(nx + 1, ny + 3 + i, 52, 1, ' ', FG, bg)
+            cv.fill(nx + 1, ny + 3 + i, 64, 1, ' ', FG, bg)
             cv.text(nx + 2, ny + 3 + i, '►' if on else ' ', GOLD, bg)
             cv.text(nx + 4, ny + 3 + i, texts[part][0], GOLD if on else FG, bg)
             cv.text(nx + 22, ny + 3 + i, texts[part][1], DIM, bg)
@@ -1252,7 +1386,10 @@ class Editor(MK.Maker, LY.LayerTools):
         typing = st.get('typing')
         cv.fill(nx + 2, ny + 12, 10, 1, ' ', FG, SEL if typing else FIELD)
         cv.text(nx + 2, ny + 12, st['size'] + ('_' if typing else ''), FG, SEL if typing else FIELD)
-        cv.text(nx + 14, ny + 12, 'up to 40 x 30; you can change it later', DIM, PANEL)
+        if st['part'] == 'place':
+            cv.text(nx + 14, ny + 12, 'click: 60 x 34, 80 x 50, 100 x 60, 120 x 70', DIM, PANEL)
+        else:
+            cv.text(nx + 14, ny + 12, 'up to 40 x 30; you can change it later', DIM, PANEL)
         cv.text(nx + 2, ny + 15, 'Enter', GOLD, PANEL)
         cv.text(nx + 8, ny + 15, 'make it', FG, PANEL)
         cv.text(nx + 16, ny + 15, 'Esc', GOLD, PANEL)

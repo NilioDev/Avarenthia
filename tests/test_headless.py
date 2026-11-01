@@ -8902,6 +8902,7 @@ def editor():
         assert 'Avarenthia Editor' in ''.join(cv.ch[:ES.W])
         editor_b1(home)
         editor_doors()
+        editor_places(home)
     finally:
         EF.home = real_home
         Canvas.cut = None
@@ -9124,6 +9125,97 @@ def editor_doors():
         ring = {(x + a, y + b) for x, y in r.cells for a, b in K5.D4} - r.cells
         joined += sum(1 for c in ring if c in plan.floor) >= 2
     assert joined >= 6, joined
+
+
+def editor_places(home):
+    """Whole places in the editor (round C): every place read, written and read again unchanged; the floors as tabs
+    (PgUp / PgDn), a new floor with its twin stair, the check; In the world; people and finds; a new place and a room
+    made a whole place, saved to my places.des and read back; the screen drawn whole."""
+    from avarenthia import drawnplaces as DP
+    from avarenthia.canvas import FakeCanvas, Canvas
+    from avarenthia.editor import files as EF, screen as ES
+    from avarenthia.editor.model import PlaceDoc
+    for pl in DP.load(force=True):
+        q = PlaceDoc.from_place(pl).to_place()
+        for k in ('name', 'size', 'sign', 'fg', 'look', 'rumour', 'book', 'land', 'world'):
+            assert getattr(pl, k) == getattr(q, k), (pl.name, k)
+        for a, b in zip(pl.order(), q.order()):
+            assert a.name == b.name and [r.rstrip() for r in a.rows] == [r.rstrip() for r in b.rows], (pl.name, a.name)
+            assert a.persons == b.persons and a.items == b.items
+            for k in ('things', 'events', 'spots', 'moods', 'switches', 'counters', 'lists'):
+                assert getattr(a.piece, k) == getattr(b.piece, k), (pl.name, a.name, k)
+    doc = PlaceDoc.from_place(DP.by_name("Saint Odo's Rest"))
+    doc.file = os.path.join(home, EF.MY_PLACES)
+    e = ES.Editor()
+    e.open_place(doc)
+    assert e.room.name == 'ground' and all(o is not False for o, _m, _c in e.problems()), e.problems()
+    e.key('pagedown')
+    assert e.room.name == 'down 1'
+    e.key('pageup')
+    e.key('pageup')
+    assert e.room.name == 'up 1'
+    # a new floor down: a small room round its stair up, and the check wants the twin stair above it
+    e.add_floor('down')
+    assert e.room.name == 'down 3' and any('<' in ''.join(r) for r in e.room.grid)
+    bad = [m for o, m, _c in e.problems() if o is False]
+    assert any('down 2' in m and 'twin' in m for m in bad), bad
+    e.remove_floor('down 3')
+    assert not doc.floor('down 3') and all(o is not False for o, _m, _c in e.problems())
+    # In the world
+    e.field_click('p_found', 1)
+    assert doc.world['found'] != ['map', 'rumour', 'book']
+    e.field_click('p_found', 3)
+    assert doc.world['found'] == ['map', 'rumour', 'book']
+    e.field_click('p_look', 1)
+    e.text(' More.')
+    e.key('enter')
+    assert doc.look.endswith('More.')
+    # a person and a find on the Creatures layer
+    e.room = doc.floor('ground')
+    e.layer = 'Creatures'
+    assert any(h == 'PEOPLE AND FINDS' for h, _i in e.pal())
+    c = next((x, y) for y in range(e.room.h) for x in range(e.room.w) if e.room.get(x, y) == '.'
+             and not any(p[1] == (x, y) for p in e.room.persons))
+    e.pick['Creatures'] = ES.Item('person', name='person', label='person')
+    e.place_spot_click(c, 1)
+    e.dialog[1]['done']('Sister Wen: Mind the bell.')
+    e.dialog = None
+    assert ('Sister Wen', c, 'Mind the bell.') in e.room.persons
+    e.pick['Creatures'] = ES.Item('find', name='find', label='find')
+    e.place_spot_click(c, 1)
+    e.dialog[1]['done']('tome')
+    e.dialog = None
+    assert ('tome', c) in e.room.items
+    assert e.save(), e.msg
+    back = [d for d in EF.read(doc.file) if isinstance(d, PlaceDoc)]
+    assert len(back) == 1 and ('Sister Wen', c, 'Mind the bell.') in back[0].floor('ground').persons
+    # the screen, drawn whole, on every layer and with the new-place window
+    Canvas.cut = []
+    cv = FakeCanvas(ES.W, ES.H)
+    for lay in ES.LAYERS:
+        e.layer = lay
+        e.render(cv)
+    e.new_dialog()
+    e.dialog[1]['part'] = 'place'
+    e.dialog[1]['size'] = '80 x 50'
+    e.render(cv)
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    assert 'Saint Odo' in ''.join(cv.ch[:ES.W])
+    # a new place
+    e.key('enter')
+    assert e.place is not doc and e.place.size == (80, 50) and e.field[0] == 'p_name'
+    e.text(' x')
+    e.key('enter')
+    assert e.place.name.endswith(' x') and e.save(), (e.msg, e.problems())
+    assert any(isinstance(d, PlaceDoc) and d.name == e.place.name for d in EF.read(doc.file))
+    # a room at its size limit becomes a whole place
+    e2 = ES.Editor()
+    e2.offer_place = True
+    e2.bottom_click(ES.AX + 2, ES.AY + ES.AH + 2)
+    assert e2.place is not None and e2.room.name == 'ground' and e2.place.size == (60, 34)
+    assert all(o is not False for o, _m, _c in e2.problems()), e2.problems()
+    print('editor places ok:', len(DP.load()), 'whole places read and written again')
 
 
 def LY_mons(r):
@@ -9839,6 +9931,17 @@ ENDMAP
 ENDPLACE
 ''', 'x')[0]
     assert any('no floor below' in msg for msg, _f in DP.problems(bad))
+    # Try (F5) on a whole place in the editor: the hero at the place's edge, on its ground floor
+    from avarenthia.editor.model import PlaceDoc
+    EF.home = lambda: home
+    try:
+        with TR.SaveElsewhere():
+            g2, why = TR.start(PlaceDoc.from_place(pl))
+    finally:
+        EF.home = real_home
+        DP.load(force=True)
+    assert g2 is not None, why
+    assert getattr(g2.map, 'dp', (None, None))[1] == 'ground' and D.TILES[g2.map.tile(g2.player.x, g2.player.y)].walk
     print('drawn_places ok')
 
 

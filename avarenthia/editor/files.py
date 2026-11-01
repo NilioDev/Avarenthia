@@ -4,9 +4,10 @@ import os
 import sys
 
 from .. import pieces as P
-from .model import Room
+from .model import Room, PlaceDoc
 
 MINE = 'My pieces.des'
+MY_PLACES = 'my places.des'
 
 
 def home():
@@ -29,6 +30,9 @@ def files():
     src = source_dir()
     if src:
         out += [(f, os.path.join(src, f)) for f in sorted(os.listdir(src)) if f.endswith('.des')]
+        if os.path.isdir(P.PLACES):
+            out += [(f'places/{f}', os.path.join(P.PLACES, f)) for f in sorted(os.listdir(P.PLACES))
+                    if f.endswith('.des')]
     h = home()
     if os.path.isdir(h):
         out += [(f, os.path.join(h, f)) for f in sorted(os.listdir(h)) if f.endswith('.des')]
@@ -44,16 +48,28 @@ def read(path):
         r = Room.from_piece(p)
         r.file = path
         rooms.append(r)
+    if 'PLACE:' in text:
+        from .. import drawnplaces as DP
+        rooms += [PlaceDoc.from_place(pl, path) for pl in DP.parse(text, os.path.basename(path))]
     return rooms
 
 
-def game_pieces():
-    """The game's own pieces as rooms, from the pack in a built program (saved to My pieces, never back)."""
+def game_pieces(places=False):
+    """The game's own pieces as rooms, from the pack in a built program (saved to My pieces, never back); with
+    places, its whole places too (saved to my places)."""
     out = []
     for p in P.load():
         r = Room.from_piece(p)
         r.file = os.path.join(source_dir(), p.file) if source_dir() and p.file else ''
         out.append(r)
+    if places:
+        from .. import drawnplaces as DP
+        for pl in DP.load():
+            d = PlaceDoc.from_place(pl, '')
+            d.file = ''
+            for f in d.floors:
+                f.file = ''
+            out.append(d)
     return out
 
 
@@ -96,6 +112,43 @@ def save(room, path=None, old_name=None):
     return path
 
 
+def place_spans(text):
+    """[(name, start line, end line)] of every whole place in a file's text (end is the ENDPLACE line)."""
+    out, cur, start = [], None, 0
+    for i, line in enumerate(text.split('\n')):
+        st = line.strip()
+        if st.upper().startswith('PLACE:') and cur is None:
+            cur, start = st.split(':', 1)[1].strip(), i
+        elif st == 'ENDPLACE' and cur is not None:
+            out.append((cur, start, i))
+            cur = None
+    return out
+
+
+def save_place(doc, old_name=None, path=None):
+    """Write a whole place into its file (or my places.des): its PLACE block replaced, or added. Returns the path."""
+    path = path or doc.file or os.path.join(home(), MY_PLACES)
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    text = ''
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as f:
+            text = f.read()
+    lines = text.split('\n')
+    for name, a, b in place_spans(text):
+        if name == (old_name or doc.name):
+            text = '\n'.join(lines[:a] + doc.text().rstrip('\n').split('\n') + lines[b + 1:])
+            break
+    else:
+        text = text + ('\n' if text.strip() and not text.endswith('\n\n') else '') + doc.text()
+    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+        f.write(text)
+    doc.file = path
+    for fl in doc.floors:
+        fl.file = path
+    doc.saved()
+    return path
+
+
 _CACHE = None
 
 
@@ -114,6 +167,8 @@ def forget_cache():
     global _CACHE
     _CACHE = None
     P.load(force=True)
+    from .. import drawnplaces as DP
+    DP.load(force=True)
 
 
 # ------------------------------------------------------------------ own tiles and things (Ctrl+T)

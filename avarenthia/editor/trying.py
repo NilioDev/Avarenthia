@@ -46,8 +46,46 @@ def world(say=None):
     return g
 
 
+def start_place(doc, say=None):
+    """A game standing at the west edge of the whole place, on its ground floor, or (None, why not)."""
+    from .. import debug as DBG
+    from .. import drawnplaces as DP
+    from ..sites import Site
+    try:
+        pl = doc.to_place()
+    except (DP.Bad, P.Bad, ValueError) as e:
+        return None, str(e).split(': ', 2)[-1]
+    DP._ALL = [q for q in DP.load() if q.name != pl.name] + [pl]     # until the editor reads the places again
+    for fl in pl.floors:
+        P.EXTRA[fl.piece.name] = fl.piece
+    g = world(say)
+    g.hook()
+    DBG.ON = True
+    w, m = g.world, g.maps['over']
+    taken = {(q.x, q.y) for q in w.sites} | {(q.x, q.y) for q in w.settlements} | \
+        {(d.x, d.y) for d in w.dungeons.values()}
+    p = g.player
+    px, py = (p.x, p.y) if g.cur == 'over' else getattr(g, 'over_pos', (p.x, p.y))
+    from .. import data as D
+    spot = next(((x, y) for r in range(1, 30) for x in range(px - r, px + r + 1) for y in range(py - r, py + r + 1)
+                 if m.inb(x, y) and (x, y) not in taken and D.TILES[m.tile(x, y)].walk
+                 and m.tile(x, y) not in (D.ROAD, D.TOWN, D.CITY, D.RIVER)), None)
+    if spot is None:
+        return None, 'no free cell in the test world for the place'
+    st = Site(len(w.sites), 'drawn', spot[0], spot[1], pl.name)
+    st.place = pl.name
+    w.sites.append(st)
+    DP.setup(g, w, st, pl)
+    DBG.to_over(g, *spot)
+    g.enter_site(st.id)
+    return g, ''
+
+
 def start(room, say=None):
     """A game standing at the piece's door, or (None, why not)."""
+    from .model import PlaceDoc
+    if isinstance(room, PlaceDoc):
+        return start_place(room, say)
     from .. import debug as DBG
     try:
         pc = piece_of(room)
@@ -83,6 +121,8 @@ def run(ctx, tileset, room, say=None):
             return _play(ctx, room, say)
     finally:
         P.load(force=True)                       # the game's pieces again, without the one tried
+        from .. import drawnplaces as DP
+        DP.load(force=True)
 
 
 def _play(ctx, room, say):
