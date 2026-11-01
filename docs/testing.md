@@ -466,3 +466,11 @@ three things. Test part `boss_moves`.
   and 3% uniques. Debug: Teleport to a fire level and a winter map, Reveal map.
 - **Seen and told** - the affix line in IN SIGHT, the look line, the first-time tip, a unique's new name. Debug: spawn
   a unique, reset tips.
+
+## Playing it (approved 1 November 2026, not built)
+
+- **A note for Claude** - the zip beside the save with the note, the screen and the save; loading that save stands
+  you where the note was written. Debug: it is itself a debug menu line.
+- **Saves that last** - a save from the build before loads, with new fields filled; a breaking step gives the one
+  line on the main menu; a save that cannot be written says so in red. Debug: none needed; keep an old build's save.
+- **The money check** - `python tests/money.py` prints the three tables; the part `money` stays in its bands.

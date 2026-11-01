@@ -18,6 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
+| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, and a money check beside the fighting bot. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -131,6 +132,32 @@ Only colour, brightness and tidiness: no new signs, animations or keys. Dutch pr
    and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
    shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
 Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
+
+---
+
+## Playing it: notes, saves that last, the money check (approved 1 November 2026, not built)
+
+Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
+so before more systems: make playing and reporting cheap.
+1. **A note for Claude** (test build and `--debug` only, not in the handbook). In the F12 menu, "Note for Claude":
+   type one line, Enter. The game writes one file `feedback-<day>-<turn>.zip` beside the save, holding `note.txt`
+   (the line, the build's commit, the seed, day and turn, the place's name and kind, where you stand, level, class
+   and money), `screen.png` (the screen as it was before the menu opened, at scale 1) and a copy of the save. Nilio
+   uploads the zip to the project; Claude can load the save and stand where he stood. The log says where the file went.
+2. **Saves that last.** Today any new `SAVE_VERSION` throws the save away, so every fix build means a new game.
+   From now on: loading fills every missing field of the player, the game, the world, maps, creatures and items with
+   its default (new fields in `__init__` are found by comparing with a fresh object of the same class), then runs
+   the steps of a list `MIGRATIONS` (from version n to n+1) for real changes of shape. Only a step marked
+   `breaking` drops the save, and then the main menu says so in one line instead of the save just being gone.
+   Things a new build adds to world making show only in a new world; the handbook does not need to say so.
+   A failed save says so in the log in red (today it is silent). CLAUDE.md's rule becomes: bump `SAVE_VERSION` and
+   add a step when saved data changes shape.
+3. **The money check** (`tests/money.py`, like `tests/bot.py`). A bot lives a set of days at level 1, 10 and 20 the
+   way a player earns: jobs from the board, buying and selling goods between two towns, hunting and selling hides,
+   a guard's wage; and pays what a player pays: beds, food, repairs, a hireling's wage, the temple's fee once. It
+   prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
+   good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
+   settle the bands it should stay in; then a test part `money` fails when a build leaves them.
 
 ---
 
