@@ -18,7 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, and a list of what you met. Not in the build order yet |
+| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, and a list of what you met. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -158,7 +158,19 @@ so before more systems: make playing and reporting cheap.
    prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
    good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
    settle the bands it should stay in; then a test part `money` fails when a build leaves them.
-4. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
+4. **The first tome** (Nilio, 1 November 2026: yes to measuring and making it sure). You start blank and your class
+   wakes with your first tome, but Thornfield's shop never sells one, so the start hangs on loot. The blank start
+   stays; the first tome is made sure in three ways, so it hangs on no one place:
+   - **Snagtooth's hoard.** The kobolds who robbed you in the ditch took a book too. In the hoard lie three tomes of
+     three different schools, one of them yours, the others stolen from travellers; which one was yours you do not
+     know. Reading one wakes the memory as now (the question, the name). You may take all three; the others sell.
+   - **A village shop** may hold one tome (a quarter of the time; cities stay at half), so a player who skips the den
+     can still buy one with the priestess's coin.
+   - **The temple where you wake** has a shelf with one tome of the temple's own god's school, at a price you can
+     pay after the den or a first job.
+   The opening check (with the money check, `tests/money.py --opening`) plays the first days the way a new player
+   does and prints on which day the first tome was read and the first level reached, over ten worlds.
+5. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
    world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
    player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
    epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12

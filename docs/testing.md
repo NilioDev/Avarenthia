@@ -476,3 +476,6 @@ three things. Test part `boss_moves`.
 - **The money check** - `python tests/money.py` prints the three tables; the part `money` stays in its bands.
 - **What you met** - meeting a system the first time adds it with the day; F12 shows met and never met; the note's
   zip holds the list. Debug: it is itself a debug menu line.
+- **The first tome** - Snagtooth's hoard with three tomes of three schools; a village shop's tome now and then; the
+  shelf in the temple where you wake; `tests/money.py --opening` prints the day of the first tome. Debug: Teleport to
+  the Hollow Den, spawn Snagtooth, give coin.
