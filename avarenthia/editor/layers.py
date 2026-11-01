@@ -117,7 +117,10 @@ class LayerTools:
         """A click on one of the new palettes' lines. Returns True when it was one."""
         r = self.room
         if it.kind == 'action':
-            if it.name == 'lists':
+            if it.name == 'to_things':
+                self.layer = 'Things'
+                self.say('The Things layer: telling things, puzzle things, and under MORE every tile of the game.')
+            elif it.name == 'lists':
                 self.lists_dialog()
             elif it.name == 'switch+':
                 self.ask_line('A switch: its name, then its states', 'gate = shut open', self._add_switch)

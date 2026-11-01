@@ -34,7 +34,7 @@ BAD = (236, 106, 92)
 INFO = (136, 182, 220)
 WARN_BG = (110, 26, 20)
 
-AX, AY, AW, AH = 25, 3, 53, 42            # the drawing area
+AX, AY, AW, AH = 27, 3, 51, 42            # the drawing area
 DP_SIZES = PM.DP.SIZES
 RX = 80                                   # the right column
 PAL_Y0, PAL_Y1 = 11, H - 3                # the palette's lines
@@ -89,7 +89,8 @@ def palette(layer):
                 ('WAYS', [Item('sign', '+', label='a way in, always'), Item('sign', "'", label='a door, maybe'),
                           Item('sign', 'n', label='a hidden door'),
                           Item('sign', '<', label='stairs up'), Item('sign', '>', label='stairs down')]),
-                ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else [])
+                ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else []) + \
+            [('THINGS, PUZZLES, ALL', [Item('action', name='to_things', label='to Things (Tab)')])]
     telling = [Item('thing', name=DOES[a], act=a, label=f'{a}') for a in sorted(DOES)]
     puzzle = [Item('thing', name=t, act=a, label=f'{t} ({a})' if a and a not in t.split() else t)
               for a, t in PUZZLE_THINGS]
@@ -1053,7 +1054,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             cv.fill(1, 2 + i, 22, 1, ' ', FG, bg)
             cv.text(2, 2 + i, k.upper(), GOLD, bg)
             cv.text(4, 2 + i, lab, GOLD if on else FG, bg)
-        cv.text(2, 2 + len(TOOLS), 'Ctrl+Z undo · Ctrl+Y', DIM, PANEL)
+        cv.text(2, 2 + len(TOOLS), 'Ctrl+Z/Y', GOLD, PANEL)
+        cv.text(11, 2 + len(TOOLS), 'undo/redo', DIM, PANEL)
         cv.frame(0, PAL_Y0 - 1, 24, H - PAL_Y0, LINE, PANEL, 'Palette', GOLD)
         lines = self._pal_lines()[self.pal_scroll[self._pal_key()]:]
         pick = self.pick[self._pal_key()] or Item('none')
@@ -1091,6 +1093,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             n = self.view[1] + j
             if n % 5 == 0:
                 cv.text(AX - 3, AY + j * z, f'{n:>2}'[-2:], DIM, BG)
+            else:
+                cv.put(AX - 2, AY + j * z, '·', scale(DIM, .5), BG)
 
     def render_drawing(self, cv, vw, vh, cursor=True):
         """The drawing as the view shows it, on cv from 0, 0 (vw x vh cells)."""
