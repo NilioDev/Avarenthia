@@ -474,3 +474,5 @@ three things. Test part `boss_moves`.
 - **Saves that last** - a save from the build before loads, with new fields filled; a breaking step gives the one
   line on the main menu; a save that cannot be written says so in red. Debug: none needed; keep an old build's save.
 - **The money check** - `python tests/money.py` prints the three tables; the part `money` stays in its bands.
+- **What you met** - meeting a system the first time adds it with the day; F12 shows met and never met; the note's
+  zip holds the list. Debug: it is itself a debug menu line.

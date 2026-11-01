@@ -18,7 +18,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, and a money check beside the fighting bot. Not in the build order yet |
+| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, and a list of what you met. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -158,6 +158,13 @@ so before more systems: make playing and reporting cheap.
    prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
    good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
    settle the bands it should stay in; then a test part `money` fails when a build leaves them.
+4. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
+   world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
+   player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
+   epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12
+   ("What you met": met with the day, and never met) and puts it in the note's zip. After Nilio has played, the
+   never-met list shows what may be hidden too well; then rumours, the inn's talk or the news point to it a little
+   more often. Nothing is cut or forced on the player.
 
 ---
 
