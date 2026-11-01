@@ -323,6 +323,25 @@ TILES = [
     Tile('¥', '#9ae0a0', False, False, 'idol with gem eyes', bg='#1a2a1a'),
     Tile('¥', '#8a8478', False, False, 'blind idol', bg='#1a1a1a'),
     Tile('‡', '#c8a878', False, False, 'ladder up'),
+    # more puzzle things (puzzles.py, the editor's round C)
+    Tile('ß', '#b8c8e8', False, False, 'mirror statue', bg='#1a2030'),
+    Tile('ß', '#e8e0d0', False, False, 'pale statue', bg='#222020'),
+    Tile('≡', '#b08850', True, False, 'raft', bg='#1a3a5a'),
+    Tile('Ö', '#a0b4c8', False, True, 'wind vent', bg='#202830'),
+    Tile('▓', '#9a9080', False, True, 'shifting wall', bg='#2a2620'),
+    Tile('░', '#5a5448', True, False, 'shifting wall, drawn back'),
+    Tile('Ø', '#6a6058', False, False, 'hole in the floor', bg='#000000'),
+    Tile('ö', '#c88040', False, False, 'oil barrel', bg='#2a1c10'),
+    Tile('¤', '#7a7aa0', True, False, 'rune tile'),
+    Tile('¤', '#c8c8ff', True, False, 'glowing rune tile', bg='#202040'),
+    Tile('□', '#6a6a5a', True, False, 'dark floor tile'),
+    Tile('■', '#f0e0a0', True, False, 'lit floor tile', bg='#3a3418'),
+    Tile('ш', '#d0b070', False, False, 'scale pan', bg='#2a2010'),
+    Tile('¦', '#a0a8b0', False, False, 'iron rod'),
+    Tile('¦', '#a0e8ff', False, False, 'humming iron rod', bg='#102030'),
+    Tile('∆', '#c890ff', False, False, 'seal shard on a plinth', bg='#24123a'),
+    Tile('Φ', '#c890ff', False, True, 'sealed door', bg='#24123a'),
+    Tile('*', '#c8d8ff', False, True, 'shaft of moonlight', bg='#182038'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -356,6 +375,8 @@ MARK = 252                       # a telling thing of a place of today (landmark
 (PLATE, PLATEDOWN, SBLOCK, LEVERON, REDCRYSTAL, BLUECRYSTAL, REDUP, REDDOWN, BLUEUP, BLUEDOWN, SWIVEL, SWIVEL2, SUNDISC,
  SUNSHAFT, CRACKWALL, CRUMBLE, SLICK, SPIKEHOLES, SPIKESUP, PORTAL, IDOLPLINTH, KEYHOLE, RIDDLE, SARCO, SARCOOPEN, BOWL,
  SCRY, CHAINBOOK, GEMIDOL, BLINDIDOL, LADDER) = range(253, 284)      # puzzle things (puzzles.py)
+(MIMIC, STALKER, RAFT, VENT, SHIFTWALL, SHIFTGAP, HOLE, OILBARREL, RUNE_T, RUNELIT, LIGHTOFF, LIGHTON, SCALE, ROD, RODLIT,
+ SHARDPLINTH, SEAL, MOONSHAFT) = range(284, 302)                   # more of them (round C)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

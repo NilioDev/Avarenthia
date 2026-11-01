@@ -9214,6 +9214,7 @@ def puzzles():
         DBG.theme_level(g, name)
         m = g.map
         rid = next(i for i, r in enumerate(m.rooms) if r[2] == name)
+        m.mons0 = list(m.mons)
         m.mons[:] = []
         cells = set(TH.cells_of(m, rid))
         marks = {}
@@ -9435,6 +9436,321 @@ def puzzles():
     p.gold += cost
     g.uncurse_all()
     assert not any(len(b) > 3 and b[3] == PZ.CURSE for b in p.buffs)
+
+    # ------------------------------------------------ round C: puzzle things 27-44
+    def walk(m, path):
+        for n in path:
+            p.x, p.y = n
+            TH.on_step(g)
+            TH.tick(g)
+
+    def sokoban(m, cells, start, movers, goal, fill=()):
+        """Search pushes: movers is the set of cells with blocks; a block pushed into a cell of fill fills it."""
+        free = {c for c in cells if D.TILES[m.tile(*c)].walk or c in movers}
+        st0 = (start, frozenset(movers), frozenset())
+        seen, todo, way = {st0}, deque([st0]), {}
+        while todo:
+            pos, bl, filled = cur = todo.popleft()
+            if goal(pos, bl, filled):
+                moves = []
+                while cur in way:
+                    cur, d = way[cur]
+                    moves.append(d)
+                return list(reversed(moves))
+            for d in NB4:
+                n = (pos[0] + d[0], pos[1] + d[1])
+                if n not in free and n not in filled:
+                    continue
+                nb, nf = bl, filled
+                if n in bl:
+                    t = (n[0] + d[0], n[1] + d[1])
+                    if t in fill and t not in filled:
+                        nb, nf = bl - {n}, filled | {t}
+                    elif (t in free or t in filled) and t not in bl:
+                        nb = (bl - {n}) | {t}
+                    else:
+                        continue
+                nxt = (n, nb, nf)
+                if nxt not in seen:
+                    seen.add(nxt)
+                    way[nxt] = (cur, d)
+                    todo.append(nxt)
+        return None
+
+    def push_moves(m, moves):
+        for d in moves:
+            n = (p.x + d[0], p.y + d[1])
+            if not D.TILES[m.tile(*n)].walk and n in m.things:
+                TH.bump(g, *n)
+            else:
+                p.x, p.y = n
+                TH.on_step(g)
+            TH.tick(g)
+
+    # 27: the mirror statues
+    m, rid, cells, marks = room('statue hall')
+    plates = set(marks['P'])
+    p.x, p.y = start = beside(m, marks['R'][0], orth=True)
+    m._ppos = start
+    ms = {marks['M'][0]: (1, 1), marks['N'][0]: (-1, 1)}
+    walkable = {c for c in cells if D.TILES[m.tile(*c)].walk}
+    walkable |= set(ms)
+
+    def mim_goal(pos, sts):
+        return plates <= {c for c, _f in sts} | {pos} and any(c in plates for c, _f in sts)
+    st0 = (start, tuple(sorted(ms.items())))
+    seen, todo, way, goal = {st0}, deque([st0]), {}, None
+    while todo:
+        pos, sts = cur = todo.popleft()
+        if plates <= {c for c, _f in sts}:
+            goal = cur
+            break
+        for d in NB4:
+            n = (pos[0] + d[0], pos[1] + d[1])
+            if n not in walkable or n in {c for c, _f in sts}:
+                continue
+            new, taken = [], {c for c, _f in sts}
+            for c, f in sts:
+                to = (c[0] + d[0] * f[0], c[1] + d[1] * f[1])
+                if to in walkable and to != n and to not in taken:
+                    taken.discard(c)
+                    taken.add(to)
+                    new.append((to, f))
+                else:
+                    new.append((c, f))
+            nxt = (n, tuple(sorted(new)))
+            if nxt not in seen:
+                seen.add(nxt)
+                way[nxt] = (cur, n)
+                todo.append(nxt)
+    assert goal, 'the statue hall cannot be solved'
+    path = []
+    while goal in way:
+        goal, n = way[goal]
+        path.append(n)
+    walk(m, reversed(path))
+    assert opened(m, marks), 'the mirror statues did not open the bars'
+    bump(m, marks['R'][0])
+    assert all(m.tile(*c) == D.MIMIC for c in ms), 'the lever did not set the statues back'
+
+    # 28: the pale statue comes while unseen
+    m, rid, cells, marks = room('pale statue')
+    pl = marks['P'][0]
+    real_visible = g.visible
+    g.visible = lambda x, y: False
+    try:
+        for _ in range(40):
+            s = next(c for c, (a, r) in m.things.items() if a == 'stalker')
+            if s == pl or opened(m, marks):
+                break
+            dx, dy = pl[0] - s[0], pl[1] - s[1]
+            step = ((dx > 0) - (dx < 0), 0) if abs(dx) >= abs(dy) else (0, (dy > 0) - (dy < 0))
+            q = (pl[0] + step[0], pl[1] + step[1])
+            if not D.TILES[m.tile(*q)].walk:
+                q = beside(m, pl, orth=True)
+            p.x, p.y = q
+            TH.tick(g)
+    finally:
+        g.visible = real_visible
+    assert opened(m, marks), 'the pale statue never came onto the plate'
+
+    # 29: the raft
+    m, rid, cells, marks = room('raft crossing')
+    r = marks['W'][0]
+    f, d = next((f, d) for d in NB4 for f in [(r[0] - d[0], r[1] - d[1])]
+                if D.TILES[m.tile(*f)].walk and m.tile(*f) != D.WATER and m.tile(r[0] + d[0], r[1] + d[1]) == D.WATER)
+    p.x, p.y = f
+    TH.tick(g)
+    p.x, p.y = r
+    TH.on_step(g)
+    assert (p.x, p.y) != r and m.tile(p.x, p.y) == D.RAFT and m.tile(*r) == D.WATER, 'the raft did not carry you'
+
+    # 30: the wind, and a block that shields you from it
+    m, rid, cells, marks = room('wind passage')
+    v = marks['V'][0]
+    u = next(d for d in NB4 if D.TILES[m.tile(v[0] + d[0], v[1] + d[1])].walk)
+    p.x, p.y = v[0] + 2 * u[0], v[1] + 2 * u[1]
+    TH.tick(g)
+    assert (p.x, p.y) == (v[0] + 3 * u[0], v[1] + 3 * u[1]), 'the wind did not push you'
+    b = marks['B'][0]
+    for _ in range(20):
+        if b == (v[0] + u[0], v[1] + u[1]):
+            break
+        p.x, p.y = b[0] + u[0], b[1] + u[1]
+        TH.bump(g, *b)
+        TH.tick(g)
+        b = (b[0] - u[0], b[1] - u[1])
+    assert m.tile(v[0] + u[0], v[1] + u[1]) == D.SBLOCK
+    assert (p.x, p.y) == (v[0] + 2 * u[0], v[1] + 2 * u[1]), 'the block did not shield you'
+
+    # 31: the walls shift on a rhythm
+    m, rid, cells, marks = room('shifting maze')
+    s0 = marks['S'][0]
+    g.turn += (-g.turn) % 4
+    TH.tick(g)
+    assert m.tile(*s0) == D.SHIFTGAP
+
+    # 32: blocks into the chasm make a bridge
+    m, rid, cells, marks = room('block bridge')
+    chest = next(c for c in cells if m.tile(*c) == D.CHEST)
+    chasm = {c for c in cells if m.tile(*c) == D.CHASM}
+    p.x, p.y = start = beside(m, marks['R'][0], orth=True)
+    near_chest = {(chest[0] + d[0], chest[1] + d[1]) for d in NB4}
+    moves = sokoban(m, cells - chasm, start, set(marks['B']), lambda pos, bl, fl: pos in near_chest, fill=chasm)
+    assert moves is not None, 'the block bridge cannot be solved'
+    push_moves(m, moves)
+    assert (p.x, p.y) in near_chest
+    bump(m, marks['R'][0])
+    assert all(m.tile(*c) == D.CHASM for c in chasm), 'the lever did not open the chasm again'
+
+    # 34: the oil barrel against the cracked wall
+    m, rid, cells, marks = room('oil cellar')
+    w = marks['W'][0]
+    by_wall = {(w[0] + d[0], w[1] + d[1]) for d in NB4} & cells
+    p.x, p.y = start = beside(m, marks['F'][0], orth=True)
+    moves = sokoban(m, cells, start, set(marks['O']), lambda pos, bl, fl: bool(bl & by_wall))
+    assert moves is not None, 'the barrel cannot reach the wall'
+    push_moves(m, moves)
+    barrel = next(c for c, (a, r) in m.things.items() if a == 'oil')
+    bump(m, marks['F'][0])
+    bump(m, barrel)
+    p.x, p.y = max((c for c in cells if D.TILES[m.tile(*c)].walk),
+                   key=lambda c: abs(c[0] - barrel[0]) + abs(c[1] - barrel[1]))
+    for _ in range(3):
+        TH.tick(g)
+    assert m.tile(*w) != D.CRACKWALL and D.TILES[m.tile(*w)].walk, 'the barrel did not blow the wall in'
+
+    # 35: the runes, a wrong one first
+    m, rid, cells, marks = room('rune walk')
+    walk(m, [marks['A'][0]])
+    assert not opened(m, marks) and m.tile(*marks['A'][0]) == D.RUNE_T
+    for ch in 'CADB':
+        walk(m, [beside(m, marks[ch][0], orth=True), marks[ch][0]])
+    assert opened(m, marks), 'the runes in order did not open the bars'
+
+    # 36: the light floor, solved by search
+    m, rid, cells, marks = room('light floor')
+    lights = marks['L']
+    idx = {c: i for i, c in enumerate(lights)}
+    floor = {c for c in cells if D.TILES[m.tile(*c)].walk}
+    p.x, p.y = start = beside(m, marks['R'][0], orth=True)
+    m._ppos = start
+    st0 = (start, 0)
+    seen, todo, way, goal = {st0}, deque([st0]), {}, None
+    full = (1 << len(lights)) - 1
+    while todo:
+        pos, bits = cur = todo.popleft()
+        if bits == full:
+            goal = cur
+            break
+        for d in NB4:
+            n = (pos[0] + d[0], pos[1] + d[1])
+            if n not in floor:
+                continue
+            nb = bits
+            if n in idx:
+                for c in (n, (n[0] + 1, n[1]), (n[0] - 1, n[1]), (n[0], n[1] + 1), (n[0], n[1] - 1)):
+                    if c in idx:
+                        nb ^= 1 << idx[c]
+            nxt = (n, nb)
+            if nxt not in seen:
+                seen.add(nxt)
+                way[nxt] = (cur, n)
+                todo.append(nxt)
+    assert goal, 'the light floor cannot be solved'
+    path = []
+    while goal in way:
+        goal, n = way[goal]
+        path.append(n)
+    walk(m, reversed(path))
+    assert opened(m, marks), 'the lit floor did not open the bars'
+
+    # 37: the scale
+    m, rid, cells, marks = room('scale room')
+    from avarenthia.entities import Item
+    bump(m, marks['S'][0])
+    need = TH.state(m, rid)['counter']
+    g.pending = None
+    stones = [Item(g.new_id(), 'potion', 'hp') for _ in range(need)]
+    p.inv.extend(stones)
+    for it in stones:
+        PZ.r_scale(g, f'put:{it.id}', {'rid': rid})
+    assert opened(m, marks), 'the scale did not open the bars'
+    PZ.r_scale(g, 'back', {'rid': rid})
+    assert all(it in p.inv for it in stones)
+
+    # 38: a storm spell on the rod; fire on the webs
+    m, rid, cells, marks = room('storm rod')
+    p.x, p.y = beside(m, marks['T'][0])
+    g.compute_fov()
+    PZ.on_spell(g, 'storm')
+    assert opened(m, marks), 'the rod did not open the bars'
+    x0 = marks['X'][0]
+    p.x, p.y = beside(m, x0)
+    g.compute_fov()
+    PZ.on_spell(g, 'fire')
+    assert m.tile(*x0) == D.FLOOR, 'the webs did not burn'
+
+    # 39: two plates at once, you and a creature
+    m, rid, cells, marks = room('twin plates')
+    from avarenthia.entities import make_monster
+    a, b = marks['P']
+    o = make_monster(g, 'skeleton', a[0], a[1], 1)
+    o.awake = False
+    m.mons.append(o)
+    p.x, p.y = b
+    TH.tick(g)
+    assert opened(m, marks), 'two on the plates did not open the bars'
+
+    # 40-41: the lure, and the key a creature carries
+    m, rid, cells, marks = room('guard hall')
+    keeper = next((o for o in m.mons0 if getattr(o, 'carries', None) is not None), None)
+    assert keeper is not None, 'no creature carries the key'
+    gong = marks['G'][0]
+    far = max((c for c in cells if D.TILES[m.tile(*c)].walk), key=lambda c: max(abs(c[0] - gong[0]), abs(c[1] - gong[1])))
+    guard = make_monster(g, 'skeleton', far[0], far[1], 1)
+    guard.awake = False
+    m.mons.append(guard)
+    bump(m, gong)
+    assert getattr(guard, 'lured', None), 'the gong lured no one'
+    d0 = max(abs(guard.x - gong[0]), abs(guard.y - gong[1]))
+    for _ in range(3):
+        PZ.lured(g, guard)
+    assert max(abs(guard.x - gong[0]), abs(guard.y - gong[1])) < d0, 'the lured guard did not come'
+    m.mons[:] = [keeper]
+    g.kill(keeper)
+    key = next(it for it in m.items if it.k == 'vkey')
+    m.items.remove(key)
+    p.inv.append(key)
+    bump(m, marks['K'][0])
+    assert opened(m, marks), 'the carried key did not open the bars'
+
+    # 43: the timed gate
+    m, rid, cells, marks = room('timed gate')
+    walk(m, [marks['P'][0]])
+    assert opened(m, marks)
+    p.x, p.y = beside(m, marks['P'][0], orth=True)
+    for _ in range(16):
+        TH.tick(g)
+    assert not opened(m, marks), 'the gate did not shut again'
+
+    # 44: the moon shaft, by night; the tide in an IF
+    m, rid, cells, marks = room('moon chapel')
+    from avarenthia import towns as TWN
+    real_night = TWN.is_night
+    TWN.is_night = lambda game: True
+    try:
+        for want in product((D.SWIVEL, D.SWIVEL2), repeat=len(marks['M'])):
+            for c, w in zip(marks['M'], want):
+                if m.tile(*c) != w:
+                    bump(m, c)
+            TH.tick(g)
+            if opened(m, marks):
+                break
+    finally:
+        TWN.is_night = real_night
+    assert opened(m, marks), 'the moonlight never reached the disc'
+    assert TH._holds(g, 'ebb', rid) in (True, False) and TH._holds(g, 'ebb', rid) != TH._holds(g, 'flood', rid)
     print('puzzles ok')
 
 

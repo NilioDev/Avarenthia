@@ -138,9 +138,10 @@ def _cross(m, tile, main, flow, bridge=None):
     """Lay one crossing: a straight-as-can-be way over the river from the reachable part to another one."""
     prev = {}
     q = deque()
+    theme = getattr(m, 'theme_cells', ())            # a drawn room's own water is never bridged (a raft, a sluice)
     for i in main:
         for j in _round(m, i):
-            if m.t[j] == tile and j not in prev:
+            if m.t[j] == tile and j not in prev and j not in theme:
                 prev[j] = None
                 q.append(j)
     while q:
@@ -161,7 +162,7 @@ def _cross(m, tile, main, flow, bridge=None):
                     m.t[c] = kind
                     flow.pop(c, None)
                 return True
-            if m.t[j] == tile and j not in prev:
+            if m.t[j] == tile and j not in prev and j not in theme:
                 prev[j] = i
                 q.append(j)
     return False

@@ -2158,6 +2158,9 @@ class Game:
             return
         m.mons.remove(mon)
         self.kills += 1
+        if getattr(mon, 'carries', None) is not None:     # a key it kept (puzzles.py)
+            self.spill(m, mon.x, mon.y, mon.carries)
+            self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} drops a key.', 'good')
         EP.on_kill(self, mon)
         if not mon.is_npc:                             # where it fell: a necromancer has a use for that
             sl = m.__dict__.setdefault('slain', [])
@@ -2491,6 +2494,8 @@ class Game:
                 return
         if MC.mon_turn(self, mon, df):
             return
+        if getattr(mon, 'lured', None) and TH.PZ.lured(self, mon):
+            return                                      # it goes to see what struck the gong (puzzles.py)
         if not kit and AI.turn(self, mon, df):
             return
         if (d['ranged'] or d['caster']) and not kit and seen and 2 <= dist <= 7 and random.random() < (.45 if d['caster'] else .6) \
@@ -2917,7 +2922,13 @@ class Game:
         if BH.has(self, 'hexed'):
             self.msg('A toad has no skills. You can only hop.', 'bad')
             return 0
-        return SK.use(self, n)
+        spent = SK.use(self, n)
+        if spent and getattr(self.map, 'things', None):
+            from . import classes as CL, puzzles as PZ
+            sid = CL.slot_skill(self, n)
+            if sid in SK.SKILLS:
+                PZ.on_spell(self, SK.SKILLS[sid].line)          # a rod in sight hums, a web burns (puzzles.py)
+        return spent
 
     def fire(self):
         """The fire key: a shot with a bow, crossbow or sling, a throwing knife, a spear thrown, a reach weapon's

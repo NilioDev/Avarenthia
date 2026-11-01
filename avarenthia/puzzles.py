@@ -96,19 +96,28 @@ def a_block(game, x, y, rid, st):
         return 0
     to = (x + dx, y + dy)
     t = m.tile(*to)
-    if not m.inb(*to) or game.occupied(m, *to) or t not in (D.FLOOR, D.PLATE, D.PLATEDOWN, D.PORTAL, D.SPIKEHOLES,
-                                                              D.REDDOWN, D.BLUEDOWN, D.SLICK):
+    if not m.inb(*to) or game.occupied(m, *to) or t not in ROLL_ON + DROP_IN:
         game.msg('The block will not budge; something is in the way.')
         return 0
-    move_block(game, (x, y), to, rid)
+    name = m.things[(x, y)][0]
+    move_block(game, (x, y), to, rid, m.tile(x, y), name)
     p.x, p.y = x, y
-    game.msg('You put your shoulder to the block. It grinds a step on.')
+    if t in DROP_IN:
+        return 1
+    game.msg('You put your shoulder to the barrel. It rolls a step on.' if name == 'oil' else
+             'You put your shoulder to the block. It grinds a step on.')
     return 1
 
 
-def move_block(game, a, b, rid):
-    """A block from a to b: the tile under it comes back at a, and a plate, portal or ice at b does its part."""
-    m = game.map
+ROLL_ON = (D.FLOOR, D.PLATE, D.PLATEDOWN, D.PORTAL, D.SPIKEHOLES, D.REDDOWN, D.BLUEDOWN, D.SLICK)
+DROP_IN = (D.CHASM, D.WATER, D.HOLE)           # a block fills a chasm or deep water; through a hole it falls below
+MOVERS = {D.SBLOCK: 'block', D.OILBARREL: 'oil', D.MIMIC: 'mimic', D.STALKER: 'stalker'}
+
+
+def move_block(game, a, b, rid, tile=D.SBLOCK, name='block', m=None):
+    """A block (or a barrel, or a statue) from a to b: the tile under it comes back at a, and a plate, portal or ice at
+    b does its part. A block pushed into a chasm or deep water fills it; into a hole, it falls to the floor below."""
+    m = m or game.map
     under = m.__dict__.setdefault('under', {})
     held = m.__dict__.setdefault('under_thing', {})        # the plate (or other thing) a block stands on
     on = m.__dict__.setdefault('blocks_on', {})
@@ -123,6 +132,15 @@ def move_block(game, a, b, rid):
     else:
         m.set(a[0], a[1], back)
     t = m.tile(*b)
+    if t in (D.CHASM, D.WATER) and name in ('block', 'oil'):
+        m.set(b[0], b[1], D.FLOOR)
+        game.msg('The block topples in with a great splash. Its top stands level with the floor.' if t == D.WATER else
+                 'The block topples into the chasm and jams there. You could walk on it.')
+        return
+    if t == D.HOLE:
+        game.msg('The block drops through the hole. Far below, stone strikes stone.')
+        fall_below(game, m, b, tile, name)
+        return
     if t == D.PORTAL:                                 # through the portal with it
         other = _other_portal(m, b)
         if other and not game.occupied(m, *other) and other not in on:
@@ -138,8 +156,8 @@ def move_block(game, a, b, rid):
     on[b] = True
     if b in m.things:
         held[b] = m.things[b]
-    m.set(b[0], b[1], D.SBLOCK)
-    m.things[b] = ('block', rid)
+    m.set(b[0], b[1], tile)
+    m.things[b] = (name, rid)
     if t == D.PLATE:                                  # a plate goes down under the block
         _fire(game, 'press', held.get(b, ('', rid))[1], b)
 
@@ -241,9 +259,16 @@ def beam(game, m=None):
     made = m is not None
     m = m or game.map
     out = {}
+    night = None
     for c, (a, rid) in list(getattr(m, 'things', {}).items()):
-        if a != 'shaft':
+        if a not in ('shaft', 'moonshaft'):
             continue
+        if a == 'moonshaft':                          # the moon shines in only by night
+            if night is None:
+                from .towns import is_night
+                night = is_night(game)
+            if not night and not made:            # (a level being made is checked as if by night)
+                continue
         d = next(((dx, dy) for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0))
                   if D.TILES[m.tile(c[0] + dx, c[1] + dy)].walk), None)
         x, y = c
@@ -268,8 +293,9 @@ def beam(game, m=None):
                     m.__dict__.setdefault('_solved_shafts', []).append(c)
                 elif not st.get('sunlit'):
                     st['sunlit'] = True
-                    game.msg('The beam strikes the golden disc. It blazes, and the room answers.', 'good')
-                    _fire(game, 'sun', rid, (x, y))
+                    game.msg('The beam strikes the golden disc. It blazes, and the room answers.' if a == 'shaft' else
+                             'Moonlight strikes the disc. It shines white, and the room answers.', 'good')
+                    _fire(game, 'sun' if a == 'shaft' else 'moon', rid, (x, y))
                 break
             if not D.TILES[t].walk or not made and game.occupied(m, x, y) and (x, y) != (game.player.x, game.player.y):
                 break
@@ -683,6 +709,567 @@ def a_shaft(game, x, y, rid, st):
     return 0
 
 
+# ================================================================== 27-44: more puzzle things (the editor's round C)
+# ------------------------------------------------------------------ 27: mirror statues
+def mimics(game):
+    """Mirror statues copy the step you just took in their room: 'mimic' the same way, 'mimicx' mirrored left to
+    right. Plates go down under them as under a block."""
+    m, p = game.map, game.player
+    prev = getattr(m, '_ppos', None)
+    if not prev or prev == (p.x, p.y):
+        return
+    d = (p.x - prev[0], p.y - prev[1])
+    if max(abs(d[0]), abs(d[1])) != 1:
+        return
+    here = _rid(m, (p.x, p.y))
+    if here is None:
+        return
+    movers = [(c, a, rid) for c, (a, rid) in list(m.things.items()) if a in ('mimic', 'mimicx') and rid == here]
+    for c, a, rid in movers:
+        dd = d if a == 'mimic' else (-d[0], d[1])
+        to = (c[0] + dd[0], c[1] + dd[1])
+        if to in _room_cells(m, rid) and m.tile(*to) in ROLL_ON and not game.occupied(m, *to) and \
+                to != (p.x, p.y) and m.things.get(to, ('',))[0] not in MOVER_NAMES:
+            move_block(game, c, to, rid, D.MIMIC, a)
+
+
+MOVER_NAMES = ('block', 'oil', 'mimic', 'mimicx', 'stalker')
+
+
+@act('mimic')
+def a_mimic(game, x, y, rid, st):
+    game.msg('A statue of a traveller, like you. It stands as you stand, one step behind.')
+    return 0
+
+
+ACTS['mimicx'] = a_mimic
+
+
+# ------------------------------------------------------------------ 28: the pale statue
+@act('stalker')
+def a_stalker(game, x, y, rid, st):
+    game.msg('A pale statue, its hands over its face. You are sure it stood further off a moment ago.')
+    return 0
+
+
+def stalkers(game):
+    """A pale statue comes a step nearer each turn you cannot see it, inside its own room."""
+    m, p = game.map, game.player
+    for c, (a, rid) in list(m.things.items()):
+        if a != 'stalker' or game.visible(*c):
+            continue
+        if _rid(m, (p.x, p.y)) != rid:
+            continue
+        cells = _room_cells(m, rid)
+        best = None
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            to = (c[0] + dx, c[1] + dy)
+            if to in cells and m.tile(*to) in ROLL_ON and not game.occupied(m, *to) and to != (p.x, p.y) \
+                    and m.things.get(to, ('',))[0] not in MOVER_NAMES:
+                dist = abs(to[0] - p.x) + abs(to[1] - p.y)
+                if best is None or dist < best[0]:
+                    best = (dist, to)
+        if best and best[0] < abs(c[0] - p.x) + abs(c[1] - p.y):
+            move_block(game, c, best[1], rid, D.STALKER, 'stalker')
+
+
+# ------------------------------------------------------------------ 29: the raft
+@act('raft')
+def a_raft(game, x, y, rid, st):
+    """Step onto the raft and the current takes it the way you stepped, until it runs aground."""
+    m, p = game.map, game.player
+    prev = getattr(m, '_ppos', None)
+    if not prev or prev == (x, y):
+        return 0
+    d = (x - prev[0], y - prev[1])
+    if abs(d[0]) + abs(d[1]) != 1:
+        return 0
+    c, went = (x, y), 0
+    while went < 60:
+        n = (c[0] + d[0], c[1] + d[1])
+        if m.tile(*n) != D.WATER or game.occupied(m, *n):
+            break
+        m.set(c[0], c[1], D.WATER)
+        m.things.pop(c, None)
+        m.set(n[0], n[1], D.RAFT)
+        m.things[n] = ('raft', rid)
+        c = n
+        went += 1
+    if went:
+        p.x, p.y = c
+        m._ppos = c
+        game.msg('The current takes the raft and carries you across.')
+        game.compute_fov()
+    return 0
+
+
+# ------------------------------------------------------------------ 30: wind in a passage
+def winds(game):
+    """Each vent blows along its line: the first one in the way is pushed a step on, unless a block shields it."""
+    m, p = game.map, game.player
+    for c, (a, rid) in list(m.things.items()):
+        if a != 'vent':
+            continue
+        d = next(((dx, dy) for dx, dy in ((0, 1), (1, 0), (0, -1), (-1, 0))
+                  if D.TILES[m.tile(c[0] + dx, c[1] + dy)].walk), None)
+        if not d:
+            continue
+        x, y = c
+        for _ in range(20):
+            x, y = x + d[0], y + d[1]
+            if not D.TILES[m.tile(x, y)].walk:
+                break
+            o = next((o for o in m.mons if (o.x, o.y) == (x, y)), None)
+            if (x, y) == (p.x, p.y) or o:
+                n = (x + d[0], y + d[1])
+                if D.TILES[m.tile(*n)].walk and not game.occupied(m, *n) and n != (p.x, p.y):
+                    if o:
+                        o.x, o.y = n
+                    else:
+                        p.x, p.y = n
+                        m._ppos = n
+                        if not getattr(m, '_wind_said', False):
+                            m._wind_said = True
+                            game.msg('A gale out of the wall pushes you back.', 'bad')
+                break
+
+
+@act('vent')
+def a_vent(game, x, y, rid, st):
+    game.msg('Cold wind roars out of a vent in the wall. A block in its way would break it.')
+    return 0
+
+
+# ------------------------------------------------------------------ 31: shifting walls
+SHIFT_EVERY = 4
+
+
+def shifts(game):
+    m = game.map
+    if game.turn % SHIFT_EVERY:
+        return
+    moved = False
+    for c, (a, rid) in list(m.things.items()):
+        if a != 'shift':
+            continue
+        t = m.tile(*c)
+        if t == D.SHIFTWALL:
+            m.set(c[0], c[1], D.SHIFTGAP)
+            moved = True
+        elif t == D.SHIFTGAP and not game.occupied(m, *c) and (game.player.x, game.player.y) != c:
+            m.set(c[0], c[1], D.SHIFTWALL)
+            moved = True
+    if moved and any(game.visible(*c) for c, (a, _r) in m.things.items() if a == 'shift'):
+        game.msg('Stone grinds on stone: the walls shift.')
+
+
+@act('shift')
+def a_shift(game, x, y, rid, st):
+    game.msg('The wall stands in a groove in the floor. It moves on a rhythm, like the spikes.')
+    return 0
+
+
+# ------------------------------------------------------------------ 32-33: blocks into chasms and holes
+def below_key(game, m):
+    """The map key of the floor under this one, or None."""
+    dg = game.world.dungeons.get(getattr(m, 'did', None)) if getattr(m, 'did', None) is not None else None
+    if getattr(m, 'site', None) is not None and m.kind != 'dungeon':
+        b = getattr(game.world.sites[m.site], 'below', None)
+        return f'{b}:1' if b else None
+    if dg is None:
+        return None
+    if getattr(dg, 'rise', False):
+        if m.depth == 1:
+            return game.world.sites[dg.site].map_key if getattr(dg, 'site', None) is not None else None
+        return f'{dg.id}:{m.depth - 1}'
+    return f'{dg.id}:{m.depth + 1}' if m.depth < dg.depth else None
+
+
+def fall_below(game, m, c, tile, name):
+    """A block through a hole lands on the floor below, on the same spot, and presses a plate there."""
+    key = below_key(game, m)
+    if key is None:
+        return
+    falls = game.__dict__.setdefault('falls', {})
+    falls.setdefault(key, []).append((c, tile, name))
+    if key in game.maps:
+        land_falls(game, game.maps[key], key)
+
+
+def land_falls(game, m, key):
+    for c, tile, name in game.__dict__.get('falls', {}).pop(key, []):
+        spot = c if m.inb(*c) and m.tile(*c) in ROLL_ON and not game.occupied(m, *c) else None
+        if spot is None:
+            continue
+        rid = _rid(m, spot)
+        t = m.tile(*spot)
+        m.__dict__.setdefault('under', {})[spot] = D.PLATE if t == D.PLATEDOWN else t
+        m.__dict__.setdefault('blocks_on', {})[spot] = True
+        things = m.__dict__.setdefault('things', {})
+        if spot in things:
+            m.__dict__.setdefault('under_thing', {})[spot] = things[spot]
+        m.set(spot[0], spot[1], tile)
+        things[spot] = (name, rid)
+        if t == D.PLATE:
+            m.__dict__.setdefault('pending', []).append(('press', rid, spot))
+
+
+@act('hole')
+def a_hole(game, x, y, rid, st):
+    game.msg('A square hole in the floor. Far below, the dark. Something heavy would go through it.')
+    return 0
+
+
+# ------------------------------------------------------------------ 34: the oil barrel
+@act('oil')
+def a_oil(game, x, y, rid, st):
+    p = game.player
+    if any(b[0] == 'brand' for b in p.buffs):
+        p.buffs = [b for b in p.buffs if b[0] != 'brand']
+        fuse(game, (x, y))
+        return 1
+    return a_block(game, x, y, rid, st)
+
+
+def fuse(game, c):
+    m = game.map
+    if c in m.__dict__.setdefault('fuses', {}):
+        return
+    m.fuses[c] = 2
+    game.msg('The oil catches. Get away from the barrel!', 'bad')
+
+
+def blow(game, c):
+    """The barrel bursts: fire round it, a blow to all beside it, and cracked walls fall in."""
+    from . import spellmap as SM
+    m, p = game.map, game.player
+    lvl = getattr(m, 'level', 1)
+    m.set(c[0], c[1], m.__dict__.get('under', {}).pop(c, D.FLOOR))
+    m.things.pop(c, None)
+    m.__dict__.get('blocks_on', {}).pop(c, None)
+    game.msg('The barrel bursts in a ball of fire!', 'bad')
+    game.shake()
+    near = [(c[0] + dx, c[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+    for n in near:
+        if m.tile(*n) == D.CRACKWALL:
+            rid = _rid(m, n) if _rid(m, n) is not None else _ring_room(m, n)
+            m.set(n[0], n[1], D.FLOOR)
+            m.things.pop(n, None)
+            game.msg('The cracked wall is blown in.', 'good')
+            _fire(game, 'break', rid, n)
+        elif m.tile(*n) == D.OILBARREL and n != c:
+            fuse(game, n)
+    for o in list(m.mons):
+        if (o.x, o.y) in near:
+            o.hp -= 10 + lvl * 2
+            if o.hp <= 0:
+                game.kill(o)
+    if (p.x, p.y) in near:
+        game.hurt(10 + lvl * 2, 'a bursting barrel', 'fire')
+    SM.area(game, m, [n for n in near if D.TILES[m.tile(*n)].walk], D.BURNING)
+
+
+def _ring_room(m, c):
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        r = _rid(m, (c[0] + dx, c[1] + dy))
+        if r is not None:
+            return r
+    return None
+
+
+# ------------------------------------------------------------------ 35: runes in order
+@act('rune')
+def a_rune(game, x, y, rid, st):
+    """Step on the runes in the order cut somewhere in the place. A wrong one bites, and the row goes dark."""
+    m = game.map
+    if (game.player.x, game.player.y) != (x, y):
+        game.msg('A rune is cut in the floor tile.')
+        return 0
+    mark = getattr(m, 'marks', {}).get((x, y))
+    wants = [ev['when'][6:] for ev in getattr(m, 'events', ()) if ev['room'] == rid and ev['when'].startswith('order:')]
+    if not mark or not wants:
+        return 0
+    seq = st.setdefault('runes', '') + mark
+    done = next((w for w in wants if seq.endswith(w)), None)
+    if done:
+        st['runes'] = ''
+        m.set(x, y, D.RUNELIT)
+        game.msg('The last rune flares, and the whole row shines.', 'good')
+        _fire(game, f'order:{done}', rid)
+    elif any(w.startswith(seq) for w in wants):
+        st['runes'] = seq
+        m.set(x, y, D.RUNELIT)
+        game.msg('The rune glows under your foot.')
+    else:
+        st['runes'] = ''
+        for c in _room_cells(m, rid):
+            if m.tile(*c) == D.RUNELIT:
+                m.set(c[0], c[1], D.RUNE_T)
+        game.hurt(3, 'a wrong rune')
+        game.msg('A cold spark bites your foot, and the runes go dark.', 'bad')
+    return 0
+
+
+# ------------------------------------------------------------------ 36: the light floor
+@act('lights')
+def a_lights(game, x, y, rid, st):
+    """Each tile you step on turns, and its four neighbours with it. All lit, and the room answers."""
+    m = game.map
+    if (game.player.x, game.player.y) != (x, y):
+        return 0
+    for c in ((x, y), (x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+        t = m.tile(*c)
+        if t in (D.LIGHTOFF, D.LIGHTON) and m.things.get(c, ('',))[0] == 'lights':
+            m.set(c[0], c[1], D.LIGHTON if t == D.LIGHTOFF else D.LIGHTOFF)
+    tiles = [c for c, (a, r) in m.things.items() if a == 'lights' and r == rid]
+    if tiles and all(m.tile(*c) == D.LIGHTON for c in tiles) and not st.get('alllit'):
+        st['alllit'] = True
+        game.msg('Every tile of the floor shines. Somewhere a bolt slides back.', 'good')
+        _fire(game, 'solved', rid)
+    return 0
+
+
+# ------------------------------------------------------------------ 37: the scale
+def weight(it):
+    """How heavy a thing is on the scale."""
+    if it.k == 'gear':
+        return {'weapon': 3, 'body': 5, 'shield': 4, 'head': 2}.get(getattr(it, 'slot', ''), 1)
+    return {'tome': 2, 'oldbook': 2, 'trophy': 2}.get(it.k, 1)
+
+
+@act('scale')
+def a_scale(game, x, y, rid, st):
+    p = game.player
+    if 'counter' not in st:
+        st['counter'] = random.randint(4, 7)
+    pan = st.setdefault('pan', [])
+    on = sum(weight(i) for i in pan)
+    text = (f'A great scale. On one pan lies a bronze weight with {st["counter"]} notches cut in it. On the other '
+            + (f'lie {len(pan)} things of yours, weighing {on} notches.' if pan else 'lies nothing.'))
+    opts = [(f'Put on {i.display_name()} ({weight(i)})', f'put:{i.id}') for i in p.inv
+            if i.k not in ('gold', 'quest') and not game.is_equipped(i)][:10]
+    if pan:
+        opts.append(('Take your things back', 'back'))
+    opts.append(('Walk on', 'bye'))
+    EV.ask(game, 'pz_scale', 'The scale', text, opts, rid=rid, x=x, y=y)
+    return 0
+
+
+def r_scale(game, choice, ctx):
+    m, p = game.map, game.player
+    st = _state(m, ctx['rid'])
+    pan = st.setdefault('pan', [])
+    if choice == 'back':
+        p.inv.extend(pan)
+        pan.clear()
+        game.msg('You take your things off the pan.')
+        return
+    if not str(choice).startswith('put:'):
+        return
+    it = next((i for i in p.inv if f'put:{i.id}' == choice), None)
+    if it is None:
+        return
+    p.inv.remove(it)
+    pan.append(it)
+    on = sum(weight(i) for i in pan)
+    if on == st['counter'] and not st.get('balanced'):
+        st['balanced'] = True
+        game.msg('The pans swing, and come to rest level. A latch clicks.', 'good')
+        _fire(game, 'solved', ctx['rid'])
+    elif on > st['counter']:
+        game.msg('Your pan sinks to the floor. Too much.')
+    else:
+        game.msg('Your pan dips, but the bronze weight is heavier still.')
+
+
+EV.RESOLVERS['pz_scale'] = r_scale
+
+
+# ------------------------------------------------------------------ 38: spells as a key (always with another way)
+@act('rod')
+def a_rod(game, x, y, rid, st):
+    game.msg('An iron rod stands out of the floor, wired into the wall. It hums when a storm is near.'
+             if game.map.tile(x, y) == D.RODLIT else 'An iron rod stands out of the floor, wired into the wall.')
+    return 0
+
+
+@act('burnable')
+def a_burnable(game, x, y, rid, st):
+    game.msg('Old and dry. It would burn.')
+    return 0
+
+
+def on_spell(game, line):
+    """A spell of Storm or Fire was cast: rods in sight hum, and webs, roots, braziers and barrels in sight within
+    a few steps catch."""
+    m, p = game.map, game.player
+    if line not in ('storm', 'fire') or not getattr(m, 'things', None):
+        return
+    for c, (a, rid) in list(m.things.items()):
+        if max(abs(c[0] - p.x), abs(c[1] - p.y)) > 7 or not game.visible(*c):
+            continue
+        if line == 'storm' and a == 'rod' and m.tile(*c) == D.ROD:
+            m.set(c[0], c[1], D.RODLIT)
+            game.msg('Lightning leaps to the iron rod. It hums, and something in the wall answers.', 'good')
+            _fire(game, 'charged', rid, c)
+        elif line == 'fire' and a == 'burnable':
+            burn(game, c, rid)
+        elif line == 'fire' and a == 'brazier' and m.tile(*c) == D.BOWLOUT:
+            light(game, c, rid)
+        elif line == 'fire' and a == 'oil':
+            fuse(game, c)
+
+
+def burn(game, c, rid):
+    m = game.map
+    m.set(c[0], c[1], D.FLOOR)
+    m.things.pop(c, None)
+    game.msg('It burns away to ash.')
+    _fire(game, 'burnt', rid, c)
+
+
+# ------------------------------------------------------------------ 40: the lure
+@act('lure')
+def a_lure(game, x, y, rid, st):
+    """Strike it, and those who guard this place go to see what it was; then they settle again."""
+    m, p = game.map, game.player
+    n = 0
+    for o in m.mons:
+        if o.is_npc or max(abs(o.x - x), abs(o.y - y)) > 24:
+            continue
+        o.lured = [x, y, 14]
+        o.awake = True
+        n += 1
+    game.msg('The gong booms through the halls.' + (' Feet shuffle, coming to see.' if n else ''))
+    return 1
+
+
+def lured(game, mon):
+    """A creature that heard the lure walks to it, unless it sees you close by. Returns True when it did."""
+    lu = getattr(mon, 'lured', None)
+    if not lu:
+        return False
+    p = game.player
+    if game.visible(mon.x, mon.y) and max(abs(mon.x - p.x), abs(mon.y - p.y)) <= 2:
+        mon.lured = None
+        return False
+    lu[2] -= 1
+    m = game.map
+    if lu[2] <= 0 or max(abs(mon.x - lu[0]), abs(mon.y - lu[1])) <= 1:
+        mon.lured = None
+        mon.awake = False                        # it looks about, and settles there
+        return True
+    best = None
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            n = (mon.x + dx, mon.y + dy)
+            if (dx or dy) and D.TILES[m.tile(*n)].walk and not game.occupied(m, *n) and n != (p.x, p.y):
+                d = max(abs(n[0] - lu[0]), abs(n[1] - lu[1]))
+                if best is None or d < best[0]:
+                    best = (d, n)
+    if best:
+        mon.x, mon.y = best[1]
+    return True
+
+
+# ------------------------------------------------------------------ 41: the key a creature carries
+@act('guarded')
+def a_guarded(game, x, y, rid, st):
+    """A keyhole whose key one of the place's creatures carries."""
+    return a_keyhole(game, x, y, rid, st)
+
+
+def give_key(game, m, c, lvl):
+    """The keyhole's key goes to the strongest creature on the level away from the hole (it drops it when it falls)."""
+    from .entities import Item
+    key = Item(game.new_id(), 'vkey', 'k5', 1)
+    key.name, key.door = 'Worn Bronze Key', (m.key, ('hole', c[0], c[1]))
+    mons = [o for o in m.mons if not o.is_npc and max(abs(o.x - c[0]), abs(o.y - c[1])) > 8]
+    if not mons:
+        key.x, key.y = c[0], c[1]
+        hide_key(game, m, c, lvl)
+        return
+    o = max(mons, key=lambda o: (o.maxhp, o.lvl))
+    o.carries = key
+
+
+# ------------------------------------------------------------------ 42: three shards of a seal
+SHARDS = 3
+
+
+def seal_of(m):
+    return getattr(m, 'seal_id', None) or m.key
+
+
+@act('shard')
+def a_shard(game, x, y, rid, st):
+    from .entities import Item
+    m, p = game.map, game.player
+    it = Item(game.new_id(), 'trophy', 'shard')
+    it.name, it.worth, it.seal = 'Shard of a Seal', 1, seal_of(m)
+    p.inv.append(it)
+    _set(m, (x, y), D.PLINTH)
+    have = sum(1 for i in p.inv if i.t == 'shard' and getattr(i, 'seal', None) == it.seal)
+    game.msg(f'You lift a shard of violet stone from the plinth. It is warm. ({have} of {SHARDS})', 'good')
+    return 1
+
+
+@act('seal')
+def a_seal(game, x, y, rid, st):
+    m, p = game.map, game.player
+    mine = [i for i in p.inv if i.t == 'shard' and getattr(i, 'seal', None) == seal_of(m)]
+    if len(mine) < SHARDS:
+        game.msg(f'A door sealed with a disc of violet stone, broken in {SHARDS}. The shards are gone; '
+                 f'you carry {len(mine)} of them.')
+        return 0
+    for i in mine[:SHARDS]:
+        p.inv.remove(i)
+    _set(m, (x, y), D.FLOOR)
+    game.msg('You fit the shards into the seal. It flares, and the door is simply gone.', 'good')
+    _fire(game, 'unlock', rid, (x, y))
+    return 1
+
+
+# ------------------------------------------------------------------ 44: the moon shaft (and the tide in IFs)
+@act('moonshaft')
+def a_moonshaft(game, x, y, rid, st):
+    from .towns import is_night
+    game.msg('Moonlight falls in through a shaft in the stone.' if is_night(game) else
+             'A narrow shaft in the stone. By day only grey light comes down it.')
+    return 0
+
+
+# ------------------------------------------------------------------ the rest of each turn
+def tick_more(game):
+    m = game.map
+    if getattr(m, 'pending', None):
+        for when, rid, c in m.pending:
+            _fire(game, when, rid, c)
+        m.pending = []
+    things = m.things
+    acts = {a for a, _r in things.values()}
+    if 'stalker' in acts:
+        stalkers(game)
+    if 'vent' in acts:
+        winds(game)
+    if 'shift' in acts:
+        shifts(game)
+    for c, n in list(getattr(m, 'fuses', {}).items()):
+        if n <= 1:
+            del m.fuses[c]
+            blow(game, c)
+        else:
+            m.fuses[c] = n - 1
+    if acts & {'burnable', 'oil'}:
+        for c, (a, rid) in list(things.items()):
+            if a in ('burnable', 'oil') and any(m.tile(c[0] + dx, c[1] + dy) == D.BURNING
+                                                for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                if a == 'burnable':
+                    burn(game, c, rid)
+                else:
+                    fuse(game, c)
+
+
 # ------------------------------------------------------------------ the thens of the puzzles (themes._then)
 def then(game, verb, arg, rid):
     """Returns True when the verb was one of the puzzles'."""
@@ -711,6 +1298,7 @@ def tick(game):
     m, p = game.map, game.player
     things = getattr(m, 'things', {})
     st_of = {}
+    mimics(game)
     for c, (a, rid) in list(things.items()):
         t = m.tile(*c)
         if a == 'pressure':
@@ -755,8 +1343,9 @@ def tick(game):
         if not game.occupied(m, *c) and (p.x, p.y) != c:
             m.set(c[0], c[1], t)
             del m.to_rise[c]
-    if any(a == 'shaft' for a, _r in things.values()):
+    if any(a in ('shaft', 'moonshaft') for a, _r in things.values()):
         beam(game)
+    tick_more(game)
     m._ppos = (p.x, p.y)
 
 
@@ -769,7 +1358,10 @@ def setup(game, m, lvl):
     for c, (a, rid) in list(getattr(m, 'things', {}).items()):
         if a == 'keyhole':
             hide_key(game, m, c, lvl)
-        elif a == 'block':
+        elif a == 'guarded':
+            give_key(game, m, c, lvl)
+        elif a in ('block', 'oil', 'mimic', 'mimicx', 'stalker'):
+            m.__dict__.setdefault('things0', {})[c] = a
             m.__dict__.setdefault('blocks_on', {})[c] = True
             m.__dict__.setdefault('under', {})[c] = D.FLOOR
         elif a == 'crystal' and 'colour' not in _state(m, rid):
@@ -783,6 +1375,7 @@ def setup(game, m, lvl):
     beam(game, m)
     m.__dict__.pop('_solved_shafts', None)
     m.__dict__.pop('_first_mirror', None)
+    land_falls(game, m, m.key)                               # a block that fell through a hole before this was made
 
 
 def reset(game, rid, after=False):
@@ -804,9 +1397,9 @@ def reset(game, rid, after=False):
             del m.to_rise[c]
         return
     for c, t in getattr(m, 'laid', {}).items():
-        if c in inside and t == D.SBLOCK and m.tile(*c) == D.SBLOCK:
+        if c in inside and t in MOVERS and m.tile(*c) == t:
             on[c], under[c] = True, D.FLOOR
-            m.things[c] = ('block', rid)
+            m.things[c] = (m.__dict__.get('things0', {}).get(c, MOVERS[t]), rid)
     st = _state(m, rid)
     for k in ('sunlit', 'rung', 'struck', 'solved'):
         st.pop(k, None)

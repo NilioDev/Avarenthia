@@ -28,7 +28,14 @@ PUZZLE_THINGS = [('pressure', 'pressure plate'), ('block', 'stone block'), ('lev
                  ('keyhole', 'keyhole'), ('sluice', 'sluice gate'), (None, 'arrow slit'), ('riddle', 'riddle stone'),
                  ('sarcophagus', 'sarcophagus'), ('offering', 'offering bowl'), ('scrying', 'scrying pool'),
                  ('book', 'chained book'), ('eyes', 'idol with gem eyes'), ('rope', 'rope down'),
-                 ('ladder', 'ladder up')]
+                 ('ladder', 'ladder up'),
+                 ('mimic', 'mirror statue'), ('mimicx', 'mirror statue'), ('stalker', 'pale statue'),
+                 ('raft', 'raft'), ('vent', 'wind vent'), ('shift', 'shifting wall'),
+                 ('shift', 'shifting wall, drawn back'), ('hole', 'hole in the floor'), ('oil', 'oil barrel'),
+                 ('rune', 'rune tile'), ('lights', 'dark floor tile'), ('lights', 'lit floor tile'),
+                 ('scale', 'scale pan'), ('rod', 'iron rod'), ('burnable', 'web'), ('burnable', 'roots'),
+                 ('lure', 'gong'), ('guarded', 'keyhole'), ('shard', 'seal shard on a plinth'),
+                 ('seal', 'sealed door'), ('moonshaft', 'shaft of moonlight')]
 
 
 def tile_of(ch, things):

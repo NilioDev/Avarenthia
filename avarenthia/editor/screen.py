@@ -82,7 +82,8 @@ def palette(layer):
                           Item('sign', '<', label='stairs up'), Item('sign', '>', label='stairs down')]),
                 ('ROCK', [Item('sign', ' ', label='rock (rubber)')])] + ([('MY TILES', own)] if own else [])
     telling = [Item('thing', name=DOES[a], act=a, label=f'{a}') for a in sorted(DOES)]
-    puzzle = [Item('thing', name=t, act=a, label=t) for a, t in PUZZLE_THINGS]
+    puzzle = [Item('thing', name=t, act=a, label=f'{t} ({a})' if a and a not in t.split() else t)
+              for a, t in PUZZLE_THINGS]
     named = set(P.TILE_NAMES)
     seen = {D.TILES[v].name for v in P.LEGEND.values()} | {D.TILES[v].name for v in P.TILE_NAMES.values()}
     more = [Item('thing', name=k, label=D.TILES[v].name) for k, v in sorted(P.TILE_NAMES.items())

@@ -320,3 +320,322 @@ MAP
  .........
      +
 ENDMAP
+
+; ================================================================== more puzzle things (round C)
+NAME:   statue hall
+SHAPE:  a hall of two mirror statues
+DEPTH:  2
+WEIGHT: 3
+MOOD:   Two statues of travellers stand in this hall. As you step in, they step too: one with you, one against you.
+MOOD:   Mirror statues. Two plates wait in the floor, and the statues seem to know it.
+THING:  M = mirror statue do:mimic
+THING:  N = mirror statue do:mimicx
+THING:  P = pressure plate do:pressure
+THING:  Q = bars
+THING:  R = lever do:lever
+COUNTER: plates 0
+EVENT:  when=press at=P then=add:plates again=yes
+EVENT:  when=release at=P then=sub:plates again=yes
+EVENT:  when=count:plates:2 then=open:Q then=msg:"Both plates sink. The bars slide away into the floor."
+EVENT:  when=bump at=R then=reset then=msg:"The statues grind back to where they stood." again=yes
+MAP
+       c
+       Q
+ .............
+ .P.........P.
+ .............
+ ...M.....N...
+ .............
+ .............
+ R............
+       +
+ENDMAP
+
+NAME:   pale statue
+SHAPE:  a hall of pillars and a pale statue
+DEPTH:  3
+WEIGHT: 3
+MOOD:   A pale statue stands among the pillars, its hands over its face. You do not like turning your back on it.
+MOOD:   Pillars, a plate in the floor, and a statue that is not where it was.
+THING:  S = pale statue do:stalker
+THING:  P = pressure plate do:pressure
+THING:  Q = bars
+EVENT:  when=press at=P then=open:Q then=msg:"Something heavy settles on the plate. The bars lift."
+MAP
+       c
+       Q
+ .............
+ .S.#.....#...
+ .............
+ .....P.......
+ .............
+ ...#.....#...
+ .............
+       +
+ENDMAP
+
+NAME:   raft crossing
+SHAPE:  a cave with a stream and a raft
+DEPTH:  2
+WEIGHT: 3
+MOOD:   Dark water runs across the cave. A raft is tied up at your side; a chest stands on the far bank.
+THING:  W = raft do:raft
+MAP
+ ...c...
+ .......
+ ~~~~~~~
+ ~~~~~~~
+ ~~~~~~~
+ ~~~W~~~
+ .......
+    +
+ENDMAP
+
+NAME:   wind passage
+SHAPE:  a passage with a vent of wind
+DEPTH:  2
+WEIGHT: 3
+MOOD:   A gale roars down the passage out of a vent in the far wall. A block of stone stands in the way.
+THING:  V = wind vent do:vent
+THING:  B = stone block do:block
+THING:  R = lever do:lever
+EVENT:  when=bump at=R then=reset again=yes
+MAP
+    V
+    .
+    .c
+    .
+    .
+    .
+    B
+ R......
+ .......
+    +
+ENDMAP
+
+NAME:   shifting maze
+SHAPE:  a hall of walls that move
+DEPTH:  2
+WEIGHT: 3
+MOOD:   The walls in this hall stand in grooves. Every few heartbeats they grind a step.
+THING:  S = shifting wall do:shift
+THING:  G = shifting wall, drawn back do:shift
+MAP
+ ...c...
+ .......
+ SGSGSGS
+ .......
+ GSGSGSG
+ .......
+    +
+ENDMAP
+
+NAME:   block bridge
+SHAPE:  a hall split by a chasm
+DEPTH:  2
+WEIGHT: 3
+MOOD:   A chasm splits the hall. On the far side, a chest. On this side, blocks of stone, just the size of the gap.
+THING:  B = stone block do:block
+THING:  R = lever do:lever
+EVENT:  when=bump at=R then=reset again=yes
+MAP
+ ...c...
+ .......
+ vvvvvvv
+ vvvvvvv
+ .......
+ ..B.B..
+ .......
+ .......
+ R......
+    +
+ENDMAP
+
+NAME:   oil cellar
+SHAPE:  a cellar with an oil barrel and a cracked wall
+DEPTH:  2
+WEIGHT: 3
+MOOD:   An oil barrel stands in the cellar, and a brazier burns. One wall is cracked right through.
+THING:  O = oil barrel do:oil
+THING:  F = fire bowl do:brazier
+THING:  W = cracked wall do:cracked
+MAP
+    c
+    W
+ .......
+ .......
+ ...O...
+ .......
+ .....F.
+ .......
+    +
+ENDMAP
+
+NAME:   rune walk
+SHAPE:  a hall of runes in the floor
+DEPTH:  2
+WEIGHT: 3
+MOOD:   Four runes are cut in the floor, one behind the other. Over the arch is cut: the third from the door, then the first, then the farthest, then the second.
+THING:  A = rune tile do:rune
+THING:  B = rune tile do:rune
+THING:  C = rune tile do:rune
+THING:  D = rune tile do:rune
+THING:  Q = bars
+EVENT:  when=order:CADB then=open:Q then=msg:"The four runes blaze together. The bars sink away."
+MAP
+   c
+   Q
+ .....
+ ..D..
+ .....
+ ..C..
+ .....
+ ..B..
+ .....
+ ..A..
+ .....
+   +
+ENDMAP
+
+NAME:   light floor
+SHAPE:  a hall with a floor of tiles
+DEPTH:  1
+WEIGHT: 3
+MOOD:   A square of dark tiles in the floor. Where you step, they change, and their neighbours with them.
+THING:  L = dark floor tile do:lights
+THING:  Q = bars
+THING:  R = lever do:lever
+EVENT:  when=solved then=open:Q
+EVENT:  when=bump at=R then=reset again=yes
+MAP
+    c
+    Q
+ .......
+ ..LLL..
+ ..LLL..
+ ..LLL..
+ .......
+ R......
+    +
+ENDMAP
+
+NAME:   scale room
+SHAPE:  a room with a great scale
+DEPTH:  1
+WEIGHT: 3
+MOOD:   A great scale of bronze stands in the middle of the room. A bronze weight lies on one pan.
+THING:  S = scale pan do:scale
+THING:  Q = bars
+EVENT:  when=solved then=open:Q
+MAP
+    c
+    Q
+ .......
+ .......
+ ...S...
+ .......
+    +
+ENDMAP
+
+NAME:   storm rod
+SHAPE:  a room with an iron rod and a nook
+DEPTH:  2
+WEIGHT: 3
+MOOD:   An iron rod stands out of the floor, wired into the wall by the bars. Down a narrow way choked with old webs, a lever.
+THING:  T = iron rod do:rod
+THING:  Q = bars
+THING:  L = lever do:lever
+THING:  X = web do:burnable
+EVENT:  when=charged at=T then=open:Q
+EVENT:  when=bump at=L then=open:Q
+MAP
+    c
+    Q
+ .......
+ ...T...
++.......
+ .......
+ .####X#
+      L
+ENDMAP
+
+NAME:   twin plates
+SHAPE:  a hall with two plates far apart
+DEPTH:  1
+WEIGHT: 3
+MOOD:   Two plates lie far apart in the floor. One pair of feet will not do; you need two, or a heavy friend.
+THING:  P = pressure plate do:pressure
+THING:  Q = bars
+COUNTER: plates 0
+EVENT:  when=press at=P then=add:plates again=yes
+EVENT:  when=release at=P then=sub:plates again=yes
+EVENT:  when=count:plates:2 then=open:Q
+MAP
+        c
+        Q
+ ...............
+ .P...........P.
+ ...............
+        +
+ENDMAP
+
+NAME:   guard hall
+SHAPE:  a hall with guards, a gong and a keyhole
+DEPTH:  2
+WEIGHT: 3
+MOOD:   Guards doze in this hall. A gong hangs in a side nook; a keyhole is set beside a barred alcove.
+THING:  G = gong do:lure
+THING:  K = keyhole do:guarded
+THING:  Q = bars
+EVENT:  when=unlock at=K then=open:Q
+CREATURE: ? at 3,4
+CREATURE: ? at 9,4
+MAP
+       c
+  K    Q
+ ...........
+ ...........
+ ...........
+ ...........
+ G..........
+       +
+ENDMAP
+
+NAME:   timed gate
+SHAPE:  a long hall with a plate and a far gate
+DEPTH:  2
+WEIGHT: 3
+MOOD:   A plate in the floor at one end, a barred alcove far off at the other. Whatever opens it will not wait long.
+THING:  P = pressure plate do:pressure
+THING:  Q = bars
+EVENT:  when=press at=P then=open:Q then=after:14:shut:Q again=yes
+MAP
+ c
+ Q
+ ..............
+ ..............
+ ............P.
+ ..............
+       +
+ENDMAP
+
+NAME:   moon chapel
+SHAPE:  a chapel with a shaft to the sky
+DEPTH:  2
+WEIGHT: 3
+MOOD:   A narrow shaft runs up through the stone to the sky. A silver mirror stands below it, and a disc waits.
+MOOD:   An old chapel of the moon. By day it is only grey.
+THING:  S = shaft of moonlight do:moonshaft
+THING:  M = mirror on a swivel do:swivel
+THING:  D = sun disc do:sundisc
+THING:  Q = bars
+EVENT:  when=moon at=D then=open:Q then=msg:"The disc shines white. The bars slide away."
+MAP
+   S    c
+ .......Q.
+ .........
+ ..M....D.
+ .........
+ .........
+     +
+ENDMAP

@@ -388,6 +388,9 @@ def _holds(game, c, rid=None):
     if c.startswith('count:') and rid is not None:             # count:plates:3 (at least)
         _v, name, n = (c.split(':', 2) + ['0'])[:3]
         return state(game.map, rid).get('ct', {}).get(name, 0) >= int(n or 0)
+    if c in ('ebb', 'flood'):                                  # the tide at the sea (nature.py)
+        from .nature import low_tide
+        return low_tide(game) == (c == 'ebb')
     if c == 'night':
         return TW.is_night(game)
     if c == 'day':

@@ -62,7 +62,15 @@ and the puzzle things' (puzzles.py; pieces/puzzles.des has an example room of ea
     portal (two portal stones in a room)   idol (golden idol on a plinth)   keyhole (its key lies on the level)
     sluice (sluice gate)   riddle (riddle stone)   sarcophagus   offering (offering bowl)   scrying (scrying pool)
     book (chained book)   eyes (idol with gem eyes)   rope (rope down)   ladder (ladder up)
+    mimic / mimicx (a mirror statue: it takes your steps, mimicx mirrored)   stalker (a pale statue: it comes
+    nearer while you cannot see it)   raft (on deep water)   vent (a wind vent in the wall)   shift (a shifting wall,
+    or one drawn back)   hole (a hole in the floor: a block falls through, onto a plate below)   oil (an oil barrel:
+    pushed like a block, lit with a brand or fire)   rune (rune tiles stepped on in an order)   lights (dark or lit
+    floor tiles: a light floor)   scale (a scale pan)   rod (an iron rod: Storm makes it hum)   burnable (a web or
+    roots: fire burns it away)   lure (a gong that draws the guards to it)   guarded (a keyhole whose key a
+    creature carries)   shard / seal (three shards of a seal open a sealed door)   moonshaft (a shaft of moonlight)
 Things without a do: that the events work: red block, sunk red block, blue block, sunk blue block, arrow slit.
+A spell is never the only key: give a room with a rod or webs a lever or another way too.
 
 Events
 ------
@@ -79,7 +87,10 @@ Puzzle events
 -------------
     when=   press / release (a pressure plate at=, under anything that stands on it)   lit (a brazier)
             sun (the sunbeam reaches a disc)   hit (a crystal)   break (a cracked wall)   solved (a riddle stone)
-            unlock (a keyhole)   order:CAB (the bells marked C, A and B struck in that order)
+            unlock (a keyhole or a seal)   order:CAB (the bells or runes marked C, A and B in that order)
+            moon (moonlight reaches a disc)   charged (Storm on an iron rod)   burnt (fire on a web or roots)
+            solved also comes when a scale is level or a light floor is all lit
+    if=     ebb, flood (the tide at the sea)
     then=   arrows:<mark> (the slits there shoot along their line)   raise:red / raise:blue (that colour of blocks
             stands up, the other sinks)   water:down / water:up (the room's water)   become:<mark>:<tile name>
     A room with blocks needs a lever that sets it back: EVENT: when=bump at=R then=reset again=yes

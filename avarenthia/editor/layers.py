@@ -28,7 +28,9 @@ WHEN_SAYS = {'enter': 'you step in, the first time', 'step': 'you step on the ma
              'take': 'you take a find', 'clear': 'the last foe falls', 'night': 'night falls',
              'press': 'a plate goes down', 'release': 'a plate comes up', 'lit': 'a brazier catches fire',
              'sun': 'the sunbeam reaches a sun disc', 'hit': 'a crystal is struck', 'break': 'a cracked wall falls',
-             'solved': 'a riddle stone is answered', 'unlock': 'the key turns in a keyhole'}
+             'solved': 'a riddle, a scale or a light floor is solved', 'unlock': 'a keyhole or a seal opens',
+             'moon': 'moonlight reaches a disc', 'charged': 'lightning strikes an iron rod',
+             'burnt': 'a web or roots burn away'}
 SPAWNS = ('pack', 'undead', 'beasts', 'fire', 'vermin')
 OPENS = {D.BARS, D.RUBBLE, D.DOOR, D.VAULTDOOR, D.SECRET}
 
@@ -435,11 +437,11 @@ class LayerTools:
                 opts += [(f'switch:{n}:{s}: the switch {n} comes to {s}', f'switch:{n}:{s}') for s in states]
             for n in r.counters:
                 opts += [(f'count:{n}:{k}: the counter {n} comes to {k}', f'count:{n}:{k}') for k in range(1, 7)]
-            opts.append(('order: bells struck in an order (type their marks)', 'order:'))
+            opts.append(('order: bells struck or runes stepped on in an order (type their marks)', 'order:'))
 
             def when(v):
                 if v == 'order:':
-                    return self.ask_line('The marks of the bells, in order', 'CAB', lambda s: self._set_ev(
+                    return self.ask_line('The marks of the bells or runes, in order', 'CAB', lambda s: self._set_ev(
                         i, 'when', 'order:' + ''.join(ch for ch in s.upper() if ch.isalpha())))
                 self._set_ev(i, 'when', v)
             self.ask_pick('WHEN', opts, when)
@@ -451,7 +453,8 @@ class LayerTools:
                 r.change()
                 e['if'].pop(j)
                 return
-            opts = [('night', 'night'), ('day', 'day')] + [(f'chance:{n} (in a hundred)', f'chance:{n}')
+            opts = [('night', 'night'), ('day', 'day'), ('ebb (the tide is out)', 'ebb'),
+                    ('flood (the tide is in)', 'flood')] + [(f'chance:{n} (in a hundred)', f'chance:{n}')
                                                            for n in (10, 25, 50, 75)]
             for n, states in r.switches.items():
                 opts += [(f'switch:{n}:{s}', f'switch:{n}:{s}') for s in states]
