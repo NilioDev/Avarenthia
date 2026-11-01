@@ -444,3 +444,13 @@ three things. Test part `boss_moves`.
   out of sight, empty the belt.
 - **The tally** - from the menu at any time, after the win, at death; every number counting. Debug: a "Fill the
   tally" button with plausible numbers, and the win/death screens to open.
+
+
+## More makers (approved 1 November 2026)
+
+- **Each new maker** - every kind can be reached and seen whole. Debug: Teleport (each new kind in the list), Reveal
+  map, a "make again" key to roll the same kind with a new seed.
+- **States and break-ins** - one place in each state (lived in, fallen, held, overgrown) and a level that breaks into
+  another kind. Debug: choose the state when teleporting; Teleport to a level with a break-in.
+- **Time and season places** - the tide cave at high and low tide, the drowned village in a dry summer, the fey
+  hill's lost week. Debug: set the hour and the season (Time), Teleport.

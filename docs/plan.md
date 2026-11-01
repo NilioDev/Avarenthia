@@ -16,6 +16,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
 | **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Not in the build order yet |
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
+| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus states (living, fallen, held, overgrown) and levels breaking into other kinds. Not in the build order yet |
 | **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -166,6 +167,40 @@ Thread "Hoofdscherm en drankjesbelt herzien". Dutch proposal and mockups (real t
    and the death screens. The counters live on the player (`p.tally`, one dict; `g.kills` moves there too);
    SAVE_VERSION goes up.
 Handbook: potions and their grades, the belt and its keys, the pack's three turns, the tally (proposal in the Dutch file).
+
+---
+
+## More makers (approved 1 November 2026, not built)
+
+Thread "Overzicht van alle generatoren". Dutch list: project files `generatoren/voorstel.md`. Each maker is its own
+plan (like `delves.py`): you can tell from the map what the place is; what matters is a tile you see and bump.
+1. **A fallen dwarf hold**: the hold maker (`deephold.py`) in ruin, three layers (the city, the workshops, the mines),
+   the chasm bridge fallen, the forges cold; the cause comes from the history (a thing from the deep, goblins moved
+   in, a plague, a flood) and the chronicle tells it.
+2. **Real mines**: shafts and galleries that follow ore veins, cart rails, lifts, pit props, cave-ins and flooded deep
+   levels; for human, kobold and abandoned mines. The Lost Mine becomes one.
+3. **Sewers under cities**, following the streets above: channels with ledges, grates up to the street, a thieves' den.
+4. **Catacombs or an ossuary** under city temples: a grid of niche passages, a bone chapel.
+5. **A castle dungeon**: cells, a guard room, a torture room; prisoners to free.
+6. **A maze** with a folklore dweller (the minotaur) at its heart.
+7. **Ice caves** in a glacier: slick ice you slide over, the frozen dead.
+8. **Lava tubes** under volcanoes: long round tunnels, crusts.
+9. **A tide or smugglers' cave** on the coast: at high tide the low part floods (the hour counts).
+10. **A fungal deep**: a wood of great mushrooms and spore clouds.
+11. **An abandoned halfling hill home or a burnt elven glade**, a small place on the land.
+12. **A drowned village** under a lake, reached only in a dry summer.
+13. **A bandit hideout** in a quarry or a ruined keep: people with watch rounds and an alarm bell (rung, it wakes all).
+14. **A fey hill**: a hall under the hill where time runs otherwise; outside a week has passed.
+15. **A giant's steading** in the mountains: everything too big, under tables, crawl under doors.
+16. **Wyrm bones**: the skeleton of an old dragon half in the ground, ribs for passages, the skull the last room.
+17. **A sinkhole shaft**: levels round one open pit; look down, jump, or go down on a rope.
+18. **Cellars under towns**: small cellars under houses and inns, for jobs.
+19. **A geode**: a crystal cave that breaks the light into colours, rare stones.
+20. **Termite mounds** on the savanna: climbed up from inside.
+21. **A graveyard of family vaults**: many small vaults on one map.
+Over all of them: **states** (a place lived in, fallen, held by another people or by monsters, or overgrown) and
+**break-ins** (a level that gives onto another kind: a mine into a Varnish deep, a sewer into the catacombs).
+To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
 
