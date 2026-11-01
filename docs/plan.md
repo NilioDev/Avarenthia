@@ -168,6 +168,12 @@ so before more systems: make playing and reporting cheap.
      can still buy one with the priestess's coin.
    - **The temple where you wake** has a shelf with one tome of the temple's own god's school, at a price you can
      pay after the den or a first job.
+   - **All eleven are known and reachable** (Nilio, 1 November 2026: three tomes leave classes you never hear of).
+     The three in the hoard are a quick start, never the whole choice: nothing makes you read them. In the temple
+     where you wake stands a lectern, "The Eleven Ways": bump it and read one short paragraph per class, what it does
+     and which guild keeps its tomes. And every combat guild's hall sells the first tome of its own school to someone
+     still blank, once, at a price the first jobs pay; halls stand in many towns of many peoples, so every class can
+     be reached by walking, whatever your name is with one people.
    The opening check (with the money check, `tests/money.py --opening`) plays the first days the way a new player
    does and prints on which day the first tome was read and the first level reached, over ten worlds.
 5. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth

@@ -479,3 +479,5 @@ three things. Test part `boss_moves`.
 - **The first tome** - Snagtooth's hoard with three tomes of three schools; a village shop's tome now and then; the
   shelf in the temple where you wake; `tests/money.py --opening` prints the day of the first tome. Debug: Teleport to
   the Hollow Den, spawn Snagtooth, give coin.
+- **The Eleven Ways** - the lectern in the start temple with all eleven classes; a guild hall selling its school's
+  first tome only while you are blank. Debug: Teleport to a guild hall, give coin.
