@@ -13,10 +13,10 @@ test maps keep the rules). Still not right to Nilio's eye:
 - Next time: say first what looks wrong in each picture, make that a rule in the checker, then fix.
 
 ## Smaller loose ends
-- **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
+- **Later, not planned:** leadership, a house of your own (`plan.md`, At a glance).
 - **Parked for later** (`docs/parked.md`): multiplayer, the bard, the werewolf's and the vampire's curse.
 
-Settled, no longer open: how to make `testing.md` easy to test (the test menu in `plan.md`, 2 November 2026), the build order (in `plan.md` since 23 October 2026), the northern lights' gift (in `plan.md` since 22 October 2026), the player as a ruler
+Settled, no longer open: the crafts guilds (in `plan.md` since 2 November 2026), how to make `testing.md` easy to test (the test menu in `plan.md`, 2 November 2026), the build order (in `plan.md` since 23 October 2026), the northern lights' gift (in `plan.md` since 22 October 2026), the player as a ruler
 (stays no; taken off this list 22 October 2026), the menu line that listed only 5 life skills (fixed 22 October
 2026), the visible weather border between regions (thread "Seizoenen in de wereld"; Nilio said it is not needed) and
 the class system (approved 19 October 2026, "we kunnen later nog sleutelen").

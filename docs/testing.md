@@ -502,3 +502,13 @@ three things. Test part `boss_moves`.
   after a new build. Debug: F12, [T].
 - **Note for Claude and ✗** - the zip beside the save with note.txt, screen.png and the save; loading that save
   stands where you stood. Debug: F12, [N]; a ✗ on any test.
+
+## Crafts guilds (approved 2 November 2026, not built)
+- **The four new guilds** - each guild's halls among three peoples; joining; a rank asking the craft's rank and the
+  entry fee. Debug: Teleport to a hall, set a life skill rank, give coin.
+- **Bench, test and mark** - the guild bench free for members and paid for others; the master's test in the hall; the
+  mark in an item's name and its better price. Debug: set guild rank, give materials (Give item).
+- **Board, secrets, day** - the master's board orders; each of the four secrets; the guild day's stalls and contest.
+  Debug: set guild rank to Master, Time (skip to the guild day).
+- **Streets and happenings** - the smiths', tanners' and weavers' streets in a city; the quarrel over the water, the
+  strong arm, the journeyman. Debug: Teleport to a city, "Town: make a happening".
