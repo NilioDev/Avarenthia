@@ -4,22 +4,6 @@ Questions and choices that wait for Nilio, gathered 19 October 2026 so nothing i
 name he can use ("open.md", "open: debug menu"). When a point is settled, write the decision into `plan.md`
 (or `built.md`) and delete it here.
 
-## Multiplayer (parked, not urgent)
-Parked on 22 October 2026: we come back to this later; nothing to decide now. Talked through on 22 October 2026 (thread "Multiplayer"). Nilio wants real online multiplayer: every player runs
-their own copy of the game (own screen, menus, handbook, settings), not a remote terminal window.
-- Shape: the host owns the world (monsters, jobs, shop stock, the clock are decided only there). A joining player
-  makes the same world from the seed, so the big map never goes over the line; after that the host sends only what
-  changes, and the player's game sends actions ("walk east", "buy sword"). No separate server; over the internet
-  through something like Tailscale. Not lockstep (every copy reckoning everything itself): one difference in the
-  dice and the worlds drift apart.
-- Rules still to settle: the clock waits for every player; world-map travel, resting and sleeping together; shops
-  and choice windows must not freeze the others; death, sharing loot, jobs for two, the one save (kept by the host).
-- Cost: preparation (several players in one world, screens apart from the rules) 3 to 4 big rounds, the network 2
-  more. Bigger than the class build. Advice: after classes and life skills.
-- Rule from now on (in CLAUDE.md): what belongs to the player lives on the player.
-- Old code left as it is for now: about 30 things that belong to the player live on the game (where you are: `cur`, `over_pos`; the log, jobs,
-  bestiary, kills, death, the hireling, crimes, open choices, "already told" flags), used in some 500 places.
-
 ## City streets and bridges (parked, later)
 Parked on 23 October 2026: "nog steeds niet lekker, lossen we later op". What we have stays as it is (plan.md,
 "Cities that grew" and its City rules; mockups and the checker `steden/controle.py` in the project files; all 30
@@ -33,7 +17,7 @@ test maps keep the rules). Still not right to Nilio's eye:
 
 ## Smaller loose ends
 - **Later, not planned:** crafts guilds, leadership, a house of your own (`plan.md`, At a glance).
-- **Parked for later** (`docs/parked.md`): the bard, the werewolf's and the vampire's curse.
+- **Parked for later** (`docs/parked.md`): multiplayer, the bard, the werewolf's and the vampire's curse.
 
 Settled, no longer open: the build order (in `plan.md` since 23 October 2026), the northern lights' gift (in `plan.md` since 22 October 2026), the player as a ruler
 (stays no; taken off this list 22 October 2026), the menu line that listed only 5 life skills (fixed 22 October

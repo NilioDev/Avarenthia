@@ -84,7 +84,7 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
 - Bump `SAVE_VERSION` in engine.py whenever saved data changes shape.
 
 ## Multiplayer later (Nilio, 22 Oct 2026)
-Real multiplayer may come (see "Multiplayer" in `docs/open.md`). So: whatever belongs to the player (gear, money,
+Real multiplayer may come (see "Multiplayer" in `docs/parked.md`). So: whatever belongs to the player (gear, money,
 jobs, what they know, what they were told, where they are) lives on the player, never loose on the game or world.
 
 ## Tests and CI
