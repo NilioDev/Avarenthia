@@ -1,8 +1,8 @@
 # Testing: what each new thing needs
 
 What Nilio wants to be able to try in the test build ("Avarenthia (test)", F12 debug menu, see "Debug menu and a test
-build" in `plan.md`) for each new thing, so he does not have to play for weeks to reach it. Not built; how to make it easy
-is still to settle. When a round is built, its lines stay here as long as they are useful for testing.
+build" in `plan.md`) for each new thing, so he does not have to play for weeks to reach it. The Tests page in F12 (plan.md, "The test menu") will set
+each line up with one key. When a round is built, its lines stay here as long as they are useful for testing.
 Each line: **what** - what to check - what the debug menu should offer.
 
 ## Classes (built 23 October 2026)
@@ -495,3 +495,10 @@ three things. Test part `boss_moves`.
   make a need with a chosen twist or seed; "Folk: next part now".
 - **Rewards and favours** - standing in town and with the people, each reward kind, each favour showing in its window
   (ferry, gate while wanted, lord, guide). Debug: give a favour (Give item), set wanted (crime).
+
+## The test menu (approved 2 November 2026, not built)
+
+- **Tests page** - every built line of this file shown, each set up by its key, ✓ and ✗ kept after a restart and
+  after a new build. Debug: F12, [T].
+- **Note for Claude and ✗** - the zip beside the save with note.txt, screen.png and the save; loading that save
+  stands where you stood. Debug: F12, [N]; a ✗ on any test.

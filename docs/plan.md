@@ -19,8 +19,9 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
 | **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Not in the build order yet |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | A note for Claude in the test build (one line of text, packed with the seed, the place, a screenshot and the save), saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Not in the build order yet |
-| **Parked** | The bard; the werewolf's and the vampire's curse (docs/parked.md) |
+| **Approved: playing it** | Saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Not in the build order yet |
+| **Approved: the test menu** | F12 in the test build gets a Tests page (every line of `docs/testing.md`, set up with one key, ticked off ✓ or ✗) and a Note for Claude; both write one feedback zip, which replaces the old bug-report folder. Not in the build order yet |
+| **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
 **The build order** (settled with Nilio 23 October 2026, thread "Bouwvolgorde plan.md"; the Dutch proposal with the
@@ -136,15 +137,31 @@ Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on reme
 
 ---
 
+## The test menu: tests, notes and reports (approved 2 November 2026, not built)
+
+Thread "Testen in de testbuild makkelijk maken". `docs/testing.md` has some 150 lines, and each one takes several
+loose steps in F12 today (teleport, give, set a rank, time on). One round (L), in the F12 menu that is built
+(test build and `--debug` only, not in the handbook); the rest of F12 stays as it is.
+- **Tests [T]**: a page with the lines of `testing.md`, grouped by round; lines of things not built yet are hidden.
+  One key on a line sets everything up with the debug actions we have (a city on a river, a tome and rank 20, the
+  feast's date...); a line at the top says what to check. A setup that needs a debug action that does not exist yet
+  gets that action in the same round. Each line's setup is a small recipe in data (`debug_tests.py`), keyed by the
+  line's name in `testing.md`; test part `debug_tests` fails when a line has no recipe or a recipe does not run.
+- **Ticking off**: ✓ it is right, ✗ it is wrong plus one line of text. What was ticked is kept (beside the save, not in
+  it) with the build's commit, so the page shows what is not yet tested, and what was tested in an older build.
+- **Note for Claude [N]**: type one line, Enter. The game writes one file `feedback-<day>-<turn>.zip` beside the
+  save, holding `note.txt` (the line, the build's commit, the seed, day and turn, the place's name and kind, where you
+  stand, level, class and money), `screen.png` (the screen as it was before the menu opened, at scale 1) and a copy
+  of the save. Nilio uploads the zip to the project; Claude can load the save and stand where he stood. The log says
+  where the file went. A ✗ on the Tests page writes the same zip, with the test's name and what to check in `note.txt`.
+- **One kind of report**: the zip replaces today's bug-report folder (its last 200 log lines and keys and the screen as
+  text go into the zip too).
+
 ## Playing it: notes, saves that last, the money check (approved 1 November 2026, not built)
 
 Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
 so before more systems: make playing and reporting cheap.
-1. **A note for Claude** (test build and `--debug` only, not in the handbook). In the F12 menu, "Note for Claude":
-   type one line, Enter. The game writes one file `feedback-<day>-<turn>.zip` beside the save, holding `note.txt`
-   (the line, the build's commit, the seed, day and turn, the place's name and kind, where you stand, level, class
-   and money), `screen.png` (the screen as it was before the menu opened, at scale 1) and a copy of the save. Nilio
-   uploads the zip to the project; Claude can load the save and stand where he stood. The log says where the file went.
+1. **A note for Claude**: now part of "The test menu: tests, notes and reports" below, and built with it.
 2. **Saves that last.** Today any new `SAVE_VERSION` throws the save away, so every fix build means a new game.
    From now on: loading fills every missing field of the player, the game, the world, maps, creatures and items with
    its default (new fields in `__init__` are found by comparing with a fresh object of the same class), then runs
