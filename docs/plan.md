@@ -14,13 +14,13 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
-| **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Not in the build order yet |
-| **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Not in the build order yet |
-| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Not in the build order yet |
-| **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Not in the build order yet |
-| **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Not in the build order yet |
-| **Approved: playing it** | Saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Not in the build order yet |
-| **Approved: the test menu** | F12 in the test build gets a Tests page (every line of `docs/testing.md`, set up with one key, ticked off ✓ or ✗) and a Note for Claude; both write one feedback zip, which replaces the old bug-report folder. Not in the build order yet |
+| **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Rounds 42 |
+| **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Rounds 43-44 |
+| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 48-50 |
+| **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Rounds 46-47 |
+| **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Rounds 45 |
+| **Approved: playing it** | Saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Rounds 38-41 |
+| **Approved: the test menu** | F12 in the test build gets a Tests page (every line of `docs/testing.md`, set up with one key, ticked off ✓ or ✗) and a Note for Claude; both write one feedback zip, which replaces the old bug-report folder. Rounds 37 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Crafts guilds, leadership, a house of your own |
 
@@ -81,7 +81,22 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     test part `puzzles`). 36. **Round C** (XL): whole places, puzzle things 27-44. Built 1 November 2026
     (`drawnplaces.py`, `places/saint-odo.des`, `editor/placemode.py`; test parts `puzzles`, `drawn_places`, `editor`).
     Merged after 36 (see `docs/built.md`).
-After that: Multiplayer (parked).
+37. **Block 10: playing and reporting made cheap** (settled 2 November 2026, thread "Testen in de testbuild makkelijk
+    maken"; the Dutch proposal: project files `bouw/volgorde-2.md`). 37. **The test menu** (L). 38. **Saves that last**
+    (M). 39. **The money check** (M). Merge after 39.
+40. **Block 11: the start of the game.** 40. **The first tome, a letter for the city, the baron's word** (L).
+    41. **What you met** (M). 42. **The belt and the tally** (L). Merge after 42.
+43. **Block 12: a finer look, not busier.** 43. **Items 1, 2, 5, 6, 7** (M). 44. **Item 3, then item 4** (M). Merge
+    after 44.
+45. **Block 13: creatures and folk.** 45. **Marked creatures** (L). 46. **Folk in need, part 1** (XL): the maker, needs
+    from the world, the grammar, rewards, who remembers you. 47. **Part 2** (L): twists, favours, the 120 seeds.
+    Merge after 47.
+48. **Block 14: more makers.** 48. **Part 1** (XL): the fallen dwarf hold, real mines, sewers, catacombs, the castle
+    dungeon, the maze, ice caves. 49. **Part 2** (XL): lava tubes, tide caves and the other makers. 50. **Part 3** (L):
+    the 14 states and levels breaking into other kinds. Merge after 50.
+51. **Block 15: loose ends.** 51. **Boss fights: what is left** (L). 52. **Dungeons: what is left** (M): the entrance
+    part of the fixed plans, each people flavouring a theme room. Merge after 52.
+No play build in between (Nilio, 2 November 2026): he plays when block 15 is built. After that: Multiplayer (parked).
 
 ---
 
@@ -161,7 +176,7 @@ loose steps in F12 today (teleport, give, set a rank, time on). One round (L), i
 
 Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
 so before more systems: make playing and reporting cheap.
-1. **A note for Claude**: now part of "The test menu: tests, notes and reports" below, and built with it.
+1. **A note for Claude**: now part of "The test menu: tests, notes and reports" above, and built with it.
 2. **Saves that last.** Today any new `SAVE_VERSION` throws the save away, so every fix build means a new game.
    From now on: loading fills every missing field of the player, the game, the world, maps, creatures and items with
    its default (new fields in `__init__` are found by comparing with a fresh object of the same class), then runs
@@ -402,6 +417,7 @@ bosses for the big one (a fish) and the relic job.
 ---
 
 ## Parked
+- **Multiplayer**: see docs/parked.md.
 - **The bard** (the Lark's Company): see docs/parked.md. Not until Nilio says so.
 
 ## Later (not planned yet)
