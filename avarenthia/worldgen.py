@@ -435,11 +435,12 @@ def gen_wild(game, terrain, lvl, keys, elite=0, leader=None, faction=None):
     return m
 
 
-def gen_shop(game, city=False):
+def gen_shop(game, city=False, village=False):
+    """A shop's stock. A city's shop sells a first tome one time in two, a village's one time in four."""
     lvl = max(1, game.player.lvl) + (1 if city else 0)
     ks = [k for k, b in D.BASES.items() if b['lvl'] <= lvl + 2]
     stock = [make_gear(game, random.choice(ks), 'magic' if random.random() < .06 else 'normal', lvl) for _ in range(8)]
-    if city and random.random() < .5:
+    if random.random() < (.5 if city else .25 if village else 0):
         from .entities import make_tome
-        stock.append(make_tome(game, 0))
+        stock.insert(0, make_tome(game, 0))          # first, so a village's shorter shelf keeps it
     return stock

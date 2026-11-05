@@ -329,8 +329,10 @@ def talk(game, npc):
         if key == 'carto' and r >= 1:
             opts.append((f'Buy an old Varnish chart ({fmt(chart_price(game))})', 'chart'))
         opts.append(('Leave the guild', 'leave'))
+    from . import firststeps as FS
+    opts = FS.guild_options(game, key) + opts
     opts.append(('Goodbye', 'bye'))
-    EV.ask(game, 'guild', npc.name, text, opts[:12], guild=key)
+    EV.ask(game, 'guild', npc.name, text, opts[:12] if len(opts) <= 12 else opts[:11] + [opts[-1]], guild=key)
 
 
 def combos_for(game, key):
@@ -403,6 +405,10 @@ def resolve(game, choice, ctx):
     g = GUILDS[key]
     s = state(game)[key]
     p = game.player
+    if choice.startswith('firsttome:'):
+        from . import firststeps as FS
+        FS.buy_guild_tome(game, choice.split(':', 1)[1])
+        return
     if choice == 'join':
         why = cant_join(game, key)
         if why:

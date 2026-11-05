@@ -277,6 +277,8 @@ class Item:
                 out.append(describe(sk, 0))
                 out.append(f"Needs {DISCIPLINES[sk.line]['name']} {sk.unlock} to learn." if sk.unlock else 'Anyone can learn it.')
                 out.append('Read it from your inventory to learn the skill.')
+                if getattr(self, 'stamp_name', None):
+                    out.append(f"On the first page, a bookseller's stamp: a quill and a key, and the word {self.stamp_name}.")
             return out
         b = D.BASES[self.base]
         if b.get('grade', 'normal') != 'normal':
@@ -331,7 +333,8 @@ class Item:
             return 20
         if self.k == 'tome':
             from .skills import SKILLS
-            return 90 + round(SKILLS[self.t].step * 110)
+            sk = SKILLS[self.t]
+            return 5 if sk.tier == 0 else 90 + round(sk.step * 110)       # a first tome: a few coins, within reach
         if self.k == 'tool':
             return {'kit': 25, 'tent': 60, 'pick': 15, 'trowel': 4, 'knife': 3, 'frame': 6, 'waterskin': 4, 'hooks': 6, 'rope': 3, 'net': 10,
                     'bandage': 1, 'bedroll': 8, 'barding': 4 * getattr(self, 'bard', 3)}.get(self.t, 8)

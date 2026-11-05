@@ -18,8 +18,7 @@ from . import debug as DBG
 # A heading hides all its lines; 'heading :: name' hides one line.
 NOT_BUILT = {'A finer look, not busier', 'The belt and the tally', 'More makers', 'Marked creatures',
              'Folk in need', 'Crafts guilds',
-             'Playing it :: What you met', 'Playing it :: The first tome', 'Playing it :: The Eleven Ways',
-             'Playing it :: A letter for the city', "Playing it :: The baron's word"}
+             'Playing it :: What you met'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -485,12 +484,46 @@ def s_note(game, n, text):
     game.msg(f'Test: {text}', 'info')
 
 
+def s_first(game, n, *stages):
+    """The first steps (round 40), at a stage: the temple, the den, the letter, the city, the word, the war."""
+    from . import firststeps as FS
+    w, f = game.world, game.flags
+    stage = stages[n % len(stages)]
+    st = FS.st(game)
+    if stage == 'temple':
+        DBG.teleport(game, ('site', w.start_temple))
+    elif stage == 'den':
+        d = w.dungeons['den']
+        DBG.to_over(game, d.x, d.y)
+        game.enter_dungeon('den', d.depth, 'down')
+    elif stage == 'letter':
+        f['den'] = True
+        st.pop('letter', None)
+        DBG.teleport(game, ('s', 0))
+    elif stage == 'guild':
+        DBG.teleport(game, ('s', FS.letter_city(game).id))
+        game.msg('Test: walk into a guild master of a fighting guild.', 'info')
+    else:                                   # the city, the word, the war
+        f['den'] = True
+        if not st.get('letter'):
+            FS.give_letter(game, None)
+        DBG.teleport(game, ('s', FS.letter_city(game).id))
+        if stage in ('word', 'war') and st.get('letter') == 'carried':
+            trader = next((o for o in game.map.mons if getattr(o, 'role', '') == 'market'), None)
+            if trader:
+                FS.merchant(game, trader)
+        if stage == 'war':
+            DBG.force_event(game, 'realmwar')
+    game.request = ('save',)
+    game.msg(f'Test: the first steps, {stage}.', 'info')
+
+
 STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'deep': s_deep, 'bossfloor': s_boss_dungeon,
          'days': s_days, 'month': s_month, 'hour': s_hour, 'weekday': s_weekday, 'feast': s_feast, 'fair': s_fair,
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'puzzle': s_puzzle,
-         'boss': s_boss, 'note': s_note}
+         'boss': s_boss, 'note': s_note, 'first': s_first}
 
 GOLD = 10 * 100 * 100
 SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
@@ -690,6 +723,10 @@ R = {
     'Playing it :: A note for Claude': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],
     'Playing it :: Saves that last': [('note', "keep a save of the build before this one and load it here.")],
     'Playing it :: The money check': [('note', 'python tests/money.py prints the three tables.')],
+    'Playing it :: The first tome': [('first', 'den', 'temple'), ('coin', 2000)],
+    'Playing it :: The Eleven Ways': [('first', 'temple', 'guild'), ('coin', 2000)],
+    'Playing it :: A letter for the city': [('first', 'letter', 'city')],
+    "Playing it :: The baron's word": [('first', 'word', 'war')],
     # The test menu
     'The test menu :: Tests page': [('note', 'tick this line with [y], restart, and see it kept.')],
     'The test menu :: Note for Claude and ✗': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

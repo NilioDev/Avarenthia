@@ -58,6 +58,10 @@ def ch_first_steps(g):
                'Leave town by the gate. On the world map, an arrow at the edge points to your job.',
                'Keep to the roads at first. They are patrolled; the wilds are not.',
                'Come back to the inn to hand the job in, get paid, and sleep in a bed.']),
+        ('p', 'When the Hollow Den is done, Elder Berend sends you to the nearest city with a letter and a few loads of '
+              'Thornfield\'s goods: sell them on its market and see what a load fetches there. The trader who takes '
+              'the letter tells you what a city has, and wants a city good back home. In that city a messenger may ask '
+              'you to carry a sealed word to a lord\'s seat; the lord shows you the realm and has work.'),
         ('h', 'The keys you need'),
         ('k', '[arrows]', 'move; walk into things to fight, talk or open them'),
         ('k', '[Enter]', 'do the obvious thing where you stand: go in, take the stairs, pick up, read'),
@@ -213,8 +217,8 @@ def ch_hero(g):
               'choose where the points go.'),
         ('h', 'Skills'),
         ('p', 'Skills come from three places: the weapon in your hand, the tomes of your classes, and the guild masters. '
-              'Tomes, the sign {≡}, are found on monsters, in ruins and at standing stones, or bought from peddlers '
-              'and city outfitters. Disciplines grow as you use them, and decide which tomes you can understand. '
+              'Tomes, the sign {≡}, are found on monsters, in ruins and at standing stones, or bought from peddlers, '
+              'village shops and city outfitters. Disciplines grow as you use them, and decide which tomes you can understand. '
               'Who you become tells how classes and the bar work.'),
         ('p', 'Six weapon disciplines: Unarmed, Swordsmanship, Axes and Maces, Spears and Staves, Daggers, Bows and '
               'Crossbows. The weapon in your main hand decides which one grows.'),
@@ -273,6 +277,11 @@ def ch_who(g):
         ('p', 'You begin as nobody in particular: a weapon, your fists and what you can learn. The first tome of a '
               'school you read wakes a memory, and that school becomes your class. It asks you first. From then on '
               'only tomes of your class speak to you; any other tome you may sell or keep.'),
+        ('p', 'A first tome is never far. Snagtooth\'s hoard holds three, of three schools. The temple where you wake '
+              'has one of its god\'s school on a shelf, for the poor box, and a chained book on a lectern, the sign {¶}, '
+              'The Eleven Ways, that tells of every class and which guild keeps its tomes. Every fighting guild\'s hall '
+              'sells the first tome of its school once to one who has none yet, and a village shop has one now and '
+              'then.'),
         ('h', 'A second class'),
         ('p', f'At rank {CL.SECOND_AT} in your class, one tome of another school may open to you. It asks you first, '
               'for it is for good: that school becomes your second class, and the two together give you a name of '

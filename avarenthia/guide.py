@@ -137,6 +137,8 @@ TIPS = {
     'hunt': 'Tip: the arrow on the edge shows where the wind comes from. Keep it in your face, or they smell you.',
     'skin': 'Tip: Enter on a carcass skins it; with a knife or a dagger you get the hide too.',
     'knight': 'Tip: as a knight your liege may call you to the levy; the call comes as a job in your journal, e.',
+    'cargo': 'Tip: walk into the trader on the market to sell what is on your cart; a good fetches more where it is scarce.',
+    'realms': 'Tip: m, then 4, shows the realms: who holds which land, and the lords\' seats.',
     'realmjob': 'Tip: a lord remembers the work you do. Enough of it, with a good name in the empire, and you may swear fealty.',
     'library': 'Tip: what a scribe reads to you goes into your chronicle: e, the Lore tab, then Enter.',
     'cook': 'Tip: R in the open lets you light a fire and cook; a hearth or a fire pit works too, walk into it.',

@@ -19,7 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
 | **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Rounds 46-47 |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Rounds 45 |
-| **Approved: playing it** | A sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met (the note for Claude, saves that last and the money check are built). Rounds 40-41 |
+| **Approved: playing it** | A list of what you met (the note for Claude, saves that last, the money check, the first tome, the letter and the baron's word are built). Round 41 |
 | **Approved: crafts guilds** | Four new guilds so every life skill has one (smiths and miners, tanners and trappers, tailors, cooks and innkeepers), halls among three peoples each; a free guild bench, the master's test in the hall, the guild mark, the master's board, one guild secret at Master, a guild day with a contest, their own streets; guild jobs of seven kinds. Rounds 48-49 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
@@ -84,7 +84,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 37. **Block 10: playing and reporting made cheap** (settled 2 November 2026, thread "Testen in de testbuild makkelijk
     maken"; the Dutch proposal: project files `bouw/volgorde-2.md`). 37. **The test menu** (L). 38. **Saves that last**
     (M). 39. **The money check** (M). Built 5 November 2026 (see `docs/built.md`).
-40. **Block 11: the start of the game.** 40. **The first tome, a letter for the city, the baron's word** (L).
+40. **Block 11: the start of the game.** 40. **The first tome, a letter for the city, the baron's word** (L; built 5 November 2026).
     41. **What you met** (M). 42. **The belt and the tally** (L). Merge after 42.
 43. **Block 12: a finer look, not busier.** 43. **Items 1, 2, 5, 6, 7** (M). 44. **Item 3, then item 4** (M). Merge
     after 44.
@@ -156,49 +156,10 @@ Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on reme
 
 ---
 
-## Playing it: the first steps and what you met (approved 1 November 2026; items 1-3 built 5 November 2026)
+## Playing it: the first steps and what you met (approved 1 November 2026; items 1-6 built 5 November 2026)
 
 Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
 so before more systems: make playing and reporting cheap.
-4. **The first tome** (Nilio, 1 November 2026: yes to measuring and making it sure). You start blank and your class
-   wakes with your first tome, but Thornfield's shop never sells one, so the start hangs on loot. The blank start
-   stays; the first tome is made sure in three ways, so it hangs on no one place:
-   - **Snagtooth's hoard.** The kobolds who robbed you in the ditch took a book too. In the hoard lie three tomes of
-     three different schools, one of them yours, the others stolen from travellers; which one was yours you do not
-     know. Reading one wakes the memory as now (the question, the name). You may take all three; the others sell.
-   - **A village shop** may hold one tome (a quarter of the time; cities stay at half), so a player who skips the den
-     can still buy one with the priestess's coin.
-   - **The temple where you wake** has a shelf with one tome of the temple's own god's school, at a price you can
-     pay after the den or a first job.
-   - **All eleven are known and reachable** (Nilio, 1 November 2026: three tomes leave classes you never hear of).
-     The three in the hoard are a quick start, never the whole choice: nothing makes you read them. In the temple
-     where you wake stands a lectern, "The Eleven Ways": bump it and read one short paragraph per class, what it does
-     and which guild keeps its tomes. And every combat guild's hall sells the first tome of its own school to someone
-     still blank, once, at a price the first jobs pay; halls stand in many towns of many peoples, so every class can
-     be reached by walking, whatever your name is with one people.
-   The opening check (with the money check, `tests/money.py --opening`) plays the first days the way a new player
-   does and prints on which day the first tome was read and the first level reached, over ten worlds.
-5. **A letter for the city** (Nilio, 1 November 2026: the first steps out into the land, and a first lesson in trade).
-   Today Elder Berend sends you to the Rat Warrens and the mine, and after them only says "the vale is wide". Instead:
-   - **Right after Snagtooth**, not after the rats or the mine: back in Thornfield, Berend gives you a letter for a
-     merchant in the nearest city and a few loads of Thornfield's own goods (grain, wool or whatever the village makes)
-     in your peddler's pack. A job in the journal, modest pay. The rats and the mine wait for when you come back.
-   - **The road** is your first real trip on the world map: the signpost, a ford or bridge, perhaps an inn.
-   - **In the city** you sell the loads at the market yourself and see they fetch more than at home. The merchant takes
-     the letter, pays you and in a few sentences tells you what a city has: the guild halls (and the first tome they sell
-     to the blank), the temple, the job board, the caravans. His answer for Berend asks for a city good back home (salt,
-     tools or cloth): buy it here, sell it in Thornfield, and you have made your first trade on your own.
-   - **A hook for later:** one of the three tomes from Snagtooth's hoard bears the stamp of a bookseller in this city.
-     He knows the book and who bought it, and little more: a first trace of who you were, with no story forced behind it.
-   Taught by the job's own lines and one first-time tip at the first market (selling cargo), not by screen text.
-6. **The baron's word** (Nilio, 1 November 2026). The rule for first jobs: one short job per big way of playing,
-   given by someone already standing there, never forced (fighting: the den; crafts: the fisher and the herbalist;
-   road and trade: the letter; the great evils: Berend's pointer). The realms and powers had none. Now: in the city of
-   the letter, after the merchant, a messenger of the city's baron (or the ruler who holds it) stands by the gate or
-   the market with a sealed word for a lord's seat a day or two away: a knight's tower, a manor or a baron's hold.
-   Bringing it opens the realms layer of the world map for the land you crossed, shows the seat's lord, and the lord
-   offers the first realm job from `realmjobs.py`; the answer can go back for a little coin. If the city's ruler is at
-   war, the word is about that war. No more first jobs until "What you met" shows a way of playing players miss.
 7. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
    world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
    player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an

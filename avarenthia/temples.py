@@ -284,6 +284,9 @@ def human(game, site, m, cx, cy, friendly):
     m.signs.append((cx - 26, cy - 5, 'TEMPLE'))
     PL.lit(m, [(cx + 20, cy - 1), (cx + 20, cy + 1), (cx - 21, cy)])
     m.altar = altar
+    if getattr(game.world, 'start_temple', None) == site.id:
+        from . import firststeps as FS
+        FS.dress_temple(game, site, m, cx, cy)
     return (cx - 30, cy)
 
 

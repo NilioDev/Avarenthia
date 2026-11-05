@@ -469,7 +469,7 @@ three things. Test part `boss_moves`.
 - **Seen and told** - the affix line in IN SIGHT, the look line, the first-time tip, a unique's new name. Debug: spawn
   a unique, reset tips.
 
-## Playing it (approved 1 November 2026, not built)
+## Playing it (approved 1 November 2026; the first tome, the letter and the word built 5 November 2026)
 
 - **A note for Claude** - the zip beside the save with the note, the screen and the save; loading that save stands
   you where the note was written. Debug: it is itself a debug menu line.

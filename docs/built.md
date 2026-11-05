@@ -51,9 +51,19 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
+| **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 
 ## Built
 
+- **The first steps** (round 40, 5 November 2026; `firststeps.py`, state on `p.first`; test part `first_steps`,
+  `tests/money.py --opening`). Snagtooth's hoard holds three tomes of three schools, one with a bookseller's stamp
+  of the letter's city; a first tome is worth 5s; village shops sell one a quarter of the time; the start temple has a
+  shelf (its god's school, 8s) and the lectern The Eleven Ways; every fighting guild sells its school's first tome once
+  to the blank (10s). After the den Berend gives a letter and four loads for the nearest city; the trader there pays
+  2s 50c, tells what a city has, asks for a city good back home (the first trade, in the chronicle) and knows the
+  stamp; a messenger then sends you with a sealed word to the nearest lord's seat (about the city's war if there is
+  one), where the lord shows the land between, gives the answer (1s 50c back) and offers the first realm job. Tips:
+  selling cargo, the realms layer.
 - **The test menu, saves that last, the money check** (rounds 37-39, 5 November 2026; `debug_tests.py`, `saves.py`,
   `tests/money.py`; test parts `debug_tests`, `lasting_saves`, `money`, `debug_menu`). F12: N writes the note for
   Claude (one `feedback-<day>-<turn>.zip` beside the save: note.txt, the save, log, keys, the screen as text and as
@@ -2744,3 +2754,47 @@ From "Playing it" (approved 1 November 2026):
    prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
    good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
    settle the bands it should stay in; then a test part `money` fails when a build leaves them.
+
+## The first steps (built 5 November 2026; the spec)
+
+From "Playing it" in plan.md, items 4-6.
+
+4. **The first tome** (Nilio, 1 November 2026: yes to measuring and making it sure). You start blank and your class
+   wakes with your first tome, but Thornfield's shop never sells one, so the start hangs on loot. The blank start
+   stays; the first tome is made sure in three ways, so it hangs on no one place:
+   - **Snagtooth's hoard.** The kobolds who robbed you in the ditch took a book too. In the hoard lie three tomes of
+     three different schools, one of them yours, the others stolen from travellers; which one was yours you do not
+     know. Reading one wakes the memory as now (the question, the name). You may take all three; the others sell.
+   - **A village shop** may hold one tome (a quarter of the time; cities stay at half), so a player who skips the den
+     can still buy one with the priestess's coin.
+   - **The temple where you wake** has a shelf with one tome of the temple's own god's school, at a price you can
+     pay after the den or a first job.
+   - **All eleven are known and reachable** (Nilio, 1 November 2026: three tomes leave classes you never hear of).
+     The three in the hoard are a quick start, never the whole choice: nothing makes you read them. In the temple
+     where you wake stands a lectern, "The Eleven Ways": bump it and read one short paragraph per class, what it does
+     and which guild keeps its tomes. And every combat guild's hall sells the first tome of its own school to someone
+     still blank, once, at a price the first jobs pay; halls stand in many towns of many peoples, so every class can
+     be reached by walking, whatever your name is with one people.
+   The opening check (with the money check, `tests/money.py --opening`) plays the first days the way a new player
+   does and prints on which day the first tome was read and the first level reached, over ten worlds.
+5. **A letter for the city** (Nilio, 1 November 2026: the first steps out into the land, and a first lesson in trade).
+   Today Elder Berend sends you to the Rat Warrens and the mine, and after them only says "the vale is wide". Instead:
+   - **Right after Snagtooth**, not after the rats or the mine: back in Thornfield, Berend gives you a letter for a
+     merchant in the nearest city and a few loads of Thornfield's own goods (grain, wool or whatever the village makes)
+     in your peddler's pack. A job in the journal, modest pay. The rats and the mine wait for when you come back.
+   - **The road** is your first real trip on the world map: the signpost, a ford or bridge, perhaps an inn.
+   - **In the city** you sell the loads at the market yourself and see they fetch more than at home. The merchant takes
+     the letter, pays you and in a few sentences tells you what a city has: the guild halls (and the first tome they sell
+     to the blank), the temple, the job board, the caravans. His answer for Berend asks for a city good back home (salt,
+     tools or cloth): buy it here, sell it in Thornfield, and you have made your first trade on your own.
+   - **A hook for later:** one of the three tomes from Snagtooth's hoard bears the stamp of a bookseller in this city.
+     He knows the book and who bought it, and little more: a first trace of who you were, with no story forced behind it.
+   Taught by the job's own lines and one first-time tip at the first market (selling cargo), not by screen text.
+6. **The baron's word** (Nilio, 1 November 2026). The rule for first jobs: one short job per big way of playing,
+   given by someone already standing there, never forced (fighting: the den; crafts: the fisher and the herbalist;
+   road and trade: the letter; the great evils: Berend's pointer). The realms and powers had none. Now: in the city of
+   the letter, after the merchant, a messenger of the city's baron (or the ruler who holds it) stands by the gate or
+   the market with a sealed word for a lord's seat a day or two away: a knight's tower, a manor or a baron's hold.
+   Bringing it opens the realms layer of the world map for the land you crossed, shows the seat's lord, and the lord
+   offers the first realm job from `realmjobs.py`; the answer can go back for a little coin. If the city's ruler is at
+   war, the word is about that war. No more first jobs until "What you met" shows a way of playing players miss.

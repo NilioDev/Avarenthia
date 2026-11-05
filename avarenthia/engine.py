@@ -39,6 +39,7 @@ from . import mastery as MA
 from . import archaeology as AR
 from . import tradegoods as TG
 from . import caravan as CV
+from . import firststeps as FS
 from . import townlife as TL
 from . import feasts as FE
 from . import landmarks as LM
@@ -239,7 +240,7 @@ class Game:
                 p.x, p.y = spot[0]
         WO.progress(.87, 'Waking the wild')
         p.life = max(1, p.life * 2 // 3)
-        self.shops = {0: W.gen_shop(self)}
+        self.shops = {0: W.gen_shop(self, village=True)}
         WA.populate(self)
         SA.place_coves(self)
         LV.setup(self)
@@ -860,7 +861,7 @@ class Game:
                         p.x, p.y = nx, ny            # one step in from the edge
                         break
         if 'shop' in s.services:
-            self.shops[sid] = W.gen_shop(self, s.is_city)
+            self.shops[sid] = W.gen_shop(self, s.is_city, village=not s.is_city)
             if not s.is_city:
                 del self.shops[sid][6:]
             self.shops[sid] += CK.shop_stock(self, s) + CRF.shop_cloth(self, s)
@@ -1136,6 +1137,10 @@ class Game:
         spent = EP.bump(self, nx, ny, t)
         if spent is not None:
             return spent
+        if getattr(m, 'first', None) and (nx, ny) in m.first:
+            spent = FS.bump(self, nx, ny)
+            if spent is not None:
+                return spent
         if t in (D.JAR, D.HCAIRN):
             return SH.bump(self, nx, ny, t)
         if t in (D.BEACON, D.LITBEACON) or (t in (D.RAFT, D.AIR) and getattr(m, 'skychain', False)):
@@ -2224,14 +2229,10 @@ class Game:
             shield.name = 'Your Buckler'
             self.spill(m, mon.x, mon.y, sword)
             self.spill(m, mon.x, mon.y, shield)
-            from .entities import make_tome
-            spell = random.choice(['firebolt', 'frost_shard', 'spark', 'mend', 'drain'])
-            tome = Item(self.new_id(), 'tome', spell)
-            tome.name = 'tome'
-            self.spill(m, mon.x, mon.y, tome)
-            for it in (sword, shield, tome):
+            for it in (sword, shield):
                 it.dropped = False
-            self.msg('Among the chief\'s filthy hoard: your sword and shield! And a small book, its pages full of strange signs.', 'gold')
+            FS.hoard(self, m, mon.x, mon.y)
+            self.msg('Among the chief\'s filthy hoard: your sword and shield! And three small books, their pages full of strange signs.', 'gold')
             self.msg('Now go to Thornfield and report to Elder Berend. Sister Ilse said he wanted to meet you.', 'info')
             th = self.world.settlements[0]
             self.reveal_place(th.x, th.y, 2)
@@ -3321,6 +3322,7 @@ class Game:
         if f.get('quest_fish') and not f.get('fish_done'):
             out.append(('A first catch', 'The old fisherman by the pond in Thornfield wants to see your first fish. '
                         'Stand by water and press A to cast.'))
+        out += FS.story(self)
         return out
 
     def reveal_route(self, a, b):
@@ -3376,6 +3378,8 @@ class Game:
         role = npc.role
         if role == 'wagon':
             CV.talk(self, npc)
+            return
+        if FS.talk(self, npc):
             return
         m = self.map
         hid = getattr(m, 'hid', None)

@@ -5299,6 +5299,135 @@ def lasting_saves():
     E.delete_save()
 
 
+def first_steps():
+    """Round 40: a sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome, a
+    village shop), the letter for the city, the merchant's answer and the first trade, the baron's word."""
+    from avarenthia import firststeps as FS, economy as ECO, events as EV, worldgen as W
+    print('== first steps')
+    random.seed(40)
+    app = new_app('soft', 4040)
+    g = app.game
+    p = g.player
+    m = g.map
+    assert g.map.site == g.world.start_temple and getattr(m, 'first', None), 'the start temple has its shelf and lectern'
+    lec = next(c for c, k in m.first.items() if k == 'lectern')
+    assert m.tile(*lec) == D.CHAINBOOK
+    g.request = g.pending = None
+    p.x, p.y = lec[0] - 1, lec[1]
+    g.try_move(1, 0)
+    assert g.pending and g.pending['key'] == 'first_ways', g.pending
+    FS.r_ways(g, 'cunning', {})
+    assert g.request[0] == 'dialog' and "Thieves' Guild" in g.request[2]
+    g.pending = g.request = None
+    shelf = next(c for c, k in m.first.items() if k == 'shelf')
+    p.gold = 2000
+    FS.bump(g, *shelf)
+    FS.r_shelf(g, 'buy', {})
+    line = FS.temple_school(g)
+    assert any(i.k == 'tome' and i.t == FS.first_skill(line).id for i in p.inv) and p.gold == 1200
+    for it in [i for i in p.inv if i.k == 'tome']:
+        g.remove_one(it)
+    # a combat guild sells the first tome once to the blank
+    assert FS.guild_options(g, 'magi') and FS.guild_options(g, 'stillhand') == []
+    FS.buy_guild_tome(g, 'frost')
+    assert p.gold == 200 and FS.guild_options(g, 'iron') == []
+    for it in [i for i in p.inv if i.k == 'tome']:
+        g.remove_one(it)
+    # a first tome is cheap; villages sell one now and then, cities more often, a hut never
+    tome = FS.tome_of(g, 'fire')
+    assert tome.value() == 500
+    n = sum(any(i.k == 'tome' for i in W.gen_shop(g, village=True)) for _ in range(200))
+    assert 20 < n < 90 and not any(any(i.k == 'tome' for i in W.gen_shop(g)) for _ in range(60)), n
+    vil = next(v for v in g.world.settlements if v.kind == 'village' and 'shop' in v.services and v.id)
+    seen = 0
+    for _ in range(40):
+        to_over(g, vil.id)
+        g.enter_town(vil.id)
+        seen += any(i.k == 'tome' for i in g.shops[vil.id])
+    assert seen, 'a village shop keeps its tome on the shelf'
+    # Snagtooth's hoard: three tomes of three schools, one with a city bookseller's stamp
+    p.vit, p.lvl = 200, 6
+    d = g.world.dungeons['den']
+    g.enter_dungeon('den', d.depth, 'up')
+    boss = next(o for o in g.map.mons if o.k == 'snagtooth')
+    g.kill(boss)
+    from avarenthia.skills import SKILLS
+    tomes = [i for i in g.map.items if i.k == 'tome' and i.id in FS.st(g).get('hoard', [])]
+    assert len(tomes) == 3 and len({SKILLS[i.t].line for i in tomes}) == 3, [i.t for i in tomes]
+    city = FS.letter_city(g)
+    stamped = [i for i in tomes if getattr(i, 'stamp', None) == city.id]
+    assert len(stamped) == 1 and any(city.name in ln for ln in stamped[0].lines())
+    for it in tomes:
+        p.x, p.y = it.x, it.y
+        g.auto_pickup()
+    # Elder Berend: the letter and the loads
+    to_over(g, 0)
+    g.enter_town(0)
+    elder = next(o for o in g.map.mons if o.role == 'elder')
+    g.talk(elder)
+    st = FS.st(g)
+    good, n = st['loads']
+    assert st['letter'] == 'carried' and p.cargo.get(good) == n and n >= 1 and city.name in g.request[2]
+    assert any('letter' in t.lower() for t, _x in g.story())
+    g.request = None
+    g.talk(elder)
+    assert 'trader on the market' in g.request[2], 'a reminder while the letter is carried'
+    g.request = None
+    # the city: the trader takes the letter, the loads are sold, the messenger waits
+    to_over(g, city.id)
+    g.enter_town(city.id)
+    trader = next(o for o in g.map.mons if o.role == 'market')
+    gold = p.gold
+    g.talk(trader)
+    assert st['letter'] == 'given' and p.gold == gold + FS.LETTER_PAY and 'guild halls' in g.request[2]
+    assert st.get('trace') and 'old coin' in g.request[2], 'the stamped tome leaves a trace'
+    assert not any(i.k == 'quest' and i.t == 'letter' for i in p.inv)
+    g.request = None
+    assert ECO.sell(g, city, good, n) == n and good not in p.cargo
+    want = st['want']
+    mess = [o for o in g.map.mons if o.role == 'messenger']
+    seat = g.world.sites[st['seat']] if st.get('seat') is not None else None
+    if seat is not None:
+        assert mess and st['word'] == 'offered'
+        g.talk(mess[0])
+        assert st['word'] == 'carried' and seat.name in g.request[2]
+        g.request = g.pending = None
+        to_over(g, city.id)
+        g.cur = 'over'
+        p.x, p.y = seat.x, seat.y
+        g.enter_site(seat.id)
+        lord = next((o for o in g.map.mons if o.role == 'lord'), None)
+        if lord is not None:
+            g.talk(lord)
+            assert st['word'] == 'answer' and any(i.k == 'quest' and i.t == 'answer' for i in p.inv)
+            assert 'realms' in g.__dict__.get('tips', set())
+            g.request = g.pending = None
+            to_over(g, city.id)
+            g.enter_town(city.id)
+            gold = p.gold
+            g.talk(next(o for o in g.map.mons if o.role == 'messenger'))
+            assert st['word'] == 'done' and p.gold == gold + FS.ANSWER_PAY
+        else:
+            print('   (the seat has no lord at home)')
+    else:
+        print('   (no seat near the city)')
+    # the first trade on your own: the city good sold at home
+    to_over(g, city.id)
+    g.enter_town(city.id)
+    p.gold = 5000
+    assert ECO.buy(g, city, want, 2) >= 1
+    to_over(g, 0)
+    g.enter_town(0)
+    th = g.world.settlements[0]
+    if want in th.market:
+        ECO.sell(g, th, want, 2)
+        assert st.get('traded')
+    g.request = None
+    g.talk(next(o for o in g.map.mons if o.role == 'elder'))
+    assert st.get('home')
+    print('first_steps ok: city', city.name, 'loads', n, good, 'answer', want)
+
+
 def money():
     """The money check (tests/money.py): at level 1, 10 and 20 the coin left over a day, the days of work for a bed and
     for a raising stay in their bands (first guesses, to settle with Nilio)."""
@@ -10157,7 +10286,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

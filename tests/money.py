@@ -8,6 +8,7 @@ Paying: a bed at the inn on a night in town, food on the road, mending what the 
 level 10, and the temple's raising once.
 
     python tests/money.py [days] [seed]
+    python tests/money.py --opening [worlds]     the day of the first tome, over that many worlds (round 40)
 
 The part `money` of test_headless.py runs a short check and fails when a build leaves the BANDS below. The bands are
 first guesses, to settle with Nilio after he has read the first tables."""
@@ -225,7 +226,35 @@ def check(days=20, seed=11):
     return bad
 
 
+def opening(worlds=10):
+    """The day of the first tome, modelled: Snagtooth's hoard once the den is reached and cleared (the road there
+    and a day below), or the Thornfield shop's tome on day one when it has one and the priestess's coppers buy it."""
+    from avarenthia import firststeps as FS
+    rows = []
+    for seed in range(1, worlds + 1):
+        random.seed(seed)
+        g = E.Game('Opening', hardcore=False, seed=seed)
+        w = g.world
+        ts = w.sites[w.start_temple]
+        d = w.dungeons['den']
+        den_day = 1 + MS.travel_days(max(abs(d.x - ts.x), abs(d.y - ts.y)) * 1.3) + 1
+        shop = [it for it in g.shops.get(0, []) if it.k == 'tome']
+        first = 1 if shop and shop[0].value() <= 520 else den_day
+        city = FS.letter_city(g)
+        th = w.settlements[0]
+        rows.append((seed, den_day, bool(shop), first, city.name, road_days(th, city)))
+        print(f'  world {seed:>2}: den cleared day {den_day}, Thornfield shop tome {"yes" if shop else "no "}, '
+              f'first tome day {first}; the letter to {city.name}, {road_days(th, city)} days off')
+    days = [r[3] for r in rows]
+    print(f'First tome: day {min(days)} to {max(days)}, on average day {sum(days) / len(days):.1f}.')
+    return rows
+
+
 if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == '--opening':
+        opening(int(sys.argv[2]) if len(sys.argv) > 2 else 10)
+        E.delete_save()
+        sys.exit(0)
     days = int(sys.argv[1]) if len(sys.argv) > 1 else 40
     seed = int(sys.argv[2]) if len(sys.argv) > 2 else 11
     for lvl in LEVELS:

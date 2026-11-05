@@ -224,6 +224,8 @@ def sell(game, s, g, n=1):
                 p.cost_basis.pop(g, None)
         game.msg(f"You sell {done} {D.GOODS[g]['name']} for {fmt(got)}{note}.", 'gold')
         TG.after_sell(game, s, g, done, got, profit)
+        from . import firststeps as FS
+        FS.on_sell(game, s, g, done)
     return done
 
 
