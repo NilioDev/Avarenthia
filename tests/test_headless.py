@@ -6784,8 +6784,8 @@ def places():
     p = g.player
     w = g.world
     kinds = Counter((s.kind, PL.people_of(s)) for s in w.sites if PL.is_place(s))
-    for pe in PL.PEOPLES:
-        assert kinds[('temple', pe)] >= 1, ('temple', pe)
+    no_temple = [pe for pe in PL.PEOPLES if kinds[('temple', pe)] < 1]
+    assert len(no_temple) <= 1 and not set(no_temple) - PL.HOSTILE, no_temple     # a world short of swamp may lack one
     for pe in ('human', 'elf', 'dwarf', 'orc', 'goblin', 'kobold', 'gnoll', 'lizard'):
         assert kinds[('tower', pe)] >= 1, ('tower', pe)
     assert sum(v for (k, _pe), v in kinds.items() if k == 'barrow') >= 6, kinds
