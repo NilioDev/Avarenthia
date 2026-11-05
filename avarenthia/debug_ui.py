@@ -319,7 +319,9 @@ class DebugScreen(Modal):
                            ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
             ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
                          ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
-                         ('u', self.flag('coords'), self.do(lambda: DBG.toggle(g(), 'coords')))]),
+                         ('u', self.flag('coords'), self.do(lambda: DBG.toggle(g(), 'coords'))),
+                         ('r', 'Window size...', self.window_page),
+                         ('G', 'Margin: new stretch now', self.do(lambda: DBG.margin_new(g())))]),
         ]
         right = [
             ('THE PLAYER', [('g', self.flag('god'), self.do(lambda: DBG.toggle(g(), 'god'))),
@@ -405,6 +407,10 @@ class DebugScreen(Modal):
         from . import weather as WX
         rows = [(v[1], v[0], k) for k, v in WX.KINDS.items()]
         return ListPage(self, 'Weather', rows, lambda k: (DBG.set_weather(self.game, k), 'close')[1])
+
+    def window_page(self):
+        rows = [('window', f'{w} x {h}' + note, (w, h)) for w, h, note in DBG.WINDOW_SIZES]
+        return ListPage(self, 'Window size', rows, lambda wh: (setattr(self.app, 'want_window', wh), 'close')[1])
 
     def spawn_page(self):
         rows = sorted(((('boss' if d.get('boss') else d.get('tags', '').split(' ')[0] or 'creature'), d['name'], k)

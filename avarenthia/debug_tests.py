@@ -832,8 +832,8 @@ R = {
     'The Avarenthia Editor :: More doors': [('theme', 'middle'), SCHOOLS_NOTE],
     'The Avarenthia Editor :: Whole places': [('to', 'drawn'), ('dbg', 'reveal_map')],
     'The Avarenthia Editor :: Whole places in the editor': [('note', 'in the editor: Ctrl+N, "A whole place".')],
-    'A window that fits :: Sizes and Zoom': [('note', 'resize the window, and Zoom on the title screen (round 56).')],
-    'A window that fits :: The margin': [('note', 'a very wide window: the old map round the game (round 56).')],
+    'A window that fits :: Sizes and Zoom': [('note', 'resize the window or F12, [r] Window size; Zoom on the title screen.')],
+    'A window that fits :: The margin': [('note', 'F12, [r] Window size 5120 x 1440; [G] for a new stretch of the margin.')],
     'The Avarenthia Editor :: Makers in the editor': [('note', 'in the editor: Ctrl+G; a rectangle first for a maker area.')],
     # Playing it
     'Playing it :: A note for Claude': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

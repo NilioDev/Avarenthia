@@ -11,7 +11,9 @@ import tcod
 from avarenthia import glyphs
 from avarenthia import debug as DBG
 from avarenthia.canvas import TcodCanvas
-from avarenthia.ui import App, W, H
+from avarenthia import ui as UI
+from avarenthia import engine as E
+from avarenthia.ui import App
 
 # When frozen by PyInstaller, bundled files live in sys._MEIPASS.
 HERE = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -117,7 +119,7 @@ def screen_size():
 
 def window_scale():
     """The largest whole-number scale of the font (square 8x8 cells) whose window still fits on screen with room to spare."""
-    tw, th = W * glyphs.TILE_W, H * glyphs.TILE_H
+    tw, th = UI.BASE_W * glyphs.TILE_W, UI.BASE_H * glyphs.TILE_H
     size = screen_size()
     if not size:
         return 1
@@ -135,16 +137,35 @@ def main():
     # the debug menu (F12): only in the test build, or from the source with --debug
     DBG.turn_on(sys.argv[1:], here=HERE, frozen=getattr(sys, 'frozen', False))
     tileset = load_tileset()
-    console = tcod.console.Console(W, H, order='F')
+    # A normal window (not maximized), at the window size of the last run, or else sized to the largest
+    # whole-number scale of the font that fits the screen so the pixels stay crisp. A bigger window shows more map
+    # (up to 16:9), the rest of a very wide one is the margin; F11 goes fullscreen. Zoom (title screen) fixes the scale.
+    st = E.load_settings()
+    try:
+        win_w, win_h = (int(v) for v in st.get('window', '').split('x'))
+    except ValueError:
+        k = window_scale()
+        win_w, win_h = UI.BASE_W * glyphs.TILE_W * k, UI.BASE_H * glyphs.TILE_H * k
+    console = tcod.console.Console(UI.BASE_W, UI.BASE_H, order='F')
     app = App(TcodCanvas(console))
-    # A normal window (not maximized, not fullscreen), sized to the largest whole-number scale of the
-    # font that fits the screen so the pixels stay crisp. It can still be resized; F11 goes fullscreen.
-    k = window_scale()
     flags = getattr(tcod.context, 'SDL_WINDOW_RESIZABLE', 0x20)
-    with tcod.context.new(columns=W, rows=H, width=W * glyphs.TILE_W * k, height=H * glyphs.TILE_H * k,
+    with tcod.context.new(columns=UI.BASE_W, rows=UI.BASE_H, width=win_w, height=win_h,
                           tileset=tileset, title='Avarenthia (test)' if DBG.ON else 'Avarenthia', vsync=True, sdl_window_flags=flags) as ctx:
+        if st.get('fullscreen') == '1':
+            toggle_fullscreen(ctx)
+        console = fit(ctx, app)
         last_tick = 0.0
         while app.running:
+            if app.want_window:            # the debug menu's Window size
+                try:
+                    ctx.sdl_window.fullscreen = False
+                    ctx.sdl_window.size = app.want_window
+                except Exception:
+                    pass
+                app.want_window = None
+                app.relayout = True
+            if app.relayout:
+                console = fit(ctx, app)
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)
             if app.shot:                   # a note for Claude asked for a picture of this frame
@@ -155,17 +176,22 @@ def main():
                 DBG.add_shot(app)
                 app.shot = None
             timeout = app.frame_delay()
+            if app.cv is not app.full:     # the margin drifts a cell a minute, also while nothing else moves
+                timeout = min(timeout, 15.0) if timeout is not None else 15.0
             if app.auto:
                 timeout = max(.005, app.auto_delay - (time.monotonic() - last_tick))
             pressed = False
             for ev in tcod.event.wait(timeout):
                 if isinstance(ev, tcod.event.Quit):
                     app.quit()
+                elif isinstance(ev, tcod.event.WindowResized) or getattr(ev, 'type', '') in ('WINDOWRESIZED', 'WINDOWSIZECHANGED'):
+                    console = fit(ctx, app)
                 elif isinstance(ev, tcod.event.KeyDown):
                     tok, shift = key_token(ev)
                     pressed = True
                     if tok == 'f11' or (tok == 'enter' and int(ev.mod) & int(getattr(tcod.event.Modifier, 'ALT', 0x0300))):
                         toggle_fullscreen(ctx)
+                        console = fit(ctx, app)
                     elif tok:
                         app.key(tok, shift)
                 if not app.running:
@@ -173,7 +199,43 @@ def main():
             if app.auto and not pressed and time.monotonic() - last_tick >= app.auto_delay * .9:
                 last_tick = time.monotonic()
                 app.tick()
+        remember_window(ctx)
 
+
+def pixel_size(ctx):
+    """The window's drawing area in pixels (on a high-density screen more than its size in window units)."""
+    for get in (lambda: ctx.sdl_renderer.output_size, lambda: ctx.sdl_window.size):
+        try:
+            w, h = get()
+            if w > 0 and h > 0:
+                return int(w), int(h)
+        except Exception:
+            pass
+    return UI.BASE_W * glyphs.TILE_W, UI.BASE_H * glyphs.TILE_H
+
+
+def fit(ctx, app):
+    """A console of the window's size in cells at the chosen scale; the game in its middle part, the margin round it."""
+    app.relayout = False
+    pw, ph = pixel_size(ctx)
+    k, cols, rows, rect = UI.layout(pw, ph, app.zoom, glyphs.TILE_W)
+    console = tcod.console.Console(cols, rows, order='F')
+    app.resize(TcodCanvas(console), rect)
+    return console
+
+
+def remember_window(ctx):
+    """The window's size and fullscreen for the next start."""
+    try:
+        win = ctx.sdl_window
+        full = bool(win.fullscreen)
+        kw = {'fullscreen': int(full)}
+        if not full:
+            w, h = win.size
+            kw['window'] = f'{int(w)}x{int(h)}'
+        E.save_settings(**kw)
+    except Exception:
+        pass
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -242,6 +242,17 @@ def folk_next(game):
     game.msg(f'Debug: {n} follow-ups due; enter their town.', 'info')
 
 
+WINDOW_SIZES = ((880, 480, ', the smallest: 110 x 60 at 1x'), (1920, 1080, ''), (2560, 1440, ''),
+                (3440, 1440, ', wide: a margin'), (5120, 1440, ', super wide: a broad margin'))
+
+
+def margin_new(game):
+    """The margin round a wide window: a new stretch of the old map now (as on a new zone or day)."""
+    from . import margin as MG
+    MG.EXTRA += 1
+    game.msg('Debug: a new stretch of the margin.', 'info')
+
+
 def reset_tips(game):
     """Every first-time tip may be said again."""
     game.__dict__['tips'] = set()

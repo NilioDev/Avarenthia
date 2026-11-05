@@ -108,6 +108,67 @@ class TallCanvas(Canvas):
         self.base.dim(f)
 
 
+class OffsetCanvas(Canvas):
+    """A w x h part of a bigger canvas, its top left at (ox, oy) there: a screen laid out for that size draws on it
+    as if it were the whole screen (the game centred in a bigger window, a menu centred over a wider map)."""
+
+    def __init__(self, base, ox, oy, w, h):
+        self.base, self.ox, self.oy = base, ox, oy
+        self.w, self.h = w, h
+
+    def put(self, x, y, ch, fg=None, bg=None):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.base.put(x + self.ox, y + self.oy, ch, fg, bg)
+
+    def put_bg(self, x, y, bg):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.base.put_bg(x + self.ox, y + self.oy, bg)
+
+    def clear(self, bg=BLACK):
+        con = getattr(self.base, 'con', None)
+        if con is not None:
+            box = (slice(self.ox, self.ox + self.w), slice(self.oy, self.oy + self.h))
+            con.ch[box], con.fg[box], con.bg[box] = ord(' '), (255, 255, 255), bg
+            return
+        self.fill(0, 0, self.w, self.h, ' ', (255, 255, 255), bg)
+
+    def dim(self, f):
+        self.base.dim(f)
+
+    def get(self, x, y):
+        return self.base.get(x + self.ox, y + self.oy)
+
+    def _part(self, w, h):
+        """The real console's arrays (fg, bg) cut to this part's top left w x h, or None on a test canvas."""
+        con = getattr(self.base, 'con', None)
+        if con is None:
+            return None
+        w, h = min(w, self.w), min(h, self.h)
+        return [a[self.ox:self.ox + w, self.oy:self.oy + h] for a in (con.fg, con.bg)]
+
+    def darken(self, w, h, k):
+        parts = self._part(w, h)
+        if parts is not None:
+            for part in parts:
+                part[...] = (part * k).astype(part.dtype)
+            return
+        self._wash(w, h, lambda c: scale(c, k))
+
+    def lighten(self, w, h, k):
+        parts = self._part(w, h)
+        if parts is not None:
+            for part in parts:
+                part[...] = (part + (255 - part.astype('int32')) * k).astype(part.dtype)
+            return
+        self._wash(w, h, lambda c: mix(c, (255, 255, 255), k))
+
+    def _wash(self, w, h, f):
+        for y in range(min(h, self.h)):
+            for x in range(min(w, self.w)):
+                ch, fg, bg = self.get(x, y)
+                self.base.put(x + self.ox, y + self.oy, ch, f(fg), f(bg))
+
+
 def wrap_text(s, w):
     out = []
     for para in s.split('\n'):

@@ -11578,11 +11578,95 @@ def BS_KIT_BEAT():
     return ''.join(ph['beat'] for ph in BS.KITS['hollow_king']['phases'])
 
 
+
+def window_sizes():
+    """A window that fits (round 56): the scale, more map on a bigger window up to 16:9, the screens laid out for
+    110 x 60 centred, the old-map margin round a very wide window (random per zone and day, drifting)."""
+    from avarenthia.canvas import Canvas
+    from avarenthia import margin as MG, debug as DBG
+    # the layout: the largest whole scale at which 110 x 60 fits; the rest more map up to 16:9; the rest margin
+    assert ui.layout(880, 480) == (1, 110, 60, (0, 0, 110, 60))
+    assert ui.layout(800, 400)[1:3] == (110, 60), 'never fewer cells than the smallest screen'
+    k, cols, rows, rect = ui.layout(1920, 1080)
+    assert k == 2 and rect[2:] == (119, 67), (k, rect)
+    k, cols, rows, rect = ui.layout(2560, 1440)
+    assert k == 2 and rect == (0, 0, 160, 90), (k, rect)
+    k, cols, rows, rect = ui.layout(5120, 1440)
+    assert k == 3 and rect[2:] == (110, 60) and rect[0] == (cols - 110) // 2, (k, cols, rect)
+    assert ui.layout(5120, 1440, '2x')[0] == 2 and ui.layout(5120, 1440, '2x')[3][2:] == (160, 90)
+    for pw, ph in ((3440, 1440), (2560, 1080), (3840, 2160), (1920, 1200), (5120, 1440)):
+        k, cols, rows, (x, y, w, h) = ui.layout(pw, ph)
+        assert w * 9 <= h * 16 or w == ui.BASE_W, (pw, ph, w, h)
+        assert 0 <= x and x + w <= cols and 0 <= y and y + h <= rows
+    app = new_app('soft')
+    g = app.game
+    to_over(g, 0)
+    try:
+        for pw, ph in ((2560, 1440), (5120, 1440), (1920, 1080)):
+            k, cols, rows, rect = ui.layout(pw, ph)
+            app.resize(FakeCanvas(cols, rows), rect)
+            x0, y0, w, h = rect
+            assert (ui.W, ui.H) == (w, h) and ui.MAP_W == w - 30 and ui.MAP_H == h - 9 and ui.PX == ui.MAP_W + 2
+            assert ui.PW == 27 and ui.H - ui.LOG_Y == 8, 'the panel and the log keep their size'
+            Canvas.cut = []
+            app.render()
+            assert not Canvas.cut, Canvas.cut
+            Canvas.cut = None
+            cv = app.full
+            row = lambda y: ''.join(cv.ch[y * cv.w + x0:y * cv.w + x0 + w])  # noqa: E731
+            assert '@' in ''.join(row(y)[:ui.MAP_W] for y in range(ui.MAP_H)), 'the hero on the bigger map'
+            assert g.player.name in row(0)[ui.PX:], 'the panel at the right edge of the game'
+            margin = [(x, y) for y in range(cv.h) for x in range(cv.w) if not (x0 <= x < x0 + w and y0 <= y < y0 + h)]
+            if margin:
+                assert all(cv.fg[y * cv.w + x] == MG.INK and cv.bg[y * cv.w + x] == MG.PAPER for x, y in margin)
+                assert sum(cv.ch[y * cv.w + x] != ' ' for x, y in margin) > len(margin) // 3, 'the old map in it'
+                assert max(MG.INK) <= 64, 'never brighter than a quarter'
+            # a screen laid out for 110 x 60 sits in the middle of the game's part, at that size
+            app.push(ui.HelpScreen(app))
+            app.render()
+            assert (ui.W, ui.H) == (w, h), 'the sizes come back after a 110 x 60 screen'
+            left = x0 + (w - ui.BASE_W) // 2
+            top = ''.join(''.join(cv.ch[y * cv.w + left:y * cv.w + left + ui.BASE_W]) for y in range(y0, y0 + h))
+            assert "Handbook" in top
+            app.pop()
+            app.push(ui.LookScreen(app))  # the look cursor works on the whole bigger map
+            app.render()
+            app.pop()
+        # the margin: random per zone and day, the same within them, and it drifts
+        a = MG.seed_for(g)
+        g.turn += D.DAY_LEN
+        assert MG.seed_for(g) != a
+        g.turn -= D.DAY_LEN
+        assert MG.seed_for(g) == a
+        was_cur = g.cur
+        g.cur = 'another zone'
+        assert MG.seed_for(g) != a
+        g.cur = was_cur
+        art = MG.art(40, 20, a)
+        assert art == MG.art(40, 20, a) and art != MG.art(40, 20, a + 1)
+        small = FakeCanvas(10, 4)
+        MG.draw(small, (2, 0, 6, 4), a, 0)
+        one = list(small.ch)
+        MG.draw(small, (2, 0, 6, 4), a, 1)
+        assert small.ch != one, 'the margin drifts'
+        DBG.margin_new(g)
+        assert MG.seed_for(g) != a
+        # the Zoom on the title screen goes round and is kept
+        menu = ui.App(FakeCanvas(ui.BASE_W, ui.BASE_H))
+        was = menu.zoom
+        menu.top.on_key('z', False)
+        assert menu.zoom != was and menu.relayout and E.load_settings()['zoom'] == menu.zoom
+        assert ui.App(FakeCanvas(ui.BASE_W, ui.BASE_H)).zoom == menu.zoom
+        E.save_settings(zoom='auto')
+    finally:
+        ui.set_size(ui.BASE_W, ui.BASE_H)
+    print('window sizes ok')
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

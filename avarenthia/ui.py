@@ -33,18 +33,59 @@ from . import war as WAR
 from . import aurora as AUR
 from . import rift as RIFT
 from . import bosses as BS
-from .canvas import scale, mix, wrap_text, TallCanvas
+from .canvas import scale, mix, wrap_text, TallCanvas, OffsetCanvas
+from . import margin as MG
 from .data import DOWN, UP, TOWN, ENTR, WALL
 from .worldgen import cheb
 from .folk import unfound as FKunfound
 from .landmarks import glyph as LMglyph
 from .tribes import LOOK as TRglow
 
-W, H = 110, 60          # square 8x8 cells: 880 x 480 pixels before scaling
+BASE_W, BASE_H = 110, 60   # the smallest screen, square 8x8 cells: 880 x 480 pixels before scaling
+W, H = BASE_W, BASE_H      # the game's screen now: a bigger window gives more map (set_size)
 MAP_W, MAP_H = 80, 51
 LOG_Y = 52
 PX = 82                 # panel x
 PW = W - PX - 1         # panel width
+ZOOMS = ('auto', '1x', '2x', '3x', '4x')
+
+
+def set_size(w, h):
+    """The game's screen at w x h cells: the panel (28 wide) and the log (8 lines) keep their size, the map gets the rest."""
+    global W, H, MAP_W, MAP_H, LOG_Y, PX, PW
+    W, H = max(BASE_W, w), max(BASE_H, h)
+    MAP_W, MAP_H = W - (BASE_W - 80), H - (BASE_H - 51)
+    LOG_Y = MAP_H + 1
+    PX = MAP_W + 2
+    PW = W - PX - 1
+
+
+class base_size:
+    """Inside it the sizes are the smallest screen's (for the screens laid out for 110 x 60: menus, sheets, books)."""
+
+    def __enter__(self):
+        self.was = W, H
+        set_size(BASE_W, BASE_H)
+
+    def __exit__(self, *a):
+        set_size(*self.was)
+
+
+def layout(px_w, px_h, zoom='auto', tile=8):
+    """How a window of px_w x px_h pixels is used: the whole-number scale k (the largest at which 110 x 60 cells fit,
+    or the player's Zoom), the console in cells (cols x rows, the whole window), and the game's part of it
+    (x, y, w, h): the cells left over at that scale up to 16:9 at most; the rest is the margin (margin.py)."""
+    k = 1
+    if zoom in ZOOMS[1:]:
+        k = int(zoom[0])
+    else:
+        while BASE_W * tile * (k + 1) <= px_w and BASE_H * tile * (k + 1) <= px_h:
+            k += 1
+    cell = tile * k
+    cols, rows = max(BASE_W, px_w // cell), max(BASE_H, px_h // cell)
+    h = rows
+    w = max(BASE_W, min(cols, h * 16 // 9))
+    return k, cols, rows, ((cols - w) // 2, (rows - h) // 2, w, h)
 
 BG = (13, 11, 10)
 PANEL = (22, 18, 15)
@@ -74,8 +115,13 @@ ORB_MASK = ['  #####  ', ' ####### ', '#########', '#########', '#########', '##
 
 
 class App:
-    def __init__(self, canvas):
-        self.cv = canvas
+    def __init__(self, canvas, rect=None):
+        self.resize(canvas, rect)
+        self.zoom = E.load_settings().get('zoom', 'auto')         # the window's scale: auto or 1x-4x (main.py)
+        if self.zoom not in ZOOMS:
+            self.zoom = 'auto'
+        self.relayout = False      # main.py: the Zoom changed, size the window's cells anew
+        self.want_window = None    # debug: main.py sets the window to this size (in pixels)
         self.game = None
         self.running = True
         self.screens = [MainMenu(self)]
@@ -92,6 +138,14 @@ class App:
         self.auto_label = ''
         self.shot = None           # debug: a picture of the next frame goes here (main.py saves it)
         self.shot_zip = None       # debug: the note's zip the picture goes into
+
+    def resize(self, canvas, rect=None):
+        """Draw on `canvas` (the whole window); the game takes rect (x, y, w, h) of it, the margin the rest."""
+        self.full = canvas
+        self.rect = rect or (0, 0, canvas.w, canvas.h)
+        x, y, w, h = self.rect
+        self.cv = canvas if (x, y, w, h) == (0, 0, canvas.w, canvas.h) else OffsetCanvas(canvas, x, y, w, h)
+        set_size(w, h)
 
     # ---------------------------------------------------------- plumbing
     @property
@@ -282,7 +336,14 @@ class App:
         for i, s in enumerate(self.screens[start:]):
             if s.overlay and getattr(s, 'dim', True):
                 cv.dim(.35)
-            s.render(TallCanvas(cv) if s.tall else cv)
+            if s.fullsize or (W, H) == (BASE_W, BASE_H):
+                s.render(TallCanvas(cv) if s.tall else cv)
+            else:                       # laid out for 110 x 60: centred on the bigger screen
+                part = OffsetCanvas(cv, (W - BASE_W) // 2, (H - BASE_H) // 2, BASE_W, BASE_H)
+                with base_size():
+                    s.render(TallCanvas(part) if s.tall else part)
+        if self.cv is not self.full:
+            MG.draw(self.full, self.rect, MG.seed_for(self.game), MG.drift())
         t = time.monotonic()
         self.effects = [e for e in self.effects if (self.fx_alive(e, t) if e[0] == 'fx' else
                                                     t - e[1] < (e[2][4] if e[0] == 'flash' else
@@ -292,6 +353,7 @@ class App:
 
 class Screen:
     overlay = False
+    fullsize = False    # drawn on the whole (maybe bigger) screen; the others are laid out for 110 x 60 and centred
     tall = False        # laid out in text rows: drawn with every row doubled (see TallCanvas)
 
     def __init__(self, app):
@@ -382,7 +444,7 @@ class MainMenu(Screen):
         opts += [('n', 'New game', FG)]
         if DBG.ON:
             opts.append(('d', 'Quick start (debug): a random hero, then the seed', INFO))
-        opts += [('f', f'Spell effects: {self.app.fx_mode}', DIM), ('esc', 'Quit', DIM)]
+        opts += [('f', f'Spell effects: {self.app.fx_mode}', DIM), ('z', f'Zoom: {self.app.zoom}', DIM), ('esc', 'Quit', DIM)]
         return opts
 
     def on_key(self, tok, shift):
@@ -411,6 +473,11 @@ class MainMenu(Screen):
             app = self.app
             app.fx_mode = AN.FX_MODES[(AN.FX_MODES.index(app.fx_mode) + 1) % len(AN.FX_MODES)]
             E.save_settings(effects=app.fx_mode)
+        elif tok == 'z':                    # the window's scale: auto (the largest that fits) or a fixed 1x-4x
+            app = self.app
+            app.zoom = ZOOMS[(ZOOMS.index(app.zoom) + 1) % len(ZOOMS)]
+            E.save_settings(zoom=app.zoom)
+            app.relayout = True
         elif tok == 'esc':
             self.app.quit()
 
@@ -588,6 +655,8 @@ def intent(g, o):
 
 
 class GameScreen(Screen):
+    fullsize = True
+
     def view_origin(self):
         g = self.game
         m, p = g.map, g.player
@@ -3435,6 +3504,7 @@ class ChronicleScreen(BookScreen):
 
 
 class LookScreen(Modal):
+    fullsize = True
     tall = False
     """Inspect: move a cursor over the map and read what is there."""
     dim = False
