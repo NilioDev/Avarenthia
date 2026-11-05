@@ -505,6 +505,12 @@ def ch_jobs(g):
               'favour. A favour is a token in your pack, a ferryman\'s token or a carved whistle: shown once where it '
               'counts, at a ferry, a harbour, a town gate where you are wanted, an inn, a smith, the temple that '
               'raises you, a lord\'s hall, or a pass the snow has shut. Then it is gone.'),
+        ('p', 'Not every trouble is what it seems. The beast may guard its young, the thief may be a hungry child, '
+              'the thing may be cursed or already sold. You find out on the spot, and choose; a rumour may warn you. '
+              'Now and then a job from a board turns the same way.'),
+        ('p', 'Those you help remember you: they greet you, now and then give you something, and their story may go '
+              'on, days or weeks later. Those nobody helps solve it themselves, or it goes wrong, and the news tells '
+              'which. Folk can die. Their graves stand at the edge of the village, with their names on them.'),
         ('h', 'Money'),
         ('p', '100 copper make a silver, 100 silver make a gold. Jobs pay modestly; trade is where the money is. Coin '
               'goes on beds, meals, repairs, wages and the temple. What you cannot afford is shown in grey.'),

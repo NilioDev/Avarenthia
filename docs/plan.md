@@ -15,7 +15,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
-| **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Rounds 46-47 |
 | **Approved: crafts guilds** | Four new guilds so every life skill has one (smiths and miners, tanners and trappers, tailors, cooks and innkeepers), halls among three peoples each; a free guild bench, the master's test in the hall, the guild mark, the master's board, one guild secret at Master, a guild day with a contest, their own streets; guild jobs of seven kinds. Rounds 48-49 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
@@ -85,7 +84,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 43. **Block 12: a finer look, not busier.** 43. **Items 1, 2, 5, 6, 7** (M; built 5 November 2026). 44. **Item 3, then item 4** (M; built 5 November 2026). Merge
     after 44.
 45. **Block 13: creatures and folk.** 45. **Marked creatures** (L; built 5 November 2026). 46. **Folk in need, part 1** (XL; built 5 November 2026): the maker, needs
-    from the world, the grammar, rewards, who remembers you. 47. **Part 2** (L): twists, favours, the 120 seeds.
+    from the world, the grammar, rewards, who remembers you. 47. **Part 2** (L; built 5 November 2026): twists, favours, the 120 seeds.
     Merge after 47.
 48. **Block 14: the crafts guilds** (added 5 November 2026; after folk in need, whose maker makes the guild jobs).
     48. **Crafts guilds** (XL): the four new guilds and their halls, ranks, the guild bench, the master's test in the
@@ -164,48 +163,6 @@ an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds
 To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
-
-## Folk in need (approved 1 November 2026, not built)
-Quests the world makes itself, beside the boards. The Dutch proposal with examples: project files `quests/voorstel.md`
-(thread "Leukere quests laten genereren").
-- **Who.** 0 to 2 ordinary people with a need in each settlement, and on the road, by herds, in hermitages, as captives
-  in a den, among hostile peoples when your standing allows. They wear the `!` and `?` that already mark people with
-  work (`missions.py`); passing near, they say their need in the log; a bump talks (one choice window). Look names them
-  ("Maud, the miller's wife, worried"). One first-time tip; no new key. Taken needs go in the Jobs tab and layer.
-- **Need from the world.** Every need hangs on something real in this world, never made up for the quest: a monster
-  group, nest, named enemy or roaming boss on the map; the news (raid, plague, famine, fire, war, an evil's mark);
-  season and weather (a shut pass, drought, harvest, ice); caravans and goods; realms (a levy, a baron's grab); old
-  places, Varnish ruins, barrows; the giver's trade (smith, fisher, innkeeper, priest...); the giver's people, each its
-  own list (halfling, dwarf, elf, gnome, half-orc, human, and kobold, goblin, lizardfolk); feast days. No need depends
-  on one people or place.
-- **The grammar** (after Doran and Parberry's study of RPG quests): a motive (safety, health, family, knowledge,
-  property, tools, honour, peace, skill, feast), an approach, and 1-4 steps from verbs the game has: go, talk, follow
-  tracks (the named enemies' search area), find, bring, kill, drive off, guard or escort, make (a life skill), use a
-  thing at a place, keep watch a night, spy, catch alive. Mostly 1-2 steps; sometimes a journey of 3-4.
-- **Twists,** about one in three, picked at making and found on the spot (a rumour may hint): 18 kinds (the beast
-  guards its young; it was driven out by something worse; the thief is a hungry child; the missing one will not come
-  back; the giver lies; a rival; already sold; cursed; too late; the wrong one accused; a bewitched kin; the weather
-  turns; two people want the opposite; a hidden place; a captive in the den; the beast is sick; the giver in danger
-  while you are away). At most one choice, 2-4 options. The board jobs get these twists now and then too.
-- **Rewards.** Small coin (the money balance). Standing always: in the giver's town, with the giver's people if
-  another, with a temple, guild or the law where it fits; a twist's choice can also cost standing (`jobs.effects`).
-  Beside it one thing fitting the giver: a service (a free repair or sharpening, a bed, healing, a crossing), a
-  rumour that leads somewhere real (a hidden place, a herb, an epic teacher, a boss's weakness), a recipe or a
-  bestiary step, something the giver owns (only what such a person has: the loot rule), access, or a follower later.
-- **Favours.** About eight kinds, each a thing in the pack ("the ferryman's token", "Hob's carved whistle"). No key: it
-  shows as an extra option in a window that exists already (the ferry, the city gate while wanted, the lord, a guide
-  over a pass) and is gone after one use. On the player.
-- **Remembered.** Who you helped lives on the player (`p.folk`): they greet you, now and then give a small thing or a
-  rumour; sometimes a follow-up days or weeks later (up to three parts). Needs run out after some days: folk solve it
-  themselves or it goes wrong, and the news says which; left alone, the world shows it (the goat gone, the well foul,
-  the mill still, a grave with a name you know). Givers can die.
-- **Seeds.** 120 hand-written small stories beside the maker (like the Varnish books): fixed lines, 2-4 steps, one
-  twist with a choice drawn from a few, and a rule where it may fall ("The bell that rings at night": a human village
-  with a chapel). Each world gets 20 to 25 of them.
-- Code: `folkquests.py` (maker, steps) and `folkdata.py` (lists, twists, seeds); hooks in `townlife.py`, `events.py`,
-  `news.py`, `missions.py` (Mission kind 'folk' with steps). Handbook: Jobs and money, Towns and people. The wiki gets
-  the seeds' titles. Test part `folk`. Bump `SAVE_VERSION`. Size XL in two parts: A the maker, sources, steps, rewards,
-  standing, favours and UI; B the twists (also on the boards), who remembers you, follow-ups and consequences, seeds.
 
 ## Crafts guilds (approved 2 November 2026, not built)
 Every life skill gets a guild that keeps it. The Dutch proposal: the doc "Ambachtsgildes: voorstellen" (thread

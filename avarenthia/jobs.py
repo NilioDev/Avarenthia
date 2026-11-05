@@ -859,6 +859,10 @@ def on_accept(game, s, m):
     from . import missions as MS
     w, p = game.world, game.player
     d = m.data
+    if m.kind in ('nest', 'missing', 'rescue', 'relic', 'shrine', 'cargo', 'debt', 'deserter', 'harvest', 'well') \
+            and random.random() < 1 / 6:
+        from . import folkdata as FD
+        d['twist'] = random.choice(FD.BOARD_TWISTS)     # found as it ends (folkquests.board_twist)
     if d.get('did') is not None and m.kind in ('nest', 'deep'):
         dg = w.dungeons[d['did']]
         game.reveal_place(dg.x, dg.y)

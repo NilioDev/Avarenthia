@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'More makers', 'Crafts guilds', 'Folk in need :: Twists and seeds'}
+NOT_BUILT = {'More makers', 'Crafts guilds'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -769,6 +769,11 @@ R = {
     'Folk in need :: Folk with a need': [('to', ('village', 'town', 'city')),
                                          ('dbgnext', 'folk_need', 'beasts', 'nest', 'named', 'news', 'season', 'scarce',
                                           'realm', 'old', 'kin', 'trade', 'feast', 'people', 'watch'), SCHOOLS_NOTE],
+    'Folk in need :: Twists and seeds': [('to', ('village', 'town', 'city')),
+                                         ('dbgnext', 'folk_twist', 'young', 'worse', 'child', 'stay', 'liar', 'rival',
+                                          'sold', 'cursed', 'late', 'wrong', 'bewitched', 'weather', 'opposite', 'hidden',
+                                          'captive', 'sick', 'danger', 'more'), ('dbg', 'folk_seed', 0),
+                                         ('dbg', 'folk_next'), SCHOOLS_NOTE],
     'Folk in need :: Rewards and favours': [('to', ('village', 'town')), ('dbg', 'folk_need'),
                                             ('give', 'Favour: Hob\'s ferry token'), ('give', "Favour: Hob's word at the gate"),
                                             ('give', "Favour: Hob's letter of thanks"), ('give', "Favour: Hob's carved whistle"),

@@ -51,6 +51,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
+| **Built: folk in need (5 Nov)** | Ordinary people in the settlements ask for help with a need from the world as it is; 1-4 steps, a twist one time in three (boards too), small coin, standing and one thing fitting the giver (eight favours), folk who remember you and follow-ups, needs that run out and graves; 128 hand-written seeds, 20-25 a world |
 | **Built: marked creatures (5 Nov)** | One list of 20 affixes for champions (one, from level 15 sometimes two), uniques (two or three, and a name like the named enemies') and the named enemies; each fits its kind, place and season, has an answer, stands beside the name in IN SIGHT and in a sentence on the look; rarer than before |
 | **Built: a finer look (5 Nov)** | Remembered land with a hint of colour, calmer roads, whole names on the map, one colour scale on the panel, names in the log in their colour, each kind of level its own remembered tint, a soft fade-in |
 | **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
@@ -59,6 +60,23 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **Folk in need** (rounds 46-47, 5 November 2026; `folkquests.py`, `folkdata.py`, test part `folk`; SAVE_VERSION 67
+  and 68). Needs on the world (`world.needs`: sid -> [need]), 0-2 per settlement, steady for five days; a giver
+  stands about (role 'folk') with `!`, says a line in passing (tip 'folk'), a bump opens one window. Sources: a
+  monster group on the map, a nest's chief, a named enemy, the town's news event, the season, a scarce good, the
+  giver's trade, a feast near, the levy at a lord's seat, an old dungeon, kin elsewhere, a night's watch, each
+  people's own list, and the seeds (128 in `folkdata.SEEDS`, 20-25 per world by `world_seeds`, where their rule
+  fits). Verbs: kill, clear, hunt, find (the relic machinery of dungeons), go, seat, watch, bring, dish; now and then
+  a journey (word to kin first). Mission kind 'folk', steps in `m.data['steps']`. Coin 5-40s, the town's standing,
+  a god or the town for priests and guards, and one thing by trade: eight favours (Item 'favour': ferry, ship,
+  gate, bed, repair, heal, guide, lord; options in the ferry, sailing, gate and lord windows; bed, repair, the
+  raising and the shut pass take it when used), something of their own, a rumour of an unseen place, the bestiary.
+  18 twists (`folkdata.TWISTS`), one in three, revealed at the step they hang on, one choice through
+  `jobs.effects`; one board job in six of ten kinds gets one of six (`BOARD_TWISTS`) as it ends. Who you helped
+  (`p.folk`) stands in their town, greets you, gives a loaf or a rumour now and then, and has up to three later
+  parts (`folkdata.FOLLOW`). Offers that run out are solved or go wrong (news, a shop shut, a death); givers die in
+  raids and plagues; graves at the edge of the village with their epitaph on the look. Not yet: folk on the
+  road, by herds, in hermitages and dens.
 - **Marked creatures** (round 45, 5 November 2026; `affixes.py`, test part `affixes`; SAVE_VERSION 66, the old
   names migrate). One list of 20 affixes (`affixes.AFFIXES`, also `named.TRAITS`): the 16 traits, Brutal (was Extra
   Strong), and new Warded (resists one school: fire, cold, lightning or holy, by 75%), Ember-hearted (burning ground
@@ -2932,3 +2950,45 @@ where and the answer for each: project files `monsters/affixen.md`.
 - **Loot unchanged:** only those who use gear drop gear. A skinned unique may give a part tied to its affix (about
   25%, as named enemies do now, `beastparts.TRAIT_POWER`); champions nothing extra. The bestiary does not change.
 - Handbook: two or three sentences in the fighting chapter. Test part `affixes`. Bump `SAVE_VERSION`.
+
+## Folk in need (built 5 November 2026; the spec)
+Quests the world makes itself, beside the boards. The Dutch proposal with examples: project files `quests/voorstel.md`
+(thread "Leukere quests laten genereren").
+- **Who.** 0 to 2 ordinary people with a need in each settlement, and on the road, by herds, in hermitages, as captives
+  in a den, among hostile peoples when your standing allows. They wear the `!` and `?` that already mark people with
+  work (`missions.py`); passing near, they say their need in the log; a bump talks (one choice window). Look names them
+  ("Maud, the miller's wife, worried"). One first-time tip; no new key. Taken needs go in the Jobs tab and layer.
+- **Need from the world.** Every need hangs on something real in this world, never made up for the quest: a monster
+  group, nest, named enemy or roaming boss on the map; the news (raid, plague, famine, fire, war, an evil's mark);
+  season and weather (a shut pass, drought, harvest, ice); caravans and goods; realms (a levy, a baron's grab); old
+  places, Varnish ruins, barrows; the giver's trade (smith, fisher, innkeeper, priest...); the giver's people, each its
+  own list (halfling, dwarf, elf, gnome, half-orc, human, and kobold, goblin, lizardfolk); feast days. No need depends
+  on one people or place.
+- **The grammar** (after Doran and Parberry's study of RPG quests): a motive (safety, health, family, knowledge,
+  property, tools, honour, peace, skill, feast), an approach, and 1-4 steps from verbs the game has: go, talk, follow
+  tracks (the named enemies' search area), find, bring, kill, drive off, guard or escort, make (a life skill), use a
+  thing at a place, keep watch a night, spy, catch alive. Mostly 1-2 steps; sometimes a journey of 3-4.
+- **Twists,** about one in three, picked at making and found on the spot (a rumour may hint): 18 kinds (the beast
+  guards its young; it was driven out by something worse; the thief is a hungry child; the missing one will not come
+  back; the giver lies; a rival; already sold; cursed; too late; the wrong one accused; a bewitched kin; the weather
+  turns; two people want the opposite; a hidden place; a captive in the den; the beast is sick; the giver in danger
+  while you are away). At most one choice, 2-4 options. The board jobs get these twists now and then too.
+- **Rewards.** Small coin (the money balance). Standing always: in the giver's town, with the giver's people if
+  another, with a temple, guild or the law where it fits; a twist's choice can also cost standing (`jobs.effects`).
+  Beside it one thing fitting the giver: a service (a free repair or sharpening, a bed, healing, a crossing), a
+  rumour that leads somewhere real (a hidden place, a herb, an epic teacher, a boss's weakness), a recipe or a
+  bestiary step, something the giver owns (only what such a person has: the loot rule), access, or a follower later.
+- **Favours.** About eight kinds, each a thing in the pack ("the ferryman's token", "Hob's carved whistle"). No key: it
+  shows as an extra option in a window that exists already (the ferry, the city gate while wanted, the lord, a guide
+  over a pass) and is gone after one use. On the player.
+- **Remembered.** Who you helped lives on the player (`p.folk`): they greet you, now and then give a small thing or a
+  rumour; sometimes a follow-up days or weeks later (up to three parts). Needs run out after some days: folk solve it
+  themselves or it goes wrong, and the news says which; left alone, the world shows it (the goat gone, the well foul,
+  the mill still, a grave with a name you know). Givers can die.
+- **Seeds.** 120 hand-written small stories beside the maker (like the Varnish books): fixed lines, 2-4 steps, one
+  twist with a choice drawn from a few, and a rule where it may fall ("The bell that rings at night": a human village
+  with a chapel). Each world gets 20 to 25 of them.
+- Code: `folkquests.py` (maker, steps) and `folkdata.py` (lists, twists, seeds); hooks in `townlife.py`, `events.py`,
+  `news.py`, `missions.py` (Mission kind 'folk' with steps). Handbook: Jobs and money, Towns and people. The wiki gets
+  the seeds' titles. Test part `folk`. Bump `SAVE_VERSION`. Size XL in two parts: A the maker, sources, steps, rewards,
+  standing, favours and UI; B the twists (also on the boards), who remembers you, follow-ups and consequences, seeds.

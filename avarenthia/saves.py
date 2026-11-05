@@ -41,6 +41,7 @@ MIGRATIONS = {
     64: ('the kill count moved to the tally', _tally, False),
     65: ('the marks of creatures renamed', _affixes, False),
     66: ('folk in need: their needs on the world, who you helped on the player', None, False),
+    67: ('folk in need: twists, seeds, follow-ups and graves', None, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

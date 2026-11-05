@@ -196,8 +196,9 @@ def screen_text(app):
 
 
 # ------------------------------------------------------------------ the world
-def folk_need(game, src=None):
-    """Folk: make a need here (in the settlement you stand in, or the nearest), of this source when it can be had."""
+def folk_need(game, src=None, twist=None, seed=None):
+    """Folk: make a need here (in the settlement you stand in, or the nearest), of this source when it can be had;
+    with a twist (a key of folkdata.TWISTS) or a seed (its index in folkdata.SEEDS)."""
     from . import folkquests as FQ
     w = game.world
     m = game.map
@@ -208,7 +209,7 @@ def folk_need(game, src=None):
     s = w.settlements[sid]
     nd = None
     for _ in range(30):
-        nd = FQ.make(game, s)
+        nd = FQ.make(game, s, seed=seed, twist=twist)
         if nd and (src is None or nd['src'] == src):
             break
     if not nd:
@@ -219,6 +220,26 @@ def folk_need(game, src=None):
         FQ.place(game, m, nd)
     game.msg(f"Debug: {nd['title']} ({nd['src']}): {FQ.brief(game, nd)}", 'info')
     return nd
+
+
+def folk_twist(game, twist):
+    return folk_need(game, twist=twist)
+
+
+def folk_seed(game, i):
+    return folk_need(game, seed=i)
+
+
+def folk_next(game):
+    """Folk: every follow-up of those you helped comes due now."""
+    from . import folkquests as FQ
+    n = 0
+    for h in FQ.helped(game).values():
+        if not h.get('follow'):
+            h['follow'] = 'wedding'
+        h['due'] = game.day
+        n += 1
+    game.msg(f'Debug: {n} follow-ups due; enter their town.', 'info')
 
 
 def reset_tips(game):

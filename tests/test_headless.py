@@ -5823,7 +5823,7 @@ def folk():
     beast = next(x for x in w.wanderers if x.kind == 'monsters' and x.group)
     nd = FQ.make(g, s)
     nd['steps'] = [dict(v='kill', wd=beast.id, x=beast.x, y=beast.y, name=beast.name)]
-    nd['reward'] = 'ferry'
+    nd['reward'], nd['twist'] = 'ferry', None
     FQ.store(g).setdefault(0, []).append(nd)
     FQ.on_enter(g, m)
     o = next(x for x in m.mons if getattr(x, 'need', None) == nd['id'])
@@ -5850,7 +5850,7 @@ def folk():
     # bring, go, find and watch
     def new(steps, reward='rumour'):
         n = FQ.make(g, s)
-        n['steps'], n['reward'] = steps, reward
+        n['steps'], n['reward'], n['twist'] = steps, reward, None
         FQ.store(g)[0].append(n)
         return FQ.take(g, n['id']), n
     mi, n = new([dict(v='bring', good='grain', qty=2)], 'bed')
@@ -5896,7 +5896,60 @@ def folk():
     assert not FQ.has(g, 'gate') and s.rep == -60
     assert all(k in FD.FAVOURS for k in set(FD.TRADE_REWARD.values()) - {'own', 'rumour', 'bestiary'})
     assert len(FD.FAVOURS) == 8 and 'folk' in GDE.TIPS
-    print('folk ok:', len(made), 'needs from', sorted(srcs))
+    # round 47: twists, seeds, who remembers you, what happens when nobody helps
+    assert len(FD.TWISTS) == 18 and len(FD.SEEDS) >= 120
+    for i, sd in enumerate(FD.SEEDS):
+        assert sd[5] is None or sd[5] in FD.TWISTS, sd[0]
+        for tok in sd[4]:
+            v, _, rest = tok.partition(':')
+            assert v in ('kill', 'clear', 'hunt', 'find', 'go', 'seat', 'watch', 'bring', 'dish'), (sd[0], tok)
+            if v == 'bring':
+                assert rest.split(':')[0] in D.GOODS, (sd[0], tok)
+    ws = FQ.world_seeds(g)
+    assert 20 <= len(w.folk_seeds) <= 25 and set(ws) <= set(w.folk_seeds)
+    seeded = [FQ.make(g, s, seed=i) for i in range(len(FD.SEEDS))]
+    seeded = [x for x in seeded if x]
+    assert len(seeded) > 30 and all(x['seed'] for x in seeded)
+    beast = next(x for x in w.wanderers if x.kind == 'monsters' and x.group and x.mission is None)
+    mi, n = new([dict(v='kill', wd=beast.id, x=beast.x, y=beast.y, name=beast.name)])
+    mi.data['twist'] = 'young'
+    MS.on_group_defeated(g, beast)
+    assert g.pending['key'] == 'folktwist' and len(g.pending['options']) == 3
+    EV.RESOLVERS['folktwist'](g, g.pending['options'][1][1], g.pending['ctx'])
+    assert mi.data['coin_mult'] == .5 and mi.data['friend'] and mi.state == 'turnin'
+    o = FQ.place(g, g.map, n)
+    o.need = n['id']
+    FQ.talk(g, o)
+    h = FQ.helped(g)[n['id']]
+    assert mi.state == 'done' and h['follow'] == 'friend' and mi.reward == n['coin'] // 2
+    h['due'] = g.day
+    known = sum(1 for e in p.bestiary.values() if e)
+    FQ.visit(g, s)
+    assert 'follow' not in h or h['follow'] != 'friend'
+    # a need that runs out: the news tells it; a giver who dies leaves a grave with a name
+    from avarenthia import news as NW
+    nd = FQ.make(g, s)
+    nd['until'] = g.day - 1
+    nd['motive'] = 'health'
+    FQ.store(g)[0].append(nd)
+    before = len(NW.store(g))
+    FQ.refresh(g, s)
+    assert len(NW.store(g)) > before and nd not in FQ.store(g)[0]
+    FQ.died(g, s, dict(nd, title='Maud, the miller\'s wife'))
+    g.map.life_day = None
+    FQ.on_enter(g, g.map)
+    eps = g.map.epitaphs
+    assert any('Maud' in t for t in eps.values())
+    i = next(i for i, t in eps.items() if 'Maud' in t)
+    assert g.map.t[i] == D.GRAVE and any('Maud' in ln for ln in DS.tile(g, g.map, i % g.map.w, i // g.map.w)[2])
+    # a board job's twist
+    from avarenthia import missions as MS2
+    bm = MS2.Mission(g.new_id(), 'nest', 0)
+    bm.title, bm.reward, bm.state, bm.data = 'Clear a nest', 3000, 'active', {'twist': 'rival'}
+    g.missions.append(bm)
+    MS2.complete(g, bm, [0])
+    assert g.pending['key'] == 'boardtwist'
+    print('folk ok:', len(made), 'needs from', sorted(srcs), '; seeds that fall in Thornfield:', len(seeded))
 
 
 def money():

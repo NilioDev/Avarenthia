@@ -375,6 +375,9 @@ def complete(game, m, sids):
     del game.jobs_done[:-10]
     game.msg(f"Job done: {m.title}. You receive {fmt(m.reward + bonus)}{f' ({fmt(bonus)} reputation bonus)' if bonus else ''}.", 'gold')
     game.num(p.x, p.y, '+' + fmt(m.reward + bonus, True), (242, 196, 67), True)
+    if m.kind != 'folk' and m.data.get('twist'):
+        from . import folkquests as FQ
+        FQ.board_twist(game, m)
 
 
 def fail(game, m, why):

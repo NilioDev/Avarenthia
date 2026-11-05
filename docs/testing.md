@@ -488,7 +488,7 @@ three things. Test part `boss_moves`.
 - **The baron's word** - the messenger in the letter's city, the sealed word, the lord's seat, the realms layer opening,
   the first realm job, the war version. Debug: set the letter done (story flags), Teleport to the city, start a war.
 
-## Folk in need (approved 1 November 2026, not built)
+## Folk in need (approved 1 November 2026, built 5 November 2026)
 - **Folk with a need** - the `!` on them, the log line when near, the window, the Jobs tab; each source making its
   need (a monster group, news, season, caravan, realm, old place, trade, people); a need running out and its sign in
   the world. Debug: "Folk: make a need here" (by source and kind), Time (skip days), Teleport.

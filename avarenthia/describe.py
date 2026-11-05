@@ -228,6 +228,10 @@ def tile(game, m, x, y):
     i = y * m.w + x
     t = D.TILES[m.t[i]]
     lines = [TILE_DESC.get(t.name, '')]
+    from . import folkquests as FQ
+    ep = FQ.epitaph(m, x, y)
+    if ep:
+        lines.append(ep)
     deco = getattr(m, 'deco', None)
     if deco and deco[i] in DECO_DESC:
         lines.append(DECO_DESC[deco[i]])

@@ -186,19 +186,29 @@ def journey(game, s, steps):
     return steps
 
 
-def make(game, s, avoid=()):
-    """A new need in this settlement, or None."""
+def make(game, s, avoid=(), seed=None, twist=None):
+    """A new need in this settlement, or None: now and then one of the world's seeds, else made from what is here."""
     from .races import random_name
     pp = people_of(s)
     givers = FD.GIVERS.get(pp) or FD.GIVERS['human']
     trade, title = random.choice(givers)
-    srcs = sources(game, s, trade, pp)
-    srcs = [x for x in srcs if x[0] not in avoid] or srcs
-    if not srcs:
-        return None
-    rare = {'beasts': 2, 'nest': 1, 'named': 2, 'news': 3, 'people': 3, 'trade': 2, 'season': 1.5, 'scarce': 1.5}
-    src, motive, steps, line = random.choices(srcs, [rare.get(x[0], 1) for x in srcs])[0]
-    steps = journey(game, s, steps)
+    sd = None
+    if seed is not None or random.random() < .3:
+        sd = from_seed(game, s, pp, seed)
+    if sd:
+        src, motive, steps, line, trade, title = 'seed', sd['motive'], sd['steps'], sd['line'], sd['trade'], sd['title']
+        twist = twist or sd['twist']
+    else:
+        srcs = sources(game, s, trade, pp)
+        srcs = [x for x in srcs if x[0] not in avoid] or srcs
+        if not srcs:
+            return None
+        rare = {'beasts': 2, 'nest': 1, 'named': 2, 'news': 3, 'people': 3, 'trade': 2, 'season': 1.5, 'scarce': 1.5}
+        src, motive, steps, line = random.choices(srcs, [rare.get(x[0], 1) for x in srcs])[0]
+        steps = journey(game, s, steps)
+        if twist is None and random.random() < .33:
+            fit = [k for k, v in FD.TWISTS.items() if any(st['v'] in v[0] for st in steps)]
+            twist = random.choice(fit) if fit else None
     gender = random.choice(['male', 'female'])
     if any(w in title for w in ('wife', 'daughter', 'woman', 'alewife')):
         gender = 'female'
@@ -209,7 +219,104 @@ def make(game, s, avoid=()):
     return dict(id=game.new_id(), sid=s.id, name=first, title=f'{first}, {title}', gender=gender, people=pp, trade=trade,
                 motive=motive, src=src, line=line, steps=steps, made=game.day,
                 until=game.day + random.randint(*OFFER_DAYS), coin=(4 + 5 * danger + random.randint(0, 6)) * 100,
-                reward=FD.TRADE_REWARD.get(trade, 'rumour'))
+                reward=FD.TRADE_REWARD.get(trade, 'rumour'), twist=twist, seed=sd['seed'] if sd else None,
+                hint=FD.TWIST_HINT.get(twist) if twist and random.random() < .5 else None)
+
+
+# ------------------------------------------------------------------ the seeds
+def world_seeds(game):
+    """The 20 to 25 seeds this world has, by index into folkdata.SEEDS; those used are struck off."""
+    w = game.world
+    if 'folk_seeds' not in w.__dict__:
+        rnd = random.Random(getattr(w, 'seed', 0) * 31 + 47)
+        w.folk_seeds = rnd.sample(range(len(FD.SEEDS)), rnd.randint(20, 25))
+        w.folk_seeds_used = []
+    return [i for i in w.folk_seeds if i not in w.folk_seeds_used]
+
+
+def seed_fits(game, s, pp, rule):
+    words = rule.split()
+    peoples = [x for x in words if x in FD.GIVERS]
+    kinds = [x for x in words if x in ('hamlet', 'village', 'town', 'city', 'metropolis', 'deephold')]
+    if peoples and pp not in peoples or kinds and s.kind not in kinds:
+        return False
+    from . import calendar as CAL
+    seasons = [x for x in words if x in ('winter', 'spring', 'summer', 'autumn')]
+    if seasons and CAL.season(game.day) not in seasons:
+        return False
+    if 'temple' in words and 'temple' not in s.services:
+        return False
+    if 'harbour' in words and not ('harbour' in s.services or getattr(s, 'harbour', None)):
+        return False
+    return True
+
+
+def seed_steps(game, s, spec):
+    """The steps of a seed made real in this world, or None when a target is missing."""
+    out = []
+    for tok in spec:
+        v, _, rest = tok.partition(':')
+        if v == 'kill':
+            bs = [wd for wd in _beasts(game, s) if not _taken(game, 'wd', wd.id)]
+            if not bs:
+                return None
+            wd = bs[0]
+            out.append(dict(v='kill', wd=wd.id, x=wd.x, y=wd.y, name=wd.name))
+        elif v == 'clear':
+            ns = [d for d in _nests(game, s) if not _taken(game, 'did', d.id)]
+            if not ns:
+                return None
+            out.append(dict(v='clear', did=ns[0].id, boss=ns[0].boss, name=ns[0].name))
+        elif v == 'hunt':
+            ns = [n for n in _named(game, s) if not _taken(game, 'nid', n.id)]
+            if not ns:
+                return None
+            out.append(dict(v='hunt', nid=ns[0].id, name=ns[0].name))
+        elif v == 'find':
+            ds = [d for d in _dungeons(game, s) if not _taken(game, 'did', d.id)]
+            if not ds:
+                return None
+            d = random.choice(ds)
+            out.append(dict(v='find', did=d.id, relic=rest, name=d.name))
+        elif v == 'go':
+            ts = _towns(game, s)
+            if not ts:
+                return None
+            o = random.choice(ts)
+            out.append(dict(v='go', sid=o.id, name=o.name, who=rest))
+        elif v == 'seat':
+            hs = _seats(game, s)
+            if not hs:
+                return None
+            h = random.choice(hs)
+            out.append(dict(v='seat', hid=h.id, name=h.title))
+        elif v == 'bring':
+            g, _, n = rest.partition(':')
+            out.append(dict(v='bring', good=g, qty=int(n or 1)))
+        else:
+            out.append(dict(v=v))
+    return out
+
+
+def from_seed(game, s, pp, want=None):
+    """A seed that may fall here: {seed, title, line, steps, twist, trade, motive}, or None."""
+    cands = world_seeds(game) if want is None else [want]
+    random.shuffle(cands)
+    for i in cands:
+        title, rule, trade, line, spec, twist = FD.SEEDS[i]
+        if want is None and not seed_fits(game, s, pp, rule):
+            continue
+        steps = seed_steps(game, s, spec)
+        if not steps:
+            continue
+        givers = dict(FD.GIVERS.get(pp) or FD.GIVERS['human'])
+        who = givers.get(trade) or dict(FD.GIVERS['human']).get(trade) or 'a local'
+        motive = {'kill': 'safety', 'clear': 'safety', 'hunt': 'honour', 'find': 'property', 'go': 'family',
+                  'seat': 'family', 'watch': 'safety', 'bring': 'tools', 'dish': 'feast'}[steps[-1]['v']]
+        if want is None:
+            game.world.folk_seeds_used.append(i)
+        return dict(seed=title, line=line, steps=steps, twist=twist, trade=trade, title=who, motive=motive)
+    return None
 
 
 def wanted(game, s):
@@ -221,7 +328,14 @@ def wanted(game, s):
 
 def refresh(game, s):
     lst = store(game).setdefault(s.id, [])
+    for nd in [nd for nd in lst if nd['until'] < game.day]:
+        lapse(game, s, nd)
     lst[:] = [nd for nd in lst if nd['until'] >= game.day]
+    ev = getattr(s, 'event', None)
+    if ev and ev[0] in ('war', 'raid', 'undead', 'plague') and lst and random.random() < .15:
+        nd = random.choice(lst)
+        lst.remove(nd)
+        died(game, s, nd)
     tries = 0
     while len(lst) < wanted(game, s) and tries < 3:
         tries += 1
@@ -229,6 +343,77 @@ def refresh(game, s):
         if nd:
             lst.append(nd)
     return lst
+
+
+# ------------------------------------------------------------------ when nobody helps
+WRONG = {'safety': ('{name} lost the last of the flock to it.', 'the flock gone'),
+         'health': ('The sickness took {name} in the end.', None),
+         'family': ('{name} never heard from their kin again.', None),
+         'property': ('{name} gave up looking.', None),
+         'tools': ('{name} closed the shop for good.', 'scarce'),
+         'honour': ('{name} lost face before the whole town.', None),
+         'peace': ('{name} mourns still.', None),
+         'feast': ('The feast went ahead with an empty table.', None),
+         'knowledge': ('Nobody learnt what it was.', None), 'skill': ('{name} could not do it alone.', None)}
+
+
+def lapse(game, s, nd, failed=False):
+    """A need runs out: the folk solved it themselves, or it went wrong; the news says which, the world shows it."""
+    from . import news as NW
+    if not failed and random.random() < .5:
+        NW.post(game, 'folk', f"In {s.name}, {nd['title']} solved their trouble without help in the end.", s.x, s.y)
+        return
+    line, sign = WRONG.get(nd['motive'], ('It went badly for {name}.', None))
+    NW.post(game, 'folk', f"In {s.name}: " + line.format(name=nd['title']), s.x, s.y)
+    if sign == 'scarce':
+        st = next((st for st in nd['steps'] if st['v'] == 'bring'), None)
+        if st and st['good'] in s.market:
+            s.market[st['good']][0] = 0                 # the shop shut: none of it on the market
+    if nd['motive'] in ('health', 'safety') and random.random() < .3:
+        died(game, s, nd)
+
+
+def died(game, s, nd):
+    """Givers can die: a grave with a name you may know."""
+    from . import news as NW
+    NW.post(game, 'folk', f"{nd['title']} of {s.name} is dead.", s.x, s.y)
+    h = helped(game).get(nd.get('root', nd.get('nid', nd['id'])))
+    if h:
+        h['dead'] = True
+    grave(game, s.id, f"Here lies {nd['title']}. {random.choice(['Missed by all.', 'Gone before their time.', 'At rest.'])}")
+    from . import missions as MS
+    m = mission_of(game, nd.get('nid', nd['id']))
+    if m:
+        MS.fail(game, m, f"{nd['title']} is dead.")
+
+
+def grave(game, sid, text):
+    game.world.__dict__.setdefault('folk_graves', {}).setdefault(sid, []).append(text)
+
+
+def place_graves(game, m):
+    """The graves of folk you knew, at the edge of the settlement; their names on the look (m.epitaphs)."""
+    from .towns import INDOOR
+    lst = game.world.__dict__.get('folk_graves', {}).get(m.sid, [])
+    eps = m.__dict__.setdefault('epitaphs', {})
+    have = set(eps.values())
+    for text in lst:
+        if text in have:
+            continue
+        cx, cy = m.entry
+        for r in range(4, 14):
+            cells = [(cx + dx, cy + dy) for dx in range(-r, r + 1) for dy in (-r, r)
+                     if m.inb(cx + dx, cy + dy) and m.tile(cx + dx, cy + dy) in (D.GRASS, D.FLOOR, D.PATH)
+                     and m.tile(cx + dx, cy + dy) not in INDOOR and not m.mon_at(cx + dx, cy + dy)]
+            if cells:
+                x, y = random.choice(cells)
+                m.set(x, y, D.GRAVE)
+                eps[y * m.w + x] = text
+                break
+
+
+def epitaph(m, x, y):
+    return m.__dict__.get('epitaphs', {}).get(y * m.w + x)
 
 
 def need(game, nid):
@@ -260,6 +445,15 @@ def on_enter(game, m):
     for nd in offers + [mi.data for mi in MS.active(game) if mi.kind == 'folk' and mi.giver == sid]:
         if nd.get('nid', nd['id']) not in there:
             place(game, m, nd)
+    known = {getattr(o, 'helped', None) for o in m.mons if o.role == 'folk'}
+    for hid, h in helped(game).items():
+        if h['sid'] == sid and hid not in known and not h.get('dead') and hid not in keep:
+            npc = place(game, m, dict(id=None, title=h['title'], people=h.get('people', 'human'),
+                                      gender=h.get('gender', 'male'), motive=h['motive']))
+            if npc:
+                npc.need, npc.helped, npc.job = None, hid, 'glad to see you'
+    visit(game, s)
+    place_graves(game, m)
 
 
 def place(game, m, nd):
@@ -290,6 +484,10 @@ def tick(game, m):
     for o in m.mons:
         if o.role != 'folk' or cheb(o.x, o.y, p.x, p.y) > 3 or not game.visible(o.x, o.y):
             continue
+        hid = getattr(o, 'helped', None)
+        if hid is not None:
+            greet(game, o, hid)
+            continue
         nd = need(game, getattr(o, 'need', None))
         if nd and nd.get('said') != game.day:
             nd['said'] = game.day
@@ -297,6 +495,63 @@ def tick(game, m):
             from . import guide as GDE
             GDE.tip(game, 'folk')
     _watch(game, m)
+
+
+def greet(game, npc, hid):
+    """Who you helped greets you, and now and then gives a small thing or a rumour."""
+    h = helped(game).get(hid)
+    if not h or h.get('greet') == game.day:
+        return
+    h['greet'] = game.day
+    game.msg(random.choice(FD.GREET).format(name=npc.name.split(',')[0]), 'talk')
+    if game.day - h.get('gift_day', 0) >= 10 and random.random() < .3:
+        h['gift_day'] = game.day
+        s = game.world.settlements[h['sid']]
+        line = _rumour(game, s) if random.random() < .5 else None
+        if line:
+            game.msg(line, 'info')
+        else:
+            from .entities import Item
+            it = Item(game.new_id(), 'food', 'bread')
+            if game.add_to_inv(it):
+                game.msg(f"{npc.name.split(',')[0]} gives you a loaf, still warm.", 'good')
+
+
+def visit(game, s):
+    """A follow-up that has come due for someone of this town: a new part of their story, up to three."""
+    for hid, h in helped(game).items():
+        if h['sid'] != s.id or not h.get('follow') or game.day < h.get('due', 0) or h.get('dead'):
+            continue
+        key = h.pop('follow')
+        line, kind = FD.FOLLOW[key]
+        first = h['title'].split(',')[0]
+        if kind == 'need':
+            nd = make(game, s)
+            if nd:
+                nd.update(name=first, title=h['title'], people=h.get('people', nd['people']), gender=h.get('gender'),
+                          trade=h['trade'], motive='health', line=line.strip('"'), twist=None,
+                          steps=[dict(v='bring', good='medicine', qty=1)], root=hid, src='follow')
+                store(game).setdefault(s.id, []).append(nd)
+            continue
+        game.msg(f"{first}: {line}" if line.startswith('"') else line, 'talk')
+        if kind == 'gift':
+            from .entities import Item
+            game.add_to_inv(Item(game.new_id(), 'food', 'bread'))
+            from . import jobs as JB
+            JB.effects(game, town=[(s.id, 3)])
+        elif kind == 'beast':
+            from . import bestiary as BE
+            BE.study(game, 1)
+        elif kind == 'rumour':
+            r = _rumour(game, s)
+            if r:
+                game.msg(r, 'info')
+        elif kind == 'rep':
+            s.rep = min(100, s.rep + 2)
+        if h.get('part', 1) < 3 and random.random() < .3:
+            h['follow'] = random.choice(['thanks', 'apprentice'])
+            h['due'] = game.day + random.randint(10, 40)
+            h['part'] = h.get('part', 1) + 1
 
 
 def mark(game, npc):
@@ -321,7 +576,7 @@ def talk(game, npc):
     nd = need(game, nid)
     if nd:
         from .money import fmt
-        EV.ask(game, 'folk', npc.name, say_need(nd) + f'\n\n{brief(game, nd)} They offer {fmt(nd["coin"])}, and '
+        EV.ask(game, 'folk', npc.name, say_need(nd) + (f' {nd["hint"]}' if nd.get('hint') else '') + f'\n\n{brief(game, nd)} They offer {fmt(nd["coin"])}, and '
                f'{"a favour" if nd["reward"] in FD.FAVOURS else "something of their own" if nd["reward"] == "own" else "what they know"}.',
                [('I will help', 'take'), ('Not now', 'bye')], nid=nid, npc=npc.id)
         return True
@@ -486,8 +741,128 @@ def _start(game, m):
 def advance(game, m, line=None):
     if line:
         game.msg(line, 'gold')
+    st = current(m)
     m.data['step'] = m.data.get('step', 0) + 1
+    tw = m.data.get('twist')
+    if tw and not m.data.get('twisted') and st and (st['v'] in FD.TWISTS[tw][0] or current(m) is None):
+        reveal(game, m)
+        return
     _start(game, m)
+
+
+# ------------------------------------------------------------------ the twists
+def _fill(game, m, text):
+    from . import jobs as JB
+    w = game.world
+    s = w.settlements[m.giver]
+    ts = _towns(game, s)
+    return text.format(rival=m.data.setdefault('twist_rival', random.choice(JB.RIVALS)),
+                       town=(ts[0].name if ts else s.name),
+                       other=m.data.setdefault('twist_other', random.choice(JB.NAMES) + ' ' + random.choice(['the fisher', 'the miller', 'the farmer'])))
+
+
+def reveal(game, m):
+    """What you find on the spot: one choice, 2 to 4 options (or none)."""
+    from . import events as EV
+    m.data['twisted'] = True
+    tw = m.data['twist']
+    _verbs, text, opts = FD.TWISTS[tw]
+    p = game.player
+    out = []
+    for i, (lab, oc) in enumerate(opts):
+        ok = p.gold >= oc.get('pay', 0) and (not oc.get('need_good') or p.cargo.get(oc['need_good'], 0) >= 1)
+        out.append((_fill(game, m, lab), f'{m.id}:{i}' if ok else None))
+    EV.ask(game, 'folktwist', m.data['title'], _fill(game, m, text), out, mid=m.id)
+
+
+def r_twist(game, choice, ctx):
+    from . import missions as MS
+    m = MS.find(game, ctx.get('mid'))
+    if not m or not choice or ':' not in choice:
+        return
+    i = int(choice.split(':')[1])
+    _lab, oc = FD.TWISTS[m.data['twist']][2][i]
+    outcome(game, m, oc)
+    if m.state in ('active', 'turnin') and m.kind == 'folk':
+        _start(game, m)
+
+
+def outcome(game, m, oc):
+    """What a twist's choice leaves: coin, standing, a new step, a later part."""
+    from . import jobs as JB
+    p = game.player
+    d = m.data
+    w = game.world
+    if oc.get('pay'):
+        p.gold -= oc['pay']
+    if oc.get('need_good'):
+        g = oc['need_good']
+        p.cargo[g] -= 1
+        if not p.cargo[g]:
+            del p.cargo[g]
+    d['coin_mult'] = d.get('coin_mult', 1) * oc.get('coin', 1)
+    JB.effects(game, town=[(m.giver, oc.get('rep', 0) + oc.get('law', 0))], god=oc.get('god', 0))
+    if oc.get('lose'):
+        game.end_turn(oc['lose'] * D.DAY_LEN // 24, True)
+    if oc.get('rumour'):
+        line = _rumour(game, w.settlements[m.giver])
+        if line:
+            game.msg(line, 'info')
+    if oc.get('friend'):
+        d['friend'] = True
+    if oc.get('follow'):
+        d['follow'] = oc['follow']
+    if oc.get('grave'):
+        grave(game, m.giver, f"Here lies one of {d['name']}'s kin, who waited too long for news.")
+    if oc.get('captive'):
+        game.msg('The captive limps off towards home, weeping. Word of it will go before you.', 'good')
+    if oc.get('step') and m.kind == 'folk':
+        s = w.settlements[m.giver]
+        if oc['step'] == 'go_temple':
+            ts = [o for o in w.settlements if 'temple' in o.services and o.id != m.giver] or _towns(game, s)
+            who = 'a priest'
+        else:
+            ts = _towns(game, s)
+            who = 'the trader who has it'
+        if ts:
+            o = min(ts, key=lambda t: cheb(t.x, t.y, s.x, s.y))
+            d['steps'].insert(d['step'], dict(v='go', sid=o.id, name=o.name, who=who))
+    if oc.get('end') and m.kind == 'folk':
+        d['step'] = len(d['steps'])
+
+
+def board_twist(game, m):
+    """A board job, now and then: one of the twists that fit any job, found as it ends."""
+    from . import events as EV
+    tw = m.data.get('twist')
+    if not tw or m.data.get('twisted'):
+        return
+    m.data['twisted'] = True
+    _v, text, opts = FD.TWISTS[tw]
+    out = [(_fill(game, m, lab), f'{m.id}:{i}') for i, (lab, _oc) in enumerate(opts)]
+    EV.ask(game, 'boardtwist', m.title, _fill(game, m, text), out, mid=m.id, reward=m.reward)
+
+
+def r_board(game, choice, ctx):
+    from . import missions as MS
+    from . import jobs as JB
+    m = MS.find(game, ctx.get('mid'))
+    if not m or not choice:
+        return
+    _lab, oc = FD.TWISTS[m.data['twist']][2][int(choice.split(':')[1])]
+    extra = round(ctx.get('reward', 0) * (oc.get('coin', 1) - 1))
+    if extra:
+        game.player.gold = max(0, game.player.gold + extra)
+        from .money import fmt
+        game.msg(f"{'You get' if extra > 0 else 'You give up'} {fmt(abs(extra))}.", 'info')
+    if oc.get('pay'):
+        game.player.gold = max(0, game.player.gold - oc['pay'])
+    if m.giver is not None:
+        JB.effects(game, town=[(m.giver, oc.get('rep', 0))], god=oc.get('god', 0))
+    if oc.get('rumour'):
+        line = _rumour(game, game.world.settlements[m.giver] if m.giver is not None else game.world.settlements[0])
+        if line:
+            game.msg(line, 'info')
 
 
 def _ready(game, m):
@@ -521,11 +896,20 @@ def finish(game, m, npc=None):
         dg = game.world.dungeons.get(d.get(key)) if d.get(key) else None
         if dg is not None and dg.relic == m.id:
             dg.relic = None
+    m.reward = round(m.reward * d.get('coin_mult', 1))
     MS.complete(game, m, [m.giver])
     _people_standing(game, m)
     gift = reward(game, m)
     hp = helped(game)
-    hp[d['nid']] = dict(name=d['name'], title=d['title'], sid=m.giver, day=game.day, motive=d['motive'], trade=d['trade'])
+    old = hp.get(d.get('root', d['nid']), {})
+    part = old.get('part', 0) + 1
+    follow = d.get('follow') or ('friend' if d.get('friend') else None)
+    if follow is None and part < 3 and random.random() < .45:
+        follow = random.choice(['wedding', 'thanks', 'apprentice'])
+    hp[d.get('root', d['nid'])] = dict(name=d['name'], title=d['title'], sid=m.giver, day=game.day, motive=d['motive'],
+                                      trade=d['trade'], people=d['people'], gender=d['gender'], part=part,
+                                      follow=follow if part < 3 else None,
+                                      due=game.day + random.randint(7, 30), gift_day=game.day)
     if npc is not None:
         npc.need = None
         game.request = ('dialog', npc.name, random.choice(FD.THANKS) + (f' {gift}' if gift else ''))
@@ -568,8 +952,12 @@ def reward(game, m):
         names = BE.study(game, 2)
         if names:
             return f"{d['name']} tells you what the trappers know of the {' and the '.join(n.lower() for n in names)}."
+    return _rumour(game, game.world.settlements[m.giver])
+
+
+def _rumour(game, s):
+    """A rumour that leads somewhere real: a place near this town you have not seen, marked on your map."""
     w = game.world
-    s = w.settlements[m.giver]
     om = game.maps['over']
     unseen = [x for x in list(w.dungeons.values()) + list(getattr(w, 'sites', ())) if hasattr(x, 'x')
               and not om.seen[x.y * om.w + x.x] and cheb(x.x, x.y, s.x, s.y) <= 50]
@@ -683,6 +1071,9 @@ def on_fail(game, m):
     dg = game.world.dungeons.get(m.data.get('dungeon')) if m.data.get('dungeon') else None
     if dg is not None and dg.relic == m.id:
         dg.relic = None
+    if 'dead' not in m.data:
+        m.data['dead'] = False
+        lapse(game, game.world.settlements[m.giver], m.data, failed=True)
 
 
 def daily(game):
@@ -748,6 +1139,8 @@ def use(game, kind):
 def _register():
     from . import events as EV
     EV.RESOLVERS['folk'] = r_folk
+    EV.RESOLVERS['folktwist'] = r_twist
+    EV.RESOLVERS['boardtwist'] = r_board
 
 
 _register()

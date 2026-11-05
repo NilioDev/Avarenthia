@@ -578,6 +578,19 @@ add('trade', 'Skills', 'Trade: named goods, far goods, barter',
     f'<h3 class="gh">Far, bartered and forbidden goods</h3><div class="tw"><table><tr><th>Good</th><th>Base (silver)</th>'
     f'<th>Kind</th></tr>{ex_rows}</table></div>')
 
+# ---------------------------------------------------------------- folk in need
+import avarenthia.folkdata as FDW
+fs_rows = ''.join(f'<tr class="entry"><td>{e(t)}</td><td>{e(w or "anywhere")}</td><td>{e(", ".join(st))}</td>'
+                  f'<td>{e(tw or "")}</td></tr>' for t, w, _tr, _ln, st, tw in FDW.SEEDS)
+tw_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(v[1])}</td><td>{e("; ".join(o for o, _x in v[2]))}</td></tr>'
+                  for k, v in FDW.TWISTS.items())
+add('folk', 'World', 'Folk in need', '<p>Ordinary people with a need from the world as it is (folkquests.py, folkdata.py): '
+    'the twists, and the hand-written seeds, 20 to 25 of them in each world. ' + badge('built') + '</p>',
+    f'<h3 class="gh">The twists ({len(FDW.TWISTS)})</h3><div class="tw"><table><tr><th>Twist</th><th>What you find</th>'
+    f'<th>Choices</th></tr>{tw_rows}</table></div>'
+    f'<h3 class="gh">The seeds ({len(FDW.SEEDS)})</h3><div class="tw"><table><tr><th>Title</th><th>Where</th>'
+    f'<th>Steps</th><th>Twist</th></tr>{fs_rows}</table></div>')
+
 # ---------------------------------------------------------------- the boss maker
 import avarenthia.bossmaker as MKW
 bm_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(", ".join(v["mon"] or list(MKW.BODIES)))}</td>'
