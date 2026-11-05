@@ -72,6 +72,7 @@ class Room:
         self.max_w, self.max_h = MAX_W, MAX_H
         self.persons = []                 # a floor's people: [(name, (x, y), says)]
         self.items = []                   # a floor's fixed finds: [(what, (x, y))]
+        self.makers = []                  # a floor's maker areas: [(what, (x, y, w, h))], filled anew in every world
         self.undo, self.redo = [], []
         self.dirty = False
 
@@ -102,6 +103,7 @@ class Room:
         self.spots = {c: v for c, v in self.spots.items() if self.inb(*c)}
         self.persons = [p for p in self.persons if self.inb(*p[1])]
         self.items = [i for i in self.items if self.inb(*i[1])]
+        self.makers = [a for a in self.makers if a[1][0] + a[1][2] <= w and a[1][1] + a[1][3] <= h]
         return w, h
 
     def shift(self, dx, dy):
@@ -116,13 +118,15 @@ class Room:
         self.spots = {(x + dx, y + dy): v for (x, y), v in self.spots.items() if self.inb(x + dx, y + dy)}
         self.persons = [(n, (x + dx, y + dy), s) for n, (x, y), s in self.persons if self.inb(x + dx, y + dy)]
         self.items = [(n, (x + dx, y + dy)) for n, (x, y) in self.items if self.inb(x + dx, y + dy)]
+        self.makers = [(n, (x + dx, y + dy, w, h)) for n, (x, y, w, h) in self.makers
+                       if self.inb(x + dx, y + dy) and self.inb(x + dx + w - 1, y + dy + h - 1)]
 
     # ------------------------------------------------------------ undo
     def _state(self):
         return (copy.deepcopy(self.grid), dict(self.things), copy.deepcopy(self.subst), copy.deepcopy(self.events),
                 (self.name, self.part, list(self.kinds), self.depth, self.weight, self.shape, self.gate, list(self.moods)),
                 copy.deepcopy((self.spots, self.lists, self.more, self.switches, self.counters, self.dress)),
-                self.doors, (list(self.persons), list(self.items)))
+                self.doors, (list(self.persons), list(self.items)), list(self.makers))
 
     def _put_state(self, st):
         self.grid, self.things, self.subst, self.events = copy.deepcopy(st[0]), dict(st[1]), copy.deepcopy(st[2]), \
@@ -132,6 +136,7 @@ class Room:
         self.spots, self.lists, self.more, self.switches, self.counters, self.dress = copy.deepcopy(st[5])
         self.doors = st[6]
         self.persons, self.items = list(st[7][0]), list(st[7][1])
+        self.makers = list(st[8])
 
     def change(self):
         """Call before a change (one stroke, one field): the state before it goes on the undo stack."""
@@ -196,6 +201,7 @@ class Room:
         r.spots, r.lists, r.more = dict(p.spots), copy.deepcopy(p.lists), p.more
         r.switches, r.counters, r.dress = copy.deepcopy(p.switches), dict(p.counters), list(p.dress)
         r.doors = p.doors
+        r.makers = list(p.makers)
         r.file = p.file
         return r
 
@@ -289,6 +295,7 @@ def _text(self):
     for name, (x, y), says in self.persons:
         out.append(f'PERSON: {name} at {x},{y}' + (f' says="{says}"' if says else ''))
     out += [f'ITEM:   {what} at {x},{y}' for what, (x, y) in self.items]
+    out += [f'MAKER:  {what} at {x},{y} {w}x{h}' for what, (x, y, w, h) in self.makers]
     out.append('MAP')
     out += self.rows()
     out.append('ENDMAP')

@@ -52,7 +52,7 @@ SOURCE = os.path.join(os.path.dirname(HERE), 'pieces')
 
 class Piece:
     __slots__ = ('name', 'part', 'kinds', 'depth', 'weight', 'moods', 'rows', 'subst', 'things', 'events', 'shape',
-                 'gate', 'file', 'spots', 'lists', 'more', 'switches', 'counters', 'dress', 'doors')
+                 'gate', 'file', 'spots', 'lists', 'more', 'switches', 'counters', 'dress', 'doors', 'makers')
 
     def __init__(self, name):
         self.name, self.part, self.kinds, self.depth, self.weight = name, 'middle', ['any'], 0, 10
@@ -65,6 +65,7 @@ class Piece:
         self.counters = {}       # name -> start
         self.dress = []          # [(set, how full 1-5)]: dressed anew in every world
         self.doors = ''          # DOORS: how many ways in the game opens ('1', '1-2', '2-3', 'all'); '' = each +
+        self.makers = []         # MAKER: a floor's areas a maker fills anew in every world [(what, (x, y, w, h))]
 
     def door_count(self):
         """(least, most) doors the game opens, counting every + (which always opens)."""
@@ -261,6 +262,15 @@ def parse(text, file='', checked=True):
                 cur.dress.append((name.strip(), int(full)))
             except ValueError:
                 cur.dress.append((val.strip(), 3))
+        elif key == 'MAKER':                    # MAKER: land:forest at 10,4 30x20   (whole places only)
+            what, _, rest = val.partition(' at ')
+            try:
+                xy, size = rest.split()
+                x, y = (int(v) for v in xy.split(','))
+                w, h = (int(v) for v in size.lower().split('x'))
+            except ValueError:
+                raise Bad(f'{where}: write a maker area as "MAKER: cave at 10,4 30x20"')
+            cur.makers.append((what.strip(), (x, y, w, h)))
         else:
             raise Bad(f'{where}: no such word: {key}')
     if checked:

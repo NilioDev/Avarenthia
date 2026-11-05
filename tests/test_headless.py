@@ -10384,6 +10384,7 @@ def editor():
         editor_b1(home)
         editor_doors()
         editor_places(home)
+        editor_makers(home)
     finally:
         EF.home = real_home
         Canvas.cut = None
@@ -10606,6 +10607,152 @@ def editor_doors():
         ring = {(x + a, y + b) for x, y in r.cells for a, b in K5.D4} - r.cells
         joined += sum(1 for c in ring if c in plan.floor) >= 2
     assert joined >= 6, joined
+
+
+def editor_makers(home):
+    """The makers in the editor (round 55): every maker of the Try world makes one that the check takes and that is
+    written and read again unchanged; Ctrl+G's window (the list, R, a frame, the choices, Enter) gives a whole place or
+    a room; a maker area is written, read, checked and filled in the game, joined to what is drawn, and differs per
+    world."""
+    from avarenthia import drawnplaces as DP, pieces as PC
+    from avarenthia.canvas import FakeCanvas, Canvas
+    from avarenthia.entities import GameMap
+    from avarenthia.editor import screen as ES, generate as G, genmode as GM
+    from avarenthia.editor.model import PlaceDoc, Room
+    e = ES.Editor()
+    e.key('g', ctrl=True)
+    assert e.dialog and e.dialog[0] == 'gen', e.dialog
+    g = e.gen_game
+    ms = e.dialog[1]['makers']
+    groups = {m.group for m in ms}
+    assert {'DUNGEONS', 'PLACES', 'SETTLEMENTS', 'LAND', 'FOR AN AREA'} <= groups, groups
+    assert len(ms) > 100, len(ms)
+    assert any(m.id == 'dungeon:sewer' for m in ms) and any(m.id.startswith('site:temple') for m in ms)
+    n = 0
+    for mk in ms:
+        made = G.make(g, mk, 0, mk.floors)
+        d, _line = G.to_drawing(made, {'creatures': 'as ?', 'dressing': mk.id.endswith('e')}, None, f'made {mk.id}')
+        assert isinstance(d, PlaceDoc), mk.id
+        pl = d.to_place()
+        assert not DP.problems(pl), (mk.id, DP.problems(pl))
+        q = PlaceDoc.from_place(pl).to_place()
+        assert [f.rows for f in pl.order()] == [f.rows for f in q.order()], mk.id
+        assert pl.size in DP.SIZES and len(pl.floors) >= 1
+        n += 1
+    # the window: pick a village in the list, another roll, its choices, and a frame dragged on it
+    cv = FakeCanvas(ES.W, ES.H)
+    Canvas.cut = []
+    st = e.dialog[1]
+    lines = e.gen_lines()
+    k = next(j for j, (t, i) in enumerate(lines) if i is not None and ms[i].id == 'settle:village')
+    st['scroll'] = max(0, k - 10)
+    e.mouse('down', GM.LX + 2, GM.LY + k - st['scroll'])
+    assert e.gen_maker().id == 'settle:village' and st['made'], st['error']
+    first = list(st['made'].floors[0][1].t)
+    e.key('r')
+    assert st['n'] == 1 and st['made'] and list(st['made'].floors[0][1].t) != first
+    for x, y, text, what in e.gen_buttons():
+        if what == 'dressing':
+            e.mouse('down', x + 1, y)
+    assert st['dressing'] is False
+    e.key('right')
+    e.render(cv)
+    assert 'make with a maker' in ''.join(cv.ch[GM.BOX[1] * ES.W:(GM.BOX[1] + 1) * ES.W])
+    e.mouse('down', GM.PX + 2, GM.PY + 2)
+    e.mouse('move', GM.PX + 31, GM.PY + 21)
+    e.mouse('up', GM.PX + 31, GM.PY + 21)
+    assert st['frame'] == ((st['pan'][0] + 2, 2), (st['pan'][0] + 31, 21)), st['frame']
+    e.render(cv)
+    e.key('enter')
+    assert e.dialog is None and isinstance(e.room, Room) and not e.place, e.msg
+    assert (e.room.w, e.room.h) == (30, 20) and e.room.name.startswith('made village')
+    assert any('+' in ''.join(row) for row in e.room.grid)
+    # the whole of it: a village is a whole place of 120 x 80
+    e.key('g', ctrl=True)
+    st = e.dialog[1]
+    st['i'] = next(i for i, m in enumerate(st['makers']) if m.id == 'settle:village')
+    e.gen_make()
+    e.key('enter')
+    assert e.place and e.place.size == (120, 80), (e.place and e.place.size, e.msg)
+    e.render(cv)
+    # a dungeon with three floors: a house over its stair on the ground, the floors as tabs
+    e.key('g', ctrl=True)
+    st = e.dialog[1]
+    st['i'] = next(i for i, m in enumerate(st['makers']) if m.id == 'dungeon:crypt')
+    st['floors'] = 3
+    e.gen_make()
+    e.render(cv)
+    e.key('enter')
+    names = [f.name for f in e.place.order()]
+    assert names[0] == 'ground' and names[1:] == [f'down {k}' for k in range(1, len(names))] and len(names) >= 3, names
+    assert not DP.problems(e.place.to_place())
+    e.render(cv)
+    # a maker area: a rectangle in a whole place, Ctrl+G makes the area, the line is written and read again
+    d = PlaceDoc.new('area test', (80, 50))
+    d.file = os.path.join(home, 'my places.des')
+    e.open_place(d)
+    e.sel = ((50, 10), (75, 40))
+    e.key('g', ctrl=True)
+    st = e.dialog[1]
+    assert st['area'] == (50, 10, 26, 31) and all(m.area for m in st['makers'])
+    st['i'] = next(i for i, m in enumerate(st['makers']) if m.how == 'land')
+    e.gen_make()
+    e.render(cv)
+    e.key('enter')
+    assert e.room.makers and e.room.makers[0][1] == (50, 10, 26, 31), e.room.makers
+    assert 'MAKER:' in e.place.text()
+    pl = e.place.to_place()
+    assert pl.floor('ground').piece.makers == e.room.makers and not DP.problems(pl), DP.problems(pl)
+    e.render(cv)
+    e.room.makers.append(('nothing', (70, 45, 20, 10)))
+    probs = DP.problems(e.place.to_place())
+    assert any('no maker called' in p for p, _f in probs) and any('reaches out' in p for p, _f in probs), probs
+    e.room.makers.pop()
+    e.sel = ((49, 9), (76, 41))
+    e.key('delete')
+    assert not e.room.makers
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    # in the game: an underground area of rooms or cave is filled and joined to a drawn hall; another world, other tiles
+    for what in ('rooms', 'cave', 'land:' + DP.land_biomes(g)[0]):
+        made = []
+        for seed in (1, 2):
+            m = GameMap('t', 'dungeon', 't', 70, 40, D.WALL)
+            drawn = set()
+            for y in range(15, 25):
+                for x in range(2, 14):
+                    m.set(x, y, D.FLOOR if 2 < x < 13 and 15 < y < 24 else D.WALL)
+                    drawn.add((x, y))
+            m.set(13, 20, D.DOOR)
+            real, g.seed = g.seed, seed
+            try:
+                DP.fill_area(g, m, what, (20, 4, 46, 32), drawn, what.startswith('land:'))
+            finally:
+                g.seed = real
+            seen, todo = {(5, 20)}, [(5, 20)]
+            while todo:
+                x, y = todo.pop()
+                for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if m.inb(*nb) and nb not in seen and (D.TILES[m.tile(*nb)].walk or m.tile(*nb) == D.DOOR):
+                        seen.add(nb)
+                        todo.append(nb)
+            inside = [(x, y) for y in range(4, 36) for x in range(20, 66) if D.TILES[m.tile(x, y)].walk]
+            assert len(inside) > 200, (what, len(inside))
+            assert sum(c in seen for c in inside) > len(inside) * .9, (what, sum(c in seen for c in inside), len(inside))
+            made.append(list(m.t))
+        assert made[0] != made[1], what
+    # the whole way: the place in the Try world, its ground floor laid with the area filled
+    from avarenthia.editor import trying as TR
+    d = PlaceDoc.new('area place', (80, 50))
+    d.file = os.path.join(home, 'my places.des')
+    d.floors[0].makers.append(('land:' + DP.land_biomes(g)[0], (2, 2, 30, 20)))
+    g2, why = TR.start_place(d)
+    assert g2 is not None, why
+    assert g2.map.drawn and sum(D.TILES[g2.map.tile(x, y)].walk for y in range(2, 22) for x in range(2, 32)) > 300
+    DP.load(force=True)
+    PC.load(force=True)
+    random.seed()
+    print('editor makers ok:', n, 'makers, each made once and checked')
 
 
 def editor_places(home):

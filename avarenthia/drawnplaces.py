@@ -35,7 +35,7 @@ from . import data as D
 from . import pieces as P
 from .worldgen import cheb
 
-SIZES = ((60, 34), (80, 50), (100, 60), (120, 70))
+SIZES = ((60, 34), (80, 50), (100, 60), (120, 70), (120, 80))
 FOUND = ('map', 'rumour', 'book')
 ROADS = ('near', 'far', 'any')
 
@@ -223,7 +223,7 @@ def problems(pl):
     """What is wrong with a whole place, in plain words: [(message, floor name or None)]."""
     out = []
     if pl.size not in SIZES:
-        out.append((f'a whole place is 60x34, 80x50, 100x60 or 120x70, not {pl.size[0]}x{pl.size[1]}', None))
+        out.append((f'a whole place is 60x34, 80x50, 100x60, 120x70 or 120x80, not {pl.size[0]}x{pl.size[1]}', None))
     if not pl.floor('ground'):
         out.append(('a whole place needs a ground floor (FLOOR: ground)', None))
     names = [f.name for f in pl.floors]
@@ -253,6 +253,14 @@ def problems(pl):
         out += [(f'{f.name}: {msg}', f.name) for msg in _unreached(pl, f)]
         if any('?' in r for r in f.rows) and not _slot_pieces(_slots(f.rows)[0] if _slots(f.rows) else set()):
             out.append((f'{f.name}: no theme room fits in its room slot ?: make the slot bigger', f.name))
+    for f in pl.floors:
+        for what, (x, y, w, h) in (f.piece.makers if f.piece else []):
+            if not is_area_maker(what):
+                out.append((f'{f.name}: no maker called {what} for an area', f.name))
+            if x < 0 or y < 0 or x + w > pl.size[0] or y + h > pl.size[1]:
+                out.append((f'{f.name}: the maker area at {x},{y} reaches out of the place', f.name))
+            if w < AREA_MIN[0] or h < AREA_MIN[1]:
+                out.append((f'{f.name}: a maker area is at least {AREA_MIN[0]} x {AREA_MIN[1]}', f.name))
     if 'rumour' in pl.world['found'] and not pl.rumour:
         out.append(('it is found by a rumour: write the RUMOUR', None))
     if 'book' in pl.world['found'] and not pl.book:
@@ -284,7 +292,8 @@ def _unreached(pl, f):
     seen, todo = {ends[0]}, [ends[0]]
     while todo:
         x, y = todo.pop()
-        for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+        for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1),           # the hero walks diagonally too
+                  (x + 1, y + 1), (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1)):
             if n in cells and n not in seen:
                 seen.add(n)
                 todo.append(n)
@@ -554,6 +563,154 @@ def _lay(game, m, pl, fl, fill):
     plan.marks = marks
     plan.spots = {c: what for c, what in pc.spots.items() if m.inb(*c)}
     TH.lay(m, plan, room_ids, pieces)
+    for n, (what, rect) in enumerate(getattr(pc, 'makers', ())):
+        fill_area(game, m, what, rect, set(cells), fl.name == 'ground', n)
+
+
+# ------------------------------------------------------------------ maker areas (round 55)
+# An area of a floor that a maker fills anew in every world: 'rooms' (the K5 maker), 'cave', or 'land:<biome>' (the
+# land of a world cell of that biome, as you walk it in its zone). Its edges are joined to the drawn part.
+AREA_MIN = (8, 6)
+WATERY = {'ocean', 'sea', 'shallows', 'pack_ice', 'icy_water', 'reef', 'lagoon', 'lagoon_deep', 'whirl_a', 'whirl_b',
+          'lake', 'crater_lake', 'fjord', 'river'}
+
+
+def is_area_maker(what):
+    return what in ('rooms', 'cave') or (what.startswith('land:') and len(what) > 5)
+
+
+def land_biomes(game):
+    """The biomes of the world's land that a maker area can take, the most common first."""
+    om = game.maps['over']
+    bio = getattr(om, 'biome', None)
+    if bio is None:
+        return []
+    count = {}
+    for i, b in enumerate(bio):
+        name = om.biome_names[b]
+        if name not in WATERY and D.TILES[om.t[i]].walk:
+            count[name] = count.get(name, 0) + 1
+    return [k for k, _n in sorted(count.items(), key=lambda kv: -kv[1])]
+
+
+def area_tiles(game, what, w, h, rng):
+    """The tiles a maker makes for a w x h area, as rows [[tile]], or None when it cannot here."""
+    from .entities import GameMap
+    if what == 'rooms':
+        from . import k5
+        W, H = max(w, 80), max(h, 50)
+        state = random.getstate()
+        random.seed(rng.random())
+        try:
+            plan = k5.make(W, H)
+        finally:
+            random.setstate(state)
+        kinds = {'water': D.WATER, 'shallow': D.SHALLOW}
+        t = [[D.WALL] * W for _ in range(H)]
+        for (x, y), k in plan.floor.items():
+            t[y][x] = kinds.get(k, D.FLOOR)
+        for x, y in plan.doors:
+            t[y][x] = D.DOOR
+        x0, y0 = (W - w) // 2, (H - h) // 2
+        return [row[x0:x0 + w] for row in t[y0:y0 + h]]
+    if what == 'cave':
+        from .worldgen import gen_cave
+        mm = GameMap('area', 'dungeon', 'area', w, h, D.ROCK)
+        state = random.getstate()
+        random.seed(rng.random())
+        try:
+            ok = gen_cave(mm)
+        finally:
+            random.setstate(state)
+        if not ok:
+            return None
+        return [[D.WALL if v == D.ROCK else v for v in mm.t[y * w:(y + 1) * w]] for y in range(h)]
+    if what.startswith('land:'):
+        from . import zones as ZN
+        om = game.maps['over']
+        bio = getattr(om, 'biome', None)
+        want = what[5:]
+        cells = [i for i, b in enumerate(bio or []) if om.biome_names[b] == want and D.TILES[om.t[i]].walk]
+        if not cells:                         # this world has none of that land: some land of its own
+            cells = [i for i, b in enumerate(bio or []) if om.biome_names[b] not in WATERY and D.TILES[om.t[i]].walk]
+        if not cells:
+            return None
+        i = rng.choice(cells)
+        cx, cy = i % om.w, i // om.w
+        nx, ny = -(-w // ZN.ZW), -(-h // ZN.ZH)
+        t, _marks = ZN.make(game, max(0, cx - nx // 2), max(0, cy - ny // 2), nx, ny)
+        x0, y0 = (t.shape[1] - w) // 2, (t.shape[0] - h) // 2
+        out = [[int(v) for v in t[y0 + y, x0:x0 + w]] for y in range(h)]
+        for row in out:
+            for x, v in enumerate(row):
+                if v in (D.ENTR, D.TOWN, D.CITY, D.CASTLE, D.FORT):
+                    row[x] = D.GRASS
+        return out
+    return None
+
+
+def fill_area(game, m, what, rect, drawn, ground, n=0):
+    """Fill a maker area of the map where nothing is drawn, then join what it made to the rest."""
+    x0, y0, w, h = rect
+    rng = random.Random(game.seed * 7919 + (getattr(m, 'site', 0) or 0) * 131 + n * 17 + x0 * 3 + y0)
+    rows = area_tiles(game, what, w, h, rng)
+    if rows is None:
+        return
+    area = set()
+    for y in range(h):
+        for x in range(w):
+            c = (x0 + x, y0 + y)
+            if m.inb(*c) and c not in drawn:
+                m.set(c[0], c[1], rows[y][x])
+                area.add(c)
+    join(m, area, drawn, D.PATH if ground else D.FLOOR)
+
+
+def _walk(m, c):
+    return D.TILES[m.tile(*c)].walk or m.tile(*c) == D.DOOR
+
+
+def join(m, area, drawn, way):
+    """Every walkable patch of the area joined to the walkable cells beyond it: the shortest way, round what is drawn
+    if it can, else through a drawn wall, which gets a door."""
+    from collections import deque
+    left = {c for c in area if _walk(m, c)}
+    while left:
+        start = left.pop()
+        part, todo = {start}, [start]
+        while todo:
+            x, y = todo.pop()
+            for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if nb in left:
+                    left.discard(nb)
+                    part.add(nb)
+                    todo.append(nb)
+        if len(part) < 4:
+            continue
+        for through in (False, True):
+            came = {c: None for c in part}
+            q = deque(part)
+            end = None
+            while q and end is None:
+                c = q.popleft()
+                for nb in ((c[0] + 1, c[1]), (c[0] - 1, c[1]), (c[0], c[1] + 1), (c[0], c[1] - 1)):
+                    if nb in came or not m.inb(*nb):
+                        continue
+                    if nb in drawn and not _walk(m, nb) and not (through and m.tile(*nb) == D.WALL):
+                        continue
+                    came[nb] = c
+                    if _walk(m, nb) and nb not in area:
+                        end = nb
+                        break
+                    q.append(nb)
+            if end is None:
+                continue
+            c = came[end]
+            while c is not None and c not in part:
+                if not _walk(m, c):
+                    m.set(c[0], c[1], D.DOOR if c in drawn else way)
+                c = came[c]
+            break
 
 
 def _carve(cells, part, inside, start):

@@ -61,9 +61,17 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 | **Built: dungeons on their own land** | Built places start outside on their own map; each kind its own plan; the K5 maker with drawn theme rooms; the entrance part of the fixed plans (a goblin totem, a crypt's mourners, a spider's web) and theme rooms in the way of the people who live near (rounds 5-7, 33-36, 54) |
 | **Built: boss fights, what was left (5 Nov)** | Arenas dressed by place; ways out by rope or hole as well as the rotten wall; a place falls in or wakes after its boss; fights won another way (break the altar, hold out, rescue); bosses for the big one and the relic job |
+| **Built: makers in the editor (5 Nov)** | Ctrl+G in the editor makes a start with any of the game's makers (dungeons, places, settlements, the land of each biome), then it is drawn by hand; maker areas in a whole place are laid anew in every world. Round 55 |
 
 ## Built
 
+- **Makers in the editor** (round 55, 5 November 2026; `editor/generate.py` the list of makers and map to drawing,
+  `editor/genmode.py` the Ctrl+G window, the maker areas in `drawnplaces.py` (`fill_area`, `join`, `area_tiles`), the
+  MAKER line in `pieces.py`; test part `editor`). The makers run on the Try world: dungeons by kind or maker, every
+  site kind (by people for temples, towers, barrows, abbeys, forts, manors), every settlement kind, the land of each
+  biome, and rooms or cave for an area. Whole places got the size 120 x 80; the reach check walks diagonally, as the
+  hero does. Simpler than the spec: a maker area is a rectangle (select, then Ctrl+G), and it gets no creatures of its
+  own (the floor's MORE and `?` still work); the rooms and cave area makers lay no theme rooms.
 - **Boss fights, what was left, and dungeons, what was left** (rounds 53-54, 5 November 2026; `arenas.py`, hooked into
   `bosses.py`, `bossmaker.py`, `jobs.py`, `lifeskills.py`, `missions.py`; the people's theme rooms in `pieces/theme.des`
   with KIND `people:<race>`, `worldgen.people_near` sets `m.people`, `PC.pick` takes a tuple of tags; the entrance in
@@ -1038,6 +1046,28 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
   SAVE_VERSION 58. Not built: the shutters on the houses are doors that shut (no new tile); the carts on the dwarves'
   line move as before; the hoard grows in glitter, not in coin you could take.
 
+
+## Makers in the editor (built 5 November 2026; the spec)
+
+Nilio starts a hand-made room or place from one of the game's own makers, so it keeps the game's style, then edits it.
+Dutch proposal: project files `editor/generatoren-in-editor.md`.
+- **Ctrl+G "Make with a maker"**: the makers in groups (dungeons: K5 and its kinds, the delves, the new makers of
+  rounds 50-52; places: towers, barrows, temples, abbeys, forts and manors per people, the goblin village, the Rift;
+  outdoors: a zone of the world per kind of land and biome, the places on the land; settlements: hamlet, village,
+  farm, roadside inn, the dwarf, halfling and half-orc towns), the maker's own choices where it has them (size,
+  depth, people, state), a preview, R makes another, Enter takes it. Run on the kept Try world (`try world.sav`).
+- **What comes along**: creatures as `?`, as drawn, or none; the dressing on or off (a bare plan to dress with Ctrl+D).
+  Tiles without a sign of the legend become THING letters, as MORE does.
+- **Where it goes**: up to 40 x 30 a piece; bigger a whole place, a maker's floors as its floor tabs with twin stairs;
+  or drag a frame on the preview and take only that part (a street of a city, a corner of a cave). After that it is
+  an ordinary drawing (events, puzzles, variety, Try, the check, saving); the game does not know a maker began it.
+- **Whole places get the size 120 x 80** (a village is 112 x 72). Cities are too big: take a part.
+- **The maker area**: paint an area of a whole place with a maker (and its choices); the game fills it anew in every
+  world, clipped to the area and joined to the drawn part at its edges (a fixed chapel in a wood that differs per
+  world). Format: a `MAKER:` line per area in the place's floor; the check wants every area reachable.
+- Code: `editor/generate.py` (the list of makers, map to drawing), the dialog in `screen.py`, the maker area in
+  `drawnplaces.py`. Test part `editor`: every maker once, drawing back to map equal, the maker area filled and
+  reachable in two seeds. Not in the handbook (the editor is not in it).
 
 ## The Avarenthia Editor (built 31 October to 1 November 2026; the spec)
 

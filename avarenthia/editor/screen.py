@@ -11,6 +11,7 @@ from .. import data as D
 from .. import pieces as P
 from ..canvas import scale, wrap_text
 from . import files as F
+from . import genmode as GM
 from . import layers as LY
 from . import maker as MK
 from . import placemode as PM
@@ -115,7 +116,7 @@ def _is_ground(ch):
     return ch in GROUND or ch in WAYS or ch == ' '
 
 
-class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
+class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools, GM.GenTools):
     _Item = Item
 
     def __init__(self, room=None):
@@ -323,6 +324,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                 self.maker_dialog()
             elif tok == 'r':
                 self.roll_dialog()
+            elif tok == 'g':
+                self.gen_dialog()
             return
         if tok == 'esc':
             if self.pasting or self.sel:
@@ -339,6 +342,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
             r.change()
             T.paint(r, T.rect_cells(*self.sel, filled=True), ' ')
             r.tidy()
+            if GM.drop_areas(r, *self.sel):
+                self.say('The maker area in it is gone too.')
             return
         if tok == 'space':
             self.space = True
@@ -404,7 +409,9 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
         if kind == 'move':
             self.hover = c
         if self.dialog:
-            if kind == 'down':
+            if self.dialog[0] == 'gen':
+                self.gen_mouse(kind, x, y, button)
+            elif kind == 'down':
                 self.dialog_click(x, y, button)
             return
         if kind == 'down' and self.field and not self.field_hit(x, y):
@@ -535,8 +542,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
 
     def _top_buttons(self):
         out, x = [], 58
-        for k, lab, act in (('Ctrl+N', 'New', self.new_dialog), ('Ctrl+O', 'Open', self.open_dialog),
-                            ('Ctrl+S', 'Save', self.save)):
+        for k, lab, act in (('Ctrl+N', 'New', self.new_dialog), ('Ctrl+G', 'Make', self.gen_dialog),
+                            ('Ctrl+O', 'Open', self.open_dialog), ('Ctrl+S', 'Save', self.save)):
             w = len(k) + 1 + len(lab)
             out.append((f'{k} {lab}', x, x + w, act))
             x += w + 2
@@ -813,6 +820,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
     # ------------------------------------------------------------ dialogs
     def dialog_key(self, tok, shift, ctrl):
         kind, st = self.dialog[0], self.dialog[1] if len(self.dialog) > 1 else {}
+        if kind == 'gen':
+            return self.gen_key(tok, shift)
         if kind == 'line':
             if tok == 'backspace':
                 st['text'] = st['text'][:-1]
@@ -967,7 +976,7 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                     xx += len(k) + 4
             if y == ny + 12 and nx + 2 <= x < nx + 12 and st['part'] == 'place':
                 sizes = [f'{a} x {b}' for a, b in DP_SIZES]
-                st['size'] = sizes[(sizes.index(st['size']) + (1 if button == 1 else -1)) % 4] \
+                st['size'] = sizes[(sizes.index(st['size']) + (1 if button == 1 else -1)) % len(sizes)] \
                     if st['size'] in sizes else sizes[0]
             elif y == ny + 12 and nx + 2 <= x < nx + 12:
                 st['typing'] = True
@@ -1023,7 +1032,8 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
         if self.dialog:
             {'open': self.render_open, 'new': self.render_new, 'kinds': self.render_kinds, 'line': self.render_line,
              'pick': self.render_pick, 'lists': self.render_lists, 'variety': self.render_variety,
-             'dress': self.render_dress, 'roll': self.render_roll, 'maker': self.render_maker}[self.dialog[0]](cv)
+             'dress': self.render_dress, 'roll': self.render_roll, 'maker': self.render_maker,
+             'gen': self.render_gen}[self.dialog[0]](cv)
 
     def render_top(self, cv):
         cv.fill(0, 0, W, 1, ' ', FG, BAR)
@@ -1112,6 +1122,11 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                             if r.inb(self.hover[0] + dx, self.hover[1] + dy)})
         land = bool(self.place) and r.name == 'ground'         # the ground floor's rock is the land round it
         inside = set() if land else {(x, y) for y in range(r.h) for x in range(r.w) if r.get(x, y) not in " #+'"}
+        areas = GM.area_cells(r)
+        labels = {}
+        for what, (ax, ay, aw, _ah) in r.makers:
+            for k, letter in enumerate(what[:aw]):
+                labels[(ax + k, ay)] = letter
         marks = {xy: '☺' for _n, xy, _s in r.persons}
         marks.update({xy: '♦' for _w, xy in r.items})
         for j in range(vh):
@@ -1161,6 +1176,10 @@ class Editor(MK.Maker, LY.LayerTools, PM.PlaceTools):
                 if c in marks:
                     col = ((232, 214, 170) if marks[c] == '☺' else GOLD) if self.layer == 'Creatures' else DIM
                     cv.put(i, j, marks[c], col, None)
+                if c in areas and ch == ' ' and r.inb(x, y):
+                    cv.put(i, j, labels.get(c, '░' if (x + y) % 2 else ' '), (110, 130, 190), GM.AREA_BG)
+                elif c in areas:
+                    cv.put_bg(i, j, GM.AREA_BG)
                 if c in bad:
                     cv.put_bg(i, j, WARN_BG)
                 if self.sel and _in_rect(c, *self.sel):
