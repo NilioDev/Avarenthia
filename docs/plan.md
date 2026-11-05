@@ -93,7 +93,34 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 53. **Block 16: loose ends.** 53. **Boss fights: what is left** (L; built 5 November 2026). 54. **Dungeons: what is left**
     (M; built 5 November 2026): the entrance part of the fixed plans, each people flavouring a theme room. Merge after 54.
     All 54 rounds are built (see `docs/built.md`).
+55. **Block 17: the makers in the editor** (approved 5 November 2026, thread "Generatoren in de editor gebruiken";
+    build on Nilio's "ga"). 55. **Makers in the editor** (XL), one round with the maker area: see "Makers in the
+    editor" below.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
+
+---
+
+## Makers in the editor (approved 5 November 2026)
+
+Nilio starts a hand-made room or place from one of the game's own makers, so it keeps the game's style, then edits it.
+Dutch proposal: project files `editor/generatoren-in-editor.md`.
+- **Ctrl+G "Make with a maker"**: the makers in groups (dungeons: K5 and its kinds, the delves, the new makers of
+  rounds 50-52; places: towers, barrows, temples, abbeys, forts and manors per people, the goblin village, the Rift;
+  outdoors: a zone of the world per kind of land and biome, the places on the land; settlements: hamlet, village,
+  farm, roadside inn, the dwarf, halfling and half-orc towns), the maker's own choices where it has them (size,
+  depth, people, state), a preview, R makes another, Enter takes it. Run on the kept Try world (`try world.sav`).
+- **What comes along**: creatures as `?`, as drawn, or none; the dressing on or off (a bare plan to dress with Ctrl+D).
+  Tiles without a sign of the legend become THING letters, as MORE does.
+- **Where it goes**: up to 40 x 30 a piece; bigger a whole place, a maker's floors as its floor tabs with twin stairs;
+  or drag a frame on the preview and take only that part (a street of a city, a corner of a cave). After that it is
+  an ordinary drawing (events, puzzles, variety, Try, the check, saving); the game does not know a maker began it.
+- **Whole places get the size 120 x 80** (a village is 112 x 72). Cities are too big: take a part.
+- **The maker area**: paint an area of a whole place with a maker (and its choices); the game fills it anew in every
+  world, clipped to the area and joined to the drawn part at its edges (a fixed chapel in a wood that differs per
+  world). Format: a `MAKER:` line per area in the place's floor; the check wants every area reachable.
+- Code: `editor/generate.py` (the list of makers, map to drawing), the dialog in `screen.py`, the maker area in
+  `drawnplaces.py`. Test part `editor`: every maker once, drawing back to map equal, the maker area filled and
+  reachable in two seeds. Not in the handbook (the editor is not in it).
 
 ---
 
