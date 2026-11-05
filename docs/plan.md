@@ -125,7 +125,7 @@ Dutch proposal: project files `editor/generatoren-in-editor.md`.
 
 ---
 
-## A window that fits (approved 5 November 2026)
+## A window that fits (approved 5 November 2026; round 56, built right after round 55)
 
 The screen grows with the window instead of showing black bars. Mockups per resolution: project files `venster/`.
 - **The scale**: the largest whole scale (1x-4x) at which 110 x 60 cells still fit; pixels stay crisp, the map is
