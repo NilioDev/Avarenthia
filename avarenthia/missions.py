@@ -3,6 +3,7 @@ import math
 import random
 
 from . import data as D
+from . import affixes as AF
 from . import calendar as CAL
 from .data import ROAD, TOWN, CITY, ENTR, FLOOR, UP
 from .entities import Item
@@ -119,8 +120,7 @@ def make_offer(game, s, kinds=None, prey=None, max_rank=None):
             what = f'the outlaw {leader}'
         else:
             k = random.choice(D.BIOME_MONSTERS[reg.biome])
-            a, b, c = D.UNIQUE_NAME
-            leader = random.choice(a) + random.choice(b) + ' ' + random.choice(c)
+            leader = AF.unique_name(k)
             keys = [k] * random.randint(2, 4)
             what = f"{leader}, a monstrous {D.MONSTERS[k]['name'].lower()}"
         m.reward = round(60 + lvl * 30)
@@ -385,6 +385,9 @@ def fail(game, m, why):
     from . import jobs as JB
     GU.job_failed(game, m)
     JB.on_fail(game, m)
+    if m.kind == 'folk':
+        from . import folkquests as FQ
+        FQ.on_fail(game, m)
     if m.giver is not None:
         w.settlements[m.giver].rep = max(-50, w.settlements[m.giver].rep - 8)
     elif m.faction:
@@ -413,9 +416,13 @@ def on_enter(game, sid):
             complete(game, m, [sid])
     from . import jobs as JB
     JB.on_enter(game, sid)
+    from . import folkquests as FQ
+    FQ.on_enter_town(game, sid)
 
 
 def on_group_defeated(game, wd):
+    from . import folkquests as FQ
+    FQ.on_group_defeated(game, wd)
     m = find(game, wd.mission)
     if m and m.kind in ('bounty', 'war_bounty', 'personal') and m.state == 'active':
         m.state = 'turnin'
@@ -423,6 +430,9 @@ def on_group_defeated(game, wd):
 
 
 def on_pickup(game, it):
+    from . import folkquests as FQ
+    if FQ.on_pickup(game, it):
+        return
     m = find(game, getattr(it, 'mission', None))
     if m and m.state == 'active':
         m.state = 'turnin'
@@ -440,6 +450,8 @@ def giver_name(game, m):
 
 
 def on_enter_hold(game, hid):
+    from . import folkquests as FQ
+    FQ.on_enter_hold(game, hid)
     p = game.player
     for m in active(game):
         if m.hold != hid:
@@ -481,6 +493,8 @@ def find(game, mid):
 
 
 def daily(game):
+    from . import folkquests as FQ
+    FQ.daily(game)
     for m in active(game):
         if m.deadline is not None and game.day > m.deadline and m.state == 'active':
             fail(game, m, 'You ran out of time.')
@@ -501,6 +515,9 @@ def target_pos(game, m):
     from . import jobs as JB
     if m.kind in JB.KINDS:
         return JB.target_pos(game, m)
+    if m.kind == 'folk':
+        from . import folkquests as FQ
+        return FQ.target_pos(game, m)
     if m.kind == 'personal':
         d = m.data
         if m.state == 'active' and d['sub'] == 'letter':
@@ -593,8 +610,7 @@ def accept_personal(game, wd, o):
             return False
         reg = w.region_at(*spot)
         k = random.choice([k for k in D.BIOME_MONSTERS[reg.biome] if D.MONSTERS[k]['hp'] >= 2] or D.BIOME_MONSTERS[reg.biome])
-        a, b, c = D.UNIQUE_NAME
-        leader = random.choice(a) + random.choice(b) + ' ' + random.choice(c)
+        leader = AF.unique_name(k)
         lvl = w.danger_at(*spot) + 1
         keys = [k] + [random.choice(D.BIOME_MONSTERS[reg.biome]) for _ in range(random.randint(1, 3))]
         m.data.update(spot=spot, leader=leader, lvl=lvl)
@@ -686,6 +702,9 @@ def quest_mark(game, npc):
     """'!' over someone with work for you, '?' over someone you can hand a job in to, or None."""
     f, p = game.flags, game.player
     role = getattr(npc, 'role', None)
+    if role == 'folk':
+        from . import folkquests as FQ
+        return FQ.mark(game, npc)
     if role == 'client':
         m = find(game, getattr(npc, 'mission', None))
         if not m or m.state not in ('active', 'turnin'):

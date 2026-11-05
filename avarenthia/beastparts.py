@@ -47,6 +47,7 @@ TRAIT_POWER = {
     'Stone Skin': ('dr', 4), 'Thorny': ('thorns', 10), 'Vampiric': ('leech', 4), 'Regenerating': ('regen', 3),
     'Swift': ('dex', 8), 'Blink': ('dex', 6), 'Summoner': ('mpk', 3), 'Splitting': ('lpk', 3), 'Multishot': ('crit', 6),
     'Berserk': ('str', 8), 'Shielded': ('res_all', 8), 'Cursing': ('mana', 20), 'Warcry': ('str', 6),
+    'Brutal': ('str', 8), 'Warded': ('res_all', 8), 'Ember-hearted': ('res_fire', 30),
 }
 RANK_MULT = {'notable': 1, 'notorious': 1.3, 'legendary': 1.7}
 SKIN_NEED = {'notable': 15, 'notorious': 30, 'legendary': 45}
@@ -238,7 +239,8 @@ def lines(game, it):
     from .itemdata import AFFTXT
     if it.k == 'npart':
         stat, v = npower(it)
-        return [f'From a {it.rank} named beast. A piece made of it bears its name and carries its {it.t.lower()} nature: '
+        src = 'a marked beast' if getattr(it, 'nid', 0) is None else f'a {it.rank} named beast'
+        return [f'From {src}. A piece made of it bears its name and carries its {it.t.lower()} nature: '
                 + AFFTXT.get(stat, stat + ' {}').format(v) + '. Choose it at a workbench or an anvil when you make something.']
     part, _src = split(it.t)
     if part not in PART:

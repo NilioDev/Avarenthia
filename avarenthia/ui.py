@@ -13,6 +13,7 @@ from . import zones as ZN
 from . import seasons as SE
 from . import living as LV
 from . import data as D
+from . import affixes as AF
 from . import economy as ECO
 from . import engine as E
 from . import events as EV
@@ -1536,6 +1537,12 @@ class GameScreen(Screen):
                 cv.put(x + PW - 10 + j, yy, '█' if j < n else '░', life_col(fr) if j < n else LINE, bg)
             word, col = intent(g, o)
             cv.text(x + 2, yy + 1, word, col, bg, maxw=PW - 2)
+            if o.mods and not o.is_npc:                 # a marked creature: its affixes on the same line, as many as fit
+                marks = o.mods[:]
+                while marks and len(word) + 3 + len(AF.label_of(marks)) > PW - 2:
+                    marks.pop()
+                if marks:
+                    cv.text(x + 4 + len(word), yy + 1, AF.label_of(marks), scale(o.fg, .8), bg)
         shown = rows - (2 if top else 0)
         if len(foes) > shown:
             cv.text(x, y + 1 + top + shown * 2, f'and {len(foes) - shown} more', DIM, PANEL)
@@ -1675,8 +1682,11 @@ class GameScreen(Screen):
             cv.put(x + i, y + 1, ' ', FG, full if i < int(bw * frac + .99) else (40, 20, 16))
         cv.text(x, y + 1, f'{max(0, tgt.hp)}/{tgt.maxhp}', (255, 240, 220))
         extra = f'level {tgt.lvl}'
-        if tgt.mods:
-            extra += ' · ' + ', '.join(tgt.mods)
+        marks = tgt.mods[:]
+        while marks and len(extra) + 3 + len(AF.label_of(marks)) > PW:
+            marks.pop()
+        if marks:
+            extra += ' · ' + AF.label_of(marks)
         cv.text(x, y + 2, extra, DIM, PANEL, maxw=PW)
         res = tgt.tpl.get('res', {})
         if res and g.lore(tgt.k) >= 1:            # you learn what it fears by fighting its kind

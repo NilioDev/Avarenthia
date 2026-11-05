@@ -5677,6 +5677,228 @@ def finer_look():
     print('finer_look ok')
 
 
+def affixes():
+    """Round 45: marked creatures. One list of twenty affixes for champions, uniques and the named enemies, each
+    fitting certain kinds, with an answer; rarer champions and uniques; names in the named enemies' style; IN SIGHT and
+    the look line; Grave-bound, Ember-hearted, Warded and fire against Regenerating; the old names migrate."""
+    from avarenthia import affixes as AF, named as NM, saves as SV, arts as ART, describe as DS, worldgen as WG
+    from avarenthia.entities import make_monster
+    from avarenthia.canvas import Canvas
+    print('== affixes')
+    app = new_app('soft', seed=45)
+    g, p = app.game, app.game.player
+    g.enter_dungeon('den', 1, 'up')
+    m = g.map
+    assert len(AF.AFFIXES) == 20 and NM.TRAITS is AF.AFFIXES and set(AF.TEXT) == set(AF.AFFIXES)
+    assert not hasattr(D, 'ELITE_MODS') and not hasattr(D, 'UNIQUE_NAME')
+    random.seed(45)
+    for k in ('skeleton', 'kob_slinger', 'goblin', 'wolf', 'spider', 'orc'):
+        for _ in range(40):
+            c = make_monster(g, k, p.x, p.y, 16, 1)
+            assert 1 <= len(c.mods) <= 2 and len(set(c.mods)) == len(c.mods), c.mods
+            u = make_monster(g, k, p.x, p.y, 6, 2)
+            assert 2 <= len(u.mods) <= 3, u.mods
+            assert u.name != D.MONSTERS[k]['name'] and not any(w in u.name for w in ('Goremaw', 'the Defiler', 'the Unclean')), u.name
+            for o in (c, u):
+                assert not ('Frost-touched' in o.mods and 'Fire-blooded' in o.mods)
+                assert 'Multishot' not in o.mods or D.MONSTERS[k]['ranged'], (k, o.mods)
+                assert 'Grave-bound' not in o.mods or AF.undead(k), (k, o.mods)
+                assert 'Splitting' not in o.mods or not (AF.people(k) or AF.undead(k)), (k, o.mods)
+                assert 'Fast' not in o.mods and 'Extra Strong' not in o.mods
+    c = make_monster(g, 'wolf', p.x, p.y, 4, 1)
+    assert c.name == 'Champion ' + D.MONSTERS['wolf']['name'] and len(c.mods) == 1
+    # fewer: in dungeons about 8% champions and 3% uniques
+    random.seed(7)
+    before = list(m.mons)
+    seen = {0: 0, 1: 0, 2: 0}
+    for _ in range(600):
+        n0 = len(m.mons)
+        WG.spawn_pack(g, m, 5, 'crypt', (p.x, p.y))
+        new = m.mons[n0:]
+        if new:
+            seen[max(o.elite for o in new)] += 1
+        del m.mons[n0:]
+    m.mons = before
+    tot = sum(seen.values())
+    assert .02 < seen[2] / tot < .05 and .05 < seen[1] / tot < .12, seen
+    # the answers
+    o = make_monster(g, 'wolf', p.x + 1, p.y, 5, 0)
+    AF.apply(o, ['Warded'])
+    o.warded = 'fire'
+    assert g.mon_res(o, 'fire') >= 75 and g.mon_res(o, 'cold') <= o.tpl['res'].get('cold', 0)
+    AF.apply(o, ['Regenerating'])
+    assert AF.regenerates(g, o)
+    AF.on_hit(g, o, 'fire')
+    assert not AF.regenerates(g, o)
+    g.turn += 3
+    assert AF.regenerates(g, o)
+    # grave-bound: rises once, unless the last blow was fire
+    sk = make_monster(g, 'skeleton', p.x + 1, p.y, 5, 0)
+    AF.apply(sk, ['Grave-bound'])
+    m.mons.append(sk)
+    sk.last_elem = None
+    sk.hp = 0
+    g.kill(sk)
+    assert sk in m.mons and sk.hp > 0 and sk.risen
+    sk.hp = 0
+    g.kill(sk)
+    assert sk not in m.mons
+    sk2 = make_monster(g, 'skeleton', p.x + 1, p.y, 5, 0)
+    AF.apply(sk2, ['Grave-bound'])
+    m.mons.append(sk2)
+    AF.on_hit(g, sk2, 'fire')
+    sk2.hp = 0
+    g.kill(sk2)
+    assert sk2 not in m.mons, 'a fire blow keeps it down'
+    # ember-hearted: the ground burns where it dies
+    m = g.map
+    spot = next((x, y) for x, y in WG.free_around(g, m, p.x, p.y, 8) if cheb(x, y, p.x, p.y) >= 3)
+    e = make_monster(g, 'wolf', spot[0], spot[1], 5, 0)
+    AF.apply(e, ['Ember-hearted'])
+    m.mons.append(e)
+    e.hp = 0
+    g.kill(e)
+    assert m.tile(*spot) == D.BURNING or any(m.tile(spot[0] + dx, spot[1] + dy) == D.BURNING
+                                             for dx in (-1, 0, 1) for dy in (-1, 0, 1)), 'the ground burns'
+    # dispel strips the magic marks, now also Warded, Ember-hearted and Blink
+    assert all(a in ART.MAGIC_MODS for a in ('Warded', 'Ember-hearted', 'Blink', 'Swift'))
+    # seen: IN SIGHT beside the name, the sentence on the look
+    u = make_monster(g, 'orc', p.x + 1, p.y, 6, 2)
+    AF.apply(u, ['Venomous', 'Swift', 'Warded'])
+    u.warded = 'cold'
+    assert AF.sentence(u) == 'Its blows poison; it is quick; it shrugs off Frost Magic.', AF.sentence(u)
+    assert AF.label(u) == 'venomous, swift, warded'
+    _n, _fg, lines = DS.monster(g, u)
+    assert any('Its blows poison' in ln for ln in lines), lines
+    u.awake = True
+    m.mons = [x for x in m.mons if x is not u] + [u]
+    g.compute_fov()
+    Canvas.cut = []
+    app.render()
+    assert not Canvas.cut, Canvas.cut
+    Canvas.cut = None
+    assert 'venomous' in app.cv.dump(), 'the marks stand in sight'
+    # old saves: the old names become the new
+    old = make_monster(g, 'wolf', p.x, p.y, 3, 0)
+    old.mods = ['Fast', 'Extra Strong', 'Fire Enchanted']
+    m.mons.append(old)
+    SV.MIGRATIONS[65][1](g)
+    assert old.mods == ['Swift', 'Brutal', 'Fire-blooded'], old.mods
+    # a named enemy draws its traits from the same list
+    for _ in range(20):
+        ts = AF.roll(g, 'wolf', 3)
+        assert all(t in AF.AFFIXES for t in ts) and 'Grave-bound' not in ts
+    print('affixes ok')
+
+
+def folk():
+    """Round 46: folk in need, part A. People in the settlements with a need from the world as it is (a group on the
+    map, the news, the season, the market, their trade and people); the '!' over them, their line in passing, one
+    window; the steps (kill, clear, hunt, find, go, seat, watch, bring, dish); the reward and the favours."""
+    from avarenthia import folkquests as FQ, folkdata as FD, crime as CR, guide as GDE, describe as DS, events as EV
+    print('== folk')
+    app = new_app('soft', seed=46)
+    g, p = app.game, app.game.player
+    to_over(g, 0)
+    w = g.world
+    made = [FQ.make(g, s) for s in w.settlements[:40] for _ in range(3)]
+    made = [nd for nd in made if nd]
+    srcs = {nd['src'] for nd in made}
+    assert len(made) > 60 and len(srcs) >= 6, srcs
+    for nd in made:
+        assert 1 <= len(nd['steps']) <= 4 and nd['motive'] in FD.MOTIVES and nd['line'] and 100 <= nd['coin'] <= 6000
+        for st in nd['steps']:                       # every need hangs on something real
+            if st['v'] == 'kill':
+                assert any(x.id == st['wd'] for x in w.wanderers)
+            elif st['v'] in ('clear', 'find'):
+                assert st['did'] in w.dungeons
+            elif st['v'] == 'go':
+                assert 0 <= st['sid'] < len(w.settlements)
+            elif st['v'] == 'bring':
+                assert st['good'] in D.GOODS
+    # in the town: the giver with '!', the line in passing, the window
+    s = w.settlements[0]
+    g.enter_town(0)
+    m = g.map
+    beast = next(x for x in w.wanderers if x.kind == 'monsters' and x.group)
+    nd = FQ.make(g, s)
+    nd['steps'] = [dict(v='kill', wd=beast.id, x=beast.x, y=beast.y, name=beast.name)]
+    nd['reward'] = 'ferry'
+    FQ.store(g).setdefault(0, []).append(nd)
+    FQ.on_enter(g, m)
+    o = next(x for x in m.mons if getattr(x, 'need', None) == nd['id'])
+    assert MS.quest_mark(g, o) == '!'
+    assert any('worry' in ln for ln in DS.person(g, o))
+    p.x, p.y = o.x + 1, o.y
+    g.compute_fov()
+    g.tips = set()
+    FQ.tick(g, m)
+    assert any(o.name in t for t, _c in g.log[-3:]) and 'folk' in g.tips
+    FQ.talk(g, o)
+    assert g.pending['key'] == 'folk' and 'Kill' in g.pending['text']
+    EV.RESOLVERS['folk'](g, 'take', g.pending['ctx'])
+    mi = FQ.mission_of(g, nd['id'])
+    assert mi and mi in MS.active(g) and FQ.need(g, nd['id']) is None
+    assert MS.target_pos(g, mi)[0] == (beast.x, beast.y)
+    MS.on_group_defeated(g, beast)
+    assert mi.state == 'turnin' and MS.quest_mark(g, o) == '?'
+    gold = p.gold
+    FQ.talk(g, o)
+    assert mi.state == 'done' and p.gold > gold and nd['id'] in FQ.helped(g)
+    tok = FQ.has(g, 'ferry')
+    assert tok is not None and 'ferry token' in tok.display_name()
+    # bring, go, find and watch
+    def new(steps, reward='rumour'):
+        n = FQ.make(g, s)
+        n['steps'], n['reward'] = steps, reward
+        FQ.store(g)[0].append(n)
+        return FQ.take(g, n['id']), n
+    mi, n = new([dict(v='bring', good='grain', qty=2)], 'bed')
+    FQ.on_enter(g, m)
+    o = next(x for x in m.mons if getattr(x, 'need', None) == n['id'])
+    assert MS.quest_mark(g, o) is None
+    p.cargo['grain'] = 2
+    assert MS.quest_mark(g, o) == '?'
+    FQ.talk(g, o)
+    assert mi.state == 'done' and not p.cargo.get('grain') and FQ.has(g, 'bed')
+    other = next(x for x in w.settlements if x.id != 0 and x.kind != 'deephold')
+    d = next(x for x in w.dungeons.values() if x.relic is None and not x.main and getattr(x, 'site', None) is None)
+    mi, n = new([dict(v='go', sid=other.id, name=other.name, who='my sister'),
+                 dict(v='find', did=d.id, relic='a silver locket', name=d.name)])
+    MS.on_enter(g, other.id)
+    assert mi.data['step'] == 1 and d.relic == mi.id
+    g.enter_dungeon(d.id, d.depth, 'up')
+    it = next(x for x in g.map.items if getattr(x, 'mission', None) == mi.id)
+    MS.on_pickup(g, it)
+    assert mi.state == 'turnin' and d.relic is None
+    to_over(g, 0)
+    g.enter_town(0)
+    mi, n = new([dict(v='watch')])
+    g.turn = (g.turn // D.DAY_LEN + 1) * D.DAY_LEN + D.DAY_LEN * 2 // 24
+    FQ.tick(g, g.map)
+    assert mi.state == 'turnin'
+    # the favours, each in a window that exists already
+    gold = p.gold
+    g.inn_meal()
+    assert p.gold == gold and not FQ.has(g, 'bed'), 'the inn token pays for the bed'
+    s.rep = -60
+    s.stopped_day = -1
+    CR.at_gate(g, s)
+    assert any(c == 'favour:gate' for _l, c in g.pending['options']) is False
+    from avarenthia.entities import Item
+    tk = Item(g.new_id(), 'favour', 'gate')
+    tk.who, tk.giver = 'Hob', 'Hob, a watchman'
+    g.add_to_inv(tk)
+    s.stopped_day = -1
+    CR.at_gate(g, s)
+    assert any(c == 'favour:gate' for _l, c in g.pending['options'])
+    EV.RESOLVERS['gate'](g, 'favour:gate', g.pending['ctx'])
+    assert not FQ.has(g, 'gate') and s.rep == -60
+    assert all(k in FD.FAVOURS for k in set(FD.TRADE_REWARD.values()) - {'own', 'rumour', 'bestiary'})
+    assert len(FD.FAVOURS) == 8 and 'folk' in GDE.TIPS
+    print('folk ok:', len(made), 'needs from', sorted(srcs))
+
+
 def money():
     """The money check (tests/money.py): at level 1, 10 and 20 the coin left over a day, the days of work for a bed and
     for a raising stay in their bands (first guesses, to settle with Nilio)."""
@@ -10535,7 +10757,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

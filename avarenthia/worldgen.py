@@ -158,7 +158,7 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
     big = D.MONSTERS[k]['hp'] >= 2
     if elite is None:
         r = random.random()
-        elite = 2 if r < .07 else 1 if r < .19 else 0
+        elite = 2 if r < .03 else 1 if r < .11 else 0
     size = random.randint(2, 4) if elite == 1 else random.randint(1, 2) if big else random.randint(2, 5)
     if tag == 'den':                    # the first dungeon: lone kobolds and pairs, never a mob
         elite, size = 0, random.choices([1, 2], [3, 2])[0]

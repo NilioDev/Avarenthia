@@ -156,6 +156,8 @@ def at_gate(game, s):
     opts = [(f'Pay the fine of {fmt(f)}', 'pay' if game.player.gold >= f else None)]
     opts += [('Spend three days in the stocks', 'stocks'), ('Swear it was someone else, and prove it', 'name'),
              ('Turn and run', 'run')]
+    from . import folkquests as FQ
+    opts += FQ.option(game, 'gate')
     ask(game, 'gate', f'The guards of {s.name}',
         f'Two guards block your way, hands on their swords. "You are wanted in {s.name} for {what}. '
         f'Pay your fine, or take your punishment."', opts, sid=s.id)
@@ -165,6 +167,11 @@ def at_gate(game, s):
 def r_gate(game, choice, ctx):
     s = game.world.settlements[ctx['sid']]
     p = game.player
+    if choice == 'favour:gate':
+        from . import folkquests as FQ
+        if FQ.use(game, 'gate'):
+            game.msg(f'The guards read it, look at each other, and step aside. You are still wanted in {s.name}.', 'info')
+            return
     if choice == 'pay':
         p.gold -= fine(s)
         s.rep = -5

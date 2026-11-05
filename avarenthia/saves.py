@@ -21,8 +21,26 @@ def _tally(g):
     t['kills'] = t.get('kills', 0) + (n or 0)
 
 
+def _affixes(g):
+    """66: the marks of creatures got their new names (Fast is Swift, Extra Strong is Brutal, Fire Enchanted is
+    Fire-blooded)."""
+    from .affixes import OLD
+    for m in list(getattr(g, 'maps', {}).values()):
+        for mon in getattr(m, 'mons', ()):
+            mods = getattr(mon, 'mods', None)
+            if mods:
+                new = []
+                for a in mods:
+                    a = OLD.get(a, a)
+                    if a not in new:
+                        new.append(a)
+                mon.mods = new
+
+
 MIGRATIONS = {
     64: ('the kill count moved to the tally', _tally, False),
+    65: ('the marks of creatures renamed', _affixes, False),
+    66: ('folk in need: their needs on the world, who you helped on the player', None, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

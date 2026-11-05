@@ -147,6 +147,14 @@ def ch_fighting(g):
               'or off.'),
         ('p', 'On a foe, burning flickers orange, poison pulses green, the frozen stand on pale blue ice and the '
               'weakened look dim.'),
+        ('h', 'Marked creatures'),
+        ('p', 'A creature in blue is a champion, one in gold a unique with a name of its own. Each bears one or more '
+              'marks: venomous, swift, warded, grave-bound and more. In sight they stand beside its name; a look with '
+              '[o] tells what each one does.'),
+        ('p', 'Every mark has an answer you already own. Many small blows or a flail get past a shielded one, a war '
+              'hammer past stone skin, a bow or a long reach keeps you from thorns, and fire stops a creature that '
+              'splits or heals. The grave-bound rise once more, unless the last blow was fire or holy or they fall on '
+              'hallowed ground. A dispel strips the magic marks.'),
         ('h', 'Bosses'),
         ('p', 'The great foes fight in their own way. Before a great blow they wind up, and the ground it will strike '
               'turns red; a number on it counts the turns left. Step out in time: there is always a way. A purple '
@@ -487,6 +495,16 @@ def ch_jobs(g):
         ('p', 'Some jobs ask you to choose. What you choose is remembered: by a town, a faction, your god, '
               'your guild, the law, and your hireling.'),
         ('p', 'A traveller who gives you a job waits for you afterwards at the inn of the town they were going to.'),
+        ('h', 'Folk in need'),
+        ('p', 'Ordinary people have troubles of their own, and every one is real: the pack you saw north of the '
+              'village, the sickness in the news, the winter, the empty market, their own trade. Someone with a need '
+              'wears a !, says it as you pass, and tells you more when you walk into them. A need taken goes in your '
+              'journal like any job. Some are a short walk; some are a journey of three or four steps.'),
+        ('p', 'They pay little: a few silver, and a better name in their town. But each gives something of their '
+              'own: bread, a potion, a rumour of a place you did not know, what a trapper knows of a beast, or a '
+              'favour. A favour is a token in your pack, a ferryman\'s token or a carved whistle: shown once where it '
+              'counts, at a ferry, a harbour, a town gate where you are wanted, an inn, a smith, the temple that '
+              'raises you, a lord\'s hall, or a pass the snow has shut. Then it is gone.'),
         ('h', 'Money'),
         ('p', '100 copper make a silver, 100 silver make a gold. Jobs pay modestly; trade is where the money is. Coin '
               'goes on beds, meals, repairs, wages and the temple. What you cannot afford is shown in grey.'),

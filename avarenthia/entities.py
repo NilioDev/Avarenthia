@@ -6,7 +6,7 @@ from . import data as D
 
 # kinds kept by their own module: display(game, it), lines(game, it), value(game, it), glyph(it), color(it)
 CRAFT = {'dish': 'cooking', 'cookbook': 'cooking', 'hide': 'hunting', 'part': 'beastparts', 'npart': 'beastparts', 'carcass': 'hunting',
-         'leather': 'hunting', 'ammo': 'weapons', 'draught': 'alchemy', 'mat': 'crafts'}
+         'leather': 'hunting', 'ammo': 'weapons', 'draught': 'alchemy', 'mat': 'crafts', 'favour': 'folkquests'}
 
 
 def _craft(it):
@@ -742,15 +742,7 @@ def make_monster(game, k, x, y, lvl, elite=0):
     elif elite == 2:
         hp = round(hp * 3.5)
         xp *= 5
-        a, b, c = D.UNIQUE_NAME
-        m.name = random.choice(a) + random.choice(b) + ' ' + random.choice(c)
         m.fg = D.UNIQUE_FG
-        m.mods = random.sample(D.ELITE_MODS, random.randint(1, 2))
-        if 'Extra Strong' in m.mods:
-            dmg = [round(v * 1.5) for v in dmg]
-        if 'Stone Skin' in m.mods:
-            df *= 2
-            hp = round(hp * 1.3)
     m.hp = m.maxhp = hp
     m.dmg = tuple(dmg)
     m.df = df
@@ -758,6 +750,9 @@ def make_monster(game, k, x, y, lvl, elite=0):
     m.xp = xp
     from .weapons import pick_wield
     m.wield = pick_wield(k)                 # the one weapon it fights with, and may drop
+    if elite:
+        from . import affixes as AF
+        AF.mark(game, m)                    # its affixes (round 45), and a unique's name
     from .behave import on_spawn
     on_spawn(game, m)
     from . import bosses as BS

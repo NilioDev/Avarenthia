@@ -16,6 +16,7 @@ os.chdir(SRC)
 import avarenthia.skills as SK
 import avarenthia.weaponskills as WS
 import avarenthia.data as D
+import avarenthia.affixes as AF
 import avarenthia.evils as EV
 import avarenthia.shadow as SHD
 import avarenthia.skyseat as SKY
@@ -386,8 +387,9 @@ for fam in sorted(groups, key=lambda f: (f == 'bosses and legends', f)):
 add('monsters', 'Creatures', f'Monsters ({len(D.MONSTERS)})',
     '<p>Every creature in the code (data.py, creatures.py, menagerie.py and the rest). Stats are shown at the lowest level it appears '
     '(bosses at their fixed level): life = (4 + 4.5·lvl)·x, damage = (2 + 1.4·lvl)…(4 + 2.8·lvl)·x, defence = (3 + 3·lvl)·x. '
-    'The three multipliers are life / damage / defence. A champion has 2.5× life and 1.25× damage; a unique 3.5× life and one or two of: '
-    + e(', '.join(D.ELITE_MODS)) + '.</p>', mon_html)
+    'The three multipliers are life / damage / defence. A champion has 2.5× life and 1.25× damage and one affix (from level 15 '
+    'sometimes two); a unique 3.5× life, two or three affixes and a name. The affixes, each fitting certain kinds: '
+    + e('; '.join(f'{a}: {AF.TEXT[a]}' for a in AF.AFFIXES)).replace('{school}', 'one school of magic') + '.</p>', mon_html)
 
 ab_rows = ''
 for (lab, txt), ks in sorted(USERS.items(), key=lambda kv: kv[0][0].lower()):

@@ -18,14 +18,9 @@ from .worldgen import cheb
 
 RANKS = ('notable', 'notorious', 'legendary')
 RANK_WORD = {'notable': 'notable', 'notorious': 'notorious', 'legendary': 'legendary'}
-TRAITS = ['Venomous', 'Frost-touched', 'Fire-blooded', 'Stone Skin', 'Thorny', 'Vampiric', 'Regenerating', 'Swift', 'Blink',
-          'Summoner', 'Splitting', 'Multishot', 'Berserk', 'Shielded', 'Cursing', 'Warcry']
-TRAIT_TEXT = {'Venomous': 'its blows poison', 'Frost-touched': 'its touch is cold and slows you', 'Fire-blooded': 'it burns',
-              'Stone Skin': 'its hide turns blades', 'Thorny': 'it cuts whoever strikes it', 'Vampiric': 'it heals as it wounds',
-              'Regenerating': 'its wounds close by themselves', 'Swift': 'it is quick', 'Blink': 'it steps through the air',
-              'Summoner': 'it calls its kin', 'Splitting': 'cut it and it splits', 'Multishot': 'it looses two shots at once',
-              'Berserk': 'it rages when hurt', 'Shielded': 'it turns the first blows aside', 'Cursing': 'it curses',
-              'Warcry': 'its war cry drives its band on'}
+from . import affixes as AF
+TRAITS = AF.AFFIXES                     # one list with the champions and uniques (round 45)
+TRAIT_TEXT = {a: t.replace('{school}', 'one school of magic') for a, t in AF.TEXT.items()}
 
 # what can be named, by prey (who pays for it): beasts for the Wardens, the dead for the Dawn, warlords for the Iron Company,
 # sorcerers for the Magi, gang bosses for the Thieves, the knights who hunt the Coven
@@ -280,8 +275,7 @@ def make(game, x=None, y=None, prey=None, rank=None, boss=None, k=None):
     _name(game, n, spot)
     n.lvl = danger + {'notable': 2, 'notorious': 3, 'legendary': 5}[rank]
     nt = {'notable': 1, 'notorious': random.randint(2, 3), 'legendary': random.randint(3, 4)}[rank]
-    pool = [t for t in TRAITS if (t != 'Multishot' or d['ranged']) and (t != 'Splitting' or k not in RACE)]
-    n.traits = random.sample(pool, nt)
+    n.traits = AF.roll(game, k, nt)
     size = {'notable': random.randint(0, 2), 'notorious': random.randint(3, 5), 'legendary': random.randint(4, 6)}[rank]
     if k in BANDS:
         n.following = [random.choice(BANDS[k]) for _ in range(size)]
@@ -450,8 +444,7 @@ def daily(game):
 
 def grow(game, n):
     n.fame += 1
-    left = [t for t in TRAITS if t not in n.traits and (t != 'Multishot' or D.MONSTERS[n.k]['ranged'])
-            and (t != 'Splitting' or n.k not in RACE)]
+    left = [a for a, _w in AF.weights(game, n.k, n.traits)]
     if random.random() < .5 and left and len(n.traits) < 5:
         n.traits.append(random.choice(left))
     else:
@@ -572,14 +565,7 @@ def apply(game, mon, n):
     mon.lvl = n.lvl
     mon.hp = mon.maxhp = round(mon.maxhp * mult[0])
     mon.dmg = tuple(round(v * mult[1]) for v in mon.dmg)
-    mon.mods = list(n.traits)
-    if 'Stone Skin' in n.traits:
-        mon.df *= 2
-        mon.hp = mon.maxhp = round(mon.maxhp * 1.2)
-    if 'Shielded' in n.traits:
-        mon.shield = 4
-    if 'Swift' in n.traits:
-        mon.mods.append('Fast')
+    AF.apply(mon, n.traits)
     mon.weak_res = {n.weak: -50}
     base = getattr(mon, 'look', None) or f"{n.what()[0].upper() + n.what()[1:]}."
     mon.look = base.rstrip('.') + ', with ' + ' and '.join(n.looks) + '.'

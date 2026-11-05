@@ -10,6 +10,7 @@ import random
 from . import data as D
 from .money import fmt
 from .worldgen import cheb
+from . import folkquests as FQ
 
 TIER = {'hamlet': 0, 'village': 1, 'town': 2, 'city': 3, 'metropolis': 4}
 SHIPS = {   # kind: name, lowest harbour tier at both ends, furthest reach (sea cells), cells a day, copper a cell,
@@ -167,16 +168,19 @@ def r_sail(game, choice, ctx):
         EV.ask(game, 'sail', f"To {s.name}", f"A {SHIPS[kind]['name']}, {days(kind, n)} day{'s' if days(kind, n) > 1 else ''} at sea. "
                'An armed escort costs more; pirates leave armed ships alone.',
                [(f'Plain passage ({fmt(fare(kind, n))})', f'go:{sid}:{kind}:{n}:0'),
-                (f'With an armed escort ({fmt(fare(kind, n, True))})', f'go:{sid}:{kind}:{n}:1'), ('Not now', 'bye')])
+                (f'With an armed escort ({fmt(fare(kind, n, True))})', f'go:{sid}:{kind}:{n}:1')]
+               + [(lab, f'go:{sid}:{kind}:{n}:free') for lab, _c in FQ.option(game, 'ship')] + [('Not now', 'bye')])
         return
     if choice.startswith('go:'):
         _g, sid, kind, n, armed = choice.split(':')
-        sail(game, game.world.settlements[int(sid)], kind, int(n), armed == '1')
+        if armed == 'free' and not FQ.use(game, 'ship'):
+            return
+        sail(game, game.world.settlements[int(sid)], kind, int(n), armed == '1', free=armed == 'free')
 
 
-def sail(game, dest, kind, n, armed):
+def sail(game, dest, kind, n, armed, free=False):
     p = game.player
-    cost = fare(kind, n, armed)
+    cost = 0 if free else fare(kind, n, armed)
     if p.gold < cost:
         game.msg(f'The passage costs {fmt(cost)}.', 'bad')
         return

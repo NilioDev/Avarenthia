@@ -68,6 +68,7 @@ DECO_DESC = {1: 'Damp moss grows here.', 2: 'Pale grass grows here in the dark.'
              13: 'Filth and scraps. It stinks.', 14: 'Trampled mud.', 15: 'A smoky cookfire, ringed with gnawed bones.',
              16: 'Heavy tracks in the dust, and more than one kind. Something big walks here with company.'}
 ROLE_DESC = {
+    'folk': 'Someone with a worry of their own. Walk into them to hear it.',
     'skipper': 'A skipper. Walk into them to hire a passage along the coast.',
     'inn': 'The innkeeper. Jobs on the board, hot meals, a bed and the local gossip.',
     'factor': "A factor of the Merchants' Guild. Trade work, and talk of prices on the roads near here.",
@@ -175,9 +176,10 @@ def monster(game, mon):
         tags.append('a champion: tougher than its kin')
     elif mon.elite == 2 or d.get('boss'):
         tags.append('unique and dangerous')
-    if mon.mods:
-        tags.append(', '.join(mon.mods).lower())
     lines.append(f'Level {mon.lvl}, {health_word(mon)}' + (f'; {"; ".join(tags)}' if tags else '') + '.')
+    if mon.mods:
+        from . import affixes as AF
+        lines.append(AF.sentence(mon))              # its marks: "Its blows poison; it is quick."
     lvl_gap = mon.lvl - game.player.lvl
     lines.append('It looks far stronger than you.' if lvl_gap >= 4 else 'It looks tougher than you.' if lvl_gap >= 2
                  else 'An even match.' if lvl_gap >= -1 else 'It should be no match for you.')

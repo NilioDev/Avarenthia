@@ -212,7 +212,7 @@ def on_dungeon_level(game, dg, m, depth):
     """A level the rivals got to first: most of its monsters dead, the chests open; or their bodies by the stairs."""
     what = getattr(dg, 'rivals', None)
     if what == 'cleared':
-        m.mons = [o for o in m.mons if o.is_npc or getattr(o, 'is_boss', False) or random.random() < .3]
+        m.mons = [o for o in m.mons if o.is_npc or getattr(o, 'is_boss', False) or o.k == dg.boss or random.random() < .3]
         for i, t in enumerate(m.t):
             if t == D.CHEST:
                 m.t[i] = D.CHEST_OPEN

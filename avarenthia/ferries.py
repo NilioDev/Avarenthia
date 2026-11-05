@@ -134,7 +134,9 @@ def offer(game, k, npc=None):
         return
     f = fare(game)
     p = game.player
-    opts = [(f'Cross ({fmt(f)})', 'cross') if p.gold >= f else (f'Cross ({fmt(f)})', None), ('Not now', 'bye')]
+    from . import folkquests as FQ
+    opts = [(f'Cross ({fmt(f)})', 'cross') if p.gold >= f else (f'Cross ({fmt(f)})', None)] + FQ.option(game, 'ferry') + \
+        [('Not now', 'bye')]
     EV.ask(game, 'townferry', man.name, ('"High water, so it costs more. Hold on to the rope." ' if f > FARE else
                                          random.choice(['"Over the water? Stand in the middle and keep still."',
                                                         '"Step on, step on. She is older than me but she floats."'])) +
@@ -142,6 +144,11 @@ def offer(game, k, npc=None):
 
 
 def r_cross(game, choice, ctx):
+    if choice == 'favour:ferry':
+        from . import folkquests as FQ
+        if FQ.use(game, 'ferry'):
+            ctx = dict(ctx, fare=0)
+            choice = 'cross'
     if choice != 'cross':
         return
     from . import met as MET

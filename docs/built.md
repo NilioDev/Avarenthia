@@ -51,6 +51,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
+| **Built: marked creatures (5 Nov)** | One list of 20 affixes for champions (one, from level 15 sometimes two), uniques (two or three, and a name like the named enemies') and the named enemies; each fits its kind, place and season, has an answer, stands beside the name in IN SIGHT and in a sentence on the look; rarer than before |
 | **Built: a finer look (5 Nov)** | Remembered land with a hint of colour, calmer roads, whole names on the map, one colour scale on the panel, names in the log in their colour, each kind of level its own remembered tint, a soft fade-in |
 | **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
 | **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
@@ -58,6 +59,20 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **Marked creatures** (round 45, 5 November 2026; `affixes.py`, test part `affixes`; SAVE_VERSION 66, the old
+  names migrate). One list of 20 affixes (`affixes.AFFIXES`, also `named.TRAITS`): the 16 traits, Brutal (was Extra
+  Strong), and new Warded (resists one school: fire, cold, lightning or holy, by 75%), Ember-hearted (burning ground
+  3 x 3 where it dies) and Grave-bound (undead only; rises once at half life unless the last blow was fire or holy or
+  it falls on hallowed ground); Fast became Swift, Fire Enchanted went into Fire-blooded; fire or acid stops
+  Regenerating for 3 turns, a fire blow stops Splitting. `affixes.fits` keeps each to its kinds, `weights` makes
+  Frost-touched likelier in winter, the north and cold levels, Fire-blooded on ash levels; never both. A champion
+  has one (from level 15 a 30% chance of two), a unique two or three and a name from `unique_name` (the named
+  enemies' style; `D.UNIQUE_NAME` and `D.ELITE_MODS` are gone). Packs in dungeons: 8% champions, 3% uniques (were
+  12% and 7%); in the wild 6% champions plus a little with the distance. IN SIGHT shows the affixes after the
+  intent word, as many as fit; the target box after the level; the look adds the sentence (`affixes.sentence`).
+  Berserk, Blink and Summoner act for champions and uniques too (`affixes.turn`). Dispel strips `affixes.MAGIC`
+  (now with Swift, Warded, Ember-hearted, Blink). A slain unique beast gives a part tied to an affix a quarter of
+  the time, with a knife (`affixes.part`). First-time tip 'marked'; F12 Tests: the step `marked`.
 - **A finer look, not busier** (rounds 43-44, 5 November 2026; `look.py`, `ui.py`; test part `finer_look`).
   Remembered world-map land keeps a dull hint of its colour; roads calmer (darker ochre); settlement names drawn
   after the signs and moved inwards at the edge of the view; the target's bar and IN SIGHT in one scale (green,
@@ -2895,3 +2910,25 @@ Only colour, brightness and tidiness: no new signs, animations or keys. Dutch pr
    and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
    shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
 Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
+
+## Marked creatures (built 5 November 2026; the spec)
+Monsters grow more varied through one list of affixes, not through more kinds (there are 272). The full table with who,
+where and the answer for each: project files `monsters/affixen.md`.
+- **One list, 20 affixes.** The 16 traits of the named enemies (`named.TRAITS`); *Extra Strong* becomes **Brutal**
+  (hits half again as hard), *Fire Enchanted* goes into Fire-blooded, *Fast* into Swift. Three new: **Warded** (resists
+  one school of magic, the look line says which), **Ember-hearted** (burning ground 3 x 3 where it dies), **Grave-bound**
+  (undead only: rises once more unless the body is burnt or hallowed). Also new: fire or acid stops Regenerating for 3 turns.
+- **Who has how many.** A champion (blue) has 1 affix, from level 15 sometimes 2. A unique (gold) has 2 or 3 and a name in
+  the named enemies' style ("Old Greytooth"); the Diablo names (`D.UNIQUE_NAME`, "Gorefang the Wicked") go. A named
+  enemy keeps its own growing but draws its traits from this list.
+- **It must fit.** Each affix belongs to certain kinds (Multishot only archers, Splitting never a people, Warcry only
+  leaders); place, region and season make one likelier (Frost-touched in winter and the north, Fire-blooded on fire
+  levels). Frost-touched and Fire-blooded never together.
+- **Rarer.** Of the packs in dungeons about 8% champions and 3% uniques (now 12% and 7%); a little fewer in the wild.
+- **Seen on one tile.** The colour stays blue or gold; in IN SIGHT the affixes stand on their own line under the name
+  ("venomous, swift"); the look line `l` gives the sentence (`TRAIT_TEXT`). One first-time tip in `guide.TIPS`.
+- **Every affix has an answer** the player already owns (Shielded: the flail or many small blows; Stone Skin: the war
+  hammer; Thorny: a bow or reach; Splitting: fire). Dispel strips the magic ones, now also Warded, Ember-hearted and Blink.
+- **Loot unchanged:** only those who use gear drop gear. A skinned unique may give a part tied to its affix (about
+  25%, as named enemies do now, `beastparts.TRAIT_POWER`); champions nothing extra. The bestiary does not change.
+- Handbook: two or three sentences in the fighting chapter. Test part `affixes`. Bump `SAVE_VERSION`.

@@ -524,6 +524,13 @@ def _turn(game, mon, df):
         from . import named as NM
         if NM.mon_turn(game, mon, df):
             return True
+    elif mon.mods and mon.elite:
+        from . import affixes as AF
+        if seen:
+            from . import guide as GDE
+            GDE.tip(game, 'marked')
+        if AF.turn(game, mon):
+            return True
     # an ambusher that is already aware of you waits, unseen, until you come close
     if getattr(mon, 'lurk', False):
         if dist <= (1 if beh(mon, 'disguise') else 2) and seen:
@@ -909,7 +916,7 @@ def on_death(game, mon):
     if beh(mon, 'cinders'):
         from . import rift as RF
         RF.died(game, mon)
-    sp = mon.tpl.get('split') or ('Splitting' in mon.mods and mon.k)
+    sp = mon.tpl.get('split') or ('Splitting' in mon.mods and getattr(mon, 'last_elem', None) != 'fire' and mon.k)
     if sp and sp in D.MONSTERS:
         from .entities import make_monster
         spots = free_around(game, m, mon.x, mon.y, 1)

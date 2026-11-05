@@ -43,6 +43,8 @@ from . import firststeps as FS
 from . import met as MET
 from . import belt as BL
 from . import tally as TY
+from . import affixes as AF
+from . import folkquests as FQ
 from . import townlife as TL
 from . import feasts as FE
 from . import landmarks as LM
@@ -96,7 +98,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 65
+SAVE_VERSION = 67
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -1147,6 +1149,9 @@ class Game:
         t = m.tile(nx, ny)
         if m.kind == 'over':
             why = SE.blocked(self, nx, ny) or CV.blocked(self, nx, ny)
+            if why and why.startswith('Deep snow') and FQ.use(self, 'guide'):
+                why = None                              # a herder's path over the shut pass
+                self.msg('You blow the whistle, and a herder comes down to lead you by the goat path.', 'info')
             if why:
                 self.msg(why, 'info')
                 return 0
@@ -1444,7 +1449,7 @@ class Game:
             keys = SH.wild_keys(self, p.x, p.y, lvl) or EVL.wild_keys(self, p.x, p.y, lvl) or LN.pack(self, lvl) or \
                 WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
             r = random.random()
-            elite = 1 if r < .08 + off * .004 else 0
+            elite = 1 if r < .06 + off * .003 else 0
             self.start_encounter(None, t, lvl, keys, elite)
             return 1
         if cheb(p.x, p.y, *self._home_xy()) > 4:
@@ -1830,6 +1835,8 @@ class Game:
     def inn_meal(self, price=None, line=None):
         p = self.player
         price = self.MEAL if price is None else price
+        if price and FQ.use(self, 'bed'):
+            price = 0
         if p.gold < price:
             self.msg('You cannot afford a bed.', 'bad')
             return
@@ -2011,8 +2018,10 @@ class Game:
         if mon.is_npc or not elem:
             return 0
         r = mon.tpl['res'].get(elem, 0) + getattr(mon, 'weak_res', {}).get(elem, 0)
-        if ('Fire Enchanted' in mon.mods or 'Fire-blooded' in mon.mods) and elem == 'fire':
+        if 'Fire-blooded' in mon.mods and elem == 'fire':
             r = max(r, 50)
+        if 'Warded' in mon.mods and elem == getattr(mon, 'warded', None):
+            r = max(r, 75)
         if 'Frost-touched' in mon.mods and elem == 'cold':
             r = max(r, 50)
         return r
@@ -2063,6 +2072,8 @@ class Game:
         if not its:
             self.msg('Your gear is in good order.')
             return
+        if cost and FQ.use(self, 'repair'):
+            cost = 0
         if self.player.gold < cost:
             self.msg(f'Mending all your gear costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
@@ -2094,6 +2105,8 @@ class Game:
             ART.broke_cover(self)
         if elem:
             dmg *= 1 - self.mon_res(mon, elem) / 100
+        if mon.mods:
+            AF.on_hit(self, mon, elem)
         if getattr(mon, 'lurk', False):          # struck where it hid: it shows itself
             AI.on_wake(self, mon)
             mon.awake = True
@@ -2221,6 +2234,8 @@ class Game:
             return
         if BS.spare(self, mon):                          # a threshold holds it, or a shard raises it
             return
+        if mon.mods and AF.rises(self, mon):            # Grave-bound: once more, unless burnt or hallowed
+            return
         m.mons.remove(mon)
         TY.kill(self, mon)
         if getattr(mon, 'carries', None) is not None:     # a key it kept (puzzles.py)
@@ -2263,14 +2278,13 @@ class Game:
                 p.life = min(s['max_life'], p.life + s['lpk'])
             if s['mpk']:
                 p.mana = min(s['max_mana'], p.mana + s['mpk'])
-        if 'Fire Enchanted' in mon.mods:
-            self.flash(ring(mon.x, mon.y, 1), (255, 122, 44), '*', .26)
-            self.msg(f'{mon.name} explodes in flames!', 'bad')
-            if cheb(mon.x, mon.y, p.x, p.y) <= 1:
-                self.hurt(mon.dmg[1] * .8, mon.name, 'fire')
+        if mon.mods:
+            AF.ember(self, mon)                          # Ember-hearted: the ground burns where it dies
+            AF.part(self, mon)                           # a unique beast's part, now and then
         BH.on_death(self, mon)
         if getattr(mon, 'named', None) is not None:
             NM.on_kill(self, mon)
+        FQ.on_kill(self, mon)
         self.drop_loot(mon)
         if mon.faction:
             WAR.on_kill(self, mon)
@@ -2441,7 +2455,7 @@ class Game:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 2))
             if mon.tpl['leech']:
                 mon.hp = min(mon.maxhp, mon.hp + round(dmg / 3))
-            elem = 'fire' if 'Fire Enchanted' in mon.mods or 'Fire-blooded' in mon.mods else \
+            elem = 'fire' if 'Fire-blooded' in mon.mods else \
                 'cold' if 'Frost-touched' in mon.mods else mon.tpl['elem']
             word = {'fire': ' with fire', 'cold': ' with frost', 'lightning': ' with lightning'}.get(elem, '')
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} hits you{word}.', 'bad')
@@ -2644,7 +2658,7 @@ class Game:
             if getattr(mon, 'prey', None) is not None:
                 HT.prey_turn(self, mon)
                 continue
-            if (d['regen'] or 'Regenerating' in mon.mods) and mon.hp < mon.maxhp:
+            if (d['regen'] or AF.regenerates(self, mon)) and mon.hp < mon.maxhp:
                 mon.hp = min(mon.maxhp, mon.hp + -(-mon.maxhp // 40))
             if mon.effects:
                 for k in list(mon.effects):
@@ -2658,6 +2672,7 @@ class Game:
                         if k == 'bleed':
                             WP.blood_trail(self, m, mon.x, mon.y)       # a red trail where it goes
                         if mon.hp <= 0:
+                            mon.last_elem = {'burn': 'fire', 'poison': 'poison'}.get(k)
                             self.kill(mon)
                             break
                     if TT.keeps(self, mon, k):
@@ -2692,7 +2707,7 @@ class Game:
                 AI.step_away(self, mon)                 # dread, or the light of the dawn on the dead: it runs
                 continue
             ox_, oy_ = mon.x, mon.y
-            acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Fast' in mon.mods else 0)
+            acts = 1 + (1 if d['fast'] and self.turn % 2 == 0 else 0) + (1 if 'Swift' in mon.mods else 0)
             if BH.has(self, 'slowed') and self.turn % 2 == 0:
                 acts += 1
             while acts > 0 and not self.dead and mon in m.mons and self.cur == key:
@@ -2848,6 +2863,8 @@ class Game:
         p = self.player
         seat = SKY.in_seat(self)
         fee = self.raise_fee() * (2 if seat else 1)           # he keeps those who die in his city: the priests fight for you
+        if FQ.use(self, 'heal'):
+            fee = 0                                         # a blessing a priest of the folk gave you
         bound = SKY.binds(self)
         if p.gold < fee:
             self.dead = True
@@ -2897,7 +2914,7 @@ class Game:
             self.corpses.append((key, corpse.id))
             if bound and key != 'over':
                 SKY.shade(self, key, corpse)                 # where the dead are bound, your body rises (skyseat.py)
-            p.inv = [it for it in p.inv if self.is_equipped(it) or it.k == 'quest']
+            p.inv = [it for it in p.inv if self.is_equipped(it) or it.k in ('quest', 'favour')]
             p.cargo, p.cost_basis = {}, {}
         here = self.world.settlements[self.home] if self.home is not None else None
         ox, oy = self.over_pos if self.cur != 'over' else (p.x, p.y)

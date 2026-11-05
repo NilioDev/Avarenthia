@@ -16,8 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'More makers', 'Marked creatures',
-             'Folk in need', 'Crafts guilds'}
+NOT_BUILT = {'More makers', 'Crafts guilds', 'Folk in need :: Twists and seeds'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -517,12 +516,30 @@ def s_first(game, n, *stages):
     game.msg(f'Test: the first steps, {stage}.', 'info')
 
 
+def s_marked(game, n, k='orc', elite=1, every=True):
+    """A champion or a unique beside you; with every, the next of the twenty affixes each time (with a fitting kind)."""
+    from . import affixes as AF
+    from . import data as D
+    a = AF.AFFIXES[n % len(AF.AFFIXES)]
+    kind = k
+    if every:
+        kind = next((c for c in (k, 'kob_slinger', 'skeleton', 'wolf', 'spider', 'orc_chief') if c in D.MONSTERS
+                     and (AF.fits(c, a) or a == 'Warcry' and AF.leader(c))), k)
+    mon = DBG.spawn(game, kind, elite)
+    if mon is None:
+        return
+    if every:
+        rest = [x for x in mon.mods if x != a and not {x, a} == {'Frost-touched', 'Fire-blooded'}]
+        AF.apply(mon, [a] + rest[:elite])
+    game.msg(f"Test: {mon.name}: {AF.label(mon)}.", 'info')
+
+
 STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'deep': s_deep, 'bossfloor': s_boss_dungeon,
          'days': s_days, 'month': s_month, 'hour': s_hour, 'weekday': s_weekday, 'feast': s_feast, 'fair': s_fair,
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'puzzle': s_puzzle,
-         'boss': s_boss, 'note': s_note, 'first': s_first}
+         'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked}
 
 GOLD = 10 * 100 * 100
 SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
@@ -748,6 +765,20 @@ R = {
                                                          ('give', 'Minor Mana Potion'), ('spawn', 'goblin', {'sleep': True}),
                                                          ('note', 'drink the pockets dry with Shift+1, 2: then q rummages.')],
     'The belt and the tally :: The tally': [('dbgnext', 'tally_look', 'tally', 'death', 'win')],
+    # Folk in need
+    'Folk in need :: Folk with a need': [('to', ('village', 'town', 'city')),
+                                         ('dbgnext', 'folk_need', 'beasts', 'nest', 'named', 'news', 'season', 'scarce',
+                                          'realm', 'old', 'kin', 'trade', 'feast', 'people', 'watch'), SCHOOLS_NOTE],
+    'Folk in need :: Rewards and favours': [('to', ('village', 'town')), ('dbg', 'folk_need'),
+                                            ('give', 'Favour: Hob\'s ferry token'), ('give', "Favour: Hob's word at the gate"),
+                                            ('give', "Favour: Hob's letter of thanks"), ('give', "Favour: Hob's carved whistle"),
+                                            ('note', 'a ferry, a town where you are wanted (crime), a lord, a shut pass.')],
+    # Marked creatures
+    'Marked creatures :: Each affix': [('deep', 'dungeon', 1), ('marked', 'orc', 1), ('marked', 'orc', 2),
+                                       ('give', 'Flail'), ('give', 'War Hammer'), ('give', 'Short Bow'), SCHOOLS_NOTE],
+    'Marked creatures :: Fit and rarity': [('deep', ('dungeon (rift)', 'dungeon (cave)'), 1), ('month', 1),
+                                           ('marked', 'wolf', 2, False), ('dbg', 'reveal_map'), SCHOOLS_NOTE],
+    'Marked creatures :: Seen and told': [('deep', 'dungeon', 1), ('dbg', 'reset_tips'), ('marked', 'goblin', 2, False)],
     # The test menu
     'The test menu :: Tests page': [('note', 'tick this line with [y], restart, and see it kept.')],
     'The test menu :: Note for Claude and ✗': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

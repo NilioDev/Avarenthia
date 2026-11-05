@@ -196,6 +196,37 @@ def screen_text(app):
 
 
 # ------------------------------------------------------------------ the world
+def folk_need(game, src=None):
+    """Folk: make a need here (in the settlement you stand in, or the nearest), of this source when it can be had."""
+    from . import folkquests as FQ
+    w = game.world
+    m = game.map
+    sid = getattr(m, 'sid', None)
+    if sid is None:
+        x, y = game.world_pos()
+        sid = min(w.settlements, key=lambda s: max(abs(s.x - x), abs(s.y - y))).id
+    s = w.settlements[sid]
+    nd = None
+    for _ in range(30):
+        nd = FQ.make(game, s)
+        if nd and (src is None or nd['src'] == src):
+            break
+    if not nd:
+        game.msg('Debug: no need can be made here.', 'bad')
+        return None
+    FQ.store(game).setdefault(sid, []).append(nd)
+    if m.kind == 'town' and getattr(m, 'sid', None) == sid:
+        FQ.place(game, m, nd)
+    game.msg(f"Debug: {nd['title']} ({nd['src']}): {FQ.brief(game, nd)}", 'info')
+    return nd
+
+
+def reset_tips(game):
+    """Every first-time tip may be said again."""
+    game.__dict__['tips'] = set()
+    game.msg('Debug: the first-time tips are new again.', 'info')
+
+
 def reveal_map(game):
     om = game.maps['over']
     for i in range(len(om.seen)):
@@ -709,6 +740,9 @@ def item_list():
                 out.append(('part', BP.part_name(f'{part}:{beast}'), ('part', f'{part}:{beast}')))
     for trait in BP.TRAIT_POWER:
         out.append(('named part', f'Named beast part: {trait}', ('npart', trait)))
+    from . import folkdata as FD
+    for k, v in FD.FAVOURS.items():
+        out.append(('favour', 'Favour: ' + v[0].format(who='Hob'), ('favour', k)))
     for t, nm in (('rope', 'Coil of Rope'), ('bedroll', 'Bedroll'), ('tent', 'Tent and Bedroll'), ('kit', 'Repair Kit'),
                   ('trowel', "Digger's Trowel")):
         out.append(('tool', nm, ('tool', t)))
@@ -747,6 +781,9 @@ def give(game, recipe, rar='normal'):
         it = EN.Item(game.new_id(), 'leather', recipe[1], 8)
     elif kind == 'part':
         it = EN.Item(game.new_id(), 'part', recipe[1], 4)
+    elif kind == 'favour':
+        it = EN.Item(game.new_id(), 'favour', recipe[1])
+        it.who, it.giver = 'Hob', 'Hob, a friend'
     elif kind == 'npart':
         it = EN.Item(game.new_id(), 'npart', recipe[1])
         it.beast, it.nid, it.rank, it.src, it.word = 'Old Greyback', None, 'notorious', 'wolf', 'pelt'

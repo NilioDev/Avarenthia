@@ -459,7 +459,7 @@ three things. Test part `boss_moves`.
   hill's lost week. Debug: set the hour and the season (Time), Teleport.
 
 
-## Marked creatures (approved 1 November 2026, not built)
+## Marked creatures (approved 1 November 2026, built 5 November 2026)
 
 - **Each affix** - a champion and a unique with each of the 20 affixes; what it does and its answer (Dispel, fire on
   Regenerating, burning or hallowing a Grave-bound body). Debug: spawn a champion or unique with an affix of choice.

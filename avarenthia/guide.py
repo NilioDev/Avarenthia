@@ -137,6 +137,8 @@ TIPS = {
     'hunt': 'Tip: the arrow on the edge shows where the wind comes from. Keep it in your face, or they smell you.',
     'skin': 'Tip: Enter on a carcass skins it; with a knife or a dagger you get the hide too.',
     'knight': 'Tip: as a knight your liege may call you to the levy; the call comes as a job in your journal, e.',
+    'folk': 'Tip: someone with a ! has a need of their own; walk into them to hear it.',
+    'marked': 'Tip: a creature in blue or gold bears marks; o, the look, tells what they do.',
     'belt': 'Tip: Shift and a number drinks from that pocket of your belt; q and w pick the right one for you.',
     'cargo': 'Tip: walk into the trader on the market to sell what is on your cart; a good fetches more where it is scarce.',
     'realms': 'Tip: m, then 4, shows the realms: who holds which land, and the lords\' seats.',

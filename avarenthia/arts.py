@@ -12,7 +12,7 @@ from . import skills as SK
 from .worldgen import cheb, free_around
 
 SNEAK_COL, ARC = (150, 150, 170), (190, 150, 255)
-MAGIC_MODS = ('Fast', 'Fire Enchanted', 'Vampiric', 'Frost-touched', 'Regenerating', 'Multishot', 'Fire-blooded')
+from .affixes import MAGIC as MAGIC_MODS     # what dispel strips (round 45: also Warded, Ember-hearted, Blink)
 RUNES = SK.RUNES_AT_ONCE           # runes you may have lying at once
 STEALTH_NOTICE = .15            # a foe's chance each turn to notice you while you sneak (else .65)
 

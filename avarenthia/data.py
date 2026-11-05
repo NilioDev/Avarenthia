@@ -588,10 +588,6 @@ DUNGEONS = {
     'crypt': dict(name='Crypt of Morvenna', depth=5, base=7, style='rooms', tag='crypt', boss='lich', wall=hexrgb('#7e869c')),
 }
 DUNGEON_ORDER = ['rat', 'mine', 'crypt']
-ELITE_MODS = ['Fast', 'Extra Strong', 'Stone Skin', 'Fire Enchanted', 'Vampiric']
-UNIQUE_NAME = (['Gore', 'Bone', 'Blood', 'Grim', 'Rot', 'Ash', 'Venom', 'Dread', 'Skull', 'Black'],
-               ['maw', 'fang', 'grinder', 'spawn', 'hide', 'gnaw', 'claw', 'tooth', 'heart'],
-               ['the Wicked', 'the Cold', 'the Hungry', 'the Defiler', 'the Unclean', 'the Mad', 'the Hollow'])
 CHAMPION_FG = hexrgb('#7a9cff')
 UNIQUE_FG = hexrgb('#efc54e')
 

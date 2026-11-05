@@ -1571,6 +1571,8 @@ def talk(game, npc):
             opts.append(('Renounce your oath', 'renounce'))
         elif not kn:
             opts.append(('Swear fealty to this lord', 'fealty'))
+    from . import folkquests as FQ
+    opts += FQ.option(game, 'lord')
     opts.append(('Goodbye', 'bye'))
     EV.ask(game, 'lord', style(R, lo, False), f'{greeting(game, lo)}\n\n{describe_lord(R, lo)} The arms of House {h.name}: '
            f'{arms_words(h.arms)}. "{h.motto}."', opts, lid=lo.id, npc=npc.id)
@@ -1611,6 +1613,12 @@ def r_lord(game, choice, ctx):
         fealty(game, npc, lo)
     elif choice == 'renounce':
         renounce(game, lo)
+    elif choice == 'favour:lord':
+        from . import folkquests as FQ
+        if FQ.use(game, 'lord'):
+            kg = kingdom_of_lord(R, lo)
+            add_favour(game, kg.id if kg else None, 6)
+            game.say(npc, 'So you helped my people. Good. I will remember it.')
 
 
 def court_news(game, lo):

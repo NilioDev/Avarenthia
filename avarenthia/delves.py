@@ -472,6 +472,13 @@ def folk(game, m, d, depth, up, down):
         else:
             spawn_pack(game, m, lvl, d.tag, spot, None if d.tag != 'den' else 0, how == 'guard')
             packs += 1
+    if last and d.boss and d.boss in D.MONSTERS and not any(o.k == d.boss for o in m.mons):
+        far = max(m.delve_rooms, key=lambda r: abs(r[1] - up[0]) + abs(r[2] - up[1]), default=None)
+        spot = _spot(m, _RoomView(m, m.delve_rooms.index(far)), (far[1], far[2])) if far else None
+        ok = spot is not None and D.TILES[m.tile(*spot)].walk and not m.mon_at(*spot)
+        cells = [spot] if ok else free_around(game, m, *(spot or up), 3)
+        if cells:                                   # a plan without a leader's room: the boss waits in the farthest
+            m.mons.append(make_monster(game, d.boss, cells[0][0], cells[0][1], lvl))
     m.watch_turns = 0
     if KINDS[kind].get('props'):
         _props(m)

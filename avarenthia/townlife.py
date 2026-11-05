@@ -280,6 +280,8 @@ def _slum(game, m, s):
 # ------------------------------------------------------------------ each time you come in
 def on_enter(game, m):
     dress(game, m)
+    from . import folkquests as FQ
+    FQ.on_enter(game, m)                            # folk in need (round 46)
     from . import feasts as FE
     FE.on_enter(game, m)
     pp = m.people
@@ -725,6 +727,8 @@ def _free_lane(m, npc):
 
 # ------------------------------------------------------------------ every turn in a settlement
 def tick(game, m):
+    from . import folkquests as FQ
+    FQ.tick(game, m)
     pp = getattr(m, 'people', None)
     if pp is None and getattr(m, 'life_v', 0) == 0:
         return
@@ -992,6 +996,9 @@ def describe(site):
 # ------------------------------------------------------------------ talking
 def talk(game, npc):
     role = npc.role
+    if role == 'folk':
+        from . import folkquests as FQ
+        return FQ.talk(game, npc)
     if role == 'refugee':
         talk_refugee(game, npc)
         return True
