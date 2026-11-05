@@ -3898,7 +3898,7 @@ def schools():
         g.map.mons = [o for o in g.map.mons if o.is_npc and not getattr(o, 'thrall', 0)]
         for xy in list(SM.fields(g.map)):
             SM.clear(g.map, xy)
-        if sid == 'blink':                          # room to blink to: an open stretch of floor
+        if sid == 'blink' or len(free_around(g, g.map, p.x, p.y, 1)) < 6:   # room: an open stretch of floor
             m_ = g.map
             p.x, p.y = max(((i % m_.w, i // m_.w) for i, t in enumerate(m_.t) if t == D.FLOOR),
                            key=lambda c: sum(1 for a in range(-3, 4) for b in range(-3, 4)
@@ -3911,7 +3911,7 @@ def schools():
             if sid == 'tame':
                 e.hp = 1
             if sid == 'dispel':
-                e.mods = list(e.mods) + ['Fast']   # something to take away
+                e.mods = list(e.mods) + ['Swift']  # something to take away
             if getattr(sk, 'need_unseen', False):
                 e.awake = False                    # Cheap Shot: only on one who does not see you
             g.map.mons.append(e)
@@ -3927,7 +3927,7 @@ def schools():
             ok = SK.use(g, 5)
             if ok and (sid != 'tame' or MC.beasts(g)):
                 break
-        assert ok, sid
+        assert ok, (sid, [l[0] for l in g.log[-3:]])
         if sid == 'tame':
             assert MC.beasts(g), 'not tamed'
             tamed = True

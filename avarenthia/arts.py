@@ -314,6 +314,14 @@ def through_gate(game):
 
 
 # ------------------------------------------------------------------ Arcane: runes, and taking spells away
+def _takes(m, c):
+    """Would a rune take on this cell (open dry ground, nothing held there)?"""
+    from . import spellmap as SM
+    old = SM.fields(m).get(c)
+    under = old[2] if old else m.tile(*c)
+    return under not in SM.KEEP_OFF and not old and D.TILES[under].walk and under not in SM.WATERS
+
+
 def x_rune(game, sk, r):
     from . import spellmap as SM
     TT = _tt()
@@ -322,6 +330,12 @@ def x_rune(game, sk, r):
     if not c:
         game.msg('There is no room for a rune.')
         return False
+    if not _takes(m, c):                     # water or a held tile there: the next free spot that takes a rune
+        p, t = game.player, game.nearest_target(8, False)
+        spots = [q for q in free_around(game, m, p.x, p.y, 1) if q != (p.x, p.y) and not game.occupied(m, *q)
+                 and _takes(m, q)]
+        if spots:
+            c = min(spots, key=lambda q: cheb(q[0], q[1], t.x, t.y)) if t else spots[0]
     most = RUNES + (1 if TT.has(game, 'many_runes') else 0)
     mine = [xy for xy in getattr(m, 'runes', []) if m.tile(*xy) == D.RUNE]
     while len(mine) >= most:
