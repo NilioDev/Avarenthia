@@ -415,6 +415,8 @@ def resolve(game, choice, ctx):
             game.msg(why.replace('But you', 'You'), 'bad')
             return
         s['joined'], s['last'] = True, game.day
+        from . import met as MET
+        MET.saw(game, 'guild')
         s['rep'] = max(s['rep'], 0)
         if key == 'coven':
             p.toll = getattr(p, 'toll', 0) + 10

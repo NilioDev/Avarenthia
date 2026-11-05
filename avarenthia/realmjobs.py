@@ -1798,6 +1798,8 @@ def r_realmoffer(game, choice, ctx):
 
 def accept(game, m):
     from . import missions as MS
+    from . import met as MET
+    MET.saw(game, 'job: ' + m.kind)
     if len(MS.active(game)) >= MS.MAX_ACTIVE:
         game.msg(f'You already have {MS.MAX_ACTIVE} jobs. Finish one first.', 'bad')
         return False

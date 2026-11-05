@@ -567,6 +567,8 @@ def dig(game, x, y):
     at = CRF.METALS[metal][2] if good == 'ore' else 10
     LS.gain(game, 'mining', 3 if good == 'gems' else 1 + at / 10, at=at, what=metal if good == 'ore' else 'gems')
     more = 1 if r >= 50 else 0                         # a master gets one more out of every vein
+    from . import tally as TY
+    TY.add(game, 'ore', 1 + more)
     if metal != 'iron':
         CRF.give(game, 'ore_' + metal, 1 + more + (1 if random.random() < .3 else 0))
         game.msg(f'You break {CRF.ORE_NAME[metal].lower()} out of the vein!', 'gold')

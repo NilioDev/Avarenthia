@@ -250,6 +250,14 @@ def active(game):
 
 def accept(game, s, m):
     """s is whatever owns the board: a Settlement or a Stronghold."""
+    ok = _accept(game, s, m)
+    if ok is not False and m in game.missions:
+        from . import met as MET
+        MET.saw(game, 'job: ' + m.kind)
+    return ok
+
+
+def _accept(game, s, m):
     p = game.player
     from .economy import free_cargo
     if len(active(game)) >= MAX_ACTIVE:
@@ -352,6 +360,9 @@ def complete(game, m, sids):
     local = w.settlements[m.giver].rep if m.giver is not None else max(0, p.rep.get(m.faction, 0))
     bonus = round(m.reward * min(local, 100) / 200)
     p.gold += m.reward + bonus
+    from . import tally as TY
+    TY.add(game, 'earn_jobs', m.reward + bonus)
+    TY.add(game, 'jobs')
     for sid in sids:
         w.settlements[sid].rep = min(100, w.settlements[sid].rep + m.rep)
     if m.faction:

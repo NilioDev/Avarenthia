@@ -121,6 +121,8 @@ def eat(game, it):
     v = food_value(it)
     if not v:
         return 0
+    from . import tally as TY
+    TY.add(game, 'meals')
     if p.food >= MAX - 30:
         game.msg('You are too full to eat another bite.')
         return 0

@@ -113,7 +113,21 @@ def ch_fighting(g):
         ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. [1] and [2] come with the '
                        'weapon in your hand, [3] to [6] are the ones you chose. Weapon skills and Warcraft cost '
                        'stamina, spells mana.'),
-        ('k', '[q] [w]', 'drink a health or a mana potion. It takes a turn.'),
+        ('k', '[q] [w]', 'drink a health or a mana potion from your belt: the smallest that fills what you miss, or '
+                         'the largest. It takes a turn.'),
+        ('k', '[Shift+1-5]', 'drink from that pocket of your belt.'),
+        ('h', 'Potions and the belt'),
+        ('p', 'Health and Mana potions come in four grades: Minor, plain, Greater and Superior, each a little brighter '
+              'red or blue. Every shop sells Minor and plain ones, cities Greater, a great city now and then Superior; '
+              'deep foes carry the better ones.'),
+        ('p', 'The belt on the panel shows your pockets: two without a belt, three with a sash, four with a belt or a '
+              'plated belt, and a rare belt may give one more. A pocket holds up to three of one kind and grade. A new '
+              'potion goes into a pocket of its kind or an empty one, and an empty pocket fills from your pack once no '
+              'foe is in sight. From the belt a potion takes a turn; from the pack three, as you rummage, and a new foe '
+              'or a blow breaks it off.'),
+        ('h', 'The tally'),
+        ('p', 'The menu [Esc], Hero, opens The tally: the road you walked, your fights, the coin that came and went, and '
+              'the rest of a life, with what you are remembered for. It shows again when your tale ends.'),
         ('k', '[f]', 'shoot with a bow, crossbow or sling at your target, throw a knife or your spear, or strike a foe two '
                      'tiles away with a spear or a staff.'),
         ('h', 'IN SIGHT'),
@@ -1382,6 +1396,7 @@ BASIC_KEYS = [
     ('[Tab] [Shift+Tab]', 'next, previous target'),
     ('[1-6]', 'use a skill: 1 and 2 your weapon, 3 to 6 your choice'),
     ('[q] [w]', 'health potion, mana potion'),
+    ('[Shift+1-5]', 'drink from a pocket of the belt'),
     ('[>] [<]', 'go in, down or into the land; climb up'),
 ]
 

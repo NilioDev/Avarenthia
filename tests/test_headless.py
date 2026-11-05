@@ -13,7 +13,8 @@ from avarenthia import engine as E, data as D, ui, economy as ECO, missions as M
 from avarenthia.canvas import FakeCanvas  # noqa: E402
 from avarenthia.worldgen import cheb  # noqa: E402
 
-E.save_path = lambda: os.path.join(tempfile.gettempdir(), f'avarenthia_test_{os.getpid()}.dat')    # runs side by side keep apart
+_RUN_DIR = tempfile.mkdtemp(prefix=f'avarenthia_test_{os.getpid()}_')          # runs side by side keep apart: the save,
+E.save_path = lambda: os.path.join(_RUN_DIR, 'avarenthia_test.dat')              # snapshots and notes each in their own
 
 TOKENS = ['up', 'down', 'left', 'right', 'np7', 'np9', 'np1', 'np3', 'h', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
@@ -5428,6 +5429,176 @@ def first_steps():
     print('first_steps ok: city', city.name, 'loads', n, good, 'answer', want)
 
 
+def what_you_met():
+    """Round 41: the first meeting of each system or kind of place, with the day, on the player; F12 [M] lists met
+    and never met; the note's zip carries met.txt."""
+    import zipfile
+    from avarenthia import debug as DBG, debug_ui as DU, met as MET, economy as ECO, guide as GDE
+    print('== what you met')
+    app = new_app('soft', seed=41)
+    g, p = app.game, app.game.player
+    m = MET.state(g)
+    temple = MET.site_kind(g.world, g.world.sites[g.world.start_temple])
+    assert m.get('place: ' + temple) == 1, m
+    to_over(g, 0)
+    g.enter_town(0)
+    assert 'place: village' in m
+    GDE.tip(g, 'cargo')
+    assert 'tip: cargo' in m
+    g.turn += 5 * D.DAY_LEN
+    th = g.world.settlements[0]
+    good = next(k for k in th.market if k in D.GOODS)
+    p.gold = 10000
+    ECO.buy(g, th, good, 1)
+    ECO.sell(g, th, good, 1)
+    assert m['trade'] == g.day and m['trade'] > 1
+    keys = dict(MET.everything(g))
+    assert 'place: dungeon (cave)' in keys or any(k.startswith('place: dungeon') for k in keys)
+    assert all(k in keys for k in m), 'every met key is listed'
+    txt = MET.text(g)
+    assert 'Never met:' in txt and 'Settlement: village' in txt
+    DBG.ON = True
+    try:
+        app.key('f12')
+        assert isinstance(app.top, DU.DebugScreen)
+        app.key('M')
+        app.render()
+        assert 'What you met' in app.cv.dump() and 'never' in app.cv.dump()
+        while isinstance(app.top, DU.DebugScreen):
+            app.key('esc')
+        path = DBG.feedback_zip(app, 'what you met')
+        with zipfile.ZipFile(path) as z:
+            assert 'Never met' in z.read('met.txt').decode()
+        os.remove(path)
+    finally:
+        DBG.ON = False
+    print('what_you_met ok:', len(m), 'met of', len(keys))
+
+
+def belt_and_tally():
+    """Round 42: potions in four grades, the belt's pockets (none 2, sash 3, belt 4, a rare one 5), Shift+number, q
+    picking the grade, three turns from the pack and broken off by a foe, refilling; the turn counter gone from the
+    screen; the tally on the player, its page from the menu and after death; the kill count moved (save 64 to 65)."""
+    from avarenthia import belt as BL, tally as TY, saves as SV
+    from avarenthia.entities import Item, make_gear, make_monster
+    print('== belt and tally')
+    random.seed(42)
+    app = new_app('soft', seed=42)
+    g, p = app.game, app.game.player
+    assert [r[1] for r in BL.rows(g)] == ['hp', None], BL.rows(g)
+    for t in ('hp_minor', 'hp', 'hp_greater', 'hp_superior', 'mp_minor', 'mp', 'mp_greater', 'mp_superior'):
+        assert t in D.POTIONS and BL.GRADE[t]
+    assert D.POTIONS['hp_minor']['val'] < D.POTIONS['hp']['val'] < D.POTIONS['hp_greater']['val'] < D.POTIONS['hp_superior']['val']
+    # pockets from the belt slot
+    for base, n in (('sash', 3), ('belt', 4), ('platedbelt', 4)):
+        it = make_gear(g, base, 'normal', 10)
+        g.add_to_inv(it)
+        p.eq['belt'] = it.id
+        assert BL.pockets(g) == n, (base, BL.pockets(g))
+    it.aff.append(['pocket', 1])
+    it.ided = True
+    assert BL.pockets(g) == 5
+    # potions go to a pocket of their kind, else an empty one; the rest stays in the pack
+    g.add_to_inv(Item(g.new_id(), 'potion', 'hp_greater', 5))
+    g.add_to_inv(Item(g.new_id(), 'potion', 'mp_minor', 1))
+    rows = BL.rows(g)
+    assert rows[0][1:] == ('hp', 2) and ('hp_greater', 3) in [r[1:] for r in rows] and ('mp_minor', 1) in [r[1:] for r in rows]
+    assert BL.free_of(g, 'hp_greater') == 0 and ('hp_greater', 2) in [r[1:] for r in rows], 'the rest into an empty pocket'
+    # q: the smallest grade that fills what you miss
+    s = g.stats()
+    p.life = s['max_life'] - 5
+    assert BL.choose(g, 'hp') == ('hp', True)
+    p.life = 1
+    assert BL.choose(g, 'hp') == ('hp_greater', True)
+    # Shift+number drinks that pocket, one turn
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    turn = g.turn
+    gs = app.top
+    gs.on_key('1', True)
+    assert g.turn == turn + 1 and BL.rows(g)[0][2] == 1
+    # from the pack: three turns; a foe coming into sight breaks it off
+    p.eq.pop('belt', None)
+    BL.sync(g)
+    g.add_to_inv(Item(g.new_id(), 'potion', 'mp', 1))
+    assert BL.free_of(g, 'mp') == 1 or any(r[1] == 'mp' for r in BL.rows(g))
+    for r in BL.state(g):
+        r[0], r[1] = None, 0
+    before = g.count('potion', 'mp')
+    turn = g.turn
+    assert g.drink('mp', exact=True) == 1 and g.turn == turn + 2 and g.count('potion', 'mp') == before - 1
+    g.add_to_inv(Item(g.new_id(), 'potion', 'mp', 1))
+    for r in BL.state(g):
+        r[0], r[1] = None, 0
+    real = g.end_turn
+
+    def with_foe(cost, quiet=False):
+        real(cost, quiet)
+        if not any(not o.is_npc for o in g.map.mons):
+            g.map.mons.append(make_monster(g, 'rat', p.x + 1, p.y, 1))
+            g.compute_fov()
+    g.end_turn = with_foe
+    try:
+        n = g.count('potion', 'mp')
+        assert g.drink('mp', exact=True) == 0 and g.count('potion', 'mp') == n, 'broken off: nothing drunk'
+    finally:
+        del g.end_turn
+    g.map.mons = [o for o in g.map.mons if o.is_npc]
+    g.compute_fov()
+    g.end_turn(1)
+    assert all(r[1] and r[2] for r in BL.rows(g)), 'an empty pocket fills from the pack once no foe is in sight'
+    # shops: Minor everywhere, Greater in cities
+    th = g.world.settlements[0]
+    assert ('potion', 'hp_minor') in E.supplies(g, 0) and ('potion', 'hp_greater') not in E.supplies(g, 0)
+    city = next(c for c in g.world.settlements if c.is_city)
+    assert ('potion', 'hp_greater') in E.supplies(g, city.id)
+    # the panel: the belt rows, no turn counter under the map
+    app.render()
+    dump = app.cv.dump()
+    assert 'Health' in dump and f' turn {g.turn} ' not in dump
+    # the tally
+    TY.add(g, 'steps', 3)
+    mon = make_monster(g, 'rat', p.x, p.y, 1)
+    g.map.mons.append(mon)
+    g.kill(mon)
+    assert g.kills == 1 and TY.get(g, 'slain') and TY.get(g, 'potions') >= 2
+    g.hurt(3, 'a test')
+    assert TY.get(g, 'hit_taken') >= 1
+    blocks = dict(TY.blocks(g))
+    assert set(blocks) == {'The Road', 'Fights', 'Coin', 'A Life'}
+    app.key('esc')
+    assert isinstance(app.top, ui.MenuScreen), app.top
+    app.top.pick('tally')
+    app.render()
+    assert isinstance(app.top, ui.TallyScreen), (app.top, app.screens)
+    assert 'The tally of' in app.cv.dump() and 'Foes slain' in app.cv.dump() and '....' in app.cv.dump()
+    app.key('esc')
+    # a save of version 64 with the kill count on the game: it moves to the tally
+    E.save_game(g)
+    import pickle
+    import zlib
+    with open(E.save_path(), 'rb') as f:
+        old = pickle.loads(zlib.decompress(f.read()[len(E.SAVE_MAGIC):]))
+    old.version = 64
+    old.__dict__['kills'] = 7
+    old.player.tally.pop('kills', None)
+    with open(E.save_path(), 'wb') as f:
+        f.write(E.SAVE_MAGIC + zlib.compress(pickle.dumps(old)))
+    g2 = E.load_game()
+    assert g2 is not None and g2.kills == 7 and 'kills' not in g2.__dict__, SV.note()
+    # the death screen leads to the tally, then a new game
+    app.start_game(g2)
+    app.push(ui.DeathScreen(app))
+    app.render()
+    assert 'Turns' not in app.cv.dump()
+    app.key('n')
+    assert isinstance(app.top, ui.TallyScreen)
+    app.render()
+    app.key('esc')
+    assert isinstance(app.top, ui.NameScreen)
+    E.delete_save()
+    print('belt_and_tally ok')
+
+
 def money():
     """The money check (tests/money.py): at level 1, 10 and 20 the coin left over a day, the days of work for a bed and
     for a raising stay in their bands (first guesses, to settle with Nilio)."""
@@ -10286,7 +10457,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

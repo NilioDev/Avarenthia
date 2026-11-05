@@ -427,9 +427,15 @@ CURSES = [('life', 6, 18), ('str', 3, 8), ('dex', 3, 8), ('vit', 3, 7), ('ene', 
 CURSETXT = {'dmg_flat': '-{} damage', 'ed': '-{}% damage', 'edef': '-{}% defense', 'hit': '-{} to accuracy',
             'mana': '-{} to mana', 'life': '-{} to life', 'str': '-{} to Strength', 'dex': '-{} to Dexterity',
             'vit': '-{} to Vitality', 'ene': '-{} to Energy', 'crit': '-{}% critical strike chance', 'regen': '-{} life regeneration'}
-POTIONS = {
+POTIONS = {            # four grades of health and mana (belt.py), the red and blue a little brighter per grade
+    'hp_minor': dict(name='Minor Health Potion', col=hexrgb('#b8443a'), val=10),
     'hp': dict(name='Health Potion', col=hexrgb('#e04a3c'), val=18),
+    'hp_greater': dict(name='Greater Health Potion', col=hexrgb('#f25e4a'), val=60),
+    'hp_superior': dict(name='Superior Health Potion', col=hexrgb('#ff7e64'), val=180),
+    'mp_minor': dict(name='Minor Mana Potion', col=hexrgb('#4062c8'), val=10),
     'mp': dict(name='Mana Potion', col=hexrgb('#4f78ff'), val=18),
+    'mp_greater': dict(name='Greater Mana Potion', col=hexrgb('#6c92ff'), val=60),
+    'mp_superior': dict(name='Superior Mana Potion', col=hexrgb('#90acff'), val=180),
     'rejuv': dict(name='Rejuvenation Potion', col=hexrgb('#b45ae0'), val=60),
     'cure': dict(name='Antidote', col=hexrgb('#80d060'), val=20),
 }

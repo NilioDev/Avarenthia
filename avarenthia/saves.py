@@ -14,7 +14,15 @@ import random
 FIRST = 64
 
 # from version n to n+1: (what changed, the function that changes a loaded game or None, breaking?)
+def _tally(g):
+    """65: the kill count went from the game to the player's tally."""
+    n = g.__dict__.pop('kills', 0)
+    t = g.player.__dict__.setdefault('tally', {})
+    t['kills'] = t.get('kills', 0) + (n or 0)
+
+
 MIGRATIONS = {
+    64: ('the kill count moved to the tally', _tally, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

@@ -1000,6 +1000,8 @@ def hear(game, npc=None):
     from . import jobs as JB
     where = JB._region(game, t.x, t.y)
     game.msg(f'You have heard of {t.teacher}, {t.who}. The hut is on your map now.', 'gold')
+    from . import met as MET
+    MET.saw(game, 'epic')
     return (f'They say {t.teacher} still lives {TEACHERS[t.cls][1]}, {where}, to the {dir_name(t.x - ox, t.y - oy)}: '
             f'{t.who}, who knew {CL.school(t.cls)} like nobody living. Few find the way, and fewer are taught.')
 

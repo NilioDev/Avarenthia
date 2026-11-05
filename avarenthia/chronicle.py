@@ -25,6 +25,8 @@ def facts(game):
 
 
 def add(game, chapter, text, src, who=None, where=None, place=None, title=None, key=None, quiet=False):
+    from . import met as MET
+    MET.saw(game, 'chapter: ' + chapter)
     """A new fact for the chronicle; the same fact twice is kept once (seen beats read, read beats heard)."""
     fs = facts(game)
     key = key or text

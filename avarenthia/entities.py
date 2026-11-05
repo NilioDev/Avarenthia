@@ -610,6 +610,8 @@ def make_gear(game, bk, rar, ilvl):
             r = roll_affix(it, random.random() < .5, [a[0] for a in it.aff])
             if r:
                 it.aff.append(r[0])
+        if it.slot == 'belt' and random.random() < .25:
+            it.aff.append(['pocket', 1])                # one more pocket on the belt (belt.py)
         it.name = random.choice(D.RARE_A) + ' ' + random.choice(D.RARE_B)
         it.req = max(b['lvl'], ilvl - 2)
     else:

@@ -296,7 +296,8 @@ class DebugScreen(Modal):
             ('MOMENTS', [('a', 'Save a snapshot...', lambda: self.snap_page(True)),
                          ('b', 'Load a snapshot...', lambda: self.snap_page(False)),
                          ('N', 'Note for Claude...', self.report_page),
-                         ('T', 'Tests...', self.tests_page)]),
+                         ('T', 'Tests...', self.tests_page),
+                         ('M', 'What you met...', self.met_page)]),
             ('THE WORLD', [('m', 'Show the whole map', self.do(lambda: DBG.reveal_map(g()))),
                            ('t', 'Teleport...', self.teleport_page),
                            ('d', 'Time...', self.time_page),
@@ -329,7 +330,8 @@ class DebugScreen(Modal):
                             ('n', 'Skill ranks...', self.rank_page),
                             ('p', 'Rested here: spend tree points', self.do(lambda: DBG.rested(g()))),
                             ('i', 'Give an item...', self.item_page),
-                            ('y', 'Identify all you carry', self.do(lambda: g().identify_all()))]),
+                            ('y', 'Identify all you carry', self.do(lambda: g().identify_all())),
+                            ('Y', 'Fill the tally and open it', self.do(lambda: DBG.fill_tally(g()), True))]),
             ('THE REST', [('j', 'Jobs...', self.job_page),
                           ('e', 'Force an event...', self.event_page),
                           ('f', 'Standing...', self.standing_page),
@@ -369,6 +371,12 @@ class DebugScreen(Modal):
 
     def tests_page(self):
         return TestsPage(self)
+
+    def met_page(self):
+        from . import met as MET
+        rows = [(f'day {d}' if ok else 'never', lab, None) for ok, d, lab in MET.rows(self.game)]
+        n = sum(1 for r in rows if r[0] != 'never')
+        return ListPage(self, f'What you met: {n} of {len(rows)}', rows, lambda v: None)
 
     def teleport_page(self):
         rows = sorted(DBG.places(self.game), key=lambda r: (r[0], r[1]))

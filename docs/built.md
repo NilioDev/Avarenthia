@@ -51,10 +51,26 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
+| **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
+| **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 
 ## Built
 
+- **The belt and the tally** (round 42, 5 November 2026; `belt.py`, `tally.py`, state on `p.belt` and `p.tally`;
+  test part `belt_and_tally`; SAVE_VERSION 65, the kill count moved to the tally). Health and mana potions in four
+  grades (Minor, plain, Greater, Superior); every shop sells Minor, cities Greater, a metropolis Superior one day in
+  three; deep foes drop better ones. The panel's belt: one row per pocket (2, a sash 3, a belt 4, a rare belt's +1
+  pocket 5), each one kind and grade up to 3; Shift+1-5 drink a pocket, q and w pick the smallest grade that fills
+  what you miss; from the pack three turns, broken off by a new foe in sight or a blow; empty pockets refill once no
+  foe is in sight. Only potions go in pockets (brews, oils and flasks not yet). The turn counter left the line under
+  the map and the end screens. The tally: The Road, Fights, Coin, A Life, Remembered for, Who you became; menu Hero,
+  and after the death and win screens; F12 [Y] fills it.
+- **What you met** (round 41, 5 November 2026; `met.py`, state on `p.met`; test part `what_you_met`). The first
+  time you stand at each kind of place (settlement, dungeon style, site kind by people, hold), take each job kind,
+  see each first-time tip, open each chronicle chapter, or sail, cross a ferry, join a guild, sell on a market, hear
+  an epic's rumour or are raised, the day goes on the player. F12 [M] lists met with the day and never met; the
+  note's zip holds met.txt.
 - **The first steps** (round 40, 5 November 2026; `firststeps.py`, state on `p.first`; test part `first_steps`,
   `tests/money.py --opening`). Snagtooth's hoard holds three tomes of three schools, one with a bookseller's stamp
   of the letter's city; a first tome is worth 5s; village shops sell one a quarter of the time; the start temple has a
@@ -2798,3 +2814,50 @@ From "Playing it" in plan.md, items 4-6.
    Bringing it opens the realms layer of the world map for the land you crossed, shows the seat's lord, and the lord
    offers the first realm job from `realmjobs.py`; the answer can go back for a little coin. If the city's ruler is at
    war, the word is about that war. No more first jobs until "What you met" shows a way of playing players miss.
+
+## What you met (built 5 November 2026; the spec)
+
+From "Playing it" in plan.md, item 7.
+
+7. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
+   world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
+   player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
+   epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12
+   ("What you met": met with the day, and never met) and puts it in the note's zip. After Nilio has played, the
+   never-met list shows what may be hidden too well; then rumours, the inn's talk or the news point to it a little
+   more often. Nothing is cut or forced on the player.
+
+## The belt and the tally (built 5 November 2026; the spec)
+
+Thread "Hoofdscherm en drankjesbelt herzien". Dutch proposal and mockups (real tileset, seed 7): project files
+`hoofdscherm/` (`voorstel.md`, `H1_hoofdscherm_na.png`, `B1-B3_*.png`, `E1_eindscherm_tally.png`).
+1. **Potions in four grades**, by name, the red and blue a little brighter per grade: Minor (life 25% + 5, mana
+   30% + 5; every village, 10c), plain (as now: 45% + 10, 50% + 8; 18c), Greater (60% + 20, 65% + 15; cities,
+   temples, alchemists; 60c), Superior (80% + 30, 80% + 25; only great cities and rarely, deep loot, alchemy rank 40;
+   1s 80c). Rejuvenation and the antidote stay as they are. Loot rule: potions may drop more, Superior stays rare.
+2. **The belt** replaces the line `Q Health x2  W Mana x0` on the panel: one row per pocket, a gold number, the
+   potion's sign in its colour, its name with grade, how many. Portal and Cargo stay on one line under it, Money under
+   that.
+   - **Pockets come from the belt slot:** none 2, a sash 3, a belt or plated belt 4; a rare affix "+1 pocket" to 5.
+   - **Each pocket holds one kind and grade**, up to 3. A new potion goes into a pocket of its kind, else an empty
+     one; the rest stays in the pack. Brewed draughts, oils and flasks fit in a pocket too.
+   - **Shift+1 to Shift+5** use pocket 1-5 (Nilio, 1 November 2026: every pocket its own key; Shift with the numbers
+     because the skill bar is on 1-6 and it works on every keyboard; no F-keys, laptops need Fn for them).
+   - **Q and W stay**: they drink health or mana from the belt and pick the smallest grade that fills what you miss
+     (the largest if none does).
+   - **From the belt 1 turn, from the pack 3 turns** (you rummage). Rummaging breaks off like resting: a new foe in
+     sight, a blow, or a key; then you have not drunk, the potion stays in the pack and the turns are gone.
+   - **An empty pocket fills from the pack** once no foe is in sight.
+   - Taught by one first-time tip when you first have a potion in a pocket other than the first.
+3. **The turn counter leaves the main screen**: the line under the map no longer shows `turn N` when nothing else is
+   there (the debug coords stay). The death and win screens lose their Turns row.
+4. **The tally**: one page, "The tally of <name>", with dotted leaders like a ledger, in four blocks: The Road (days,
+   turns, steps, leagues on land and at sea, places found, deepest floor, nights in a bed and under the sky), Fights
+   (foes slain, the kind slain most, bosses felled, times you fell, closest call, hardest blow dealt and taken,
+   potions drunk, hirelings lost), Coin (gold earned from jobs, trade and loot; spent on beds, repairs, wages, the
+   temple; best single sale; richest you were), A Life (jobs done, fish, meals, brews, ore, books, rumours, feasts,
+   fell in a river). Under it Remembered for (the chronicle's deeds) and Who you became (level, class name, highest
+   ranks). Opened from the menu (Esc, group Hero, no key of its own; Nilio, 1 November 2026) and shown after the win
+   and the death screens. The counters live on the player (`p.tally`, one dict; `g.kills` moves there too);
+   SAVE_VERSION goes up.
+Handbook: potions and their grades, the belt and its keys, the pack's three turns, the tally (proposal in the Dutch file).

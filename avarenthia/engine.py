@@ -40,6 +40,9 @@ from . import archaeology as AR
 from . import tradegoods as TG
 from . import caravan as CV
 from . import firststeps as FS
+from . import met as MET
+from . import belt as BL
+from . import tally as TY
 from . import townlife as TL
 from . import feasts as FE
 from . import landmarks as LM
@@ -93,7 +96,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 64
+SAVE_VERSION = 65
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -172,6 +175,18 @@ SUPPLIES = [('potion', 'hp'), ('potion', 'mp'), ('scroll', 'tp'), ('tool', 'rod'
             ('food', 'ration'), ('food', 'barley'), ('food', 'honey'), ('food', 'salt'), ('tool', 'knife'), ('tool', 'frame'),
             ('tool', 'trowel')]
 INV_MAX = 32
+
+
+def supplies(game, key=None):
+    """What a shop always has: Minor potions in every one, Greater in cities, Superior now and then in a great city."""
+    out = list(SUPPLIES)
+    s = game.world.settlements[key] if isinstance(key, int) and 0 <= key < len(game.world.settlements) else None
+    extra = [('potion', 'hp_minor'), ('potion', 'mp_minor')]
+    if s is not None and s.is_city:
+        extra += [('potion', 'hp_greater'), ('potion', 'mp_greater')]
+        if s.kind == 'metropolis' and (game.day + s.id) % 3 == 0:
+            extra += [('potion', 'hp_superior'), ('potion', 'mp_superior')]
+    return out[:2] + extra + out[2:]
 COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'skeleton'}
 
 
@@ -266,7 +281,6 @@ class Game:
         self.flags = {}
         self.dead = False
         self.cause = None
-        self.kills = 0
         self.max_depth = {}
         self.last_save = 0
         self.portal = None
@@ -311,6 +325,11 @@ class Game:
     @property
     def day(self):
         return self.turn // D.DAY_LEN + 1
+
+    @property
+    def kills(self):
+        """Foes slain: on the player's tally (tally.py)."""
+        return TY.get(self, 'kills') if getattr(self, 'player', None) is not None else 0
 
     @property
     def here(self):
@@ -371,10 +390,14 @@ class Game:
             for o in inv:
                 if o.k == it.k and o.t == it.t:
                     o.n += it.n
+                    if it.k == 'potion':
+                        BL.gain(self, it)
                     return True
         if len(inv) >= INV_MAX:
             return False
         inv.append(it)
+        if it.k == 'potion':
+            BL.gain(self, it)
         return True
 
     def remove_one(self, it):
@@ -664,6 +687,7 @@ class Game:
     # ------------------------------------------------------------ map changes
     def enter_dungeon(self, did, depth, arrive):
         self.mark_visit('d', did)
+        TY.most(self, 'deepest', depth)
         key = f'{did}:{depth}'
         p = self.player
         follow = BS.leaving(self) if self.cur != 'over' else []     # a roaming boss that hunts you follows
@@ -943,6 +967,7 @@ class Game:
     def enter_hold(self, hid):
         p = self.player
         h = self.world.holds[hid]
+        MET.saw(self, 'place: ' + h.kind)
         hostile = WAR.is_hostile(self, h.faction)
         if self.cur == 'over':
             self.over_pos = (p.x, p.y)
@@ -1260,6 +1285,7 @@ class Game:
         ox, oy = p.x, p.y
         p.x, p.y = nx, ny
         p.stepped = self.turn                   # a scimitar cuts in passing after a step
+        TY.add(self, 'leagues_land' if m.kind == 'over' else 'steps')
         if m.kind == 'over':
             esc = MS.escort_wanderer(self)
             if esc:
@@ -1436,6 +1462,7 @@ class Game:
                 TR.theft(self)
             if it.k == 'gold':
                 p.gold += it.n
+                TY.add(self, 'earn_loot', it.n)
                 self.num(p.x, p.y, '+' + fmt(it.n, True), C_GOLD)
                 self.msg(f'You pick up {fmt(it.n)}.', 'gold')
             elif it.k == 'corpse':
@@ -1656,32 +1683,52 @@ class Game:
         self.compute_fov()
         self.request = ('save',)
 
-    def drink(self, kind):
+    def drink(self, kind, pocket=None, exact=False):
+        """Q and W (kind 'hp' or 'mp': the best of the belt), a pocket (Shift and its number), or a potion type
+        from the pack. From the belt a turn; from the pack three, and a foe or a blow breaks it off."""
         p = self.player
-        it = next((i for i in p.inv if i.k == 'potion' and i.t == kind), None)
-        if not it and kind != 'rejuv':
-            it = next((i for i in p.inv if i.k == 'potion' and i.t == 'rejuv'), None)
+        if pocket is not None:
+            b = BL.sync(self)
+            if pocket >= len(b) or not b[pocket][0] or b[pocket][1] <= 0:
+                self.msg(f'Pocket {pocket + 1} of your belt is empty.', 'bad')
+                return 0
+            t, belt = b[pocket][0], True
+            b[pocket][1] -= 1
+        elif kind in ('hp', 'mp') and not exact:
+            got = BL.choose(self, kind)
+            if not got:
+                self.msg(f"You have no {'health' if kind == 'hp' else 'mana'} potions left.", 'bad')
+                return 0
+            t, belt = got
+            if belt:
+                BL.take(self, t)
+        else:
+            t = kind
+            belt = BL.take(self, t)
+        it = next((i for i in p.inv if i.k == 'potion' and i.t == t), None)
         if not it:
-            self.msg(f"You have no {'health' if kind == 'hp' else 'mana'} potions left.", 'bad')
+            self.msg('You have none of that left.', 'bad')
+            return 0
+        if not belt and not BL.rummage(self):
             return 0
         s = self.stats()
         self.remove_one(it)
-        if it.t in ('hp', 'rejuv'):
-            h = round(s['max_life'] * (.45 if it.t == 'hp' else .4)) + 10
-            p.life = min(s['max_life'], p.life + h)
+        TY.add(self, 'potions')
+        life, mana = BL.heal_of(self, it.t)
+        if life and it.t != 'cure':
+            p.life = min(s['max_life'], p.life + life)
             p.poison = None
-            self.num(p.x, p.y, f'+{h}', C_HEAL, True)
+            self.num(p.x, p.y, f'+{life}', C_HEAL, True)
         if it.t == 'cure':
             p.poison = None
             p.life = min(s['max_life'], p.life + 10)
             BH.cure(self, ('diseased', 'confused', 'slowed', 'paralysed'))
-        if it.t in ('mp', 'rejuv'):
-            h = round(s['max_mana'] * (.5 if it.t == 'mp' else .4)) + 8
-            p.mana = min(s['max_mana'], p.mana + h)
-            self.num(p.x, p.y + (1 if it.t == 'rejuv' else 0), f'+{h}', C_MANA, True)
-        self.msg({'hp': 'You drink a health potion.', 'mp': 'You drink a mana potion.', 'rejuv': 'You drink a rejuvenation potion.',
-                  'cure': 'You drink the antidote. The poison loses its grip.'}[it.t], 'good')
-        if it.t in ('hp', 'rejuv'):
+        if mana:
+            p.mana = min(s['max_mana'], p.mana + mana)
+            self.num(p.x, p.y + (1 if it.t == 'rejuv' else 0), f'+{mana}', C_MANA, True)
+        self.msg('You drink the antidote. The poison loses its grip.' if it.t == 'cure' else
+                 f'You drink {"an" if D.POTIONS[it.t]["name"][0] in "AEIOU" else "a"} {D.POTIONS[it.t]["name"].lower()}.', 'good')
+        if BL.family(it.t) == 'hp' or it.t == 'rejuv':
             EP.quench(self, 'The potion cools you.')
         EP.on_drink(self)
         return 1
@@ -1787,6 +1834,8 @@ class Game:
             self.msg('You cannot afford a bed.', 'bad')
             return
         p.gold -= price
+        TY.add(self, 'spent_beds', price)
+        TY.add(self, 'bed_nights')
         p.food = HU.MAX
         s = self.stats()
         p.life, p.mana, p.stamina, p.poison = s['max_life'], s['max_mana'], s['max_stamina'], None
@@ -1804,7 +1853,10 @@ class Game:
 
     def read_tome(self, it):
         """Your class's tome, a first one that wakes a memory, or a second school (classes.py)."""
-        return CL.read(self, it)
+        used = CL.read(self, it)
+        if it not in self.player.inv:
+            TY.add(self, 'books')
+        return used
 
     def identify_all(self, dry=False):
         its = [it for it in self.player.inv if it.k == 'gear' and not it.identified]
@@ -1881,8 +1933,8 @@ class Game:
     def learn_skill(self, i):
         pass
 
-    def buy_supply(self, i):
-        k, t = SUPPLIES[i]
+    def buy_supply(self, i, key=None):
+        k, t = supplies(self, key)[i]
         if k == 'tool' and t in ('rod', 'tent', 'pick', 'knife', 'frame', 'trowel') and any(x.k == 'tool' and x.t == t for x in self.player.inv):
             self.msg({'rod': 'You already have a fishing pole.', 'tent': 'You already have a tent.',
                       'pick': 'You already have a pick.', 'trowel': 'You already have a trowel.', 'knife': 'You already have a skinning knife.',
@@ -2015,6 +2067,7 @@ class Game:
             self.msg(f'Mending all your gear costs {fmt(cost)}. You cannot afford it.', 'bad')
             return
         self.player.gold -= cost
+        TY.add(self, 'spent_repairs', cost)
         for it in its:
             it.dur = it.mdur
         self.clamp_vitals()
@@ -2063,6 +2116,7 @@ class Game:
         dmg = EP.duel_blow(self, mon, round(EP.on_damage(self, mon, dmg, weapon, ranged)))
         dmg = BS.blow(self, mon, dmg, crit, weapon, elem)
         mon.hp -= dmg
+        TY.dealt(self, dmg)
         mon.awake = True
         self.wake_pack(mon)
         mon.hit_flash = 1
@@ -2146,6 +2200,7 @@ class Game:
         if self.__dict__.get('spare_full') and p.life >= s['max_life']:
             dmg = min(dmg, p.life - 1)                  # a marked blow never kills from full life (bosses.py)
         p.life -= dmg
+        TY.hurt(self, dmg, p.life, s['max_life'])
         BH.on_hurt(self)
         big = dmg >= s['max_life'] * .2
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
@@ -2167,7 +2222,7 @@ class Game:
         if BS.spare(self, mon):                          # a threshold holds it, or a shard raises it
             return
         m.mons.remove(mon)
-        self.kills += 1
+        TY.kill(self, mon)
         if getattr(mon, 'carries', None) is not None:     # a key it kept (puzzles.py)
             self.spill(m, mon.x, mon.y, mon.carries)
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} drops a key.', 'good')
@@ -2325,6 +2380,11 @@ class Game:
             self.spill(m, mon.x, mon.y, HU.make_food(self, 'meat'))
         if (uses or carrier) and random.random() < (.5 if special else .06):
             t = 'rejuv' if random.random() < .12 else 'hp' if random.random() < .6 else 'mp'
+            if t != 'rejuv':
+                r = random.random()
+                deep = mon.lvl >= 18
+                t += ('_superior' if deep and r < .03 else '_greater' if r < (.25 if deep else .08) else
+                      '_minor' if r > (.8 if mon.lvl >= 8 else .55) else '')
             self.spill(m, mon.x, mon.y, Item(self.new_id(), 'potion', t))
 
     def announce(self, it):
@@ -2645,6 +2705,9 @@ class Game:
 
     def end_turn(self, cost, quiet=False):
         p = self.player
+        TY.every_turn(self)
+        if not self.hostile_visible():
+            BL.refill(self)                             # an empty pocket fills from the pack
         if cost == 1 and ART.haste_skip(self):
             return                                      # Haste: this one took no time
         for _ in range(cost):
@@ -2793,6 +2856,7 @@ class Game:
             self.msg('You have died, and there is no coin in your purse for the priests. Your tale ends here.', 'bad')
             return
         p.deaths += 1
+        MET.saw(self, 'raising')
         MC.on_player_death(self)
         NM.on_player_death(self)
         m = self.map
@@ -2845,6 +2909,7 @@ class Game:
         p.life, p.mana, p.stamina = max(1, s['max_life'] // 2), s['max_mana'] // 2, s['max_stamina'] // 2
         p.poison = p.burn = None
         p.gold -= fee
+        TY.add(self, 'spent_temple', fee)
         p.buffs = [['frail', 25, D.DAY_LEN * 2, 'Weakened by death']]
         self.cur = 'over'
         p.x, p.y = dest.x, dest.y
@@ -3135,6 +3200,7 @@ class Game:
     def camp(self, fire):
         """A night (or a rest) in the open: wild animals, robbers, a thief, or a bad night's sleep."""
         p, w = self.player, self.world
+        TY.add(self, 'sky_nights')
         ox, oy = (p.x, p.y) if self.cur == 'over' else self.over_pos
         danger = w.danger_at(ox, oy)
         near_road = w.off_road(ox, oy) <= 2
@@ -3207,6 +3273,7 @@ class Game:
     def mark_visit(self, kind, ref):
         """Places you have stood at yourself: only these can you travel to without thinking."""
         self.__dict__.setdefault('visited', set()).add((kind, ref))
+        MET.visit(self, kind, ref)
 
     def has_visited(self, kind, ref):
         return (kind, ref) in self.__dict__.get('visited', ())

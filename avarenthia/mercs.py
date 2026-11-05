@@ -583,6 +583,8 @@ def hurt(game, mc, dmg, mon=None, block=0.0):
 
 def fall(game, mc, cause):
     """Down. In hardcore, dead: his gear lies with his body. In softcore, a temple can raise him."""
+    from . import tally as TY
+    TY.add(game, 'hirelings_lost')
     from .entities import Item
     from . import epics as EP
     from . import skyseat as SKY
@@ -900,6 +902,8 @@ def daily(game):
         mc.paid = game.day
     elif p.gold >= mc.wage:
         p.gold -= mc.wage
+        from . import tally as TY
+        TY.add(game, 'spent_wages', mc.wage)
         mc.paid = game.day
         mc.morale = min(100, mc.morale + 2)
     else:

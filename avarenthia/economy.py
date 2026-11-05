@@ -223,9 +223,13 @@ def sell(game, s, g, n=1):
             if g not in p.cargo:
                 p.cost_basis.pop(g, None)
         game.msg(f"You sell {done} {D.GOODS[g]['name']} for {fmt(got)}{note}.", 'gold')
+        from . import tally as TY
+        TY.sale(game, got, 'trade')
         TG.after_sell(game, s, g, done, got, profit)
         from . import firststeps as FS
         FS.on_sell(game, s, g, done)
+        from . import met as MET
+        MET.saw(game, 'trade')
     return done
 
 

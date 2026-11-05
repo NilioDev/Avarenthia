@@ -181,6 +181,12 @@ def sail(game, dest, kind, n, armed):
         game.msg(f'The passage costs {fmt(cost)}.', 'bad')
         return
     p.gold -= cost
+    from . import met as MET
+    MET.saw(game, 'ship')
+    from . import tally as TY
+    ox, oy = game.world_pos()
+    if hasattr(dest, 'x'):
+        TY.add(game, 'leagues_sea', max(abs(dest.x - ox), abs(dest.y - oy)))
     d = days(kind, n)
     if d > 1 and 'starpath' in p.__dict__.get('marks', {}):
         d -= 1                                      # you know the voyagers' star chart, and the skipper listens

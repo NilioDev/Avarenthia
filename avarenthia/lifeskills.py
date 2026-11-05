@@ -417,6 +417,8 @@ def land(game, pl, ok):
     it = make_fish(game, k)
     if game.add_to_inv(it):
         game.msg(f'You catch a {f[0]}!', 'gold' if f[1] >= 10 else 'good')
+        from . import tally as TY
+        TY.add(game, 'fish')
     else:
         game.msg(f'You catch a {f[0]}, but your pack is full. You let it go.')
     gain(game, 'fishing', 1 + f[1] // 6, at=f[1], what=k)

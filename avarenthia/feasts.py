@@ -290,6 +290,8 @@ def on_enter(game, m):
         m._look = None
     if getattr(m, 'feast_told', None) != (game.day, f['key']):
         m.feast_told = (game.day, f['key'])
+        from . import tally as TY
+        TY.add(game, 'feasts')
         game.msg(f'{f["name"]}: {f["sight"]}', 'gold')
         from . import guide as GD
         GD.tip(game, 'feast')

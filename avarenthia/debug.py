@@ -119,7 +119,8 @@ def load_snapshot(i):
 def feedback_zip(app, note='', test=None):
     """A note for Claude (F12, N, or a wrong tick on the Tests page): one zip beside the save with all it takes to
     stand where you stood: note.txt (the line, the build, the seed, the day and turn, the place, where you stand,
-    level, class, money), the save, the last 200 lines of the log and keys, the screen as text, and screen.png (taken
+    level, class, money), the save, the last 200 lines of the log and keys, the screen as text, met.txt (What you
+    met), and screen.png (taken
     by main.py on the next frame, with the menu closed). test is (name, what to check) for a line of the Tests page."""
     import zipfile
     from . import calendar as CAL
@@ -153,6 +154,8 @@ def feedback_zip(app, note='', test=None):
         z.writestr('log.txt', ''.join(f'{t}\n' for t, _c in game.log[-200:]))
         z.writestr('keys.txt', ' '.join(KEYS) + '\n')
         z.writestr('screen.txt', screen_text(app) + '\n')
+        from . import met as MET
+        z.writestr('met.txt', MET.text(game))
         z.write(tmp, 'save.dat')
     os.remove(tmp)
     app.shot = path + '.png'
@@ -585,6 +588,35 @@ def god_tick(game):
     s = game.stats()
     p.life, p.mana, p.stamina = s['max_life'], s['max_mana'], s['max_stamina']
     return True
+
+
+def fill_tally(game):
+    """Plausible numbers in every line of the tally, and the page opened."""
+    import random as R
+    from . import tally as TY
+    t = TY.state(game)
+    for k, hi in (('steps', 40000), ('leagues_land', 3000), ('leagues_sea', 400), ('deepest', 9), ('bed_nights', 60),
+                  ('sky_nights', 40), ('kills', 900), ('bosses', 6), ('hit_dealt', 240), ('hit_taken', 120),
+                  ('potions', 150), ('hirelings_lost', 2), ('earn_jobs', 900000), ('earn_trade', 1500000),
+                  ('earn_loot', 300000), ('spent_beds', 18000), ('spent_repairs', 90000), ('spent_wages', 120000),
+                  ('spent_temple', 40000), ('best_sale', 60000), ('richest', 2000000), ('jobs', 80), ('fish', 120),
+                  ('meals', 200), ('brews', 30), ('ore', 70), ('books', 25), ('rumours', 90), ('feasts', 12)):
+        t[k] = max(t.get(k, 0), R.randint(hi // 3, hi))
+    t['slain'] = {'Giant Rat': 140, 'Goblin': 95, 'Dire Wolf': 60}
+    t['closest'], t['closest_life'] = 3, 4
+    game.request = ('tally',)
+
+
+def end_screen(game, which='death'):
+    """Open the death or the win screen to look at (nothing dies)."""
+    game.request = ('endscreen', which)
+
+
+def tally_look(game, which='tally'):
+    """The Tests page: the filled tally, or the death or win screen after it."""
+    fill_tally(game)
+    if which != 'tally':
+        end_screen(game, which)
 
 
 def give_coin(game, copper):

@@ -16,9 +16,8 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'A finer look, not busier', 'The belt and the tally', 'More makers', 'Marked creatures',
-             'Folk in need', 'Crafts guilds',
-             'Playing it :: What you met'}
+NOT_BUILT = {'A finer look, not busier', 'More makers', 'Marked creatures',
+             'Folk in need', 'Crafts guilds'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -723,10 +722,20 @@ R = {
     'Playing it :: A note for Claude': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],
     'Playing it :: Saves that last': [('note', "keep a save of the build before this one and load it here.")],
     'Playing it :: The money check': [('note', 'python tests/money.py prints the three tables.')],
+    'Playing it :: What you met': [('note', "F12, [M]: met with the day, then never met; the note's zip holds met.txt.")],
     'Playing it :: The first tome': [('first', 'den', 'temple'), ('coin', 2000)],
     'Playing it :: The Eleven Ways': [('first', 'temple', 'guild'), ('coin', 2000)],
     'Playing it :: A letter for the city': [('first', 'letter', 'city')],
     "Playing it :: The baron's word": [('first', 'word', 'war')],
+    # The belt and the tally
+    'The belt and the tally :: Potion grades': [('give', 'Minor Health Potion'), ('give', 'Greater Health Potion'),
+                                                ('give', 'Superior Mana Potion'), ('to', ('village', 'town', 'city'))],
+    'The belt and the tally :: The belt': [('give', 'Sash'), ('give', 'Plated Belt'), ('give', 'Greater Health Potion'),
+                                           ('give', 'Mana Potion'), ('spawn', 'goblin', {'sleep': True})],
+    'The belt and the tally :: Drinking from the pack': [('give', 'Health Potion'), ('give', 'Minor Health Potion'),
+                                                         ('give', 'Minor Mana Potion'), ('spawn', 'goblin', {'sleep': True}),
+                                                         ('note', 'drink the pockets dry with Shift+1, 2: then q rummages.')],
+    'The belt and the tally :: The tally': [('dbgnext', 'tally_look', 'tally', 'death', 'win')],
     # The test menu
     'The test menu :: Tests page': [('note', 'tick this line with [y], restart, and see it kept.')],
     'The test menu :: Note for Claude and ✗': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

@@ -241,6 +241,10 @@ class App:
         elif req[0] == 'quarter':
             from . import guilds as GU
             self.push(ShopScreen(self, 'g:' + req[1], quarter=req[1]))
+        elif req[0] == 'tally':
+            self.push(TallyScreen(self))
+        elif req[0] == 'endscreen':                    # the test build: the death or the win screen, to look at
+            self.push(DeathScreen(self) if req[1] == 'death' else WinScreen(self))
         elif req[0] == 'market':
             self.push(MarketScreen(self, req[1]))
         elif req[0] == 'inn':
@@ -681,8 +685,6 @@ class GameScreen(Screen):
         elif right:
             cv.text_right(MAP_W - 2, MAP_H, right[1], INFO, BG)
             cv.text_right(MAP_W - 2 - len(right[1]), MAP_H, right[0], GOLD, BG)
-        else:
-            cv.text_right(MAP_W - 2, MAP_H, f' turn {g.turn} ', DIM, BG)
 
     # ---------------------------------------------------------- map
     def draw_map(self, cv):
@@ -1380,32 +1382,40 @@ class GameScreen(Screen):
                 continue
             cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f"{SK.cost_of(g, sk)}{'st' if stam else 'mp'}",
                           BAD if cd else ((scale(STAMINA, 1.3) if stam else INFO) if ok else DIM), PANEL)
-        hp = g.count('potion', 'hp') + g.count('potion', 'rejuv')
-        mp = g.count('potion', 'mp') + g.count('potion', 'rejuv')
+        from . import belt as BL
+        belt = BL.rows(g)                               # the belt: one row per pocket
+        for i, (num, t, n) in enumerate(belt):
+            yy = 33 + i
+            cv.text(x, yy, str(num), GOLD, PANEL)
+            if t:
+                col = D.POTIONS[t]['col'] if t in D.POTIONS else FG
+                cv.put(x + 2, yy, '!', col if n else DIM, PANEL)
+                cv.text(x + 4, yy, BL.name(t), col if n else DIM, PANEL, maxw=PW - 9)
+                cv.text_right(x + PW - 1, yy, f'x{n}', FG if n else DIM, PANEL)
+            else:
+                cv.text(x + 4, yy, 'empty pocket', LINE, PANEL)
+        y0 = 33 + len(belt)
         tp = g.count('scroll')
-        cv.text(x, 33, 'Q', GOLD, PANEL)
-        cv.text(x + 2, 33, f'Health x{hp}', D.POTIONS['hp']['col'] if hp else DIM, PANEL)
-        cv.text(x + 14, 33, 'W', GOLD, PANEL)
-        cv.text(x + 16, 33, f'Mana x{mp}', D.POTIONS['mp']['col'] if mp else DIM, PANEL)
-        cv.text(x, 34, 'P', GOLD, PANEL)
-        cv.text(x + 2, 34, f'Portal x{tp}', FG if tp else DIM, PANEL)
+        cv.text(x, y0, 'P', GOLD, PANEL)
+        cv.text(x + 2, y0, f'Portal x{tp}', FG if tp else DIM, PANEL)
         cap, used = ECO.cargo_capacity(p), ECO.cargo_weight(p)
-        cv.text_right(x + PW - 1, 34, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
-        cv.text(x, 35, 'Money', DIM, PANEL)
-        cv.text_right(x + PW - 1, 35, fmt(p.gold, True), GOLD, PANEL)
+        cv.text_right(x + PW - 1, y0, f'Cargo {used}/{cap}', BAD if used >= cap else FG if used else DIM, PANEL)
+        cv.text(x, y0 + 1, 'Money', DIM, PANEL)
+        cv.text_right(x + PW - 1, y0 + 1, fmt(p.gold, True), GOLD, PANEL)
         from . import crime as CR
         wanted = CR.wanted_in(g)
         if wanted:
             st = CR.max_heat(g)
-            cv.text(x, 37, 'WANTED', BAD, PANEL)
-            cv.text(x + 7, 37, '*' * st, GOLD, PANEL)
-            cv.text_right(x + PW - 1, 37, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
-        self.draw_insight(cv, x, 39)
+            cv.text(x, y0 + 2, 'WANTED', BAD, PANEL)
+            cv.text(x + 7, y0 + 2, '*' * st, GOLD, PANEL)
+            cv.text_right(x + PW - 1, y0 + 2, (wanted[0].name if len(wanted) == 1 else f'{len(wanted)} towns')[:PW - 14], BAD, PANEL)
+        more = max(0, len(belt) - 2)                     # a fuller belt pushes the rest down a little
+        self.draw_insight(cv, x, 39 + more, 4 - more // 2)
         if p.stat_pts:
-            cv.text(x, 49, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
+            cv.text(x, 49 + more, f'C: {p.stat_pts} attribute points', GOLD, PANEL, maxw=PW)
         elif p.buffs:
-            cv.text(x, 49, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
-        self.draw_target(cv, x, 51)
+            cv.text(x, 49 + more, ', '.join(f'{b[3]} {b[2]}' for b in p.buffs), GOOD, PANEL, maxw=PW)
+        self.draw_target(cv, x, 51 + min(more, 2))
         # what you can do right here, then the keys that always work
         hints = g.context_hints()
         if hints:
@@ -1423,7 +1433,7 @@ class GameScreen(Screen):
             cv.text(cx + len(key) + 1, H - 1, word, scale(DIM, .8), PANEL)
             cx += len(key) + len(word) + 2
 
-    def draw_insight(self, cv, x, y):
+    def draw_insight(self, cv, x, y, rows=4):
         """IN SIGHT: every enemy you can see, nearest first, with a bar and what it is doing; your target lit."""
         g = self.game
         p = g.player
@@ -1457,7 +1467,7 @@ class GameScreen(Screen):
             if DBG.ON and DBG.has(g, 'rhythm'):        # the test build: its beat, and where it stands in it
                 cv.text(x, y + 9, f'[debug] {BS.rhythm(boss)}', DIM, PANEL, maxw=PW)
             top = 3
-        for i, o in enumerate(foes[:4 - (2 if top else 0)]):
+        for i, o in enumerate(foes[:rows - (2 if top else 0)]):
             yy = y + 1 + top + i * 2
             bg = (52, 40, 28) if o.id == tid else PANEL
             if o.id == tid:
@@ -1644,6 +1654,8 @@ class GameScreen(Screen):
             return
         if tok in ('np5', '.', 's'):
             self.act(lambda: 1)
+        elif shift and tok in ('1', '2', '3', '4', '5'):
+            self.act(lambda: g.drink(None, pocket=int(tok) - 1))
         elif tok in ('1', '2', '3', '4', '5', '6'):
             self.act(lambda: g.use_skill(int(tok) - 1))
         elif tok == 'f':
@@ -1984,7 +1996,7 @@ class InventoryScreen(Modal):
         if it.k not in ('potion', 'scroll'):
             return
         app.pop()
-        used = g.drink(it.t) if it.k == 'potion' else g.town_portal()
+        used = g.drink(it.t, exact=True) if it.k == 'potion' else g.town_portal()
         if used and not g.dead:
             g.end_turn(used)
 
@@ -2433,6 +2445,7 @@ class ShopScreen(Modal):
         self.key = key if key is not None else self.game.home
         self.quarter = quarter
         self.mult = 1.0
+        self.SUPPLIES = E.supplies(self.game, self.key)
         if quarter:
             from . import guilds as GU
             self.SUPPLIES = []
@@ -2498,7 +2511,7 @@ class ShopScreen(Modal):
         i = self.sel[self.pane]
         if self.pane == 0:
             if i < len(self.SUPPLIES):
-                g.buy_supply(i)
+                g.buy_supply(i, self.key)
             else:
                 g.buy_gear(i - len(self.SUPPLIES), self.key, self.mult)
         else:
@@ -3695,7 +3708,7 @@ class DeathScreen(Modal):
         x, y = self.box(cv, 60, 15 + (len(deeds) + 1 if deeds else 0))
         end = 'In hardcore, death is final.' if p.hardcore else 'Your tale ends here.'
         cv.wrap(x + 3, y + 2, 54, f"{p.name} was slain by {g.cause or 'fate'} in {g.loc_name()}. {end}", FG, PANEL, 3)
-        rows = [('Level', p.lvl), ('Experience', p.xp), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
+        rows = [('Level', p.lvl), ('Experience', p.xp), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 5 + i, a, DIM, PANEL)
             cv.text(x + 18, y + 5 + i, str(b), FG, PANEL)
@@ -3706,12 +3719,14 @@ class DeathScreen(Modal):
                 cv.text(x + 18, yy, d, GOLD, PANEL, maxw=40)
                 yy += 1
             yy += 1
-        cv.text(x + 3, yy + 1, '[N] New game    [Esc] Quit', GOLD, PANEL)
+        cv.text(x + 3, yy + 1, '[N] The tally, then a new game    [Esc] Quit', GOLD, PANEL)
 
     def on_key(self, tok, shift):
         if tok in ('n', 'enter'):
-            self.app.game = None
-            self.app.screens = [NameScreen(self.app)]
+            def new_game():
+                self.app.game = None
+                self.app.screens = [NameScreen(self.app)]
+            self.app.push(TallyScreen(self.app, after=new_game))
         elif tok == 'esc':
             self.app.running = False
 
@@ -3726,19 +3741,64 @@ class WinScreen(Modal):
         cv.wrap(x + 3, y + 2, 58, f"{p.name} climbed the chain of the Sky-Seat and broke the Hollow King on his throne. "
                 "The mist over the sea is only mist now. The land will heal, slowly, and the chronicle keeps your name.",
                 FG, PANEL, 4)
-        rows = [('Level', p.lvl), ('Turns', g.turn), ('Kills', g.kills), ('Money', fmt(p.gold))]
+        rows = [('Level', p.lvl), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
             cv.text(x + 18, y + 6 + i, str(b), FG, PANEL)
-        cv.text(x + 3, y + 12, '[Enter] Keep exploring    [N] New game', GOLD, PANEL)
+        cv.text(x + 3, y + 12, '[Enter] The tally, then keep exploring    [N] New game', GOLD, PANEL)
 
     def on_key(self, tok, shift):
         if tok in ('enter', 'esc'):
             self.app.pop()
+            self.app.push(TallyScreen(self.app))
         elif tok == 'n':
             E.save_game(self.game)
             self.app.game = None
             self.app.screens = [NameScreen(self.app)]
+
+
+class TallyScreen(Modal):
+    """The tally of a life (tally.py): four blocks like a ledger, what you are remembered for and who you became.
+    Opened from the menu (Esc, Hero) and shown after the death and win screens."""
+
+    def __init__(self, app, after=None):
+        super().__init__(app)
+        self.after = after
+
+    def render(self, cv):
+        from . import tally as TY
+        from . import chronicle as CH
+        from . import classes as CL
+        g = self.game
+        p = g.player
+        bw = 44
+        x, y = self.box(cv, bw * 2 + 8, 30, f' The tally of {p.name} ')
+        for i, (title, rows) in enumerate(TY.blocks(g)):
+            bx = x + 3 + (i % 2) * (bw + 2)
+            by = y + 1 + (i // 2) * 11
+            cv.text(bx, by, title, GOLD, PANEL)
+            for j, (label, value) in enumerate(rows):
+                line = TY.leader(label, value, bw)
+                cv.text(bx, by + 1 + j, line[:len(label)], FG, PANEL)
+                cv.text(bx + len(label), by + 1 + j, line[len(label):len(line) - len(str(value))], LINE, PANEL)
+                cv.text_right(bx + bw - 1, by + 1 + j, str(value)[:bw - len(label) - 4], FG, PANEL)
+        yy = y + 23
+        deeds = [f['title'] for f in CH.deeds(g)][-4:]
+        cv.text(x + 3, yy, 'Remembered for', GOLD, PANEL)
+        cv.wrap(x + 22, yy, bw * 2 - 18, '; '.join(deeds) if deeds else 'nothing yet', FG, PANEL, 2)
+        yy += 2
+        cv.text(x + 3, yy, 'Who you became', GOLD, PANEL)
+        disc = sorted(((r[0], k) for k, r in p.disc.items() if r[0] > 0), reverse=True)[:3]
+        ranks = ', '.join(f'{SK.DISCIPLINES[k]["name"]} {n}' for n, k in disc) or 'no ranks yet'
+        cv.wrap(x + 22, yy, bw * 2 - 18, f'Level {p.lvl}, {CL.title(g) or "no class"}. Highest ranks: {ranks}.', FG,
+                PANEL, 2)
+        cv.text_center(x + bw + 4, y + 29, ' Esc: close ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        if tok in ('esc', 'enter', 'space', 'n'):
+            self.app.pop()
+            if self.after:
+                self.after()
 
 
 # ====================================================================== trade and jobs
@@ -4876,7 +4936,8 @@ class MenuScreen(Modal):
                   ('C', 'Life skills', 'fishing, foraging, alchemy, brewing, mining, smithing, hunting, skinning, cooking, '
                                                   'leatherworking, tailoring, archaeology'),
                   ('z', 'Skills', 'your spells and abilities, and the six on your bar'),
-                  ('v', 'Bestiary', 'the creatures you have met')]),
+                  ('v', 'Bestiary', 'the creatures you have met'),
+                  ('tally', 'The tally', 'your life in numbers: the road, the fights, the coin and the rest')]),
         ('World', [('m', 'World map', 'the lands you have seen'), ('e', 'Journal', 'jobs, the road, standing, lore and every sign, the log'),
                    ('travel', 'Travel', 'on the map: Tab picks a place you have been, Enter sets out'), ('x', 'Explore', 'wander a dungeon until something turns up')]),
         ('Actions', [('t', 'Talk', 'to someone near you'), ('h', 'Company', 'orders and gear for your hireling and your beast'), ('o', 'Look around', 'inspect anything you can see'),
@@ -4935,6 +4996,9 @@ class MenuScreen(Modal):
 
     def pick(self, k):
         self.app.pop()
+        if k == 'tally':
+            self.app.push(TallyScreen(self.app))
+            return
         gs = self.app.top
         if isinstance(gs, GameScreen):
             gs.on_key(k, False)

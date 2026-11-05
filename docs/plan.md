@@ -14,12 +14,10 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
-| **Approved: the belt and the tally** | Potions in four grades; a belt of pockets on the panel, as many as your belt gives, each on Shift+1-5; drinking from the pack takes three turns and can be broken off; the turn counter leaves the main screen for a page of small numbers about your road (the tally), in the menu and at the end. Rounds 42 |
 | **Approved: a finer look, not busier** | Remembered land keeps a hint of its colour; calmer roads; each kind of level its own remembered tint; a short fade-in on entering; names on the world map kept whole; the panel's bars in one colour scale; names in the log in their own colour. Plus the look rule. Rounds 43-44 |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
 | **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Rounds 46-47 |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Rounds 45 |
-| **Approved: playing it** | A list of what you met (the note for Claude, saves that last, the money check, the first tome, the letter and the baron's word are built). Round 41 |
 | **Approved: crafts guilds** | Four new guilds so every life skill has one (smiths and miners, tanners and trappers, tailors, cooks and innkeepers), halls among three peoples each; a free guild bench, the master's test in the hall, the guild mark, the master's board, one guild secret at Master, a guild day with a contest, their own streets; guild jobs of seven kinds. Rounds 48-49 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
@@ -85,7 +83,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     maken"; the Dutch proposal: project files `bouw/volgorde-2.md`). 37. **The test menu** (L). 38. **Saves that last**
     (M). 39. **The money check** (M). Built 5 November 2026 (see `docs/built.md`).
 40. **Block 11: the start of the game.** 40. **The first tome, a letter for the city, the baron's word** (L; built 5 November 2026).
-    41. **What you met** (M). 42. **The belt and the tally** (L). Merge after 42.
+    41. **What you met** (M; built 5 November 2026). 42. **The belt and the tally** (L; built 5 November 2026). Merge after 42.
 43. **Block 12: a finer look, not busier.** 43. **Items 1, 2, 5, 6, 7** (M). 44. **Item 3, then item 4** (M). Merge
     after 44.
 45. **Block 13: creatures and folk.** 45. **Marked creatures** (L). 46. **Folk in need, part 1** (XL): the maker, needs
@@ -153,57 +151,6 @@ Only colour, brightness and tidiness: no new signs, animations or keys. Dutch pr
    and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
    shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
 Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.
-
----
-
-## Playing it: the first steps and what you met (approved 1 November 2026; items 1-6 built 5 November 2026)
-
-Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
-so before more systems: make playing and reporting cheap.
-7. **What you met** (Nilio, 1 November 2026: not meeting everything is fine, the many systems are there so the tenth
-   world still surprises; but measure it, and help where something good is hidden too well). The game notes on the
-   player the first time you meet each system or kind of place (a realm job, a feast, a caravan, a Varnish page, an
-   epic's rumour, a servant's mark, each landmark kind...), with the day. The test build shows the list in F12
-   ("What you met": met with the day, and never met) and puts it in the note's zip. After Nilio has played, the
-   never-met list shows what may be hidden too well; then rumours, the inn's talk or the news point to it a little
-   more often. Nothing is cut or forced on the player.
-
----
-
-## The belt and the tally (approved 1 November 2026, not built)
-
-Thread "Hoofdscherm en drankjesbelt herzien". Dutch proposal and mockups (real tileset, seed 7): project files
-`hoofdscherm/` (`voorstel.md`, `H1_hoofdscherm_na.png`, `B1-B3_*.png`, `E1_eindscherm_tally.png`).
-1. **Potions in four grades**, by name, the red and blue a little brighter per grade: Minor (life 25% + 5, mana
-   30% + 5; every village, 10c), plain (as now: 45% + 10, 50% + 8; 18c), Greater (60% + 20, 65% + 15; cities,
-   temples, alchemists; 60c), Superior (80% + 30, 80% + 25; only great cities and rarely, deep loot, alchemy rank 40;
-   1s 80c). Rejuvenation and the antidote stay as they are. Loot rule: potions may drop more, Superior stays rare.
-2. **The belt** replaces the line `Q Health x2  W Mana x0` on the panel: one row per pocket, a gold number, the
-   potion's sign in its colour, its name with grade, how many. Portal and Cargo stay on one line under it, Money under
-   that.
-   - **Pockets come from the belt slot:** none 2, a sash 3, a belt or plated belt 4; a rare affix "+1 pocket" to 5.
-   - **Each pocket holds one kind and grade**, up to 3. A new potion goes into a pocket of its kind, else an empty
-     one; the rest stays in the pack. Brewed draughts, oils and flasks fit in a pocket too.
-   - **Shift+1 to Shift+5** use pocket 1-5 (Nilio, 1 November 2026: every pocket its own key; Shift with the numbers
-     because the skill bar is on 1-6 and it works on every keyboard; no F-keys, laptops need Fn for them).
-   - **Q and W stay**: they drink health or mana from the belt and pick the smallest grade that fills what you miss
-     (the largest if none does).
-   - **From the belt 1 turn, from the pack 3 turns** (you rummage). Rummaging breaks off like resting: a new foe in
-     sight, a blow, or a key; then you have not drunk, the potion stays in the pack and the turns are gone.
-   - **An empty pocket fills from the pack** once no foe is in sight.
-   - Taught by one first-time tip when you first have a potion in a pocket other than the first.
-3. **The turn counter leaves the main screen**: the line under the map no longer shows `turn N` when nothing else is
-   there (the debug coords stay). The death and win screens lose their Turns row.
-4. **The tally**: one page, "The tally of <name>", with dotted leaders like a ledger, in four blocks: The Road (days,
-   turns, steps, leagues on land and at sea, places found, deepest floor, nights in a bed and under the sky), Fights
-   (foes slain, the kind slain most, bosses felled, times you fell, closest call, hardest blow dealt and taken,
-   potions drunk, hirelings lost), Coin (gold earned from jobs, trade and loot; spent on beds, repairs, wages, the
-   temple; best single sale; richest you were), A Life (jobs done, fish, meals, brews, ore, books, rumours, feasts,
-   fell in a river). Under it Remembered for (the chronicle's deeds) and Who you became (level, class name, highest
-   ranks). Opened from the menu (Esc, group Hero, no key of its own; Nilio, 1 November 2026) and shown after the win
-   and the death screens. The counters live on the player (`p.tally`, one dict; `g.kills` moves there too);
-   SAVE_VERSION goes up.
-Handbook: potions and their grades, the belt and its keys, the pack's three turns, the tally (proposal in the Dutch file).
 
 ---
 

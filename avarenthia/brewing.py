@@ -108,6 +108,8 @@ def brew(game, key):
     it = HU.make_food(game, res, n)
     it.origin = game.world_pos()
     game.add_to_inv(it) or game.spill(game.map, p.x, p.y, it)
+    from . import tally as TY
+    TY.add(game, 'brews')
     game.msg(f'You brew {n} {HU.FOODS[res][0].lower()}{"s" if n > 1 and res == "ale" else ""}.', 'good')
     if r >= 30:
         from . import economy as ECO

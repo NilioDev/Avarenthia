@@ -144,6 +144,8 @@ def offer(game, k, npc=None):
 def r_cross(game, choice, ctx):
     if choice != 'cross':
         return
+    from . import met as MET
+    MET.saw(game, 'ferry')
     m, p = game.map, game.player
     k = ctx['ferry']
     if k >= len(getattr(m, 'ferries', [])):

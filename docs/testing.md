@@ -435,17 +435,16 @@ three things. Test part `boss_moves`.
   line unchanged; a wrapped line keeps the colour. Debug: spawn a foe, Give item.
 
 
-## The belt and the tally (approved 1 November 2026, not built)
+## The belt and the tally (approved 1 November 2026, built 5 November 2026)
 
 - **Potion grades** - each grade of health and mana, what it restores, where it is sold. Debug: give potions of any
   grade (Give item), Teleport to a village, a town, a city.
 - **The belt** - pockets by belt worn (none, sash, belt, a "+1 pocket" belt), Shift+1-5, Q and W picking the smallest
-  grade that will do, refilling once no foe is in sight, a brew or oil in a pocket, the tip. Debug: give belts and
-  potions, spawn a foe.
-- **Drinking from the pack** - three turns, broken off by a foe coming in sight, a blow or a key. Debug: spawn a foe
+  grade that will do, refilling once no foe is in sight, the tip. Debug: give belts and potions, spawn a foe.
+- **Drinking from the pack** - three turns, broken off by a foe coming in sight or a blow. Debug: spawn a foe
   out of sight, empty the belt.
-- **The tally** - from the menu at any time, after the win, at death; every number counting. Debug: a "Fill the
-  tally" button with plausible numbers, and the win/death screens to open.
+- **The tally** - from the menu at any time, after the win, at death; every number counting. Debug: F12 [Y] fills
+  the tally with plausible numbers and opens it; the Tests page also opens the death and win screens.
 
 
 ## More makers (approved 1 November 2026)
@@ -469,7 +468,7 @@ three things. Test part `boss_moves`.
 - **Seen and told** - the affix line in IN SIGHT, the look line, the first-time tip, a unique's new name. Debug: spawn
   a unique, reset tips.
 
-## Playing it (approved 1 November 2026; the first tome, the letter and the word built 5 November 2026)
+## Playing it (approved 1 November 2026, built 5 November 2026)
 
 - **A note for Claude** - the zip beside the save with the note, the screen and the save; loading that save stands
   you where the note was written. Debug: it is itself a debug menu line.

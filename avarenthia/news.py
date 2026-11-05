@@ -109,6 +109,8 @@ def far_news(game):
 
 def gossip(game):
     """The innkeeper: local news first, then whatever the road brought in."""
+    from . import tally as TY
+    TY.add(game, 'rumours')
     return tell(game, None, near=30) or game.rumor()
 
 
