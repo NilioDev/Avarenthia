@@ -147,11 +147,12 @@ def main():
         while app.running:
             app.render()
             ctx.present(console, keep_aspect=True, integer_scaling=True)
-            if app.shot:                   # a debug bug report asked for a picture of this frame
+            if app.shot:                   # a note for Claude asked for a picture of this frame
                 try:
                     ctx.save_screenshot(app.shot)
                 except Exception:
                     pass
+                DBG.add_shot(app)
                 app.shot = None
             timeout = app.frame_delay()
             if app.auto:

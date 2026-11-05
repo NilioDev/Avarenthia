@@ -1,6 +1,7 @@
 """Headless tests: drive the real UI and engine with key tokens on a fake canvas.
 Run from the project folder:  python tests/test_headless.py [--dump]
 """
+import json
 import os
 import random
 import sys
@@ -5091,16 +5092,28 @@ def debug_menu():
         menu('l')
         app.key('enter')
         assert g.merc is not None and g.merc.state == 'alive', g.merc
-        # the bug report: a folder with all it takes
-        menu('r')
+        # a note for Claude: one zip beside the save with all it takes
+        menu('N')
         typed('the rat bit me')
         app.key('enter')
-        last = os.path.dirname(app.shot)                # this report's own folder (other runs may write theirs)
-        for fn in ('report.txt', 'log.txt', 'keys.txt', 'screen.txt', 'save.dat'):
-            assert os.path.exists(os.path.join(last, fn)), fn
-        assert 'the rat bit me' in open(os.path.join(last, 'report.txt'), encoding='utf-8').read()
-        assert 'Debug' not in open(os.path.join(last, 'screen.txt'), encoding='utf-8').read().split('\n')[0]
-        assert app.shot and app.shot.endswith('screen.png')
+        zp = app.shot_zip
+        assert zp and zp.endswith('.zip') and os.path.exists(zp), zp
+        import zipfile
+        with zipfile.ZipFile(zp) as z:
+            names = set(z.namelist())
+            assert {'note.txt', 'log.txt', 'keys.txt', 'screen.txt', 'save.dat'} <= names, names
+            note = z.read('note.txt').decode('utf-8')
+            assert 'the rat bit me' in note and f'Seed: {g.seed}' in note and 'Money:' in note and 'Build:' in note, note
+            assert 'Debug' not in z.read('screen.txt').decode('utf-8').split('\n')[0]
+            with open(os.path.join(tmp, 'save.dat'), 'wb') as f:
+                f.write(z.read('save.dat'))
+        g2 = DBG.read_game(os.path.join(tmp, 'save.dat'))
+        assert g2 and (g2.player.x, g2.player.y, g2.cur) == (p.x, p.y, g.cur)      # it stands where you stood
+        open(app.shot, 'wb').write(b'png')                                        # main.py takes the picture
+        DBG.add_shot(app)
+        with zipfile.ZipFile(zp) as z:
+            assert 'screen.png' in z.namelist()
+        assert app.shot_zip is None
         # back to the snapshot
         menu('b', '1')
         assert app.game is not g and app.game.turn == saved_turn and isinstance(app.top, ui.GameScreen)
@@ -5108,6 +5121,196 @@ def debug_menu():
     finally:
         DBG.ON = False
 
+
+
+def debug_tests():
+    """The Tests page of the debug menu (F12, T): every built line of docs/testing.md has a recipe, every recipe a
+    line; a recipe runs; Enter sets a line up and again the next of its kind; y ticks it right and the tick is kept
+    with the build; n ticks it wrong and writes the note for Claude with the test in it."""
+    import zipfile
+    from avarenthia import debug as DBG, debug_ui as DU, debug_tests as DT
+    print('== debug_tests')
+    every = DT.lines(True)
+    assert len(every) > 100, len(every)
+    heads = {r[0] for r in every} | {r[1] for r in every}
+    assert DT.NOT_BUILT <= heads, DT.NOT_BUILT - heads
+    keys = {r[1] for r in every}
+    assert len(keys) == len(every), [k for k in keys if sum(r[1] == k for r in every) > 1]
+    missing = [r[1] for r in DT.lines() if r[1] not in DT.RECIPES]
+    assert not missing, f'lines of testing.md with no recipe in debug_tests.py: {missing}'
+    stale = [k for k in DT.RECIPES if k not in keys]
+    assert not stale, f'recipes with no line in testing.md: {stale}'
+    for k, rec in DT.RECIPES.items():
+        assert rec and all(s[0] in DT.STEPS for s in rec), k
+    app = new_app('soft', seed=6)
+    DBG.ON = True
+    try:
+        if os.path.exists(DT.ticks_path()):
+            os.remove(DT.ticks_path())
+        # every recipe runs in one world, one after the other
+        only = os.environ.get('TEST_RECIPES')
+        DT.FAST.append(True)                                  # time only says it would pass: the slow part
+        for r in DT.lines():
+            if only and only not in r[1]:
+                continue
+            g = app.game
+            n = len(g.log)
+            DT.run(g, r[1], 0)
+            g.request = None                                  # no save after each one: it is the slow part
+            app.render()
+            assert not g.dead, r[1]
+            assert not any('has no setup' in t for t, _c in g.log[n:]), r[1]
+        DT.FAST.clear()
+        DT.run(g, 'Feast days :: The Fair of Skell', 0)           # one with time running for real
+        g.request = None
+        g = app.game
+        # the page: Enter sets a line up and closes the menu, the check stands in the log
+        app.key('f12')
+        app.key('T')
+        page = app.top.pages[-1]
+        assert isinstance(page, DU.TestsPage), page
+        rows = page.shown()
+        pick = next(i for i, j in enumerate(page.lines_only(rows)) if 'Temples of every people' in rows[j][1][1])
+        page.sel = pick
+        app.render()
+        assert 'TEMPLES' not in app.cv.dump() and 'Temples of every people' in app.cv.dump()
+        app.key('enter')
+        assert isinstance(app.top, ui.GameScreen)
+        first = g.loc_name()
+        assert any(t.startswith('Check:') for t, _c in g.log[-6:]), g.log[-6:]
+        app.key('f12')
+        app.key('T')
+        app.top.pages[-1].sel = pick
+        app.key('enter')                                  # again: the next temple
+        assert g.loc_name() != first, first
+        # y ticks it right; the tick is kept, with this build
+        app.key('f12')
+        app.key('T')
+        page = app.top.pages[-1]
+        page.sel = pick
+        app.key('y')
+        key = next(r[1] for r in DT.lines() if 'Temples of every people' in r[1])
+        tk = DT.ticks()[key]
+        assert tk['mark'] == 'ok' and tk['commit'] == DT.commit(), tk
+        app.render()
+        assert '✓' in app.cv.dump()
+        page.only_open = True                              # the open ones only: it is gone from the list
+        assert all(r[1][1] != key for r in page.shown() if r[0] == 'line')
+        page.only_open = False
+        # n ticks it wrong and writes the note for Claude with the test's name in it
+        page.sel = pick
+        app.key('n')
+        for ch in 'no bell':
+            app.key('space' if ch == ' ' else ch)
+        app.key('enter')
+        assert DT.ticks()[key]['mark'] == 'bad' and DT.ticks()[key]['note'] == 'no bell'
+        with zipfile.ZipFile(app.shot_zip) as z:
+            note = z.read('note.txt').decode('utf-8')
+        assert 'no bell' in note and 'Temples of every people' in note and 'What to check:' in note, note
+        DT.tick(key, None)
+        assert key not in DT.ticks()
+        # an old build's tick shows, but dim, and counts as open
+        DT.tick(key, 'ok')
+        tks = DT.ticks()
+        tks[key]['commit'] = 'older'
+        with open(DT.ticks_path(), 'w', encoding='utf-8') as f:
+            json.dump(tks, f)
+        app.key('f12')
+        app.key('T')
+        page = app.top.pages[-1]
+        page.only_open = True
+        assert any(r[1][1] == key for r in page.shown() if r[0] == 'line')
+        app.key('esc')
+        app.key('esc')
+    finally:
+        DBG.ON = False
+
+
+def lasting_saves():
+    """Saves that last: a save from an older build loads with the fields it lacks filled in; every version since
+    saves.FIRST has its step; a breaking step drops the save and the main menu says so; a failed save says so."""
+    from avarenthia import saves as SV
+    print('== lasting_saves')
+    for v in range(SV.FIRST, E.SAVE_VERSION):
+        assert v in SV.MIGRATIONS, f'SAVE_VERSION went past {v} with no step for it in saves.MIGRATIONS'
+    app = new_app('soft', seed=3)
+    g, p = app.game, app.game.player
+    E.save_game(g)
+    # an older build's save: some fields of the game, the player, a town, a creature and an item are missing
+    import pickle
+    import zlib
+    with open(E.save_path(), 'rb') as f:
+        old = pickle.loads(zlib.decompress(f.read()[len(E.SAVE_MAGIC):]))
+    for obj, k in ((old, 'zones'), (old.player, 'bestiary'), (old.world.settlements[0], 'board'),
+                   (old.player.inv[0], 'n')):
+        obj.__dict__.pop(k, None)
+    mon = next((m for mp in old.maps.values() for m in mp.mons), None)
+    if mon is not None:
+        mon.__dict__.pop('awake', None)
+    old.version = SV.FIRST
+    with open(E.save_path(), 'wb') as f:
+        f.write(E.SAVE_MAGIC + zlib.compress(pickle.dumps(old)))
+    g2 = E.load_game()
+    assert g2 is not None and g2.version == E.SAVE_VERSION, SV.note()
+    assert g2.zones == {} and hasattr(g2.player, 'bestiary') and g2.world.settlements[0].board == [] and g2.player.inv[0].n
+    if mon is not None:
+        assert all(hasattr(m, 'awake') for mp in g2.maps.values() for m in mp.mons)
+    app.start_game(g2)
+    app.key('space')
+    app.render()
+    # a breaking step: the save is not kept, and the main menu says so in one line
+    old.version = E.SAVE_VERSION - 1
+    keep, first = dict(SV.MIGRATIONS), SV.FIRST
+    SV.MIGRATIONS[E.SAVE_VERSION - 1] = ('the maps changed shape', None, True)
+    SV.FIRST = min(first, E.SAVE_VERSION - 1)
+    try:
+        with open(E.save_path(), 'wb') as f:
+            f.write(E.SAVE_MAGIC + zlib.compress(pickle.dumps(old)))
+        assert E.load_game() is None and 'cannot read' in SV.note() and 'the maps changed shape' in SV.note()
+        menu = ui.MainMenu(app)
+        cv = FakeCanvas(ui.W, ui.H)
+        menu.render(cv)
+        assert 'the maps changed shape' in cv.dump()
+    finally:
+        SV.MIGRATIONS.clear()
+        SV.MIGRATIONS.update(keep)
+        SV.FIRST = first
+    # too old, or newer than this build
+    old.version = SV.FIRST - 1
+    with open(E.save_path(), 'wb') as f:
+        f.write(E.SAVE_MAGIC + zlib.compress(pickle.dumps(old)))
+    assert E.load_game() is None and 'before saves lasted' in SV.note()
+    old.version = E.SAVE_VERSION + 1
+    with open(E.save_path(), 'wb') as f:
+        f.write(E.SAVE_MAGIC + zlib.compress(pickle.dumps(old)))
+    assert E.load_game() is None and 'newer build' in SV.note()
+    with open(E.save_path(), 'wb') as f:
+        f.write(b'not a save')
+    assert E.load_game() is None and SV.note()
+    # a save that cannot be written says so in red
+    keep_path = E.save_path
+    E.save_path = lambda: tempfile.gettempdir()           # a folder: it cannot be written
+    try:
+        g2.dead = False
+        E.save_game(g2)
+        assert g2.log[-1][1] == 'bad' and 'could not be saved' in g2.log[-1][0], g2.log[-1]
+    finally:
+        E.save_path = keep_path
+    E.delete_save()
+
+
+def money():
+    """The money check (tests/money.py): at level 1, 10 and 20 the coin left over a day, the days of work for a bed and
+    for a raising stay in their bands (first guesses, to settle with Nilio)."""
+    print('== money')
+    sys.path.insert(0, os.path.dirname(__file__))
+    import money as MN
+    keep = E.save_path
+    try:
+        bad = MN.check(days=20, seed=11)
+    finally:
+        E.save_path = keep
+    assert not bad, bad
 
 def k5():
     """The K5 maker: levels with no bad doors and no double walls, fast, every cell reachable; the drawn pieces read,
@@ -9954,7 +10157,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

@@ -50,8 +50,23 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: classes part 1 (23 Oct)** | A blank start, the first and second class, 55 pair names; the bar is 2 weapon skills, 3 class skills, 1 elite; two skills for every weapon kind, each family with a rule for class skills |
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
+| **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
 
 ## Built
+
+- **The test menu, saves that last, the money check** (rounds 37-39, 5 November 2026; `debug_tests.py`, `saves.py`,
+  `tests/money.py`; test parts `debug_tests`, `lasting_saves`, `money`, `debug_menu`). F12: N writes the note for
+  Claude (one `feedback-<day>-<turn>.zip` beside the save: note.txt, the save, log, keys, the screen as text and as
+  screen.png), replacing the bug-report folder; T opens the Tests page: every line of `docs/testing.md` whose thing is
+  built (`NOT_BUILT` hides the rest), Enter sets it up with a recipe of debug steps (again: the next one of its kind),
+  y right, n wrong (writes the zip with the test in it), c clear, u only the open ones; ticks are kept beside the save
+  with the build's commit (CI writes it into TESTBUILD; testing.md is packed in the test build). The tale of an older
+  place moved to O, the northern lights to A. Saves: `Game.fields()` holds the game's own fields; on loading, every
+  object of the game's classes gets the fields it lacks from a fresh one (`saves.fill`), then `saves.MIGRATIONS` runs
+  one step per version since `saves.FIRST` (64); a breaking step, a newer save or an unreadable one leaves one red
+  line on the main menu; a save that cannot be written says so in the log in red. The money check is a model with the
+  game's own rewards and prices (jobs, escort wages, real buying and selling between two towns, hides and meat; beds,
+  food, mending, a hireling from level 10, one raising); its bands in `money.BANDS` are first guesses.
 
 - **The Avarenthia Editor** (rounds 33-36, 31 October to 1 November 2026; `avarenthia/editor/`, `editor.py`,
   `dressing.py`, `owntiles.py`, `puzzles.py`, `drawnplaces.py`, `places/`). Nilio's own program in the test build:
@@ -2692,3 +2707,40 @@ and are chosen in town (Z). Two beasts (Packmaster) take the beast's place in th
   - **Kobold, the Hoard Tomb:** the old hoardmaster buried in his coin; take some and the loose floor gives way into the old shaft.
   - **Gnoll, the Bone Hill:** a hill of the bones of every kill heaped over a great packlord; the bone-callers wake what lies below.
   - **Lizardfolk, the Drowned Tomb:** stone coffins sunk in a sacred pool round an island with a stone egg; wade or dive; the drowned halls below.
+
+## The test menu, saves that last, the money check (built 5 November 2026; the spec)
+
+Thread "Testen in de testbuild makkelijk maken". `docs/testing.md` has some 150 lines, and each one takes several
+loose steps in F12 today (teleport, give, set a rank, time on). One round (L), in the F12 menu that is built
+(test build and `--debug` only, not in the handbook); the rest of F12 stays as it is.
+- **Tests [T]**: a page with the lines of `testing.md`, grouped by round; lines of things not built yet are hidden.
+  One key on a line sets everything up with the debug actions we have (a city on a river, a tome and rank 20, the
+  feast's date...); a line at the top says what to check. A setup that needs a debug action that does not exist yet
+  gets that action in the same round. Each line's setup is a small recipe in data (`debug_tests.py`), keyed by the
+  line's name in `testing.md`; test part `debug_tests` fails when a line has no recipe or a recipe does not run.
+- **Ticking off**: ✓ it is right, ✗ it is wrong plus one line of text. What was ticked is kept (beside the save, not in
+  it) with the build's commit, so the page shows what is not yet tested, and what was tested in an older build.
+- **Note for Claude [N]**: type one line, Enter. The game writes one file `feedback-<day>-<turn>.zip` beside the
+  save, holding `note.txt` (the line, the build's commit, the seed, day and turn, the place's name and kind, where you
+  stand, level, class and money), `screen.png` (the screen as it was before the menu opened, at scale 1) and a copy
+  of the save. Nilio uploads the zip to the project; Claude can load the save and stand where he stood. The log says
+  where the file went. A ✗ on the Tests page writes the same zip, with the test's name and what to check in `note.txt`.
+- **One kind of report**: the zip replaces today's bug-report folder (its last 200 log lines and keys and the screen as
+  text go into the zip too).
+
+From "Playing it" (approved 1 November 2026):
+1. **A note for Claude**: now part of "The test menu: tests, notes and reports" above, and built with it.
+2. **Saves that last.** Today any new `SAVE_VERSION` throws the save away, so every fix build means a new game.
+   From now on: loading fills every missing field of the player, the game, the world, maps, creatures and items with
+   its default (new fields in `__init__` are found by comparing with a fresh object of the same class), then runs
+   the steps of a list `MIGRATIONS` (from version n to n+1) for real changes of shape. Only a step marked
+   `breaking` drops the save, and then the main menu says so in one line instead of the save just being gone.
+   Things a new build adds to world making show only in a new world; the handbook does not need to say so.
+   A failed save says so in the log in red (today it is silent). CLAUDE.md's rule becomes: bump `SAVE_VERSION` and
+   add a step when saved data changes shape.
+3. **The money check** (`tests/money.py`, like `tests/bot.py`). A bot lives a set of days at level 1, 10 and 20 the
+   way a player earns: jobs from the board, buying and selling goods between two towns, hunting and selling hides,
+   a guard's wage; and pays what a player pays: beds, food, repairs, a hireling's wage, the temple's fee once. It
+   prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
+   good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
+   settle the bands it should stay in; then a test part `money` fails when a build leaves them.

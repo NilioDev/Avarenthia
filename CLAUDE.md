@@ -76,12 +76,14 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   `weapons.py` the weapons' own rules (reach, crossbows, two weapons, fists, `armoured`); `bestiary.py` what
   you know of each creature kind (on the player); `classes.py` who you become (classes, pair names, the bar); `weaponskills.py` keys 1-2 per weapon kind and the
   family rules; `trees.py` the class trees (knots as data, `tuned` + hooks) and the 66 rules (`RULES`); `guide.py` the look legend, Signs and first-time tips; `debug.py` + `debug_ui.py` the debug menu (F12, test build
-  and `--debug` only; not in the handbook); `avarenthia/editor/` the Avarenthia Editor (`python main.py --editor`, test build only; `placemode.py` whole places, `trying.py` F5); `puzzles.py` the 44 puzzle things; `drawnplaces.py` whole places (`places/*.des`, PLACE blocks); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
+  and `--debug` only; not in the handbook; N the note for Claude, T the Tests page in `debug_tests.py`); `avarenthia/editor/` the Avarenthia Editor (`python main.py --editor`, test build only; `placemode.py` whole places, `trying.py` F5); `puzzles.py` the 44 puzzle things; `drawnplaces.py` whole places (`places/*.des`, PLACE blocks); `anim.py` small tile animations (the screen redraws on a timer only while one is in view: `GameScreen.moving`).
 - World size: `world.WORLD_W/H` = 480 x 270. Counts made for the old 320 x 180 world go through `world.scaled(n)`.
 - Choice dialogs: `EV.ask(game, key, title, text, options, **ctx)` + `EV.RESOLVERS[key] = fn(game, choice, ctx)`.
 - UI requests: `game.request = ('shop', ...)` etc., handled in `App.after_action`.
 - Buffs: `p.buffs = [[kind, value, turns, label]]`. Money in copper (100c = 1s, 100s = 1g).
-- Bump `SAVE_VERSION` in engine.py whenever saved data changes shape.
+- Saves last across builds (`saves.py`): a missing field is filled from a fresh object of its class, so a new field of
+  the game itself goes in `Game.fields()`. Bump `SAVE_VERSION` in engine.py whenever saved data changes shape and add
+  its step to `saves.MIGRATIONS` (marked breaking only when a save truly cannot be kept); test part `lasting_saves`.
 
 ## Multiplayer later (Nilio, 22 Oct 2026)
 Real multiplayer may come (see "Multiplayer" in `docs/parked.md`). So: whatever belongs to the player (gear, money,
@@ -96,6 +98,8 @@ jobs, what they know, what they were told, where they are) lives on the player, 
   - Once, at the end of a build, before merging to `main`: seeds 1-3, then `smoke`, then the bot.
   - CI runs the whole suite (seed 1 with `smoke`) on every push: read its result, don't run it again locally.
 - `python tests/bot.py 2` lets a bot play.
+- `python tests/money.py [days] [seed]` prints the money check: coin in and out per day at level 1, 10 and 20 (bands
+  in `money.BANDS`, part `money`).
 - The wiki (Nilio, 25 Oct 2026): `python tools/wiki/build_wiki.py` writes `wiki/avarenthia-wiki.html` from the code and
   docs (lore, great evils, monsters, skills, classes, items, the handbook, plan.md); CI builds it on every push as the
   artifact "Avarenthia wiki". A new data table worth reading gets a few lines there.

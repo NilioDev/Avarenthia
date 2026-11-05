@@ -1,8 +1,10 @@
 # Testing: what each new thing needs
 
 What Nilio wants to be able to try in the test build ("Avarenthia (test)", F12 debug menu, see "Debug menu and a test
-build" in `plan.md`) for each new thing, so he does not have to play for weeks to reach it. The Tests page in F12 (plan.md, "The test menu") will set
-each line up with one key. When a round is built, its lines stay here as long as they are useful for testing.
+build" in `plan.md`) for each new thing, so he does not have to play for weeks to reach it. The Tests page in F12 (T) shows every line of a built thing and sets
+it up with one key; its setup is a recipe in `avarenthia/debug_tests.py`, keyed by the heading and the line's name
+(the bold words, or the first words). A new line needs a recipe there once its thing is built (test part
+`debug_tests`); a heading of a thing not built yet stands in `debug_tests.NOT_BUILT`. When a round is built, its lines stay here as long as they are useful for testing.
 Each line: **what** - what to check - what the debug menu should offer.
 
 ## Classes (built 23 October 2026)
@@ -182,7 +184,7 @@ Each line: **what** - what to check - what the debug menu should offer.
   people's telling things (bell, gong, moonwell, idol, blood pit...), the deep place below. Debug: Teleport (temple
   and its people); Standing (f) to be a friend or a stranger.
 - **The older bottom** - the tale, the loose flagstone on the last level, the ring of stones and the Old Warden.
-  Debug: "Hear the tale of an older place" (T), then Teleport to a temple marked "older below".
+  Debug: "Hear the tale of an older place" (O), then Teleport to a temple marked "older below".
 - **Towers** - every people's floors, the stair a quarter turn on, the haze and shadow below, a slit on lower floors,
   the lookout on top by day and by night, in fog. Debug: Teleport (tower and its people), Time, Weather.
 - **Fallen towers, edges and falls** - half fallen and ruin, the question at an edge, a fall by floors, a foe thrown
@@ -207,13 +209,13 @@ Each line: **what** - what to check - what the debug menu should offer.
 ## The northern lights' gift (built 24 October 2026)
 
 - **Rune stones and milestones** - a rune stone unseen by day, found under the lights, glowing on the map; bumped, its
-  arrow and the first stretch of the way it shows; a milestone's extra line. Debug: "Northern lights in the sky" (N),
+  arrow and the first stretch of the way it shows; a milestone's extra line. Debug: "Northern lights in the sky" (A),
   Teleport near one (cold lands).
-- **Frost and Storm** - a quarter cheaper under the lights. Debug: N, give a Frost tome, Ranks.
+- **Frost and Storm** - a quarter cheaper under the lights. Debug: A, give a Frost tome, Ranks.
 - **Barrow spirits** - the spirit rising and fading with the lights, its mark, its errand (grave, sword, grave
   robbers) and the hand-in at the barrow; the question at the way down; going down or robbing the bier, the angry
-  dead and the hostile spirit. Debug: N, Teleport to a barrow in the north.
-- **The glow** - blue-green round ghosts and their kin, red round fiends. Debug: N, Spawn a ghost or an imp.
+  dead and the hostile spirit. Debug: A, Teleport to a barrow in the north.
+- **The glow** - blue-green round ghosts and their kin, red round fiends. Debug: A, Spawn a ghost or an imp.
 
 ## The Rift and the Ashen Deep (built 24 October 2026)
 
@@ -496,7 +498,7 @@ three things. Test part `boss_moves`.
 - **Rewards and favours** - standing in town and with the people, each reward kind, each favour showing in its window
   (ferry, gate while wanted, lord, guide). Debug: give a favour (Give item), set wanted (crime).
 
-## The test menu (approved 2 November 2026, not built)
+## The test menu (built 5 November 2026)
 
 - **Tests page** - every built line of this file shown, each set up by its key, ✓ and ✗ kept after a restart and
   after a new build. Debug: F12, [T].

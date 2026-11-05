@@ -176,38 +176,9 @@ COIN_CARRIERS = {'kobold', 'goblin', 'gobarcher', 'orc', 'ogre', 'cultist', 'ske
 
 class Game:
     def __init__(self, name, hardcore=True, seed=None, race='human', gender='other'):
-        self.version = SAVE_VERSION
+        self.fields()
         self.seed = seed if seed is not None else random.randrange(1, 10 ** 9)
         random.seed(self.seed)
-        self._next_id = 1
-        self.turn = 0
-        self.maps = {}
-        self.cur = 'town'
-        self.log = []
-        self.log_mark = 0
-        self.flags = {}
-        self.dead = False
-        self.cause = None
-        self.kills = 0
-        self.max_depth = {}
-        self.last_save = 0
-        self.portal = None
-        self.shops = {}
-        self.missions = []
-        self.price_log = {}
-        self.encounter = None
-        self.zone_fight = False
-        self.zones = {}           # what changed in the zones you have walked: (cx, cy) -> changes
-        self.last_day = 1
-        self.low_warned = False
-        self.events = []        # transient effects for the UI
-        self.request = None     # transient: a screen the UI should open
-        self.vis = bytearray()
-        self.dist = None
-        self.pending = None     # an open choice (travel events, places, travellers)
-        self.encounter_poi = None
-
-        self.corpses = []
         self.turn = D.DAY_LEN * 7 // 24      # the story starts at seven in the morning
         p = self.player = Player(name or 'Wanderer', hardcore)
         p.race, p.gender = race, gender
@@ -280,6 +251,41 @@ class Game:
         WO.progress(1, 'The world is ready')
 
     # ------------------------------------------------------------ basics
+
+    def fields(self):
+        """The game's own fields and their first values. A save from an older build gets the ones it lacks from here
+        (saves.py), so a new field of the game goes here."""
+        self.version = SAVE_VERSION
+        self._next_id = 1
+        self.turn = 0
+        self.maps = {}
+        self.cur = 'town'
+        self.log = []
+        self.log_mark = 0
+        self.flags = {}
+        self.dead = False
+        self.cause = None
+        self.kills = 0
+        self.max_depth = {}
+        self.last_save = 0
+        self.portal = None
+        self.shops = {}
+        self.missions = []
+        self.price_log = {}
+        self.encounter = None
+        self.zone_fight = False
+        self.zones = {}           # what changed in the zones you have walked: (cx, cy) -> changes
+        self.last_day = 1
+        self.low_warned = False
+        self.events = []        # transient effects for the UI
+        self.request = None     # transient: a screen the UI should open
+        self.vis = bytearray()
+        self.dist = None
+        self.pending = None     # an open choice (travel events, places, travellers)
+        self.encounter_poi = None
+
+        self.corpses = []
+
     def hook(self):
         """Install this world's factions, boss names and price rules (after creating or loading)."""
         FA.install(self.world.factions)
@@ -3857,16 +3863,31 @@ def save_game(game):
         with open(save_path() + '.tmp', 'wb') as f:
             f.write(SAVE_MAGIC + zlib.compress(pickle.dumps(game, protocol=pickle.HIGHEST_PROTOCOL), 6))
         os.replace(save_path() + '.tmp', save_path())
-    except OSError:
-        pass
+    except Exception as ex:
+        game.msg(f'Your game could not be saved: {ex}.', 'bad')
+
+
+def read_save(path):
+    """A game from a save file, brought up to this build (saves.py); None when there is none or it cannot be kept."""
+    from . import saves as SV
+    with open(path, 'rb') as f:
+        raw = f.read()
+    try:
+        g = pickle.loads(zlib.decompress(raw[len(SAVE_MAGIC):]) if raw.startswith(SAVE_MAGIC) else raw)
+    except Exception:
+        SV.say('Your save is from an older build that this one cannot read. Start a new game.')
+        return None
+    return SV.upgrade(g, SAVE_VERSION)
 
 
 def load_game():
+    from . import saves as SV
+    SV.NOTE.clear()
+    if not os.path.exists(save_path()):
+        return None
     try:
-        with open(save_path(), 'rb') as f:
-            raw = f.read()
-        g = pickle.loads(zlib.decompress(raw[len(SAVE_MAGIC):]) if raw.startswith(SAVE_MAGIC) else raw)
-        if getattr(g, 'version', 0) == SAVE_VERSION and not g.dead:
+        g = read_save(save_path())
+        if g is not None and not g.dead:
             from . import owntiles as OT, pieces as PC
             PC.load()
             OT.remap(g, getattr(g, 'own_tiles', None))
@@ -3874,8 +3895,8 @@ def load_game():
             g.hook()
             g.compute_fov()
             return g
-    except Exception:
-        pass
+    except Exception as ex:
+        SV.say(f'Your save could not be read ({type(ex).__name__}). Start a new game.')
     return None
 
 

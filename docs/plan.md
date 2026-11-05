@@ -19,8 +19,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
 | **Approved: folk in need** | Ordinary people in every settlement, on the road and in camps ask for help with a need drawn from the world as it is (the wolves on the map, a raid in the news, the winter, their trade and people); a quest of 1-4 steps with a twist one time in three, useful rewards and favours, standing, people who remember you, 120 hand-written seeds. Rounds 46-47 |
 | **Approved: marked creatures** | One list of 20 affixes for champions, uniques and named enemies (the 16 traits, Brutal, and new Warded, Ember-hearted, Grave-bound); a champion has one, a unique two or three; each fits its kind, place and season and has an answer the player already owns; rarer than now; loot unchanged. Rounds 45 |
-| **Approved: playing it** | Saves that last across new builds, a money check beside the fighting bot, a sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met. Rounds 38-41 |
-| **Approved: the test menu** | F12 in the test build gets a Tests page (every line of `docs/testing.md`, set up with one key, ticked off ✓ or ✗) and a Note for Claude; both write one feedback zip, which replaces the old bug-report folder. Rounds 37 |
+| **Approved: playing it** | A sure first tome, a first trip to the city that teaches trade, the baron's word, and a list of what you met (the note for Claude, saves that last and the money check are built). Rounds 40-41 |
 | **Approved: crafts guilds** | Four new guilds so every life skill has one (smiths and miners, tanners and trappers, tailors, cooks and innkeepers), halls among three peoples each; a free guild bench, the master's test in the hall, the guild mark, the master's board, one guild secret at Master, a guild day with a contest, their own streets; guild jobs of seven kinds. Rounds 48-49 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
@@ -84,7 +83,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     Merged after 36 (see `docs/built.md`).
 37. **Block 10: playing and reporting made cheap** (settled 2 November 2026, thread "Testen in de testbuild makkelijk
     maken"; the Dutch proposal: project files `bouw/volgorde-2.md`). 37. **The test menu** (L). 38. **Saves that last**
-    (M). 39. **The money check** (M). Merge after 39.
+    (M). 39. **The money check** (M). Built 5 November 2026 (see `docs/built.md`).
 40. **Block 11: the start of the game.** 40. **The first tome, a letter for the city, the baron's word** (L).
     41. **What you met** (M). 42. **The belt and the tally** (L). Merge after 42.
 43. **Block 12: a finer look, not busier.** 43. **Items 1, 2, 5, 6, 7** (M). 44. **Item 3, then item 4** (M). Merge
@@ -157,45 +156,10 @@ Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on reme
 
 ---
 
-## The test menu: tests, notes and reports (approved 2 November 2026, not built)
-
-Thread "Testen in de testbuild makkelijk maken". `docs/testing.md` has some 150 lines, and each one takes several
-loose steps in F12 today (teleport, give, set a rank, time on). One round (L), in the F12 menu that is built
-(test build and `--debug` only, not in the handbook); the rest of F12 stays as it is.
-- **Tests [T]**: a page with the lines of `testing.md`, grouped by round; lines of things not built yet are hidden.
-  One key on a line sets everything up with the debug actions we have (a city on a river, a tome and rank 20, the
-  feast's date...); a line at the top says what to check. A setup that needs a debug action that does not exist yet
-  gets that action in the same round. Each line's setup is a small recipe in data (`debug_tests.py`), keyed by the
-  line's name in `testing.md`; test part `debug_tests` fails when a line has no recipe or a recipe does not run.
-- **Ticking off**: ✓ it is right, ✗ it is wrong plus one line of text. What was ticked is kept (beside the save, not in
-  it) with the build's commit, so the page shows what is not yet tested, and what was tested in an older build.
-- **Note for Claude [N]**: type one line, Enter. The game writes one file `feedback-<day>-<turn>.zip` beside the
-  save, holding `note.txt` (the line, the build's commit, the seed, day and turn, the place's name and kind, where you
-  stand, level, class and money), `screen.png` (the screen as it was before the menu opened, at scale 1) and a copy
-  of the save. Nilio uploads the zip to the project; Claude can load the save and stand where he stood. The log says
-  where the file went. A ✗ on the Tests page writes the same zip, with the test's name and what to check in `note.txt`.
-- **One kind of report**: the zip replaces today's bug-report folder (its last 200 log lines and keys and the screen as
-  text go into the zip too).
-
-## Playing it: notes, saves that last, the money check (approved 1 November 2026, not built)
+## Playing it: the first steps and what you met (approved 1 November 2026; items 1-3 built 5 November 2026)
 
 Thread "Advies: wat ontbreekt er nog aan de game". Nilio is the only tester and has not played since the blocks began,
 so before more systems: make playing and reporting cheap.
-1. **A note for Claude**: now part of "The test menu: tests, notes and reports" above, and built with it.
-2. **Saves that last.** Today any new `SAVE_VERSION` throws the save away, so every fix build means a new game.
-   From now on: loading fills every missing field of the player, the game, the world, maps, creatures and items with
-   its default (new fields in `__init__` are found by comparing with a fresh object of the same class), then runs
-   the steps of a list `MIGRATIONS` (from version n to n+1) for real changes of shape. Only a step marked
-   `breaking` drops the save, and then the main menu says so in one line instead of the save just being gone.
-   Things a new build adds to world making show only in a new world; the handbook does not need to say so.
-   A failed save says so in the log in red (today it is silent). CLAUDE.md's rule becomes: bump `SAVE_VERSION` and
-   add a step when saved data changes shape.
-3. **The money check** (`tests/money.py`, like `tests/bot.py`). A bot lives a set of days at level 1, 10 and 20 the
-   way a player earns: jobs from the board, buying and selling goods between two towns, hunting and selling hides,
-   a guard's wage; and pays what a player pays: beds, food, repairs, a hireling's wage, the temple's fee once. It
-   prints one table per level: coin in and out per day by kind, and how many days of work buy a bed, a repair, a
-   good weapon of its level, a Greater potion and a raising at the temple. After the first run Nilio and Claude
-   settle the bands it should stay in; then a test part `money` fails when a build leaves them.
 4. **The first tome** (Nilio, 1 November 2026: yes to measuring and making it sure). You start blank and your class
    wakes with your first tome, but Thornfield's shop never sells one, so the start hangs on loot. The blank start
    stays; the first tome is made sure in three ways, so it hangs on no one place:

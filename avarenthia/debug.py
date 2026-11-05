@@ -77,10 +77,8 @@ def write_game(game, path):
 
 def read_game(path):
     from . import engine as E
-    with open(path, 'rb') as f:
-        raw = f.read()
-    g = pickle.loads(zlib.decompress(raw[len(E.SAVE_MAGIC):]) if raw.startswith(E.SAVE_MAGIC) else raw)
-    if getattr(g, 'version', 0) != E.SAVE_VERSION:
+    g = E.read_save(path)
+    if g is None:
         return None
     g.events, g.request = [], None
     return g
@@ -118,41 +116,64 @@ def load_snapshot(i):
         return None
 
 
-def bug_report(app, note=''):
-    """A folder with all it takes to replay a bug: what you wrote, the seed, the place, the turn, the last 200 lines of
-    the log and keys, the screen as text (and as a picture, saved by main.py on the next frame) and the save."""
+def feedback_zip(app, note='', test=None):
+    """A note for Claude (F12, N, or a wrong tick on the Tests page): one zip beside the save with all it takes to
+    stand where you stood: note.txt (the line, the build, the seed, the day and turn, the place, where you stand,
+    level, class, money), the save, the last 200 lines of the log and keys, the screen as text, and screen.png (taken
+    by main.py on the next frame, with the menu closed). test is (name, what to check) for a line of the Tests page."""
+    import zipfile
     from . import calendar as CAL
+    from . import classes as CL
+    from . import money as MO
+    from . import debug_tests as DT
     game = app.game
-    stamp = time.strftime('%Y%m%d-%H%M%S')
-    base = os.path.join(folder(), 'bug-reports', stamp)
-    path, k = base, 1
-    while True:                                     # two reports in one second each get a folder of their own
-        try:
-            os.makedirs(path)
-            break
-        except FileExistsError:
-            k += 1
-            path = f'{base}-{k}'
     p = game.player
-    lines = [f'What went wrong: {note or "(nothing written)"}',
-             f'When: {time.strftime("%Y-%m-%d %H:%M:%S")}',
-             f'Seed: {game.seed}', f'Save version: {game.version}',
-             f'Hero: {p.name}, {p.race}, level {p.lvl}, life {p.life}, {"hardcore" if p.hardcore else "softcore"}',
-             f'Place: {place_line(game)}', f'Map: {game.cur} ({game.map.kind}, {game.map.w}x{game.map.h})',
-             f'Turn: {game.turn}, day {game.day}, {CAL.long(game.day)}',
-             f'Debug flags: {", ".join(sorted(flags(game))) or "none"}']
-    with open(os.path.join(path, 'report.txt'), 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines) + '\n')
-    with open(os.path.join(path, 'log.txt'), 'w', encoding='utf-8') as f:
-        f.writelines(f'{t}\n' for t, _c in game.log[-200:])
-    with open(os.path.join(path, 'keys.txt'), 'w', encoding='utf-8') as f:
-        f.write(' '.join(KEYS) + '\n')
-    with open(os.path.join(path, 'screen.txt'), 'w', encoding='utf-8') as f:
-        f.write(screen_text(app) + '\n')
-    write_game(game, os.path.join(path, 'save.dat'))
-    app.shot = os.path.join(path, 'screen.png')
-    game.msg(f'Debug: bug report written to {path}', 'info')
+    path = os.path.join(folder(), f'feedback-{game.day}-{game.turn}.zip')
+    k = 1
+    while os.path.exists(path):
+        k += 1
+        path = os.path.join(folder(), f'feedback-{game.day}-{game.turn}-{k}.zip')
+    m = game.map
+    lines = [f'Note: {note or "(nothing written)"}']
+    if test:
+        lines += [f'Test: {test[0]}', f'What to check: {test[1]}']
+    lines += [f'Build: {DT.commit()}', f'Written: {time.strftime("%Y-%m-%d %H:%M:%S")}',
+              f'Seed: {game.seed}', f'Save version: {game.version}',
+              f'Day {game.day} ({CAL.long(game.day)}), turn {game.turn}',
+              f'Place: {game.loc_name()} ({m.kind}, map {game.cur}, {m.w}x{m.h})',
+              f'Where you stand: {place_line(game)}',
+              f'Hero: {p.name}, {p.race}, level {p.lvl}, life {p.life}, {"hardcore" if p.hardcore else "softcore"}',
+              f'Class: {CL.title(game) or "blank"} ({", ".join(CL.classes(game)) or "no school"})',
+              f'Money: {MO.fmt(p.gold)}',
+              f'Debug flags: {", ".join(sorted(flags(game))) or "none"}']
+    tmp = path + '.save'
+    write_game(game, tmp)
+    with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('note.txt', '\n'.join(lines) + '\n')
+        z.writestr('log.txt', ''.join(f'{t}\n' for t, _c in game.log[-200:]))
+        z.writestr('keys.txt', ' '.join(KEYS) + '\n')
+        z.writestr('screen.txt', screen_text(app) + '\n')
+        z.write(tmp, 'save.dat')
+    os.remove(tmp)
+    app.shot = path + '.png'
+    app.shot_zip = path
+    game.msg(f'Debug: your note is in {path}', 'info')
     return path
+
+
+def add_shot(app):
+    """After main.py took the picture of the frame: put it in the zip as screen.png."""
+    import zipfile
+    zp, shot = getattr(app, 'shot_zip', None), app.shot
+    app.shot_zip = None
+    if not zp or not shot or not os.path.exists(shot):
+        return
+    try:
+        with zipfile.ZipFile(zp, 'a') as z:
+            z.write(shot, 'screen.png')
+        os.remove(shot)
+    except OSError:
+        pass
 
 
 def screen_text(app):

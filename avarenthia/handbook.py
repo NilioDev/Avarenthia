@@ -71,7 +71,8 @@ def ch_first_steps(g):
               'bottom: what just happened.'),
         ('h', 'Saving'),
         ('p', 'There is one save, and it is made for you whenever you go from one place to another and when you quit '
-              'from the menu: [Esc], Game, Save and quit. In Hardcore, death is final.'),
+              'from the menu: [Esc], Game, Save and quit. A newer version of the game still reads your save. In Hardcore, '
+              'death is final.'),
     ]
 
 

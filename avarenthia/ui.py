@@ -90,6 +90,7 @@ class App:
         self.auto_delay = .06
         self.auto_label = ''
         self.shot = None           # debug: a picture of the next frame goes here (main.py saves it)
+        self.shot_zip = None       # debug: the note's zip the picture goes into
 
     # ---------------------------------------------------------- plumbing
     @property
@@ -362,6 +363,9 @@ class MainMenu(Screen):
                 cv.text(bx + (bw - len(lab)) // 2, yy, lab, col, night)
         credit = f'a game by {AUTHOR}'
         cv.text(cv.w - len(credit) - 2, cv.h - 2, credit, (150, 136, 120), night)
+        from . import saves as SV
+        if not self.saved and SV.note():                  # a save this build could not keep: one line says so
+            cv.text_center(cv.w // 2, cv.h - 4, SV.note(), BAD, night)
 
     def options(self):
         opts = []

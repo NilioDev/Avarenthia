@@ -59,7 +59,8 @@ jobs:
         shell: bash
         run: |
           echo "The test build: the debug menu (F12) is on." > TESTBUILD
-          pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." main.py
+          echo "commit ${GITHUB_SHA::7}" >> TESTBUILD
+          pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." --add-data "docs/testing.md${{ matrix.sep }}." main.py
       - name: Build the editor (only in the test download)
         run: pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaEditor --hidden-import main --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
       - uses: actions/upload-artifact@v4

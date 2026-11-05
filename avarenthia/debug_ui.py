@@ -157,6 +157,121 @@ class AskPage(Page):
         return None
 
 
+
+class TestsPage(Page):
+    """F12, T: the lines of docs/testing.md by heading. Enter sets one up (again: the next of its kind); y ticks it
+    right, n wrong (with a note for Claude), c takes the tick off, u shows only what is not ticked in this build."""
+    title = 'Tests'
+    SHOW = 16
+
+    def __init__(self, screen):
+        from . import debug_tests as DT
+        super().__init__(screen)
+        self.DT = DT
+        self.rows = DT.lines()
+        self.sel = 0
+        self.only_open = False
+
+    def shown(self):
+        ticks = self.DT.ticks()
+        build = self.DT.commit()
+        rows, head = [], None
+        for r in self.rows:
+            t = ticks.get(r[1])
+            if self.only_open and t and t.get('commit') == build:
+                continue
+            if r[0] != head:
+                head = r[0]
+                rows.append(('head', head))
+            rows.append(('line', r, t))
+        return rows
+
+    def lines_only(self, rows):
+        return [i for i, r in enumerate(rows) if r[0] == 'line']
+
+    def current(self, rows):
+        idx = self.lines_only(rows)
+        if not idx:
+            return None
+        self.sel = max(0, min(self.sel, len(idx) - 1))
+        return rows[idx[self.sel]][1]
+
+    def render(self, cv, x, y):
+        rows = self.shown()
+        build = self.DT.commit()
+        idx = self.lines_only(rows)
+        cur = self.current(rows)
+        done = sum(1 for r in rows if r[0] == 'line' and r[2] and r[2].get('commit') == build)
+        cv.text(x + 3, y + 2, f'{len(idx)} lines', DIM, PANEL)
+        cv.text_right(x + BOX_W - 3, y + 2, f'ticked in this build ({build}): {done}' +
+                      (' · only the open ones' if self.only_open else ''), DIM, PANEL)
+        if not idx:
+            cv.text(x + 3, y + 4, 'Nothing here: testing.md was not found, or every line is ticked.', DIM, PANEL)
+            return
+        at = idx[self.sel]
+        top = max(0, min(at - self.SHOW // 2, len(rows) - self.SHOW))
+        for i, r in enumerate(rows[top:top + self.SHOW]):
+            yy = y + 4 + i
+            if r[0] == 'head':
+                cv.text(x + 3, yy, r[1].upper(), DIM, PANEL, maxw=BOX_W - 6)
+                continue
+            sel = top + i == at
+            bg = SEL_BG if sel else PANEL
+            if sel:
+                cv.fill(x + 2, yy, BOX_W - 4, 1, ' ', FG, bg)
+            t = r[2]
+            if t:
+                old = t.get('commit') != build
+                mark, col = ('✓', GOOD) if t['mark'] == 'ok' else ('✗', BAD)
+                cv.text(x + 4, yy, mark, DIM if old else col, bg)
+            cv.text(x + 6, yy, r[1][2], GOLD if sel else FG, bg, maxw=BOX_W - 10)
+        # what to check, and what the setup does, under the list
+        yy = y + 5 + self.SHOW
+        n = cv.wrap(x + 3, yy, BOX_W - 6, cur[3], FG, PANEL)
+        if cur[4] and n < 3:
+            cv.wrap(x + 3, yy + n, BOX_W - 6, 'Setup: ' + cur[4], DIM, PANEL)
+
+    def help(self):
+        return 'Up/Down · Enter: set it up (again: the next one) · y: right · n: wrong · c: clear · u: open only · Esc'
+
+    def on_key(self, tok, shift):
+        rows = self.shown()
+        idx = self.lines_only(rows)
+        cur = self.current(rows)
+        if tok in ('up', 'np8'):
+            self.sel -= 1
+        elif tok in ('down', 'np2'):
+            self.sel += 1
+        elif tok == 'pageup':
+            self.sel -= self.SHOW
+        elif tok == 'pagedown':
+            self.sel += self.SHOW
+        elif tok == 'u':
+            self.only_open = not self.only_open
+            self.sel = 0
+        elif cur is None:
+            return None
+        elif tok in ('enter', 'np_enter'):
+            n = self.DT.RUNS.get(cur[1], 0)
+            self.DT.RUNS[cur[1]] = n + 1
+            self.DT.run(self.game, cur[1], n)
+            self.DT.show_check(self.game, cur)
+            return 'close'
+        elif tok == 'y':
+            self.DT.tick(cur[1], 'ok', day=self.game.day)
+            self.sel += 1
+        elif tok == 'c':
+            self.DT.tick(cur[1], None)
+        elif tok == 'n':
+            def done(note, cur=cur):
+                self.DT.tick(cur[1], 'bad', note, self.game.day)
+                DBG.feedback_zip(self.app, note, (cur[2], cur[3]))
+                return 'close'
+            return AskPage(self.screen, f'Wrong: {cur[2]}', f'What is wrong? One line (Enter alone writes it without). '
+                           f'The note, the screen and the save go into one zip beside the save.', done, digits=False)
+        self.sel = max(0, min(self.sel, max(0, len(idx) - 1)))
+        return None
+
 class DebugScreen(Modal):
     """F12: the debug menu over the game."""
 
@@ -180,7 +295,8 @@ class DebugScreen(Modal):
         left = [
             ('MOMENTS', [('a', 'Save a snapshot...', lambda: self.snap_page(True)),
                          ('b', 'Load a snapshot...', lambda: self.snap_page(False)),
-                         ('r', 'Write a bug report...', self.report_page)]),
+                         ('N', 'Note for Claude...', self.report_page),
+                         ('T', 'Tests...', self.tests_page)]),
             ('THE WORLD', [('m', 'Show the whole map', self.do(lambda: DBG.reveal_map(g()))),
                            ('t', 'Teleport...', self.teleport_page),
                            ('d', 'Time...', self.time_page),
@@ -188,9 +304,9 @@ class DebugScreen(Modal):
                            ('s', 'Spawn a creature...', self.spawn_page),
                            ('z', 'Theme room or river...', self.theme_page),
                            ('Z', 'Set this room back as drawn', self.do(lambda: DBG.reset_room(g()), True)),
-                           ('T', 'Hear the tale of an older place', self.do(lambda: DBG.old_tale(g()), True)),
+                           ('O', 'Hear the tale of an older place', self.do(lambda: DBG.old_tale(g()), True)),
                            ('F', 'Change who holds this fort', self.do(lambda: DBG.fort_holder(g()), True)),
-                           ('N', self.flag('aurora'), self.do(lambda: DBG.toggle(g(), 'aurora'))),
+                           ('A', self.flag('aurora'), self.do(lambda: DBG.toggle(g(), 'aurora'))),
                            ('B', self.flag('oldfind'), self.do(lambda: DBG.toggle(g(), 'oldfind'))),
                            ('W', self.flag('oldnight'), self.do(lambda: DBG.toggle(g(), 'oldnight'))),
                            ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
@@ -243,12 +359,16 @@ class DebugScreen(Modal):
         g.msg(f'Debug: snapshot {i} loaded.', 'info')
         return 'close'
 
-    def report_page(self):
+    def report_page(self, test=None):
         def done(note):
-            DBG.bug_report(self.app, note)
+            DBG.feedback_zip(self.app, note, test)
             return 'close'
-        return AskPage(self, 'Write a bug report', 'What went wrong? One line, in any words (Enter alone writes it without).',
-                       done, digits=False)
+        what = f'What is wrong with "{test[0]}"?' if test else 'What did you see? One line, in any words'
+        return AskPage(self, 'Note for Claude', f'{what} (Enter alone writes it without). The note, the screen and the '
+                       'save go into one zip beside the save.', done, digits=False)
+
+    def tests_page(self):
+        return TestsPage(self)
 
     def teleport_page(self):
         rows = sorted(DBG.places(self.game), key=lambda r: (r[0], r[1]))
