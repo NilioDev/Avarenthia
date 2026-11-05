@@ -5631,6 +5631,8 @@ def finer_look():
     from avarenthia import towns as TWN
     while not 11 <= TWN.hour(g) <= 14:
         g.turn += D.DAY_LEN // 24
+    from avarenthia import debug as DBG
+    DBG.set_weather(g, 'clear')                          # fog, rain or snow would grey the land
     app.render()
     ox, oy = gs.origin
     def green(c):
