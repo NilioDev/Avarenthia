@@ -66,17 +66,38 @@ GUILDS = {
     # the crafts: no limit
     'alembic': dict(name='The Guild of Alembic and Barrel', short='Alembic and Barrel', kind='life', secret=0, fg='#e0a0e0',
                     sign='ALCHEMISTS', master='Mistress {n}', ranks=['Bottlewasher', 'Apprentice', 'Journeyman', 'Master', 'Grand Alembic'],
-                    rivals=[], jobs=['freight', 'courier'], halls=3, skills=['alchemy', 'brewing'],
+                    rivals=[], jobs=['freight', 'courier'], halls=3, skills=['alchemy', 'brewing', 'foraging'],
                     desc='Alchemists and brewers, who argue about everything except the price of good copper.'),
     'carto': dict(name="The Cartographers' Society", short='Cartographers', kind='life', secret=0, fg='#d8c890', sign='MAPMAKER',
                   master='Master Surveyor {n}', ranks=['Errand-runner', 'Surveyor', 'Mapmaker', 'Master Cartographer',
                                                       'Keeper of the Charts'],
-                  rivals=[], jobs=['courier', 'fetch'], halls=2, skills=['foraging'],
+                  rivals=[], jobs=['courier', 'fetch'], halls=2, skills=['archaeology', 'foraging'],
                   desc='They draw the realm, and they keep old Varnish charts that show ways nobody walks any more.'),
     'anglers': dict(name='The Brotherhood of the Net', short='Anglers', kind='life', secret=0, fg='#80c0e0', sign='NET HALL',
                     master='Net-Elder {n}', ranks=['Netmender', 'Angler', 'Boatman', 'Master Angler', 'Sea-Elder'],
                     rivals=[], jobs=['freight', 'courier'], halls=0, skills=['fishing'],
                     desc='Fishers and boatmen of the harbours. They know every current, and every tale the sailors bring.'),
+    # round 48: the crafts guilds (craftguilds.py); their halls are picked among three peoples or more
+    'hammer': dict(name='The Hammer and Tongs', short='Hammer and Tongs', kind='life', secret=0, fg='#e0a070',
+                   sign='HAMMER AND TONGS', master='Forgemaster {n}',
+                   ranks=['Bellows-hand', 'Apprentice', 'Journeyman', 'Master Smith', 'Forgemaster'],
+                   rivals=[], jobs=['freight', 'courier'], halls=0, skills=['smithing', 'mining'],
+                   desc='Smiths and miners. They say the realm stands on iron, and they know who forged it.'),
+    'lodge': dict(name="The Tanners' and Trappers' Lodge", short="Tanners' Lodge", kind='life', secret=0, fg='#c09060',
+                  sign='TANNERS', master='Lodge-Elder {n}',
+                  ranks=['Scraper', 'Apprentice', 'Journeyman', 'Master Tanner', 'Lodge-Elder'],
+                  rivals=[], jobs=['freight', 'courier'], halls=0, skills=['leatherworking', 'skinning', 'hunting'],
+                  desc='Hunters, skinners and tanners. Their halls stand downstream, and smell of it.'),
+    'needle': dict(name='The Needle and Loom', short='Needle and Loom', kind='life', secret=0, fg='#c8a8e0',
+                   sign='NEEDLE AND LOOM', master='Loom-Master {n}',
+                   ranks=['Threader', 'Apprentice', 'Journeyman', 'Master Tailor', 'Loom-Master'],
+                   rivals=[], jobs=['freight', 'courier'], halls=0, skills=['tailoring'],
+                   desc='Weavers, dyers and tailors. Every banner of the realm went through their hands.'),
+    'ladle': dict(name='The Lantern and Ladle', short='Lantern and Ladle', kind='life', secret=0, fg='#f0c878',
+                  sign='LANTERN AND LADLE', master='Head Cook {n}',
+                  ranks=['Pot-hand', 'Apprentice', 'Journeyman', 'Master Cook', 'Head of the Table'],
+                  rivals=[], jobs=['freight', 'courier'], halls=0, skills=['cooking', 'brewing'],
+                  desc='Cooks, brewers and innkeepers. A town is only as good as the table it keeps.'),
 }
 ORDER = list(GUILDS)
 
@@ -115,12 +136,14 @@ def state(game):
     st = game.__dict__.setdefault('guilds', {})
     for k in ORDER:
         st.setdefault(k, dict(joined=False, rep=0, last=0, found=not GUILDS[k]['secret'], board=[], board_day=-99, left=False))
+        st[k].setdefault('paid', 0)          # the crafts guilds: the rank the master raised you to (craftguilds)
     return st
 
 
 def rank(game, key):
-    rep = state(game)[key]['rep']
-    return max(i for i, v in enumerate(RANK_REP) if rep >= v)
+    s = state(game)[key]
+    r = max(i for i, v in enumerate(RANK_REP) if s['rep'] >= v)
+    return min(r, s['paid']) if GUILDS[key]['kind'] == 'life' else r
 
 
 def rank_name(game, key):
@@ -178,6 +201,8 @@ def setup(world):
     old = [s.id for s in cities if s.id not in halls['coven']] or [s.id for s in cities]
     halls['ossuary'] = [rng.choice(old)] if old else []
     world.guild_halls = halls
+    from . import craftguilds as CG
+    CG.setup(world)
 
 
 def temple_mult(game):
@@ -229,6 +254,8 @@ def place_master(game, m, pl, key, names):
         npc.name = random.choice(['A quiet man', 'A pale woman', 'A tired cobbler', 'An old widow'])
         npc.fg = D.hexrgb('#a8aab4')
     m.mons.append(npc)
+    from . import craftguilds as CG
+    CG.dress_hall(game, m, pl, key, npc)
     return npc
 
 
@@ -309,10 +336,13 @@ def talk(game, npc):
     else:
         r = rank(game, key)
         text = (f'"Welcome back, {g["ranks"][r].lower()}." You stand at {s["rep"]} with {g["short"]}'
-                + (f'; {RANK_REP[r + 1] - s["rep"]} more for {g["ranks"][r + 1]}.' if r < 4 else '. There is no higher rank.'))
+                + ('; you have earned the next rank, and the master can raise you.' if r < 4 and s['rep'] >= RANK_REP[r + 1]
+                   else f'; {RANK_REP[r + 1] - s["rep"]} more for {g["ranks"][r + 1]}.' if r < 4 else '. There is no higher rank.'))
         if game.day - s['last'] > DECAY_AFTER - 3:
             text += ' "We have not seen you working for us lately. People forget."'
         opts.append(('Ask for work', 'work'))
+        from . import craftguilds as CG
+        opts += CG.master_options(game, key)
         for sid, rk, line, dr, price in TEACH.get(key, []) + combos_for(game, key):
             from .skills import SKILLS
             if sid in game.player.known:
@@ -405,6 +435,9 @@ def resolve(game, choice, ctx):
     g = GUILDS[key]
     s = state(game)[key]
     p = game.player
+    from . import craftguilds as CG
+    if choice and CG.resolve(game, choice, key):
+        return
     if choice.startswith('firsttome:'):
         from . import firststeps as FS
         FS.buy_guild_tome(game, choice.split(':', 1)[1])
@@ -493,6 +526,7 @@ def leave(game, key):
     s = state(game)[key]
     s['joined'], s['left'] = False, True
     s['rep'] = RANK_REP[max(0, rank(game, key) - 2)]            # leaving costs you your standing
+    s['paid'] = min(s['paid'], rank(game, key))
     s['board'] = []
     game.msg(f'You leave {g["name"]}.', 'info')
     if g['secret']:
@@ -628,6 +662,13 @@ def job_done(game, m):
     after = rank(game, key)
     if after > before:
         game.msg(f'{GUILDS[key]["name"]} raises you to {GUILDS[key]["ranks"][after]}.', 'unique')
+    elif GUILDS[key]['kind'] == 'life':
+        from . import craftguilds as CG
+        e = CG.earned(game, key)
+        if e > s['paid'] and s.get('told', -1) < e:
+            s['told'] = e
+            game.msg(f'You have earned the rank of {GUILDS[key]["ranks"][e]} with {GUILDS[key]["short"]}: '
+                     'the master will raise you, for the fee.', 'unique')
     if before >= 2 and random.random() < .2 + .1 * (before - 2):
         from .entities import random_gear
         it = random_gear(game, game.player.lvl + before, 2)

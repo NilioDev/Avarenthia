@@ -557,6 +557,8 @@ def shape_of(p):
 def player_look(p, bg, t):
     """Your @: in a beast's shape it takes the beast's colours, and shows burning and poison like any creature."""
     fg = (255, 246, 220)
+    from .craftguilds import livery_fg
+    fg = livery_fg(p) or fg                             # a livery sewn by the Needle and Loom: their colours
     sh = shape_of(p)
     if sh:
         fg, bg = SHAPES.get(sh, ((200, 170, 120), bg))

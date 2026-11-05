@@ -881,6 +881,7 @@ EVENTS = [('pirates', 'A pirate ship sets sail'), ('ship', 'A merchant ship sets
           ('warband', 'A warband marches on a hold'), ('wagons', 'Three wagons of your own join you'),
           ('wagonraid', 'Robbers fall on your wagons'), ('league', 'A League caravan races you'),
           ('happening', 'Something happens in this town'), ('lotus', 'Five black lotus in your cargo'),
+          ('guildday', "Today is this town's guild day"),
           ('realmwar', 'Two realms go to war'), ('star', 'A star falls')]
 
 
@@ -929,6 +930,16 @@ def force_event(game, kind):
         s = game.here
         got = TL.happening(game, game.map, s) if s is not None else None
         game.msg(f'Debug: {got}.' if got else 'Debug: not in a town.', 'info')
+        return None
+    elif kind == 'guildday':
+        from . import feasts as FE
+        s = game.here
+        if s is None:
+            game.msg('Debug: not in a town.', 'info')
+            return None
+        game.world.guild_day_now = (s.id, game.day)
+        FE.on_enter(game, game.map)
+        game.msg('Debug: the guild day, if a crafts guild has a hall here.', 'info')
         return None
     elif kind == 'realmwar':
         from . import realms as RL, landmarks as LM
@@ -986,7 +997,7 @@ def set_guild(game, key, rank):
     """Join a guild at a rank (0-4), past its rivals and its secrecy."""
     from . import guilds as GU
     st = GU.state(game)[key]
-    st.update(joined=True, found=True, left=False, rep=GU.RANK_REP[rank], last=game.day)
+    st.update(joined=True, found=True, left=False, rep=GU.RANK_REP[rank], last=game.day, paid=rank)
     game.msg(f"Debug: {GU.GUILDS[key]['short']}, {GU.rank_name(game, key)}.", 'info')
 
 

@@ -3716,7 +3716,8 @@ def realms():
                 (gx, gy), nm = MS_.target_pos(g, m2)
                 assert nm, key
     CAL.season = season
-    assert len(made) >= len(RJ.TASKS) - 4 and played >= 60      # some need a coast, a reef or a witch the world lacks, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
+    # some need a coast, a reef, a tribe or a witch the world lacks (macOS once made one fewer)
+    assert len(made) >= len(RJ.TASKS) - 6 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
     # the months of the courts, the hosts and the raids
     g.missions = []
     to_over(g, 0)
@@ -3750,7 +3751,7 @@ def realms():
     g2 = E.load_game()
     assert g2.world.realm.empire == R.empire and len(g2.world.history) == len(H)
     print('realms ok:', len(R.kingdoms), 'kingdoms,', len(R.houses), 'houses,', len(made), 'kinds of realm job,', played,
-          'choices played,', R.events, 'court events')
+          'choices played,', R.events, 'court events; this world lacks', sorted(set(RJ.TASKS) - set(made)))
 
 
 def stamina():
@@ -5789,6 +5790,141 @@ def affixes():
         ts = AF.roll(g, 'wolf', 3)
         assert all(t in AF.AFFIXES for t in ts) and 'Grave-bound' not in ts
     print('affixes ok')
+
+
+def craftguilds():
+    """Round 48: the crafts guilds. Four new guilds with halls among three peoples; ranks that ask the craft and a
+    fee; the guild's own bench free for members; the mark; the master's test and board; the secrets; the guild day."""
+    from avarenthia import guilds as GU, craftguilds as CG, crafts as CRF, lifeskills as LS, feasts as FE
+    from avarenthia import events as EV, saves as SV, mastery as MA, guide as GDE
+    print('== craftguilds')
+    app = new_app('soft', seed=48)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    halls = w.guild_halls
+    for k in CG.NEW:
+        assert len(halls[k]) >= 3 and len({w.settlements[i].race for i in halls[k]}) >= 3, (k, halls[k])
+        assert GU.GUILDS[k]['kind'] == 'life' and GU.GUILDS[k]['skills']
+    assert 'archaeology' in GU.GUILDS['carto']['skills'] and 'foraging' in GU.GUILDS['alembic']['skills']
+    # the hall of the Hammer and Tongs: the master and the guild's own anvil
+    sid = next(i for i in halls['hammer'] if w.settlements[i].race == 'human')
+    g.enter_town(sid)
+    m = g.map
+    master = next(o for o in m.mons if getattr(o, 'guild', None) == 'hammer')
+    bench = next(c for c, k in getattr(m, 'guild_bench', {}).items() if k == 'hammer')
+    assert m.tile(*bench) == D.ANVIL
+    p.x, p.y = next((bench[0] + dx, bench[1] + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                    if (dx or dy) and D.TILES[m.tile(bench[0] + dx, bench[1] + dy)].walk)
+    assert CG.bench_here(g) == 'hammer' and CRF.fee_here(g, CRF.ANVIL_FEE) == CRF.ANVIL_FEE
+    CRF.anvil(g)
+    assert 'members use it free' in g.pending['text']
+    g.pending = None
+    st = GU.state(g)['hammer']
+    GU.resolve(g, 'join', dict(guild='hammer'))
+    assert st['joined'] and CRF.fee_here(g, CRF.ANVIL_FEE) == 0
+    # ranks: the standing earns, the master raises you for the craft and the fee
+    st['rep'] = 200
+    assert GU.rank(g, 'hammer') == 0 and CG.earned(g, 'hammer') == 2
+    p.gold = 10 ** 6
+    opt = CG.raise_option(g, 'hammer')
+    assert opt and opt[0][1] is None                       # Smithing 0: greyed
+    p.life_sk['smithing'] = [22, 0]
+    assert CG.raise_option(g, 'hammer')[0][1] == 'raise'
+    gold = p.gold
+    GU.resolve(g, 'raise', dict(guild='hammer'))
+    GU.resolve(g, 'raise', dict(guild='hammer'))
+    assert GU.rank(g, 'hammer') == 2 and gold - p.gold == CG.FEE[1] + CG.FEE[2]
+    # the mark from Journeyman: in the name, a sixth more, the hall buys it
+    CRF.give(g, 'bar_iron', 6)
+    CRF.make(g, 'smithing', 'spear', 'iron')
+    spear = next(i for i in p.inv if i.k == 'gear' and getattr(i, 'made', None) and i.made[0] == 'smithing')
+    assert spear.gmark == 'hammer' and spear.name.endswith('Hammer mark'), spear.name
+    plain = spear.value()
+    spear.gmark = None
+    assert plain > spear.value()
+    spear.gmark = 'hammer'
+    opts = CG.master_options(g, 'hammer')
+    assert any(o[1] == 'cgsell' for o in opts) and any(o[1] == 'cgorder' for o in opts)
+    GU.talk(g, master)
+    assert any(o[1] == 'cgsell' for o in g.pending['options'])
+    g.pending = None
+    # the master's board: one order at a time, better paid
+    o1 = CG.make_order(g, 'hammer')
+    assert o1 and o1.guild == 'hammer' and o1 in g.missions and CG.order_for(g, 'hammer') is o1
+    assert next(o for o in CG.master_options(g, 'hammer') if 'board' in o[0])[1] is None
+    # the master's test: Smithing 25 shown in the hall
+    p.life_sk['smithing'] = [25, 0]
+    MA.need_test(g, 'smithing', 25)
+    t = next(x for x in g.missions if x.kind == 'mastertest')
+    assert any(o[1] == f'cgtest:{t.id}' for o in CG.master_options(g, 'hammer'))
+    for _ in range(3):
+        CRF.give(g, 'bar_deepiron', 4)
+        CRF.make(g, 'smithing', 'dagger', 'deepiron')
+    CG.hand_in_test(g, t.id)
+    assert ('smithing', 25) in p.life_tests
+    gold = p.gold
+    CG.sell_marked(g, 'hammer')
+    assert p.gold > gold and not CG.marked_work(g, 'hammer')
+    # the secret at Master: re-temper, once a piece
+    p.life_sk['smithing'] = [32, 0]
+    st['rep'] = 400
+    GU.resolve(g, 'raise', dict(guild='hammer'))
+    assert GU.rank(g, 'hammer') == 3 and any(o[1] == 'secret' for o in CG.master_options(g, 'hammer'))
+    CRF.give(g, 'bar_bloodstone', 4)
+    CRF.make(g, 'smithing', 'dagger', 'bloodstone')
+    blade = next(i for i in p.inv if getattr(i, 'made', (0, ''))[1] == 'bloodstone')
+    CG.secret(g, 'hammer')
+    ch = next(o[1] for o in g.pending['options'] if o[1] and o[1].startswith('temper:'))
+    EV.RESOLVERS['cgsecret'](g, ch, g.pending['ctx'])
+    assert blade.tempered
+    # the Lodge: mounting a named beast's head, a gift for a lord
+    from avarenthia.entities import Item
+    part = Item(g.new_id(), 'npart', 'fang')
+    part.beast, part.rank, part.word, part.nid = 'Old Ripfang', 'notorious', 'fang', None
+    p.inv.append(part)
+    CG.r_secret(g, f'mount:{part.id}', {})
+    tr = next(i for i in p.inv if i.k == 'trophy')
+    assert 'Ripfang' in tr.display_name() and tr.value() > 0 and CG.trophy_option(g)
+    # the Needle and Loom: a livery in a people's colours, the @ wears it
+    CRF.give(g, 'cloth_wool', 1)
+    CG.r_secret(g, 'livery:human', {})
+    from avarenthia import anim as AN
+    assert p.livery == 'human' and AN.player_look(p, (0, 0, 0), 0)[0] == CG.LIVERY['human'][0]
+    s2 = next(s for s in w.settlements if s.race == 'human' and s.id != sid)
+    rep = s2.rep
+    CG.on_enter_town(g, s2)
+    CG.on_enter_town(g, s2)
+    assert s2.rep == min(100, rep + 3)
+    # the guild day: in the hall town once a year, a contest
+    s = w.settlements[sid]
+    day = next(d for d in range(1, 400) if CG.days_today(g, s, d))
+    assert any(f['key'] == 'guild_hammer' for f in FE.today(g, s, day))
+    CRF.give(g, 'bar_moonsilver', 4)
+    p.life_sk['smithing'] = [40, 0]
+    CRF.make(g, 'smithing', 'dagger', 'moonsilver')
+    bars = CRF.count(g, 'bar_moonsilver')
+    random.seed(48)
+    assert all(CG.contest(g, 'hammer') for _ in range(12))
+    assert CRF.count(g, 'bar_moonsilver') > bars                # won at least once: the prize
+    assert 'guildmark' in GDE.TIPS
+    # the streets and happenings: a smith short of a hand, a journeyman on his wander year
+    from avarenthia import townlife as TL
+    assert set(CG.happenings(g, s)) == {'strongarm', 'journeyman'}
+    for kind in ('strongarm', 'journeyman'):
+        assert TL.happening(g, m, s, kind) == kind
+        npc = next(o for o in m.mons if o.role == kind)
+        assert TL.talk_life(g, npc)
+    lodge = w.settlements[halls['lodge'][0]]
+    g.enter_town(lodge.id)
+    assert any(v[0] == '‡' for v in (getattr(g.map, 'over', None) or {}).values()) or not getattr(g.map, 'guild_bench', None)
+    # an old save: the halls come, and a rank already held stays
+    del w.guild_halls['hammer']
+    GU.state(g)['alembic'].update(rep=200, joined=True)
+    del GU.state(g)['alembic']['paid']
+    SV._craftguilds(g)
+    assert w.guild_halls['hammer'] and GU.rank(g, 'alembic') == 2
+    print('craftguilds ok:', {k: len(halls[k]) for k in CG.NEW}, 'halls')
 
 
 def folk():
@@ -10810,7 +10946,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

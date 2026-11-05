@@ -37,11 +37,24 @@ def _affixes(g):
                 mon.mods = new
 
 
+def _craftguilds(g):
+    """68: the four crafts guilds get their halls in an old world; who already held a crafts guild rank keeps it."""
+    w = getattr(g, 'world', None)
+    if w is not None and 'hammer' not in getattr(w, 'guild_halls', {}):
+        from .craftguilds import setup
+        setup(w)
+    from . import guilds as GU
+    for k, s in getattr(g, 'guilds', {}).items():
+        if k in GU.GUILDS and GU.GUILDS[k]['kind'] == 'life' and 'paid' not in s:
+            s['paid'] = max(i for i, v in enumerate(GU.RANK_REP) if s.get('rep', 0) >= v)
+
+
 MIGRATIONS = {
     64: ('the kill count moved to the tally', _tally, False),
     65: ('the marks of creatures renamed', _affixes, False),
     66: ('folk in need: their needs on the world, who you helped on the player', None, False),
     67: ('folk in need: twists, seeds, follow-ups and graves', None, False),
+    68: ('the crafts guilds: four new guilds, their halls, ranks raised by the master', _craftguilds, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

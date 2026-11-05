@@ -510,7 +510,7 @@ three things. Test part `boss_moves`.
 - **Bench, test and mark** - the guild bench free for members and paid for others; the master's test in the hall; the
   mark in an item's name and its better price. Debug: set guild rank, give materials (Give item).
 - **Board, secrets, day** - the master's board orders; each of the four secrets; the guild day's stalls and contest.
-  Debug: set guild rank to Master, Time (skip to the guild day).
+  Debug: set guild rank to Master, Events "Today is this town's guild day".
 - **Streets and happenings** - the smiths', tanners' and weavers' streets in a city; the quarrel over the water, the
   strong arm, the journeyman. Debug: Teleport to a city, "Town: make a happening".
 - **Guild jobs** - each of the seven kinds from a guild master; the quarrel's three ways (side, side, mediate) with

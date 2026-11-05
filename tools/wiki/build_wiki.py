@@ -591,6 +591,18 @@ add('folk', 'World', 'Folk in need', '<p>Ordinary people with a need from the wo
     f'<h3 class="gh">The seeds ({len(FDW.SEEDS)})</h3><div class="tw"><table><tr><th>Title</th><th>Where</th>'
     f'<th>Steps</th><th>Twist</th></tr>{fs_rows}</table></div>')
 
+# ---------------------------------------------------------------- the crafts guilds
+import avarenthia.guilds as GUW
+import avarenthia.craftguilds as CGW
+cg_rows = ''.join(f'<tr class="entry"><td>{e(g["name"])}</td><td>{e(", ".join(g["skills"]))}</td>'
+                  f'<td>{e(" - ".join(g["ranks"]))}</td><td>{e(CGW.SECRET.get(k, ""))}</td></tr>'
+                  for k, g in GUW.GUILDS.items() if g['kind'] == 'life')
+add('craftguilds', 'World', 'The crafts guilds', '<p>' + e(CGW.__doc__.strip().splitlines()[0]) + ' ' + badge('built') + '</p>',
+    '<p>A rank asks the craft at ' + e(', '.join(str(n) for n in CGW.CRAFT_NEED[1:])) + ' and a fee of '
+    + e(', '.join(f'{n}c' for n in CGW.FEE[1:])) + ' copper when the master raises you.</p>'
+    f'<div class="tw"><table><tr><th>Guild</th><th>Skills</th><th>Ranks</th><th>Secret at Master</th></tr>{cg_rows}'
+    '</table></div>')
+
 # ---------------------------------------------------------------- the boss maker
 import avarenthia.bossmaker as MKW
 bm_rows = ''.join(f'<tr class="entry"><td>{e(k)}</td><td>{e(", ".join(v["mon"] or list(MKW.BODIES)))}</td>'

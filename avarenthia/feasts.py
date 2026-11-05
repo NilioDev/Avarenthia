@@ -123,6 +123,23 @@ FEASTS = [
          deco='¥', acts=[('Hear the amnesty read', 'amnesty')]),
 ]
 BY_KEY = {f['key']: f for f in FEASTS}
+# the crafts guilds' days, in their hall towns (craftguilds.days_today)
+GUILD_DAYS = {k: dict(key='guild_' + k, name=n, fig=f, sight=t, deco='♦', who='guild',
+                      acts=[('Enter your best piece in the contest', 'contest:' + k), ('Walk the stalls and listen', 'rumour')])
+              for k, n, f, t in (
+                  ('hammer', 'The Day of the Anvil', 'A judge in a leather apron',
+                   'The Hammer and Tongs keep their day: forges open to the street, stalls of blades and pots, and a '
+                   'contest for the best piece.'),
+                  ('lodge', 'The Lodge Day', 'A judge with hides over the arm',
+                   'The Tanners\' Lodge keeps its day: pelts hung out on poles, boots and saddles on the stalls, and a '
+                   'contest for the best piece.'),
+                  ('needle', 'The Day of the Loom', 'A judge with a measuring tape',
+                   'The Needle and Loom keep their day: bolts of cloth over the stalls, banners in the street, and a '
+                   'contest for the best piece.'),
+                  ('ladle', 'The Day of the Ladle', 'A judge with a wooden spoon',
+                   'The Lantern and Ladle keep their day: long tables in the street, pots on every fire, and a contest '
+                   'for the best dish.'))}
+BY_KEY.update({f['key']: f for f in GUILD_DAYS.values()})
 FAIR = dict(key='fair', name='The Fair of Skell', fig='A showman of the travelling fair',
             sight='The travelling fair is in town for a week: stalls, jugglers and a merry-go-round, traders who pay '
                   'well, and thieves who know it.', deco='♦', acts=[('Try your luck at the fair', 'coin:30'),
@@ -206,6 +223,8 @@ def today(game, place=None, day=None):
         out = [f for f in FEASTS if _on(day, f['when']) and keeps(game, place, f['who'])]
         if has_fair(game, place, day):
             out.append(FAIR)
+        from . import craftguilds as CG
+        out += CG.days_today(game, place, day)
     else:
         out = [f for f in FEASTS if _on(day, f['when']) and keeps_site(place, f['who'])]
     return out
@@ -372,6 +391,10 @@ def do(game, f, kind, args, npc=None):
         from . import hunger as HU
         p.food = HU.MAX
         game.msg('You eat your fill, and nobody asks you for a coin.', 'good')
+    elif kind == 'contest':
+        from . import craftguilds as CG
+        if not CG.contest(game, args[0], npc):
+            p.__dict__.setdefault('feasts', set()).discard((f'{f["key"]}:0', _year(game)))
     elif kind == 'rumour':
         if npc is not None:
             game.say(npc, game.rumor())

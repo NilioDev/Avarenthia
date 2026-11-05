@@ -374,6 +374,8 @@ class Item:
             v = round(D.BASES[self.base]['val'] * (1 + (D.RARITY_MULT[self.rar] - 1) * .4))
         elif self.cursed:
             v //= 3
+        if getattr(self, 'gmark', None):            # the mark of a crafts guild: merchants pay a sixth more
+            v = round(v * 1.15)
         return v
 
     def id_cost(self):

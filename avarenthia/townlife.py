@@ -282,6 +282,8 @@ def on_enter(game, m):
     dress(game, m)
     from . import folkquests as FQ
     FQ.on_enter(game, m)                            # folk in need (round 46)
+    from . import craftguilds as CG
+    CG.ensure_halls(game, m)                        # a crafts guild hall the town plan had no room for
     from . import feasts as FE
     FE.on_enter(game, m)
     pp = m.people
@@ -485,6 +487,8 @@ def happening(game, m, s, kind=None):
     inn = next((b for b in blds if b['kind'] == 'inn'), None)
     temple = next((b for b in blds if b['kind'] in ('temple', 'healer')), None)
     kinds = [k for k in HAPPENINGS if (k != 'brawl' or inn) and (k != 'funeral' or temple)]
+    from . import craftguilds as CG
+    kinds += CG.happenings(game, s)                 # a smith wants a strong arm, a journeyman on his wander year
     kind = kind or random.choice(kinds)
     if kind not in kinds:
         return None
@@ -515,6 +519,15 @@ def happening(game, m, s, kind=None):
             n.home_pos = n.work_pos
             n.path = []
         game.msg('A bell tolls slowly: a funeral goes through the streets to the temple.', 'info')
+    elif kind in ('strongarm', 'journeyman'):
+        c = _free_near(m, cx, cy, 2, 10, _outdoor(m))
+        if not c:
+            return None
+        if kind == 'strongarm':
+            _npc(game, m, f'{names.pop()}, a smith short of a hand', 'strongarm', '#e0a070', c[0], c[1], 'strongarm', stay=True)
+        else:
+            n = _npc(game, m, f'{names.pop()}, a journeyman on the road', 'journeyman', '#c8b890', c[0], c[1], 'journeyman')
+            n.bound = CG.next_hall(game, s)
     elif kind == 'pickpocket':
         c = _free_near(m, cx, cy, 4, 12, _outdoor(m))
         if not c:
@@ -589,6 +602,10 @@ def talk_life(game, npc):
         if hasattr(p, 'food') and not getattr(m, 'cake', None) == game.day:
             m.cake = game.day
             p.food = min(p.food + 120, 1200)
+        return True
+    if role in ('strongarm', 'journeyman'):
+        from . import craftguilds as CG
+        CG.talk_happening(game, npc)
         return True
     if role == 'pickpocket':
         took = getattr(npc, 'took', None)

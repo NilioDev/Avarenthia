@@ -421,6 +421,8 @@ def on_enter(game, sid):
     JB.on_enter(game, sid)
     from . import folkquests as FQ
     FQ.on_enter_town(game, sid)
+    from . import craftguilds as CG
+    CG.on_enter_town(game, game.world.settlements[sid])
 
 
 def on_group_defeated(game, wd):

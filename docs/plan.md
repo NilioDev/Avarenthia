@@ -87,7 +87,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     from the world, the grammar, rewards, who remembers you. 47. **Part 2** (L; built 5 November 2026): twists, favours, the 120 seeds.
     Merge after 47.
 48. **Block 14: the crafts guilds** (added 5 November 2026; after folk in need, whose maker makes the guild jobs).
-    48. **Crafts guilds** (XL): the four new guilds and their halls, ranks, the guild bench, the master's test in the
+    48. **Crafts guilds** (XL; built 5 November 2026): the four new guilds and their halls, ranks, the guild bench, the master's test in the
     hall, the guild mark, the master's board, the secrets, the guild day, their streets. 49. **Guild jobs** (L): the
     seven kinds, the quarrel over the water and its consequences, the founder's heirlooms. Merge after 49.
 50. **Block 15: more makers.** 50. **Part 1** (XL): the fallen dwarf hold, real mines, sewers, catacombs, the castle

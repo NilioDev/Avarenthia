@@ -217,14 +217,18 @@ def anvil(game):
     extra(game, 'smithing', opts)
     opts.append(('Leave', 'leave'))
     r = LS.rank(game, 'smithing')
+    from . import craftguilds as CG
     fee = fee_here(game, ANVIL_FEE)
     EV.ask(game, 'anvil', 'The anvil', 'Hammer, tongs and a forge that is still warm.' +
-           (f' The use of the forge costs {fmt(fee)}.' if fee else '') + (f'\n\nSmithing {r}.' if r else ''), opts)
+           (f' The use of the forge costs {fmt(fee)}.' if fee else '') + CG.bench_line(game) + (f'\n\nSmithing {r}.' if r else ''), opts)
 
 
 def fee_here(game, fee):
     """In a town the smith or the tanner wants paying for the use of the forge or the bench; in the wild it is free."""
-    return fee if game.map.kind == 'town' else 0
+    if game.map.kind != 'town':
+        return 0
+    from . import craftguilds as CG
+    return 0 if CG.free_bench(game) else fee
 
 
 def pay(game, fee):
@@ -405,8 +409,9 @@ def bench(game):
     extra(game, 'tailoring', opts)
     opts.append(('Leave', 'leave'))
     fee = fee_here(game, BENCH_FEE)
+    from . import craftguilds as CG
     EV.ask(game, 'bench', 'The workbench', 'Awls, needles, waxed thread, shears and a heavy knife.' +
-           (f' The use of the bench costs {fmt(fee)}.' if fee else '') +
+           (f' The use of the bench costs {fmt(fee)}.' if fee else '') + CG.bench_line(game) +
            (f'\n\nLeatherworking {rl}, Tailoring {rt}.' if rl or rt else ''), opts)
 
 
@@ -578,6 +583,8 @@ def make(game, craft, k, m, feel=None, parts=()):
         if getattr(it, 'named_part', None):
             from .named import poss
             it.name = f'{poss(it.named_part)} {bname}'
+        from . import craftguilds as CG
+        CG.mark(game, it, craft)
         game.add_to_inv(it) or game.spill(game.map, p.x, p.y, it)
         game.msg(f'You make {it.name}' + (f', {it.feel}' if getattr(it, 'feel', None) else '') + '.',
                  'gold' if q == 'masterwork' else 'good')

@@ -1089,6 +1089,8 @@ def ch_crafts(g):
         ('p', 'Walk into an anvil to smelt ore into bars, to forge, to mend your metal gear for a bar or a load of ore, '
               'or to hone your blade for a while. Smithing makes every metal weapon, mail and plate, helms, shields, '
               'gauntlets and greaves, and tools: a pick, a skinning knife, fish hooks.'),
+        ('p', 'In a town the anvil and the bench cost a few coppers to use; in its own hall a crafts guild lets its '
+              'members work free. See Guilds.'),
         ('h', 'Tailoring and leather'),
         ('p', 'At a workbench, Tailoring makes quilted armour, robes, caps, hoods, sashes, wraps and soft shoes, '
               'each warm or cool as you choose; and bandages, rope and a fishing net. Warm clothes keep the cold '
@@ -1177,6 +1179,20 @@ def ch_guilds(g):
               'mana alike; the Hollow Coven\'s techniques cost life as well.'),
         ('p', 'Standing with a guild fades slowly if you do nothing for it, but never below your rank.'),
         ('p', 'Some guilds hang out no sign. Listen for rumours, and watch for chalk marks on the walls.'),
+        ('h', 'The crafts guilds'),
+        ('p', 'Every life skill has a guild that keeps it: the Hammer and Tongs smiths and miners, the Tanners\' and '
+              'Trappers\' Lodge hunters, skinners and leatherworkers, the Needle and Loom tailors, the Lantern and Ladle '
+              'cooks and brewers, Alembic and Barrel alchemists, brewers and herbalists, the Cartographers foragers and '
+              'diggers, the Brotherhood of the Net fishers. Their halls stand among several peoples.'),
+        ('p', 'A crafts guild\'s jobs earn your standing, but the master raises you only when your craft is good enough, '
+              'about 10, 20, 30 and 40, and for a fee at each rank instead of dues. In the hall stands the guild\'s own '
+              'anvil, bench or hearth: members use it free. The master also judges the tests at 25 and 40, so the far '
+              'master need not, and keeps a board of better paid orders, one at a time.'),
+        ('p', 'From Journeyman what you make carries your guild\'s mark in its name: merchants pay more for it, and '
+              'the hall always buys it. A Master learns the guild\'s secret: the smiths re-temper a piece, the Lodge '
+              'mounts a named beast\'s head for a lord, the Needle and Loom sew a livery in a people\'s colours, the '
+              'Ladle cooks a table for the whole inn. Once a year each hall keeps its guild day, with a contest for '
+              'your best piece.'),
     ]
 
 

@@ -1573,6 +1573,8 @@ def talk(game, npc):
             opts.append(('Swear fealty to this lord', 'fealty'))
     from . import folkquests as FQ
     opts += FQ.option(game, 'lord')
+    from . import craftguilds as CG
+    opts += CG.trophy_option(game)
     opts.append(('Goodbye', 'bye'))
     EV.ask(game, 'lord', style(R, lo, False), f'{greeting(game, lo)}\n\n{describe_lord(R, lo)} The arms of House {h.name}: '
            f'{arms_words(h.arms)}. "{h.motto}."', opts, lid=lo.id, npc=npc.id)
@@ -1619,6 +1621,12 @@ def r_lord(game, choice, ctx):
             kg = kingdom_of_lord(R, lo)
             add_favour(game, kg.id if kg else None, 6)
             game.say(npc, 'So you helped my people. Good. I will remember it.')
+    elif choice == 'trophy':
+        from . import craftguilds as CG
+        if CG.give_trophy(game):
+            kg = kingdom_of_lord(R, lo)
+            add_favour(game, kg.id if kg else None, 5)
+            game.say(npc, 'A fine head. It will hang in the hall, and people will ask who brought it.')
 
 
 def court_news(game, lo):
