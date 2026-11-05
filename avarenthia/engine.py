@@ -1182,6 +1182,11 @@ class Game:
             spent = BS.bump(self, nx, ny, t)
             if spent is not None:
                 return spent
+        if getattr(m, 'win', None) and t == D.ALTAR:
+            from . import arenas as AR
+            spent = AR.bump_altar(self, nx, ny)
+            if spent is not None:
+                return spent
         if t in VN.BUMP or getattr(m, 'vn', None):
             spent = VN.bump(self, nx, ny)
             if spent is not None:
@@ -1650,6 +1655,8 @@ class Game:
                 self.request = ('save',)
             if m.depth == 1:
                 MK.left(self, dg)
+                from . import arenas as AR
+                AR.leaving(self, dg)
             else:
                 self.enter_dungeon(m.did, m.depth - 1, 'down')
             return 1
@@ -2643,6 +2650,9 @@ class Game:
         if EP.time_stopped(self):
             return                                      # Time Stop: only you move
         BS.tick(self)
+        if getattr(self.map, 'win', None):
+            from . import arenas as AR
+            AR.turn(self)
         if self.cur != key:
             return
         for mon in m.mons[:]:

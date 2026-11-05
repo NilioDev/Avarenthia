@@ -1379,6 +1379,8 @@ def felled(game, mon):
     if st(mon) is None:
         return
     game.banner = ['FOE FELLED', None]
+    from . import arenas as AR
+    AR.felled(game, mon)
     if mon.__dict__.get('maker'):
         from . import bossmaker as MK
         MK.felled(game, mon)
@@ -1520,6 +1522,9 @@ def build(game, m, boss):
         m.set(c[0], c[1], D.ROTTEN)
         ar['rotten'] = c
     furnish(game, m, boss, ar)
+    from . import arenas as AR
+    AR.dress(game, m, boss, ar)                             # the room fits its place (round 53)
+    AR.way_out(game, m, ar)
 
 
 def _inner(m, ar, c, room, gap=2):
@@ -1633,6 +1638,8 @@ def seal(game, ar):
     game.shake()
     from . import guide as GD
     GD.tip(game, 'shut')
+    from . import arenas as AR
+    AR.told_style(game, ar)
 
 
 def open_up(game, ar, fell):
@@ -1675,6 +1682,10 @@ def bump(game, x, y, t):
     ar = m.__dict__.get('arena')
     if not ar:
         return None
+    from . import arenas as AR
+    got = AR.bump(game, x, y, t)
+    if got is not None:
+        return got
     if t == D.VEIL:
         if (game.player.x, game.player.y) in set(map(tuple, ar['cells'])):
             return None                                       # from the inside it is only mist

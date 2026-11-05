@@ -331,13 +331,15 @@ def felled(game, mon):
 
 
 # ------------------------------------------------------------------ the jobs
-BOSS_JOBS = ('nest', 'shrine', 'boats', 'missing', 'deserter')
+BOSS_JOBS = ('nest', 'shrine', 'boats', 'missing', 'deserter', 'bigone', 'relic')
 
 
 def for_job(game, m, lvl):
     """Give a job its boss, and the rumour to its text."""
     s = game.world.settlements[m.giver] if m.giver is not None else None
     spec = draw(game, lvl, base=_base_for(m.kind), town=s.name if s else None)
+    if m.kind == 'bigone':                                  # the big one is a fish, or near enough (arenas.py)
+        spec['mon'] = random.choice([k for k in ('crocodile', 'octopus') if k in D.MONSTERS] or [spec['mon']])
     m.data['bspec'] = spec
     m.desc += f' {spec["rumour"]}'
     return m
@@ -346,7 +348,8 @@ def for_job(game, m, lvl):
 def _base_for(kind):
     return {'nest': random.choice(['beast', 'chief', 'beast']), 'shrine': random.choice(['cult', 'necromancer', 'deadlord']),
             'boats': random.choice(['beast', 'witch', 'pirate']), 'missing': random.choice(['band', 'witch', 'fey']),
-            'deserter': random.choice(['champion', 'band', 'hunter'])}.get(kind)
+            'deserter': random.choice(['champion', 'band', 'hunter']), 'bigone': 'beast',
+            'relic': random.choice(['deadlord', 'cult', 'necromancer'])}.get(kind)
 
 
 def wrap(kind, fn):
@@ -375,6 +378,8 @@ def on_fight(game, m, wild):
     if 'twinned' in spec['traits']:
         twin(game, mon, spec)
     game.msg(f'{mon.name} is here. {spec["rumour"]}', 'bad')
+    from . import arenas as AR
+    AR.other_win(game, m, wild, mon)
 
 
 def make_head(game, s):

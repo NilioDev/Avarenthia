@@ -517,7 +517,9 @@ def theme_level(game, what):
     'river:fire'); you stand at the theme room's door, or on the river bank."""
     from . import pieces as PC, themes as TH, underground as UG
     w = game.world
-    did = next(k for k, d in w.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3)
+    from . import delves as DV
+    did = next(k for k, d in w.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3
+               and DV.plan_for(d, 3) is None)
     d = w.dungeons[did]
     real = PC.pick, UG.CHANCE, UG.FIRE_SHARE, UG.FIRE_FROM
     pc = PC.by_name(what)
@@ -765,7 +767,7 @@ def item_list():
     for k, v in FD.FAVOURS.items():
         out.append(('favour', 'Favour: ' + v[0].format(who='Hob'), ('favour', k)))
     for t, nm in (('rope', 'Coil of Rope'), ('bedroll', 'Bedroll'), ('tent', 'Tent and Bedroll'), ('kit', 'Repair Kit'),
-                  ('trowel', "Digger's Trowel")):
+                  ('trowel', "Digger's Trowel"), ('rod', 'Fishing Rod')):
         out.append(('tool', nm, ('tool', t)))
     out += [('old piece', 'Old piece, tier C', ('oldpiece', False, 25)), ('old piece', 'Varnish piece, tier D', ('oldpiece', True, 35)),
             ('curio', 'A shard of star-iron', ('curio', 'stariron'))]

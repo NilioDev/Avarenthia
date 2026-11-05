@@ -346,6 +346,8 @@ def place_relic(game, mp, m):
     mp.items.append(it)
     d = game.world.dungeons[m.data['dungeon']]
     spawn_pack(game, mp, d.base + d.depth + 1, d.tag, best, elite=2, awake=False)
+    from . import arenas as AR
+    AR.relic_guard(game, mp, m, best)                  # its keeper, a boss of its own
 
 
 def complete(game, m, sids):

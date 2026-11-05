@@ -180,6 +180,22 @@ def spawn_pack(game, m, lvl, tag, center, elite=None, awake=False):
     return elite > 0
 
 
+def people_near(game, d):
+    """Who lives near a place: the people of the nearest settlement, glade or gnome hamlet within 30."""
+    w = game.world
+    best, who = 31, None
+    for s in w.settlements:
+        dd = cheb(s.x, s.y, d.x, d.y)
+        if dd < best:
+            best, who = dd, s.race
+    for st in w.sites:
+        if st.kind in ('glade', 'gnomes'):
+            dd = cheb(st.x, st.y, d.x, d.y)
+            if dd < best:
+                best, who = dd, 'elf' if st.kind == 'glade' else 'gnome'
+    return who
+
+
 def gen_k5(m):
     """A classic dungeon level from the K5 maker (k5.py): rooms of many shapes, main and narrow ways, lakes, and
     2 or 3 theme rooms drawn as pieces (pieces.py, themes.py). Keeps on the map which room each cell belongs to
@@ -190,7 +206,8 @@ def gen_k5(m):
     from . import underground as UG
     tag, depth = getattr(m, 'dtag', 'crypt'), getattr(m, 'depth', 1) or 1
     n = random.choice((2, 2, 3)) if m.w >= 100 else 1
-    themes = [(pc, PC.drawn(pc)) for pc in PC.pick('middle', tag, depth, n)]
+    people = getattr(m, 'people', None)                 # a theme room in the way of the people who live near
+    themes = [(pc, PC.drawn(pc)) for pc in PC.pick('middle', (tag, f'people:{people}' if people else None), depth, n)]
     arr = PC.pick('arrival', tag, depth, 1) if random.random() < .3 else []
     low = PC.pick('bottom', tag, depth, 1) if getattr(m, 'last', False) and random.random() < .6 else []
     plan = k5.make(m.w, m.h, themes=themes, arrival=(arr[0], PC.drawn(arr[0])) if arr else None,
@@ -254,6 +271,7 @@ def gen_dungeon(game, did, depth):
     m = GameMap(f'{did}:{depth}', 'dungeon', d.name, dw, dh, ROCK if style == 'cave' else WALL)
     m.did, m.depth, m.level, m.radius, m.wall_fg = did, depth, lvl, 7, d.wall
     m.dtag, m.last, m.style = d.tag, last, style
+    m.people = people_near(game, d)
     m.mine_rock = d.tag == 'deep' or did == 'mine'           # now and then a glint of ore in the rock
     from . import delves as DV
     kind = DV.plan_for(d, depth)

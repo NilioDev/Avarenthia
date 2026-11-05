@@ -1030,6 +1030,9 @@ def talk(game, npc):
     if role == 'prisoner':
         from . import makers as MK
         return MK.talk(game, npc)
+    if role == 'captive':
+        from . import arenas as AR
+        return AR.talk_captive(game, npc)
     if role in ('settler', 'defender'):
         from . import makers as MK
         return MK.talk_state(game, npc)

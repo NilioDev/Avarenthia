@@ -513,6 +513,38 @@ def s_theme(game, n, part='middle'):
         game.msg(f'Test: the theme room {pc.name}, {n % len(pcs) + 1} of {len(pcs)}.', 'info')
 
 
+def s_people_room(game, n):
+    """The next theme room of a people (pieces with KIND people:...)."""
+    from . import pieces as PC
+    pcs = [pc for pc in PC.load() if pc.part == 'middle' and any(k.startswith('people:') for k in pc.kinds)]
+    if not pcs:
+        game.msg('Test: no rooms of a people among the pieces.', 'bad')
+        return
+    pc = pcs[n % len(pcs)]
+    DBG.theme_level(game, pc.name)
+    game.msg(f'Test: the theme room {pc.name}, {n % len(pcs) + 1} of {len(pcs)}.', 'info')
+
+
+def s_entry(game, n):
+    """The first level of the next kind of place with a way in of its own (delves.ENTRY)."""
+    from . import delves as DV
+    ds = {}
+    for d in sorted(game.world.dungeons.values(), key=lambda d: d.id):
+        k = DV.plan_for(d, 1)
+        if k in DV.ENTRY and k not in ds:
+            ds[k] = d
+    if not ds:
+        game.msg('Test: no place with a way in of its own in this world.', 'bad')
+        return
+    k = sorted(ds)[n % len(ds)]
+    d = ds[k]
+    DBG.to_over(game, d.x, d.y)
+    game.maps.pop(f'{d.id}:1', None)
+    game.enter_dungeon(d.id, 1, 'down')
+    game.msg(f'Test: the way into {d.name} ({k}), {n % len(ds) + 1} of {len(ds)}.', 'info')
+    game.request = ('save',)
+
+
 def s_puzzle(game, n, wired=False):
     """The next example puzzle room (pieces/puzzles.des); wired: only rooms with switches or counters."""
     from . import pieces as PC
@@ -593,7 +625,7 @@ STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'de
          'days': s_days, 'month': s_month, 'hour': s_hour, 'weekday': s_weekday, 'feast': s_feast, 'fair': s_fair,
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
-         'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'puzzle': s_puzzle,
+         'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'peopleroom': s_people_room, 'entry': s_entry, 'puzzle': s_puzzle,
          'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall,
          'maker': s_maker}
 
@@ -686,6 +718,8 @@ R = {
     'The K5 maker :: Arrival and bottom rooms': [('theme', 'bottom'), SCHOOLS_NOTE],
     'The K5 maker :: Rivers underground': [('dbgnext', 'theme_level', 'river:water', 'river:fire')],
     'The K5 maker :: Rock you can see, mood lines of plain rooms, sizes': [('deep', 'dungeon', 1), SCHOOLS_NOTE],
+    'The K5 maker :: Rooms of a people': [('peopleroom',)],
+    'The K5 maker :: The way in': [('entry',)],
     # Places part 1
     'Places on their own land, part 1 :: Temples of every people': [('to', 'temple'), SCHOOLS_NOTE],
     'Places on their own land, part 1 :: The older bottom': [('dbg', 'old_tale'), ('to', 'temple', None, 'older')],
@@ -771,6 +805,13 @@ R = {
     'Boss fights :: Helpers and twins': [('boss', 'fixed'), ('dbg', 'boss', 'twin')],
     'Boss fights :: The arena': [('boss', 'fixed'), ('dbg', 'boss', 'seal')],
     'Boss fights :: Roaming bosses': [('boss', 'roam'), SCHOOLS_NOTE],
+    'Boss fights :: Arenas by place and ways out': [('flag', 'god'), ('bossfloor',), ('dbg', 'reveal_map'), SCHOOLS_NOTE],
+    'Boss fights :: The place answers': [('flag', 'god'), ('bossfloor',),
+                                         ('note', 'kill the boss, then go up and out into the daylight.')],
+    'Boss fights :: Won another way': [('lvl', 10), ('to', 'town', None, 'human'), ('job', 'shrine', 'boats', 'missing'),
+                                       SCHOOLS_NOTE],
+    'Boss fights :: The big one and the relic': [('lvl', 10), ('to', 'town', None, 'human'), ('job', 'bigone', 'relic'),
+                                                 ('give', 'Fishing Rod'), SCHOOLS_NOTE],
     'Boss fights :: Hirelings in a boss fight': [('hire', 'defender', 'warrior', 'archer', 'healer', 'mage'),
                                                  ('boss', 'fixed')],
     # Places of today

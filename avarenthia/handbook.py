@@ -172,8 +172,16 @@ def ch_fighting(g):
               'lives, a mender heals it, a channeler feeds its next great blow. Choose who falls first. Its great '
               'blows strike its own helpers too.'),
         ('p', 'An end boss waits behind a veil of mist, the sign {░}. Once you step through, the room shuts at the '
-              'first blow: no rest inside and no portal, and one hard way out, a rotten wall, the sign {#}, that gives '
-              'after five blows. A boss you flee from heals, and is ready for you next time.'),
+              'first blow: no rest inside and no portal, and one hard way out: a rotten wall, the sign {#}, that gives '
+              'after five blows; or a rope up through the roof, the sign {§}; or a hole down to the level below, the '
+              'sign {Ø}. A boss you flee from heals, and is ready for you next time.'),
+        ('p', 'The room fits its place: pillars in a temple nave, statues among the tombs, a pool of molten metal in '
+              'a forge, a lake\'s edge in a cave, trees in a glade, the high seat in a lord\'s hall. When the master '
+              'of a place falls, or two of its bosses do, the place answers as you come out: it falls in for good, or '
+              'it wakes, and more and worse come to it.'),
+        ('p', 'Some job fights are won without the boss dying. Hold out until it breaks off; cut free the one it '
+              'holds, and go; or break the black altar it draws on, four blows, and it falls with it. The big one '
+              'you fish for fights before it comes in, and a lost relic has a keeper of its own.'),
         ('p', 'Gold ground is the other way round: stand in it. When a blow will fill the whole room, the cells by '
               'its stones of light, the sign {☼}, or up on a ledge or beside a chain in the wall, the sign {§}, stay '
               'safe, and they show gold.'),
@@ -577,6 +585,10 @@ def ch_dungeons(g):
               'you can stand on, such as a summoning circle, the sign {·|224,72,72}, works when you step on it. Most '
               'give only once, and some are better left alone. A lever or a stone in the floor may work something '
               'else in the room: bars that lift, and drop again after a while.'),
+        ('p', 'Such a room is often in the way of the people who live near: a dwarf shrine with an anvil for an '
+              'altar, a goblin library of stolen books, an orc war shrine walled with bones, an elven bower, a '
+              'halfling pantry. The way in from the land has its own look too, a goblin totem and stakes, two '
+              'stone mourners at a crypt\'s stair, old web across a spider\'s cave.'),
         ('p', 'Some rooms are puzzles, and the find waits behind bars or water until you work them out. A plate in '
               'the floor, the sign {▫|200,192,176}, goes down under anything that stands on it; a stone block slides '
               'a step when you walk into it. A cold brazier takes fire from a brand of one that burns, or from a fire '

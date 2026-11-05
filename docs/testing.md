@@ -169,7 +169,7 @@ Each line: **what** - what to check - what the debug menu should offer.
 
 ## The K5 maker (built 24 October 2026)
 
-- **Theme rooms** - each of the 38 rooms, its mood line, its telling thing (pray, search, drink, the vault and its key,
+- **Theme rooms** - each of the 43 rooms, its mood line, its telling thing (pray, search, drink, the vault and its key,
   the plinths, the circle's waves, the gong guard, cells, the mirror, the lever, the arch, the falling floor...).
   Debug: "Theme room or river" (z) makes a level round the room you pick and puts you at its door.
 - **Arrival and bottom rooms** - the dead camp and the chapel by the stairs up, the throne, treasury and lair with
@@ -177,6 +177,10 @@ Each line: **what** - what to check - what the debug menu should offer.
 - **Rivers underground** - water: swimming, the question with heavy armour or pack, swimmers that follow; fire: the
   question, the burn, shoving a foe in; the crossings. Debug: "a river of water" or "a river of fire" (z).
 - **Rock you can see, mood lines of plain rooms, sizes** - walk any classic dungeon. Debug: Teleport to a dungeon.
+- **Rooms of a people** (built 5 November 2026) - the dwarf shrine, goblin library, orc war shrine, elven bower and
+  halfling pantry, met in a dungeon near that people. Debug: the recipe makes a level round the next one (Enter again).
+- **The way in** (built 5 November 2026) - a goblin totem, a crypt's mourners, web over a spider's cave, the line it
+  says. Debug: the recipe stands you on the first level of the next kind (Enter again).
 
 ## Places on their own land, part 1 (built 24 October 2026)
 
@@ -383,6 +387,15 @@ three things. Test part `boss_moves`.
 - **The arena** - the mist, the shut room, the way out, coming back after fleeing. Debug: shut or open the arena;
   "Flee test" (as if you fled once more).
 - **Roaming bosses** - sounds, tracks, following up the stairs. Debug: place a roaming boss on the level.
+- **Arenas by place and ways out** (built 5 November 2026) - a nave with pillars, tombs with statues, a forge's pool,
+  a cave's lake, a glade, a lord's hall; the rope up and the hole down. Debug: the boss floor of the next place (Enter
+  again), shut the arena.
+- **The place answers** (built 5 November 2026) - out of a place whose master fell: it falls in for good, or wakes
+  with worse in it. Debug: the boss floor, kill the boss (god mode), go up and out.
+- **Won another way** (built 5 November 2026) - hold out (boats), cut the captive free (missing), break the black
+  altar (shrine); half of those fights. Debug: a job of each kind (Enter again for the next).
+- **The big one and the relic** (built 5 November 2026) - the big one fights before it comes in; a lost relic has a
+  keeper. Debug: the big one's job with a rod; a relic job.
 - **Hirelings in a boss fight** - stepping out, handling marks, breaking. Debug: give a hireling of each kind and rank.
 
 ## Places of today (built 30 October 2026)

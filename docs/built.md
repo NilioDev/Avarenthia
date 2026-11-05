@@ -59,9 +59,17 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
 | **Built: more makers (5 Nov)** | 21 makers of places with their own plans (a fallen dwarf hold, real mines, sewers, catacombs, castle dungeons, mazes, ice caves, lava tubes, tide caves, a fungal deep, hill homes, burnt glades, drowned villages, bandit hideouts, a fey hill, giants' steadings, wyrm bones, sinkhole shafts, cellars, geodes, termite mounds, family vaults); 14 states that shift while you play; cracked walls that break into the place beyond |
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
+| **Built: dungeons on their own land** | Built places start outside on their own map; each kind its own plan; the K5 maker with drawn theme rooms; the entrance part of the fixed plans (a goblin totem, a crypt's mourners, a spider's web) and theme rooms in the way of the people who live near (rounds 5-7, 33-36, 54) |
+| **Built: boss fights, what was left (5 Nov)** | Arenas dressed by place; ways out by rope or hole as well as the rotten wall; a place falls in or wakes after its boss; fights won another way (break the altar, hold out, rescue); bosses for the big one and the relic job |
 
 ## Built
 
+- **Boss fights, what was left, and dungeons, what was left** (rounds 53-54, 5 November 2026; `arenas.py`, hooked into
+  `bosses.py`, `bossmaker.py`, `jobs.py`, `lifeskills.py`, `missions.py`; the people's theme rooms in `pieces/theme.des`
+  with KIND `people:<race>`, `worldgen.people_near` sets `m.people`, `PC.pick` takes a tuple of tags; the entrance in
+  `delves.ENTRY`; test parts `boss_rest`, `k5`, `pieces`). An arena is dressed by `arenas.style_of`; `way_out` gives the
+  rotten wall, a rope or a hole; `leaving` closes or wakes the place once; `WIN_FOR` wins shrine, boats and missing
+  fights another way.
 - **More makers** (rounds 50-52, 5 November 2026; `makers.py` and `makerdata.py`, hooked into `delves.py`; test parts
   `more_makers`, `more_makers2`, `maker_states`; SAVE_VERSION 70). A maker's place carries `d.maker`;
   `makers.kind` gives each level's plan (the hold's three layers, the mine's flooded bottom), merged into
@@ -3116,3 +3124,35 @@ the crafts guilds give no fighting power.
   Consequences go through `jobs.effects` (town, people, guild, crime) and the folk-in-need memory (`p.folk`).
 - Left out: a guild monopoly, dues, licences. UI: the guilds tab of the journal, the halls in the town legend
   (`guide.py`); no new key. Handbook: Guilds and Crafts. Test part `craftguilds`. Bump `SAVE_VERSION`.
+
+## Boss fights: what is left (approved 26 October 2026, built 5 November 2026; the spec)
+
+The kit, the library and the boss maker are built (`docs/built.md`, "Boss fights"). Not built yet, for a later
+round: arenas dressed per place (tower top, temple nave and the rest) and the ways out other than the rotten wall;
+the place that wakes or falls in after a few bosses; fights won another way (hold out, rescue, break it, escape);
+bosses for the big one (a fish) and the relic job.
+
+## Dungeons on their own land (approved 22 October 2026, built 24 October to 5 November 2026; the spec)
+Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).
+- **Built places start outside** (built for temples, towers and barrows, 24 October 2026; see `docs/built.md`). A place that stands on the land (temple, abbey or monastery, tower, fort, manor, and other buildings on the world map) starts on its own play map with land around it, matching the world-map terrain: you walk in from the edge, through a gate or a door. An upper floor (a tower, a bell loft) and cellars or a crypt are their own levels, reached by stairs. Caves, dens, nests and mines still start straight underground. Mockup C.
+- **Each kind its own plan.** A temple has a nave with pews and pillars, a transept, chapels and an altar; an abbey a cloister round a garden, a refectory and cells; a tomb a procession hall and burial galleries. You can tell from the map what the place is. Mockups A and C.
+- **Bigger and roomier**, for fights with hirelings and spells: levels up to 120 x 70 (sizes per kind below), halls two or three wide. Ties in with Nilio's later wish for bigger play maps (the map view now shows 80 x 51).
+- **Built walls are thin joined lines** (as town houses already draw them), one wall between neighbouring rooms, never a double one; caves keep their raw rock.
+- **Mixed levels** when a job or the story asks: a built tomb that breaks into a cave (mockup B). Caves may be bigger too, with several great halls.
+- **One telling thing per room** (a pool, a row of statues, an altar, a sarcophagus), always a tile used with one key or a bump.
+- **A mood line**: the first time you step into a room, the messages say what it is ("The nave. Rotten pews face a cracked altar.").
+- **Hand-drawn pieces** (the way of Dungeon Crawl Stone Soup): the format is built (24 October 2026; `pieces/README.txt`, `pieces.py`, see "The K5 maker" in `docs/built.md`). Left for the fixed plans: a kind's plan laid out first and its rooms filled with fitting pieces; unique places once per world.
+- **Events in pieces**: the when / if / then rules are built in the pieces format (24 October 2026). The editor that draws pieces: "The Avarenthia Editor" below.
+- **The random maker for classic dungeons (K5)** is built (24 October 2026, see "The K5 maker" in `docs/built.md`); the fixed plans set their theme rooms in their own spots.
+- **Settled 22 October.**
+  - **Which places start outside:** the temple, abbey or monastery, tower, fort, manor and barrow. Caves, dens, nests and mines start straight underground.
+  - **Which maker:** classic dungeons and ruins use the K5 maker, with theme rooms set into them. The other kinds get a fixed plan of their own; an abbey, for example, always has a cloister, a refectory and cells.
+  - **Goblin places come in two kinds.** The big delve with a market hall, a forge, family halls and the chief's hall is a goblin village and gets built like a settlement. An ordinary goblin hole gets its own, smaller plan in the same spirit.
+  - **Below a temple or a fort** lie 3 to 5 levels of crypt or dungeon; the number varies.
+  - **Stairs** may come out anywhere on the next level.
+  - **Sizes, in three steps.** The map view already follows the hero on maps bigger than the screen. Sizes can be tuned later.
+    - **Small, one screen, 80 x 50:** the manor, the barrow, an ordinary goblin hole and a beast's den.
+    - **Middle, 100 x 60:** the temple, the abbey, the fort, and the levels below them.
+    - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
+    - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
+- **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).

@@ -965,7 +965,7 @@ def after_fight(game, wild):
     m = MS.find(game, mid)
     if not m or m.state not in ('active', 'turnin'):
         return
-    won = wild is not None and not any(not o.is_npc for o in wild.mons)
+    won = wild is not None and (not any(not o.is_npc for o in wild.mons) or getattr(wild, 'won_other', False))
     fn = WON.get(then)
     if fn:
         fn(game, m, won)
@@ -1824,6 +1824,14 @@ def _won_rival(game, m, won):
 
 
 WON['rival'] = _won_rival
+
+
+def _won_bigone(game, m, won):
+    from . import arenas as AR
+    AR.won_bigone(game, m, won)
+
+
+WON['bigone_won'] = _won_bigone
 
 
 def on_named_meet(game, n):

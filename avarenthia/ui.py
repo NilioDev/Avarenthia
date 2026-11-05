@@ -237,6 +237,8 @@ class App:
             return
         if req[0] == 'save':
             E.save_game(g)
+            if g.pending and not any(isinstance(s_, ChoiceScreen) for s_ in self.screens):
+                self.push(ChoiceScreen(self))            # a choice asked on the way in, before the save
         elif req[0] == 'shop':
             self.push(ShopScreen(self, req[1]))
         elif req[0] == 'quarter':

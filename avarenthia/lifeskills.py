@@ -410,6 +410,14 @@ def land(game, pl, ok):
     k = pl['fish']
     if k == 'legend':
         from . import jobs as JB
+        from . import missions as MS
+        jm = MS.find(game, getattr(game, 'fishing_job', None))
+        if jm is not None and jm.data.get('bspec') and not jm.data.get('fought'):
+            jm.data['fought'] = True                   # the big one fights first (arenas.py)
+            game.fishing_job = None
+            from . import arenas as AR
+            AR.bigone_fight(game, jm)
+            return pl['turns']
         JB.landed(game)
         gain(game, 'fishing', 6)
         return pl['turns']

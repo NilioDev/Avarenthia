@@ -336,6 +336,9 @@ def mood(game, m, rid):
         lines = MOODS.get(shape[6:])
         if lines:
             game.msg(random.choice(lines), 'info')
+        if getattr(m, 'entry_line', None) and getattr(m, 'depth', 0) == 1:
+            game.msg(m.entry_line, 'info')            # the way in (delves.entrance), told once
+            m.entry_line = None
         return
     lines = SHAPE_MOODS.get(shape) or SHAPE_MOODS['plain']
     if (rid * 7 + len(m.rooms)) % 3 == 0 or shape in ('pillars', 'rotunda', 'inner', 'gallery', 'cave', 'cross'):

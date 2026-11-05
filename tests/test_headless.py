@@ -2233,6 +2233,9 @@ def more_jobs():
         if pl['kind'] == 'fish' and pl['fish'] == 'legend':
             LS.land(g, pl, True)
             break
+    if g.cur != 'over':                              # the big one fights before it comes in (round 53)
+        assert m.data.get('fought') and g.fight_map() is not None
+        clear()
     assert m.state == 'turnin', 'the big one never bit'
     home(m)
     ok(m)
@@ -2668,7 +2671,9 @@ def lands():
     if stand('deep_forest'):
         assert g.over_sight() <= 2 and LN.sight(g, 2) == 1
     if stand('alpine'):
-        assert g.over_sight() >= 7
+        from avarenthia import debug as DBG
+        DBG.set_weather(g, 'clear')                  # fog or snow would hide the view (the weather is the seed's)
+        assert g.over_sight() >= 7, g.over_sight()
     if stand('canyon'):
         assert LN.ambush(g) == 2.0
     if stand('birch'):
@@ -6308,6 +6313,91 @@ def maker_states():
     print('maker_states ok:', got, 'break-ins', len(br))
 
 
+def boss_rest():
+    """Round 53: boss fights, what was left. The arena fits its place, ways out other than the rotten wall (a rope up,
+    a hole down), the place that falls in or wakes behind you, job fights won another way (hold out, rescue, break the
+    altar), the keeper of a lost relic."""
+    from avarenthia import arenas as AR, bosses as BS, makers as MK, townlife as TL, bossmaker as BM
+    print('== boss_rest')
+    app = new_app('soft', seed=53)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    p.lvl, p.vit = 20, 400
+    p.life = g.stats()['max_life']
+    # arenas at the bottom of the places with a kit boss: dressed, with a way out
+    styles, ways = set(), set()
+    for d in [d for d in w.dungeons.values() if d.boss in BS.KITS][:8]:
+        g.enter_dungeon(d.id, d.depth, 'down')
+        ar = g.map.__dict__.get('arena')
+        if ar:
+            styles.add(ar.get('style'))
+            ways.add(ar.get('way'))
+    print('  arenas:', sorted(map(str, styles)), sorted(map(str, ways)))
+    assert styles and ways - {None}
+    # a rope up through the roof gets you out of a shut room
+    d = next(d for d in w.dungeons.values() if d.boss in BS.KITS and g.maps.get(f'{d.id}:{d.depth}') is not None
+             and g.maps[f'{d.id}:{d.depth}'].__dict__.get('arena'))
+    g.enter_dungeon(d.id, d.depth, 'down')
+    m = g.map
+    ar = m.arena
+    room = set(map(tuple, ar['cells']))
+    edge = next(c for c in ar['cells'] if m.tile(*c) in (D.FLOOR, D.ROPEDOWN) and not m.mon_at(*c)
+                and any((c[0] + a, c[1] + b) not in room for a, b in AR.D8))
+    m.set(edge[0], edge[1], D.ROPEDOWN)
+    ar['way'], ar['way_cell'], ar['sealed'] = 'rope', edge, True
+    assert AR.bump(g, edge[0], edge[1], D.ROPEDOWN) == 3 and (p.x, p.y) not in room
+    # the place answers when its master fell
+    d.boss_felled = True
+    AR.leaving(g, d)
+    assert d.reacted and not any(k.startswith(d.id + ':') for k in g.maps)
+    if getattr(d, 'closed', False):
+        assert not MK.may_enter(g, d)
+    # job fights won another way
+    s = w.settlements[0]
+
+    class Job:
+        pass
+    for kind, how in (('shrine', 'break'), ('boats', 'hold'), ('missing', 'rescue')):
+        to_over(g, 0)
+        g.start_encounter(None, D.GRASS, 6, ['bandit', 'bandit'], 0, intro='')
+        wild = g.fight_map()
+        boss = next(o for o in wild.mons if not o.is_npc)
+        jm = Job()
+        jm.kind, jm.data = kind, {}
+        r0 = random.random
+        random.random = lambda: .9
+        try:
+            AR.other_win(g, jm, wild, boss)
+        finally:
+            random.random = r0
+        assert wild.win['how'] == how, (kind, getattr(wild, 'win', None))
+        if how == 'break':
+            x, y = wild.win['altar']
+            for _ in range(4):
+                AR.bump_altar(g, x, y)
+            assert boss not in wild.mons or boss.hp <= 0
+        elif how == 'hold':
+            g.turn += AR.HOLD_TURNS + 1
+            AR.turn(g)
+            assert not any(not o.is_npc for o in wild.mons)
+        else:
+            cap = next(o for o in wild.mons if o.role == 'captive')
+            assert TL.talk(g, cap)
+        assert wild.won_other, kind
+        g.leave_to_over()
+    # the keeper of a relic
+    dd = next(x for x in w.dungeons.values() if x.tag == 'crypt' and not getattr(x, 'maker', None))
+    g.enter_dungeon(dd.id, dd.depth, 'down')
+    jm = Job()
+    jm.kind, jm.data = 'relic', {'dungeon': dd.id}
+    up = g.map.t.index(D.UP)
+    o = AR.relic_guard(g, g.map, jm, (up % g.map.w, up // g.map.w))
+    assert o is not None and BS.st(o) is not None and jm.data['bspec']
+    assert 'bigone' in BM.BOSS_JOBS and 'relic' in BM.BOSS_JOBS
+    print('boss_rest ok')
+
+
 def folk():
     """Round 46: folk in need, part A. People in the settlements with a need from the world as it is (a group on the
     map, the news, the season, the market, their trade and people); the '!' over them, their line in passing, one
@@ -6520,7 +6610,9 @@ def k5():
     g = app.game
     p = g.player
     p.vit = 600
-    did = next(k for k, d in g.world.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3)
+    from avarenthia import delves as DV
+    did = next(k for k, d in g.world.dungeons.items() if d.style != 'cave' and d.tag != 'den' and d.depth >= 3
+               and DV.plan_for(d, 3) is None)
     real_pick = PC.pick
     try:
         for pc in middle:
@@ -11331,7 +11423,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

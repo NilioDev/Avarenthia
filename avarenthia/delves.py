@@ -504,10 +504,46 @@ def folk(game, m, d, depth, up, down):
             m.sky_exit = far
     if kind == 'warren' and depth == 1:
         _back_way(m, up)
+    if depth == 1:
+        entrance(game, m, kind, up)
     if getattr(d, 'maker', None):
         from . import makers as MK
         MK.after_folk(game, m, d, depth, up, down)
     return packs
+
+
+# the entrance part of each plan (round 54): what stands in the way in from the land, and the line it gives
+ENTRY = {
+    'den': ([('BONES', 3, 'any')], 'Gnawed bones lie in the way in: a warning, or what is left of a meal.'),
+    'warren': ([('TOTEM', 1, 'wall'), ('STAKES', 2, 'wall')], 'A goblin totem and sharpened stakes guard the way in: '
+               'keep out, in any tongue.'),
+    'cave': ([('CAIRN', 1, 'wall')], 'A little cairn of stones by the way in, left by someone who came out again.'),
+    'antnest': ([('RUBBLE', 3, 'wall')], 'Heaps of dug earth by the way in, still warm from the workers.'),
+    'spiderlair': ([('WEBS', 3, 'any')], 'Old web hangs across the way in, grey with dust and full of husks.'),
+    'lair_spider': ([('WEBS', 3, 'any')], 'Old web hangs across the way in, grey with dust and full of husks.'),
+    'grotto': ([('SHALLOW', 3, 'any')], 'The sea runs in at the mouth, and every wave sounds twice in the dark.'),
+    'gloam': ([('SHROOM', 3, 'any')], 'Pale growths crowd the way in, turning slowly towards your light.'),
+    'lair_dragon': ([('BONES', 4, 'any')], 'Charred bones and melted armour lie in the mouth of the cave.'),
+    'burrow': ([('BONES', 2, 'any')], 'Bones and tufts of fur at the mouth of the burrow. The gnolls eat here.'),
+    'swamp': ([('SHALLOW', 3, 'any')], 'Black water stands in the way in, and the reeds lean over it.'),
+    'crypt': ([('STATUE', 2, 'wall')], 'Two stone mourners stand either side of the way down, their faces worn away.'),
+    'catacomb': ([('STATUE', 1, 'wall')], 'A saint in stone stands at the foot of the stair, a finger to its lips.'),
+    'castle': ([('BARREL', 1, 'wall')], 'The jailers\' stair: a barrel of water, a hook for the keys, and nobody on '
+               'it.'),
+    'maze': ([('STATUE', 1, 'wall')], 'A statue of a bull-headed man stands at the gate of the maze.'),
+}
+
+
+def entrance(game, m, kind, up):
+    """The way in from the land: one telling thing and a line, in the first room of the plan."""
+    got = ENTRY.get(kind)
+    if not got or not getattr(m, 'delve_rooms', None):
+        return
+    things, line = got
+    first = KINDS[kind]['first']
+    rid = next((i for i, r in enumerate(m.delve_rooms) if r[0] == first), 0)
+    _things(m, rid, [(getattr(D, t), n, w) for t, n, w in things], (up,))
+    m.entry_line = line
 
 
 class _RoomView:

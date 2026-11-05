@@ -610,7 +610,8 @@ def own_blocks(text, file=''):
 
 def pick(part, tag, depth, n, used=()):
     """Up to n different pieces for this part of a place, by weight."""
-    pool = [p for p in load() if p.part == part and p.suits(tag, depth) and p.name not in used]
+    tags = tag if isinstance(tag, (tuple, list)) else (tag,)
+    pool = [p for p in load() if p.part == part and any(p.suits(t, depth) for t in tags if t) and p.name not in used]
     out = []
     while pool and len(out) < n:
         p = random.choices(pool, [p.weight for p in pool])[0]

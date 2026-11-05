@@ -681,3 +681,92 @@ MAP
    .......
       +
 ENDMAP
+
+; ================================================================== the peoples' own (round 54): a theme room in the
+; way of the people who live near the place (KIND people:<race>, worldgen.people_near)
+NAME:   dwarfshrine
+KIND:   people:dwarf
+WEIGHT: 30
+SHAPE:  a square hall with an anvil for an altar
+MOOD:   A dwarf shrine. Where an altar would stand there is an anvil, black with old offerings of iron.
+MOOD:   A shrine of the dwarves: two hearths, and an anvil to pray at with the hammer.
+THING:  A = anvil do:forge
+MAP
+ .........
+ .s.....s.
+ ....A....
+ ..h...h..
+ .........
+ .s.....s.
+ .........
+     +
+ENDMAP
+
+NAME:   goblinlibrary
+KIND:   people:goblin people:orc
+WEIGHT: 30
+SHAPE:  a cave of stolen shelves
+MOOD:   A goblin library: stolen books on stolen shelves, pages torn out to light fires. Some are still worth reading.
+MOOD:   Books, stacked in heaps the way goblins stack loot, and a heap of shiny things beside them.
+THING:  K = shelves do:library
+MAP
+ ..........
+ .kkk..kkk.
+ ..........
+ ...*..*...
+ .kk....kk.
+ ....K.....
+ ..........
+      +
+ENDMAP
+
+NAME:   orcwarshrine
+KIND:   people:orc
+WEIGHT: 30
+SHAPE:  a shrine walled with bones
+MOOD:   An orc war shrine. Bones are stacked into walls, and the altar is black with old blood.
+THING:  A = altar do:shrine
+MAP
+ .o.o.o.o.
+ .........
+ o...A...o
+ .........
+ o.%...%.o
+ .........
+ .........
+     +
+ENDMAP
+
+NAME:   elfbower
+KIND:   people:elf
+WEIGHT: 30
+SHAPE:  a round bower of white stone
+MOOD:   An elven bower, cut in white stone. Grass grows on the floor, and the water in the basin is clear.
+THING:  F = fountain do:fountain
+MAP
+   .....
+  .""""".
+ ."""s""".
+ .""F""".
+ .""""""".
+ ."s"""s".
+ .........
+     +
+ENDMAP
+
+NAME:   halflingpantry
+KIND:   people:halfling
+WEIGHT: 30
+SHAPE:  a round pantry under the hill
+MOOD:   A halfling pantry, dug under the hill: shelves of jars, hams on hooks, a table for second breakfast.
+THING:  B = barrel do:larder
+THING:  H = hearth do:cook
+MAP
+  bbbbbbb
+ b.......b
+ B..ttt..H
+ b.......b
+ b.......b
+  .......
+     +
+ENDMAP

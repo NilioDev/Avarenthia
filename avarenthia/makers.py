@@ -618,6 +618,9 @@ def tick(game):
 
 def may_enter(game, dg):
     """The drowned village shows only in a dry summer, when the lake draws back."""
+    from . import arenas as AR
+    if AR.closed(game, dg):
+        return False
     if getattr(dg, 'maker', None) != 'drowned':
         return True
     from . import calendar as CAL
