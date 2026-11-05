@@ -328,6 +328,9 @@ def _base(game, site, w, h, ground, key=None, name=None):
 
 def _done(m, entry):
     m.entry = entry
+    x, y = entry                                   # the first step in is always free (a path may turn at once)
+    if m.inb(x + 1, y) and not D.TILES[m.tile(x + 1, y)].walk and m.tile(x + 1, y) in (D.TREE, D.STONETREE):
+        m.set(x + 1, y, D.PATH)
     for i in range(len(m.seen)):
         m.seen[i] = 1
     m.lights = list(m.glows)
