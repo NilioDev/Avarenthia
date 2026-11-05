@@ -4527,7 +4527,7 @@ def pairs():
     p.disc['arcane'][0] = 70
     p.bar = [None, None, 'blink', 'dispel', 'counterspell', None]
     o = foes(1)[0]
-    o.mods = ['Fire Enchanted', 'Fast']
+    o.mods = ['Fire-blooded', 'Swift']
     start = (p.x, p.y)
     p.cooldowns, p.mana = {}, 999
     assert SK.use(g, 2) and (p.x, p.y) != start
@@ -7077,7 +7077,10 @@ def halls():
     finally:
         PL.tier = real
     # every underground kind lays out its own plan: rooms by their use, folk where they belong
+    from avarenthia import makers as MK
     for k, kd in DV.KINDS.items():
+        if k in MK.NAMES or k in MK.TAG or k.startswith(('fallenhold', 'realmine')):
+            continue                        # the more makers' kinds: test parts more_makers, more_makers2
         did = f'test_{k}'
         dg = Dungeon(did, f'Test {k}', 2, 3, 'cave' if not kd.get('built') else 'rooms', k, None, (120, 110, 100), 5, 5, False)
         w.dungeons[did] = dg
@@ -7914,7 +7917,7 @@ def epics():
             e.awake = True
             e.hp = e.maxhp = 400
             if sid == 'unweave':
-                e.mods = list(e.mods) + ['Fast']
+                e.mods = list(e.mods) + ['Swift']
                 e.called = True
             g.map.mons.append(e)
         g.compute_fov()
@@ -9996,10 +9999,12 @@ def landmarks():
     p.x, p.y = tb.x, tb.y
     g.enter_site(tb.id)
     keeper = next(o for o in g.map.mons if o.role == 'landmark')
-    gold = p.gold
+    p.gold = gold = max(p.gold, 1000)               # the walk above may have spent it
     LM.talk(g, keeper)
     EV.resolve(g, 'pay')
-    assert g.cur == 'over' and (p.x, p.y) == tuple(tb.far) and p.gold == gold - tb.toll
+    # on the far bank (an ambush there may have taken you into its stretch of land)
+    assert tuple(g.over_pos) == tuple(tb.far) and p.gold == gold - tb.toll, \
+        (g.cur, g.over_pos, tb.far, p.gold, gold, tb.toll, [l[0] for l in g.log[-4:]])
     # no robber near a caravanserai
     sr = next(s for s in w.sites if s.kind == 'serai')
     to_over(g)

@@ -437,6 +437,8 @@ def drawn(p):
                     continue
             cells[(x, y)] = ch
     k, flip = random.randint(0, 3), random.random() < .5
+    if any(a == 'mimicx' for _t, a in p.things.values()):
+        k = random.choice((0, 2))           # a mirror statue mirrors left and right: keep the room's axes
 
     def turn(x, y):
         if flip:
