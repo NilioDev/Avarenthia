@@ -383,10 +383,10 @@ def rock_look(m, r, r2):
 
 
 ROAD_JOIN = {D.ROAD, D.TOWN, D.CITY, D.ENTR, D.CASTLE, D.FORT}
-ROAD_FG = (214, 164, 88)          # ochre
-MAIN_FG = (250, 200, 110)
-ROAD_BG = (44, 31, 18)            # a strip of trodden earth under the road
-MAIN_BG = (58, 40, 22)
+ROAD_FG = (172, 132, 76)          # ochre, calm: settlements, names and places stand out above the roads
+MAIN_FG = (196, 152, 88)
+ROAD_BG = (36, 26, 16)            # a darker strip of trodden earth under the road
+MAIN_BG = (46, 33, 19)
 PATH_FG = (138, 160, 116)         # the old ways: faint grey-green
 
 
@@ -495,3 +495,34 @@ def tainted(look, kind, i=0):
 
 def blighted(look, strength=.55):
     return tainted(look, 'blight')
+
+
+# ------------------------------------------------------------------ remembered levels (a finer look, item 3)
+# Every kind of level remembers in its own dull tint: what you saw but cannot see now. The tint is the level's own, not
+# the whole place's: a mine level that gives onto fire or ice shows that level's tint.
+REMEMBERED_TINT = {'earth': ((74, 56, 36), (14, 10, 6)), 'cold': ((56, 82, 122), (8, 12, 26)),
+                   'ash': ((92, 46, 36), (20, 8, 6)), 'marsh': ((56, 76, 60), (8, 14, 10)),
+                   'stone': ((60, 62, 72), (10, 10, 16))}
+REMEMBERED_KIND = {'cave': 'earth', 'den': 'earth', 'warren': 'earth', 'burrow': 'earth', 'antnest': 'earth',
+                   'spiderlair': 'earth', 'lair_orc': 'earth', 'deep': 'earth', 'grotto': 'earth', 'mine': 'earth',
+                   'gloam': 'marsh', 'swamp': 'marsh', 'snakeruin': 'marsh', 'sewer': 'marsh', 'drowned': 'marsh',
+                   'rift': 'ash', 'lair_ifrit': 'ash', 'lava': 'ash', 'ice': 'cold', 'frost': 'cold', 'glacier': 'cold',
+                   'crypt': 'stone', 'dungeon': 'stone', 'tower': 'stone', 'barrow': 'stone', 'vault': 'stone'}
+
+
+def remembered_kind(m):
+    """The kind of this level for its remembered tint: earth, cold, ash, marsh or stone (built places)."""
+    if getattr(m, 'rift', False) or getattr(m, 'style', '') == 'rift':
+        return 'ash'
+    if getattr(m, 'frozen', False) or getattr(m, 'icy', False):
+        return 'cold'
+    if getattr(m, 'flooded', False):
+        return 'marsh'
+    if getattr(m, 'mine', None) is not None and getattr(m, 'mine', None) is not False:
+        return 'earth'
+    for key in (getattr(m, 'level_kind', None), getattr(m, 'dtag', None), getattr(m, 'delve', None),
+                getattr(m, 'style', None)):
+        if key in REMEMBERED_KIND:
+            return REMEMBERED_KIND[key]
+    return 'stone'
+

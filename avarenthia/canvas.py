@@ -158,6 +158,12 @@ class TcodCanvas(Canvas):
         c = self.con
         return chr(c.ch[x, y]), tuple(int(v) for v in c.fg[x, y]), tuple(int(v) for v in c.bg[x, y])
 
+    def darken(self, w, h, k):
+        """The top left w x h cells at k of their light (the fade-in when you change maps)."""
+        for a in (self.con.fg, self.con.bg):
+            part = a[:w, :h]
+            part[...] = (part * k).astype(a.dtype)
+
     def lighten(self, w, h, k):
         """The top left w x h cells washed towards white by k (the sky's frame for a great lightning stroke)."""
         for a in (self.con.fg, self.con.bg):
@@ -207,6 +213,12 @@ class FakeCanvas(Canvas):
     def get(self, x, y):
         i = y * self.w + x
         return self.ch[i], tuple(self.fg[i]), tuple(self.bg[i])
+
+    def darken(self, w, h, k):
+        for y in range(min(h, self.h)):
+            for x in range(min(w, self.w)):
+                i = y * self.w + x
+                self.fg[i], self.bg[i] = scale(self.fg[i], k), scale(self.bg[i], k)
 
     def lighten(self, w, h, k):
         for y in range(min(h, self.h)):

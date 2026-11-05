@@ -51,12 +51,20 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: weapons and the bestiary (23 Oct)** | 12 new weapon kinds (26 in all) in six disciplines, each with its own rule; reach, thrown spears and knives, crossbows that load; two weapons at once; Shield Bash and Block; monsters fight with one weapon of their own; the bestiary grows in three steps by killing and skinning |
 | **Built: the Avarenthia Editor (31 Oct - 1 Nov)** | Nilio's own program in the test build to draw rooms, whole places, tiles and things; events with switches, counters and wires; Zelda-like puzzles in the game; creatures drawn, of the place or from his own lists; dressing a room; the PxPlus tileset. Rounds 33-36, built 31 October to 1 November 2026 |
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
+| **Built: a finer look (5 Nov)** | Remembered land with a hint of colour, calmer roads, whole names on the map, one colour scale on the panel, names in the log in their colour, each kind of level its own remembered tint, a soft fade-in |
 | **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
 | **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 
 ## Built
 
+- **A finer look, not busier** (rounds 43-44, 5 November 2026; `look.py`, `ui.py`; test part `finer_look`).
+  Remembered world-map land keeps a dull hint of its colour; roads calmer (darker ochre); settlement names drawn
+  after the signs and moved inwards at the edge of the view; the target's bar and IN SIGHT in one scale (green,
+  yellow, red), long names shortened to their last words, never cut; creature, potion, tome and gear names in the
+  log in their own colour (gear by grade); each kind of level remembers in its own tint (`look.REMEMBERED_TINT`:
+  earth, cold, ash, marsh, stone, chosen per level by `remembered_kind`); a quarter-second fade-in from black on a
+  new map, off with the spell effects off.
 - **The belt and the tally** (round 42, 5 November 2026; `belt.py`, `tally.py`, state on `p.belt` and `p.tally`;
   test part `belt_and_tally`; SAVE_VERSION 65, the kill count moved to the tally). Health and mana potions in four
   grades (Minor, plain, Greater, Superior); every shop sells Minor, cities Greater, a metropolis Superior one day in
@@ -2861,3 +2869,29 @@ Thread "Hoofdscherm en drankjesbelt herzien". Dutch proposal and mockups (real t
    and the death screens. The counters live on the player (`p.tally`, one dict; `g.kills` moves there too);
    SAVE_VERSION goes up.
 Handbook: potions and their grades, the belt and its keys, the pack's three turns, the tally (proposal in the Dutch file).
+
+## A finer look, not busier (built 5 November 2026; the spec)
+
+Only colour, brightness and tidiness: no new signs, animations or keys. Dutch proposal and mockups (real tileset, seed
+7): project files `mooier/` (`voorstel.md`, `M1_wereldkaart.png`, `M2_*.png`).
+1. **Remembered land keeps a hint of its colour.** On the world map, land out of sight is now nearly grey; it becomes
+   less grey and a little darker, so forest stays dull green and water dull blue (`ui.draw_map`, the fog branch).
+2. **Calmer roads.** Roads are now the brightest thing on the world map; ochre instead of gold and a darker strip
+   (`look.ROAD_FG/MAIN_FG/ROAD_BG/MAIN_BG`), so settlements, names and places stand out.
+3. **Each kind of level its own remembered tint.** Today every level remembers in the same blue-grey. One dull tint
+   per kind of level, as data: earth (dens, warrens, mines), cold blue (ice), ash red (fire, kept dull), grey-green
+   (drowned, marsh), stone grey (crypts, towers, built places). The tint belongs to the level, not the whole place:
+   a mine that gives onto a fire or ice level shows that level's tint. No darker-per-depth (Nilio: unclear, and it
+   clashes with levels of another kind).
+4. **A soft fade-in** of about a quarter second from black when you take stairs, a gate or an entrance. Follows the
+   effects setting (off: no fade).
+5. **Names on the world map kept whole.** A sign never overwrites a name ("Stoneminst∩r"), and a name at the edge of
+   the view moves inwards instead of being cut ("cklestock").
+6. **The panel in one colour scale.** The target's life bar uses IN SIGHT's scale (green, yellow, red) instead of
+   always red; a long name in IN SIGHT wraps or is shortened, never cut ("Champion Blac").
+7. **Names in the log in their own colour.** Only the name of a creature or an item takes the colour it has on the
+   map (the goblin green, the fire beetle orange, a potion red); the rest of the line keeps its colour now. In a fight
+   you see at once which line belongs to which sign. Gear takes its grade's colour, the one it already has on the map
+   and in the pack (`D.RARITY_COLOR`: normal pale, magic blue, rare yellow, unique gold, set green), so a find
+   shows its grade in the log too (Nilio, 31 October 2026). Mockup `M5_log.png`.
+Order: 1, 2, 5, 6, 7 first (small), then 3, then 4. Handbook: a sentence on remembered land at the world map, if any.

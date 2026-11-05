@@ -60,7 +60,8 @@ def manage(g):
 
 
 def potions(g, t):
-    return g.count('potion', t) + g.count('potion', 'rejuv')
+    from avarenthia.belt import family
+    return sum(i.n for i in g.player.inv if i.k == 'potion' and (family(i.t) == t or i.t == 'rejuv'))
 
 
 def town_run(g):

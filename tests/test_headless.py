@@ -5599,6 +5599,84 @@ def belt_and_tally():
     print('belt_and_tally ok')
 
 
+def finer_look():
+    """Rounds 43-44, a finer look: remembered land keeps a hint of its colour, calmer roads, names on the world map kept
+    whole, one colour scale on the panel and names never cut, names in the log in their own colour, each kind of level
+    its own remembered tint, a soft fade-in on a new map (off with the effects)."""
+    from avarenthia import look as LOOK
+    print('== finer look')
+    random.seed(43)
+    app = new_app('soft', seed=43)
+    g, p = app.game, app.game.player
+    gs = app.screens[0]
+    app.fx_mode = 'off'                                  # no fade-in while colours are looked at
+    to_over(g, 0)
+    app.render()
+    # remembered land: a forest out of sight stays greenish
+    om = g.maps['over']
+    for i in range(len(om.seen)):
+        om.seen[i] = 1
+    from avarenthia import towns as TWN
+    while not 11 <= TWN.hour(g) <= 14:
+        g.turn += D.DAY_LEN // 24
+    app.render()
+    ox, oy = gs.origin
+    def green(c):
+        return c[1] > c[0] + 8 and c[1] > c[2] + 8
+    far = [(x, y) for y in range(max(0, oy), min(om.h, oy + ui.MAP_H)) for x in range(max(0, ox), min(om.w, ox + ui.MAP_W))
+           if not g.visible(x, y) and green(LOOK.get(om, y * om.w + x)[1])]
+    assert far, 'green land out of sight in view'
+    cells = [app.cv.get(x - ox, y - oy) for x, y in far[:200]]
+    n = sum(1 for _c, f, b in cells if f[1] > f[0] and f[1] > f[2])
+    assert n > len(cells) // 2, ('dull green, not grey', cells[:5])
+    # calmer roads
+    assert sum(LOOK.ROAD_FG) < sum(LOOK.MAIN_FG) < sum((236, 210, 150)) and sum(LOOK.ROAD_BG) < sum(LOOK.MAIN_BG)
+    # a name at the edge of the view moves inwards whole
+    s = g.world.settlements[0]
+    app.cv.clear()
+    gs.draw_overworld_extras(app.cv, s.x - 1, s.y - 5)
+    assert s.name in app.cv.dump(), 'the name is whole at the left edge'
+    # one colour scale; names shortened, never cut
+    assert ui.life_col(.9) == ui.GOOD and ui.life_col(.5) == ui.GOLD and ui.life_col(.1) == ui.BAD
+    assert ui.short_name('Champion Blackfang', 12) == 'Blackfang' and len(ui.short_name('A Very Long Named Thing', 6)) <= 6
+    # names in the log in their own colour
+    g.log_mark = len(g.log)
+    g.msg('The Giant Rat bites you.', 'bad')
+    app.render()
+    dump = app.cv.dump().split('\n')
+    row = next(i for i, ln in enumerate(dump) if 'The Giant Rat bites you.' in ln)
+    col0 = dump[row].index('Giant Rat')
+    _ch, fg, _bg = app.cv.get(col0, row)
+    assert fg == D.MONSTERS['rat']['fg'], (fg, D.MONSTERS['rat']['fg'])
+    _ch, fg2, _bg = app.cv.get(dump[row].index('bites'), row)
+    assert fg2 != fg
+    # each kind of level its own remembered tint
+    g.enter_dungeon('den', 1, 'down')
+    assert LOOK.remembered_kind(g.map) == 'earth'
+
+    class M:
+        pass
+    m = M()
+    m.rift = True
+    assert LOOK.remembered_kind(m) == 'ash'
+    m = M()
+    m.dtag = 'crypt'
+    assert LOOK.remembered_kind(m) == 'stone'
+    m.dtag = 'swamp'
+    assert LOOK.remembered_kind(m) == 'marsh'
+    assert len(set(LOOK.REMEMBERED_TINT.values())) == 5
+    # the fade-in: on a new map the view starts dark, with the effects off it does not
+    app.fx_mode = 'full'
+    app.render()
+    assert getattr(gs, '_fade_t', None) is not None and gs.moving
+    to_over(g, 0)
+    app.fx_mode = 'off'
+    app.render()
+    assert getattr(gs, '_fade_t', None) is None
+    app.fx_mode = 'full'
+    print('finer_look ok')
+
+
 def money():
     """The money check (tests/money.py): at level 1, 10 and 20 the coin left over a day, the days of work for a bed and
     for a raising stay in their bands (first guesses, to settle with Nilio)."""
@@ -10457,7 +10535,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

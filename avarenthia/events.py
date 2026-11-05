@@ -357,7 +357,9 @@ def maybe_event(game, on_road):
 
 
 def e_hurt(game):
-    opts = [('Give him a health potion', 'potion')] if game.count('potion', 'hp') else []
+    from .belt import family
+    opts = [('Give him a health potion', 'potion')] if any(i.k == 'potion' and family(i.t) == 'hp'
+                                                          for i in game.player.inv) else []
     opts += [('Go through his pack', 'rob'), ('Leave him', 'leave')]
     ask(game, 'hurt', 'A wounded traveller', 'A man lies groaning by the wayside, an arrow in his leg. "Please... anything..."', opts)
 
@@ -367,7 +369,8 @@ def r_hurt(game, choice, ctx):
     p = game.player
     f = game.world.region_at(p.x, p.y).faction
     if choice == 'potion':
-        it = next(i for i in p.inv if i.k == 'potion' and i.t == 'hp')
+        from .belt import family
+        it = min((i for i in p.inv if i.k == 'potion' and family(i.t) == 'hp'), key=lambda i: D.POTIONS[i.t]['val'])
         game.remove_one(it)
         change_rep(game, f, 3)
         if random.random() < .5:

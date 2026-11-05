@@ -592,11 +592,14 @@ class GameScreen(Screen):
         oy = -((MAP_H - m.h) // 2) if m.h <= MAP_H else max(0, min(m.h - MAP_H, p.y - MAP_H // 2))
         return ox, oy
 
+    FADE = .25                      # a soft fade-in from black when you take stairs, a gate or an entrance
+
     def render(self, cv):
         g = self.game
         self.draw_map(cv)
         self.draw_pointer(cv)
         self.draw_wind(cv)
+        self.fade_in(cv)
         for x in range(MAP_W):
             cv.put(x, MAP_H, '─', LINE, BG)
         for y in range(H):
@@ -605,6 +608,23 @@ class GameScreen(Screen):
         self.draw_status(cv)
         self.draw_log(cv)
         self.draw_panel(cv)
+
+    def fade_in(self, cv):
+        """A new map comes up from black in a quarter second; with the effects off it is there at once."""
+        key = self.game.cur
+        now = time.monotonic()
+        if key != getattr(self, '_fade_key', key):
+            self._fade_t = now if self.app.fx_mode != 'off' else None
+        self._fade_key = key
+        t0 = getattr(self, '_fade_t', None)
+        if t0 is None or not hasattr(cv, 'darken'):
+            return
+        k = (now - t0) / self.FADE
+        if k >= 1:
+            self._fade_t = None
+            return
+        cv.darken(MAP_W, MAP_H, max(0.0, k))
+        self.moving = True
 
     def draw_pointer(self, cv):
         """On the world map: the goal of the job you follow, lit when in view, else an arrow on the edge towards it."""
@@ -709,6 +729,7 @@ class GameScreen(Screen):
             lighting = True                 # dusk and night in town: the street lamps light the way
             lamps = {xy: k for k, xy in enumerate(getattr(m, 'lamps', ()))}
         lmap = DR.light_map(m) if lighting else None
+        mem_fg, mem_bg = LOOK.REMEMBERED_TINT[LOOK.remembered_kind(m)] if m.kind != 'town' else ((40, 52, 96), (8, 10, 22))
         torchlit = lighting
         deco = getattr(m, 'deco', None)
         trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
@@ -846,8 +867,8 @@ class GameScreen(Screen):
                         ch, fg, bg = AN.beacon(m, mx, my, (ch, fg, bg), t)
                         self.moving = True
                 elif lighting:
-                    fg = mix(scale(fg, .42), (40, 52, 96), .4)
-                    bg = mix(scale(bg, .35), (8, 10, 22), .5)
+                    fg = mix(scale(fg, .42), mem_fg, .4)       # remembered: the dull tint of this kind of level
+                    bg = mix(scale(bg, .35), mem_bg, .5)
                 if v:
                     if torch:
                         d = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
@@ -926,10 +947,10 @@ class GameScreen(Screen):
                     fg, bg = mix(fg, (150, 124, 84), .6), (34, 28, 22)     # roads you know stay legible in the fog
                 elif not lighting and m.kind == 'over':
                     # fog of war: land you remember, but cannot see now; grey and veiled
-                    gr = (fg[0] + fg[1] + fg[2]) // 3
-                    fg = mix(scale(mix(fg, (gr, gr, gr), .6), .42), (52, 58, 74), .3)
+                    gr = (fg[0] + fg[1] + fg[2]) // 3            # less grey than before, a little darker:
+                    fg = mix(scale(mix(fg, (gr, gr, gr), .35), .38), (52, 58, 74), .22)   # forest stays dull green
                     gb = (bg[0] + bg[1] + bg[2]) // 3
-                    bg = mix(scale(mix(bg, (gb, gb, gb), .6), .45), (10, 12, 18), .5)
+                    bg = mix(scale(mix(bg, (gb, gb, gb), .35), .4), (10, 12, 18), .45)
                     if LOOK._h(mx, my, 31) % 9 == 0:
                         bg = mix(bg, (26, 28, 36), .5)       # wisps of mist
                 elif not lighting:
@@ -1104,20 +1125,6 @@ class GameScreen(Screen):
         g = self.game
         p = g.player
         w = g.world
-        # settlement names
-        for s in w.settlements:
-            if not g.known_settlement(s):
-                continue
-            vx, vy = s.x - ox, s.y - oy - 1
-            label = s.name
-            lx = vx - len(label) // 2
-            if 0 <= vy < MAP_H and -len(label) < lx < MAP_W and not (p.y == s.y - 1 and lx - 1 <= p.x - ox <= lx + len(label)):
-                col = (255, 226, 140) if s.is_city else (236, 210, 150) if s.kind != 'hamlet' else (196, 176, 136)
-                if s.kind == 'metropolis':
-                    label = label.upper()
-                for j, ch in enumerate(' ' + label + ' '):
-                    if 0 <= lx + j - 1 < MAP_W:
-                        cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
         # temples, monasteries and watchtowers
         om = g.map
         night = TW.is_night(g)
@@ -1201,6 +1208,21 @@ class GameScreen(Screen):
             vx, vy = c['x'] - ox, c['y'] - oy
             if 0 <= vx < MAP_W and 0 <= vy < MAP_H and om.seen[c['y'] * om.w + c['x']] and (c['x'], c['y']) != (p.x, p.y):
                 cv.put(vx, vy, LV.SHRINE_LOOK[0], LV.SHRINE_LOOK[1], (40, 32, 22))
+        # settlement names: after the signs, so no sign cuts a name; at the edge of the view moved inwards whole
+        for s in w.settlements:
+            if not g.known_settlement(s):
+                continue
+            vx, vy = s.x - ox, s.y - oy - 1
+            label = s.name.upper() if s.kind == 'metropolis' else s.name
+            if not (0 <= vy < MAP_H and -len(label) < vx - len(label) // 2 < MAP_W):
+                continue
+            lx = max(1, min(vx - len(label) // 2, MAP_W - len(label) - 1))
+            if p.y == s.y - 1 and lx - 1 <= p.x - ox <= lx + len(label):
+                continue
+            col = (255, 226, 140) if s.is_city else (236, 210, 150) if s.kind != 'hamlet' else (196, 176, 136)
+            for j, ch in enumerate(' ' + label + ' '):
+                if 0 <= lx + j - 1 < MAP_W:
+                    cv.put(lx + j - 1, vy, ch, col, (30, 22, 14))
         # hoof tracks and the herds near you (never remembered on the map)
         from . import hunting as HTM
         for (hx, hy), _v in list(HTM.hoof(g).items()):
@@ -1260,11 +1282,45 @@ class GameScreen(Screen):
             if len(lines) >= H - LOG_Y:
                 break
         lines = lines[:H - LOG_Y][::-1]
+        names = self.log_names()
         for i, (ln, cls, new, first) in enumerate(lines):
             col = LOGCOL.get(cls, FG) if new else scale(LOGCOL.get(cls, FG), .55)
             if first and cls in LOG_MARKED:                # what matters: a mark in the margin
                 cv.put(0, LOG_Y + i, '►', col)
             cv.text(1, LOG_Y + i, ln, col)
+            if names:                                      # a creature's or an item's name in its own colour
+                for mt in names[0].finditer(ln):
+                    nc = names[1].get(mt.group(0))
+                    if nc:
+                        cv.text(1 + mt.start(), LOG_Y + i, mt.group(0), nc if new else scale(nc, .55))
+
+    def log_names(self):
+        """(pattern, name -> colour) of the creatures and items the log may name: every kind of creature, what lies on
+        this map and what you carry; gear in its grade's colour. Made again only when the map or the turn changes."""
+        import re
+        g = self.game
+        key = (g.cur, g.turn, len(g.player.inv))
+        if getattr(self, '_names_key', None) == key:
+            return self._names
+        cols = {}
+        for k, mt in D.MONSTERS.items():
+            cols[mt['name']] = D.hexrgb(mt['fg']) if isinstance(mt['fg'], str) else mt['fg']
+        for o in g.map.mons:
+            if not o.is_npc:
+                cols[o.name] = o.fg
+        for k, pd in D.POTIONS.items():
+            cols[pd['name']] = pd['col']
+        for it in list(g.player.inv) + list(g.map.items):
+            try:
+                nm = it.display_name()
+            except Exception:
+                continue
+            if it.k in ('gear', 'potion', 'tome') and len(nm) > 3:
+                cols[re.sub(r'^\d+x ', '', nm)] = it.color()
+        cols = {n: c for n, c in cols.items() if n and len(n) > 2}
+        pat = re.compile(r'\b(' + '|'.join(re.escape(n) for n in sorted(cols, key=len, reverse=True)) + r')\b') if cols else None
+        self._names_key, self._names = key, ((pat, cols) if pat else None)
+        return self._names
 
     # ---------------------------------------------------------- side panel
     def draw_panel(self, cv):
@@ -1473,16 +1529,16 @@ class GameScreen(Screen):
             if o.id == tid:
                 cv.fill(x, yy, PW, 2, ' ', FG, bg)
             cv.put(x, yy, o.ch, o.fg, bg)
-            cv.text(x + 2, yy, o.name, FG, bg, maxw=PW - 13)
+            cv.text(x + 2, yy, short_name(o.name, PW - 13), FG, bg)
             fr = max(0, o.hp) / max(1, o.maxhp)
             n = int(10 * fr + .99) if o.hp > 0 else 0
             for j in range(10):
-                cv.put(x + PW - 10 + j, yy, '█' if j < n else '░', (BAD if fr < .4 else GOOD) if j < n else LINE, bg)
+                cv.put(x + PW - 10 + j, yy, '█' if j < n else '░', life_col(fr) if j < n else LINE, bg)
             word, col = intent(g, o)
             cv.text(x + 2, yy + 1, word, col, bg, maxw=PW - 2)
-        shown = 4 - (2 if top else 0)
+        shown = rows - (2 if top else 0)
         if len(foes) > shown:
-            cv.text(x, y + 9, f'and {len(foes) - shown} more', DIM, PANEL)
+            cv.text(x, y + 1 + top + shown * 2, f'and {len(foes) - shown} more', DIM, PANEL)
 
     def orb(self, cv, x, y, frac, col, alt=None, w=9, h=9):
         """A glass globe of life or mana, drawn with quarter blocks (two by two pixels a cell, square pixels, so it is
@@ -1608,14 +1664,15 @@ class GameScreen(Screen):
             tgt = last[0] if last else (min(vis, key=lambda o: cheb(o.x, o.y, p.x, p.y)) if vis else None)
         if not tgt:
             return
-        cv.text(x, y, tgt.name, tgt.fg, PANEL, maxw=PW)
+        cv.text(x, y, short_name(tgt.name, PW), tgt.fg, PANEL)
         if tgt.is_npc:
             cv.text(x, y + 1, 'Walk into them to talk.', DIM, PANEL)
             return
         bw = PW
         frac = max(0, tgt.hp) / tgt.maxhp
+        full = scale(life_col(frac), .55)                  # IN SIGHT's scale: green, yellow, red
         for i in range(bw):
-            cv.put(x + i, y + 1, ' ', FG, BLOOD if i < int(bw * frac + .99) else (40, 20, 16))
+            cv.put(x + i, y + 1, ' ', FG, full if i < int(bw * frac + .99) else (40, 20, 16))
         cv.text(x, y + 1, f'{max(0, tgt.hp)}/{tgt.maxhp}', (255, 240, 220))
         extra = f'level {tgt.lvl}'
         if tgt.mods:
@@ -1755,6 +1812,23 @@ class GameScreen(Screen):
 
 
 # ====================================================================== modal screens
+def life_col(fr):
+    """One colour scale for life on the panel: green, yellow, red."""
+    return GOOD if fr >= .66 else GOLD if fr >= .33 else BAD
+
+
+def short_name(name, n):
+    """A name that fits n cells: whole, else its last words (\"Champion Blackfang\" becomes \"Blackfang\"), never cut."""
+    if len(name) <= n:
+        return name
+    words = name.split()
+    for k in range(1, len(words)):
+        tail = ' '.join(words[k:])
+        if len(tail) <= n:
+            return tail
+    return words[-1][:n]
+
+
 class Modal(Screen):
     overlay = True
     tall = True

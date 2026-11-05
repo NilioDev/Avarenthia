@@ -193,8 +193,13 @@ class Item:
             return mod.lines(g, self)
         if self.k != 'gear':
             if self.k == 'potion':
-                out.append({'hp': 'Restores 45% of your life.', 'mp': 'Restores 50% of your mana.',
-                            'rejuv': 'Restores 40% of life and mana.'}[self.t])
+                from .belt import GRADE
+                if self.t in GRADE:
+                    fam, _g, share, plus = GRADE[self.t]
+                    out.append(f"Restores {round(share * 100)}% of your {'life' if fam == 'hp' else 'mana'}, and {plus} more.")
+                else:
+                    out.append({'rejuv': 'Restores 40% of life and mana.', 'cure': 'Ends poison and sickness, and heals '
+                                'a little.'}.get(self.t, 'A potion.'))
             elif self.k == 'scroll':
                 out.append('Opens a portal to the last town you visited, and back.')
             elif self.k == 'quest':

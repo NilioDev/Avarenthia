@@ -422,7 +422,7 @@ three things. Test part `boss_moves`.
 - **Whole places in the editor** - Ctrl+N "A whole place", floors with PgUp / PgDn and + up / + down, In the world,
   people and finds on the Creatures layer, a room at 40 x 30 made a whole place, saved to my places.des.
 
-## A finer look, not busier (approved 31 October 2026)
+## A finer look, not busier (approved 31 October 2026, built 5 November 2026)
 
 - **Remembered land and roads** - the world map out of sight in its own dull colours, roads calmer than towns. Debug:
   reveal the map (Teleport far, or a reveal-map option).

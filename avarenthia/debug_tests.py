@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'A finer look, not busier', 'More makers', 'Marked creatures',
+NOT_BUILT = {'More makers', 'Marked creatures',
              'Folk in need', 'Crafts guilds'}
 
 
@@ -727,6 +727,18 @@ R = {
     'Playing it :: The Eleven Ways': [('first', 'temple', 'guild'), ('coin', 2000)],
     'Playing it :: A letter for the city': [('first', 'letter', 'city')],
     "Playing it :: The baron's word": [('first', 'word', 'war')],
+    # A finer look
+    'A finer look, not busier :: Remembered land and roads': [('to', ('town', 'city')), ('dbg', 'reveal_map'),
+                                                              ('hour', 12)],
+    "A finer look, not busier :: Each level's tint": [('deep', ('dungeon (cave)', 'dungeon (rooms)', 'dungeon (rift)',
+                                                                'dungeon (barrow)'), 1),
+                                                       ('note', 'walk away from what you saw: it keeps the tint of its kind.')],
+    'A finer look, not busier :: Fade-in': [('deep', 'dungeon (cave)', 1),
+                                            ('note', 'take the stairs with Spell effects full, short and off (Esc menu).')],
+    'A finer look, not busier :: Names and panel': [('to', ('town', 'city')), ('dbg', 'reveal_map'),
+                                                    ('spawn', 'goblin', 'orc', 'kobold')],
+    'A finer look, not busier :: Names in the log': [('spawn', 'goblin', 'orc'), ('give', 'Greater Health Potion'),
+                                                     ('give', 'Long Sword', {'rar': 'magic'})],
     # The belt and the tally
     'The belt and the tally :: Potion grades': [('give', 'Minor Health Potion'), ('give', 'Greater Health Potion'),
                                                 ('give', 'Superior Mana Potion'), ('to', ('village', 'town', 'city'))],
