@@ -181,16 +181,18 @@ def trade_and_jobs():
                     g.world.wanderers.append(wd)
                     g.start_encounter(wd)
                     assert any(o.role == 'escort' for o in g.map.mons)
-                    for o in [o for o in g.map.mons if not o.is_npc]:
-                        g.kill(o)
+                    for _ in range(5):
+                        for o in [o for o in g.map.mons if not o.is_npc]:
+                            g.kill(o)
                     g.leave_to_over()
                 g.enter_town(mi.target)
             elif mi.kind == 'bounty':
                 wd = next(x for x in g.world.wanderers if x.mission == mi.id)
                 to_over(g, s.id)
                 g.start_encounter(wd)
-                for o in [o for o in g.map.mons if not o.is_npc]:
-                    g.kill(o)
+                for _ in range(5):                    # a Splitting one leaves more behind
+                    for o in [o for o in g.map.mons if not o.is_npc]:
+                        g.kill(o)
                 g.leave_to_over()
                 assert mi.state == 'turnin', mi.state
                 g.enter_town(mi.giver)

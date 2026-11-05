@@ -339,7 +339,7 @@ def gen_dungeon(game, did, depth):
             it = Item(game.new_id(), 'gold', 'gold', purse(lvl, .5))
             it.x, it.y = c
             m.items.append(it)
-    if last or random.random() < .4:
+    if (last or random.random() < .4) and getattr(d, 'state', None) != 'emptied':     # an emptied place: none left
         place_chest(m)
     for _ in range(random.randint(1, 2)):
         c = rand_free(game, m, lambda t: t == FLOOR)
