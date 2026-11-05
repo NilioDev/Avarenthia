@@ -415,6 +415,26 @@ the crafts guilds give no fighting power.
   with racks and pits, weavers and dyers with looms and vats; the inns of the Lantern and Ladle a small mark on their
   sign. Small happenings in `townlife.py`: tanners and dyers quarrel over the water, a smith wants a strong arm for a
   day, a journeyman on his wander year walks along to the next town.
+- **Guild jobs** (approved 5 November 2026), made by the folk-in-need maker (`folkquests.py`) from steps the game has,
+  hung on the world, rewarded with guild rank, materials or a pattern (a new thing to make) and little coin:
+  1. **Fetch the stuff:** ore from a deep cave, a named beast's hide, Fey Silk; the higher your rank, the more
+     dangerous the land.
+  2. **Work for the world:** spears for the watch before a raid, winter cloaks before the snow, food for an army at
+     war, a wedding cloak for a baron's house; made or bought.
+  3. **The journeyman's wander year:** take a journeyman to a hall in another town, sometimes of another people;
+     standing with both.
+  4. **The false mark:** someone sells goods with a forged guild mark; track the forger in the poor quarter, then
+     turn him in to the Watch or take a share.
+  5. **The quarrel over the water** (tanners and dyers): take a side or mediate. The loser thinks less of you and
+     shuts its bench and board to you for a season (and guild standing is your rank, so a rank can fall); the
+     winner gives a favour (a thing in the pack, as with folk in need); mediating needs rank in both crafts, wins a
+     little with both or, failed, costs a little with both. The town shows it: the losing tanners' racks stand
+     empty for a season, or the losing dyers' vats stay dry.
+  6. **The fallen mine:** kobolds or something from below in the guild's mine; clear it and members may dig there.
+  7. **The founder's heirloom,** one great job per guild at Master, in three parts: Hammer and Tongs a broken Varnish
+     sword in three pieces at three places; the Lodge the beast that killed its founder; Needle and Loom a realm's
+     banner; Lantern and Ladle the king's meal at the Fair. The reward: the guild secret and a piece of your own.
+  Consequences go through `jobs.effects` (town, people, guild, crime) and the folk-in-need memory (`p.folk`).
 - Left out: a guild monopoly, dues, licences. UI: the guilds tab of the journal, the halls in the town legend
   (`guide.py`); no new key. Handbook: Guilds and Crafts. Test part `craftguilds`. Bump `SAVE_VERSION`.
 
