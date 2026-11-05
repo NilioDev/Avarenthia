@@ -878,14 +878,17 @@ def thornfield_and_faith():
     m = g.map
     # the roads in town go where the roads on the world map go, and none of them stops in the woods
     from collections import deque
-    cx, cy = m.centre
+    road = (D.PATH, D.GRASS, D.SIGNPOST, D.WELL, D.BRIDGE)
+    cx, cy = m.centre                         # the middle may be the pond: start on the nearest road or green
+    cx, cy = min(((x, y) for x in range(m.w) for y in range(m.h) if m.tile(x, y) in road),
+                 key=lambda c: cheb(c[0], c[1], cx, cy))
     seen = {(cx, cy)}
     q = deque([(cx, cy)])
     while q:
         x, y = q.popleft()
         for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)):
             nx, ny = x + dx, y + dy
-            if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in (D.PATH, D.GRASS, D.SIGNPOST, D.WELL, D.BRIDGE):
+            if m.inb(nx, ny) and (nx, ny) not in seen and m.tile(nx, ny) in road:
                 seen.add((nx, ny))
                 q.append((nx, ny))
     from avarenthia import towns as TWN
