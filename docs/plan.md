@@ -13,6 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
+| **Approved** | A window that fits (more map on bigger windows, Zoom, a random margin) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -121,6 +122,25 @@ Dutch proposal: project files `editor/generatoren-in-editor.md`.
 - Code: `editor/generate.py` (the list of makers, map to drawing), the dialog in `screen.py`, the maker area in
   `drawnplaces.py`. Test part `editor`: every maker once, drawing back to map equal, the maker area filled and
   reachable in two seeds. Not in the handbook (the editor is not in it).
+
+---
+
+## A window that fits (approved 5 November 2026)
+
+The screen grows with the window instead of showing black bars. Mockups per resolution: project files `venster/`.
+- **The scale**: the largest whole scale (1x-4x) at which 110 x 60 cells still fit; pixels stay crisp, the map is
+  never smaller than now. **Zoom** on the title screen (like "Spell effects"): Auto or a fixed 1x-4x, kept beside the save.
+- **More map**: the cells left over at that scale go to the map, up to 16:9 at most (min 110 x 60). The panel
+  (28 wide) and the log (8 lines) keep their size; `ui.W/H/MAP_W/MAP_H/LOG_Y/PX/PW` follow the window on a resize.
+  Every full screen (handbook, journal, menus, modals, debug pages) centres on the new size.
+- **The margin** (super wide screens, e.g. 5120 x 1440 gives 3x with 2480 px to spare): the game stays centred, the
+  rest a faint sepia old map. Random against burn-in: drawn from a random stretch of the real world's land, a new
+  stretch each time you enter a zone or a new day starts, drifting one cell every minute or so; never brighter than a
+  quarter. No text or signs to read in it.
+- Window size and fullscreen are remembered for the next start.
+- Code: `main.py` (scale, cells from the window, the resize event, the margin), `ui.py` (the sizes as settable),
+  `canvas.py`. Tests: `text_fits` and the screens at 110 x 60, 120 x 67, 160 x 90; a new part `window_sizes`.
+  Handbook: one sentence on Zoom under the keys and the title screen.
 
 ---
 

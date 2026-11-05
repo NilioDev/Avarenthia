@@ -532,3 +532,10 @@ three things. Test part `boss_moves`.
 - **Guild jobs** - each of the seven kinds from a guild master; the quarrel's three ways (side, side, mediate) with
   the bench and board shut for a season, the favour, the empty racks or dry vats; the fallen mine opening; each
   heirloom's three parts. Debug: set guild rank, the master's "Guild work of the hall".
+
+## A window that fits (approved 5 November 2026)
+- **Sizes and Zoom** - the game at several window sizes (more map, panel and log the same), every full screen
+  centred; Zoom Auto and 1x-4x on the title screen. Debug: a "Window size" choice that sets the cells (110 x 60,
+  120 x 67, 160 x 90, super wide with margin).
+- **The margin** - the random old-map stretch, a new one on a new zone or day, the slow drift. Debug: "Margin: new
+  stretch now".
