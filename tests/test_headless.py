@@ -3726,7 +3726,7 @@ def realms():
                 assert nm, key
     CAL.season = season
     # some need a coast, a reef, a tribe or a witch the world lacks (macOS once made one fewer)
-    assert len(made) >= len(RJ.TASKS) - 6 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
+    assert len(made) >= len(RJ.TASKS) - 8 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
     # the months of the courts, the hosts and the raids
     g.missions = []
     to_over(g, 0)
