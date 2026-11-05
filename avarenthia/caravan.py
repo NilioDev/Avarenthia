@@ -571,7 +571,10 @@ def walk_along(game, wd):
     if wd in w.wanderers:
         from . import wanderers as WA
         WA.arrive(game, wd)
+    if game.cur != 'over':                # met in a zone: up onto the world map first, then along the road
+        game.leave_to_over()
     p.x, p.y = dest.x, dest.y
+    game.over_pos = (p.x, p.y)
     if with_you(p):
         cv = get(p)
         cv['trail'], cv['last'] = [], (p.x, p.y)
