@@ -159,6 +159,7 @@ def ensure_halls(game, m):
     s = game.here
     if s is None or getattr(m, 'sid', None) != s.id:
         return
+    show_dry(game, m, s)
     halls = getattr(game.world, 'guild_halls', {})
     for key in NEW:
         if s.id not in halls.get(key, ()) or any(getattr(o, 'guild', None) == key for o in m.mons):
@@ -211,7 +212,7 @@ def bench_here(game):
 
 def free_bench(game):
     key = bench_here(game)
-    return bool(key) and G().state(game)[key]['joined']
+    return bool(key) and G().state(game)[key]['joined'] and not shut(game, key)
 
 
 def bench_line(game):
@@ -585,6 +586,24 @@ def dress_street(m, pl, key):
     m._look = None
 
 
+EMPTY = {'lodge': ('¦', (110, 100, 90)), 'needle': ('o', (90, 84, 76))}      # bare racks, dry vats
+
+
+def show_dry(game, m, s):
+    """After a quarrel over the water lost: the losing hall's racks stand empty, or its vats dry, for a season."""
+    over = getattr(m, 'over', None)
+    if not over:
+        return
+    lose = dry(game, s)
+    for k, (ch, col) in HALL_DECO.items():
+        full, empty = (ch, col), EMPTY[k]
+        want = empty if lose == k else full
+        for i, v in list(over.items()):
+            if (v[0], tuple(v[1])) in (full, empty) and (v[0], tuple(v[1])) != want:
+                over[i] = (want[0], want[1], None)
+    m._look = None
+
+
 def happenings(game, s):
     """The crafts guilds' small happenings in a town with one of their halls."""
     halls = getattr(game.world, 'guild_halls', {})
@@ -635,7 +654,16 @@ def master_options(game, key):
     if GU.GUILDS[key]['kind'] != 'life' or not GU.state(game)[key]['joined']:
         return []
     from .money import fmt
+    if shut(game, key):
+        return [(f'The hall will not deal with you until {_shut_day(game, key)}', None)]
     opts = raise_option(game, key)
+    for m in guild_missions(game, key):
+        opts.append((f'Report: {m.title}', f'cgreport:{m.id}'))
+    if key in NEW:
+        opts.append(('Guild work of the hall', 'cgjobs'))
+    opts += quarrel_option(game, key)
+    if key == 'hammer' and game.player.__dict__.get('guild_mine') is not None:
+        opts.append(('Your share of the guild mine\'s ore', 'cgmine'))
     for m in tests_here(game, key):
         from . import lifeskills as LS
         opts.append((f'Show your work for the test of {LS.LIFE[m.data["key"]]["name"]} {m.data["lvl"]}', f'cgtest:{m.id}'))
@@ -662,6 +690,15 @@ def resolve(game, choice, key):
             game.msg(f'The master hands you an order: {m.desc}', 'gold')
     elif choice == 'cgsell':
         sell_marked(game, key)
+    elif choice == 'cgjobs':
+        master = next((o.name for o in game.map.mons if getattr(o, 'guild', None) == key), None)
+        jobs_window(game, key, master)
+    elif choice.startswith('cgreport:'):
+        report(game, int(choice[9:]))
+    elif choice == 'cgquarrel':
+        quarrel(game, key)
+    elif choice == 'cgmine':
+        mine_share(game)
     elif choice == 'secret':
         secret(game, key)
     else:
@@ -669,10 +706,361 @@ def resolve(game, choice, key):
     return True
 
 
+# ------------------------------------------------------------------ round 49: the guild jobs
+JOBS = ('fetch', 'world', 'wander', 'forger', 'mine', 'heirloom')
+JOB_NAME = {'fetch': 'Fetch the stuff', 'world': 'Work for the world', 'wander': "The journeyman's wander year",
+            'forger': 'The false mark', 'mine': 'The fallen mine', 'heirloom': "The founder's heirloom",
+            'quarrel': 'The quarrel over the water'}
+FETCH = {'hammer': ('find', 'a sack of deep ore'), 'needle': ('find', 'a bolt of old Fey Silk'),
+         'lodge': ('hunt', None), 'ladle': ('bring', 'spice')}
+HEIRLOOM = {
+    'hammer': ('The founder\'s sword', 'The founder\'s Varnish sword lies broken in three pieces, in three old places. '
+               'Bring them back, and the hall will forge it whole.'),
+    'lodge': ('The founder\'s beast', 'The beast that killed our founder still walks. The Lodge has waited a long time.'),
+    'needle': ('The realm\'s banner', 'The old banner of the realm, that our founder wove, hangs forgotten in a lord\'s '
+               'seat and its pieces are lost. Bring them home.'),
+    'ladle': ('The king\'s meal', 'Our founder cooked for a king once. Cook the meal again: wine, spice, and a dish of '
+              'your own, carried to the great city.'),
+}
+# the guild's gift at the end of a job: (kind, what by rank 0..4)
+GIFT = {'hammer': ('mat', ['bar_iron', 'bar_silver', 'bar_deepiron', 'bar_blackiron', 'bar_adamant']),
+        'needle': ('mat', ['cloth_wool', 'cloth_felt', 'cloth_spidersilk', 'cloth_shadowsilk', 'cloth_queensilk']),
+        'lodge': ('leather', ['leather', 'sturdy', 'thick', 'cavefur', 'drake']),
+        'ladle': ('coin', [100, 200, 300, 500, 800])}
+
+
+def _hall_people(game, key):
+    halls = getattr(game.world, 'guild_halls', {}).get(key, ())
+    return [game.world.settlements[i] for i in halls]
+
+
+def _need(game, key, s, kind, master, steps, line, title, coin, **extra):
+    """A guild job as a folk-in-need record, so the folk maker carries it (steps, twists, the memory)."""
+    nd = dict(id=game.new_id(), sid=s.id, name=master.split(' ')[-1] if master else 'the master', title=master or 'The master',
+              gender='male', people=s.race, trade='guild', motive='skill', src='guild', line=line, steps=steps,
+              made=game.day, until=game.day + 30, coin=coin, reward='guild', twist=None, seed=None, hint=None,
+              guild=key, job=kind, job_title=f'{G().GUILDS[key]["short"]}: {title}')
+    nd.update(extra)
+    return nd
+
+
+def offers(game, key, master=None):
+    """The guild jobs this hall has for you now: up to three, of the kinds that fit the world and your rank."""
+    from . import folkquests as FQ
+    from . import lifeskills as LS
+    s = game.here
+    if not s or key not in NEW:
+        return []
+    r = G().rank(game, key)
+    out = []
+    rnd_coin = lambda n: (n + random.randint(0, 4)) * 100           # noqa: E731  (little coin: the guild pays in kind)
+    # 1. fetch: the higher the rank, the more dangerous the place
+    verb, thing = FETCH[key]
+    if verb == 'find':
+        ds = sorted(FQ._dungeons(game, s), key=lambda d: d.depth)
+        if ds:
+            d = ds[min(len(ds) - 1, r * len(ds) // 5)]
+            out.append(_need(game, key, s, 'fetch', master, [dict(v='find', did=d.id, relic=thing, name=d.name)],
+                             f'We are short of the best stuff. {thing[0].upper() + thing[1:]} lies in {d.name}.',
+                             f'{thing[0].upper() + thing[1:]}', rnd_coin(4)))
+    elif verb == 'hunt':
+        ns = FQ._named(game, s)
+        if ns:
+            n = ns[0]
+            out.append(_need(game, key, s, 'fetch', master, [dict(v='hunt', nid=n.id, name=n.name)],
+                             f'A hide off {n.name} would make the Lodge\'s name for a year.', f'The hide of {n.name}',
+                             rnd_coin(5)))
+    else:
+        out.append(_need(game, key, s, 'fetch', master, [dict(v='bring', good=thing, qty=2)],
+                         'The hall\'s kitchen is out of spice, and the guild day is near.', 'Spice for the hall',
+                         rnd_coin(3)))
+    # 2. work for the world: pieces the world needs, made by you
+    craft = {'hammer': 'smithing', 'lodge': 'leatherworking', 'needle': 'tailoring', 'ladle': 'cooking'}[key]
+    if LS.rank(game, craft) >= 3:
+        why = random.choice(ORDER_WHY[key])
+        what = 'dishes of your own cooking' if key == 'ladle' else f'pieces of your own {LS.LIFE[craft]["name"].lower()}'
+        out.append(_need(game, key, s, 'world', master, [dict(v='piece', craft=craft, n=2, what=what)], why,
+                         why.rstrip('.'), rnd_coin(3)))
+    # 3. the wander year: a journeyman to a hall in another town, of another people if it can be
+    others = [o for o in _hall_people(game, key) if o.id != s.id]
+    if others:
+        o = min(others, key=lambda o: (o.race == s.race, cheb(o.x, o.y, s.x, s.y)))
+        nm = random.choice(['Jory', 'Wenna', 'Tam', 'Ilsa', 'Bram', 'Odo'])
+        out.append(_need(game, key, s, 'wander', master, [dict(v='go', sid=o.id, name=o.name, who='the hall there')],
+                         f'{nm}, our journeyman, goes on his wander year to the hall in {o.name}. The roads are bad; walk '
+                         'with him.', f'{nm}\'s wander year', rnd_coin(3), to_sid=o.id))
+    # 4. the false mark: a forger in a city's poor quarter
+    cities = [o for o in game.world.settlements if o.is_city and o.id != s.id and cheb(o.x, o.y, s.x, s.y) <= 80]
+    if cities and r >= 1:
+        o = min(cities, key=lambda o: cheb(o.x, o.y, s.x, s.y))
+        out.append(_need(game, key, s, 'forger', master, [dict(v='go', sid=o.id, name=o.name, who='the forger')],
+                         f'Goods with our mark, and not ours, on the market of {o.name}. Find the forger in the poor '
+                         'quarter.', 'The false mark', rnd_coin(5), twist='forger'))
+    # 6. the fallen mine (the Hammer and Tongs): kobolds or worse in the guild's mine
+    if key == 'hammer' and not game.player.__dict__.get('guild_mine'):
+        ns = FQ._nests(game, s)
+        if ns:
+            d = ns[0]
+            out.append(_need(game, key, s, 'mine', master, [dict(v='clear', did=d.id, boss=d.boss, name=d.name)],
+                             f'Our mine in {d.name} is lost to what came up from below. Clear it, and every member may '
+                             'dig there again.', 'The fallen mine', rnd_coin(6), mine=d.id))
+    # 7. the founder's heirloom, once, at Master
+    done = game.player.__dict__.setdefault('heirlooms', set())
+    if r >= 3 and key not in done:
+        steps = heirloom_steps(game, key, s)
+        if steps:
+            title, line = HEIRLOOM[key]
+            out.append(_need(game, key, s, 'heirloom', master, steps, line, title, rnd_coin(10)))
+    taken = {m.data.get('job') for m in game.missions if m.kind == 'folk' and m.data.get('guild') == key
+             and m.state in ('active', 'turnin')}
+    out = [nd for nd in out if nd['job'] not in taken]
+    random.shuffle(out)
+    return out[:3]
+
+
+def heirloom_steps(game, key, s):
+    from . import folkquests as FQ
+    ds = FQ._dungeons(game, s)
+    if key == 'hammer':
+        if len(ds) < 3:
+            return None
+        ds = sorted(ds, key=lambda d: -d.depth)[:3]
+        return [dict(v='find', did=d.id, relic=f'a piece of the founder\'s sword ({k} of 3)', name=d.name)
+                for k, d in enumerate(ds, 1)]
+    if key == 'lodge':
+        ns = sorted(FQ._named(game, s), key=lambda n: -getattr(n, 'lvl', 0))
+        return [dict(v='hunt', nid=ns[0].id, name=ns[0].name)] if ns else None
+    if key == 'needle':
+        hs = FQ._seats(game, s)
+        if not hs or not ds:
+            return None
+        return [dict(v='seat', hid=hs[0].id, name=hs[0].title), dict(v='find', did=ds[0].id, relic='the banner\'s lost '
+                                                                     'corner', name=ds[0].name)]
+    big = [o for o in game.world.settlements if o.kind == 'metropolis'] or [o for o in game.world.settlements if o.is_city]
+    if not big:
+        return None
+    return [dict(v='bring', good='wine', qty=1), dict(v='go', sid=big[0].id, name=big[0].name, who='the king\'s steward'),
+            dict(v='dish')]
+
+
+def has_pieces(game, st):
+    return len(_pieces(game, st)) >= st['n']
+
+
+def _pieces(game, st):
+    p = game.player
+    if st['craft'] == 'cooking':
+        return [i for i in p.inv if i.k == 'dish']
+    return [i for i in p.inv if i.k == 'gear' and getattr(i, 'made', None) and i.made[0] == st['craft']
+            and not game.is_equipped(i)]
+
+
+def take_pieces(game, st):
+    n = st['n']
+    for it in _pieces(game, st):
+        if n <= 0:
+            break
+        if it.k == 'dish':
+            game.remove_one(it)
+        else:
+            game.player.inv.remove(it)
+        n -= 1
+
+
+def jobs_window(game, key, master):
+    from . import events as EV
+    from . import folkquests as FQ
+    from .money import fmt
+    if shut(game, key):
+        game.msg(f'"You took the other side at the water. Come back after {_shut_day(game, key)}."', 'bad')
+        return
+    lst = offers(game, key, master)
+    s = game.here
+    FQ.store(game).setdefault(s.id, [])
+    game.world.__dict__.setdefault('guild_offers', {})[key] = lst
+    if not lst:
+        game.msg('"Nothing the hall needs of you just now."', 'info')
+        return
+    text = '"The hall has work for a member:"\n\n' + '\n'.join(f'- {nd["line"]} ({FQ.brief(game, nd)})' for nd in lst)
+    opts = [(f'{nd["job_title"]} ({fmt(nd["coin"])} and the guild\'s thanks)', f'take:{i}') for i, nd in enumerate(lst)]
+    EV.ask(game, 'cgjob', G().GUILDS[key]['short'], text, opts + [('Not now', 'bye')], guild=key)
+
+
+def r_job(game, choice, ctx):
+    from . import folkquests as FQ
+    key = ctx['guild']
+    if not choice or not choice.startswith('take:'):
+        return
+    lst = game.world.__dict__.get('guild_offers', {}).get(key, [])
+    i = int(choice[5:])
+    if i >= len(lst):
+        return
+    nd = lst.pop(i)
+    FQ.store(game).setdefault(nd['sid'], []).append(nd)
+    m = FQ.take(game, nd['id'])
+    if m:
+        m.guild = key
+    elif nd in FQ.store(game).get(nd['sid'], []):
+        FQ.store(game)[nd['sid']].remove(nd)
+    return m
+
+
+def guild_missions(game, key):
+    from . import folkquests as FQ
+    return [m for m in game.missions if m.kind == 'folk' and m.data.get('guild') == key and m.state in ('active', 'turnin')
+            and (m.state == 'turnin' or FQ._ready(game, m))]
+
+
+def report(game, mid):
+    from . import folkquests as FQ
+    m = next((x for x in game.missions if x.id == mid), None)
+    if m and (m.state == 'turnin' or FQ._ready(game, m)):
+        FQ.finish(game, m, None)
+
+
+def reward(game, m):
+    """The guild pays in kind: materials of the craft by your rank, standing in two towns, a mine, a piece of your own."""
+    from . import jobs as JB
+    d = m.data
+    key = d['guild']
+    kind = d.get('job')
+    r = G().rank(game, key)
+    if kind == 'wander' and d.get('to_sid') is not None:
+        JB.effects(game, town=[(m.giver, 2), (d['to_sid'], 3)], quiet=True)
+    if kind == 'mine':
+        game.player.guild_mine = d.get('mine')
+        return 'The mine is the guild\'s again. Members may dig there, and the hall gives you a share of its ore.'
+    if kind == 'heirloom':
+        game.player.__dict__.setdefault('heirlooms', set()).add(key)
+        from .entities import make_gear
+        fam = {'hammer': 'longsword', 'lodge': 'leather', 'needle': 'robe', 'ladle': 'sash'}[key]
+        from .itemdata import grades
+        base = grades(fam)[-1]
+        it = make_gear(game, base, 'rare', game.player.lvl + 3)
+        it.name = f'{G().GUILDS[key]["short"]}\'s Gift, {D.BASES[base]["name"]}'
+        it.gmark = key
+        game.add_to_inv(it) or game.spill(game.map, game.player.x, game.player.y, it)
+        G().state(game)[key]['rep'] += 120
+        return f'The whole hall stands when you come in. The master gives you {it.name}, made for you.'
+    gk, ladder = GIFT[key]
+    what = ladder[min(4, r + (1 if kind == 'fetch' else 0))]
+    if gk == 'coin':
+        game.player.gold += what
+        from .money import fmt
+        return f'The hall adds {fmt(what)} from the kitchen\'s box.'
+    if gk == 'mat':
+        from . import crafts as CRF
+        CRF.give(game, what, 2)
+        return f'The hall gives you two of {CRF.mat_name(what)}.'
+    from .entities import Item
+    it = Item(game.new_id(), 'leather', what, 2)
+    game.add_to_inv(it) or game.spill(game.map, game.player.x, game.player.y, it)
+    return f'The hall gives you {it.display_name()}.'
+
+
+def mine_share(game):
+    """Once a week, a member who won back the mine takes a share of its ore at the Hammer and Tongs."""
+    from . import crafts as CRF
+    p = game.player
+    if game.day - p.__dict__.get('mine_day', -99) < 7:
+        game.msg('"Your share for this week is taken. The mine is not a well."', 'info')
+        return
+    p.mine_day = game.day
+    r = G().rank(game, 'hammer')
+    ore = ['ore_iron', 'ore_silver', 'ore_deepiron', 'ore_blackiron', 'ore_adamant'][min(4, r)]
+    CRF.give(game, ore, 3)
+    game.msg(f'From the guild\'s mine: three of {CRF.mat_name(ore)}.', 'good')
+
+
+# ------------------------------------------------------------------ 5. the quarrel over the water
+def quarrel_state(game):
+    """On the player: {'loser': guild, 'until': day, 'sid': town} while a quarrel's consequence lasts."""
+    return game.player.__dict__.setdefault('water', {})
+
+
+def quarrel_option(game, key):
+    if key not in ('lodge', 'needle'):
+        return []
+    q = quarrel_state(game)
+    if q.get('year') == game.day // 360:
+        return []
+    return [('The tanners and the dyers quarrel over the water', 'cgquarrel')]
+
+
+def quarrel(game, key):
+    from . import events as EV
+    from . import lifeskills as LS
+    both = min(LS.rank(game, 'leatherworking'), LS.rank(game, 'tailoring'))
+    EV.ask(game, 'cgquarrel', 'The quarrel over the water', 'The tanners soak their hides upstream, and the dyers '
+           'downstream say their vats run brown. Both halls want you on their side; the Watch wants it settled.',
+           [('Side with the tanners', 'lodge'), ('Side with the dyers', 'needle'),
+            (f'Mediate (Leatherworking and Tailoring 15; yours {both})', 'mediate' if both >= 15 else None),
+            ('Keep out of it', 'bye')], guild=key)
+
+
+def r_quarrel(game, choice, ctx):
+    from . import jobs as JB
+    from . import calendar as CAL
+    if not choice or choice == 'bye':
+        return
+    GU = G()
+    q = quarrel_state(game)
+    here = game.here
+    q.clear()
+    q.update(year=game.day // 360, sid=here.id if here else None)
+    if choice == 'mediate':
+        ok = random.random() < .6
+        for k in ('lodge', 'needle'):
+            st = GU.state(game)[k]
+            st['rep'] = max(0, st['rep'] + (25 if ok else -25))
+            st['paid'] = min(st['paid'], earned(game, k))
+        game.msg('You get both halls round one table, and in the end the tanners move their pits a bend downstream. '
+                 'Both think a little better of you.' if ok else 'You talk until the lamps burn down, and both halls '
+                 'leave angrier than they came. Each thinks you favoured the other.', 'good' if ok else 'bad')
+        if here:
+            JB.effects(game, town=[(here.id, 3 if ok else -1)], quiet=True)
+        return
+    win, lose = choice, ('needle' if choice == 'lodge' else 'lodge')
+    st = GU.state(game)[lose]
+    st['rep'] = max(0, st['rep'] - 90)
+    st['paid'] = min(st['paid'], earned(game, lose))          # standing is your rank: it can fall
+    GU.state(game)[win]['rep'] += 30
+    q.update(loser=lose, until=game.day + 90)
+    from .entities import Item
+    tok = Item(game.new_id(), 'favour', 'repair' if win == 'lodge' else 'bed')
+    tok.who = GU.GUILDS[win]['short']
+    tok.giver = GU.GUILDS[win]['name']
+    game.add_to_inv(tok) or game.spill(game.map, game.player.x, game.player.y, tok)
+    game.msg(f'You side with {GU.GUILDS[win]["short"]}. {GU.GUILDS[lose]["short"]} shut their bench and board to you '
+             f'until {CAL.short(game.day + 90)}; {GU.GUILDS[win]["short"]} give you a favour.', 'gold')
+    if here:
+        JB.effects(game, town=[(here.id, 1)], quiet=True)
+
+
+def shut(game, key):
+    q = quarrel_state(game)
+    return q.get('loser') == key and game.day < q.get('until', 0)
+
+
+def _shut_day(game, key):
+    from . import calendar as CAL
+    return CAL.short(quarrel_state(game).get('until', game.day))
+
+
+def dry(game, s):
+    """The town shows it: the losing tanners' racks stand empty, the losing dyers' vats stay dry."""
+    q = quarrel_state(game)
+    if q.get('sid') == s.id and game.day < q.get('until', 0):
+        return q.get('loser')
+    return None
+
+
 def register():
     from . import events as EV
     from . import entities as EN
     EV.RESOLVERS['cgsecret'] = r_secret
+    EV.RESOLVERS['cgjob'] = r_job
+    EV.RESOLVERS['cgquarrel'] = r_quarrel
     EN.CRAFT['trophy'] = 'craftguilds'
 
 

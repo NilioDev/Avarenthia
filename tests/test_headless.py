@@ -5927,6 +5927,109 @@ def craftguilds():
     print('craftguilds ok:', {k: len(halls[k]) for k in CG.NEW}, 'halls')
 
 
+def guild_jobs():
+    """Round 49: the guild jobs, made by the folk-in-need maker: fetch, work for the world, the wander year, the false
+    mark, the fallen mine, the founder's heirloom; the quarrel over the water and what it leaves."""
+    from avarenthia import guilds as GU, craftguilds as CG, crafts as CRF, folkquests as FQ, folkdata as FD
+    from avarenthia import events as EV, debug as DBG, missions as MS
+    print('== guild_jobs')
+    app = new_app('soft', seed=49)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    p.gold, p.lvl = 10 ** 6, 20
+    p.life_sk['smithing'] = [35, 0]
+    DBG.set_guild(g, 'hammer', 3)
+    sid = next(i for i in w.guild_halls['hammer'] if w.settlements[i].race == 'human')
+    g.enter_town(sid)
+    master = next(o for o in g.map.mons if getattr(o, 'guild', None) == 'hammer')
+    kinds = set()
+    for _ in range(12):
+        kinds |= {nd['job'] for nd in CG.offers(g, 'hammer', master.name)}
+    assert {'world', 'wander'} <= kinds and kinds <= set(CG.JOBS), kinds
+    MS.MAX_ACTIVE = 99
+
+    def take(kind):
+        for _ in range(30):
+            CG.jobs_window(g, 'hammer', master.name)
+            lst = w.guild_offers['hammer']
+            i = next((k for k, nd in enumerate(lst) if nd['job'] == kind), None)
+            g.pending = None
+            if i is not None:
+                return CG.r_job(g, f'take:{i}', dict(guild='hammer'))
+        return None
+    # work for the world: two pieces of your own smithing, handed in at the hall
+    m = take('world')
+    assert m and m.guild == 'hammer' and m.kind == 'folk' and m.title.startswith('Hammer and Tongs:')
+    assert not any(o.role == 'folk' and getattr(o, 'need', None) == m.data['nid'] for o in g.map.mons)
+    CRF.give(g, 'bar_iron', 6)
+    for _ in range(2):
+        CRF.make(g, 'smithing', 'dagger', 'iron')
+    assert any(o[1] == f'cgreport:{m.id}' for o in CG.master_options(g, 'hammer'))
+    rep = GU.state(g)['hammer']['rep']
+    bars = CRF.count(g, 'bar_blackiron')
+    GU.resolve(g, f'cgreport:{m.id}', dict(guild='hammer'))
+    assert m.state == 'done' and GU.state(g)['hammer']['rep'] > rep and CRF.count(g, 'bar_blackiron') > bars
+    assert FQ.helped(g)[m.data['nid']]['guild'] == 'hammer'
+    # the wander year: to a hall in another town, standing in both
+    m = take('wander')
+    to = m.data['to_sid']
+    rep_to = w.settlements[to].rep
+    FQ.on_enter_town(g, to)
+    assert m.state == 'turnin'
+    CG.report(g, m.id)
+    assert m.state == 'done' and w.settlements[to].rep > rep_to
+    # the false mark: the forger, found in the city; turned in or a share
+    m = take('forger')
+    if m:
+        FQ.on_enter_town(g, FQ.current(m)['sid'])
+        assert g.pending and g.pending['key'] == 'folktwist'
+        EV.RESOLVERS['folktwist'](g, g.pending['options'][1][1], g.pending['ctx'])
+        g.pending = None
+        assert m.data['coin_mult'] > 2 and m.state == 'turnin'
+        CG.report(g, m.id)
+    # the fallen mine: clear it, and the hall gives a share of its ore each week
+    m = take('mine')
+    if m:
+        FQ.advance(g, m)
+        CG.report(g, m.id)
+        assert p.guild_mine is not None
+        ore = CRF.count(g, 'ore_blackiron')
+        CG.mine_share(g)
+        CG.mine_share(g)
+        assert CRF.count(g, 'ore_blackiron') == ore + 3
+    # the founder's heirloom at Master: its parts, then the hall's gift
+    m = take('heirloom')
+    if m:
+        while FQ.current(m):
+            FQ.advance(g, m)
+            g.pending = None
+        CG.report(g, m.id)
+        assert 'hammer' in p.heirlooms and any("Hammer and Tongs's Gift" in i.display_name() for i in p.inv)
+    # the quarrel over the water: the loser shuts its bench and board for a season, its racks or vats stand empty
+    DBG.set_guild(g, 'lodge', 2)
+    DBG.set_guild(g, 'needle', 2)
+    lid = next(i for i in w.guild_halls['needle'] if w.settlements[i].race == 'human')
+    to_over(g, 0)
+    g.enter_town(lid)
+    assert CG.quarrel_option(g, 'needle')
+    CG.quarrel(g, 'needle')
+    assert next(o for o in g.pending['options'] if o[0].startswith('Mediate'))[1] is None
+    g.pending = None
+    CG.r_quarrel(g, 'lodge', dict(guild='needle'))
+    assert CG.shut(g, 'needle') and not CG.shut(g, 'lodge') and GU.rank(g, 'needle') < 2
+    assert CG.master_options(g, 'needle')[0][1] is None and not CG.quarrel_option(g, 'needle')
+    assert any(i.k == 'favour' for i in p.inv)
+    CG.ensure_halls(g, g.map)
+    assert CG.dry(g, w.settlements[lid]) == 'needle'
+    vats = [v for v in (getattr(g.map, 'over', None) or {}).values() if v[0] == 'o']
+    assert all(tuple(v[1]) == CG.EMPTY['needle'][1] for v in vats)
+    CG.quarrel_state(g)['until'] = g.day          # the season is over
+    assert not CG.shut(g, 'needle')
+    assert 'forger' in FD.TWISTS
+    print('guild_jobs ok:', sorted(kinds))
+
+
 def folk():
     """Round 46: folk in need, part A. People in the settlements with a need from the world as it is (a group on the
     map, the news, the season, the market, their trade and people); the '!' over them, their line in passing, one
@@ -6033,7 +6136,7 @@ def folk():
     assert all(k in FD.FAVOURS for k in set(FD.TRADE_REWARD.values()) - {'own', 'rumour', 'bestiary'})
     assert len(FD.FAVOURS) == 8 and 'folk' in GDE.TIPS
     # round 47: twists, seeds, who remembers you, what happens when nobody helps
-    assert len(FD.TWISTS) == 18 and len(FD.SEEDS) >= 120
+    assert len(FD.TWISTS) == 19 and len(FD.SEEDS) >= 120
     for i, sd in enumerate(FD.SEEDS):
         assert sd[5] is None or sd[5] in FD.TWISTS, sd[0]
         for tok in sd[4]:
@@ -10946,7 +11049,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

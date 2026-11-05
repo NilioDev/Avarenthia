@@ -504,7 +504,7 @@ three things. Test part `boss_moves`.
 - **Note for Claude and ✗** - the zip beside the save with note.txt, screen.png and the save; loading that save
   stands where you stood. Debug: F12, [N]; a ✗ on any test.
 
-## Crafts guilds (approved 2 November 2026, not built)
+## Crafts guilds (approved 2 November 2026, built 5 November 2026)
 - **The four new guilds** - each guild's halls among three peoples; joining; a rank asking the craft's rank and the
   entry fee. Debug: Teleport to a hall, set a life skill rank, give coin.
 - **Bench, test and mark** - the guild bench free for members and paid for others; the master's test in the hall; the
@@ -515,4 +515,4 @@ three things. Test part `boss_moves`.
   strong arm, the journeyman. Debug: Teleport to a city, "Town: make a happening".
 - **Guild jobs** - each of the seven kinds from a guild master; the quarrel's three ways (side, side, mediate) with
   the bench and board shut for a season, the favour, the empty racks or dry vats; the fallen mine opening; each
-  heirloom's three parts. Debug: set guild rank, "Folk: make a need here" (guild kinds), Time (skip a season).
+  heirloom's three parts. Debug: set guild rank, the master's "Guild work of the hall".

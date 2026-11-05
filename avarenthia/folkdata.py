@@ -139,6 +139,10 @@ THANKS = ['"You did it! I will not forget this."', '"Thank you, friend. Truly."'
 # giver's town), god (your god), law (+ clears, - a mark), end (the need is done now), fail (it is lost), step (a new
 # step first: go_temple, go_town), follow (a later part), friend (a beast that remembers you), owner (a second person)
 TWISTS = {
+    # round 49: the false mark, found when you reach the forger (a guild job; no step has this verb, so it comes last)
+    'forger': ({'forger'}, 'In a back room of the poor quarter you find the forger: ink on his fingers, and a box of '
+               'seals cut just like the guild\'s. "Half of what I made is yours," he says, "if you never saw me."',
+               [('Take him to the Watch', dict(law=3, rep=1)), ('Take a share and keep quiet', dict(coin=2.2, law=-4))]),
     'young': ({'kill', 'clear'}, 'Behind it, in the hollow, small ones squeal: it was guarding its young.',
               [('Kill the young too', dict(coin=1, god=-1)), ('Let them go', dict(coin=.5, friend=True, god=1)),
                ('Take them alive for the lord\'s menagerie', dict(coin=1.6, rep=-1))]),

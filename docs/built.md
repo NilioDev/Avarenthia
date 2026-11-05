@@ -53,6 +53,7 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the test menu, saves that last, the money check (5 Nov)** | F12 in the test build: a Tests page with every line of testing.md set up by one key and ticked off, a note for Claude in one zip; saves of older builds load with new fields filled; `tests/money.py` prints coin in and out per day at level 1, 10 and 20 |
 | **Built: folk in need (5 Nov)** | Ordinary people in the settlements ask for help with a need from the world as it is; 1-4 steps, a twist one time in three (boards too), small coin, standing and one thing fitting the giver (eight favours), folk who remember you and follow-ups, needs that run out and graves; 128 hand-written seeds, 20-25 a world |
 | **Built: marked creatures (5 Nov)** | One list of 20 affixes for champions (one, from level 15 sometimes two), uniques (two or three, and a name like the named enemies') and the named enemies; each fits its kind, place and season, has an answer, stands beside the name in IN SIGHT and in a sentence on the look; rarer than before |
+| **Built: crafts guilds (5 Nov)** | Four new guilds (Hammer and Tongs, Tanners' and Trappers' Lodge, Needle and Loom, Lantern and Ladle) with halls among three peoples; ranks that ask the craft and a fee; the free guild bench, the master's test, the mark, the master's board, a secret at Master, the guild day and its contest, hides and vats by the halls, two happenings; guild jobs of six kinds through the folk maker and the quarrel over the water. Rounds 48-49 |
 | **Built: a finer look (5 Nov)** | Remembered land with a hint of colour, calmer roads, whole names on the map, one colour scale on the panel, names in the log in their colour, each kind of level its own remembered tint, a soft fade-in |
 | **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
 | **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
@@ -60,6 +61,18 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **Crafts guilds** (rounds 48-49, 5 November 2026; `craftguilds.py`, entries in `guilds.GUILDS`, test parts
+  `craftguilds` and `guild_jobs`; SAVE_VERSION 69). Halls picked in `craftguilds.setup` (end of `guilds.setup`) among
+  three peoples or more; a town plan with no room gives a house or a table by the square (`ensure_halls`). A crafts
+  guild rank is `min(standing rank, s['paid'])`: the master raises you for the craft (10/20/30/40) and a fee
+  (50c/2s/8s/25s). The hall's anvil, bench or hearth (`m.guild_bench`) is free for members (`crafts.fee_here`). The
+  master judges the tests at 25 and 40, keeps one better paid order at a time, buys marked work (`it.gmark`, worth 15%
+  more) and teaches the secret at Master (re-temper, mounting into a trophy for a lord, livery on `p.livery`, a table
+  for the inn). The guild day is a feast of its own (`feasts.GUILD_DAYS`) with a contest. Guild jobs are folk-in-need
+  records with `guild` and `job` (fetch, world, wander, forger with the twist 'forger', mine, heirloom; reward
+  'guild'), handed in at the master. The quarrel over the water (`p.water`): the loser shuts bench and board for 90
+  days and its racks or vats stand empty in that town. Left out: the guild mark on dishes and brews, a pattern as a
+  reward, new city streets (only hides and vats by the halls), digging rights in the mine itself (a weekly share).
 - **Folk in need** (rounds 46-47, 5 November 2026; `folkquests.py`, `folkdata.py`, test part `folk`; SAVE_VERSION 67
   and 68). Needs on the world (`world.needs`: sid -> [need]), 0-2 per settlement, steady for five days; a giver
   stands about (role 'folk') with `!`, says a line in passing (tip 'folk'), a bump opens one window. Sources: a
@@ -2992,3 +3005,58 @@ Quests the world makes itself, beside the boards. The Dutch proposal with exampl
   `news.py`, `missions.py` (Mission kind 'folk' with steps). Handbook: Jobs and money, Towns and people. The wiki gets
   the seeds' titles. Test part `folk`. Bump `SAVE_VERSION`. Size XL in two parts: A the maker, sources, steps, rewards,
   standing, favours and UI; B the twists (also on the boards), who remembers you, follow-ups and consequences, seeds.
+
+## Crafts guilds (built 5 November 2026; the spec)
+Every life skill gets a guild that keeps it. The Dutch proposal: the doc "Ambachtsgildes: voorstellen" (thread
+"Ambachtsgildes voorstellen"). Rounds 48-49 of the build order. The rule "no new guilds" was about classes and elites;
+the crafts guilds give no fighting power.
+- **Four new guilds** beside Alembic and Barrel, the Cartographers and the Brotherhood of the Net (`guilds.py`, kind
+  'life'): **The Hammer and Tongs** (mining, smithing; halls in human cities, dwarf holds, which already have a
+  smiths' guild hall, and half-orc towns), **The Tanners' and Trappers' Lodge** (hunting, skinning, leatherworking;
+  human cities by the water, halfling and half-orc towns), **The Needle and Loom** (tailoring; human cities, the
+  elven city under the Elder Tree, gnome hamlets), **The Lantern and Ladle** (cooking, brewing beside Alembic; every
+  inn with a sign, halfling hill homes). Archaeology joins the Cartographers; foraging counts for Alembic and Barrel
+  too (the herbalist). Every guild has halls among at least three peoples. Anyone may join all of them.
+- **Ranks** come from guild jobs as now, and each also asks a rank in the craft (about 10/20/30/40). An entry fee at
+  each promotion (about 50c, 2s, 8s, 25s) instead of dues.
+- **The guild bench.** The hall has the guild's own anvil, workbench or hearth; members use it free, others pay the
+  usual 30c/20c. A bump and the window that exists now.
+- **The master's test in the hall.** The tests at 25 and 40 can also be taken from the guild master; the far town's
+  job stays, so the guild is a second source.
+- **The guild mark.** From Journeyman what you make carries the mark in its name ("Iron spear, Hammer and Tongs
+  mark"): merchants pay about 15% more, and the hall always buys your work.
+- **The master's board** in the hall: better paid orders than the town board, one at a time, hung on the world
+  (spears for the watch before a raid, a named beast's hide, a wedding cloak for a baron's house, a feast-day meal).
+- **One guild secret at Master,** at the guild bench: Hammer and Tongs *re-temper* (roll a crafted power's values
+  once more, may come out worse); the Lodge *mounting* (a named beast's head becomes a trophy to sell or give a lord
+  for standing); Needle and Loom *livery* (clothes in a house's or people's colours: some standing in their land,
+  the @ wears the colour); Lantern and Ladle *a table for the house* (cook for the whole inn: good moods and two more
+  rumours).
+- **The guild day** (`feasts.py`): stalls on the square and a contest for your best piece, judged by tier, powers
+  and masterwork with a roll; the prize a rare material and your name in the news.
+- **Their streets** (`citygrow.py`): the smiths' street with sparks (`anim.py`), the tanners by the water downstream
+  with racks and pits, weavers and dyers with looms and vats; the inns of the Lantern and Ladle a small mark on their
+  sign. Small happenings in `townlife.py`: tanners and dyers quarrel over the water, a smith wants a strong arm for a
+  day, a journeyman on his wander year walks along to the next town.
+- **Guild jobs** (approved 5 November 2026), made by the folk-in-need maker (`folkquests.py`) from steps the game has,
+  hung on the world, rewarded with guild rank, materials or a pattern (a new thing to make) and little coin:
+  1. **Fetch the stuff:** ore from a deep cave, a named beast's hide, Fey Silk; the higher your rank, the more
+     dangerous the land.
+  2. **Work for the world:** spears for the watch before a raid, winter cloaks before the snow, food for an army at
+     war, a wedding cloak for a baron's house; made or bought.
+  3. **The journeyman's wander year:** take a journeyman to a hall in another town, sometimes of another people;
+     standing with both.
+  4. **The false mark:** someone sells goods with a forged guild mark; track the forger in the poor quarter, then
+     turn him in to the Watch or take a share.
+  5. **The quarrel over the water** (tanners and dyers): take a side or mediate. The loser thinks less of you and
+     shuts its bench and board to you for a season (and guild standing is your rank, so a rank can fall); the
+     winner gives a favour (a thing in the pack, as with folk in need); mediating needs rank in both crafts, wins a
+     little with both or, failed, costs a little with both. The town shows it: the losing tanners' racks stand
+     empty for a season, or the losing dyers' vats stay dry.
+  6. **The fallen mine:** kobolds or something from below in the guild's mine; clear it and members may dig there.
+  7. **The founder's heirloom,** one great job per guild at Master, in three parts: Hammer and Tongs a broken Varnish
+     sword in three pieces at three places; the Lodge the beast that killed its founder; Needle and Loom a realm's
+     banner; Lantern and Ladle the king's meal at the Fair. The reward: the guild secret and a piece of your own.
+  Consequences go through `jobs.effects` (town, people, guild, crime) and the folk-in-need memory (`p.folk`).
+- Left out: a guild monopoly, dues, licences. UI: the guilds tab of the journal, the halls in the town legend
+  (`guide.py`); no new key. Handbook: Guilds and Crafts. Test part `craftguilds`. Bump `SAVE_VERSION`.

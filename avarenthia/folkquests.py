@@ -442,12 +442,13 @@ def on_enter(game, m):
                                           and mi.giver == sid}
     m.mons = [o for o in m.mons if o.role != 'folk' or getattr(o, 'need', None) in keep]
     there = {getattr(o, 'need', None) for o in m.mons if o.role == 'folk'}
-    for nd in offers + [mi.data for mi in MS.active(game) if mi.kind == 'folk' and mi.giver == sid]:
+    for nd in offers + [mi.data for mi in MS.active(game) if mi.kind == 'folk' and mi.giver == sid
+                        and not mi.data.get('guild')]:      # a guild job's giver is the master in the hall
         if nd.get('nid', nd['id']) not in there:
             place(game, m, nd)
     known = {getattr(o, 'helped', None) for o in m.mons if o.role == 'folk'}
     for hid, h in helped(game).items():
-        if h['sid'] == sid and hid not in known and not h.get('dead') and hid not in keep:
+        if h['sid'] == sid and hid not in known and not h.get('dead') and hid not in keep and not h.get('guild'):
             npc = place(game, m, dict(id=None, title=h['title'], people=h.get('people', 'human'),
                                       gender=h.get('gender', 'male'), motive=h['motive']))
             if npc:
@@ -620,6 +621,8 @@ def step_text(st):
         return f"bring {st['qty']} {_good(st)}"
     if v == 'dish':
         return 'bring a dish you cooked'
+    if v == 'piece':
+        return f"bring {st['n']} {st['what']}"
     return v
 
 
@@ -669,6 +672,8 @@ def take(game, nid):
 
 
 def _title(nd):
+    if nd.get('job_title'):
+        return nd['job_title']
     st = nd['steps'][-1]
     v, who = st['v'], nd['name']
     if v == 'kill':
@@ -875,6 +880,9 @@ def _ready(game, m):
         return p.cargo.get(st['good'], 0) >= st['qty']
     if st['v'] == 'dish':
         return any(it.k == 'dish' for it in p.inv)
+    if st['v'] == 'piece':
+        from . import craftguilds as CG
+        return CG.has_pieces(game, st)
     return False
 
 
@@ -891,6 +899,9 @@ def finish(game, m, npc=None):
     elif st and st['v'] == 'dish':
         it = next(it for it in p.inv if it.k == 'dish')
         game.remove_one(it)
+    elif st and st['v'] == 'piece':
+        from . import craftguilds as CG
+        CG.take_pieces(game, st)
     d = m.data
     for key in ('dungeon',):
         dg = game.world.dungeons.get(d.get(key)) if d.get(key) else None
@@ -909,7 +920,9 @@ def finish(game, m, npc=None):
     hp[d.get('root', d['nid'])] = dict(name=d['name'], title=d['title'], sid=m.giver, day=game.day, motive=d['motive'],
                                       trade=d['trade'], people=d['people'], gender=d['gender'], part=part,
                                       follow=follow if part < 3 else None,
-                                      due=game.day + random.randint(7, 30), gift_day=game.day)
+                                      due=game.day + random.randint(7, 30), gift_day=game.day, guild=d.get('guild'))
+    if d.get('guild'):                  # a guild job: the hall remembers it, nobody comes to visit
+        hp[d.get('root', d['nid'])]['follow'] = None
     if npc is not None:
         npc.need = None
         game.request = ('dialog', npc.name, random.choice(FD.THANKS) + (f' {gift}' if gift else ''))
@@ -947,6 +960,9 @@ def reward(game, m):
         if game.add_to_inv(it):
             return f"{d['name']} presses {it.display_name() if hasattr(it, 'display_name') else t} into your hands."
         return None
+    if kind == 'guild':
+        from . import craftguilds as CG
+        return CG.reward(game, m)
     if kind == 'bestiary':
         from . import bestiary as BE
         names = BE.study(game, 2)

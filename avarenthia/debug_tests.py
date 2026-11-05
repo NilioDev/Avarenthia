@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'More makers', 'Crafts guilds'}
+NOT_BUILT = {'More makers'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -431,6 +431,17 @@ def s_guild(game, n, key, rank):
     DBG.set_guild(game, key, rank)
 
 
+def s_hall(game, n, *keys):
+    """Into a town where a guild keeps a hall (the next one with Enter again)."""
+    halls = [(k, i) for k in keys for i in getattr(game.world, 'guild_halls', {}).get(k, ())]
+    if not halls:
+        game.msg('Test: no such hall in this world.', 'bad')
+        return
+    k, sid = halls[n % len(halls)]
+    DBG.teleport(game, ('s', sid))
+    game.msg(f'Test: {game.world.settlements[sid].name}, a hall of {k} ({n % len(halls) + 1} of {len(halls)}).', 'info')
+
+
 def s_hire(game, n, *kinds):
     DBG.add_hireling(game, kinds[n % len(kinds)])
 
@@ -539,7 +550,7 @@ STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'de
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'puzzle': s_puzzle,
-         'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked}
+         'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall}
 
 GOLD = 10 * 100 * 100
 SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
@@ -784,6 +795,21 @@ R = {
     'Marked creatures :: Fit and rarity': [('deep', ('dungeon (rift)', 'dungeon (cave)'), 1), ('month', 1),
                                            ('marked', 'wolf', 2, False), ('dbg', 'reveal_map'), SCHOOLS_NOTE],
     'Marked creatures :: Seen and told': [('deep', 'dungeon', 1), ('dbg', 'reset_tips'), ('marked', 'goblin', 2, False)],
+    # Crafts guilds
+    'Crafts guilds :: The four new guilds': [('hall', 'hammer', 'lodge', 'needle', 'ladle'), ('rank', 'smithing', 22),
+                                             ('coin', GOLD), SCHOOLS_NOTE],
+    'Crafts guilds :: Bench, test and mark': [('hall', 'hammer'), ('guild', 'hammer', 2), ('rank', 'smithing', 25),
+                                              ('give', 'Iron Bar'), ('give', 'Deepiron Bar'), ('coin', GOLD)],
+    'Crafts guilds :: Board, secrets, day': [('hall', 'hammer', 'lodge', 'needle', 'ladle'), ('guild', 'hammer', 3),
+                                             ('guild', 'lodge', 3), ('guild', 'needle', 3), ('guild', 'ladle', 3),
+                                             ('rank', 'smithing', 30), ('event', 'guildday'), ('coin', GOLD)],
+    'Crafts guilds :: Streets and happenings': [('hall', 'hammer', 'lodge', 'needle'), ('event', 'happening'),
+                                                ('note', 'look by the hall door: hides on racks, the dyers\' vats.')],
+    'Crafts guilds :: Guild jobs': [('hall', 'hammer', 'lodge', 'needle', 'ladle'), ('guild', 'hammer', 3),
+                                    ('guild', 'lodge', 2), ('guild', 'needle', 2), ('guild', 'ladle', 3),
+                                    ('rank', 'smithing', 30), ('rank', 'leatherworking', 15), ('rank', 'tailoring', 15),
+                                    ('note', 'ask the master for guild work of the hall; the tanners\' or the dyers\' '
+                                             'master for the quarrel.')],
     # The test menu
     'The test menu :: Tests page': [('note', 'tick this line with [y], restart, and see it kept.')],
     'The test menu :: Note for Claude and ✗': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

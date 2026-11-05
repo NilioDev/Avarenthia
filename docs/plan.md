@@ -15,7 +15,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
 | **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
-| **Approved: crafts guilds** | Four new guilds so every life skill has one (smiths and miners, tanners and trappers, tailors, cooks and innkeepers), halls among three peoples each; a free guild bench, the master's test in the hall, the guild mark, the master's board, one guild secret at Master, a guild day with a contest, their own streets; guild jobs of seven kinds. Rounds 48-49 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -88,7 +87,7 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     Merge after 47.
 48. **Block 14: the crafts guilds** (added 5 November 2026; after folk in need, whose maker makes the guild jobs).
     48. **Crafts guilds** (XL; built 5 November 2026): the four new guilds and their halls, ranks, the guild bench, the master's test in the
-    hall, the guild mark, the master's board, the secrets, the guild day, their streets. 49. **Guild jobs** (L): the
+    hall, the guild mark, the master's board, the secrets, the guild day, their streets. 49. **Guild jobs** (L; built 5 November 2026): the
     seven kinds, the quarrel over the water and its consequences, the founder's heirlooms. Merge after 49.
 50. **Block 15: more makers.** 50. **Part 1** (XL): the fallen dwarf hold, real mines, sewers, catacombs, the castle
     dungeon, the maze, ice caves. 51. **Part 2** (XL): lava tubes, tide caves and the other makers. 52. **Part 3** (L):
@@ -163,61 +162,6 @@ an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds
 To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
-
-## Crafts guilds (approved 2 November 2026, not built)
-Every life skill gets a guild that keeps it. The Dutch proposal: the doc "Ambachtsgildes: voorstellen" (thread
-"Ambachtsgildes voorstellen"). Rounds 48-49 of the build order. The rule "no new guilds" was about classes and elites;
-the crafts guilds give no fighting power.
-- **Four new guilds** beside Alembic and Barrel, the Cartographers and the Brotherhood of the Net (`guilds.py`, kind
-  'life'): **The Hammer and Tongs** (mining, smithing; halls in human cities, dwarf holds, which already have a
-  smiths' guild hall, and half-orc towns), **The Tanners' and Trappers' Lodge** (hunting, skinning, leatherworking;
-  human cities by the water, halfling and half-orc towns), **The Needle and Loom** (tailoring; human cities, the
-  elven city under the Elder Tree, gnome hamlets), **The Lantern and Ladle** (cooking, brewing beside Alembic; every
-  inn with a sign, halfling hill homes). Archaeology joins the Cartographers; foraging counts for Alembic and Barrel
-  too (the herbalist). Every guild has halls among at least three peoples. Anyone may join all of them.
-- **Ranks** come from guild jobs as now, and each also asks a rank in the craft (about 10/20/30/40). An entry fee at
-  each promotion (about 50c, 2s, 8s, 25s) instead of dues.
-- **The guild bench.** The hall has the guild's own anvil, workbench or hearth; members use it free, others pay the
-  usual 30c/20c. A bump and the window that exists now.
-- **The master's test in the hall.** The tests at 25 and 40 can also be taken from the guild master; the far town's
-  job stays, so the guild is a second source.
-- **The guild mark.** From Journeyman what you make carries the mark in its name ("Iron spear, Hammer and Tongs
-  mark"): merchants pay about 15% more, and the hall always buys your work.
-- **The master's board** in the hall: better paid orders than the town board, one at a time, hung on the world
-  (spears for the watch before a raid, a named beast's hide, a wedding cloak for a baron's house, a feast-day meal).
-- **One guild secret at Master,** at the guild bench: Hammer and Tongs *re-temper* (roll a crafted power's values
-  once more, may come out worse); the Lodge *mounting* (a named beast's head becomes a trophy to sell or give a lord
-  for standing); Needle and Loom *livery* (clothes in a house's or people's colours: some standing in their land,
-  the @ wears the colour); Lantern and Ladle *a table for the house* (cook for the whole inn: good moods and two more
-  rumours).
-- **The guild day** (`feasts.py`): stalls on the square and a contest for your best piece, judged by tier, powers
-  and masterwork with a roll; the prize a rare material and your name in the news.
-- **Their streets** (`citygrow.py`): the smiths' street with sparks (`anim.py`), the tanners by the water downstream
-  with racks and pits, weavers and dyers with looms and vats; the inns of the Lantern and Ladle a small mark on their
-  sign. Small happenings in `townlife.py`: tanners and dyers quarrel over the water, a smith wants a strong arm for a
-  day, a journeyman on his wander year walks along to the next town.
-- **Guild jobs** (approved 5 November 2026), made by the folk-in-need maker (`folkquests.py`) from steps the game has,
-  hung on the world, rewarded with guild rank, materials or a pattern (a new thing to make) and little coin:
-  1. **Fetch the stuff:** ore from a deep cave, a named beast's hide, Fey Silk; the higher your rank, the more
-     dangerous the land.
-  2. **Work for the world:** spears for the watch before a raid, winter cloaks before the snow, food for an army at
-     war, a wedding cloak for a baron's house; made or bought.
-  3. **The journeyman's wander year:** take a journeyman to a hall in another town, sometimes of another people;
-     standing with both.
-  4. **The false mark:** someone sells goods with a forged guild mark; track the forger in the poor quarter, then
-     turn him in to the Watch or take a share.
-  5. **The quarrel over the water** (tanners and dyers): take a side or mediate. The loser thinks less of you and
-     shuts its bench and board to you for a season (and guild standing is your rank, so a rank can fall); the
-     winner gives a favour (a thing in the pack, as with folk in need); mediating needs rank in both crafts, wins a
-     little with both or, failed, costs a little with both. The town shows it: the losing tanners' racks stand
-     empty for a season, or the losing dyers' vats stay dry.
-  6. **The fallen mine:** kobolds or something from below in the guild's mine; clear it and members may dig there.
-  7. **The founder's heirloom,** one great job per guild at Master, in three parts: Hammer and Tongs a broken Varnish
-     sword in three pieces at three places; the Lodge the beast that killed its founder; Needle and Loom a realm's
-     banner; Lantern and Ladle the king's meal at the Fair. The reward: the guild secret and a piece of your own.
-  Consequences go through `jobs.effects` (town, people, guild, crime) and the folk-in-need memory (`p.folk`).
-- Left out: a guild monopoly, dues, licences. UI: the guilds tab of the journal, the halls in the town legend
-  (`guide.py`); no new key. Handbook: Guilds and Crafts. Test part `craftguilds`. Bump `SAVE_VERSION`.
 
 ## Dungeons on their own land (approved 22 October 2026, not built)
 Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung west to east, or a cellular cave); the kinds differ only in dressing, monsters and depth. Overview, 15 example levels and mockups: `/mnt/project-files/dungeons/` (`uitleg.md`, `mockups/`). Inspired by laughingpanjandrum's ASCII maps (Tomb of King Oraine, Church of the Ailing Flower).

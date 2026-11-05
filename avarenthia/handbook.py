@@ -1193,6 +1193,11 @@ def ch_guilds(g):
               'mounts a named beast\'s head for a lord, the Needle and Loom sew a livery in a people\'s colours, the '
               'Ladle cooks a table for the whole inn. Once a year each hall keeps its guild day, with a contest for '
               'your best piece.'),
+        ('p', 'The master also has guild work of the hall: the best stuff fetched from dangerous places, pieces of your '
+              'own for what the world needs, a journeyman walked to a hall in another town, a forger of the guild\'s '
+              'mark found in a poor quarter, the smiths\' lost mine won back, and at Master the founder\'s heirloom. '
+              'The guild pays little coin and much in kind. When the tanners and the dyers quarrel over the water, '
+              'the side you leave shuts its bench and board to you for a season, and your rank with it can fall.'),
     ]
 
 
