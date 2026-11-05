@@ -212,8 +212,8 @@ def generate(game, m, world, R):
     for s in world.settlements:
         if s.kind == 'deephold':
             book = world.powers['grudges'].get(s.id, [])
-            if book:
-                gd = min(book, key=lambda q: q['day'])
+            gd = min(book, key=lambda q: q['day']) if book else None
+            if gd and year_of(gd['day']) < now:          # a grudge of this year is news, not history
                 ev(year_of(gd['day']), 'Peoples', 'grudge', f'The oldest grudge of {s.name}',
                    f'the dwarves of {s.name} wrote in their Grudge Book: {gd["what"]}. It is not settled.', s.x, s.y,
                    sid=s.id, prio=1)
