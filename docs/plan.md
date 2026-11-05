@@ -14,7 +14,6 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **Approved: dungeons on their own land** | Built places that stand outside (temple, abbey, tower, fort, manor) start on their own play map with land around them; upper floors and cellars by stairs; each kind its own plan, bigger levels, wider halls, one telling thing per room, a mood line in the messages. Caves stay underground. Underground kinds their own plan too; hand-drawn pieces in data files and an editor for Nilio; classic dungeons from a random maker (rooms of many shapes grow onto the level, main ways 3 wide, narrow ways 1 wide, every passage from room to room). The random maker, the theme rooms, rivers underground and the pieces format are built (24 October 2026), and so are the temples, towers, barrows, abbeys, forts, manors, goblin places and the underground kinds' plans; the editor is built too (rounds 33-36, 31 October to 1 November 2026; see `docs/built.md`) |
-| **Approved: more makers** | 21 new makers for dungeons and places (a fallen dwarf hold, real mines, sewers, catacombs, a castle dungeon, a maze, ice caves, lava tubes, tide caves, a fungal deep, drowned villages, bandit hideouts, a fey hill, a giant's steading, wyrm bones and more), plus 14 states (lived in, fallen, held, flooded, besieged, sealed and more, shifting while you play) and levels breaking into other kinds. Rounds 50-52 |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -89,8 +88,8 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     48. **Crafts guilds** (XL; built 5 November 2026): the four new guilds and their halls, ranks, the guild bench, the master's test in the
     hall, the guild mark, the master's board, the secrets, the guild day, their streets. 49. **Guild jobs** (L; built 5 November 2026): the
     seven kinds, the quarrel over the water and its consequences, the founder's heirlooms. Merge after 49.
-50. **Block 15: more makers.** 50. **Part 1** (XL): the fallen dwarf hold, real mines, sewers, catacombs, the castle
-    dungeon, the maze, ice caves. 51. **Part 2** (XL): lava tubes, tide caves and the other makers. 52. **Part 3** (L):
+50. **Block 15: more makers.** 50. **Part 1** (XL; built 5 November 2026): the fallen dwarf hold, real mines, sewers, catacombs, the castle
+    dungeon, the maze, ice caves. 51. **Part 2** (XL; built 5 November 2026): lava tubes, tide caves and the other makers. 52. **Part 3** (L; built 5 November 2026):
     the 14 states and levels breaking into other kinds. Merge after 52.
 53. **Block 16: loose ends.** 53. **Boss fights: what is left** (L). 54. **Dungeons: what is left** (M): the entrance
     part of the fixed plans, each people flavouring a theme room. Merge after 54.
@@ -119,47 +118,6 @@ Prettier means using what is on the screen better, never adding to it:
 - **An accent colour has one meaning.** Gold is something for you (money, jobs, places, what matters in the log), red
   is danger; the orbs' red, ochre and blue belong to life, stamina and mana. The ground does not borrow them.
 - **Movement is scarce.** Only what really moves (fire, water, spell effects); no blinking or glinting as decoration.
-
----
-
-## More makers (approved 1 November 2026, not built)
-
-Thread "Overzicht van alle generatoren". Dutch list: project files `generatoren/voorstel.md`. Each maker is its own
-plan (like `delves.py`): you can tell from the map what the place is; what matters is a tile you see and bump.
-1. **A fallen dwarf hold**: the hold maker (`deephold.py`) in ruin, three layers (the city, the workshops, the mines),
-   the chasm bridge fallen, the forges cold; the cause comes from the history (a thing from the deep, goblins moved
-   in, a plague, a flood) and the chronicle tells it.
-2. **Real mines**: shafts and galleries that follow ore veins, cart rails, lifts, pit props, cave-ins and flooded deep
-   levels; for human, kobold and abandoned mines. The Lost Mine becomes one.
-3. **Sewers under cities**, following the streets above: channels with ledges, grates up to the street, a thieves' den.
-4. **Catacombs or an ossuary** under city temples: a grid of niche passages, a bone chapel.
-5. **A castle dungeon**: cells, a guard room, a torture room; prisoners to free.
-6. **A maze** with a folklore dweller (the minotaur) at its heart.
-7. **Ice caves** in a glacier: slick ice you slide over, the frozen dead.
-8. **Lava tubes** under volcanoes: long round tunnels, crusts.
-9. **A tide or smugglers' cave** on the coast: at high tide the low part floods (the hour counts).
-10. **A fungal deep**: a wood of great mushrooms and spore clouds.
-11. **An abandoned halfling hill home or a burnt elven glade**, a small place on the land.
-12. **A drowned village** under a lake, reached only in a dry summer.
-13. **A bandit hideout** in a quarry or a ruined keep: people with watch rounds and an alarm bell (rung, it wakes all).
-14. **A fey hill**: a hall under the hill where time runs otherwise; outside a week has passed.
-15. **A giant's steading** in the mountains: everything too big, under tables, crawl under doors.
-16. **Wyrm bones**: the skeleton of an old dragon half in the ground, ribs for passages, the skull the last room.
-17. **A sinkhole shaft**: levels round one open pit; look down, jump, or go down on a rope.
-18. **Cellars under towns**: small cellars under houses and inns, for jobs.
-19. **A geode**: a crystal cave that breaks the light into colours, rare stones.
-20. **Termite mounds** on the savanna: climbed up from inside.
-21. **A graveyard of family vaults**: many small vaults on one map.
-Over all of them: **states** and **break-ins** (a level that gives onto another kind: a mine into a Varnish deep, a
-sewer into the catacombs). The states: lived in; fallen; held by another people or by monsters; overgrown; flooded
-(the low half under water, swim or find another way); just burnt (smouldering, hot floor, part fallen in); frozen
-(winter or a curse, ice floors, frozen dwellers); stricken (doors nailed shut, stay too long and you may sicken);
-haunted (still by day, the dead rise at night); besieged (an army of a war in `realms.py` before it, defenders inside;
-help, smuggle in or betray); being plundered (the plunderers still at it); settled again (refugees or new settlers in
-an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds, the worst guards); already emptied
-(grave robbers or a rival of `living.py` came first: their tracks, their snares, maybe still them).
-**States shift while you play**: a besieged place falls if you stay away too long, a plundered one is overgrown later.
-To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ---
 

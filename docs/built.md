@@ -57,10 +57,27 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: a finer look (5 Nov)** | Remembered land with a hint of colour, calmer roads, whole names on the map, one colour scale on the panel, names in the log in their colour, each kind of level its own remembered tint, a soft fade-in |
 | **Built: the belt and the tally (5 Nov)** | Potions in four grades, a belt of 2-5 pockets on the panel with Shift+1-5, three turns from the pack; the tally of a life from the menu and at the end |
 | **Built: what you met (5 Nov)** | The first meeting of each kind of place and system with its day, listed in F12 [M] with what was never met, and in the note's zip |
+| **Built: more makers (5 Nov)** | 21 makers of places with their own plans (a fallen dwarf hold, real mines, sewers, catacombs, castle dungeons, mazes, ice caves, lava tubes, tide caves, a fungal deep, hill homes, burnt glades, drowned villages, bandit hideouts, a fey hill, giants' steadings, wyrm bones, sinkhole shafts, cellars, geodes, termite mounds, family vaults); 14 states that shift while you play; cracked walls that break into the place beyond |
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 
 ## Built
 
+- **More makers** (rounds 50-52, 5 November 2026; `makers.py` and `makerdata.py`, hooked into `delves.py`; test parts
+  `more_makers`, `more_makers2`, `maker_states`; SAVE_VERSION 70). A maker's place carries `d.maker`;
+  `makers.kind` gives each level's plan (the hold's three layers, the mine's flooded bottom), merged into
+  `delves.KINDS/THINGS/FOLK/MOODS`. Own carvers: the catacombs' grid, the maze, the family vaults. `after_carve` lays
+  the water, rails, ice, crusts and lava, the tide's cells, the ribs and the pit (`paint` never cuts the way from the
+  stair to the far end); `after_folk` the prisoners and jailer, minotaur, frozen dead, outlaws with a watch (the warren's
+  gong logic, `delves.tick`), the miners' lamps, then the state. Placed at world making from the biomes
+  (`makers.LAND`), by cities, castles, halfling towns and towns. The tide fills the sea cave by `nature.tide`; the
+  drowned village opens only in summer (`may_enter`); out of the fey hill a week passes (`left`); the shaft's pit asks
+  look, rope or jump (`shaft`). States: `d.state` from `states_for` (a fixed boss's place stays fallen), laid by
+  `apply_state`; `state_tick` for the sick air, the dead at night and the broken siege; `daily` shifts besieged to
+  plundered (20 days) to overgrown (60), now and then a ruin is moved into; `shift` drops the made levels. Break-ins
+  (`d.breakin`): sewer to catacombs, mine to the deep, castle to a crypt, shaft to a fungal deep or cave, cellar to the
+  sewer; a cracked wall at the bottom (`break_in`). Simpler than the spec: the steading has no crawling under doors
+  (the mood lines tell it), the termite mound is climbed by its stairs down with a line that you climb up, cellars
+  are places of their own by the town and not yet used by jobs, besiegers are outlaws (no army of `realms.py`).
 - **Crafts guilds** (rounds 48-49, 5 November 2026; `craftguilds.py`, entries in `guilds.GUILDS`, test parts
   `craftguilds` and `guild_jobs`; SAVE_VERSION 69). Halls picked in `craftguilds.setup` (end of `guilds.setup`) among
   three peoples or more; a town plan with no room gives a house or a table by the square (`ensure_halls`). A crafts
@@ -3005,6 +3022,45 @@ Quests the world makes itself, beside the boards. The Dutch proposal with exampl
   `news.py`, `missions.py` (Mission kind 'folk' with steps). Handbook: Jobs and money, Towns and people. The wiki gets
   the seeds' titles. Test part `folk`. Bump `SAVE_VERSION`. Size XL in two parts: A the maker, sources, steps, rewards,
   standing, favours and UI; B the twists (also on the boards), who remembers you, follow-ups and consequences, seeds.
+
+## More makers (built 5 November 2026; the spec)
+
+Thread "Overzicht van alle generatoren". Dutch list: project files `generatoren/voorstel.md`. Each maker is its own
+plan (like `delves.py`): you can tell from the map what the place is; what matters is a tile you see and bump.
+1. **A fallen dwarf hold**: the hold maker (`deephold.py`) in ruin, three layers (the city, the workshops, the mines),
+   the chasm bridge fallen, the forges cold; the cause comes from the history (a thing from the deep, goblins moved
+   in, a plague, a flood) and the chronicle tells it.
+2. **Real mines**: shafts and galleries that follow ore veins, cart rails, lifts, pit props, cave-ins and flooded deep
+   levels; for human, kobold and abandoned mines. The Lost Mine becomes one.
+3. **Sewers under cities**, following the streets above: channels with ledges, grates up to the street, a thieves' den.
+4. **Catacombs or an ossuary** under city temples: a grid of niche passages, a bone chapel.
+5. **A castle dungeon**: cells, a guard room, a torture room; prisoners to free.
+6. **A maze** with a folklore dweller (the minotaur) at its heart.
+7. **Ice caves** in a glacier: slick ice you slide over, the frozen dead.
+8. **Lava tubes** under volcanoes: long round tunnels, crusts.
+9. **A tide or smugglers' cave** on the coast: at high tide the low part floods (the hour counts).
+10. **A fungal deep**: a wood of great mushrooms and spore clouds.
+11. **An abandoned halfling hill home or a burnt elven glade**, a small place on the land.
+12. **A drowned village** under a lake, reached only in a dry summer.
+13. **A bandit hideout** in a quarry or a ruined keep: people with watch rounds and an alarm bell (rung, it wakes all).
+14. **A fey hill**: a hall under the hill where time runs otherwise; outside a week has passed.
+15. **A giant's steading** in the mountains: everything too big, under tables, crawl under doors.
+16. **Wyrm bones**: the skeleton of an old dragon half in the ground, ribs for passages, the skull the last room.
+17. **A sinkhole shaft**: levels round one open pit; look down, jump, or go down on a rope.
+18. **Cellars under towns**: small cellars under houses and inns, for jobs.
+19. **A geode**: a crystal cave that breaks the light into colours, rare stones.
+20. **Termite mounds** on the savanna: climbed up from inside.
+21. **A graveyard of family vaults**: many small vaults on one map.
+Over all of them: **states** and **break-ins** (a level that gives onto another kind: a mine into a Varnish deep, a
+sewer into the catacombs). The states: lived in; fallen; held by another people or by monsters; overgrown; flooded
+(the low half under water, swim or find another way); just burnt (smouldering, hot floor, part fallen in); frozen
+(winter or a curse, ice floors, frozen dwellers); stricken (doors nailed shut, stay too long and you may sicken);
+haunted (still by day, the dead rise at night); besieged (an army of a war in `realms.py` before it, defenders inside;
+help, smuggle in or betray); being plundered (the plunderers still at it); settled again (refugees or new settlers in
+an old ruin, `townlife.py`); sealed (never opened since the fall: the best finds, the worst guards); already emptied
+(grave robbers or a rival of `living.py` came first: their tracks, their snares, maybe still them).
+**States shift while you play**: a besieged place falls if you stay away too long, a plundered one is overgrown later.
+To settle when building: the order, which get their own boss and loot, the handbook lines.
 
 ## Crafts guilds (built 5 November 2026; the spec)
 Every life skill gets a guild that keeps it. The Dutch proposal: the doc "Ambachtsgildes: voorstellen" (thread

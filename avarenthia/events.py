@@ -164,11 +164,32 @@ def reveal(game, poi):
 def ask(game, key, title, text, options, **ctx):
     """Open a choice dialog. options: list of (label, choice_key); a key of None shows the option greyed out."""
     game.pending = dict(key=key, title=title, text=text, options=options, ctx=ctx)
+    if len(options) > PAGE:                     # more than the letters a-x: shown a page at a time
+        _page(game, list(options), 0)
     game.request = ('choice',)
+
+
+PAGE = 24
+
+
+def _page(game, every, start):
+    ev = game.pending
+    ev['every'], ev['start'] = every, start
+    part = every[start:start + PAGE - 1]
+    ev['options'] = part + [('More...', '__more')]
+    cols = ev['ctx'].get('colours')
+    if cols:
+        ev['colours_all'] = ev.get('colours_all') or list(cols)
+        ev['ctx']['colours'] = ev['colours_all'][start:start + PAGE - 1]
 
 
 def resolve(game, choice):
     ev = game.pending
+    if ev and choice == '__more' and ev.get('every'):
+        start = ev['start'] + PAGE - 1
+        _page(game, ev['every'], start if start < len(ev['every']) else 0)
+        game.request = ('choice',)
+        return
     game.pending = None
     if not ev:
         return

@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'More makers'}
+NOT_BUILT = set()
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -442,6 +442,50 @@ def s_hall(game, n, *keys):
     game.msg(f'Test: {game.world.settlements[sid].name}, a hall of {k} ({n % len(halls) + 1} of {len(halls)}).', 'info')
 
 
+def s_maker(game, n, kinds=None, state=None, enter=True, depth=1):
+    """A place of the more makers (makers.py): the next kind each time, or of these kinds; in a state when given
+    ('cycle': the next of the 14 states each time, then a place with a break-in, at its bottom)."""
+    from . import makers as MK
+    ds = sorted((d for d in game.world.dungeons.values() if getattr(d, 'maker', None)
+                 and (kinds is None or d.maker in ((kinds,) if isinstance(kinds, str) else kinds))),
+                key=lambda d: (d.maker, d.id))
+    if state == 'cycle':
+        k = n % (len(MK.STATES) + 1)
+        if k == len(MK.STATES):
+            br = [d for d in ds if getattr(d, 'breakin', None)] or \
+                [d for d in game.world.dungeons.values() if getattr(d, 'breakin', None)]
+            if not br:
+                game.msg('Test: no place breaks into another in this world.', 'bad')
+                return
+            d = br[0]
+            DBG.to_over(game, d.x, d.y)
+            game.enter_dungeon(d.id, d.depth, 'down')
+            game.msg(f'Test: the bottom of {d.name}; its cracked wall gives onto '
+                     f'{game.world.dungeons[d.breakin].name}.', 'info')
+            game.request = ('save',)
+            return
+        ds = [d for d in ds if not d.boss] or ds
+        state, ds = MK.STATES[k], ds[:1]
+    if not ds:
+        game.msg('Test: no such place in this world.', 'bad')
+        return
+    if kinds is None and state is None:                    # each kind once, in turn
+        kinds_ = sorted({d.maker for d in ds})
+        kind = kinds_[n % len(kinds_)]
+        d = next(d for d in ds if d.maker == kind)
+    else:
+        d = ds[n % len(ds)]
+    if state:
+        MK.shift(game, d, state)
+    DBG.to_over(game, d.x, d.y)
+    if not enter:
+        game.msg(f'Test: you stand at {d.name} ({d.maker}, {getattr(d, "state", "")}); [>] goes in.', 'info')
+        return
+    game.enter_dungeon(d.id, min(depth, d.depth), 'down')
+    game.request = ('save',)
+    game.msg(f'Test: {d.name}: {d.maker}, {getattr(d, "state", "")}, level {min(depth, d.depth)} of {d.depth}.', 'info')
+
+
 def s_hire(game, n, *kinds):
     DBG.add_hireling(game, kinds[n % len(kinds)])
 
@@ -550,7 +594,8 @@ STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'de
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'puzzle': s_puzzle,
-         'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall}
+         'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall,
+         'maker': s_maker}
 
 GOLD = 10 * 100 * 100
 SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
@@ -810,6 +855,17 @@ R = {
                                     ('rank', 'smithing', 30), ('rank', 'leatherworking', 15), ('rank', 'tailoring', 15),
                                     ('note', 'ask the master for guild work of the hall; the tanners\' or the dyers\' '
                                              'master for the quarrel.')],
+    # More makers
+    'More makers :: Each new maker': [('maker',), ('dbg', 'reveal_map'), SCHOOLS_NOTE],
+    'More makers :: States and break-ins': [('maker', None, 'cycle'), ('dbg', 'reveal_map'),
+                                            ('note', 'Enter again for the next state; the 15th is a cracked wall '
+                                                     'at the bottom of a place: walk into it.')],
+    'More makers :: States shifting': [('maker', ('fallenhold', 'castle'), 'besieged', False), ('days', 22),
+                                       ('note', 'a siege nobody broke: go in, the plunderers have it now.')],
+    'More makers :: Time and season places': [('maker', ('tidecave', 'drowned', 'feyhill'), None, False),
+                                              ('note', 'the tide cave: wait for the tide (Time); the drowned village '
+                                                       'opens only in summer (Time, month 7); out of the fey hill a '
+                                                       'week has gone by. Enter again for the next one.')],
     # The test menu
     'The test menu :: Tests page': [('note', 'tick this line with [y], restart, and see it kept.')],
     'The test menu :: Note for Claude and ✗': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],

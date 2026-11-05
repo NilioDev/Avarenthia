@@ -447,16 +447,16 @@ three things. Test part `boss_moves`.
   the tally with plausible numbers and opens it; the Tests page also opens the death and win screens.
 
 
-## More makers (approved 1 November 2026)
+## More makers (approved 1 November 2026, built 5 November 2026)
 
-- **Each new maker** - every kind can be reached and seen whole. Debug: Teleport (each new kind in the list), Reveal
-  map, a "make again" key to roll the same kind with a new seed.
-- **States and break-ins** - one place in each of the 14 states and a level that breaks into another kind. Debug:
-  choose the state when teleporting; Teleport to a level with a break-in.
-- **States shifting** - a besieged place falling, a plundered one growing over. Debug: pass days (Time), set a
-  place's state.
+- **Each new maker** - every kind can be reached and seen whole. Debug: the recipe takes you into the next kind each
+  time (Enter again), Reveal map.
+- **States and break-ins** - one place in each of the 14 states and a level that breaks into another kind. Debug: the
+  recipe sets the next state each time (Enter again); the 15th is the bottom of a place with a cracked wall.
+- **States shifting** - a besieged place falling, a plundered one growing over. Debug: the recipe besieges a place and
+  lets 22 days pass (Time); set a place's state with the recipe above.
 - **Time and season places** - the tide cave at high and low tide, the drowned village in a dry summer, the fey
-  hill's lost week. Debug: set the hour and the season (Time), Teleport.
+  hill's lost week. Debug: set the hour and the season (Time), the recipe stands you at each place's door.
 
 
 ## Marked creatures (approved 1 November 2026, built 5 November 2026)

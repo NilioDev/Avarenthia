@@ -1022,11 +1022,17 @@ def talk(game, npc):
     if role == 'slum':
         talk_slum(game, npc)
         return True
-    if role in ('brawler', 'runaway', 'mourner', 'pickpocket'):
+    if role in ('brawler', 'runaway', 'mourner', 'pickpocket', 'strongarm', 'journeyman'):
         return talk_life(game, npc)
     if role == 'feast':
         from . import feasts as FE
         return FE.talk(game, npc)
+    if role == 'prisoner':
+        from . import makers as MK
+        return MK.talk(game, npc)
+    if role in ('settler', 'defender'):
+        from . import makers as MK
+        return MK.talk_state(game, npc)
     return False
 
 

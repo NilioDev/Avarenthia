@@ -3555,6 +3555,9 @@ class ChoiceScreen(Modal):
         self.app.pop()
         g.log_mark = len(g.log)
         EV.resolve(g, key)
+        if key == '__more' and g.pending:          # the next page of a long list
+            g.request = None
+            self.app.push(ChoiceScreen(self.app))
 
     def on_key(self, tok, shift):
         ev = self.game.pending

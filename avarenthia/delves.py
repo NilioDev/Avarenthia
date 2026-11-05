@@ -105,7 +105,10 @@ MOODS = {
 }
 
 
-def kind_for(d):
+def kind_for(d, depth=1):
+    if getattr(d, 'maker', None):                   # the more makers (makers.py): a plan for each layer
+        from . import makers as MK
+        return MK.kind(d, depth)
     return KIND_OF_TAG.get(d.tag, d.tag)
 
 
@@ -113,7 +116,7 @@ def plan_for(d, depth):
     """Does this level get its own plan? Not the older bottom under a temple, nor the mines or classic dungeons."""
     if depth > d.depth or getattr(d, 'varnish', False):
         return None
-    k = kind_for(d)
+    k = kind_for(d, depth)
     return k if k in KINDS else None
 
 
@@ -240,6 +243,12 @@ def _links(rooms):
 def carve(game, m, d, depth, kind):
     """Lay out a level of this kind on m (filled with rock or wall). Returns (up, down) cells."""
     spec = KINDS[kind]
+    if spec.get('vaults'):                          # the graveyard of family vaults (makers.py)
+        from . import makers as MK
+        return MK.carve_vaults(game, m, d, depth, kind)
+    if spec.get('grid') or spec.get('maze'):        # the catacombs' grid, the maze (makers.py)
+        from . import makers as MK
+        return (MK.carve_grid if spec.get('grid') else MK.carve_maze)(game, m, d, depth, kind)
     built = spec.get('built', False)
     rooms = _place(m.w, m.h, spec, built, spec.get('small'))
     inside = lambda x, y: 1 <= x < m.w - 1 and 1 <= y < m.h - 1  # noqa: E731
@@ -279,6 +288,9 @@ def carve(game, m, d, depth, kind):
             _water(m, r, up, down, deep=True)
         elif r.role == 'drowned':
             _water(m, r, up, down, deep=False)
+    if getattr(d, 'maker', None):
+        from . import makers as MK
+        MK.after_carve(game, m, d, depth, kind, up, down)
     return up, down
 
 
@@ -492,6 +504,9 @@ def folk(game, m, d, depth, up, down):
             m.sky_exit = far
     if kind == 'warren' and depth == 1:
         _back_way(m, up)
+    if getattr(d, 'maker', None):
+        from . import makers as MK
+        MK.after_folk(game, m, d, depth, up, down)
     return packs
 
 
@@ -590,12 +605,17 @@ def tomb(game, m, x, y):
 def tick(game):
     """Each step: a goblin watch that has seen you for two turns strikes the gong, and the hole wakes."""
     m = game.map
-    if getattr(m, 'delve', None) != 'warren' or getattr(m, 'gong_struck', False):
+    if getattr(m, 'tidal', None) or getattr(m, 'spores', False):
+        from . import makers as MK
+        MK.tick(game)
+    if getattr(m, 'state', None) in ('stricken', 'haunted', 'besieged'):
+        from . import makers as MK
+        MK.state_tick(game)
+    if getattr(m, 'delve', None) not in ('warren', 'hideout') or getattr(m, 'gong_struck', False):
         return
     p = game.player
-    vis = getattr(game, 'visible', None)
     watch = [o for o in m.mons if getattr(o, 'watch', False) and o.hp > 0]
-    seen = [o for o in watch if max(abs(o.x - p.x), abs(o.y - p.y)) <= 8 and (vis is None or vis[o.y * m.w + o.x])]
+    seen = [o for o in watch if max(abs(o.x - p.x), abs(o.y - p.y)) <= 8 and game.visible(o.x, o.y)]
     if not seen:
         m.watch_turns = 0
         return
@@ -609,7 +629,9 @@ def strike(game, m, who):
     for o in m.mons:
         if not o.is_npc:
             o.awake = True
-    game.msg(f'{who.the()[0].upper() + who.the()[1:]} strikes the alarm gong! The whole hole wakes.', 'bad')
+    what = 'The bell rings out over the quarry: every outlaw is up.' if getattr(m, 'delve', None) == 'hideout' else \
+        'The whole hole wakes.'
+    game.msg(f'{who.the()[0].upper() + who.the()[1:]} strikes the alarm! {what}', 'bad')
 
 
 def wire(game):
@@ -644,13 +666,17 @@ def bump(game, x, y):
     """The things of an underground place: the alarm gong, a sealed tomb, a nest's eggs. Returns turns spent, or None."""
     m = game.map
     t = m.tile(x, y)
+    if t == D.CRACKWALL and getattr(m, 'breakin', None) == (x, y):
+        from . import makers as MK
+        return MK.break_in(game, x, y)
     if t == D.GONG:
         if not getattr(m, 'gong_struck', False):
             m.gong_struck = True
             for o in m.mons:
                 if not o.is_npc:
                     o.awake = True
-        game.msg('You strike the gong. Every goblin in the hole knows you are here now.', 'info')
+        game.msg('You ring the bell. Every outlaw in the quarry knows you are here now.' if m.delve == 'hideout' else
+                 'You strike the gong. Every goblin in the hole knows you are here now.', 'info')
         return 1
     if t == D.BIER:
         return tomb(game, m, x, y)
@@ -668,3 +694,11 @@ def bump(game, x, y):
              (', and it comes for you!' if woke else '.'), 'bad' if woke else 'info')
     game.gain_xp(1)
     return 1
+
+
+# the more makers (makers.py, makerdata.py): their plans, things, folk and mood lines join these
+from . import makerdata as _MKD  # noqa: E402
+KINDS.update(_MKD.KINDS)
+THINGS.update({k: [(getattr(D, t), n, w) for t, n, w in v] for k, v in _MKD.THINGS.items()})
+FOLK.update(_MKD.WHO)
+MOODS.update(_MKD.MOODS)

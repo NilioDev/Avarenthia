@@ -296,8 +296,9 @@ def choose(app, key):
 
 
 def clear_wild(g):
-    for o in [o for o in g.map.mons if not o.is_npc]:
-        g.kill(o)
+    for _ in range(6):                      # a Splitting creature leaves two more behind
+        for o in [o for o in g.map.mons if not o.is_npc]:
+            g.kill(o)
     g.leave_to_over()
 
 
@@ -6030,6 +6031,283 @@ def guild_jobs():
     print('guild_jobs ok:', sorted(kinds))
 
 
+def more_makers():
+    """Round 50: more makers, part 1. The fallen dwarf hold (three layers and its cause), real mines (the Lost Mine
+    too), sewers, catacombs, a castle's dungeon with prisoners, a maze with the minotaur, ice caves you slide in."""
+    from avarenthia import makers as MK, makerdata as MD, delves as DV, chronicle as CH, guide as GDE
+    from avarenthia.worldgen import bfs
+    print('== more_makers')
+    app = new_app('soft', seed=50)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    p.lvl, p.vit = 20, 400
+    mk = {}
+    for d in w.dungeons.values():
+        if getattr(d, 'maker', None):
+            mk.setdefault(d.maker, []).append(d)
+    assert {'sewer', 'catacomb', 'castle', 'maze', 'realmine', 'fallenhold'} <= set(mk), sorted(mk)
+    assert w.dungeons['mine'].maker == 'realmine'
+    seen = {}
+    for maker, ds in sorted(mk.items()):
+        d = ds[0]
+        for depth in range(1, d.depth + 1):
+            g.enter_dungeon(d.id, depth, 'down')
+            m = g.map
+            kind = DV.kind_for(d, depth)
+            assert m.delve == kind, (maker, depth, m.delve)
+            ups = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.UP]
+            downs = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.DOWN]
+            assert ups, (maker, depth)
+            dist = bfs(m, ups[0][0], ups[0][1], lambda t: D.TILES[t].walk or D.TILES[t].door or t == D.DOWN)
+            for c in downs:
+                assert dist[c[1] * m.w + c[0]] >= 0, (maker, depth, 'the way down is cut off')
+            roles = {r[0] for r in m.delve_rooms}
+            seen[kind] = (len(m.mons), sorted(roles))
+            if kind == 'maze':
+                assert any(o.k == 'minotaur' for o in m.mons)
+            if kind == 'castle':
+                pr = [o for o in m.mons if o.role == 'prisoner']
+                assert pr and any(o.k == 'jailer' for o in m.mons)
+                from avarenthia import townlife as TL
+                n = len(m.mons)
+                assert TL.talk(g, pr[0]) and len(m.mons) == n - 1 and p.freed == 1
+            if kind == 'sewer':
+                assert any(t == D.SHALLOW for t in m.t)
+            if kind in ('realmine', 'realmine_deep'):
+                assert any(t == D.RAIL for t in m.t)
+            if kind == 'catacomb':
+                assert sum(1 for t in m.t if t == D.BONES) > 50
+    if 'icecave' in mk:
+        d = mk['icecave'][0]
+        g.enter_dungeon(d.id, 1, 'down')
+        m = g.map
+        assert m.icecave and any(t == D.SLICK for t in m.t) and any(o.k == 'frozen_dead' for o in g.maps[f'{d.id}:2'].mons) \
+            if f'{d.id}:2' in g.maps else m.icecave
+        sl = next(i for i, t in enumerate(m.t) if t == D.SLICK and m.t[i + 1] == D.SLICK and m.t[i + 2] == D.SLICK)
+        p.x, p.y = sl % m.w, sl // m.w
+        MK.on_step(g, p.x - 1, p.y)
+        assert p.x > sl % m.w + 1 or m.t[p.y * m.w + p.x + 1] != D.SLICK
+    # the fallen hold: its cause in the chronicle, the chasm down
+    hold = mk['fallenhold'][0]
+    g.enter_dungeon(hold.id, 1, 'down')
+    assert any(f.get('key') == 'fall:' + hold.id for f in CH.facts(g)), 'the chronicle tells why it fell'
+    assert any(t == D.CHASM for t in g.map.t)
+    for k in ('minotaur', 'frozen_dead', 'jailer'):
+        assert k in D.MONSTERS and k in D.LORE
+    assert 'ice' in GDE.TIPS and set(MD.KINDS) <= set(DV.KINDS)
+    print('more_makers ok:', {k: v[0] for k, v in seen.items()})
+
+
+def more_makers2():
+    """Round 51: more makers, part 2. Lava tubes, a tide cave the sea fills, a fungal deep with spores, a halfling hill
+    home, a burnt glade, a drowned village for dry summers, a bandit hideout with its bell, a fey hill where a week goes
+    by, a giant's steading, wyrm bones, a sinkhole shaft, cellars, a geode, a termite mound, the family vaults."""
+    from avarenthia import makers as MK, makerdata as MD, delves as DV, events as EV, nature as NT, calendar as CAL
+    from avarenthia.worldgen import bfs
+    print('== more_makers2')
+    app = new_app('soft', seed=51)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    p.lvl, p.vit = 20, 400
+    p.life = g.stats()['max_life']
+    mk = {}
+    for d in w.dungeons.values():
+        if getattr(d, 'maker', None):
+            mk.setdefault(d.maker, []).append(d)
+    part2 = {'lavatube', 'tidecave', 'fungal', 'smial', 'burntglade', 'drowned', 'hideout', 'feyhill', 'steading',
+             'wyrmbones', 'shaft', 'cellar', 'geode', 'termite', 'vaults'}
+    missing = part2 - set(mk)
+    assert len(missing) <= 3, ('places missing from this world', sorted(missing))
+    seen = {}
+    for maker in sorted(part2 & set(mk)):
+        d = mk[maker][0]
+        for depth in range(1, d.depth + 1):
+            g.enter_dungeon(d.id, depth, 'down')
+            m = g.map
+            kind = DV.kind_for(d, depth)
+            assert m.delve == kind, (maker, depth, m.delve)
+            ups = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.UP]
+            assert ups, (maker, depth)
+            dist = bfs(m, ups[0][0], ups[0][1], lambda t: D.TILES[t].walk or D.TILES[t].door or t == D.DOWN)
+            downs = [(i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.DOWN]
+            for c in downs:
+                assert dist[c[1] * m.w + c[0]] >= 0, (maker, depth, 'the way down is cut off')
+            if depth < d.depth and not getattr(m, 'shaft', False):
+                assert downs, (maker, depth, 'no way down')
+            seen[kind] = len(m.mons)
+            if kind == 'lavatube':
+                assert any(t == D.LAVA for t in m.t) and any(t == D.CRUST for t in m.t)
+            if kind == 'fungal':
+                assert m.spores and sum(1 for t in m.t if t == D.SHROOM) > 10
+            if kind in ('burntglade',):
+                assert m.outdoor and any(t == D.ASH for t in m.t) and D.ROCK not in m.t
+            if kind == 'wyrmbones':
+                assert sum(1 for t in m.t if t == D.BONES) > 15
+            if kind == 'vaults':
+                assert sum(1 for t in m.t if t == D.BIER) >= 4 and sum(1 for t in m.t if t == D.DOOR) >= 4
+            if kind == 'hideout':
+                watch = [o for o in m.mons if getattr(o, 'watch', False)]
+                assert watch and any(t == D.GONG for t in m.t)
+                o = watch[0]
+                p.x, p.y = o.x + 1, o.y
+                g.compute_fov()
+                for _ in range(3):
+                    DV.tick(g)
+                assert m.gong_struck and all(x.awake for x in m.mons if not x.is_npc), 'the bell wakes them all'
+    # the tide: the low caves fill and drain with the hour
+    if 'tidecave' in mk:
+        d = mk['tidecave'][0]
+        g.enter_dungeon(d.id, 1, 'down')
+        m = g.map
+        td = m.tidal
+        assert td['low'] or td['sump']
+        cells = td['low'] + td['sump']
+        p.x, p.y = next((i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.UP)
+        states = set()
+        for _ in range(16):
+            g.turn += D.DAY_LEN // 16
+            MK.tick(g)
+            states.add((td['high'], sum(1 for i in cells if m.t[i] in (D.SHALLOW, D.WATER))))
+        assert {h for h, _n in states} >= {0, 2}, states
+        assert any(n == 0 for h, n in states if h == 0) and any(n > 0 for h, n in states if h == 2), states
+    # the drowned village only in summer
+    if 'drowned' in mk:
+        d = mk['drowned'][0]
+        day0 = g.day
+        summer = next(dd for dd in range(day0, day0 + 400) if CAL.season(dd) == 'summer')
+        winter = next(dd for dd in range(day0, day0 + 400) if CAL.season(dd) == 'winter')
+        t0 = g.turn
+        g.turn = t0 + (winter - day0) * D.DAY_LEN
+        assert not MK.may_enter(g, d)
+        g.turn = t0 + (summer - day0) * D.DAY_LEN
+        assert MK.may_enter(g, d)
+        g.turn = t0
+    # the fey hill: a week outside
+    if 'feyhill' in mk:
+        d = mk['feyhill'][0]
+        to_over(g, 0)
+        p.x, p.y = d.x, d.y
+        g.over_pos = (d.x, d.y)
+        g.enter_dungeon(d.id, 1, 'up')
+        m = g.map
+        i = m.t.index(D.UP)
+        p.x, p.y = i % m.w, i // m.w
+        day = g.day
+        g.use_stairs('up')
+        assert g.day >= day + 7 and not g.cur.startswith(d.id), (g.day, day, g.cur)
+    # the shaft: look, the rope, the jump
+    if 'shaft' in mk:
+        d = mk['shaft'][0]
+        g.enter_dungeon(d.id, 1, 'down')
+        m = g.map
+        assert m.shaft and D.CHASM in m.t
+        from avarenthia import deephold as DH
+        DH.chasm(g)
+        assert g.pending and g.pending['key'] == 'shaft'
+        assert dict((k, l) for l, k in g.pending['options']).get(None), 'no rope: greyed out'
+        EV.resolve(g, 'look')
+        DH.chasm(g)
+        life = p.life
+        EV.resolve(g, 'jump')
+        assert g.map.depth == 2 and p.life < life
+    # the termite mound climbs up
+    for k in ('lavatube', 'tidecave', 'fungal', 'steading', 'termite', 'geode', 'vaults', 'cellar'):
+        assert k in MD.KINDS and MD.KINDS[k]['rooms']
+    print('more_makers2 ok:', seen)
+
+
+def maker_states():
+    """Round 52: more makers, part 3. Each place in one of 14 states (lived, fallen, held, overgrown, flooded, burnt,
+    frozen, stricken, haunted, besieged, plundered, settled, sealed, emptied), the states shifting while you play, and
+    the cracked wall at the bottom that breaks into another place."""
+    from avarenthia import makers as MK, delves as DV, townlife as TL
+    print('== maker_states')
+    app = new_app('soft', seed=52)
+    g, p = app.game, app.game.player
+    w = g.world
+    to_over(g, 0)
+    p.lvl, p.vit = 20, 400
+    mk = [d for d in w.dungeons.values() if getattr(d, 'maker', None)]
+    assert all(getattr(d, 'state', None) in MK.STATES for d in mk), [(d.id, getattr(d, 'state', None)) for d in mk]
+    from collections import Counter
+    print('  states:', dict(Counter(d.state for d in mk)))
+    d = next(x for x in mk if x.maker in ('fallenhold', 'catacomb', 'sewer', 'castle') and not x.boss)
+    got = {}
+    for st in MK.STATES:
+        MK.shift(g, d, st)
+        to_over(g, 0)
+        g.enter_dungeon(d.id, 1, 'down')
+        m = g.map
+        assert m.state == st
+        n_ch = sum(1 for t in m.t if t == D.CHEST)
+        got[st] = len(m.mons)
+        if st == 'overgrown':
+            assert sum(1 for t in m.t if t == D.GRASS) > 20
+        if st == 'flooded':
+            assert any(t in (D.SHALLOW, D.WATER) for t in m.t)
+        if st == 'burnt':
+            assert sum(1 for t in m.t if t == D.ASH) > 20
+        if st == 'frozen':
+            assert m.icecave and any(t == D.SLICK for t in m.t)
+        if st == 'emptied':
+            assert n_ch == 0
+        if st == 'settled':
+            se = [o for o in m.mons if o.role == 'settler']
+            assert se and TL.talk(g, se[0])
+        if st == 'stricken':
+            assert m.stricken
+            hit = False
+            for k in range(40):
+                g.turn = (g.turn // 150 + 1) * 150
+                MK.state_tick(g)
+                if p.status.get('diseased', 0) > 0:
+                    hit = True
+                    break
+            assert hit, 'the sick air'
+        if st == 'haunted':
+            assert m.haunted and not m.__dict__.get('risen')
+            from avarenthia import towns as TW
+            for _ in range(48):
+                if TW.is_night(g):
+                    break
+                g.turn += D.DAY_LEN // 24
+            MK.state_tick(g)
+            assert m.risen, 'the dead rise at night'
+        if st == 'besieged':
+            bs = [o for o in m.mons if getattr(o, 'besieger', False)]
+            de = [o for o in m.mons if o.role == 'defender']
+            assert bs and de
+            for o in bs:
+                g.kill(o)
+            MK.state_tick(g)
+            assert d.state == 'lived' and not m.besieged, 'the siege is broken'
+        if st == 'sealed':
+            g.enter_dungeon(d.id, d.depth, 'down')
+            assert g.map.items, 'the best finds'
+    # the states shift while you stay away
+    to_over(g, 0)
+    MK.shift(g, d, 'besieged')
+    d.state_day = g.day - 30
+    MK.daily(g)
+    assert d.state == 'plundered' and not any(k.startswith(d.id + ':') for k in g.maps)
+    d.state_day = g.day - 70
+    MK.daily(g)
+    assert d.state == 'overgrown'
+    # a break-in: the cracked wall at the bottom
+    br = [x for x in mk if getattr(x, 'breakin', None)]
+    assert br, 'some place breaks into another'
+    b = br[0]
+    MK.shift(g, b, 'fallen')
+    g.enter_dungeon(b.id, b.depth, 'down')
+    m = g.map
+    assert m.breakin and m.tile(*m.breakin) == D.CRACKWALL
+    x, y = m.breakin
+    assert DV.bump(g, x, y) == 1 and g.cur.startswith(b.breakin + ':'), g.cur
+    print('maker_states ok:', got, 'break-ins', len(br))
+
+
 def folk():
     """Round 46: folk in need, part A. People in the settlements with a need from the world as it is (a group on the
     map, the news, the season, the market, their trade and people); the '!' over them, their line in passing, one
@@ -8367,10 +8645,14 @@ def boss_moves():
     r.x, r.y = sp[0]
     g.use_stairs('down')
     assert r not in m.mons and g.map.coming
+    told = []
+    msg0 = g.msg
+    g.msg = lambda text, *a, **k: (told.append(text), msg0(text, *a, **k))[1]
     for _ in range(8):
         g.end_turn(1)
         p.life = g.stats()['max_life']
-    assert r in g.map.mons and any('after you' in ln[0] for ln in g.log[-20:])
+    del g.msg
+    assert r in g.map.mons and any('after you' in t for t in told)
     print('boss moves ok')
 
 
@@ -11049,7 +11331,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

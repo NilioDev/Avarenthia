@@ -368,6 +368,8 @@ def gen_world(game):
         _place_strongholds(m, world, reach)
         for h in world.holds:
             m.set(h.x, h.y, CASTLE if h.kind == 'castle' else FORT)
+        from . import makers as MK
+        MK.place(m, world, reach)                   # the more makers: sewers, catacombs, castle dungeons, mazes...
         _road_distance(m, world)
         for s in world.settlements:
             m.set(s.x, s.y, CITY if s.is_city else TOWN)

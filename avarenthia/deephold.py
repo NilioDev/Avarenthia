@@ -620,6 +620,9 @@ def cave_in(game, x, y):
 
 def chasm(game):
     from . import events as EV
+    if getattr(game.map, 'shaft', False):             # a sinkhole shaft (makers.py): look, jump or the rope
+        from . import makers as MK
+        return MK.shaft(game)
     EV.ask(game, 'chasm', 'The chasm', 'The chasm drops away into the dark. Far below you hear water, and the ring of '
            'picks: the mines. You could climb down, but not without a fall.',
            [('Climb down into the dark', 'down'), ('Step back', 'bye')])
@@ -714,6 +717,8 @@ def talk(game, npc):
 def register():
     from . import events as EV
     EV.RESOLVERS['chasm'] = r_chasm
+    from . import makers as MK
+    EV.RESOLVERS['shaft'] = MK.r_shaft
     EV.RESOLVERS['cart'] = r_cart
 
 

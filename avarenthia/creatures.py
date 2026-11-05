@@ -612,6 +612,9 @@ NEW.update(_PR.PREY)
 # the fighters of the raiding peoples and the smaller powers (powers.py)
 from . import outlanders as _OL
 NEW.update(_OL.OUTLANDERS)
+# the folk of the more makers (makers.py): the minotaur, the frozen dead, the jailer
+from . import makerdata as _MKD
+NEW.update(_MKD.FOLK)
 BANDS.update(_MN.BANDS)
 HORDE.update(_MN.HORDE)
 GEAR.update(_MN.GEAR)

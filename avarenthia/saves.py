@@ -55,6 +55,7 @@ MIGRATIONS = {
     66: ('folk in need: their needs on the world, who you helped on the player', None, False),
     67: ('folk in need: twists, seeds, follow-ups and graves', None, False),
     68: ('the crafts guilds: four new guilds, their halls, ranks raised by the master', _craftguilds, False),
+    69: ('more makers: places with their own plans, their states and break-ins (new worlds)', None, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

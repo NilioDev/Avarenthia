@@ -617,6 +617,47 @@ def ch_dungeons(g):
         ('p', 'Kill a goblin watch before it strikes the gong, or the whole hole wakes. Tripwires rattle tins and wake '
               'the nearest den; a covered pit drops you to the level below. Smash a nest\'s eggs and the nest comes '
               'for you. Push the slab off a sealed tomb for what was buried with the dead.'),
+        ('h', 'Holds, mines, sewers'),
+        ('p', 'A fallen dwarf hold lies by the mountains in three layers: the city with its broken gate and the chasm '
+              'whose bridge fell, the workshops with their cold forges, and the mines. Why it fell, a thing from the '
+              'deep, goblins, a plague or a flood, you see with your own eyes, and the chronicle keeps it.'),
+        ('p', 'In a real mine the galleries follow the ore, rails run from the pithead to the face, pit props hold '
+              'the roof, and where they did not the rock came down. The deepest working is often flooded. The Lost '
+              'Mine is one of these.'),
+        ('p', 'By some cities an outfall leads into the sewers: channels with a ledge on either side, a vaulted '
+              'cistern, grates up to the street, and somewhere a dry room where thieves sleep. Under the temple '
+              'quarter run the catacombs, narrow passages on a grid with the dead in every wall, and a bone chapel.'),
+        ('p', 'Under a castle lie its cells. Walk into a prisoner to break the lock; the village they came from will '
+              'remember it. In open country stand old mazes with one way through and something with horns at the '
+              'heart. In the glaciers lie ice caves, where the frozen dead keep still until you come close, and on '
+              'slick ice, the sign {▒|200,236,255}, you slide on the way you stepped until something stops you.'),
+        ('h', 'Places of the land'),
+        ('p', 'Under a volcano run lava tubes, long round tunnels with cooled crust underfoot and pools of fire. On '
+              'the coast a sea cave fills at high tide: the low caves run with water as the sea comes in, and drain '
+              'again when it goes; smugglers keep their kegs on a dry ledge. In a fungal deep the mushrooms stand '
+              'higher than trees, and to walk among them is to breathe their spores.'),
+        ('p', 'A halfling hill home stands empty near their country; an elven glade lies burnt in the woods. Where a '
+              'lake drowned a village, its roofs show only in a dry summer, and only then can you walk its street. '
+              'Outlaws hide in old quarries with a watch by the bell: let the watch see you and the bell wakes them '
+              'all.'),
+        ('p', 'Under a fey hill the light is the colour of late summer. Stay an afternoon and come out: a week has '
+              'gone by outside. In the mountains giants keep their steadings, where you walk under the tables. In '
+              'the bone sands lie the ribs of an old dragon, with its skull for the last room. A termite mound is '
+              'climbed from inside, up to the queen.'),
+        ('p', 'A sinkhole shaft drops through ledge after ledge round one open pit. Walk into the pit to look down, '
+              'to go down on a rope, or to jump. Under some towns are cellars, older cellars below them; in the '
+              'crystal hills a geode breaks your light into colours; outside some cities stand graveyards of family '
+              'vaults, a bier in each.'),
+        ('h', 'How a place stands'),
+        ('p', 'No place stays as it was built. You can tell on the first step in: others may have moved in; it may '
+              'be overgrown, flooded, burnt or frozen; its doors nailed shut against a sickness you can catch if you '
+              'stay; still by day with the dead walking at night; besieged, with defenders holding out deep inside; '
+              'still being plundered; settled again by refugees; sealed since it fell, with the best finds and the '
+              'worst guards; or already emptied by someone who came first and left snares behind.'),
+        ('p', 'Places change while you are away. Break a siege and the defenders will tell of it in the nearest '
+              'town; leave it, and in a few weeks the plunderers are inside. Plunder grows over in time, and an empty '
+              'ruin does not stay empty. At the bottom of some places a cracked wall gives onto another: walk into it '
+              'to break through, from the sewers into the catacombs, from a mine into the deep.'),
         ('h', 'Rivers underground'),
         ('p', 'A river of water or of fire may run through a level, in at one edge and out at another. Cross it by a '
               'bridge, {=|176,128,80}, a ford, or a crust of cooled rock, {▒|110,90,78}: each is a choke point.'),

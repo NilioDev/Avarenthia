@@ -93,12 +93,13 @@ from . import bosses as BS
 from .money import fmt, purse
 from . import world as WO
 from . import worldgen as W
+from . import makers as MK
 from .data import (FLOOR, DOOR, ODOOR, DOWN, UP, WATER, MOUNTAIN, TOWN, ENTR, WELL, ROAD, CITY)
 from .entities import Item, Player, make_gear, make_unique, random_gear, make_monster
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 69
+SAVE_VERSION = 70
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -704,6 +705,8 @@ class Game:
         p.x = p.y = -5
         made = key not in self.maps
         rise = getattr(dg, 'rise', False)               # the floors of a tower (towers.py)
+        if arrive == 'up' and depth > 1:
+            MK.arrive(self, dg, depth)
         if key not in self.maps and rise:
             self.maps[key] = W.gen_dungeon(self, did, depth)
         if key not in self.maps:
@@ -1323,6 +1326,9 @@ class Game:
             TH.on_step(self)
         if m.kind == 'dungeon' and m.t[ny * m.w + nx] == D.LOOSE:
             PL.loose_step(self)
+        if getattr(m, 'icecave', False):
+            from . import makers as MK
+            MK.on_step(self, ox, oy)
         if getattr(m, 'nature', None):
             NT.on_step(self)
         if getattr(m, 'old', None):
@@ -1581,7 +1587,10 @@ class Game:
                 self.enter_site(site.id)
                 return 1
             if t == ENTR:
-                self.enter_dungeon(self.dungeon_at(p.x, p.y), 1, 'up')
+                did = self.dungeon_at(p.x, p.y)
+                if not MK.may_enter(self, self.world.dungeons[did]):
+                    return 0
+                self.enter_dungeon(did, 1, 'up')
                 return 1
             poi = EV.poi_at(self, p.x, p.y)
             if poi and poi.kind in EV.RUIN_KINDS:
@@ -1639,6 +1648,8 @@ class Game:
                 self.msg('You climb back into the daylight.')
                 self.compute_fov()
                 self.request = ('save',)
+            if m.depth == 1:
+                MK.left(self, dg)
             else:
                 self.enter_dungeon(m.did, m.depth - 1, 'down')
             return 1
@@ -2799,6 +2810,7 @@ class Game:
                 EP.daily(self)
                 FE.daily(self)
                 LM.daily(self)
+                MK.daily(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
