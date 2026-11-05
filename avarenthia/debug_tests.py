@@ -832,6 +832,7 @@ R = {
     'The Avarenthia Editor :: More doors': [('theme', 'middle'), SCHOOLS_NOTE],
     'The Avarenthia Editor :: Whole places': [('to', 'drawn'), ('dbg', 'reveal_map')],
     'The Avarenthia Editor :: Whole places in the editor': [('note', 'in the editor: Ctrl+N, "A whole place".')],
+    'The Avarenthia Editor :: Makers in the editor': [('note', 'in the editor: Ctrl+G; a rectangle first for a maker area.')],
     # Playing it
     'Playing it :: A note for Claude': [('note', 'F12, [N]: write one line, and find the zip beside the save.')],
     'Playing it :: Saves that last': [('note', "keep a save of the build before this one and load it here.")],

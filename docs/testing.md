@@ -434,12 +434,12 @@ three things. Test part `boss_moves`.
   drawn in the list), Reveal map; in the editor F5 Try on a whole place (you stand at its west edge).
 - **Whole places in the editor** - Ctrl+N "A whole place", floors with PgUp / PgDn and + up / + down, In the world,
   people and finds on the Creatures layer, a room at 40 x 30 made a whole place, saved to my places.des.
+- **Makers in the editor** - Ctrl+G, pick a maker, R for another, Enter; take a part by dragging a frame; check the
+  floors of a temple or a dungeon come as tabs. Maker area: select a rectangle in a whole place, Ctrl+G, then F5 Try
+  and see it filled and joined to the rest.
 
 ## A finer look, not busier (approved 31 October 2026, built 5 November 2026)
 
-- **Makers in the editor** - Ctrl+G, pick a maker, R for another, Enter; take a part by dragging a frame; check the
-  floors of a tower or temple come as tabs. Maker area: paint one in a whole place, F5 Try twice from new worlds
-  (the debug menu's new world) and see it filled differently and reachable.
 - **Remembered land and roads** - the world map out of sight in its own dull colours, roads calmer than towns. Debug:
   reveal the map (Teleport far, or a reveal-map option).
 - **Each level's tint** - a den, an ice cave, a fire level, a drowned level, a crypt each remember in their own tint;
