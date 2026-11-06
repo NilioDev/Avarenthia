@@ -6,6 +6,33 @@ in the thirteenth month, Vaelmoon. Today's gods are the worn-down remains of the
 
 # ------------------------------------------------------------------ loose fragments, by heading of the chronicle
 FRAGS = {
+    'Before the Founding': [
+        'The water was there first. No god made the sea, and it is the one thing in the world no one has ever counted.',
+        'The gods asked the sleeping iron: "Who among you will stand in the height of the dark, hold up the roof of the '
+        'night, and keep watch over all below?" Much of the iron said yes.',
+        'Vael was the first iron to answer: slow, unyielding and steady. The gods raised her first, in the north, and '
+        'named her first.',
+        'The iron that said no sank below the floor of the sea, and smoulders there with its own pride: the Ashen Deep.',
+        'One lord of the Deep calls himself Ilthrix, Who Was a Star. There is no title in the world he wears with fiercer '
+        'pride, or deeper hatred.',
+        'Before the lamp was lit the giants walked, grey as the crags. The first morning turned those on the open moors '
+        'to stone where they stood, every face to the east.',
+        'Where the fire from below met the starlight from above, the wyrms were born. A wyrm does not die. It lies down '
+        'in a quiet waste and sleeps, for a thousand years, or ten.',
+        'The wild lands are littered with the ribs of wyrms. Most of them, the scholars agree, are only dead bone. No '
+        'one is ever quite certain which ones are not.',
+        'The fey stepped out of the hour between the setting of the lamp and the waking of the stars. They are not elves, '
+        'whatever the elves let men believe.',
+        'The fey keep every bargain to the letter, and never once to the spirit.',
+        'Men came last, out of the western fog in frail boats, with live coals in clay pots and their eyes on the stars. '
+        'From what shore, men themselves have forgotten.',
+        'The Varnish painted a staring eye on the prow of every ship: "A blind ship cannot find its way home." No sailor '
+        'ever asked which home was meant.',
+        'A skipping rhyme of the western beaches, about a country beyond the sunset where the lamp is set down at dusk, '
+        'where the hearth-fires never die and every soul is known by name. No one knows what it means.',
+        'Every power men bow to was there at the beginning, but one. Morrak was not. He was built, and it was men who '
+        'built him.',
+    ],
     'Gods': [
         'Sol-Amarath, who lights the count of days: "Every dawn she counts us, and finds none missing." The Solmara of '
         'today is what is left of her.',
@@ -21,6 +48,12 @@ FRAGS = {
         '"Eskelion\'s mile is a thousand paces of a tired man. Do not argue with a god about his paces."',
         'A prayer on a sherd: "Sol-Amarath, I have done no great thing today. Count me anyway."',
         'A children\'s riddle: "What has a thousand names and no face?" The answer is the sky.',
+        'Sol-Amarath carries her lamp across the roof of the sky from the eastern rim to the western sea, and sets it '
+        'down beyond the waves at dusk. On the longest night, the old wives say, she turns the wick down to rest her arm.',
+        'The stars are iron, small and near. They do not burn; they watch. On a still night, far from the dogs, they ring '
+        'like a wet finger round the rim of a glass.',
+        'Aerith breathed on the world: four great winds, twelve children, and more small breezes than there are stars, '
+        'each with a secret name a patient mage might learn.',
     ],
     'The emperors': [
         'Fifty emperors in fourteen hundred years. Of most of them only a byname is known.',
@@ -34,6 +67,8 @@ FRAGS = {
         'Halun the Builder of Glass raised the upper Sky-Seat. "He wanted to see the stars closer. He did."',
         'Domna was the only empress who ruled alone. Her law of the open roads still stands in every realm, unread.',
         'Serrat the Last took the winds from the farms. His name is scratched off more stones than it is on.',
+        'The iron crown had thirteen points, for the thirteen months. The throne stood under a dome of smoked glass with '
+        'an iron nail for every star, so the Emperor sat under the night at noon.',
     ],
     'Daily life': [
         'A wax tablet, a shopping list: "Lamp oil. Two eels. Figs if Hessa has them. A new strap for the boy\'s sandal, '
@@ -100,6 +135,13 @@ FRAGS = {
         'what they want. They tell me."',
         'The first star-iron: "A star fell in the hills in the year 990 FF. The iron in it would not rust and would not '
         'cool. The smiths still say it hums."',
+        'Archmaster Orveth, the last of the Collegium, never raised his voice, drank no wine, and remembered the names '
+        'of his novices\' mothers. He believed that anything measured is made safe.',
+        'Over the door of every academy: "The dead do what they are told. That is not the same as wanting to."',
+        'A treatise of the Collegium: "The wyrm kept a will, banked like a coal in its marrow. Next time, a servant with no '
+        'will at all."',
+        'The students of Master Ennis bound him for love, so his lectures might go on. They went on for two hundred '
+        'years, in his own dry voice, and none of it by his own will.',
     ],
     'Songs and books': [
         'A love poem on a sherd: "I would bind the wind for you, if they let poets bind the wind. / They do not. So I '
@@ -124,6 +166,8 @@ FRAGS = {
         'company."',
         'Written on the Northern Wall, many hands: "Day 1. Day 2. Day 3." It goes on for a long stretch of stone. It '
         'ends at Day 3,651.',
+        'Carved in a barracks beam on the Wall: "Nine walls of men we set against the north, and the north sent nothing, '
+        'year on year, and we grew old with our spears upon the stones, and we were glad."',
     ],
     'Trades and the sea': [
         '"The Guild of Road-Wardens: we walk so you need not."',
@@ -137,6 +181,10 @@ FRAGS = {
         '"The winds bound to the fleet are the oldest and the angriest. Do not whistle on board."',
         'A sailor\'s song: "Bronze on the mast and the wind in the jar, / and the Sky-Seat behind us, and home very far."',
         'A harbour sign: "No dead to be landed here without a seal. No live ones without a fee."',
+        'Varn was a fishing town at the foot of a cliff, a few hundred souls and an endless feud over whose water was '
+        'whose. What they had that their neighbours did not: they could read the dark.',
+        'In the year 990 a star fell in the hills. Black iron veined with silver, that took no rust and never quite '
+        'cooled. Before the engineers got there, a piece was gone, and small clawed footprints ringed the pit.',
     ],
     'Voices': [
         'On a milestone, scratched: "Gaius walked this. His feet hated it."',
@@ -190,9 +238,16 @@ FRAGS = {
         '"The elves\' wood is to be cleared for the road. The elves object. The road does not." The quarrel at the edge '
         'of the wood began here.',
         '"Since the Counting I have never had a bad year. Taxes are certain, and so is my share of them." A tax farmer.',
-        'A senator: "The poor complain of the roads. The roads bring them bread. Ingratitude is the only thing in the '
+        'A lord of the Court: "The poor complain of the roads. The roads bring them bread. Ingratitude is the only thing in the '
         'Empire that has no tax."',
         'Ithila the Younger again: "It is short because the long version was burned."',
+        'Far south, beyond the last milestone, the hill-folk laid bread and oil on a stone a mile downwind of the wyrm\'s '
+        'bones every spring. "So he sleeps well." The Varnish laughed.',
+        'Three master-surveyors measured the wyrm\'s bones and came back with three numbers. None of them could say why '
+        'his hands had shaken on the chain.',
+        'Around 1100 the Collegium bound the sleeping wyrm to end the southern war. At a river ford it turned its head and '
+        'spoke, once: "You did not ask." Thirty-nine masters burned in a breath.',
+        'Where the wyrm\'s true fire touched, nothing grew again. The olive terraces of the south are the desert now.',
     ],
     'The last days': [
         '"They have taken the winds off the farms and given them to the Sky-Seat. The fields are still. The sails are '
@@ -202,6 +257,11 @@ FRAGS = {
         'is cold up there."',
         '"Tonight the tellers did not come down from the tower. Their lamps are lit. Nobody answers."',
         'On the last page of a Book of Leagues: "At the last league there is nothing. Go back."',
+        '"In Vaelmoon we do not build." Then, with the shutters closed: "Because in Vaelmoon something else is building."',
+        'A week before the end, the goblins left the mud-city under the Sky-Seat. Nobody noticed. Nobody ever noticed the '
+        'goblins.',
+        'The last Vaelmoon, the small moon climbed into the north inside her empty crown, alone, and the tellers swore '
+        'her light was colder.',
     ],
     'Why it fell': [
         'A priest: "Because it bound what should have rested."',
@@ -209,9 +269,16 @@ FRAGS = {
         'A slave: "It did not fall. It stopped. For us it stopped."',
         'An elf, long after: "Your Empire was a long noise. Then it was quiet. We liked the quiet."',
         'A dwarf: "We wrote it down in the Grudge Book. The page is still open."',
+        'An orc: "Four hundred went down the steps into the pits. What came up, the clerks wrote as beasts of burden."',
+        'A last teller\'s ledger: "On the day the Hollow King is cast down, a single light will return to the north."',
     ],
 }
 HEADS = list(FRAGS) + ['Pages that belong together', 'Bound books']
+# the chapter of The Counted Sky each heading of fragments mostly comes from
+FRAG_CH = {'Before the Founding': 'before', 'Gods': 'II', 'The emperors': 'V', 'Daily life': 'II',
+           'Law and measure': 'II', 'Mages and the binding': 'VII', 'Songs and books': 'V', 'Soldiers and the wall': 'IV',
+           'Trades and the sea': 'I', 'Voices': 'V', 'The uncounted': 'II', 'The bound dead': 'V', 'Conquest': 'II',
+           'The last days': 'VIII', 'Why it fell': 'X'}
 
 # ------------------------------------------------------------------ the books in pieces
 # where: the kinds of place a page may lie (varnish.py turns them into real places of this world)
@@ -345,16 +412,15 @@ BOOKS = [
              '"A star is missing. Master Vane says I miscounted. He counts himself. He says I miscounted. He counts again. '
              'He does not say anything."',
              '"Two missing. We sent word to the Court. The Court says the tellers have miscounted."',
-             '"Nine missing, all in the north of the sky, in a line. Master Vane drew the line on the floor. It points at '
-             'the Sky-Seat. He rubbed it out."',
-             '"Tonight there is a new star. It is not in any of the books. It does not move with the others. It is '
-             'getting bigger."',
+             '"Nine missing, all of the Crown of Vael, the ring round the small moon. Under it a scorch on the sky, like a '
+             'finger. Master Vane chalked it on the floor. It points at the Sky-Seat. He rubbed it out."',
+             '"Tonight Vael has left her place. She does not move with the others. She is getting bigger, and whiter."',
              '"Master Vane has told us to go home. He is staying to count. He says someone must write down what happens."',
              '"Four thousand and twelve. Master Vane is right. I can see the one more now. It is very bright, and it is '
              'not far away at all."'],
-         hidden='In Vane\'s hand: "The stars did not go out. They were taken. The Hollow King\'s mages pulled them down '
-                'one by one, for their iron, to build something at the Sky-Seat. The last one they pulled was too big. I '
-                'am writing this and it is coming. Ilo, you should have gone home."',
+         hidden='In Vane\'s hand: "The stars did not go out. They were taken. The mages pulled the nine of the Crown down '
+                'one by one, for their iron, to build something at the Sky-Seat. Now they are pulling Vael herself, the '
+                'eldest. She is too big. I am writing this and she is coming. Ilo, you should have gone home."',
          chron='The tellers saw the stars go, one by one, and the Court would not hear it.', effect=('place', 'forge')),
     dict(key='bell', title="The Bronze Founder's Bell", thread='fall', noun='leaf', where=('vcity', 'harbour'),
          pages=[
@@ -513,7 +579,7 @@ BOOKS = [
          pages=[
              '"Day 1. Taur is crowned. He is nineteen. He asks where the kitchens are."',
              '"Day 3. The Emperor has freed the bound winds of the Street of Glass, for a day, as in the old Loosing. The '
-             'Senate is concerned."',
+             'Court is concerned."',
              '"Day 5. The Emperor orders new coins struck with his face. The mint says it takes a month. He asks them to '
              'hurry."',
              '"Day 7. The Emperor has asked to see the pits in the east. The mages say there is nothing to see. He says he '
@@ -658,7 +724,85 @@ BOOKS = [
                 'under that, in a grown hand: "Found in the house of the Ennis family, on the 13th of Vaelmoon, 1400 FF. '
                 'The house was empty. The dog was waiting."',
          chron='The Ruin fell in the thirteenth month, Vaelmoon.', effect=('riddle', 'king', 6)),
+    dict(key='orveth', title="Orveth's Notes", thread='winds', noun='leaf', where=('starhouse', 'windtower', 'library'),
+         ch='VII', pages=[
+             '"The wyrm in the south kept a will, banked like a coal in its marrow, and in the end it used it. The fault '
+             'was not in the binding. The fault was in the thing bound. Ours shall have no will to keep."',
+             '"The captive winds grow restless in the walls. Give them one purpose and they will be quiet. Twelve great '
+             'winds; a thirteenth to hold them. We shall call the work the Thirteenth Wind."',
+             '"The bound dead need overseers, and overseers tire. One mind to hold every seal at once. Hands without '
+             'number; it need not know their names."',
+             '"Star-iron for the frame. The fallen star of 990 is not enough by a hundredfold. A star is only iron that '
+             'has not been asked. We have the names of nine."',
+             '"The councillor spoke against the work again today. I like him. I have asked that his letters to his '
+             'daughter be read before they are sent. Only read."',
+             '"Everything is measured. The frame, the winds, the dead, the hour of Vaelmoon. What is measured is safe. '
+             'There remains the heart, and the heart is only a question of size."'],
+         hidden='On the last leaf, a column of figures in a neat, patient hand: the weight of the small moon Vael, '
+                'reckoned three times. Two sums agree. The third, larger, is struck out, and beside it: "Impossible. '
+                'Recount in the morning." There is no further page.',
+         chron='Archmaster Orveth, the last of the Collegium, built the Hollow King to have no will at all.',
+         effect=('riddle', 'king', 3)),
+    dict(key='fortieth', title='The Fortieth Master', thread='dead', noun='leaf', where=('library', 'hermitage', 'deserted'),
+         ch='V', pages=[
+             '"There were forty of us round the ribs, and I was the youngest, and I was proud to be there. For nine days '
+             'and nights we said the words. On the tenth morning the bones stood up."',
+             '"It marched where we told it. It breathed where we told it, a grey breath, and the hill-forts ran like '
+             'wax. My masters wrote home that it drove easier than oxen. I wrote home that I was cold."',
+             '"Sometimes the skull turned and looked at us. Only looked. The coal behind its eyes was brighter every '
+             'week. My master said it was the binding settling."',
+             '"At the ford I was sent up the bluff for water. When I looked down, it had stopped in the middle of the '
+             'river, and it turned its head, and it spoke. Once. \'You did not ask.\'"',
+             '"Then its own fire, white, from the marrow. Thirty-nine masters were ash before I could breathe. The river '
+             'boiled round the legion. I stood among the oaks with the water jar, and I did not drop it."',
+             '"It looked at the ford the way a ploughman looks at a furrow. Then it turned its back on us and walked home '
+             'to the south, along its own black road, and lay down where we had found it, in its own hour."'],
+         hidden='Pasted inside the cover, in an old man\'s hand: "They made me a master for coming back. They cut my '
+                'words over every door: the dead do what they are told; that is not the same as wanting to. I have not '
+                'spoken a word of binding since. Every spring I send bread and oil south, to a stone a mile from the '
+                'bones. I do not ask why. I know why."',
+         chron='The Collegium bound a sleeping wyrm in the south; it woke, burned thirty-nine masters, and went home to '
+               'sleep.', effect=('wyrm',)),
+    dict(key='firstleague', title='The First League', thread='emperors', noun='leaf', where=('road', 'gate'),
+         ch='I', pages=[
+             '"Aes, son of a teller, surveyor. I am tired of the quarrel over where Varn\'s water ends. I think a quarrel '
+             'over land is only a quarrel over measure. So I shall measure."',
+             '"A staff cut to a length, and a length agreed. I walk out of Varn this morning and count my steps."',
+             '"Four hundred. The gulls follow me, thinking I have fish. I have no fish. I have a number."',
+             '"Seven hundred. My feet hurt. A thousand paces of a tired man, I said, and I am becoming the right man for '
+             'the measure."',
+             '"A thousand. I drive the staff into the ground and sit down beside it. Nobody is here. Nothing happens. I '
+             'shall call this the Empire, because it is the first thing I have measured that is mine."'],
+         hidden='On the back of the last leaf, in another hand, much later: "He measured the first league with his own '
+                'feet, and rested at the end of it, and called the resting place the Empire. That morning was the first '
+                'day of the first year From the Founding. Nothing else happened. That came later."',
+         chron='Aes the Founder walked the first league out of Varn and called the end of it the Empire.',
+         effect=('way',)),
+    dict(key='star990', title='The Star of 990', thread='fall', noun='leaf', where=('forge', 'starhouse', 'mine'),
+         ch='VI', pages=[
+             '"Year 990. A star fell in the hills last night. The tellers recounted the sky and found every watcher in '
+             'its place. A stray, then. From the deep dark. It made a hole you could stable horses in."',
+             '"The iron at its heart is black, veined with silver. It will not rust. It will not cool. It hums against the '
+             'tongs, the thin high note you hear from the sky on a still night."',
+             '"When we reached the pit a piece was gone already. Small clawed footprints all round the warm ash. The '
+             'kobolds. The legate wanted them followed. Nobody would go."',
+             '"A wind locked in a cage of this iron never slips out. A seal of it never lets a dead man fall in the '
+             'furrow. The masters have stopped talking about anything else."',
+             '"From the rest: the scales of Valdrecht, the anchor-chains of the Sky-Seat, the master-seals of the dead, the '
+             'keys of the deepest vaults. And the masters say: there is not enough. There is never enough."'],
+         hidden='In the margin, a smith\'s note in charcoal: "One fallen star makes a poor quarry for an Empire. I heard '
+                'Orveth\'s people say it: \'Then we shall not wait for them to fall.\' I have put my hammer down. Let '
+                'someone else strike this iron."',
+         chron='A star fell in the hills in 990 FF; its black iron held every binding, and the kobolds took a piece.',
+         effect=('riddle', 'fall', 4)),
 ]
+# the chapter of The Counted Sky (countedsky.py) each book comes from: change a chapter, go over its books
+BOOK_CH = dict(ninth='IX', jar='VIII', leagues='II', walls='IV', hessa='V', court='VIII', teller='VII', bell='IX',
+               mor='V', petition='V', buydead='V', lowfold='II', play='VIII', hand='V', twelve='II', chariot='V',
+               ninthday='VII', lantern='IV', daughter='VII', grain='VIII', shape='VII', ferry='IX', census='V',
+               gardener='IX', gods='II', warden='IX', child='VII')
+for _b in BOOKS:
+    _b.setdefault('ch', BOOK_CH.get(_b['key'], 'V'))
 BOOK = {b['key']: b for b in BOOKS}
 NOUN_OF = {'diary leaf': 'leaf', 'ledger leaf': 'leaf', 'wax tablet': 'tablet'}
 
@@ -671,7 +815,8 @@ RIDDLES = [
              'down somewhere.',
          frags=[
              ('A stone: "The last order: seal the vaults. The sky is falling."', 'stone', None),
-             ('"Nine missing, all in the north of the sky, in a line. It points at the Sky-Seat."', 'page:teller:3', None),
+             ('"Nine missing, all of the Crown of Vael, in a ring round the small moon. A scorch under it points at the '
+              'Sky-Seat."', 'page:teller:3', None),
              ('A star floor of iron: the star map has holes where stars were, hammered out and filled with lead.',
               'place:starhouse', None),
              ('At a forge: "Iron from the ninth star. It came down warm and singing. The masters want more."',
@@ -682,8 +827,9 @@ RIDDLES = [
              ('Under the glassy sand of the fallen sky: a chain of star-iron as thick as a man, snapped.',
               'place:fallensky', None),
              ('"Tonight there is a new star, very bright, and it is not far away at all."', 'page:jar:6', None)],
-         answer='The mages pulled the stars down for their iron, one by one, with chains and bound winds. The last one '
-                'they pulled was too great to hold. It came down on the Sky-Seat.',
+         answer='The mages pulled the stars down for their iron, the nine of the Crown of Vael, one by one, with chains and '
+                'bound winds. Then they pulled Vael herself, the small moon, to be the King\'s heart. She was too great '
+                'to hold. She came down on the Sky-Seat, and since that night there has been one moon.',
          place='anchor'),
     dict(key='king', title='Who the Hollow King was',
          gap='Who the Hollow King was, no stone older than the last two hundred years will tell. Before him, the mages '
@@ -764,13 +910,16 @@ RIDDLES = [
                 'they walked free, and some still walk.',
          place='hall'),
 ]
+for _r, _c in zip(RIDDLES, ('VII', 'VII', 'VII', 'X', 'V')):
+    _r['ch'] = _c
 RIDDLE = {r['key']: r for r in RIDDLES}
 WHOLE = 6                 # true fragments that make a riddle whole
 LAST = ('The Ruin, as it was', 'The mages of the Varnish built a god. They pulled stars down for his iron and bound every '
         'wind and an army of the dead into him, and fed the work with the uncounted, whom they changed into the first '
-        'orcs. The last star they pulled was too great: it fell on the Sky-Seat, and the Hollow King broke apart. What '
-        'is left of him is the hunger people now call Morrak. What they could not destroy, they sealed in the vaults. '
-        'You know it now, and nobody else does.')
+        'orcs. Last they pulled the small moon Vael, for his heart; she was too great, and she fell on the Sky-Seat. The '
+        'Hollow King broke, but he was never alive, so he could not die: he sits on his throne behind the storm with '
+        'an empty chest, and the hunger that leaks from it is what people now call Morrak. What they could not destroy, '
+        'they sealed in the vaults. You know it now, and nobody else does.')
 
 # ------------------------------------------------------------------ names
 CITY_NAMES = ['Aes Varnath', 'Caelumbra', 'Ithil Vess', 'Orosgard', 'Halunmere', 'Domnaris', 'Serratum', 'Ennisford',

@@ -7814,6 +7814,28 @@ def varnish():
             assert bool(f['false']) == bool(fr[2]), (r['key'], i)
         assert any(f['key'] == f'vr:{r["key"]}:answer' for f in CH.facts(g))
     assert any(f['key'] == 'vr:last' for f in CH.facts(g)), 'all five riddles whole'
+    # The Counted Sky (round 58): chapters I-VIII open with the riddles, IX and X once the King is beaten
+    from avarenthia import countedsky as CS
+    from avarenthia import skyseat as SKS
+    opened = VN.sky_open(g)
+    assert opened[-8:] == CS.ORDER[1:9] and 'IX' not in opened, opened
+    sk = SKS.sh(w)
+    if sk is not None:
+        sk['won'] = True
+        assert VN.sky_open(g)[-2:] == ['IX', 'X']
+        sk['won'] = False
+    bl = CH.blocks(g, CH.CHAPTERS.index('The Varnish'))
+    assert ('h', 'The Counted Sky') in bl and any(b[0] == 'p' and 'Varn' in b[1] for b in bl)
+    f = next(f for f in CH.facts(g) if f['key'].startswith('vr:fall:'))
+    old, f['text'] = f['text'], 'an old wording'
+    CH.blocks(g, CH.CHAPTERS.index('The Old Days'))
+    assert f['text'] == old, 'the chronicle shows the words the source has now'
+    assert all(b.get('ch') for b in T.BOOKS) and all(r.get('ch') in CS.CHAPTER for r in T.RIDDLES)
+    assert set(T.FRAG_CH) == set(T.FRAGS) and all(c in CS.CHAPTER for c in T.FRAG_CH.values())
+    V['pages'].pop((V['books'][0], 0), None)
+    VN.fix_pages(w)
+    assert V['pages'][(V['books'][0], 0)] == ('library', None), 'a page a book grew waits at a library'
+    VN.effect(g, ('wyrm',), 'The Fortieth Master')
     deep = w.sites[V['deep']['anchor']]
     to_over(g, 0)
     g.enter_site(deep.id)

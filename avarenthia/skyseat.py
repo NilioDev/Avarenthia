@@ -597,6 +597,8 @@ def won(game):
     """You won: one closing screen, then a world that heals."""
     w = game.world
     s = sh(w)
+    from . import varnish as VN
+    before = VN.sky_open(game)
     s['won'] = True
     s['night'] = False
     s['wake'] = 0.0
@@ -619,6 +621,9 @@ def won(game):
                       'claim on them.', rg.cx, rg.cy, 'The Shadow')
         from . import shadow as SH
         SH.freed_war(game, [rid])
+    if VN.sky_news(game, before):
+        game.msg('A mage of the Circle of Magi sends word: she has written out the end of the story for you, at last.',
+                 'unique')
     game.flags['saved'] = True
     game.request = ('win',)
 

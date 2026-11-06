@@ -28,7 +28,7 @@ GRADE_VAL = (1, 3, 8)
 FAMILIES = {
     # one-handed weapons
     'dagger': ('weapon', ('Dagger', 'Rondel', 'Fang Dagger'), 1, (2, 7), 12, (0, 1), dict(hit=10)),
-    'shortsword': ('weapon', ('Short Sword', 'Falchion', 'Varnish Gladius'), 1, (2, 6), 20, (.8, .4), {}),
+    'shortsword': ('weapon', ('Short Sword', 'Falchion', 'Varnish Wall-Blade'), 1, (2, 6), 20, (.8, .4), {}),
     'club': ('weapon', ('Club', 'Cudgel', 'Truncheon'), 1, (1, 8), 15, (.8, 0), {}),
     'longsword': ('weapon', ('Long Sword', 'War Sword', 'Rune Sword'), 4, (3, 10), 60, (.9, .5), {}),
     'mace': ('weapon', ('Flanged Mace', 'Morning Star', 'Devil Star'), 5, (4, 9), 70, (1, 0), {}),
@@ -38,7 +38,7 @@ FAMILIES = {
     'scimitar': ('weapon', ('Scimitar', 'Shamshir', 'Talwar'), 3, (3, 8), 50, (.6, .6), {}),
     'flail': ('weapon', ('Flail', 'Knout', 'Scourge'), 6, (3, 12), 90, (1.1, 0), {}),
     'warhammer': ('weapon', ('War Hammer', 'Battle Hammer', 'Rune Hammer'), 9, (6, 13), 140, (1.3, 0), {}),
-    'spear': ('weapon', ('Spear', 'War Spear', 'Varnish Pilum'), 2, (2, 8), 30, (.7, .3), dict(reach=True)),
+    'spear': ('weapon', ('Spear', 'War Spear', 'Varnish League-Spear'), 2, (2, 8), 30, (.7, .3), dict(reach=True)),
     'throwknives': ('weapon', ('Throwing Knives', 'Balanced Knives', 'Wind Knives'), 2, (2, 6), 30, (0, .8),
                     dict(ranged=True)),
     'sling': ('weapon', ('Sling', 'Braided Sling', 'Giant Sling'), 1, (1, 5), 8, (0, .4), dict(ranged=True)),

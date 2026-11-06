@@ -49,6 +49,13 @@ def _craftguilds(g):
             s['paid'] = max(i for i, v in enumerate(GU.RANK_REP) if s.get('rep', 0) >= v)
 
 
+def _counted_sky(g):
+    """70: The Counted Sky (round 58): a Varnish book of this world that grew a page has the new page at a library."""
+    from .varnish import fix_pages
+    if getattr(g, 'world', None) is not None:
+        fix_pages(g.world)
+
+
 MIGRATIONS = {
     64: ('the kill count moved to the tally', _tally, False),
     65: ('the marks of creatures renamed', _affixes, False),
@@ -56,6 +63,7 @@ MIGRATIONS = {
     67: ('folk in need: twists, seeds, follow-ups and graves', None, False),
     68: ('the crafts guilds: four new guilds, their halls, ranks raised by the master', _craftguilds, False),
     69: ('more makers: places with their own plans, their states and break-ins (new worlds)', None, False),
+    70: ('The Counted Sky: books that grew a page wait at a library', _counted_sky, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

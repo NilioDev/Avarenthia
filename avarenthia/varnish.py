@@ -294,7 +294,7 @@ def choose_books(game, m, world):
               'hermitage': kind('hermitage'), 'river': kind('oldbridge'),
               'road': [('poi', q.id) for q in world.pois if q.kind == 'leaguestone'],
               'library': [('library', None)],
-              'mine': [('dungeon', s.below) for s in cities]}
+              'mine': [('dungeon', s.below) for s in cities], 'forge': kind('forge')}
     for bk in chosen:
         b = T.BOOK[bk]
         used = set()
@@ -1336,6 +1336,7 @@ def whole(game, rk):
     s = st(game)
     if rk in s['whole'] or true_count(game, rk) < T.WHOLE:
         return False
+    before = sky_open(game)
     s['whole'].add(rk)
     r = T.RIDDLE[rk]
     for i, fr in enumerate(r['frags']):
@@ -1356,6 +1357,7 @@ def whole(game, rk):
         _fact(game, 'The Old Days', T.LAST[0], T.LAST[1], 'read', 'your own reckoning', 'from all you found',
               'vr:last', title=T.LAST[0])
         game.msg('All five riddles are whole. You know now what the Ruin was.', 'unique')
+    sky_news(game, before)
     from . import shadow as SH
     SH.riddle_whole(game, rk)
     return True
@@ -1466,7 +1468,8 @@ def effect(game, eff, title):
     elif kind == 'disprove':
         for f in CH.facts(game):
             if f['text'].startswith(eff[1]):
-                CH.disprove(game, f['key'], 'his letters were written in his own hand, the last of them too.')
+                CH.disprove(game, f['key'], 'his own scribes wrote it down: he died in his nineteenth year, and for '
+                                         'eleven years they ruled in his name.')
     elif kind == 'lamp':
         towers = [s for s in w.sites if s.kind == 'walltower' and s.lamp]
         for s in towers:
@@ -1484,6 +1487,15 @@ def effect(game, eff, title):
             game.reveal_place(s.x, s.y)
             game.msg(f'The book says where the old apple tree grows: on a ledge by {s.name}, under the Sky-Seat. You '
                      'mark it on your map.', 'info')
+    elif kind == 'wyrm':
+        bones = next(((x, y) for n, x, y in getattr(w, 'wonders', ()) if n == "The Wyrm's Bones"), None)
+        if bones:
+            game.reveal_place(*bones)
+            CH.add(game, 'Places', f"{title} tells where the wyrm lay down again: the Wyrm's Bones, in the south.",
+                   'read', who=title, place=bones, key=f'lead:{title}', quiet=True)
+            game.msg("The book tells where the wyrm lay down again. You mark the Wyrm's Bones on your map.", 'info')
+        from . import storyland as SL
+        SL.altar_known(game)
     elif kind == 'ferry':
         game.player.ferry_free = True
         game.msg('The tally is the ferrymen\'s own. Show it at a ferry and no ferryman will take your fare.', 'info')
@@ -1591,9 +1603,107 @@ def rumour(game, npc=None):
     return f'My grandmother had it from hers, who had it from a stone: {text}'
 
 
+# ------------------------------------------------------------------ The Counted Sky, step by step
+CUT = [0, 2, 4, 6, 7, 8]      # riddles made whole -> how many of chapters I-VIII are open
+
+
+def sky_open(game):
+    """The chapters of The Counted Sky open in this hero's chronicle: the prologue once the peoples have told theirs,
+    I-VIII as the riddles are made whole, IX and X once the Hollow King is beaten."""
+    from . import countedsky as CS
+    s = st(game)
+    out = []
+    try:
+        from . import folkbooks as FB
+        if FB.prologue_open(game):
+            out.append('before')
+    except ImportError:
+        pass
+    n = len(s['whole'])
+    out += CS.ORDER[1:1 + CUT[min(n, 5)]]
+    from . import skyseat as SK
+    if (SK.sh(game.world) or {}).get('won'):
+        out += ['IX', 'X']
+    return out
+
+
+def sky_news(game, before):
+    """Say which chapters a step opened."""
+    from . import countedsky as CS
+    new = [k for k in sky_open(game) if k not in before]
+    for k in new:
+        game.msg(f'A chapter of The Counted Sky opens in your chronicle: {CS.CHAPTER[k][0]}.', 'unique')
+    return new
+
+
+def sky_blocks(game):
+    from . import countedsky as CS
+    keys = sky_open(game)
+    if not keys:
+        return []
+    out = [('h', 'The Counted Sky'),
+           ('p', 'How the Varnish Empire rose, what it was, and how it fell: the story the pieces only show in part, '
+                 'chapter by chapter as you come to know it.')]
+    for k in CS.ORDER:
+        if k in keys:
+            t, ps = CS.CHAPTER[k]
+            out.append(('h', t, t if len(t) < 24 else t.split('. ', 1)[-1][:22]))
+            out += [('p', p) for p in ps]
+    left = len(CS.ORDER) - len(keys)
+    if left:
+        out.append(('gap', f'{left} chapter{"s" if left != 1 else ""} of the story you do not know yet. The riddles, '
+                           'the peoples, and the end of it all may tell.'))
+    return out
+
+
+def source_text(key):
+    """The text of a chronicle fact as the source has it now (None: not one of ours)."""
+    try:
+        if key.startswith('vl:'):
+            _v, hd, i = key.split(':', 2)
+            return T.FRAGS[hd][int(i)]
+        if key.startswith('vp:'):
+            _v, bk, n = key.split(':')
+            return T.BOOK[bk]['pages'][int(n)]
+        if key.startswith('vbc:'):
+            return T.BOOK[key[4:]]['chron']
+        if key.startswith('vb:'):
+            return T.BOOK[key[3:]]['hidden']
+        if key == 'vr:last':
+            return T.LAST[1]
+        if key.startswith('vr:'):
+            _v, rk, i = key.split(':')
+            return T.RIDDLE[rk]['answer'] if i == 'answer' else T.RIDDLE[rk]['frags'][int(i)][0]
+    except (KeyError, IndexError, ValueError):
+        return None
+    return None
+
+
+def refresh(game, fs):
+    """A changed story reaches old saves: our facts show the words the source has now."""
+    for f in fs:
+        k = f.get('key')
+        if isinstance(k, str) and k[:2] in ('vl', 'vp', 'vb', 'vr'):
+            t = source_text(k)
+            if t and t != f['text']:
+                f['text'] = t
+
+
+def fix_pages(world):
+    """A book that grew a page after this world was made: the new page waits at a library."""
+    V = getattr(world, 'varnish', None)
+    if not V:
+        return
+    for bk in V.get('books', ()):
+        if bk in T.BOOK:
+            for n in range(len(T.BOOK[bk]['pages'])):
+                V['pages'].setdefault((bk, n), ('library', None))
+
+
 # ------------------------------------------------------------------ the chronicle's pages
 def blocks(game, ch, fs):
     """The Varnish and The Old Days, with their headings: fragments by subject, the books in pieces, the riddles."""
+    refresh(game, fs)
     out = []
     plain = [f for f in fs if not f.get('head')]
     for f in plain:
@@ -1663,6 +1773,7 @@ def blocks(game, ch, fs):
     if unread > 0:
         out.append(('gap', f'You carry {unread} page{"s" if unread != 1 else ""} in the old letters that you cannot '
                            'read yet.'))
+    out += sky_blocks(game)
     if not fs:
         out.append(('gap', 'The empire before the Ruin: its gods, its emperors, its people. Their stones stand in the '
                            'ruins, their pages lie where they fell, and the scribes keep a shelf of what is known.'))

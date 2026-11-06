@@ -582,7 +582,7 @@ def vault_open(game, poi):
     if key:
         game.remove_one(key)
         poi.sealed = False
-        game.msg('The Varnish key turns in a lock that has not moved in four hundred years.', 'unique')
+        game.msg('The Varnish key turns in a lock that has not moved in twelve hundred years.', 'unique')
         return True
     game.msg('A door of seamless stone, carved with an eye. There is no handle, no lock, only a line of Varnish letters: '
              '"Speak, and enter." You do not know what to say.', 'info')
