@@ -11781,11 +11781,237 @@ def window_sizes():
         ui.set_size(ui.BASE_W, ui.BASE_H)
     print('window sizes ok')
 
+def inn_games():
+    """Round 59: games at the inn. A gaming table by every innkeeper with two regulars; Bones (each people's twist,
+    the cup, a skull, a loaded bone seen or found out), The Count (Water face down, counting, shown the door), Vigil
+    (the board's rules, three strengths, the masters and the deed); stakes only in the evening, a limit a night."""
+    from avarenthia import inngames as IG, inngames_ui as IGU, events as EV, chronicle as CH, guide as GDE
+    print('== inn_games')
+    app = new_app('soft', seed=59)
+    g, p = app.game, app.game.player
+    w = g.world
+    # a table in the inn of towns of every people, and its regulars
+    seen = set()
+    for s in w.settlements:
+        pp = 'dwarf' if s.kind == 'deephold' else s.race
+        if pp in seen or ('inn' not in s.services and s.kind != 'deephold'):
+            continue
+        to_over(g, s.id)
+        g.enter_town(s.id)
+        g.pending = None
+        m = g.map
+        inns = [b for b in getattr(m, 'buildings', ()) if b.get('kind') == 'inn']
+        if not inns:
+            continue
+        seen.add(pp)
+        gt = m.gametable
+        assert m.tile(*gt) == D.GAMETABLE, (s.name, gt)
+        assert len(IG.regulars(g)) >= 1, s.name
+        assert any(gt in set(b['plot'].inside) for b in inns), 'in the inn'
+        assert IG.lay(g, m) == gt and len(IG.regulars(g)) <= 2, 'laid once'
+    assert {'human', 'dwarf'} <= seen, seen
+    # Thornfield's inn: the table asks what to play; stakes wait for the evening
+    to_over(g, 0)
+    g.enter_town(0)
+    g.pending = None
+    m = g.map
+    assert GDE.cell_name(m, m.gametable[1] * m.w + m.gametable[0]) == 'Gaming table'
+    g.turn = g.day * D.DAY_LEN + D.DAY_LEN // 2          # noon
+    IG.table(g)
+    opts = dict((k, lab) for lab, k in g.pending['options'] if k)
+    assert 'vigil' in opts and 'bones' not in opts, g.pending['options']
+    g.pending = None
+    g.turn = g.day * D.DAY_LEN + D.DAY_LEN * 19 // 24     # seven in the evening
+    assert IG.evening(g)
+    p.gold = 1000
+    IG.table(g)
+    assert {'bones', 'count', 'vigil'} <= {k for _l, k in g.pending['options']}
+    EV.resolve(g, 'bones')
+    app.after_action()
+    sc = app.top
+    assert isinstance(sc, IGU.BonesScreen), sc
+    app.render()
+    sc.on_key('right', False)
+    sc.on_key('enter', False)                            # sit down with 5c
+    assert sc.g is not None and p.gold == 995 and IG.staked(g) == 5
+    for _ in range(400):
+        gm = sc.g
+        if gm.phase == 'over':
+            break
+        app.render()
+        if gm.phase == 'throw':
+            sc.on_key('enter', False)
+        elif gm.phase == 'pick':
+            for i, f in enumerate(gm.thrown):
+                if f and not gm.marked[i]:
+                    sc.sel = i
+                    sc.on_key('up', False)
+            sc.on_key('down' if gm.round >= 8 or gm.free == len(gm.thrown) == 1 else 'enter', False)
+    assert sc.g.phase == 'over'
+    app.render()
+    gold = p.gold
+    won = sc.g.you_won
+    sc.on_key('enter', False)
+    assert not isinstance(app.top, IGU.BonesScreen)
+    assert p.gold == gold + (15 if won else 0) or IG.barred(g)
+    # the rules of Bones, each people's twist
+    b = IG.Bones('dwarf', ['A', 'B'], 2, rng=random.Random(1))
+    b.first = False
+    assert b.value([4, 4, 4], [0, 1, 2]) == 24 and b.value([4, 4, 3], [0, 1, 2]) == 11
+    b.kind = 'halfling'
+    assert b.value([1, 2, 0], [0, 1]) == 8
+    b.kind, b.first = 'orc', True
+    assert b.value([0, 3, 2], [1, 2]) == 10
+    b.kind = 'human'
+    b.cur, b.phase, b.free, b.first, b.round = 0, 'throw', 3, False, 9
+    b.face = lambda loaded: 0
+    b.throw()
+    assert b.round == 0 and b.cur != 0, 'a skull ends the round'
+    loaded = IG.Bones('human', ['A', 'B'], 2, rng=random.Random(2), loaded=True)
+    assert all(loaded.face(True) != 0 for _ in range(200))
+    sharp = [IG.Bones('human', ['A', 'B'], 2, rng=random.Random(k), cunning=30).seen for k in range(60)]
+    assert any(sharp) and not all(sharp)
+    assert not any(IG.Bones('human', ['A', 'B'], 2, rng=random.Random(k)).seen for k in range(60))
+    # the night's limit
+    room = IG.stake_room(g)
+    IG.put_stake(g, room)
+    IG.table(g)
+    assert not any(k in ('bones', 'count') for _l, k in g.pending['options']), 'the night is staked'
+    g.pending = None
+    g.turn += D.DAY_LEN
+    assert IG.stake_room(g) == IG.limit(g), 'a new night'
+    # The Count: Water lies face down, the dealer plays to 17, counting is seen
+    c = IG.Count(rng=random.Random(3))
+    c.deck = [(5, 'Iron'), (9, 'Stars'), (10, 'Iron'), (7, 'Stars'), (6, 'Water'), (4, 'Water')] + c.deck[:20]
+    c.deck.reverse()
+    c.deal(5)
+    assert c.you == [(5, 'Iron'), (9, 'Stars')] and IGU._sum(c.you) == '14'
+    c.draw()
+    assert c.you[-1][1] == 'Water' and IGU._sum(c.you) == '14 + ?'
+    c.stop()
+    assert c.phase == 'done' and c.result in ('win', 'lose', 'push')
+    by, high = c.left()
+    assert sum(by.values()) == len(c.deck)
+    IG.table(g)
+    EV.resolve(g, 'count')
+    app.after_action()
+    sc = app.top
+    assert isinstance(sc, IGU.CountScreen)
+    for _ in range(6):
+        app.render()
+        gold = p.gold
+        sc.on_key('enter', False)                         # deal
+        assert p.gold == gold - 2
+        app.render()
+        sc.on_key('down', False)                          # stop
+        app.render()
+        assert sc.g.phase == 'done'
+        assert p.gold - (gold - 2) == {'win': 4, 'push': 2, 'lose': 0}[sc.g.result]
+    sc.on_key('esc', False)
+    # counting too well too often: shown the door, no service at the inn
+    st = IG.state(g)
+    st['counted'] = [[IG.night(g), IG.inn_key(g)], 9]
+    c.result, c.stake = 'win', 2
+    random.seed(4)
+    assert IG.count_hand(g, c, True) == 'barred' and IG.barred(g)
+    keeper = next(o for o in m.mons if o.is_npc and o.role == 'inn')
+    g.request = None
+    g.talk(keeper)
+    assert g.request is None, 'not served'
+    IG.table(g)
+    assert g.pending is None
+    g.turn += D.DAY_LEN * (IG.BARRED_DAYS + 1)
+    assert not IG.barred(g)
+    # Vigil: the rules of the board
+    v = IG.Vigil()
+    assert len(v.moves('I')) > 20 and v.turn == 'I' and v.outcome(v.b) is None
+    bb = ['.'] * 81
+    bb[4 * 9 + 4] = 'V'
+    assert v.outcome(bb) is None
+    bb[2 * 9 + 2] = 'V'
+    bb[4 * 9 + 4] = '.'
+    bb[2 * 9 + 1] = bb[2 * 9 + 3] = 'I'
+    assert v.outcome(bb) == 'I', 'between two Iron away from the hearth'
+    bb = ['.'] * 81
+    bb[3 * 9 + 4] = 'V'
+    bb[2 * 9 + 4] = bb[3 * 9 + 3] = bb[3 * 9 + 5] = 'I'
+    assert v.outcome(bb) == 'I', 'beside the hearth: three Iron and the hearth'
+    bb[3 * 9 + 5] = '.'
+    assert v.outcome(bb) is None
+    bb = ['.'] * 81
+    bb[0 * 9 + 4] = 'V'
+    assert v.outcome(bb) == 'W'
+    bb = ['.'] * 81
+    bb[40] = 'V'
+    bb[2 * 9 + 2], bb[2 * 9 + 3] = 'I', 'W'
+    bb[2 * 9 + 6] = 'I'
+    nb, took = IG.Vigil.apply(bb, (2 * 9 + 6, 2 * 9 + 4))
+    assert took == 1 and nb[2 * 9 + 3] == '.', 'taken between two'
+    assert (4 * 9 + 4) not in [t for f, t in IG.Vigil().moves('W') if IG.Vigil().b[f] == 'W'], 'only Vael on the hearth'
+    # the stronger plays better: the Iron at three beats the loose Watch
+    res = []
+    for k in range(3):
+        v = IG.Vigil(rng=random.Random(k))
+        while not v.winner:
+            v.strength = 3 if v.turn == 'I' else 1
+            v.play(v.best())
+        res.append(v.winner)
+    assert res.count('I') >= 2, res
+    # a game on the screen, both sides played by the board's own sense
+    IG.table(g)
+    EV.resolve(g, 'vigil')
+    app.after_action()
+    sc = app.top
+    assert isinstance(sc, IGU.VigilScreen)
+    app.render()
+    sc.on_key('enter', False)                             # the Watch
+    assert sc.v.turn == 'W' and sc.v.plies == 1
+    for _ in range(150):
+        if sc.v.winner:
+            break
+        f, t = sc.v.best()
+        sc.cur = (f % 9, f // 9)
+        sc.on_key('enter', False)
+        assert sc.held == sc.cur
+        app.render()
+        sc.cur = (t % 9, t // 9)
+        sc.on_key('enter', False)
+    if not sc.v.winner:
+        sc.on_key('esc', False)
+    app.render()
+    sc.on_key('enter', False)
+    assert not isinstance(app.top, IGU.VigilScreen)
+    # the masters: told by rumour, beaten for a deed
+    ms = IG.masters(g)
+    assert 3 <= len(ms) <= 7 and IG.masters(g) is ms
+    assert IG.rumour(g)
+    st = IG.state(g)
+    st['masters'] = [sid for sid in ms][:-1]
+    last = list(ms)[-1]
+    to_over(g, last)
+    g.enter_town(last)
+    g.pending = None
+    assert hasattr(g.map, 'gametable'), 'a master sits at a table'
+    if True:
+        assert IG.master_here(g) == ms[last] and IG.strength(g, ms[last]) == 3
+        v = IG.Vigil(you='W')
+        v.winner = 'W'
+        IG.vigil_over(g, v, ms[last])
+        assert last in st['masters'] and any(d.get('title') == 'Keeper of the Vigil' for d in CH.deeds(g))
+        assert IG.rumour(g) is None, 'nobody left to tell of'
+    # the save keeps it
+    from avarenthia import saves as SV
+    E.save_game(g)
+    g2 = E.load_game()
+    assert g2.player.inngames['masters'] == st['masters']
+    print('inn games ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):

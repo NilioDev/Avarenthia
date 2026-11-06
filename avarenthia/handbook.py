@@ -457,6 +457,26 @@ def ch_towns(g):
         ('p', 'When a great evil wakes, refugees from its lands sleep in the squares of the cities near it. Walk into '
               'one to give a silver, or to hear what drove them out: some of them passed a lieutenant\'s stronghold on '
               'the way.'),
+        ('h', 'Games at the inn'),
+        ('p', 'Every inn keeps a gaming table, the sign {π|240,208,144}, with two regulars by it. Walk into the table '
+              'or a regular to play. Bones and The Count want the evening and a small stake, and an inn takes only so '
+              'much from you in one night; Vigil is played at any hour, for the name it gives you.'),
+        ('p', 'Bones: three knucklebones. Throw, set aside one or more with [↑], then throw the rest with [Enter] or '
+              'bank with [↓]. A skull ends your round with nothing, unless it is your first throw. The first to bank '
+              '30 takes the pot. Each people plays its own way: the dwarves\' Anvil and Spark counts three alike '
+              'double, the halflings\' Pips counts a one as six, the orcs\' Teeth doubles a throw that shows a skull '
+              'at once.'),
+        ('p', 'The Count: three suits of one to ten, Stars, Iron and Water. Draw with [Enter] or stop with [↓], as '
+              'near to 21 as you dare; over it and the stake is the dealer\'s. A Water card lies face down until '
+              'both of you stop, for nobody counts the water.'),
+        ('p', 'Vigil: the Iron That Said No against the Watch of the stars, on a board of nine by nine. Pick up a '
+              'piece and set it down with [Enter]; every piece moves straight, as far as it likes. A piece caught '
+              'between two foes is taken. The Watch wins when Vael reaches the edge; the Iron wins when Vael is '
+              'closed in, on four sides on the hearth or beside it, between two further out. A master of Vigil '
+              'sits in a few great places; the inns talk of them.'),
+        ('p', 'With Cunning you see a loaded bone at the table, and may play one of your own; you keep count of the '
+              'cards too. Caught at it, or counting too well too often, you are shown the door: no games and no '
+              'bed at that inn for some days.'),
         ('h', 'The week'),
         ('p', 'A week has seven days, from Moonsday to Restday. In human towns Starsday is market day: the square '
               'fills with people and travelling traders, and traders and outfitters pay a little more for what you sell. Restday is the rest '

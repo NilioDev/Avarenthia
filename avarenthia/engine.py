@@ -102,7 +102,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 73
+SAVE_VERSION = 74
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -973,6 +973,9 @@ class Game:
             TL.on_enter(self, m)
         if ST._SEATS.is_seat(site):
             BP.sync_cages(self, site, m)
+        if m.kind != 'town':
+            from . import inngames as IG
+            IG.lay(self, m)                          # an abbey's cellar keeps a gaming table too
         self.compute_fov()
         self.request = ('save',)
 
@@ -1266,6 +1269,9 @@ class Game:
                 return FY.bump(self, nx, ny)
             if t in NT.BUMP:
                 return NT.bump(self, nx, ny)
+            if t == D.GAMETABLE:
+                from . import inngames as IG
+                return IG.table(self)
             if t in (D.HEARTH, D.FIREPIT) and not (getattr(m, 'tribe', None) and not getattr(m, 'friendly', False)):
                 CK.at_fire(self, 'hearth' if t == D.HEARTH else 'pit')
                 return 0
@@ -3512,6 +3518,10 @@ class Game:
             return
         if TL.talk(self, npc):
             return
+        if role == 'gamer':
+            from . import inngames as IG
+            IG.table(self)
+            return
         if role == 'oldplace':
             OP.talk(self, npc)
             return
@@ -3541,6 +3551,12 @@ class Game:
         if role == 'shop':
             self.request = ('shop', f'h{hid}' if hid is not None else (here.id if here else 0))
             return
+        if role == 'inn':
+            from . import inngames as IG
+            if IG.barred(self):
+                self.say(npc, random.choice(['Out. You know why.', 'Not served here, not this week. Go on.',
+                                             'I do not pour for cheats.']))
+                return
         if role in ('market', 'inn', 'stables'):
             if role == 'inn' and here is not None:
                 CK.at_inn(self, here, npc)
@@ -3925,6 +3941,11 @@ class Game:
                 return line
         if r < .6:
             line = DP.rumour(self)                   # a whole place drawn in the editor (drawnplaces.py)
+            if line:
+                return line
+        if r < .66:
+            from . import inngames as IG
+            line = IG.rumour(self)                   # a master of Vigil (round 59)
             if line:
                 return line
         return LORE.hint(self)

@@ -85,6 +85,7 @@ MIGRATIONS = {
     70: ('The Counted Sky: books that grew a page wait at a library', _counted_sky, False),
     71: ('The story on the land (round 58c)', _story_land, False),
     72: ('The bar of seven keys: an epic on key 7, filled by fighting', _seven_keys, False),
+    73: ('Games at the inn: a gaming table by the innkeeper, your games on the player', None, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

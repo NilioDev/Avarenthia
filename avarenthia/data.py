@@ -342,6 +342,7 @@ TILES = [
     Tile('∆', '#c890ff', False, False, 'seal shard on a plinth', bg='#24123a'),
     Tile('Φ', '#c890ff', False, True, 'sealed door', bg='#24123a'),
     Tile('*', '#c8d8ff', False, True, 'shaft of moonlight', bg='#182038'),
+    Tile('π', '#f0d090', False, False, 'gaming table', bg='#3a2412'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -377,6 +378,7 @@ MARK = 252                       # a telling thing of a place of today (landmark
  SCRY, CHAINBOOK, GEMIDOL, BLINDIDOL, LADDER) = range(253, 284)      # puzzle things (puzzles.py)
 (MIMIC, STALKER, RAFT, VENT, SHIFTWALL, SHIFTGAP, HOLE, OILBARREL, RUNE_T, RUNELIT, LIGHTOFF, LIGHTON, SCALE, ROD, RODLIT,
  SHARDPLINTH, SEAL, MOONSHAFT) = range(284, 302)                   # more of them (round C)
+GAMETABLE = 302                  # the inn's gaming table (inngames.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

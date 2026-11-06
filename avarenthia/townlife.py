@@ -286,6 +286,8 @@ def on_enter(game, m):
     CG.ensure_halls(game, m)                        # a crafts guild hall the town plan had no room for
     from . import feasts as FE
     FE.on_enter(game, m)
+    from . import inngames as IG
+    IG.lay(game, m)                                 # the gaming table by the innkeeper (round 59)
     pp = m.people
     day = game.day
     if getattr(m, 'life_day', None) == day:

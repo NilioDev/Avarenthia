@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'Games at the inn'}
+NOT_BUILT = set()
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -442,6 +442,40 @@ def s_hall(game, n, *keys):
     game.msg(f'Test: {game.world.settlements[sid].name}, a hall of {k} ({n % len(halls) + 1} of {len(halls)}).', 'info')
 
 
+def s_inn(game, n, who=None):
+    """Beside the gaming table of an inn: of the next people each time, or of the next master of Vigil."""
+    from . import inngames as IG
+    from . import data as D
+    w = game.world
+    if who == 'master':
+        sids = list(IG.masters(game))
+    else:
+        by = {}
+        for st in w.settlements:
+            if 'inn' in getattr(st, 'services', ()) or st.kind == 'deephold':
+                by.setdefault('dwarf' if st.kind == 'deephold' else st.race, []).append(st.id)
+        sids = [v[0] for k, v in sorted(by.items())]
+    for k in range(len(sids)):
+        sid = sids[(n + k) % len(sids)]
+        DBG.teleport(game, ('s', sid))
+        m = game.map
+        gt = getattr(m, 'gametable', None)
+        if gt is None:
+            continue
+        p = game.player
+        p.x, p.y = next(((gt[0] + dx, gt[1] + dy) for dx, dy in ((0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (1, -1),
+                                                                  (-1, -1))
+                         if game.map.inb(gt[0] + dx, gt[1] + dy) and game.map.tile(gt[0] + dx, gt[1] + dy) != IG.GAMETABLE
+                         and D.TILES[m.tile(gt[0] + dx, gt[1] + dy)].walk
+                         and not m.mon_at(gt[0] + dx, gt[1] + dy)), (p.x, p.y))
+        game.compute_fov()
+        master = IG.master_here(game)
+        game.msg(f'Test: the gaming table of {w.settlements[sid].name} ({IG.people(game)})'
+                 + (f', where {master} plays.' if master else '.'), 'info')
+        return
+    game.msg('Test: no inn with a gaming table found.', 'bad')
+
+
 def s_maker(game, n, kinds=None, state=None, enter=True, depth=1):
     """A place of the more makers (makers.py): the next kind each time, or of these kinds; in a state when given
     ('cycle': the next of the 14 states each time, then a place with a break-in, at its bottom)."""
@@ -627,13 +661,18 @@ STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'de
          'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'peopleroom': s_people_room, 'entry': s_entry, 'puzzle': s_puzzle,
          'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall,
-         'maker': s_maker}
+         'maker': s_maker, 'inn': s_inn}
 
 GOLD = 10 * 100 * 100
 SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
 
 # ------------------------------------------------------------------ the recipes, one per line of testing.md
 R = {
+    # Games at the inn
+    'Games at the inn :: Bones': [('inn',), ('hour', 19), ('coin', GOLD), ('class', 'cunning', 30),
+                                  ('note', 'Enter again for the inn of the next people.')],
+    'Games at the inn :: Vigil': [('inn', 'master'), ('note', 'Enter again for the next master; any inn plays too.')],
+    'Games at the inn :: The Count': [('inn',), ('hour', 19), ('coin', GOLD), ('class', 'cunning', 30)],
     # Classes
     'Classes :: First class': [('tome', None)],
     'Classes :: Second class': [('class', None, 20), ('tome', None, 0, True)],

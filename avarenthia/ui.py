@@ -322,6 +322,9 @@ class App:
             self.push(CompanyScreen(self, req[1]))
         elif req[0] == 'talkpick':
             self.push(TalkScreen(self, req[1]))
+        elif req[0] == 'inngame':                     # games at the inn (round 59)
+            from . import inngames_ui as IGU
+            self.push(IGU.screen(self, req[1], req[2]))
         elif req[0] == 'win':
             E.save_game(g)
             self.push(WinScreen(self))

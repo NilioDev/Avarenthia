@@ -574,7 +574,7 @@ three things. Test part `boss_moves`.
   that change, the mirror pool, the "?" date, the gold words of a bargain, the honey wine, a season gone outside.
   Debug: "Fey: hill, night, door" (three presses: to the hill, a full-moon night, the door).
 
-## Games at the inn (approved 6 November 2026)
+## Games at the inn (approved and built 6 November 2026)
 
 - **Bones** - the gaming table in an inn of each people, its name and twist, throw/set aside/stop, the skull, the
   limit per night, seeing and using a loaded bone with Cunning, being caught and not served. Debug: Teleport to an inn

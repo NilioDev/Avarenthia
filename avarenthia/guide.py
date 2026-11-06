@@ -129,6 +129,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 
 # ------------------------------------------------------------------ first-time tips
 TIPS = {
+    'games': 'Tip: walk into a gaming table π to play. Bones and The Count want the evening and a stake; Vigil, any hour.',
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
     'over': 'Tip: m opens the map; on it, the keys 1 to 7 show the land, danger, factions, realms, jobs, trade and the shadow.',
     'job': 'Tip: e opens the journal. Enter on a job follows it, and an arrow on the edge of the map points the way.',
@@ -191,6 +192,7 @@ def check(g):
                ('night', m.kind in ('over', 'wild') and TW.is_night(g)),
                ('herd', m.kind == 'over' and any(HT.seen_herd(g, h) for h in HT.herds(g))),
                ('skin', bool(HT.carcass_here(g))),
+               ('games', bool(getattr(m, 'gametable', None)) and g.visible(*m.gametable)),
                ('cook', m.kind in ('over', 'wild') and g.turn > 900 and bool(CK.pot_items(g)) and not g.visible_hostiles())]
     for key, now in moments:
         if now and tip(g, key):

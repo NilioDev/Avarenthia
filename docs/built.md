@@ -61,10 +61,14 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 | **Built: the first steps (5 Nov)** | A sure first tome (Snagtooth's three, the temple's shelf and The Eleven Ways, a guild's first tome for the blank, a village shop now and then); Berend's letter and loads for the nearest city, the trader's answer and the first trade; the baron's word to a lord's seat |
 | **Built: dungeons on their own land** | Built places start outside on their own map; each kind its own plan; the K5 maker with drawn theme rooms; the entrance part of the fixed plans (a goblin totem, a crypt's mourners, a spider's web) and theme rooms in the way of the people who live near (rounds 5-7, 33-36, 54) |
 | **Built: boss fights, what was left (5 Nov)** | Arenas dressed by place; ways out by rope or hole as well as the rotten wall; a place falls in or wakes after its boss; fights won another way (break the altar, hold out, rescue); bosses for the big one and the relic job |
+| **Built: games at the inn (6 Nov)** | A gaming table in every inn: Bones (each people's twist), The Count (Water face down) and Vigil (a tafl board, three strengths, masters over the land); small stakes, a limit a night; Cunning sees loaded bones and counts cards, and may be shown the door. Round 59 |
 | **Built: makers in the editor (5 Nov)** | Ctrl+G in the editor makes a start with any of the game's makers (dungeons, places, settlements, the land of each biome), then it is drawn by hand; maker areas in a whole place are laid anew in every world. Round 55 |
 
 ## Built
 
+- **Games at the inn** (round 59, 6 November 2026; `inngames.py`, `inngames_ui.py`; test part `inn_games`). A gaming
+  table by the innkeeper with two regulars; Bones, The Count and Vigil in their own windows, arrows, Enter and Esc
+  only; masters of Vigil told by rumour and the deed for beating them all. Spec below.
 - **The bar of seven keys** (round 57, 6 November 2026; `classes.py`, `epics.py`, `ui.py`, `tests/balance.py`; test
   parts `balance`, `classes`, `epics`). Keys 1-2 the weapon, 3-6 four class skills with at most one elite, 7 the
   epic, shown once you know one. The epic charges by fighting (blows given and taken, foes brought down, nothing
@@ -3378,3 +3382,45 @@ numbers stayed as first set (`epics.CHARGE_*`, Time Stop .6 and Barrow King .75 
 out in the table of the 22. The `balance` part checks one world at level 30 with wider bands (1.3; .4 to 3).
 Casting from the book is [Enter] on the [z] list. An old save's epic that was spent starts empty, else full. The
 debug entry "Epics" (E) also fills the charge.
+
+## Games at the inn (built 6 November 2026; the spec)
+
+Three small games of the peoples. Both start by bumping someone or something (a gaming table, a player) and are played
+with the arrows, [Enter] and [Esc] only: no new letter keys. Each gets one first-time tip in `guide.TIPS`, its
+sentences in the handbook (chapter Towns, or a short one of its own) and its lines in `docs/testing.md`. Stakes stay
+small, with a limit per inn per night, so games are never a way to earn: the gain is name, a rumour, a drink, a line
+of lore. What already is: the bandits' gaming den (a theme room: catch the cheat with one key) stays and may use Bones.
+
+- **Bones** (59a). Press your luck with three knucklebones at an inn's gaming table (a tile of its own, named by the
+  data): throw, set some aside, throw the rest again or stop; a skull loses the pot of that round. Each people its
+  own name and a small twist of the rule: dwarves "Anvil and Spark", halflings "Pips", orcs "Teeth", humans "Bones".
+  Players are townsfolk at the table, in the evening. With Cunning you see a loaded bone, and may use one of your own;
+  caught, you are not served at that inn for some days and the town hears of it. Winning often at one inn is noted
+  there (a rumour, a kind word), not paid more.
+- **Vigil** (59b). A tafl-like board game on 9 x 9: the Iron That Said No (the many) against the Watch of the stars,
+  who must bring their Vael piece to an edge (the Counted Sky). Played against an elder, a monk in an abbey, a
+  prisoner, a traveller at a crossroads; a small AI in three strengths. Masters sit in places over the land, told by
+  rumour; beating them all gives a title and talk. Each people its own board and signs (the dwarves' a forge, the
+  elves' a glade); the rule stays the same. Board shown in the middle of the screen, cursor with the arrows, [Enter]
+  to pick up and set down, [Esc] to give up.
+- **The Count** (59c). A simple card game at the same tables as Bones: draw towards 21 or stop, against the dealer.
+  Three suits of 1-10: Stars, Iron and Water. A Water card lies face down until the end ("no one has ever counted
+  the water"), so each one is a gamble; the lore is the Counted Sky's. Small stakes, the same limit per night. With
+  Cunning you count the cards (the dealer's deck shows what is left); count too well too often and you are shown the
+  door, as with a loaded bone. Mock-up screens: project files `minigames/`.
+
+As built: a gaming table (π, tile GAMETABLE) in the inn of every settlement that has one, also in an abbey's cellar,
+with two regulars (role 'gamer') beside it; walk into either. Bones and The Count from five in the evening to two at
+night, stakes of 2-20c, 50c a night per inn (100c in a city). Bones: first to bank 30, the cup starts with anyone, a
+skull ends the round except on its first throw; a quarter of the regulars play a loaded bone, Cunning sees it and
+Esc then takes your stake back; your own loaded bone is found out at the end now and then (less with Cunning rank).
+The Count: one deck of 30 through a sitting, the dealer draws to 17 by what shows (a face-down Water counted 5.5);
+counting shown with Cunning, three hands won while counting in one night and the door may follow. Barred: no games
+and no innkeeper for 5 days, the town's standing -2. Vigil: Tablut's board (16 Iron, 8 Watch and Vael); Vael is taken
+on four sides on the hearth or beside it, between two Iron further out (the old Tablut rule; with the edge as the
+goal the Watch would win too easily otherwise). Strengths: loose (one move ahead, much chance), steady (two), master
+(two, every reply). A master of Vigil in the biggest town of each people (at most seven; towns, for a city may be laid
+out without an inn), told by rumour (`engine.rumor`); beating them all is the deed "Keeper of the Vigil". Not built
+from the spec: Vigil with an elder, a prisoner or a traveller at a crossroads (it is played at the gaming tables).
+Code `inngames.py` (rules, the table, the masters) and `inngames_ui.py` (the three screens); state `p.inngames`;
+test part `inn_games`. SAVE_VERSION 74.
