@@ -581,3 +581,5 @@ three things. Test part `boss_moves`.
   of each people, Time (evening), Coin, set Cunning's rank (Ranks).
 - **Vigil** - a game against each kind of player, the three strengths, the Iron and the Watch, Vael to an edge, the
   boards of the peoples, the masters told by rumour and the title. Debug: Teleport to an inn, an abbey, a master.
+- **The Count** - draw or stop, the three suits, Water face down till the end, the dealer, the limit per night,
+  counting with Cunning and being shown the door. Debug: Teleport to an inn, Time (evening), Coin, Ranks.

@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 59, games at the inn: Bones and Vigil (approved 6 November 2026) |
+| **To build** | Round 59, games at the inn: Bones, Vigil and The Count (approved 6 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -104,14 +104,14 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     en volksboeken"). 58a. **The Varnish lore made even** (M, mostly text). 58b. **The peoples' books** (L).
     58c. **The story on the land** (M). All three built 6 November 2026 (see `docs/built.md`).
 59. **Block 20: games at the inn** (approved 6 November 2026, thread "Thematische minigames bedenken"; the Dutch
-    proposal: project files `minigames/voorstel.md`). 59a. **Bones** (S/M). 59b. **Vigil** (M/L). Spec below.
+    proposal: project files `minigames/voorstel.md`). 59a. **Bones** (S/M). 59b. **Vigil** (M/L). 59c. **The Count** (S). Spec below.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
 
 ## Games at the inn (approved 6 November 2026, not built)
 
-Two small games of the peoples. Both start by bumping someone or something (a gaming table, a player) and are played
+Three small games of the peoples. Both start by bumping someone or something (a gaming table, a player) and are played
 with the arrows, [Enter] and [Esc] only: no new letter keys. Each gets one first-time tip in `guide.TIPS`, its
 sentences in the handbook (chapter Towns, or a short one of its own) and its lines in `docs/testing.md`. Stakes stay
 small, with a limit per inn per night, so games are never a way to earn: the gain is name, a rumour, a drink, a line
@@ -129,6 +129,11 @@ of lore. What already is: the bandits' gaming den (a theme room: catch the cheat
   rumour; beating them all gives a title and talk. Each people its own board and signs (the dwarves' a forge, the
   elves' a glade); the rule stays the same. Board shown in the middle of the screen, cursor with the arrows, [Enter]
   to pick up and set down, [Esc] to give up.
+- **The Count** (59c). A simple card game at the same tables as Bones: draw towards 21 or stop, against the dealer.
+  Three suits of 1-10: Stars, Iron and Water. A Water card lies face down until the end ("no one has ever counted
+  the water"), so each one is a gamble; the lore is the Counted Sky's. Small stakes, the same limit per night. With
+  Cunning you count the cards (the dealer's deck shows what is left); count too well too often and you are shown the
+  door, as with a loaded bone. Mock-up screens: project files `minigames/`.
 
 ---
 
