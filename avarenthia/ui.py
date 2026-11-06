@@ -206,7 +206,8 @@ class App:
             self.stop_auto()           # any key interrupts auto-explore or travel
             return
         if DBG.ON:
-            DBG.record_key(tok)
+            if not getattr(self.top, 'typing', False):      # a note's letters stay out of keys.txt
+                DBG.record_key(tok)
             if tok == 'f12' and self.game and not self.game.dead and isinstance(self.screens[0], GameScreen):
                 from . import debug_ui as DU
                 if not isinstance(self.top, DU.DebugScreen):
@@ -343,7 +344,7 @@ class App:
                 with base_size():
                     s.render(TallCanvas(part) if s.tall else part)
         if self.cv is not self.full:
-            MG.draw(self.full, self.rect, MG.seed_for(self.game), MG.drift())
+            MG.draw(self.full, self.rect, MG.seed_for(self.game))
         t = time.monotonic()
         self.effects = [e for e in self.effects if (self.fx_alive(e, t) if e[0] == 'fx' else
                                                     t - e[1] < (e[2][4] if e[0] == 'flash' else
@@ -824,6 +825,7 @@ class GameScreen(Screen):
         self.weather = wk = WX.shown(g)
         WX.frame(ox, oy, WX.wetness(g))
         inline = wk != 'clear' and wk not in WX.NEEDS_CANVAS
+        cover = sky and WX.roofed(m)                # up a tower: rain falls on the air round it, not under its roof
         lightning = WX.flash(t) if wk == 'storm' else 0.0
         pvx, pvy = p.x - ox, p.y - oy
         tgt_id = getattr(p, 'target', None)
@@ -1032,7 +1034,7 @@ class GameScreen(Screen):
                     fg = mix(fg, (40, 50, 110), .35)
                     bg = scale(bg, .7)
                 if inline:
-                    if m.kind == 'town' and m.t[i] in ROOFED:
+                    if (m.kind == 'town' and m.t[i] in ROOFED) or (cover and m.t[i] != D.AIR):
                         if lightning:
                             fg, bg = WX.sheltered_flash(fg, bg, lightning)
                     else:
@@ -1066,9 +1068,10 @@ class GameScreen(Screen):
         wk = self.weather
         if wk in WX.NEEDS_CANVAS:
             shelter = None
-            if m.kind == 'town':                     # no weather under a roof
+            if m.kind == 'town' or cover:            # no weather under a roof
                 shelter = {(vx, vy) for vy in range(MAP_H) for vx in range(MAP_W)
-                           if m.inb(vx + ox, vy + oy) and m.t[(vy + oy) * m.w + vx + ox] in ROOFED}
+                           if m.inb(vx + ox, vy + oy) and (m.t[(vy + oy) * m.w + vx + ox] in ROOFED if not cover
+                                                            else m.t[(vy + oy) * m.w + vx + ox] != D.AIR)}
             WX.apply(cv, 0, 0, MAP_W, MAP_H, wk, t, centre=(p.x - ox, p.y - oy), sheltered=shelter)
         elif wk != 'clear':
             WX.passes(cv, 0, 0, MAP_W, MAP_H, wk, t)
@@ -1091,16 +1094,14 @@ class GameScreen(Screen):
             elif kind == 'speech':
                 _, x, y, txt = ev
                 lines = wrap_text(txt, 30)[:4]             # a bubble of a few short lines, never cut off
-                bw = max(len(ln) for ln in lines)
-                vx = max(0, min(MAP_W - bw, x - ox - bw // 2))
-                top = y - oy - len(lines)
-                if top < 0:
-                    top = y - oy + 1                        # no room above: speak below
+                bw, bh = max(len(ln) for ln in lines), len(lines)
+                vx, top = speech_spot(x - ox, y - oy, bw, bh, (p.x - ox, p.y - oy))
                 for k, ln in enumerate(lines):
                     vy = top + k
                     if 0 <= vy < MAP_H:
                         for j, chh in enumerate(ln.ljust(bw)):
-                            cv.put(vx + j, vy, chh, (240, 236, 220), (40, 34, 30))
+                            if (vx + j, vy) != (p.x - ox, p.y - oy):        # you always stay in sight
+                                cv.put(vx + j, vy, chh, (240, 236, 220), (40, 34, 30))
             elif kind == 'num':
                 _, x, y, txt, col, big = ev
                 rise = int(age * 2.5)
@@ -1406,7 +1407,7 @@ class GameScreen(Screen):
         hr = TW.hour(g)
         cv.text(x, 1, f"Level {p.lvl} · {'hardcore' if p.hardcore else 'softcore'}", DIM, PANEL)
         cv.text_right(x + PW - 1, 1, f"{hr:02d}:00 {'○' if TW.is_night(g) else '☼'}", (150, 160, 220) if TW.is_night(g) else GOLD, PANEL)
-        if g.map.kind != 'dungeon' and not getattr(g.map, 'underground', False):
+        if (g.map.kind != 'dungeon' or WX.aloft(g.map)) and not getattr(g.map, 'underground', False):
             wk = getattr(self, 'weather', None) or WX.shown(g)
             from . import calendar as CAL2
             cv.text(x, 2, CAL2.season(g.day).capitalize(), DIM, PANEL)
@@ -1923,6 +1924,21 @@ class Modal(Screen):
     def on_key(self, tok, shift):
         if tok == 'esc':
             self.app.pop()
+
+
+def speech_spot(sx, sy, bw, bh, you):
+    """Where a speech bubble goes (left, top on the map): over the speaker, else under, never over you; when no place
+    is free of you, sideways from you."""
+    def fits(vx, top):
+        return 0 <= top and top + bh <= MAP_H and not (vx <= you[0] < vx + bw and top <= you[1] < top + bh)
+    mid = max(0, min(MAP_W - bw, sx - bw // 2))
+    left = max(0, min(MAP_W - bw, you[0] - bw - 1))
+    right = max(0, min(MAP_W - bw, you[0] + 2))
+    for top in (sy - bh, sy + 1):
+        for vx in (mid, left, right):
+            if fits(vx, top):
+                return vx, top
+    return mid, (sy - bh if sy - bh >= 0 else sy + 1)
 
 
 def item_detail(cv, g, it, x, y, w, max_h=14):

@@ -4990,6 +4990,12 @@ def debug_menu():
             assert isinstance(app.top, ui.GameScreen)
         menu()
         app.render()
+        # every lettered line stays inside the box, above the Debug: lines and the help line (it fits 110 x 60)
+        root = app.top.pages[0]
+        assert root.height() <= DU.BOX_H - 4, root.height()
+        assert DU.BOX_H <= 60 - 2
+        keys = [k for col in root.columns for _h, rows in col for k, _l, _a in rows]
+        assert len(keys) == len(set(keys)), 'a letter twice on the debug menu'
         close()
         # the line under the map shows where you are, the turn and the seed
         app.render()
@@ -5107,7 +5113,9 @@ def debug_menu():
         assert g.merc is not None and g.merc.state == 'alive', g.merc
         # a note for Claude: one zip beside the save with all it takes
         menu('N')
-        typed('the rat bit me')
+        long_note = 'the rat bit me' + ' and then it ran off' * 30                # a long note fits, wrapped
+        typed(long_note)
+        assert app.top.typing and 'ran off_' in app.cv.dump()
         app.key('enter')
         zp = app.shot_zip
         assert zp and zp.endswith('.zip') and os.path.exists(zp), zp
@@ -5116,6 +5124,9 @@ def debug_menu():
             names = set(z.namelist())
             assert {'note.txt', 'log.txt', 'keys.txt', 'screen.txt', 'save.dat'} <= names, names
             note = z.read('note.txt').decode('utf-8')
+            keys = z.read('keys.txt').decode('utf-8')
+            assert long_note in note, note
+            assert 'r a n space o f f' not in keys, keys
             assert 'the rat bit me' in note and f'Seed: {g.seed}' in note and 'Money:' in note and 'Build:' in note, note
             assert 'Debug' not in z.read('screen.txt').decode('utf-8').split('\n')[0]
             with open(os.path.join(tmp, 'save.dat'), 'wb') as f:
@@ -6882,6 +6893,32 @@ def places():
     assert sum(om.seen) > before, 'the lookout marks the land'
     m = g.map
     assert m.sky == tw.id
+    # up a tower the land's weather goes on: rain falls on the open top and on the air round it, the panel says so
+    from avarenthia import weather as WX, debug as DBG
+    assert WX.where(g) and not WX.roofed(m)
+    DBG.set_weather(g, 'rain')
+    app.render()
+    assert app.top.weather == 'rain' and 'Rain' in app.cv.dump(), app.top.weather
+    below = g.maps[m.below]
+    assert WX.where(g) and WX.roofed(below) or getattr(below, 'sky', None) is None
+    # windows and arrow slits sit in a straight wall, never in a corner
+    for fm in g.maps.values():
+        if getattr(fm, 'sky', None) is None:
+            continue
+        for i, t in enumerate(fm.t):
+            if t == D.SLIT:
+                x, y = i % fm.w, i // fm.w
+                kind = {fm.tile(x - 1, y), fm.tile(x + 1, y), fm.tile(x, y - 1), fm.tile(x, y + 1)}
+                kind = {k for k in kind if k == fm.tile(x - 1, y) == fm.tile(x + 1, y) or
+                        k == fm.tile(x, y - 1) == fm.tile(x, y + 1)} - {D.AIR, D.SLIT}   # the wall it sits in
+                walls = {(xx, yy) for yy in range(y - 1, y + 2) for xx in range(x - 1, x + 2)
+                         if fm.inb(xx, yy) and fm.tile(xx, yy) in kind | {D.SLIT}}
+                assert TOW.straight(walls, x, y), (getattr(fm, 'upper', False), x, y, '\n'.join(
+                    ''.join(D.TILES[fm.t[yy * fm.w + xx]].ch for xx in range(x - 5, x + 6)) for yy in range(y - 3, y + 4)))
+    # a speech bubble never covers you
+    for you in ((40, 19), (40, 21), (39, 20), (41, 20), (40, 1)):
+        vx, top = ui.speech_spot(40, 20, 24, 3, you)
+        assert not (vx <= you[0] < vx + 24 and top <= you[1] < top + 3), (you, vx, top)
     air = next(((i % m.w, i // m.w) for i, t in enumerate(m.t) if t == D.AIR
                 and any(D.TILES[m.t[j]].walk for j in (i + 1, i - 1, i + m.w, i - m.w) if 0 <= j < len(m.t))), None)
     if air is None:                                     # a whole top has its parapet all round: break a gap in it
@@ -11649,11 +11686,7 @@ def window_sizes():
         g.cur = was_cur
         art = MG.art(40, 20, a)
         assert art == MG.art(40, 20, a) and art != MG.art(40, 20, a + 1)
-        small = FakeCanvas(10, 4)
-        MG.draw(small, (2, 0, 6, 4), a, 0)
-        one = list(small.ch)
-        MG.draw(small, (2, 0, 6, 4), a, 1)
-        assert small.ch != one, 'the margin drifts'
+        assert not hasattr(MG, 'drift'), 'the margin stands still between zones and days'
         DBG.margin_new(g)
         assert MG.seed_for(g) != a
         # the Zoom on the title screen goes round and is kept

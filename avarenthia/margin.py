@@ -1,12 +1,11 @@
 """The margin: what fills a window wider (or taller) than the game at its largest 16:9 size.
 
 A faint sepia old map: patches of water, hills, woods and fields in scattered signs, laid out anew from a seed when
-you enter a zone or a new day starts, and drifting one cell a minute, so nothing stands still long enough to burn
-into a screen. Never brighter than a quarter; no text or signs to read in it. A clear double line marks where
-the game's screen ends.
+you enter a zone or a new day starts, so nothing stands still long enough to burn into a screen. It does not move in
+between (Nilio, 6 November 2026: the drift was restless to watch). Never brighter than a quarter; no text or signs to
+read in it. A clear double line marks where the game's screen ends.
 """
 import random
-import time
 import zlib
 
 INK = (58, 46, 34)            # the signs: under a quarter of full light
@@ -14,7 +13,6 @@ PAPER = (16, 13, 11)          # the ground
 FRAME = (150, 118, 64)        # the clear edge where the game's screen ends (Nilio, 6 November 2026)
 PATCHES = ('≈~', '^∩', '♣♠', '.,"', '·.')     # water, hills, woods, fields, open land
 PATCH_W, PATCH_H = 6, 4
-DRIFT_SECONDS = 60
 
 _cache = {}
 EXTRA = 0                     # the debug menu's "new stretch now"
@@ -25,10 +23,6 @@ def seed_for(game):
     if not game:
         return 1 + EXTRA
     return zlib.crc32(f'{getattr(game, "cur", "")}|{int(getattr(game, "day", 0))}|{EXTRA}'.encode())
-
-
-def drift():
-    return int(time.monotonic() // DRIFT_SECONDS)
 
 
 def art(cols, rows, seed):

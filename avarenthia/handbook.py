@@ -950,7 +950,8 @@ def ch_weather(g):
                'Cold and scorching heat make you hungry sooner.',
                'Fire magic sputters in the wet and burns hotter in the heat; storm magic loves a storm.',
                'In a thunderstorm, open land is no place to be: lightning strikes.',
-               'Under a roof you stay dry.',
+               'Under a roof you stay dry. Up a tower the weather goes on round you: rain falls past the floors, and '
+               'on the open top it falls on you too.',
                'Rain and snow send the townsfolk indoors: the streets empty and the inn fills.']),
         ('h', 'Omens'),
         ('p', 'Falling ash, a sickly miasma, smoke on the wind: a great evil is near, or a rift has opened.'),

@@ -189,8 +189,9 @@ Each line: **what** - what to check - what the debug menu should offer.
   and its people); Standing (f) to be a friend or a stranger.
 - **The older bottom** - the tale, the loose flagstone on the last level, the ring of stones and the Old Warden.
   Debug: "Hear the tale of an older place" (O), then Teleport to a temple marked "older below".
-- **Towers** - every people's floors, the stair a quarter turn on, the haze and shadow below, a slit on lower floors,
-  the lookout on top by day and by night, in fog. Debug: Teleport (tower and its people), Time, Weather.
+- **Towers** - every people's floors, the stair a quarter turn on, the haze and shadow below, a slit on lower floors
+  (never in a corner), rain and snow falling round every floor and on the open top, the lookout on top by day and by
+  night, in fog. Debug: Teleport (tower and its people), Time, Weather.
 - **Fallen towers, edges and falls** - half fallen and ruin, the question at an edge, a fall by floors, a foe thrown
   over by a shove. Debug: Teleport (tower, half or ruin); Spawn a creature beside an edge.
 - **Barrows** - each people's barrow, its twist (false tomb, hidden door, the kobolds' floor, the pool), the bier and
@@ -486,8 +487,8 @@ three things. Test part `boss_moves`.
 
 ## Playing it (approved 1 November 2026, built 5 November 2026)
 
-- **A note for Claude** - the zip beside the save with the note, the screen and the save; loading that save stands
-  you where the note was written. Debug: it is itself a debug menu line.
+- **A note for Claude** - the zip beside the save with the note (as long as you like, wrapped as you type), the screen
+  and the save; loading that save stands you where the note was written. Debug: it is itself a debug menu line.
 - **Saves that last** - a save from the build before loads, with new fields filled; a breaking step gives the one
   line on the main menu; a save that cannot be written says so in red. Debug: none needed; keep an old build's save.
 - **The money check** - `python tests/money.py` prints the three tables; the part `money` stays in its bands.
@@ -537,5 +538,5 @@ three things. Test part `boss_moves`.
 - **Sizes and Zoom** - the game at several window sizes (more map, panel and log the same), every full screen
   centred; Zoom Auto and 1x-4x on the title screen. Debug: a "Window size" choice that sets the cells (110 x 60,
   120 x 67, 160 x 90, super wide with margin).
-- **The margin** - the random old-map stretch, a new one on a new zone or day, the slow drift. Debug: "Margin: new
+- **The margin** - the random old-map stretch, a new one on a new zone or day, still in between. Debug: "Margin: new
   stretch now".

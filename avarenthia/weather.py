@@ -917,9 +917,26 @@ def wetness(game):
     return st[3] if st and len(st) > 3 else 0.0
 
 
+def aloft(m):
+    """True on a floor above the ground (a tower, the floor over an abbey or a manor): open air, the land's weather."""
+    return m.kind == 'dungeon' and getattr(m, 'sky', None) is not None
+
+
+def roofed(m):
+    """On a floor above the ground: True when a roof is over it (every tower floor but the top, the floor over an
+    abbey or a manor), so rain and snow fall only on the air round it, not on its own floor."""
+    from . import data as D
+    return bool(getattr(m, 'upper', False)) or D.UP in m.t
+
+
 def where(game):
-    """(region id, overworld x, y) of the place you are in, or None underground."""
+    """(region id, overworld x, y) of the place you are in, or None underground. Up a tower or on the floor over an
+    abbey or a manor you are still out under the land's sky."""
     m = game.map
+    if aloft(m):
+        site = game.world.sites[m.sky]
+        w = game.world
+        return w.region_of[site.y * game.maps['over'].w + site.x], site.x, site.y
     if m.kind == 'dungeon' or getattr(m, 'underground', False):
         return None
     if m.kind == 'over':

@@ -5,8 +5,9 @@ from . import debug as DBG
 from .canvas import wrap_text
 from .ui import Modal, W, FG, DIM, GOLD, GOOD, BAD, INFO, PANEL
 
-BOX_W, BOX_H = 104, 28
+BOX_W, BOX_H = 104, 36          # fits the smallest screen (110 x 60); test part debug_menu checks every page fits
 SEL_BG = (50, 40, 30)
+NOTE_MAX = 3000                 # letters in a note for Claude
 
 
 class Page:
@@ -41,6 +42,10 @@ class MenuPage(Page):
         super().__init__(screen)
         self.title = title
         self.columns = columns
+
+    def height(self):
+        """Rows the tallest column takes from the box's top, the blank line after the last section included."""
+        return 2 + max(sum(len(rows) + 2 for _h, rows in col) for col in self.columns)
 
     def actions(self):
         return {key: act for col in self.columns for _h, rows in col for key, _l, act in rows}
@@ -129,16 +134,23 @@ class ListPage(Page):
 
 
 class AskPage(Page):
-    """One line to type: digits only, or any text. done(value) gives what to do next."""
+    """What to type: digits only, or any text. done(value) gives what to do next. A long text (a note) wraps over
+    the box and shows its last lines as it grows."""
 
-    def __init__(self, screen, title, prompt, done, digits=True):
+    def __init__(self, screen, title, prompt, done, digits=True, limit=80):
         super().__init__(screen)
-        self.title, self.prompt, self.done, self.digits = title, prompt, done, digits
+        self.title, self.prompt, self.done, self.digits, self.limit = title, prompt, done, digits, limit
         self.text = ''
 
     def render(self, cv, x, y):
         n = cv.wrap(x + 3, y + 3, BOX_W - 6, self.prompt, FG, PANEL)
-        cv.text(x + 3, y + 4 + n, self.text + '_', GOLD, (40, 32, 26))
+        top = y + 4 + n
+        room = max(1, BOX_H - 6 - (top - y))
+        lines = wrap_text(self.text + '_', BOX_W - 6) or ['_']
+        for i, ln in enumerate(lines[-room:]):
+            cv.text(x + 3, top + i, ln, GOLD, (40, 32, 26))
+        if self.limit > 80:
+            cv.text_right(x + BOX_W - 3, y + BOX_H - 3, f'{len(self.text)} of {self.limit}', DIM, PANEL)
 
     def help(self):
         return 'type · Enter: done · Esc: back'
@@ -150,12 +162,13 @@ class AskPage(Page):
             return self.done(self.text.strip())
         if tok == 'backspace':
             self.text = self.text[:-1]
+        elif len(self.text) >= self.limit:
+            return None
         elif tok == 'space' and not self.digits:
             self.text += ' '
-        elif len(tok) == 1 and (tok.isdigit() if self.digits else (tok.isprintable())) and len(self.text) < 80:
+        elif len(tok) == 1 and (tok.isdigit() if self.digits else (tok.isprintable())):
             self.text += tok
         return None
-
 
 
 class TestsPage(Page):
@@ -267,8 +280,8 @@ class TestsPage(Page):
                 self.DT.tick(cur[1], 'bad', note, self.game.day)
                 DBG.feedback_zip(self.app, note, (cur[2], cur[3]))
                 return 'close'
-            return AskPage(self.screen, f'Wrong: {cur[2]}', f'What is wrong? One line (Enter alone writes it without). '
-                           f'The note, the screen and the save go into one zip beside the save.', done, digits=False)
+            return AskPage(self.screen, f'Wrong: {cur[2]}', f'What is wrong? As long as you like (Enter alone writes it without). '
+                           f'The note, the screen and the save go into one zip beside the save.', done, digits=False, limit=NOTE_MAX)
         self.sel = max(0, min(self.sel, max(0, len(idx) - 1)))
         return None
 
@@ -278,6 +291,12 @@ class DebugScreen(Modal):
     def __init__(self, app):
         super().__init__(app)
         self.pages = [self.root()]
+
+    @property
+    def typing(self):
+        """True while a note is being typed: its letters are not game keys."""
+        top = self.pages[-1]
+        return isinstance(top, AskPage) and not top.digits
 
     # ------------------------------------------------------------ the pages
     def flag(self, f):
@@ -303,10 +322,12 @@ class DebugScreen(Modal):
                            ('d', 'Time...', self.time_page),
                            ('w', 'Weather...', self.weather_page),
                            ('s', 'Spawn a creature...', self.spawn_page),
+                           ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True)),
                            ('z', 'Theme room or river...', self.theme_page),
                            ('Z', 'Set this room back as drawn', self.do(lambda: DBG.reset_room(g()), True)),
+                           ('F', 'Change who holds this fort', self.do(lambda: DBG.fort_holder(g()), True))]),
+            ('OLD AND GREAT THINGS', [
                            ('O', 'Hear the tale of an older place', self.do(lambda: DBG.old_tale(g()), True)),
-                           ('F', 'Change who holds this fort', self.do(lambda: DBG.fort_holder(g()), True)),
                            ('A', self.flag('aurora'), self.do(lambda: DBG.toggle(g(), 'aurora'))),
                            ('B', self.flag('oldfind'), self.do(lambda: DBG.toggle(g(), 'oldfind'))),
                            ('W', self.flag('oldnight'), self.do(lambda: DBG.toggle(g(), 'oldnight'))),
@@ -315,13 +336,7 @@ class DebugScreen(Modal):
                            ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
                            ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
                            ('K', 'Bosses...', self.boss_page),
-                           ('S', 'The shadow...', self.shadow_page),
-                           ('k', 'Kill all in sight', self.do(lambda: DBG.kill_in_sight(g()), True))]),
-            ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
-                         ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
-                         ('u', self.flag('coords'), self.do(lambda: DBG.toggle(g(), 'coords'))),
-                         ('r', 'Window size...', self.window_page),
-                         ('G', 'Margin: new stretch now', self.do(lambda: DBG.margin_new(g())))]),
+                           ('S', 'The shadow...', self.shadow_page)]),
         ]
         right = [
             ('THE PLAYER', [('g', self.flag('god'), self.do(lambda: DBG.toggle(g(), 'god'))),
@@ -339,6 +354,11 @@ class DebugScreen(Modal):
                           ('f', 'Standing...', self.standing_page),
                           ('q', 'Guild rank...', self.guild_page),
                           ('l', 'Add a hireling...', self.hireling_page)]),
+            ('LOOKING', [('v', self.flag('sight'), self.do(lambda: DBG.toggle(g(), 'sight'))),
+                         ('o', self.flag('ai'), self.do(lambda: DBG.toggle(g(), 'ai'))),
+                         ('u', self.flag('coords'), self.do(lambda: DBG.toggle(g(), 'coords'))),
+                         ('r', 'Window size...', self.window_page),
+                         ('G', 'Margin: new stretch now', self.do(lambda: DBG.margin_new(g())))]),
         ]
         return MenuPage(self, 'Debug', [left, right])
 
@@ -367,9 +387,9 @@ class DebugScreen(Modal):
         def done(note):
             DBG.feedback_zip(self.app, note, test)
             return 'close'
-        what = f'What is wrong with "{test[0]}"?' if test else 'What did you see? One line, in any words'
+        what = f'What is wrong with "{test[0]}"?' if test else 'What did you see? In any words, as long as you like'
         return AskPage(self, 'Note for Claude', f'{what} (Enter alone writes it without). The note, the screen and the '
-                       'save go into one zip beside the save.', done, digits=False)
+                       'save go into one zip beside the save.', done, digits=False, limit=NOTE_MAX)
 
     def tests_page(self):
         return TestsPage(self)

@@ -329,10 +329,12 @@ def upper_map(game, dg, depth):
             m.set(x, y, D.BRIDGE if m.tile(x, y) == AIR else up['floor'])
     for c in up['doors']:
         m.set(c[0], c[1], DOOR)
+    from . import towers as TOW
     for x, y in cells:                                  # windows: a look out, now and then
         if m.tile(x, y) == up['wall'] and (x * 5 + y * 11) % 7 == 0 and \
                 sum(1 for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)) if m.tile(x + a, y + b) == AIR) == 1 and \
-                sum(1 for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)) if m.tile(x + a, y + b) == up['wall']) == 2:
+                TOW.straight({(x + a, y + b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                              if m.tile(x + a, y + b) in (up['wall'], D.SLIT)}, x, y):          # never in a corner
             m.set(x, y, D.SLIT)
     for x, y, t in up['put']:
         m.set(x, y, t)

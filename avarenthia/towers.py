@@ -295,7 +295,7 @@ def floor_map(game, dg, depth):
                 m.set(cx + dx, cy + dy, D.TRUNK)
     if not top and st['slits']:
         for x, y in wall:
-            if (x * 5 + y * 11 + depth) % 6 == 0 and _outer(cells, x, y):
+            if (x * 5 + y * 11 + depth) % 4 == 0 and _outer(cells, x, y) and straight(wall, x, y):
                 m.set(x, y, D.SLIT)
     down = tw['stairs'][depth - 1]
     up = tw['stairs'][depth] if not top and depth < len(tw['stairs']) else None
@@ -330,11 +330,23 @@ def floor_map(game, dg, depth):
         _furnish(m, cells, wall, use, (down, up), st)
         m.mood_line = USES[use][1]
     _connect(m, down, up, st)
+    solid = {(i % m.w, i // m.w) for i, t in enumerate(m.t) if t in (st['wall'], D.SLIT)}
+    for x, y in wall:                           # a split wall inside may meet a slit: then it is a corner, no slit
+        if m.tile(x, y) == D.SLIT and not straight(solid, x, y):
+            m.set(x, y, st['wall'])
     for i, t in enumerate(m.t):
         if t == AIR:
             m.seen[i] = 1                       # the land below is always there to see
     people(game, m, site, tw, dg, depth, top, use, (down, up))
     return m
+
+
+def straight(wall, x, y):
+    """A cell in the middle of a straight run of wall, never a corner: only there does a window or a slit go."""
+    h = (x - 1, y) in wall and (x + 1, y) in wall
+    v = (x, y - 1) in wall and (x, y + 1) in wall
+    return (h and (x, y - 1) not in wall and (x, y + 1) not in wall) or \
+        (v and (x - 1, y) not in wall and (x + 1, y) not in wall)
 
 
 def _outer(cells, x, y):
