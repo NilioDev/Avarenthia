@@ -4294,8 +4294,25 @@ def classes():
     p.classes = ['fire']
     p.known = ['firebolt', 'mend', 'shield_wall', 'inferno']
     assert CL.fits(g, SK.SKILLS['firebolt'], 2) is None and CL.fits(g, SK.SKILLS['mend'], 2)
-    assert CL.fits(g, SK.SKILLS['inferno'], 5) is None and CL.fits(g, SK.SKILLS['firebolt'], 5)
+    assert CL.fits(g, SK.SKILLS['inferno'], 5) is None and CL.fits(g, SK.SKILLS['firebolt'], 5) is None
+    assert CL.fits(g, SK.SKILLS['inferno'], 6) and CL.fits(g, SK.SKILLS['firebolt'], 6)       # key 7: the epic only
     assert CL.fits(g, SK.SKILLS['shield_wall'], 3) and CL.fits(g, SK.SKILLS['haymaker'], 2)
+    other = next(e for e in sorted(CL._elites()) if e != 'inferno' and e in SK.SKILLS)
+    p.bar = [None, None, 'inferno', None, None, None, None]
+    assert CL.fits(g, SK.SKILLS[other], 3) and CL.fits(g, SK.SKILLS[other], 2) is None     # one elite on 3-6
+    # casting from the book: three turns, broken off by a blow; not for elites, not what is on the bar
+    p.bar = [None, None, 'firebolt', None, None, None, None]
+    p.known = ['firebolt', 'fireball', 'inferno']
+    assert CL.book_why(g, 'firebolt') and CL.book_why(g, 'inferno') and CL.book_why(g, 'mend')
+    o = foes(1)[0]
+    o.hp = o.maxhp = 10 ** 4
+    p.mana, p.cooldowns = 10 ** 3, {}
+    assert CL.book_why(g, 'fireball') is None, CL.book_why(g, 'fireball')
+    t0, hp0 = g.turn, o.hp
+    CL.from_book(g, 'fireball')
+    assert g.turn - t0 == CL.BOOK_TURNS - 1 and (o.hp < hp0 or p.cooldowns.get('fireball')), (g.turn - t0, g.log[-3:])
+    # the bar changes in a town or right after a rest, never with a foe in sight
+    assert CL.can_change_bar(g)
     # the family rules: a staff makes spells cheaper, a sword's blow takes a turn off class recharges,
     # every third unarmed blow gives breath back
     st = make_gear(g, 'staff', 'normal', 5)
@@ -4317,11 +4334,12 @@ def classes():
     assert p.stamina > 0 or p.mana > 0
     # the screens: the panel shows the three groups and your name, the skills screen keys 3-6
     p.classes = ['fire', 'shadow']
-    p.bar = [None, None, 'firebolt', None, None, 'inferno']
+    p.bar = [None, None, 'firebolt', None, None, 'inferno', None]
     app.screens = [ui.GameScreen(app)]
     app.render()
     dump = app.cv.dump()
-    assert 'Hexblade' in dump and 'weapon' in dump and 'elite' in dump and 'Firebolt' in dump
+    assert 'Hexblade' in dump and 'weapon' in dump and 'class' in dump and 'Firebolt' in dump and 'Inferno' in dump
+    assert 'epic' not in dump.split('SKILLS', 1)[1][:600]        # key 7 shows only once you know an epic
     app.screens = [ui.GameScreen(app), ui.SkillsScreen(app)]
     app.render()
     assert 'YOUR WEAPON' in app.cv.dump()
@@ -4477,7 +4495,7 @@ def pairs():
     g, p = app.game, app.game.player
     p.lvl, p.str, p.dex, p.vit, p.ene = 30, 150, 150, 300, 150
     p.classes = ['frost']
-    assert CL.fits(g, SK.SKILLS['mage_armor'], 2) is None and CL.fits(g, SK.SKILLS['mage_armor'], 5)
+    assert CL.fits(g, SK.SKILLS['mage_armor'], 2) is None and CL.fits(g, SK.SKILLS['mage_armor'], 6)
     assert CL.of_no_use(g, 'smite') and not CL.of_no_use(g, 'inferno')
     g.enter_dungeon(list(g.world.dungeons)[0], 1, 'up')
     m = g.map
@@ -4690,6 +4708,19 @@ def balance():
     assert all(w >= 22 for w, _t, _d in out.values()), out
     ts = [t for _w, t, _d in out.values()]
     assert max(ts) <= 3 * max(1, min(ts)), out
+    # the bar of seven keys (round 57): the new bar with its epic on key 7, filled by fighting, against today's
+    # bar with the epic in the elite's place once per rest. One world at level 30, so the bands are wider here
+    # than in tests/balance.py over two worlds (at most 1.15 faster, about one fill a run).
+    keep = E.save_path
+    import balance as BAL
+    try:
+        tb = BAL.run(1, 11, quiet=True, levels=(30,), modes=('old+epic', 'new+epic'))
+    finally:
+        E.save_path = keep
+    sm = BAL.summary(tb)
+    print(f'  the new bar: {sm["speedup"]:.2f} times as fast, the epic filled {sm["fills_per_run"]:.2f} times a run')
+    assert sm['speedup'] <= 1.3, sm
+    assert .4 <= sm['fills_per_run'] <= 3, sm
     print('balance ok')
 
 
@@ -7941,11 +7972,29 @@ def epics():
     assert EP.st(g)['deeds']['fire'] and job.state == 'done'
     assert g.pending and g.pending['key'] == 'epic'
     EV.resolve(g, 'learn:sunfall')
-    assert p.bar[5] == 'sunfall' and 'sunfall' in p.known and CL.fits(g, EP.EPICS['sunfall'], 5) is None
-    assert CL.fits(g, EP.EPICS['sunfall'], 2) and CL.fits(g, EP.EPICS['unweave'], 5)
+    assert p.bar[6] == 'sunfall' and 'sunfall' in p.known and CL.fits(g, EP.EPICS['sunfall'], 6) is None
+    assert CL.fits(g, EP.EPICS['sunfall'], 2) and CL.fits(g, EP.EPICS['sunfall'], 5) and CL.fits(g, EP.EPICS['unweave'], 6)
+    assert not EP.ready(g, 'sunfall') and EP.charge(g) == 0         # a new epic starts empty
+    # the charge (round 57b): blows and foes fill it, foes far below give nothing, a rest does not
+    lvl0 = p.lvl
+    p.lvl = 30
+    rat = make_monster(g, 'goblin', p.x, p.y, 10)
+    EP.fill(g, felled=[rat])
+    assert EP.charge(g) == 0, EP.st(g)
+    peer = make_monster(g, 'goblin', p.x, p.y, 28)
+    peer.elite = 1
+    EP.fill(g, felled=[peer], taken=g.stats()['max_life'] // 2)
+    c1 = EP.charge(g)
+    assert 0 < c1 < 1, c1
+    EP.rested(g)
+    assert EP.charge(g) == c1
+    for _ in range(10):
+        EP.fill(g, felled=[peer])
+    assert EP.ready(g, 'sunfall') and EP.charge(g) == 1 and EP.bar_note(g, 'sunfall')[1] == EP.GOLD
+    p.lvl = lvl0
     g.talk(npc)                                     # swap for the other
     EV.resolve(g, 'learn:phoenix')
-    assert p.bar[5] == 'phoenix' and 'sunfall' not in p.known
+    assert p.bar[6] == 'phoenix' and 'sunfall' not in p.known and EP.ready(g, 'phoenix')
     app.render()
     scr = app.cv.dump()
     assert EP.SIGN in scr and 'Phoenix' in scr and 'ready' in scr and 'epic' in scr, scr
@@ -7984,12 +8033,13 @@ def epics():
             g.map.mons.append(e)
         g.compute_fov()
         EP.learn(g, sid, quiet=True)
-        EP.st(g)['spent'] = False
+        assert not SK.use(g, 6), sid                # it starts empty
+        EP.st(g)['charge'] = EP.CHARGE_FULL
         p.life = g.stats()['max_life']
-        assert SK.use(g, 5), sid
-        assert EP.st(g)['spent'] and not EP.ready(g, sid), sid
-        if sid != 'oak_shape':                      # Oak Shape's key lets it go; the others are spent until you rest
-            assert not SK.use(g, 5), sid
+        assert SK.use(g, 6), sid
+        assert EP.st(g)['charge'] == 0 and not EP.ready(g, sid), sid
+        if sid != 'oak_shape':                      # Oak Shape's key lets it go; the others are empty again
+            assert not SK.use(g, 6), sid
         foes = [o for o in g.map.mons if not o.is_npc]
         if sid == 'sunfall':
             hp0 = sum(o.hp for o in foes)
@@ -8015,7 +8065,7 @@ def epics():
         if sid == 'oak_shape':
             assert WS.kit(g) == 'oak' and CL.slot_skill(g, 0) == 'oak_slam' and BH.has(g, 'slowed'), \
                 (WS.kit(g), CL.slot_skill(g, 0), BH.status(g), p.buffs)
-            assert SK.use(g, 5) and WS.kit(g) != 'oak' and not BH.has(g, 'slowed')
+            assert SK.use(g, 6) and WS.kit(g) != 'oak' and not BH.has(g, 'slowed')
         if sid == 'one_blood':
             bst = MC.with_you(g, 'beast')
             MC.hurt(g, bst, 10 ** 5)
@@ -8036,7 +8086,7 @@ def epics():
         app.render()
         assert not g.dead, sid
         EP.rested(g)
-        assert EP.ready(g, sid) and not any(getattr(o, 'barrow_king', False) for o in g.map.mons)
+        assert not any(getattr(o, 'barrow_king', False) for o in g.map.mons)
     # Phoenix: the blow that would kill you burns you up instead, once a day
     p.buffs = []
     EP.learn(g, 'phoenix', quiet=True)
@@ -8132,7 +8182,15 @@ def epics():
     assert EP.bump(g, bx, by, D.BELL) == 1 and not EP._job(g, 'storm').data.get('done')
     g.world.weather = getattr(g.world, 'weather', None)
     # the debug menu's line
+    # an old save (round 57b): the epic on old key 6 moves to key 7; spent, it starts empty, else full
+    from avarenthia import saves as SV
+    p.bar = [None, None, None, None, None, 'phoenix']
+    EP.st(g).pop('charge', None)
+    EP.st(g)['spent'] = True
+    SV._seven_keys(g)
+    assert p.bar[6] == 'phoenix' and p.bar[5] is None and len(p.bar) == 7 and EP.st(g)['charge'] == 0
     DBG.epics(g)
+    assert EP.st(g)['charge'] == EP.CHARGE_FULL
     assert all(EP.st(g)['deeds'].get(c) for c in CL.classes(g))
     assert len(MS.active(g)) >= 1
     pickle.dumps(g)

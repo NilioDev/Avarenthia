@@ -65,6 +65,11 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **The bar of seven keys** (round 57, 6 November 2026; `classes.py`, `epics.py`, `ui.py`, `tests/balance.py`; test
+  parts `balance`, `classes`, `epics`). Keys 1-2 the weapon, 3-6 four class skills with at most one elite, 7 the
+  epic, shown once you know one. The epic charges by fighting (blows given and taken, foes brought down, nothing
+  from foes far below) and stays full until used; Phoenix once a day. The bar changes in a town or right after a
+  rest; a known skill off the bar is cast from the book in three turns. `python tests/balance.py` prints the measure.
 - **The Counted Sky in the game and the peoples' books** (round 58, 6 November 2026; `countedsky.py`, `varnish.py`,
   `varnishtexts.py`, `folktexts.py`, `folkbooks.py`, `storyland.py`; test parts `varnish`, `folkbooks`,
   `story_land`). Nilio's story as the one source; the Varnish lore made even with it (Vael and her Crown, Before the
@@ -3325,3 +3330,51 @@ Ninth Day of Taur kept its pages. The goblins' drains come from their book What 
 by a goblin fixer in a city), not from a paid goblin boss. The bones themselves cannot be plundered or bound in the
 game, so the warning and curse in the sockets wait for a way to do that. One book per small people lies in every
 world, one or two of the others; the north keeps both of theirs, the fey their one in the court.
+
+---
+
+## The bar of seven keys (built 6 November 2026; the spec)
+
+Approved by Nilio on 6 November 2026 (thread "Skillsysteem met 6 toetsen beoordelen"). Why: with three class keys
+everyone takes damage and the helping skills (Tame, Gate, Purify, Mend) never reach the bar; the bar changes only in
+a town, so deep in a dungeon most known skills are dead; and an epic on key 6 costs the elite, then leaves key 6
+empty until the next rest, while camping anywhere makes "once per rest" cheap.
+
+- **The bar:** **1-2** the weapon's two skills (as now), **3-6 four class skills, at most one of them an elite**
+  (the elite takes a class key, so it costs an ordinary skill, as in Guild Wars), **7 the epic**. Key 7 and its
+  group show only once you have learnt an epic; one first-time tip in `guide.TIPS` teaches it. In a shape, 1-2 are
+  the beast's attacks and 3-7 rest unless Untamed (as now). Weapon rules colour class skills on 3-6 as they did on 3-5.
+- **The epic charges by fighting** instead of once per rest. The ♦ on key 7 fills with blows given and taken (as a
+  share of your life) and foes brought down (by their threat); foes far below your level (about 5 levels) give
+  nothing, so rats cannot be farmed. Full after about one hard fight or a few ordinary ones; it stays full until
+  used and keeps between rests and saves; resting does not fill it. It starts empty when learnt and empties when the
+  teacher swaps it. Shown on the bar only: the ♦ goes from dull to bright gold as it fills (no number, no new screen).
+  **Phoenix** stays once per day and does not charge. How fast each epic fills is set per epic from the balance
+  measure (Time Stop and Army of the Dead may want a slower fill).
+- **Changing the bar after any rest:** [z] lets you change the bar in a town (as now) and also right after a rest,
+  an inn's bed or your camp, before you walk on, the same moment as spending tree points. Never with a foe in sight,
+  because no one rests then.
+- **Casting from the book:** any skill you know that is not on the bar can be used from the [z] list: 3 turns
+  instead of 1, its usual cost and cooldown, broken off like rummaging in the pack (a new foe in sight or a blow;
+  the turns are gone, nothing is cast). Not for elites, the epic or weapon skills: those work only from the bar.
+  So the bar is the fight, and the helping skills are still there when there is time.
+- **The balance measure** (round 57a, built first): `python tests/balance.py [seed]` beside `tests/money.py`. The
+  bot builds of the `balance` part, each fought with today's bar (3 + elite) and the new one (4 with an elite, and 4
+  without), at levels 10, 20 and 30, with and without an epic: waves won, turns, damage taken, how often the epic
+  fills per level of a dungeon, and each of the 22 epics' share of the damage or the saved life. It prints a table so
+  the charge numbers and any epic that is too strong can be set before 57b; its bands become asserts in the
+  `balance` part (new bar no more than about 15% faster than the old one; an epic about once per hard fight).
+- **Handbook:** "Who you become" (the bar's three groups become 1-2, 3-6 with one elite, 7 the epic; charging; the
+  bar after a rest; casting from the book), "Epics" (charges instead of once per rest; Phoenix once per day), "All the
+  keys" ([1-7]), "Resting" (changing the bar). The build report quotes the lines.
+- **Save data:** the bar gets seven places, an elite on old key 6 moves to class key 6 (the 4th), an epic to key 7;
+  `p.epic` gets its charge. Bump `SAVE_VERSION`, a step in `saves.MIGRATIONS` (not breaking).
+- **Tests:** `balance` (the new bar and charging), `classes` and `epics` (the slots, elite limit, key 7, the
+  charge), `lasting_saves` (the move), `text_fits`; testing.md "The bar of seven keys".
+
+**As built.** The balance measure over two worlds (seed 11): the new bar with its epic 1.13 times as fast as today's
+with the epic once per rest (band 1.15), the epic full 0.93 times a run of four waves (band about 1). The charge
+numbers stayed as first set (`epics.CHARGE_*`, Time Stop .6 and Barrow King .75 of the usual fill); no epic stood
+out in the table of the 22. The `balance` part checks one world at level 30 with wider bands (1.3; .4 to 3).
+Casting from the book is [Enter] on the [z] list. An old save's epic that was spent starts empty, else full. The
+debug entry "Epics" (E) also fills the charge.

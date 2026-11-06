@@ -62,6 +62,19 @@ def _counted_sky(g):
         fix_pages(g.world)
 
 
+def _seven_keys(g):
+    """Round 57b: the bar has seven places; an epic on old key 6 moves to key 7 and starts full, as it was."""
+    from . import epics as EP
+    p = g.player
+    while len(p.bar) < 7:
+        p.bar.append(None)
+    if p.bar[5] in EP.EPICS:
+        p.bar[6], p.bar[5] = p.bar[5], None
+    s = EP.st(g)
+    spent = s.pop('spent', False)
+    s.setdefault('charge', 0.0 if spent else EP.CHARGE_FULL)
+
+
 MIGRATIONS = {
     64: ('the kill count moved to the tally', _tally, False),
     65: ('the marks of creatures renamed', _affixes, False),
@@ -71,6 +84,7 @@ MIGRATIONS = {
     69: ('more makers: places with their own plans, their states and break-ins (new worlds)', None, False),
     70: ('The Counted Sky: books that grew a page wait at a library', _counted_sky, False),
     71: ('The story on the land (round 58c)', _story_land, False),
+    72: ('The bar of seven keys: an epic on key 7, filled by fighting', _seven_keys, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

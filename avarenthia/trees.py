@@ -229,7 +229,7 @@ TREES = {
             ('hawk_shape', 'Hawk Shape', 1, 'teach', 'hawk_shape', 1, 'Teaches Hawk Shape: weak, but you see far. As '
              'a hawk, keys 1 and 2 are Talons and Dive.'),
             ('long_shape', 'Long Shape', 2, 'buffdur', 'shapes', 30, 'Your shapes last {n}% longer.'),
-            ('untamed', 'Untamed', 1, 'flag', B, 1, 'In the shape of a beast you can still use keys 3 to 6.')]),
+            ('untamed', 'Untamed', 1, 'flag', B, 1, 'In the shape of a beast you can still use keys 3 to 7.')]),
     ],
     'beastcraft': [
         ('Bond', 'your beast', [
@@ -504,7 +504,7 @@ def rested(game):
     p.rest_spot = (game.cur, p.x, p.y)
     p.faith_day = p.__dict__.get('faith_day', -1)
     from . import epics as EP
-    EP.rested(game)                                 # the epic on key 6 is with you again
+    EP.rested(game)                                 # the barrow king goes down again
     from . import classes as CL
     if any(free(game, line) for line in CL.classes(game)):
         from . import guide as GDE
@@ -1261,7 +1261,7 @@ def thrall_made(game, o):
 
 
 def shape_keys_locked(game):
-    """In the shape of a beast, keys 3 to 6 rest, unless you are Untamed."""
+    """In the shape of a beast, keys 3 to 7 rest, unless you are Untamed."""
     from . import anim as AN
     return AN.shape_of(game.player) is not None and not has(game, 'untamed')
 

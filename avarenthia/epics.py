@@ -1,13 +1,13 @@
-"""The epics (classes part 4; see "Classes part 4: the epics" in docs/built.md). A tier above the elites, on key 6
-in the elite's place: two per class, 22 in all. An epic costs no mana or stamina but works once per rest (an inn's
-bed, your camp); Phoenix waits on the key and burns you up instead of the blow that would kill you, once a day.
+"""The epics (classes part 4; see "Classes part 4: the epics" in docs/built.md). A tier above the elites, on key 7
+(round 57): two per class, 22 in all. An epic costs no mana or stamina; it charges by fighting (blows given and taken,
+foes brought down) and stays full until used; Phoenix waits on the key and burns you up instead of the blow that would kill you, once a day.
 
 They are taught by hidden teachers, two of each class in every world, each in another part of it: an ash hermit, a
 rime witch, a retired master thief... You hear of the teachers of your own classes only through a rumour, from rank
 35 in that class; they teach from rank 40, after a deed of their own (a job in the jobs tab). When a teacher dies the
 other remains; when both are gone, a pupil takes up the work elsewhere after a season.
 
-What is yours (what you learnt, the deeds done, whether your epic is spent, Phoenix's flames) lives on the player
+What is yours (what you learnt, the deeds done, how full your epic is, Phoenix's flames) lives on the player
 (`p.epic`); the teachers' huts are sites of the world (kind 'teacher')."""
 import random
 
@@ -39,7 +39,7 @@ FIRE, ICE, STORM, HOLY, DARK, BONE, LEAF, BEAST, WAR, ARC, SNEAK = SK.FIRE, SK.I
 EPIC_LIST = [
     _S('sunfall', 'Sunfall', 'fire', (255, 214, 90), 'A small sun hangs a turn over your target, then falls: all within '
        '2 burn, and the ground burns 3 turns.'),
-    _S('phoenix', 'Phoenix', 'fire', (255, 150, 60), 'While it is ready on [6], a blow that would kill you burns you up '
+    _S('phoenix', 'Phoenix', 'fire', (255, 150, 60), 'While it is ready on [7], a blow that would kill you burns you up '
        'instead: you rise with a fifth of your life, foes within 2 catch fire, and you carry 4 flames that bite each '
        'turn. Water or a Health Potion puts one out. Once a day.'),
     _S('long_winter', 'Long Winter', 'frost', ICE, 'The ground within 3 freezes for 10 turns: who stands in it slows, '
@@ -98,7 +98,7 @@ def is_epic(sk):
 def st(game):
     p = game.player
     if not hasattr(p, 'epic'):
-        p.epic = dict(spent=False, phoenix_day=-1, learnt={}, deeds={}, heard=set(), king=False, flames=0)
+        p.epic = dict(charge=0.0, phoenix_day=-1, learnt={}, deeds={}, heard=set(), king=False, flames=0)
     return p.epic
 
 
@@ -115,10 +115,35 @@ def add_buff(game, k, turns, label, v=1):
     p.buffs = [b for b in p.buffs if b[0] != k] + [[k, v, turns, label]]
 
 
+# ------------------------------------------------------------------ the charge (round 57): the epic fills by fighting
+CHARGE_FULL = 100.0
+CHARGE_TAKEN = 60.0         # blows taken: this much for a whole life's worth
+CHARGE_DEALT = 20.0         # blows given: this much for a whole life's worth of your own
+CHARGE_FOE = 8.0            # a foe brought down, times its weight (elite 2, boss 4)
+CHARGE_BELOW = 5            # foes this many levels below you give nothing
+FILL = {'time_stop': .6, 'barrow_king': .75}      # how fast each epic fills (1: the usual), set from tests/balance.py
+
+
+def foe_weight(game, mon):
+    """What a foe counts for the charge: nothing when far below you."""
+    if getattr(mon, 'is_npc', False) or getattr(mon, 'lvl', 0) < game.player.lvl - CHARGE_BELOW:
+        return 0.0
+    return 4.0 if getattr(mon, 'is_boss', False) else 2.0 if getattr(mon, 'elite', 0) else 1.0
+
+
+def charge_gain(game, dealt=0, taken=0, felled=(), sid=None):
+    """The charge a stretch of fighting gives: blows given and taken as a share of your life, and foes brought down
+    by their weight. dealt counts only blows on foes that are not far below you."""
+    life = max(1, game.stats()['max_life'])
+    gain = CHARGE_TAKEN * taken / life + CHARGE_DEALT * dealt / life
+    gain += sum(CHARGE_FOE * foe_weight(game, o) for o in felled)
+    return gain * FILL.get(sid, 1.0)
+
+
 def on_bar(game):
-    """The epic on key 6, or None."""
+    """The epic on key 7, or None."""
     p = game.player
-    sid = p.bar[5] if len(p.bar) > 5 else None
+    sid = p.bar[6] if len(p.bar) > 6 else None
     return sid if sid in EPICS else None
 
 
@@ -126,15 +151,36 @@ def ready(game, sid):
     s = st(game)
     if sid == 'phoenix':
         return s['phoenix_day'] != game.day
-    return not s['spent']
+    return s.get('charge', 0.0) >= CHARGE_FULL
+
+
+def charge(game):
+    """How full the epic is, 0 to 1 (Phoenix: 1 while ready)."""
+    sid = on_bar(game)
+    if not sid:
+        return 0.0
+    if sid == 'phoenix':
+        return 1.0 if ready(game, sid) else 0.0
+    return min(1.0, st(game).get('charge', 0.0) / CHARGE_FULL)
+
+
+def fill(game, dealt=0, taken=0, felled=()):
+    """Fighting fills the epic on key 7: called on every blow given or taken and every foe brought down."""
+    sid = on_bar(game)
+    if not sid or sid == 'phoenix':
+        return
+    s = st(game)
+    before = s.get('charge', 0.0)
+    if before >= CHARGE_FULL:
+        return
+    s['charge'] = min(CHARGE_FULL, before + charge_gain(game, dealt, taken, felled, sid))
+    if s['charge'] >= CHARGE_FULL:
+        game.msg(f'{EPICS[sid].name} is full. It waits on [7].', 'gold')
 
 
 def rested(game):
-    """A night in a bed or at your camp: the epic comes back, and the barrow king goes down again."""
+    """A night in a bed or at your camp: the barrow king goes down again. The epic does not fill by resting."""
     s = st(game)
-    if s['spent'] and on_bar(game) and on_bar(game) != 'phoenix':
-        game.msg(f'{EPICS[on_bar(game)].name} is with you again.', 'gold')
-    s['spent'] = False
     if s['king']:
         s['king'] = False
         for o in [o for o in game.map.mons if getattr(o, 'barrow_king', False)]:
@@ -144,12 +190,12 @@ def rested(game):
 
 
 def describe(sk):
-    return sk.text + (' Once a day.' if sk.id == 'phoenix' else ' Once per rest, and no mana or stamina.')
+    return sk.text + (' Once a day.' if sk.id == 'phoenix' else ' It charges by fighting, and costs no mana or stamina.')
 
 
 def x_epic(game, sk, r):
     if sk.id == 'phoenix':
-        game.msg('Phoenix needs no calling: while it is ready on [6], the blow that would kill you burns you up '
+        game.msg('Phoenix needs no calling: while it is ready on [7], the blow that would kill you burns you up '
                  'instead.', 'info')
         return False
     if sk.id == 'oak_shape' and oak(game):
@@ -158,14 +204,15 @@ def x_epic(game, sk, r):
         game.msg('You let the oak go, and the bark falls from you.', 'good')
         return True
     if not ready(game, sk.id):
-        game.msg(f'{sk.name} is spent. It comes back when you rest: an inn\'s bed or your camp.', 'bad')
+        game.msg(f'{sk.name} is not full yet. It fills as you fight: blows given and taken, foes brought down.',
+                 'bad')
         return False
     if time_stopped(game):
         game.msg('Time stands still. Nothing more can be woken in it.', 'bad')
         return False
     if not FN[sk.id](game, sk, r):
         return False
-    st(game)['spent'] = True
+    st(game)['charge'] = 0.0
     game.msg(f'{sk.name}!', 'gold')
     return True
 
@@ -789,7 +836,17 @@ def shown(game):
 
 def bar_note(game, sid):
     """What the bar shows for an epic instead of its cost."""
-    return ('ready', GOLD) if ready(game, sid) else ('spent', (120, 110, 100))
+    if sid == 'phoenix':
+        return ('ready', GOLD) if ready(game, sid) else ('spent', (120, 110, 100))
+    return ('', glow(charge(game)))
+
+
+def glow(f):
+    """The ♦ on key 7: dull while empty, bright gold when full."""
+    dull = (90, 80, 62)
+    if f >= 1:
+        return GOLD
+    return tuple(round(a + (b - a) * f * .8) for a, b in zip(dull, GOLD))
 
 
 # ------------------------------------------------------------------ the teachers
@@ -1149,7 +1206,7 @@ def _teach(game, site, npc):
 
 
 def learn(game, sid, quiet=False):
-    """Take this epic; it goes on key 6 in the elite's place (the elite stays known)."""
+    """Take this epic; it goes on key 7, empty: it charges by fighting."""
     p, s = game.player, st(game)
     sk = EPICS[sid]
     old = s['learnt'].get(sk.line)
@@ -1161,13 +1218,16 @@ def learn(game, sid, quiet=False):
     s['learnt'][sk.line] = sid
     if sid not in p.known:
         p.known.append(sid)
-    while len(p.bar) < 6:
+    while len(p.bar) < 7:
         p.bar.append(None)
-    p.bar[5] = sid
+    p.bar[6] = sid
+    s['charge'] = 0.0
     if not quiet:
-        game.msg(f'You learn {sk.name}. It is on [6] now, in the elite\'s place.', 'gold')
+        game.msg(f'You learn {sk.name}. It is on [7] now, and it fills as you fight.', 'gold')
         from . import chronicle as CH
         site = game.world.sites[game.map.site] if getattr(game.map, 'teacher', False) else None
+        from . import guide as GDE
+        GDE.tip(game, 'epic')
         CH.deed(game, f'An epic: {sk.name}', f'{site.teacher if site else "A teacher"} taught you {sk.name}.')
 
 

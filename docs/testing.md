@@ -546,7 +546,7 @@ three things. Test part `boss_moves`.
   line); an old save's elite moved to key 6 and its epic to 7. Debug: give tomes, Guild rank (q) to 4.
 - **The epic on key 7** - key 7 shows only once an epic is learnt; the tip; the ♦ filling dull to bright gold by
   fighting, nothing from foes far below you, kept over a rest; Phoenix once per day. Debug: "Epics: rank 40, teachers,
-  deeds" (E), "Epic: fill the charge", spawn foes of your level and far below.
+  deeds" (E), which also fills the charge; spawn foes of your level and far below.
 - **The bar after a rest** - [z] changes the bar after an inn's bed or your camp, not before walking on elsewhere.
   Debug: "Rested here", Teleport out of town.
 - **Casting from the book** - a known skill off the bar from the [z] list: 3 turns, its cost, broken off by a new

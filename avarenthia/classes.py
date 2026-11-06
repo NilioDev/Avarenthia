@@ -36,7 +36,8 @@ _PAIRS = [
     ('arcane', 'nature', 'Leywalker'), ('arcane', 'beastcraft', 'Spiritcaller'), ('arcane', 'warcraft', 'Spellbreaker'),
     ('arcane', 'cunning', 'Trickster')]
 PAIRS = {frozenset((a, b)): n for a, b, n in _PAIRS}
-WEAPON, CLASS, ELITE = (0, 1), (2, 3, 4), (5,)
+WEAPON, CLASS, EPIC = (0, 1), (2, 3, 4, 5), (6,)      # keys 1-2, 3-6 (at most one elite), 7 (round 57)
+BAR = 7
 
 
 def classes(game):
@@ -147,12 +148,23 @@ def r_second(game, choice, ctx):
 
 # ------------------------------------------------------------------ the bar
 def slot_skill(game, i):
-    """The skill on key i+1: keys 1-2 come from your weapon, 3-6 from what you chose."""
+    """The skill on key i+1: keys 1-2 come from your weapon, 3-7 from what you chose."""
     if i in WEAPON:
         from . import weaponskills as WS
         return WS.skills_now(game)[i]
     p = game.player
     return p.bar[i] if i < len(p.bar) else None
+
+
+def can_change_bar(game):
+    """The bar changes in a town, and right after a rest (an inn's bed or your camp) before you walk on; never
+    with a foe in sight. None when you may, else why not."""
+    from . import trees as TT
+    if game.map.kind != 'town' and not TT.can_rest_spend(game):
+        return 'You can change your bar in a town, or right after a rest before you walk on.'
+    if game.hostile_visible():
+        return 'Not with a foe in sight.'
+    return None
 
 
 def _elites():
@@ -194,23 +206,35 @@ def fits(game, sk, i):
     if getattr(sk, 'weapon_skill', False) or weapon_guild(sk):
         return 'A weapon skill goes on keys 1 and 2.'
     epic = getattr(sk, 'epic', False)
-    if i in ELITE:
+    if i in EPIC:
         if epic:
             return None if sk.line in classes(game) else f'{sk.name} is not of your schools.'
-        return None if is_elite(sk) else 'Key 6 is for one elite or one epic: a guild\'s highest technique, or a ' \
-            'teacher\'s.'
-    if is_elite(sk) or epic:
-        return f'{sk.name} is {"an epic" if epic else "an elite"}: it can only go on key 6.'
+        return 'Key 7 is for your epic, a teacher\'s highest gift.'
+    if epic:
+        return f'{sk.name} is an epic: it can only go on key 7.'
+    if is_elite(sk):
+        p = game.player
+        other = next((s for k, s in enumerate(p.bar) if k in CLASS and k != i and s and s != sk.id
+                      and s in SK.SKILLS and is_elite(SK.SKILLS[s])), None)
+        return f'Only one elite on keys 3 to 6, and {SK.SKILLS[other].name} is there.' if other else None
     if sk.line not in classes(game):
         return f'{sk.name} is not of your schools.'
     return None
 
 
+def pad(game):
+    """The bar has seven places (an old save may have fewer)."""
+    p = game.player
+    while len(p.bar) < BAR:
+        p.bar.append(None)
+
+
 def place(game, sid):
     """Put a newly learnt skill in a free key it fits. Returns the index, or None."""
     p = game.player
+    pad(game)
     sk = SK.SKILLS[sid]
-    for i in CLASS + ELITE:
+    for i in CLASS + EPIC:
         if p.bar[i] is None and not fits(game, sk, i):
             p.bar[i] = sid
             return i
@@ -218,12 +242,61 @@ def place(game, sid):
 
 
 def tidy(game):
-    """Take off the bar what no longer fits there (an old save, a weapon skill on 3-6)."""
+    """Take off the bar what no longer fits there (an old save, a weapon skill on 3-6, a second elite)."""
     p = game.player
+    pad(game)
     for i in range(len(p.bar)):
         sid = p.bar[i]
-        if sid and (i in WEAPON or sid not in SK.SKILLS or fits(game, SK.SKILLS[sid], i)):
+        if sid and (i in WEAPON or i >= BAR or sid not in SK.SKILLS or fits(game, SK.SKILLS[sid], i)):
             p.bar[i] = None
+    del p.bar[BAR:]
+
+
+BOOK_TURNS = 3
+
+
+def book_why(game, sid):
+    """Whether a known skill may be cast from the book (the [z] list): None, or why not."""
+    sk = SK.SKILLS[sid]
+    p = game.player
+    if sid in p.bar:
+        return f'{sk.name} is on your bar: use its key.'
+    if getattr(sk, 'epic', False) or is_elite(sk):
+        return f'{sk.name} is {"an epic" if getattr(sk, "epic", False) else "an elite"}: it works only from the bar.'
+    if getattr(sk, 'weapon_skill', False) or weapon_guild(sk) or not class_line(sk.line):
+        return 'A weapon skill works only from keys 1 and 2.'
+    if sk.line not in classes(game):
+        return f'{sk.name} is not of your schools.'
+    if sk.passive:
+        return f'{sk.name} needs no calling: it is simply how you do things.'
+    if p.cooldowns.get(sid, 0) > 0:
+        return f'{sk.name} is recharging ({p.cooldowns[sid]} turns).'
+    if not SK.can_pay(game, sk):
+        return f'Not enough {SK.pool(sk)} for {sk.name}.'
+    return None
+
+
+def from_book(game, sid):
+    """Cast a known skill that is not on the bar, from the book: two turns finding the page, the third casts it. A
+    new foe in sight or a blow breaks it off; the turns are gone and nothing is cast. Returns the turns of the last
+    step (the first two are spent here)."""
+    why = book_why(game, sid)
+    if why:
+        game.msg(why, 'bad')
+        return 0
+    p = game.player
+    for _ in range(BOOK_TURNS - 1):
+        seen = {id(o) for o in game.visible_hostiles()}
+        life = p.life
+        game.end_turn(1)
+        if game.dead:
+            return 0
+        new = any(id(o) not in seen for o in game.visible_hostiles())
+        if new or p.life < life:
+            game.msg('You lose your place in the book: ' + ('something comes into sight.' if new else 'a blow!'),
+                     'bad')
+            return 0
+    return SK.use(game, None, book=sid)
 
 
 def register():

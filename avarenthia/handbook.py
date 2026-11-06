@@ -114,9 +114,9 @@ def ch_fighting(g):
         ('k', '[Tab]', 'the next enemy in sight; [Shift+Tab] the one before.'),
         ('k', '[Esc]', 'let go of your target.'),
         ('h', 'Skills and potions'),
-        ('k', '[1-6]', 'use a skill from your bar, at your target or else the nearest enemy. [1] and [2] come with the '
-                       'weapon in your hand, [3] to [6] are the ones you chose. Weapon skills and Warcraft cost '
-                       'stamina, spells mana.'),
+        ('k', '[1-7]', 'use a skill from your bar, at your target or else the nearest enemy. [1] and [2] come with the '
+                       'weapon in your hand, [3] to [6] are the ones you chose, [7] is your epic. Weapon skills and '
+                       'Warcraft cost stamina, spells mana.'),
         ('k', '[q] [w]', 'drink a health or a mana potion from your belt: the smallest that fills what you miss, or '
                          'the largest. It takes a turn.'),
         ('k', '[Shift+1-5]', 'drink from that pocket of your belt.'),
@@ -348,19 +348,28 @@ def ch_who(g):
               'the slain, Thornblade roots, and with Hunter\'s Call your beast leaps in. While it lasts, no mana comes '
               'back.'),
         ('p', 'The Shapeshifter branch of Nature teaches Wolf Shape, Bear Shape and Hawk Shape. In a beast\'s shape '
-              '[1] and [2] are its teeth and claws, and [3] to [6] rest unless you are Untamed; the key of the shape '
+              '[1] and [2] are its teeth and claws, and [3] to [7] rest unless you are Untamed; the key of the shape '
               'lets it go.'),
         ('h', 'The bar'),
-        ('p', 'Six keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take up '
-              'another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [5] are three skills '
-              'of your classes. [6] is your elite, the sign {☼|255,214,90}: one technique a guild master taught you, '
-              'or an epic in its place. '
-              'A technique of a weapon guild that fits the weapon in your hand may take the place of [1] or [2] '
-              'instead. Choose them in a town with [z]. The panel shows the three groups, with your name beside SKILLS.'),
+        ('p', 'Seven keys in three groups. [1] and [2] are your weapon\'s own two skills: they change when you take '
+              'up another kind of weapon, and the second opens at rank 10 in its discipline. [3] to [6] are four '
+              'skills of your classes, and at most one of them may be an elite, the sign {☼|255,214,90}: a technique '
+              'a guild master taught you. [7] is your epic, once you have learnt one. A technique of a weapon guild '
+              'that fits the weapon in your hand may take the place of [1] or [2] instead. The panel shows the three '
+              'groups, with your name beside SKILLS.'),
+        ('p', 'Choose them with [z] in a town, or right after a rest, an inn\'s bed or your camp, before you walk on. '
+              'Never with a foe in sight.'),
+        ('p', 'A skill you know that is not on your bar can still be cast from the book: pick it in the [z] list and '
+              'press [Enter]. It takes three turns instead of one, and a new foe in sight or a blow breaks it off: '
+              'the turns are gone and nothing is cast. Not for elites, the epic or weapon skills; those work only '
+              'from the bar.'),
         ('h', 'Epics'),
-        ('p', 'Above the elites stand the epics, two for each class. An epic goes on [6] in the elite\'s place, the '
-              'sign {♦|255,214,90}, and costs no mana or stamina: it works once, then waits until you rest, an inn\'s '
-              'bed or your camp. The panel says whether it is ready or spent.'),
+        ('p', 'Above the elites stand the epics, two for each class. An epic goes on [7], the sign '
+              '{♦|255,214,90}, and costs no mana or stamina. It charges as you fight: with the blows you give and '
+              'take, and the foes you bring down. Foes far below you give nothing. It is full after one hard fight or '
+              'a few ordinary ones, and stays full until you use it, through rests and saves; resting does not fill '
+              'it. The {♦|255,214,90} on the panel goes from dull to bright gold as it fills. A new epic starts '
+              'empty.'),
         ('p', 'Epics are taught by teachers who live alone, far from the roads: an ash hermit in a burnt valley, a '
               'rime witch at a mountain pass, an old master thief outside a city. Every class has two in the world, '
               'each in another part of it, in a hut, the sign {î|232,200,120}. From rank 35 in a class you may hear '
@@ -368,7 +377,7 @@ def ch_who(g):
               'in your jobs tab. Do it, and you may learn one of the two epics; later the teacher will trade it for '
               'the other. Teachers grow old and die. When both of a class are gone, after a season a pupil takes up '
               'the work somewhere else.'),
-        ('p', 'Phoenix is the one that waits. While it is ready on [6], a blow that would kill you burns you up '
+        ('p', 'Phoenix is the one that waits. It does not charge. While it is ready on [7], a blow that would kill you burns you up '
               'instead, and you rise with a fifth of your life. Four flames cling to you after and bite every turn; '
               'water or a Health Potion puts one out. Once a day.'),
         ('p', 'Under Time Stop only you move, for three turns, and the world goes grey. You cannot harm anyone in '
@@ -1236,8 +1245,8 @@ def ch_guilds(g):
               'crafts take anyone. Each guild has five ranks, earned with its own jobs. Members buy cheaper from the '
               'quartermaster, sleep in the hall for little or nothing, have their gear mended cheaper, and are paid '
               'better the higher they rise. Only a guild master teaches the advanced techniques, and only to those '
-              'who have earned them. A technique goes on [6] as your elite; one of your own schools may also go on '
-              '[3] to [5], and one of a weapon guild on [1] or [2] while you hold its weapon. Below the highest ranks, '
+              'who have earned them. A technique goes on [3] to [6] as your elite, one at a '
+              'time; one of a weapon guild on [1] or [2] while you hold its weapon. Below the highest ranks, '
               'a master will not teach a technique of a school that is not yours: you could never use it.'),
         ('p', 'Who serves two guilds may learn a technique of both. One that mixes weapon and spell costs stamina and '
               'mana alike; the Hollow Coven\'s techniques cost life as well.'),
@@ -1516,7 +1525,7 @@ BASIC_KEYS = [
     ('[Enter] [Space]', 'do the obvious thing here'),
     ('[Esc]', 'let go of the target; else the menu'),
     ('[Tab] [Shift+Tab]', 'next, previous target'),
-    ('[1-6]', 'use a skill: 1 and 2 your weapon, 3 to 6 your choice'),
+    ('[1-7]', 'use a skill: 1 and 2 your weapon, 3 to 6 your choice, 7 your epic'),
     ('[q] [w]', 'health potion, mana potion'),
     ('[Shift+1-5]', 'drink from a pocket of the belt'),
     ('[>] [<]', 'go in, down or into the land; climb up'),

@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'The bar of seven keys'}
+NOT_BUILT = set()
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -644,6 +644,17 @@ R = {
     'Classes :: Pair and pure rules': [('class', None, 20), ('tome', None, 0, True)],
     'Classes :: Elites and weapon-guild skills': [('guild', 'magi', 4), ('guild', 'iron', 4), ('coin', GOLD)],
     'Classes :: Epics': [('class', None, 40), ('dbg', 'epics'), ('dbg', 'rested'), ('month', 11), ('hour', 22)],
+    # The bar of seven keys
+    'The bar of seven keys :: Four class keys': [('class', None, 30), ('tome', None, 1), ('tome', None, 2),
+                                                 ('guild', 'magi', 4), ('guild', 'iron', 4), ('coin', GOLD),
+                                                 ('to', 'town', None, 'human')],
+    'The bar of seven keys :: The epic on key 7': [('class', None, 40), ('dbg', 'epics'), ('deep', 'dungeon', 1),
+                                                   ('spawn', 'goblin')],
+    'The bar of seven keys :: The bar after a rest': [('class', None, 20), ('tome', None, 1), ('tome', None, 2),
+                                                      ('dbg', 'rested')],
+    'The bar of seven keys :: Casting from the book': [('class', None, 20), ('tome', None, 1), ('tome', None, 2),
+                                                       ('deep', 'dungeon', 1), ('spawn', 'goblin', {'sleep': True})],
+    'The bar of seven keys :: The balance measure': [('note', 'run python tests/balance.py: it prints the table.')],
     # Cities that grew
     'Cities that grew, part 1 :: The heart': [('to', 'metropolis'), SCHOOLS_NOTE],
     'Cities that grew, part 1 :: Streets, lanes, rows, the wall': [('to', 'city', None, 'human')],

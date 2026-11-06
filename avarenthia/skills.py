@@ -13,7 +13,7 @@ import random
 
 from .worldgen import cheb, free_around
 
-BAR_SIZE = 6
+BAR_SIZE = 7
 UNLOCKS = (0, 8, 20, 35, 55)                 # the weapon disciplines' tome skills, and the guilds' techniques
 TOME = (0, 5, 12, 20, 30, 42, 55, 70)        # the schools of magic and Warcraft: eight tome skills each
 
@@ -321,7 +321,7 @@ for _t in TECHNIQUES:
     if _t.line == 'restoration':
         _t.undead = max(2, _t.undead)
 SKILLS = {s.id: s for s in SKILL_LIST + TECHNIQUES}
-STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None]
+STARTING_BAR = ['power_strike', 'firebolt', 'mend', None, None, None, None]
 
 
 def pool(sk):
@@ -332,7 +332,7 @@ def pool(sk):
 
 
 def cost_of(game, sk):
-    if getattr(sk, 'epic', False):                  # an epic: once per rest instead
+    if getattr(sk, 'epic', False):                  # an epic: it charges by fighting instead
         return 0
     from . import trees as TT
     if TT.free_cast(game, sk):
@@ -662,23 +662,28 @@ def learn(game, sid):
     if i is not None:
         game.msg(f'{sk.name} is now on key {i + 1}.', 'info')
     else:
-        game.msg('Change your skills in a town or stronghold (Z).', 'info')
+        game.msg('Put it on your bar with [z], in a town or right after a rest.', 'info')
     return True
 
 
 # ------------------------------------------------------------------ using
-def use(game, slot):
+def use(game, slot, book=None):
+    """Use the skill on key slot+1, or (book) a known skill from the book: classes.from_book."""
     p = game.player
     from . import classes as CL
     from . import weaponskills as WS
-    sid = CL.slot_skill(game, slot)
+    sid = book or CL.slot_skill(game, slot)
     if not sid:
-        if slot in CL.WEAPON:
+        if slot in CL.EPIC:
+            game.msg('Key 7 is for an epic.' if not _EP.st(game)['learnt'] else 'Your epic is not on key 7: put it '
+                     'back with [z].')
+        elif slot in CL.WEAPON:
             locked = WS.second_locked(game)
             game.msg(f'{SKILLS[locked].name} comes to you at {DISCIPLINES[SKILLS[locked].line]["name"]} {WS.SECOND}.'
                      if locked else 'Your weapon has no skill here.')
         else:
-            game.msg('That skill slot is empty. Skills are learned from tomes; choose them in a town with Z.' if p.known else
+            game.msg('That skill slot is empty. Skills are learned from tomes; choose them with [z] in a town, or right '
+                     'after a rest.' if p.known else
                      'You know no skills yet. Skill tomes are found on monsters, in ruins and with traders.')
         return 0
     from . import trees as TT

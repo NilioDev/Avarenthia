@@ -1496,14 +1496,17 @@ class GameScreen(Screen):
         hs = HU.state(getattr(p, 'food', 500))
         if hs:
             cv.text_right(x + PW - 1, 18, hs, GOOD if hs == 'Satiated' else GOLD if hs == 'Hungry' else BAD, PANEL)
-        # three groups: the weapon's two skills, three class skills, one elite
+        # three groups: the weapon's two skills, four class skills (one may be an elite), the epic once you know one
         rows = ((19, 'weapon', None), (20, None, 0), (21, None, 1), (22, 'class', None), (23, None, 2), (24, None, 3),
-                (25, None, 4), (26, 'elite', None), (27, None, 5))
+                (25, None, 4), (26, None, 5), (27, 'epic', None), (28, None, 6))
         from . import epics as EP
         epic = EP.on_bar(g)
+        knows_epic = bool(EP.st(g)['learnt'])
         for y, head, i in rows:
+            if (head == 'epic' or i == 6) and not knows_epic:
+                continue
             if head:
-                cv.text(x + 2, y, 'epic' if head == 'elite' and epic else head, scale(DIM, .7), PANEL)
+                cv.text(x + 2, y, head, scale(DIM, .7), PANEL)
                 continue
             sid = CL.slot_skill(g, i)
             cv.text(x, y, str(i + 1), GOLD, PANEL)
@@ -1516,17 +1519,18 @@ class GameScreen(Screen):
             cd = p.cooldowns.get(sid, 0)
             ok = SK.can_pay(g, sk) and not cd
             stam = SK.pool(sk) == 'stamina'
-            if sid == epic:                         # an epic: once per rest, no cost
+            if sid == epic:                         # an epic: it charges by fighting, no cost
                 ok = EP.ready(g, sid)
-                cv.put(x + 2, y, EP.SIGN, GOLD, PANEL)
-            elif i in CL.ELITE:
+                cv.put(x + 2, y, EP.SIGN, EP.bar_note(g, sid)[1], PANEL)
+            elif CL.is_elite(sk):
                 cv.put(x + 2, y, '☼', GOLD, PANEL)
             elif i in CL.CLASS:
                 cv.put(x + 2, y, '•', SK.DISC_COLOR.get(sk.line, FG), PANEL)
             cv.text(x + 2 + (0 if i in CL.WEAPON else 2), y, sk.name, FG if ok else DIM, PANEL, maxw=PW - 9)
             if sid == epic:
                 note, ncol = EP.bar_note(g, sid)
-                cv.text_right(x + PW - 1, y, note, ncol, PANEL)
+                if note:
+                    cv.text_right(x + PW - 1, y, note, ncol, PANEL)
                 continue
             cv.text_right(x + PW - 1, y, f'{cd}t' if cd else f"{SK.cost_of(g, sk)}{'st' if stam else 'mp'}",
                           BAD if cd else ((scale(STAMINA, 1.3) if stam else INFO) if ok else DIM), PANEL)
@@ -1814,7 +1818,7 @@ class GameScreen(Screen):
             self.act(lambda: 1)
         elif shift and tok in ('1', '2', '3', '4', '5'):
             self.act(lambda: g.drink(None, pocket=int(tok) - 1))
-        elif tok in ('1', '2', '3', '4', '5', '6'):
+        elif tok in ('1', '2', '3', '4', '5', '6', '7'):
             self.act(lambda: g.use_skill(int(tok) - 1))
         elif tok == 'f':
             self.act(g.fire)
@@ -2401,7 +2405,8 @@ class CharacterScreen(Modal):
 
 
 class SkillsScreen(Modal):
-    """Choose the skills on keys 3 to 6 (keys 1 and 2 come with your weapon). Only in a town or stronghold."""
+    """Choose the skills on keys 3 to 7 (keys 1 and 2 come with your weapon): in a town, or right after a rest.
+    Enter casts a known skill that is not on the bar, from the book (classes.from_book)."""
 
     def __init__(self, app):
         super().__init__(app)
@@ -2418,13 +2423,14 @@ class SkillsScreen(Modal):
         g = self.game
         p = g.player
         x, y = self.box(cv, 104, 30, 'Skills')
-        in_town = g.map.kind == 'town'
+        why = CL.can_change_bar(g)
         name = CL.title(g)
-        cv.text(x + 2, y + 1, (name + ' · ' if name else '') + ('Your bar' if in_town else 'change it in a town or stronghold'),
-                DIM if in_town else BAD, PANEL, maxw=48)
-        heads = {0: 'weapon', 2: 'class', 5: 'elite'}
+        cv.text(x + 2, y + 1, (name + ' · ' if name else '') + ('Your bar' if not why else
+                'change it in a town, or after a rest'), DIM if not why else BAD, PANEL, maxw=48)
+        from . import epics as EP
+        heads = {0: 'weapon', 2: 'class', 6: 'epic'}
         yy = y + 2
-        for i in range(6):
+        for i in range(CL.BAR if EP.st(g)['learnt'] else CL.BAR - 1):
             if i in heads:
                 cv.text(x + 2, yy, heads[i], scale(DIM, .7), PANEL)
                 yy += 1
@@ -2450,7 +2456,7 @@ class SkillsScreen(Modal):
             cv.fill(x + 2, yy, 48, 1, ' ', FG, bg)
             cv.text(x + 2, yy, LETTERS[i], GOLD, bg)
             on_bar = sk.id in p.bar
-            fits = CL.fits(g, sk, 5) is None or any(CL.fits(g, sk, k) is None for k in CL.CLASS)
+            fits = any(CL.fits(g, sk, k) is None for k in CL.CLASS + CL.EPIC)
             cv.text(x + 4, yy, sk.name, GOOD if on_bar else FG if fits else DIM, bg, maxw=30)
             cv.text_right(x + 49, yy, SK.DISCIPLINES[sk.line]['name'], DIM, bg)
         for yy in range(y + 1, y + 29):
@@ -2474,7 +2480,7 @@ class SkillsScreen(Modal):
         cv.wrap(x + 54, y + 20, 47, rule or 'Empty hands.', FG, PANEL, 2)
         cv.wrap(x + 54, y + 23, 47, 'Class skills are learned from tomes of your own schools; an elite from a guild '
                 'master. Harder tomes need a higher rank, which grows as you use them.', DIM, PANEL, 4)
-        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick a skill · 3-6: put it on that key · Del: clear · Tab: your tree · Esc: close ', DIM, PANEL)
+        cv.text_center(W // 2, y + 29, ' ↑↓ or letter: pick · 3-7: on that key · Enter: cast from the book · Del: clear · Tab: tree ', DIM, PANEL)
 
     def on_key(self, tok, shift):
         from . import classes as CL
@@ -2491,14 +2497,28 @@ class SkillsScreen(Modal):
             self.sel = min(len(known) - 1, self.sel + 1)
         elif len(tok) == 1 and tok in LETTERS and LETTERS.index(tok) < len(known):
             self.sel = LETTERS.index(tok)
-        elif tok in ('1', '2', '3', '4', '5', '6'):
+        elif tok == 'enter' and known:
+            sid = known[self.sel].id
+            why = CL.book_why(g, sid)
+            g.log_mark = len(g.log)
+            if why:
+                g.msg(why, 'bad')
+                return
+            self.app.pop()
+            screen = self.app.screens[-1] if getattr(self.app, 'screens', None) else None
+            if screen is not None and hasattr(screen, 'act'):
+                screen.act(lambda: CL.from_book(g, sid))
+            else:
+                g.end_turn(CL.from_book(g, sid) or 0)
+        elif tok in ('1', '2', '3', '4', '5', '6', '7'):
             i = int(tok) - 1
             self.slot = i
             if i in CL.WEAPON and not (known and CL.weapon_guild(known[self.sel])):
                 return
-            if g.map.kind != 'town':
+            why = CL.can_change_bar(g)
+            if why:
                 g.log_mark = len(g.log)
-                g.msg('You can only change your skills in a town or stronghold.', 'bad')
+                g.msg(why, 'bad')
                 return
             if not known:
                 return
@@ -2515,7 +2535,7 @@ class SkillsScreen(Modal):
                 p.bar[p.bar.index(sk.id)] = p.bar[i]
             p.bar[i] = sk.id
             CL.tidy(g)
-        elif tok in ('delete', 'backspace') and g.map.kind == 'town' and self.slot not in CL.WEAPON:
+        elif tok in ('delete', 'backspace') and not CL.can_change_bar(g) and self.slot not in CL.WEAPON:
             p.bar[self.slot] = None
 
 

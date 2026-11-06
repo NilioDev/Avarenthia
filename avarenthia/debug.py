@@ -475,7 +475,7 @@ def epics(game):
             if FK.unfound(t):
                 FK.discover(game, t, None)
             n += 1
-    s['spent'], s['phoenix_day'] = False, -1
+    s['charge'], s['phoenix_day'] = EP.CHARGE_FULL, -1
     game.msg(f'Debug: rank {EP.TEACH_AT} in your classes, their deeds done, and {n} teachers on your map.' if lines else
              'Debug: you have no class yet. Read a tome first.', 'info')
 

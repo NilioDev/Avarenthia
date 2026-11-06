@@ -102,7 +102,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 72
+SAVE_VERSION = 73
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -2159,6 +2159,7 @@ class Game:
         dmg = BS.blow(self, mon, dmg, crit, weapon, elem)
         mon.hp -= dmg
         TY.dealt(self, dmg)
+        EP.fill(self, dealt=dmg if EP.foe_weight(self, mon) else 0)     # the epic on key 7 fills as you fight
         mon.awake = True
         self.wake_pack(mon)
         mon.hit_flash = 1
@@ -2243,6 +2244,7 @@ class Game:
             dmg = min(dmg, p.life - 1)                  # a marked blow never kills from full life (bosses.py)
         p.life -= dmg
         TY.hurt(self, dmg, p.life, s['max_life'])
+        EP.fill(self, taken=dmg if not hasattr(src, 'lvl') or EP.foe_weight(self, src) else 0)
         BH.on_hurt(self)
         big = dmg >= s['max_life'] * .2
         self.num(p.x, p.y, f'-{dmg}', C_HURT, big)
@@ -2271,6 +2273,7 @@ class Game:
             self.spill(m, mon.x, mon.y, mon.carries)
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} drops a key.', 'good')
         EP.on_kill(self, mon)
+        EP.fill(self, felled=[mon])
         if not mon.is_npc:                             # where it fell: a necromancer has a use for that
             sl = m.__dict__.setdefault('slain', [])
             sl.append((mon.k, mon.x, mon.y, mon.lvl))

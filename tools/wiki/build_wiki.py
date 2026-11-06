@@ -469,7 +469,7 @@ for line in SK.DISC_ORDER:
         if getattr(s, 'epic', False):               # epics.py: from a hidden teacher, after a deed
             from avarenthia import epics as EP
             src = f'epic: {EP.TEACHERS[s.line][0]}, rank {EP.TEACH_AT}, after a deed'
-            cost = 'once a day' if s.id == 'phoenix' else 'once per rest'
+            cost = 'once a day' if s.id == 'phoenix' else 'charges by fighting'
         rows += f'<tr class="entry"><td><span class="glyph" style="color:{rgb(s.color)}">{e(s.glyph)}</span> <b>{e(s.name)}</b></td><td>{src}</td><td>{e(cost)}</td><td>{e(s.mode)}</td><td>{e(d)}</td></tr>'
     sk_html += (f'<h3 class="gh">{e(SK.DISCIPLINES[line]["name"])} <span class="count">{len(lines[line])}</span></h3>'
                 f'<div class="tw"><table class="skills"><tr><th>Skill</th><th>Learned from</th><th>Cost</th><th>Kind</th><th>At rank 1</th></tr>{rows}</table></div>')
