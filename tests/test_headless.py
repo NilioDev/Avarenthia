@@ -4993,7 +4993,8 @@ def debug_menu():
         # every lettered line stays inside the box, above the Debug: lines and the help line (it fits 110 x 60)
         root = app.top.pages[0]
         assert root.height() <= DU.BOX_H - 4, root.height()
-        assert DU.BOX_H <= 60 - 2
+        assert not DU.DebugScreen.tall and DU.BOX_H <= ui.BASE_H - 2
+        assert 'Kill all in sight' in app.cv.dump() and 'Spawn a creature' in app.cv.dump()
         keys = [k for col in root.columns for _h, rows in col for k, _l, _a in rows]
         assert len(keys) == len(set(keys)), 'a letter twice on the debug menu'
         close()

@@ -5,7 +5,7 @@ from . import debug as DBG
 from .canvas import wrap_text
 from .ui import Modal, W, FG, DIM, GOLD, GOOD, BAD, INFO, PANEL
 
-BOX_W, BOX_H = 104, 36          # fits the smallest screen (110 x 60); test part debug_menu checks every page fits
+BOX_W, BOX_H = 104, 36          # fits the smallest screen (110 x 60, single rows); test part debug_menu checks it
 SEL_BG = (50, 40, 30)
 NOTE_MAX = 3000                 # letters in a note for Claude
 
@@ -286,7 +286,9 @@ class TestsPage(Page):
         return None
 
 class DebugScreen(Modal):
-    """F12: the debug menu over the game."""
+    """F12: the debug menu over the game. Drawn in single rows (not tall like the other dialogs): its many lines
+    must fit the smallest screen, 110 x 60."""
+    tall = False
 
     def __init__(self, app):
         super().__init__(app)
