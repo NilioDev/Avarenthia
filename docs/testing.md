@@ -566,3 +566,7 @@ three things. Test part `boss_moves`.
 - **The dark ring, Aerith, the goblin drains** - the star floor before and after the King; breaking Aerith's chain
   and the lighter first phase; the drain way up. Debug: "Sky-Seat: open the mist", Teleport to a star house.
 - **The Wall on the world map** - the broken line on seen stretches, all of it after the lantern. Debug: Reveal map.
+- **The court under the hill** (a secret) - the barrow and its mushroom ring look ordinary; the door only at night
+  under a full moon after walking widdershins round it inside the ring; the court's movement, trails, flowers, signs
+  that change, the mirror pool, the "?" date, the gold words of a bargain, the honey wine, a season gone outside.
+  Debug: "Fey: teleport to the hill", Time (a full-moon night), "Fey: open the door".

@@ -196,8 +196,9 @@ sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken v
   Moved Four Paces, What the Oaks Said, The Count Kept Private, The First Winter; kobolds The Shine Tally, She Who Saw
   the Sky, The Bridge Spikes; goblins The Honest Day Book, What We Heard Under the Collegium, Sold Twice; gnolls The
   Last Verse; lizardfolk The Long Bone, Pressed Into the Peat; orcs When We Came Up; the north The Names Kept, The
-  Torches on the Snow; **the fey** one book, The First Pact from their side ("to the letter, never the spirit"). What
-  you have lives on the player.
+  Torches on the Snow; **the fey** one book, The First Pact from their side ("to the letter, never the spirit"),
+  lying only in their court (see "The court under the hill" below). The elves' The First Pact names no place: only
+  "the hills by night to the fey". What you have lives on the player.
 - **Each people's own voice** in everyday talk, as in the story: the elves first (sure of themselves to the point of
   annoying, a smile from above, never a taunt: "The price is fair. I know, because I set it."; asked about the stars
   in the north they change the subject), then dwarves curt and book-keeping, halflings hospitable and sly, gnomes
@@ -218,6 +219,24 @@ sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken v
   still steer by the stars; only the Varnish books show why. (9) **The Northern Wall on the world map**: a broken
   grey line in the towers' colour on the stretches you have seen (all of it after the lantern), gaps where it fell,
   so it reads as old and not as a border.
+- **The court under the hill: a secret** (Nilio, 6 November 2026; mockups in project files `lore/fey/`). A true
+  easter egg for whoever happens on it: no map sign, no rumour, no job, no map layer, nothing in the handbook or the
+  Signs page (a deliberate exception to the handbook rule), and not in the wiki. One grassy barrow per world looks
+  like any other, with a ring of white mushrooms round it (as ordinary fairy rings have). At night under a full
+  moon, walking once round the hill widdershins inside the ring opens a door in its flank; then you step in. Faint
+  hints only, in things that exist: a halfling skipping rhyme ("round the hill the wrong way round, when the moon is
+  full and white"), a line in the gnolls' last verse, the elves' "the hills by night to the fey". Inside, a round hall
+  of roots in dusk light that comes from nowhere, alive with movement (the one place that breaks the look rule's
+  "movement scarce", on purpose; `anim.py`): the floor's colours wave out from the dance in soft rainbow rings, motes
+  rise, candles never burn down, a honey-coloured stream runs uphill, the root walls breathe. **Trails:** what moves
+  leaves a fading echo. **Flowers where you step,** opening and wilting behind you. **Things are not one thing:**
+  the guests keep changing sign (f, c, p, n, even @); looking at one tells the truth only sometimes. **The mirror
+  pool:** your @ walks the other way in it; stepping in brings you out on the far side of the court. **The date**
+  under the map reads "Day ?, ?, year ?" while you are inside. **Bargains to the letter:** the words they will hold
+  you to light up gold in the log (the purse "that is never empty" holds one coin). **Honey wine:** the colours turn
+  inside out for a while and the log's letters swap. Time runs like honey: a night inside is a season outside,
+  seen only when you step out. What you take away is a memory, not power: the fey's book, the purse, a line under
+  Your deeds. The hall keeps its shape. Testing only through F12.
 - **Handbook:** "The Varnish" (the peoples' books beside theirs; reading through a people or a hireling; binding by
   that people), the Peoples chapter, the Wall's line in the world-map signs (`guide.py`). The build report quotes the
   lines.
