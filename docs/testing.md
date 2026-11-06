@@ -583,3 +583,17 @@ three things. Test part `boss_moves`.
   boards of the peoples, the masters told by rumour and the title. Debug: Teleport to an inn, an abbey, a master.
 - **The Count** - draw or stop, the three suits, Water face down till the end, the dealer, the limit per night,
   counting with Cunning and being shown the door. Debug: Teleport to an inn, Time (evening), Coin, Ranks.
+
+## A roof of your own (approved 6 November 2026)
+
+- **A town house** - the `$` door in a settlement of each people, buying it, each people's kind of home, the hearth
+  tax each season, the town selling it after a year unpaid. Debug: Teleport to a town of each people, Coin, Time
+  (a season on, a year on).
+- **Building anywhere** - the builder's stake, placing it on the world map, each stage from camp to keep with its
+  goods and days, the look by the land. Debug: Coin, give timber and stone, Time (days on), Teleport to each biome.
+- **The risk** - each outcome of the weekly roll (theft, a broken piece, squatters, fire, flood, snow, a great
+  evil), the news line, each defence lowering it. Debug: "Home: roll now" with a chosen outcome, set region threat.
+- **A seat** - buying an empty seat or fort from the baron as his knight, restoring it, the steward and guards'
+  wages, the baron's call in a war, losing it to a new lord. Debug: make you a knight, Coin, start a war, end it.
+- **Furnishing** - the first-time tip, placing, picking up and moving, every piece's bump, Comfort's stars and
+  "well rested", the peoples' styles and a full set, dyes, delivery. Debug: give furniture of each style, Coin.
