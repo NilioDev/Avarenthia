@@ -68,7 +68,8 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 - **A window that fits** (round 56, 5 November 2026; `ui.layout`, `ui.set_size`, `canvas.OffsetCanvas`, `margin.py`,
   `main.py`; test part `window_sizes`). The largest whole scale at which 110 x 60 fits; the cells left over go to the
   map up to 16:9 (panel and log keep their size); every other screen keeps its 110 x 60 layout, centred. Round a very
-  wide window a faint sepia old map, laid out anew per zone and day and drifting a cell a minute. Zoom (Auto, 1x-4x)
+  wide window a faint sepia old map, laid out anew per zone and day and drifting a cell a minute, with a gold double
+  line where the game's screen ends (6 November 2026). Zoom (Auto, 1x-4x)
   on the title screen; the window's size and fullscreen kept in settings.txt. Debug: [r] Window size, [G] a new
   stretch of the margin. Not built: the panel does not use a taller screen (IN SIGHT keeps its rows).
 - **Makers in the editor** (round 55, 5 November 2026; `editor/generate.py` the list of makers and map to drawing,

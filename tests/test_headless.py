@@ -11618,8 +11618,13 @@ def window_sizes():
             assert g.player.name in row(0)[ui.PX:], 'the panel at the right edge of the game'
             margin = [(x, y) for y in range(cv.h) for x in range(cv.w) if not (x0 <= x < x0 + w and y0 <= y < y0 + h)]
             if margin:
+                edge = {(x0 - 1, y) for y in range(y0 - 1, y0 + h + 1)} | {(x0 + w, y) for y in range(y0 - 1, y0 + h + 1)} \
+                    | {(x, y0 - 1) for x in range(x0 - 1, x0 + w + 1)} | {(x, y0 + h) for x in range(x0 - 1, x0 + w + 1)}
+                assert all(cv.ch[y * cv.w + x] in '║═╔╗╚╝' and cv.fg[y * cv.w + x] == MG.FRAME
+                           for x, y in edge if 0 <= x < cv.w and 0 <= y < cv.h), 'a clear edge round the game'
+                margin = [c for c in margin if c not in edge]
                 assert all(cv.fg[y * cv.w + x] == MG.INK and cv.bg[y * cv.w + x] == MG.PAPER for x, y in margin)
-                assert sum(cv.ch[y * cv.w + x] != ' ' for x, y in margin) > len(margin) // 3, 'the old map in it'
+                assert not margin or sum(cv.ch[y * cv.w + x] != ' ' for x, y in margin) > len(margin) // 3, 'the old map'
                 assert max(MG.INK) <= 64, 'never brighter than a quarter'
             # a screen laid out for 110 x 60 sits in the middle of the game's part, at that size
             app.push(ui.HelpScreen(app))

@@ -74,7 +74,7 @@ def ch_first_steps(g):
               'enemies you can see. The line under the map: where you stand and how dangerous it is. The log at the '
               'bottom: what just happened.'),
         ('p', 'A bigger window shows more of the map; the panel and the log keep their size. On a very wide screen '
-              'the game stays in the middle, with a faint old map round it. Zoom on the title screen sets how big the '
+              'the game stays in the middle in a gold frame, with a faint old map round it. Zoom on the title screen sets how big the '
               'signs are: Auto picks the largest that fits. [F11] or [Alt+Enter] goes fullscreen, and the game '
               'remembers the window for next time.'),
         ('h', 'Saving'),

@@ -2,7 +2,8 @@
 
 A faint sepia old map: patches of water, hills, woods and fields in scattered signs, laid out anew from a seed when
 you enter a zone or a new day starts, and drifting one cell a minute, so nothing stands still long enough to burn
-into a screen. Never brighter than a quarter; no text or signs to read in it.
+into a screen. Never brighter than a quarter; no text or signs to read in it. A clear double line marks where
+the game's screen ends.
 """
 import random
 import time
@@ -10,6 +11,7 @@ import zlib
 
 INK = (58, 46, 34)            # the signs: under a quarter of full light
 PAPER = (16, 13, 11)          # the ground
+FRAME = (150, 118, 64)        # the clear edge where the game's screen ends (Nilio, 6 November 2026)
 PATCHES = ('≈~', '^∩', '♣♠', '.,"', '·.')     # water, hills, woods, fields, open land
 PATCH_W, PATCH_H = 6, 4
 DRIFT_SECONDS = 60
@@ -65,10 +67,32 @@ def draw(cv, rect, seed, shift=0):
         con.ch[out] = codes[out]
         con.fg[out] = INK
         con.bg[out] = PAPER
-        return
-    for y in range(rows):
-        inside = ry <= y < ry + rh
-        for x in range(cols):
-            if inside and rx <= x < rx + rw:
-                continue
-            cv.put(x, y, signs[y * cols + (x + shift) % cols], INK, PAPER)
+    else:
+        for y in range(rows):
+            inside = ry <= y < ry + rh
+            for x in range(cols):
+                if inside and rx <= x < rx + rw:
+                    continue
+                cv.put(x, y, signs[y * cols + (x + shift) % cols], INK, PAPER)
+    frame(cv, rect)
+
+
+def frame(cv, rect):
+    """A double line in the margin's first cells round the game, so it is clear where the game's screen ends."""
+    rx, ry, rw, rh = rect
+    left, right, top, bottom = rx - 1, rx + rw, ry - 1, ry + rh
+    has_l, has_r, has_t, has_b = left >= 0, right < cv.w, top >= 0, bottom < cv.h
+    for y in range(max(0, top), min(cv.h, bottom + 1)):
+        if has_l:
+            cv.put(left, y, '║', FRAME, PAPER)
+        if has_r:
+            cv.put(right, y, '║', FRAME, PAPER)
+    for x in range(max(0, left), min(cv.w, right + 1)):
+        if has_t:
+            cv.put(x, top, '═', FRAME, PAPER)
+        if has_b:
+            cv.put(x, bottom, '═', FRAME, PAPER)
+    for ok, x, y, ch in ((has_l and has_t, left, top, '╔'), (has_r and has_t, right, top, '╗'),
+                         (has_l and has_b, left, bottom, '╚'), (has_r and has_b, right, bottom, '╝')):
+        if ok:
+            cv.put(x, y, ch, FRAME, PAPER)
