@@ -9,6 +9,7 @@ told by rumour; beat them all for a deed in the chronicle.
 The rules are pure classes (`Bones`, `Count`, `Vigil`), drawn by `inngames_ui.py`. What lasts lives on the player:
 `p.inngames` (the night's stakes, where you are barred, the masters beaten)."""
 import random
+import zlib
 
 from . import data as D
 
@@ -169,10 +170,13 @@ def lay(game, m):
         around = [(gt[0] + dx, gt[1] + dy) for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dx or dy]
         free = [c for c in around if m.inb(*c) and m.tile(*c) in (D.FLOOR, D.PLANK) and not m.mon_at(*c)]
         free.sort(key=lambda c: c[0] != gt[0] and c[1] != gt[1])          # beside it before at its corners
+        keep = random.getstate()                     # the regulars' names come from the map, not the world's dice
+        random.seed(zlib.crc32(str(m.key).encode()))
         for c in free[:2]:
             o = make_npc(game, random_name(race if race in ('human', 'dwarf', 'elf', 'halfling', 'orc', 'gnome', 'goblin')
                                            else 'human'), REGULAR, '#c8a078', c[0], c[1], True, race=race)
             m.mons.append(o)
+        random.setstate(keep)
     return gt
 
 
