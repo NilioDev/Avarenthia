@@ -1,5 +1,6 @@
-# Builds standalone executables for Windows, macOS and Linux on every push, twice: the game for players, and
-# "Avarenthia (test)" with the debug menu (F12) switched on, for testers, and beside it the Avarenthia Editor.
+# Builds standalone executables for Windows, macOS and Linux on every push, as two downloads per system:
+# "1 GAME - Avarenthia (...)" with Avarenthia-Game for players, and "2 TEST BUILD + EDITOR - Avarenthia (...)" with
+# Avarenthia-TestBuild (the debug menu, F12, switched on) and Avarenthia-Editor. Each holds a short README.
 # Download them from the run's "Artifacts" section on the Actions tab. The Linux job also builds the wiki
 # (tools/wiki/build_wiki.py): lore, monsters, skills, items and the handbook in one HTML page.
 name: Build executables
@@ -15,20 +16,23 @@ jobs:
       matrix:
         include:
           - os: windows-latest
+            label: Windows
             sep: ';'
-            file: dist/Avarenthia.exe
-            test: dist/AvarenthiaTest.exe
-            editor: dist/AvarenthiaEditor.exe
+            file: dist/Avarenthia-Game.exe
+            test: dist/Avarenthia-TestBuild.exe
+            editor: dist/Avarenthia-Editor.exe
           - os: macos-latest
+            label: macOS
             sep: ':'
-            file: dist/Avarenthia
-            test: dist/AvarenthiaTest
-            editor: dist/AvarenthiaEditor
+            file: dist/Avarenthia-Game
+            test: dist/Avarenthia-TestBuild
+            editor: dist/Avarenthia-Editor
           - os: ubuntu-latest
+            label: Linux
             sep: ':'
-            file: dist/Avarenthia
-            test: dist/AvarenthiaTest
-            editor: dist/AvarenthiaEditor
+            file: dist/Avarenthia-Game
+            test: dist/Avarenthia-TestBuild
+            editor: dist/Avarenthia-Editor
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -50,22 +54,46 @@ jobs:
       - name: Pack and seal the drawn pieces
         run: python tools/pack_pieces.py
       - name: Build
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia --add-data "assets${{ matrix.sep }}assets" main.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia-Game --add-data "assets${{ matrix.sep }}assets" main.py
+      - name: Write what is in the game download
+        shell: bash
+        run: |
+          {
+            echo "AVARENTHIA - THE GAME (${{ matrix.label }}), commit ${GITHUB_SHA::7}"
+            echo
+            echo "Avarenthia-Game: the game itself. Start this one to play."
+            echo "Your save, savegame.dat, is written beside it."
+          } > dist/README-GAME.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Avarenthia-${{ matrix.os }}
-          path: ${{ matrix.file }}
+          name: 1 GAME - Avarenthia (${{ matrix.label }})
+          path: |
+            ${{ matrix.file }}
+            dist/README-GAME.txt
       - name: Build the test build
         shell: bash
         run: |
           echo "The test build: the debug menu (F12) is on." > TESTBUILD
           echo "commit ${GITHUB_SHA::7}" >> TESTBUILD
-          pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaTest --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." --add-data "docs/testing.md${{ matrix.sep }}." main.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia-TestBuild --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." --add-data "docs/testing.md${{ matrix.sep }}." main.py
       - name: Build the editor (only in the test download)
-        run: pyinstaller --noconfirm --clean --onefile --windowed --name AvarenthiaEditor --hidden-import main --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name Avarenthia-Editor --hidden-import main --add-data "assets${{ matrix.sep }}assets" --add-data "TESTBUILD${{ matrix.sep }}." editor.py
+      - name: Write what is in the test download
+        shell: bash
+        run: |
+          {
+            echo "AVARENTHIA - TEST BUILD AND EDITOR (${{ matrix.label }}), commit ${GITHUB_SHA::7}"
+            echo
+            echo "Avarenthia-TestBuild: the game with the debug menu on F12. Keeps its own save, debug.sav."
+            echo "Avarenthia-Editor:    the Avarenthia Editor for rooms, pieces and whole places."
+            echo "                      Your own files (My pieces.des, my places.des) are written beside it."
+            echo
+            echo "To just play, take the other download, 1 GAME - Avarenthia."
+          } > dist/README-TEST-AND-EDITOR.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Avarenthia (test)-${{ matrix.os }}
+          name: 2 TEST BUILD + EDITOR - Avarenthia (${{ matrix.label }})
           path: |
             ${{ matrix.test }}
             ${{ matrix.editor }}
+            dist/README-TEST-AND-EDITOR.txt

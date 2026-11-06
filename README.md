@@ -461,8 +461,10 @@ An executable has to be built on the operating system it will run on.
 - **Windows:** double-click `build_windows.bat`; after a few minutes `dist\Avarenthia.exe` is ready.
 - **macOS / Linux:** `bash build.sh`, then `dist/Avarenthia` is ready.
 - **Through GitHub:** the workflow in `.github/workflows/build.yml` builds Windows, macOS and Linux versions on every
-  push. Download them under *Actions*, at the latest run, under *Artifacts*. Each push makes two builds: the game
-  (`Avarenthia-...`) and the test build for testers (`Avarenthia (test)-...`).
+  push. Download them under *Actions*, at the latest run, under *Artifacts*. Each push makes two downloads per
+  system: `1 GAME - Avarenthia (...)` holds `Avarenthia-Game`, the game to play; `2 TEST BUILD + EDITOR -
+  Avarenthia (...)` holds `Avarenthia-TestBuild` (the debug menu on F12) and `Avarenthia-Editor`. Each download
+  has a short README that says which file is which.
 
 ### The test build
 
