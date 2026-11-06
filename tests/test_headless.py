@@ -11727,7 +11727,7 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
@@ -11831,6 +11831,172 @@ def folkbooks():
     from avarenthia import mercs as MC
     assert hasattr(MC.Merc('fighter', 'Test', 1), 'race')
     print('   folkbooks ok:', len(V['books']), 'books of', len(peoples), 'peoples')
+
+
+def story_land():
+    """The story on the land: Bardin cut free and laid flat in a dwarf hall, the altar stone's bread in spring, Ferro's
+    measure and his seal, Tam counted, the dark ring and the silver dot after the King, Aerith freed and the King's
+    first phase lighter, the drains up, the north's welcome, the Wall's line; and the court under the hill: the door
+    only on a full-moon night after once round widdershins, the court's looks, the pool, a bargain, a season gone."""
+    from avarenthia import storyland as SL, feycourt as FC, events as EV, chronicle as CH, debug as DBG
+    from avarenthia import landmarks as LM, calendar as CAL, nature as NT, skyseat as SKY, folkbooks as FB
+    import math
+    print('== story_land')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    V = SL.info(g)
+    assert V['granary'] is not None and V['howe'] is not None and V['tam'] is not None, V
+    howe = w.sites[V['howe']]
+    assert howe.glyph == (w.sites[V['howe']].glyph) and LM.describe(g, howe).startswith('A barrow')
+    assert not FC.in_court(g)
+
+    def ans(choice):
+        pend = g.pending
+        g.pending = None
+        EV.RESOLVERS[pend['key']](g, choice, pend['ctx'])
+
+    def thing(m, key):
+        i = next(i for i, k in m.tells.items() if k == key)
+        return i % m.w, i // m.w
+    # Bardin: cut free, carried, laid flat in a dwarf hall
+    if V['bardin'] is not None:
+        site = w.sites[V['bardin']]
+        to_over(g, 0)
+        g.enter_site(site.id)
+        g.pending = None
+        x, y = thing(g.map, 'bardin')
+        SL.bump(g, x, y)
+        assert g.pending and g.pending['key'] == 'story'
+        ans('bardin')
+        assert any(i.k == 'bardin' for i in p.inv) and SL.st(g)['bardin'] == 'carried'
+        dw = next((t for t in w.settlements if t.race == 'dwarf'), None)
+        if dw:
+            to_over(g, 0)
+            g.request = None
+            g.enter_town(dw.id)
+            assert SL.st(g)['bardin'] == 'home' and not any(i.k == 'bardin' for i in p.inv)
+            assert 'dwarf' in FB.st(g)['favour']
+    # Ferro tells the measure; his seal broken, he rests
+    gr = w.sites[V['granary']]
+    to_over(g, 0)
+    g.enter_site(gr.id)
+    g.pending = None
+    ferro = next(o for o in g.map.mons if o.name.startswith('Ferro'))
+    LM.talk(g, ferro)
+    assert any(f['key'] == 'sl:ferro' for f in CH.facts(g))
+    ans('ferro_seal')
+    assert SL.st(g)['ferro'] == 'rest' and ferro not in g.map.mons
+    # Tam counted
+    tam = w.sites[V['tam']]
+    SL.tally(g, tam)
+    ans('tam')
+    assert SL.st(g)['tam']
+    SL.tally(g, w.sites[next(s.id for s in w.sites if s.kind == 'walltower' and s.id != tam.id)]) \
+        if sum(1 for s in w.sites if s.kind == 'walltower') > 1 else None
+    # the altar stone: bread and oil in spring calm the sand
+    if V['altar'] is not None:
+        SL.altar_known(g)
+        assert not __import__('avarenthia.folk', fromlist=['x']).unfound(w.sites[V['altar']])
+        DBG.to_month(g, next(mo for mo in range(12) if CAL.SEASONS[mo] == 'spring'))
+        from avarenthia.entities import Item
+        p.inv.append(Item(g.new_id(), 'food', 'bread'))
+        p.inv.append(Item(g.new_id(), 'food', 'butter'))
+        SL._offer(g)
+        rid = w.region_at(*next((x, y) for n, x, y in w.wonders if n == "The Wyrm's Bones")).id
+        assert SL.calm(w, rid, g.day)
+    # the dark ring, then the silver dot once the King is beaten
+    if V['ring'] is not None:
+        rs = w.sites[V['ring']]
+        rs.swept = True
+        to_over(g, 0)
+        g.maps.pop(rs.map_key, None)
+        g.enter_site(rs.id)
+        g.pending = None
+        assert LM.thing_at(g.map, 28, 16) == 'darkring'
+        SL.bump(g, 28, 16)
+        assert SL.st(g)['ring']
+        SKY.sh(w)['won'] = True
+        to_over(g, 0)
+        g.enter_site(rs.id)
+        assert LM.thing_at(g.map, 28, 16) == 'silverdot'
+        SKY.sh(w)['won'] = False
+    # Aerith: freed, and the King's first phase is lighter
+    SL.st(g)['aerith'] = True
+    assert SL.aerith(g)
+    # the drains
+    SL.drains_known(g)
+    assert SL.drains(g)
+    # the north's welcome, and their voice
+    nt = next((t for t in w.settlements if FB.north_of_wall(g, t.x, t.y)), None)
+    if nt:
+        to_over(g, 0)
+        g.request = None
+        g.enter_town(nt.id)
+        assert nt.id in SL.st(g)['fed'] and p.name in SL.north_voice(g)
+    # the Wall's broken line on the world map
+    wc = SL.wall_cells(g)
+    assert wc and len(wc) < len(w.varnish['wall'])
+    # the court under the hill: no door by day, nor sunwise; once round widdershins at a full-moon night
+    DBG.fey(g, 'hill')
+    m = g.map
+    assert m.howe and not m.howe['open']
+    cx, cy = m.howe['c']
+
+    def walk_round(sign):
+        for k in range(0, 40):
+            a = sign * k * math.tau / 36
+            x, y = round(cx + 5 * math.cos(a)), round(cy - 5 * math.sin(a) / 1.6)
+            if D.TILES[m.tile(x, y)].walk:
+                p.x, p.y = x, y
+                FC.step_howe(g, m)
+    walk_round(1)
+    assert not m.howe['open'], 'not by day'
+    DBG.fey(g, 'night')
+    assert NT.full_moon(g)
+    walk_round(-1)
+    assert not m.howe['open'], 'not sunwise'
+    walk_round(1)
+    assert m.howe['open'], 'the door opens'
+    dx, dy = m.howe['door']
+    LM.bump(g, dx, dy)
+    assert FC.in_court(g) and FC.date(g, 'x') == '? ?'
+    c = g.map
+    app.render()                                    # the court draws, moving
+    assert app.screens[-1].moving if hasattr(app.screens[-1], 'moving') else True
+    look = FC.cell(g, c, FC.CX, FC.CY + 2, ('.', (100, 100, 100), (0, 0, 0)), 1.0)
+    assert look[2] != (0, 0, 0)
+    # flowers where you step, and a trail
+    p.x, p.y = FC.CX, FC.CY + 5
+    FC.court_step(g, c)
+    p.x += 1
+    g.turn += 1
+    FC.court_step(g, c)
+    assert c.fey['flowers'] and c.fey['trail']
+    # the mirror pool lets you out on the far side
+    px, py = next(iter(sorted(c.fey['pool'])))
+    p.x, p.y = px, py
+    FC.court_step(g, c)
+    assert p.x == 2 * FC.CX - px
+    # a bargain: the purse, the words in gold; the honey wine; the book
+    host = next(o for o in c.mons if getattr(o, 'fey', None) == 'host')
+    LM.talk(g, host)
+    ans('fey_purse')
+    assert any(i.k == 'curio' and i.t == 'feypurse' for i in p.inv) and FC.shown_name(g) == '?'
+    assert 'never empty' in FC.gold_words(g)
+    ans_ = FC.r_fey(g, 'fey_wine', {})
+    assert FC.swap(g, 'never mind') != 'never mind'
+    FC.r_fey(g, 'fey_book', {})
+    assert 'feypact' in FB.st(g)['bound']
+    app.render()
+    # out: a season later
+    day0 = g.day
+    ex, ey = thing(c, 'feyexit')
+    LM.bump(g, ex, ey)
+    assert not FC.in_court(g) and g.day >= day0 + 89 and g.map.howe['open']
+    assert any(f['ch'] == 'Your deeds' and 'under the hill' in f['text'] for f in CH.facts(g))
+    print('   story_land ok')
 
 
 def archaeology():

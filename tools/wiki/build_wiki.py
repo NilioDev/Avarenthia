@@ -227,6 +227,24 @@ if VT:
         + f'<h3 class="gh">Bound books ({len(VT.BOOKS)})</h3><div class="cards">' + books + '</div>'
         + '<h3 class="gh">The five riddles</h3><div class="cards">' + rid + '</div>')
 
+    import avarenthia.folktexts as FT            # the peoples' books (round 58b); the fey's stays a secret
+    folk = ''
+    for pe in FT.ORDER:
+        if pe == 'fey':
+            continue
+        pd = FT.PEOPLES[pe]
+        bk = ''.join(entry(e(b['title']), f'<p class="meta">Chapter {e(b["ch"])} · found at: {e(", ".join(b["where"]))} · '
+                           f'{len(b["pages"])} {e(pd["noun"])}s</p><details><summary>Read the pages</summary><ol>'
+                           + ''.join(f'<li>{e(x)}</li>' for x in b['pages']) + '</ol></details>', 'built')
+                     for b in FT.BOOKS if b['people'] == pe)
+        folk += (f'<h3 class="gh">{e(pd["name"])}</h3><p class="meta">Written in: {e(pd["script"] or "common letters")} · '
+                 f'bound by: {e(pd["binder"] or "you, in order")}</p>'
+                 + entry('How the world began, their way', f'<p>{e(FT.DAWN[pe])}</p>', 'built')
+                 + '<div class="cards">' + bk + '</div>')
+    add('folkbooks', 'Lore', "The peoples' books",
+        f"<p>Every people's own books, its own dawn tale and its voice (folktexts.py, folkbooks.py). {badge('built')}</p>",
+        folk)
+
     op = ''.join(f'<dt>{e(OP.NAMED.get(k, k))}</dt><dd>{e(v)}</dd>' for k, v in OP.DESC.items())
     add('oldplaces', 'Lore', 'Old places', f'<p>Places left by history on the land (oldplaces.py). {badge("built")}</p>',
         entry('Old places on the land', f'<dl class="kv">{op}</dl><p class="meta">Small sights: {e(", ".join(OP.POI_NAMED.values()))}</p>', 'built'))

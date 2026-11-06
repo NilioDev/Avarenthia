@@ -389,8 +389,62 @@ def varnish_pages(game):
              'books.', 'info')
 
 
-def folk_pages(game):
-    """Every page of this world's peoples' books (not the court's), read where you can read them."""
+def fey(game, what):
+    """The court under the hill (a secret, so only here): 'hill' takes you to the barrow, 'night' makes it a
+    full-moon night, 'door' opens the door in the barrow you stand by."""
+    from . import storyland as SL
+    from . import feycourt as FC
+    s = SL.site_of(game, 'howe')
+    if s is None:
+        game.msg('Debug: this world has no such barrow.', 'bad')
+        return
+    if what == 'next':                          # one key: to the hill, then the night, then the door
+        from . import nature as NT
+        from . import towns as TW
+        here = getattr(game.map, 'site', None) == s.id and getattr(game.map, 'howe', None) is not None
+        what = 'hill' if not here else 'night' if not (NT.full_moon(game) and TW.is_night(game)) else 'door'
+    if what == 'hill':
+        to_over(game, s.x, s.y)
+        game.enter_site(s.id)
+        game.msg(f'Debug: the barrow, {s.name}.', 'info')
+    elif what == 'night':
+        from . import nature as NT
+        days = 0
+        while not 13 <= NT.moon(game.day + days) <= 15:
+            days += 1
+        game.turn += days * D.DAY_LEN
+        hour = (game.turn % D.DAY_LEN) * 24 // D.DAY_LEN
+        game.turn += ((23 - hour) % 24) * D.DAY_LEN // 24
+        game.end_turn(0, quiet=True)
+        game.msg(f'Debug: a full-moon night, day {game.day}.', 'info')
+    elif what == 'door':
+        m = game.map
+        if getattr(m, 'howe', None) is None:
+            game.msg('Debug: stand by the barrow first.', 'bad')
+            return
+        FC.open_door(game, m)
+
+
+def story_places(game):
+    """Every place of the story on the land on your map: Bardin's ruin, the altar stone, the granary, Tam's tower,
+    the star house with the dark ring (the barrow stays a secret)."""
+    from . import storyland as SL
+    from . import folk as FK
+    for k in ('bardin', 'altar', 'granary', 'tam', 'ring'):
+        s = SL.site_of(game, k)
+        if s is not None:
+            if FK.unfound(s):
+                FK.discover(game, s, None)
+            game.reveal_place(s.x, s.y)
+    SL.drains_known(game)
+    game.msg('Debug: the story\'s places are on your map, and you know the goblins\' drains.', 'info')
+
+
+def folk_pages(game, story=False):
+    """Every page of this world's peoples' books (not the court's), read where you can read them; with story, the
+    story's places on the map too."""
+    if story:
+        story_places(game)
     from . import folkbooks as FB
     s = FB.st(game)
     V = FB.info(game)

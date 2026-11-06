@@ -847,6 +847,8 @@ def ch_land(g):
                                           'behind a statue. Below waits a deep with a guardian of its own.'),
                ([('▐', (168, 176, 196))], 'a tower of the Northern Wall, where the nine legions watched the north. '
                                           'The wall runs on between the towers.'),
+               ([('─', (150, 156, 172))], 'the Northern Wall itself, long fallen: a broken grey line on the stretches '
+                                          'you have seen, with gaps where it came down.'),
                ([('⌠', (176, 200, 220))], 'a wind tower: from the top you see the land round. It howls in a storm.'),
                ([('Ö', (196, 188, 168))], 'a road of the standing dead. Break a seal, and the dead one steps down.'),
                ([('◘', (150, 170, 220))], 'a star-iron forge; a smith needs a shard of star-iron to mend Varnish work.'),
@@ -858,6 +860,10 @@ def ch_land(g):
                ([('╢', (150, 176, 196))], 'a sunken harbour, with old coins in the shallows.')]),
         ('p', 'League stones, the sign {│|196,200,214}, count down IV, III, II, I toward a city; once you can read the '
               'old letters, each shows the next. Walk into the telling things of these places.'),
+        ('p', 'Here and there the old story can still be touched: someone bound where he should not be, a stone by '
+              'old bones that wants bread in spring, a clerk who is still counting, a name on a tower that asks to be '
+              'counted. Walk into them. North of the Wall the people have forgotten most of it, but not their manners: '
+              'they feed a guest first, and ask your name, and use it.'),
         ('h', 'Falls and springs'),
         ('s', [([('≡', (236, 248, 255))], 'falls: a waterfall, a cascade or great falls. Fish bite better in the pool, '
                                           'a hollow may hide behind the falling water, and from the cairn on top of a '

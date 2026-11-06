@@ -335,8 +335,7 @@ class DebugScreen(Modal):
                            ('W', self.flag('oldnight'), self.do(lambda: DBG.toggle(g(), 'oldnight'))),
                            ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
                            ('V', 'Varnish letters and places', self.do(lambda: DBG.varnish_places(g()), True)),
-                           ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
-                           ('L', 'Folk books: all pages', self.do(lambda: DBG.folk_pages(g()), True)),
+                           ('P', 'Pages, books and the story...', self.lore_page),
                            ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
                            ('K', 'Bosses...', self.boss_page),
                            ('S', 'The shadow...', self.shadow_page)]),
@@ -472,6 +471,13 @@ class DebugScreen(Modal):
                                                          ('g', 'Stagger now', act('stagger')),
                                                          ('l', 'Flee test', act('flee')),
                                                          ('t', 'A twin (the next of six kinds)', act('twin'))])]])
+
+    def lore_page(self):
+        g = lambda: self.game  # noqa: E731
+        return MenuPage(self, 'Pages, books and the story', [[('THE OLD STORY', [
+            ('p', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
+            ('l', 'Folk books, story places', self.do(lambda: DBG.folk_pages(g(), True), True)),
+            ('h', 'Fey: hill, night, door', self.do(lambda: DBG.fey(g(), 'next'), True))])]])
 
     def shadow_page(self):
         g = lambda: self.game  # noqa: E731

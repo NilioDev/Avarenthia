@@ -504,6 +504,7 @@ VOICES = {
         'A full guest burns nothing. Mother always said so.',
         'Second breakfast is ready when you are. It is always ready, really.',
         'Big Folk do worry so. Have a pipe. Things look rounder after a pipe.',
+        'Children skip in the lane, singing: "Round the hill the wrong way round, when the moon is full and white..."',
     ],
     'gnome': [
         'Hm? Oh. Hello. I was listening to the beech. She is in a mood.',

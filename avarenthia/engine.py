@@ -16,6 +16,8 @@ from . import nature as NT
 from . import oldplaces as OP
 from . import varnish as VN
 from . import folkbooks as FB
+from . import storyland as SL
+from . import feycourt as _FC  # noqa: F401  (registers the barrow)
 from . import zones as ZN
 from . import wanderers as WA
 from . import war as WAR
@@ -100,7 +102,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 71
+SAVE_VERSION = 72
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -910,6 +912,7 @@ class Game:
         NM.hand_in(self, self.world.settlements[sid])
         MS.place_clients(self, sid, m)
         GU.reveal_master(self, m)
+        SL.on_town(self, s, m)
         FB.on_town(self, s, m)
         halls = [GU.GUILDS[k]['name'] for k in GU.halls_in(self, sid) if not GU.GUILDS[k]['secret']]
         if halls and not getattr(m, 'halls_told', False):
@@ -957,6 +960,7 @@ class Game:
             DP.on_enter(self, site, m)
         VN.on_enter(self, site, m)
         FB.on_enter(self, site, m)
+        SL.on_enter(self, site, m)
         EP.on_enter(self, site, m)
         if SH.is_shadow(site):
             SH.on_enter(self, site, m)
@@ -1190,6 +1194,8 @@ class Game:
             spent = AR.bump_altar(self, nx, ny)
             if spent is not None:
                 return spent
+        if LM.thing_at(m, nx, ny) in SL.BUMP:
+            return SL.bump(self, nx, ny)
         if t in VN.BUMP or getattr(m, 'vn', None):
             spent = VN.bump(self, nx, ny)
             if spent is not None:

@@ -852,6 +852,12 @@ class GameScreen(Screen):
         if aura:
             self.moving = True
         bmarks = BS.marks(g) if m.kind != 'over' else None      # the red ground of a great blow (bosses.py)
+        fey = getattr(m, 'fey', None)                # the court under the hill moves (feycourt.py)
+        from . import feycourt as FEYC
+        from . import storyland as SLW
+        wallc = SLW.wall_cells(g) if m.kind == 'over' else None          # the Northern Wall's broken line
+        if fey:
+            self.moving = True
         if bmarks:
             self.moving = True
         for vy in range(MAP_H):
@@ -1043,6 +1049,10 @@ class GameScreen(Screen):
                 if stopped and (mx, my) != (p.x, p.y):
                     gf, gb = sum(fg) // 3, sum(bg) // 3
                     fg, bg = mix(fg, (gf, gf, gf), .85), mix(bg, (gb, gb, gb), .85)
+                if fey:
+                    ch, fg, bg = FEYC.cell(g, m, mx, my, (ch, fg, bg), t)
+                elif wallc and i in wallc and not (mx == p.x and my == p.y) and (mx, my) not in mons:
+                    ch, fg = wallc[i], (scale(SLW.WALL_FG, .55) if not v else SLW.WALL_FG)
                 cv.put(vx, vy, ch, fg, bg)
         if m.kind == 'over':
             if season.midsummer:                     # the hill fires are seen from far off, beyond your sight
@@ -1356,11 +1366,18 @@ class GameScreen(Screen):
                 break
         lines = lines[:H - LOG_Y][::-1]
         names = self.log_names()
+        from . import feycourt as FEYC
+        golden = FEYC.gold_words(g)
         for i, (ln, cls, new, first) in enumerate(lines):
             col = LOGCOL.get(cls, FG) if new else scale(LOGCOL.get(cls, FG), .55)
             if first and cls in LOG_MARKED:                # what matters: a mark in the margin
                 cv.put(0, LOG_Y + i, '►', col)
+            ln = FEYC.swap(g, ln)                          # honey wine: the letters swap
             cv.text(1, LOG_Y + i, ln, col)
+            for gw in golden:                              # the words of a bargain light up gold
+                at = ln.find(gw)
+                if at >= 0:
+                    cv.text(1 + at, LOG_Y + i, gw, GOLD if new else scale(GOLD, .55))
             if names:                                      # a creature's or an item's name in its own colour
                 for mt in names[0].finditer(ln):
                     nc = names[1].get(mt.group(0))
@@ -1402,8 +1419,10 @@ class GameScreen(Screen):
         s = g.stats()
         cv.fill(MAP_W + 1, 0, W - MAP_W - 1, H, ' ', FG, PANEL)
         x = PX
-        cv.text(x, 0, p.name, GOLD, PANEL, maxw=PW - len(CAL.short(g.day)) - 1)
-        cv.text_right(x + PW - 1, 0, CAL.short(g.day), DIM, PANEL)
+        from . import feycourt as FEYC
+        day_txt = FEYC.date(g, CAL.short(g.day))
+        cv.text(x, 0, FEYC.shown_name(g), GOLD, PANEL, maxw=PW - len(day_txt) - 1)
+        cv.text_right(x + PW - 1, 0, day_txt, DIM, PANEL)
         hr = TW.hour(g)
         cv.text(x, 1, f"Level {p.lvl} · {'hardcore' if p.hardcore else 'softcore'}", DIM, PANEL)
         cv.text_right(x + PW - 1, 1, f"{hr:02d}:00 {'○' if TW.is_night(g) else '☼'}", (150, 160, 220) if TW.is_night(g) else GOLD, PANEL)
@@ -3921,6 +3940,8 @@ class WinScreen(Modal):
         cv.wrap(x + 3, y + 2, 58, f"{p.name} climbed the chain of the Sky-Seat and broke the Hollow King on his throne. "
                 "The mist over the sea is only mist now. The land will heal, slowly, and the chronicle keeps your name.",
                 FG, PANEL, 4)
+        from . import storyland as SLW
+        cv.wrap(x + 3, y + 10, 58, SLW.WIN_LINE, GOLD, PANEL, 1)
         rows = [('Level', p.lvl), ('Kills', g.kills), ('Money', fmt(p.gold))]
         for i, (a, b) in enumerate(rows):
             cv.text(x + 3, y + 6 + i, a, DIM, PANEL)
@@ -4218,7 +4239,8 @@ class JournalScreen(Modal):
 
     def render(self, cv):
         g = self.game
-        x, y = self.box(cv, self.BW, self.BH, f'Journal · {CAL.long(g.day)}')
+        from . import feycourt as FEYC
+        x, y = self.box(cv, self.BW, self.BH, f'Journal · {FEYC.long_date(g, CAL.long(g.day))}')
         xx = x + 3
         for k, nm in enumerate(self.TABS):
             on = k == self.tab

@@ -895,6 +895,10 @@ def region_weather(game, rid):
         if st[0] == st[2]:                               # reached the goal: pick a new one
             kinds = list(weights)
             st[2] = _random.choices(kinds, [weights[k] for k in kinds])[0]
+            if st[2] in ('dust', 'sandstorm', 'haboob', 'drystorm'):
+                from . import storyland as SL
+                if SL.calm(world, rid, day):        # bread was left at the altar stone: the sand lies still
+                    st[2] = 'clear'
         st[0] = _step(st[0], st[2])
         if len(st) < 4:
             st.append(0.0)

@@ -16,11 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'The bar of seven keys',
-             "The Counted Sky in the game :: Bardin, the altar stone, Ferro, Tam's tally",
-             'The Counted Sky in the game :: The dark ring, Aerith, the goblin drains',
-             'The Counted Sky in the game :: The Wall on the world map',
-             'The Counted Sky in the game :: The court under the hill'}
+NOT_BUILT = {'The bar of seven keys'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -789,6 +785,13 @@ R = {
                                                           ('note', 'Enter again for the next dwarf town; Teleport to '
                                                                    'a glade, a gnome hamlet, a northern hall.')],
     "The Counted Sky in the game :: The peoples' voices": [('to', 'town', None, 'elf'), SCHOOLS_NOTE],
+    "The Counted Sky in the game :: Bardin, the altar stone, Ferro, Tam's tally": [
+        ('dbg', 'story_places'), ('to', ('granary', 'altarstone', 'vcity', 'walltower')), SCHOOLS_NOTE],
+    'The Counted Sky in the game :: The dark ring, Aerith, the goblin drains': [
+        ('dbg', 'story_places'), ('dbg', 'varnish_places'), ('dbg', 'shadow', 'reveal'), ('to', 'starhouse')],
+    'The Counted Sky in the game :: The Wall on the world map': [('dbg', 'varnish_places'), ('over',)],
+    'The Counted Sky in the game :: The court under the hill': [('dbg', 'fey', 'hill'), ('dbg', 'fey', 'night'),
+                                                                ('dbg', 'fey', 'door')],
     # The great evils
     'The great evils as storyteller :: The servants': [('dbg', 'shadow', 'name'), ('dbg', 'shadow', 'wake'),
                                                        ('dbg', 'shadow', 'lairs')],

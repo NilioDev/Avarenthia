@@ -405,6 +405,11 @@ def blocks(game, fs):
 def voice(game, npc):
     """A line in a people's own tone, or None."""
     race = getattr(npc, 'race', None)
+    from . import storyland as SL
+    if here_people(game) == 'north':
+        return SL.north_voice(game)
+    if race == 'dwarf' and SL.st(game)['bardin'] == 'home' and random.random() < .3:
+        return f'{game.player.name}. Entered: the one who brought Bardin home. Go on.'
     if race not in T.VOICES:
         return None
     if race == 'elf' and 'ninenames' in st(game)['bound'] and random.random() < .2:

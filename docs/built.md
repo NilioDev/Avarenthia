@@ -65,6 +65,15 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **The Counted Sky in the game and the peoples' books** (round 58, 6 November 2026; `countedsky.py`, `varnish.py`,
+  `varnishtexts.py`, `folktexts.py`, `folkbooks.py`, `storyland.py`; test parts `varnish`, `folkbooks`,
+  `story_land`). Nilio's story as the one source; the Varnish lore made even with it (Vael and her Crown, Before the
+  Founding, four new books); the story opens chapter by chapter in The Varnish as riddles are made whole, the end
+  after the Hollow King. Books for every people (29), read through that people, bound by them, each people's own dawn
+  tale and voice (the elves look down on you). The story on the land: Bardin Coalhand, the altar stone, Ferro the
+  bound clerk, Tam's tally, the dark ring, Aerith, the goblins' drains, the north's welcome, the Northern Wall's line
+  on the world map.
+
 - **A window that fits** (round 56, 5 November 2026; `ui.layout`, `ui.set_size`, `canvas.OffsetCanvas`, `margin.py`,
   `main.py`; test part `window_sizes`). The largest whole scale at which 110 x 60 fits; the cells left over go to the
   map up to 16:9 (panel and log keep their size); every other screen keeps its 110 x 60 layout, centred. Round a very
@@ -3210,3 +3219,109 @@ Today every dungeon level is 84 x 50 and made by one of two makers (rooms strung
     - **Large, 120 x 70:** classic dungeons, caves and the goblin village.
     - **Now and then very large, 150 x 90:** a special place, such as the bottom level or one of Nilio's unique places.
 - **Theme rooms** are built for K5 (24 October 2026, see "The K5 maker" in `docs/built.md`): 38 drawn pieces in `pieces/theme.des`, with the arrival and bottom rooms. Still to come with the fixed plans: the entrance part, and each people flavouring a room (a dwarf shrine with a forge altar, a goblin library of stolen books).
+
+## The Counted Sky in the game (built 6 November 2026; the spec)
+
+Approved by Nilio on 6 November 2026 (thread "Lore uit The Counted Sky en volksboeken"). The story of the Varnish,
+"The Counted Sky", in Nilio's own writing (project files `lore/The_Counted_Sky-Niels-2026-11-06.pdf`; older text
+`lore/varnish-origin.md`), is the source: its tone is the reference for every new text. The Dutch proposal with the
+sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken voor alle volken".
+
+- **The whole story shows step by step** (Nilio, 6 November 2026), never as one book to find: each people tells its
+  own "Before the Founding" in its books, so the prologue comes from them; each Varnish riddle made whole opens one or
+  two chapters of The Counted Sky as whole text in the chronicle (a heading "The Counted Sky" in The Varnish); the
+  end (chapters IX and X and the last line, one light coming back in the north) only after the Hollow King is beaten,
+  as the book the Circle of Magi writes out for you.
+- **One source for the story:** the story goes into the repo as `docs/lore/the-counted-sky.md`; every text taken
+  from it carries the chapter it comes from, so a later change to a chapter shows which fragments and pages to go
+  over. The chronicle reads such texts from the source by key, so old saves show a changed sentence too.
+- **A review document at the end** (Nilio, 6 November 2026): once 58a and 58b are built, a document like his PDF
+  with everything that went into the game: the story, all Varnish fragments and books, every people's books and
+  their "Before the Founding", the voices; Nilio reads it through and sends changes, which then go into the source
+  and the game.
+
+- **58a. The Varnish lore made even** with the story: the heart was Vael, the small moon, after the nine stars of her
+  Crown (riddle "How the Sky-Seat fell", A Teller's Count: nine gone in a ring round Vael, the scorch pointing at the
+  Sky-Seat; its hidden line names Master Vane and his pupil Ilo); `hidden.py` "four hundred years" becomes twelve
+  hundred; the Varnish Gladius and Pilum get names of their own; "Morrak always collects" among the Morrak lines.
+  About forty new fragments from the story (a new heading "Before the Founding": the question to the iron, Ilthrix
+  Who Was a Star, the giants, the wyrms, the fey, men out of the western sea; and Orveth, Ennis, Taur and the pits,
+  the fortieth master, the eye on the prow, the skipping rhyme). Four new Varnish books: The Ninth Day of Taur
+  (widened), Orveth's Notes (a piece of the King's riddle), The Fortieth Master (points to the Wyrm's Bones and the
+  altar stone), Ennis, On Curves (four pages his own; the hidden line, in his hand on page five: "Stop.").
+- **58b. The peoples' books**, on the Varnish books' frame (pages where they fit, gathered, bound, a hidden line that
+  does something), four or five books per people in the data and one or two per people in a world, five to seven
+  pages each. Each people writes its own way: dwarves in ledger leaves, elves in rings, halflings in recipes and
+  almanacs, gnomes in workshop notebooks, kobolds on slates, goblins in a swap ledger, orcs in a young script of
+  their own, the north in kept names; gnolls and lizardfolk do not write (carved bones, moon-stones, a verse heard
+  at full moon). **Reading goes through the people:** you read their pages if your hero is of that people, if a
+  hireling of that people is with you (one line in the log), or when one of them reads it to you in their place;
+  halflings and goblins write in common letters. **That people binds them:** the Grudge Book's keeper, the
+  loremaster under the Elder Tree, the mayor in the Keepsake Hall, a gnome house. The chronicle's Peoples chapter gets
+  a heading per people. A bound book does something of that people: one of their hidden places on the map, a recipe,
+  a feast you may now join, a favour, or a piece of a Varnish riddle seen from their side. Each people tells its own
+  "Before the Founding", so the prologue comes in pieces that contradict each other. The books (sample pages in the
+  proposal): dwarves The Account of Bardin Coalhand, The Hold That Delved Too Deep, The Sparks Owed, The Night the
+  Gates Opened; elves The First Pact, The Rings of the Tree, The Nine Names (lies in a star house), Starsong;
+  halflings The Long Table Book, Pellam's Ledger, The Almanac of Not Jutting, Second Breakfast; gnomes The Stake
+  Moved Four Paces, What the Oaks Said, The Count Kept Private, The First Winter; kobolds The Shine Tally, She Who Saw
+  the Sky, The Bridge Spikes; goblins The Honest Day Book, What We Heard Under the Collegium, Sold Twice; gnolls The
+  Last Verse; lizardfolk The Long Bone, Pressed Into the Peat; orcs When We Came Up; the north The Names Kept, The
+  Torches on the Snow; **the fey** one book, The First Pact from their side ("to the letter, never the spirit"),
+  lying only in their court (see "The court under the hill" below). The elves' The First Pact names no place: only
+  "the hills by night to the fey". What you have lives on the player.
+- **Each people's own voice** in everyday talk, as in the story: the elves first (sure of themselves to the point of
+  annoying, a smile from above, never a taunt: "The price is fair. I know, because I set it."; asked about the stars
+  in the north they change the subject), then dwarves curt and book-keeping, halflings hospitable and sly, gnomes
+  absent and curious. In greetings, rumours, traders, the glade elder, the loremaster (`lore.RACE_LORE` and the
+  peoples' barks).
+- **58c. The story on the land**, each a tile you step on or bump, with one outcome: (1) **Bardin Coalhand**, bound in
+  a bridge abutment in one Varnish ruin per world, carried to a dwarf hold and laid flat: the grudge stays open, but
+  every hold knows your name. (2) **The altar stone** a mile from the Wyrm's Bones: bread and oil in spring calm the
+  desert round the bones that year; binding or plundering the bones lights something in the sockets (a warning and a
+  heavy curse, no fight). (3) **Ferro**, the bound clerk in a deserted granary, who tells the measure people needed to
+  live. (4) **Tam's tally** on his wall tower, to day 3,651 and "Count me": [e] counts him (Your deeds). (5) **The
+  dark ring** on a star house's iron floor: nine lead plugs round an empty hole; who beats the King sees one light
+  come back in the north on the closing screen, and a silver dot on that floor afterwards. (6) **Aerith** chained in
+  the Hall of the Winds: breaking her chain (the storm on that floor first grows worse) lightens the first phase of
+  the last fight, like a relic. (7) **The goblins knew**: a goblin boss, well paid, tells of the drains under the
+  mud-city: a second, narrower way up in the Under-City. (8) **The north** has mostly forgotten its past but has a
+  clear culture of its own: they call you by your name once you have said it, a guest is fed before questions, they
+  still steer by the stars; only the Varnish books show why. (9) **The Northern Wall on the world map**: a broken
+  grey line in the towers' colour on the stretches you have seen (all of it after the lantern), gaps where it fell,
+  so it reads as old and not as a border.
+- **The court under the hill: a secret** (Nilio, 6 November 2026; mockups in project files `lore/fey/`). A true
+  easter egg for whoever happens on it: no map sign, no rumour, no job, no map layer, nothing in the handbook or the
+  Signs page (a deliberate exception to the handbook rule), and not in the wiki. One grassy barrow per world looks
+  like any other, with a ring of white mushrooms round it (as ordinary fairy rings have). At night under a full
+  moon, walking once round the hill widdershins inside the ring opens a door in its flank; then you step in. Faint
+  hints only, in things that exist: a halfling skipping rhyme ("round the hill the wrong way round, when the moon is
+  full and white"), a line in the gnolls' last verse, the elves' "the hills by night to the fey". Inside, a round hall
+  of roots in dusk light that comes from nowhere, alive with movement (the one place that breaks the look rule's
+  "movement scarce", on purpose; `anim.py`): the floor's colours wave out from the dance in soft rainbow rings, motes
+  rise, candles never burn down, a honey-coloured stream runs uphill, the root walls breathe. **Trails:** what moves
+  leaves a fading echo. **Flowers where you step,** opening and wilting behind you. **Things are not one thing:**
+  the guests keep changing sign (f, c, p, n, even @); looking at one tells the truth only sometimes. **The mirror
+  pool:** your @ walks the other way in it; stepping in brings you out on the far side of the court. **The date**
+  under the map reads "Day ?, ?, year ?" while you are inside. **Bargains to the letter:** the words they will hold
+  you to light up gold in the log (the purse "that is never empty" holds one coin). **Honey wine:** the colours turn
+  inside out for a while and the log's letters swap. Time runs like honey: a night inside is a season outside,
+  seen only when you step out. What you take away is a memory, not power: the fey's book, the purse, a line under
+  Your deeds. The hall keeps its shape. Testing only through F12.
+- **Handbook:** "The Varnish" (the peoples' books beside theirs; reading through a people or a hireling; binding by
+  that people), the Peoples chapter, the Wall's line in the world-map signs (`guide.py`). The build report quotes the
+  lines.
+- **Save data:** the peoples' pages, read and bound books on the player; new world places (Bardin, the granary, the
+  altar stone). Bump `SAVE_VERSION`, a step in `saves.MIGRATIONS` (not breaking).
+- **Tests:** `varnish` (the made-even texts, the four new books), a new part `folkbooks` (pages placed, reading by
+  people/hireling, binding, effects), `text_fits`, `lasting_saves`; testing.md "The Counted Sky in the game". The
+  wiki gets the peoples' books.
+
+**As built (6 November 2026), where it differs:** the one source of the story is `avarenthia/countedsky.py` (a
+module, so the built game carries it; PyInstaller packs only assets), not `docs/lore/the-counted-sky.md`; every
+Varnish book, riddle and fragment heading and every people's book carries its chapter (`ch`). Ennis' own book was
+already in the game (On the Shape of Things), so 58a added The First League and The Star of 990 instead, and The
+Ninth Day of Taur kept its pages. The goblins' drains come from their book What We Heard Under the Collegium (bound
+by a goblin fixer in a city), not from a paid goblin boss. The bones themselves cannot be plundered or bound in the
+game, so the warning and curse in the sockets wait for a way to do that. One book per small people lies in every
+world, one or two of the others; the north keeps both of theirs, the fey their one in the court.

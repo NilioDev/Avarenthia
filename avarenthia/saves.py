@@ -49,6 +49,12 @@ def _craftguilds(g):
             s['paid'] = max(i for i, v in enumerate(GU.RANK_REP) if s.get('rep', 0) >= v)
 
 
+def _story_land(g):
+    """Round 58c: the story's places in a world made before them (with dice of their own)."""
+    from . import storyland as SL
+    SL.info(g)
+
+
 def _counted_sky(g):
     """70: The Counted Sky (round 58): a Varnish book of this world that grew a page has the new page at a library."""
     from .varnish import fix_pages
@@ -64,6 +70,7 @@ MIGRATIONS = {
     68: ('the crafts guilds: four new guilds, their halls, ranks raised by the master', _craftguilds, False),
     69: ('more makers: places with their own plans, their states and break-ins (new worlds)', None, False),
     70: ('The Counted Sky: books that grew a page wait at a library', _counted_sky, False),
+    71: ('The story on the land (round 58c)', _story_land, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

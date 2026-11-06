@@ -192,6 +192,9 @@ def r_sky(game, choice, ctx):
         enter_floor(game, int(choice.split(':')[1]))
     elif choice == 'climb':
         to_chain(game, top=False, ask=False)
+    elif choice == 'drains':
+        from . import storyland as SL
+        SL.up_drains(game)
     elif choice == 'home':
         home(game)
     elif choice == 'jump':
@@ -201,11 +204,15 @@ def r_sky(game, choice, ctx):
 def to_chain(game, top=False, ask=True):
     s = sh(game.world)
     lit = sorted(s['beacons'])
-    if ask and lit and not top:
+    from . import storyland as SL
+    if ask and (lit or SL.drains(game)) and not top:
         from . import events as EV
-        EV.ask(game, 'skyseat', 'The rocks under the chain', 'The beacon you lit burns up there, and from it a rope of '
-               'light hangs down to the rocks. You could climb the chain again, or go up the light.',
-               [('Climb the chain', 'climb')] + [(f'Up the light to {FLOORS[d - 1]}', f'floor:{d}') for d in lit[-1:]])
+        text = ('The beacon you lit burns up there, and from it a rope of light hangs down to the rocks. You could climb '
+                'the chain again, or go up the light.' if lit else 'The chain goes up into the wind. Low on the rock, '
+                'half under the sea, a grate of old iron: the goblins\' drains.')
+        EV.ask(game, 'skyseat', 'The rocks under the chain', text,
+               [('Climb the chain', 'climb')] + [(f'Up the light to {FLOORS[d - 1]}', f'floor:{d}') for d in lit[-1:]]
+               + ([('Up the old drains', 'drains')] if SL.drains(game) else []))
         if game.cur != 'over':
             game.over_pos = game.world_pos()
         return
@@ -450,6 +457,8 @@ def on_level(game, m, depth):
             m.set(*c, D.BEACON)
             m.beacon = c
     game.msg(f'{FLOORS[depth - 1]}.', 'unique')
+    from . import storyland as SL
+    SL.on_floor(game, m, depth)
     if depth != len(FLOORS):
         return
     king = next((o for o in m.mons if o.k == 'hollow_king'), None)
@@ -458,17 +467,19 @@ def on_level(game, m, depth):
     s = sh(game.world)
     if s.get('night'):
         king.maxhp = king.hp = round(king.maxhp * 1.3)          # the Long Night: harder, never unbeatable
-    n = min(3, len(keys(game)))
+    lighter = [0] if SL.aerith(game) else []          # Aerith freed: the winds are only wind (round 58c)
+    lighter += [i for i in range(3) if i not in lighter][:len(keys(game))]
+    lighter = lighter[:3]
     from . import bosses as BS
     kt = copy.deepcopy(BS.KITS['hollow_king'])
-    for i in range(n):
+    for i in lighter:
         ph = kt['phases'][i]
         ph['beat'] = ph['beat'].replace('Z', '')
         ph['cards'].pop('Z', None)
         ph.pop('trick', None)
-        game.msg(LIGHT_TEXT[i], 'gold')
+        game.msg(SL.AERITH_TEXT if i == 0 and SL.aerith(game) else LIGHT_TEXT[i], 'gold')
     king.kit_over = kt
-    king.light = n
+    king.light = len(lighter)
     near = [c for c in ((king.x + dx, king.y + dy) for dx in (-1, 0, 1) for dy in (-1, 0, 1)) if m.tile(*c) == D.FLOOR
             and (c[0], c[1]) != (king.x, king.y)]
     if near:

@@ -1080,9 +1080,8 @@ def bump(game, x, y):
                  'sky.')
         return 0
     if t == D.DAYMARKS:
-        game.msg('The stone is scratched with days in fives, thousands of them, row on row. At the end of the last row '
-                 'someone has written a name, and the numbers 3,651.', 'info')
-        return 0
+        from . import storyland as SL
+        return SL.tally(game, site)
     if t == D.VLAMP:
         from . import towns as TD
         if not TD.is_night(game):

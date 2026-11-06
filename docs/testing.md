@@ -559,14 +559,17 @@ three things. Test part `boss_moves`.
   the four new Varnish books. Debug: "Varnish: all pages and the letters", a library to bind.
 - **The peoples' books** - pages of each people where they fit; read as one of that people, with a hireling of
   that people, or read aloud in their place; bound by that people; each book's effect; the Peoples headings.
-  Debug: "Folk books: all pages", Race at start, hire a hireling of any people, Teleport to a hold, glade, hall.
+  Debug: "Folk books, story places", Race at start, hire a hireling of any people, Teleport to a hold, glade, hall.
 - **The peoples' voices** - elves' greetings, traders and rumours in their tone, then the others. Debug: Teleport to
   the elven city, a glade.
-- **Bardin, the altar stone, Ferro, Tam's tally** - each place, its one outcome. Debug: Teleport to each.
+- **Bardin, the altar stone, Ferro, Tam's tally** - each place, its one outcome: Bardin carried to a dwarf hall and
+  laid flat; bread and oil at the stone in spring calm the sand round the bones that year; Ferro tells the measure,
+  his seal broken he rests; Tam counted. Debug: "Folk books, story places", Teleport to each.
 - **The dark ring, Aerith, the goblin drains** - the star floor before and after the King; breaking Aerith's chain
-  and the lighter first phase; the drain way up. Debug: "Sky-Seat: open the mist", Teleport to a star house.
+  and the lighter first phase; the drain way up. Debug: "Folk books, story places" (knows the drains), "Sky-Seat: open
+  the mist", Teleport to a star house (sweep it).
 - **The Wall on the world map** - the broken line on seen stretches, all of it after the lantern. Debug: Reveal map.
 - **The court under the hill** (a secret) - the barrow and its mushroom ring look ordinary; the door only at night
   under a full moon after walking widdershins round it inside the ring; the court's movement, trails, flowers, signs
   that change, the mirror pool, the "?" date, the gold words of a bargain, the honey wine, a season gone outside.
-  Debug: "Fey: teleport to the hill", Time (a full-moon night), "Fey: open the door".
+  Debug: "Fey: hill, night, door" (three presses: to the hill, a full-moon night, the door).

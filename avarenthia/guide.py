@@ -104,6 +104,10 @@ def signs(g):
     om = g.maps['over']
     seen = [i for i, s in enumerate(om.seen) if s]
     rows = legend(om, seen)
+    from . import storyland as SL
+    wall = SL.wall_cells(g)
+    if any(i in wall for i in seen):                 # the Northern Wall's broken line (round 58c)
+        rows.setdefault('The Northern Wall, long fallen', [('─', SL.WALL_FG)])
     for poi in g.world.pois:
         if poi.found:
             rows.setdefault(NAMED_KIND.get(poi.kind, poi.name), [(poi.glyph[0], poi.glyph[1])])
