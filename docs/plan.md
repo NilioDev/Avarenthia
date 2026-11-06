@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Nothing approved is waiting: rounds 1-59 are built |
+| **To build** | Round 60: the Tests page grows (approved 6 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -106,11 +106,28 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 59. **Block 20: games at the inn** (approved 6 November 2026, thread "Thematische minigames bedenken"; the Dutch
     proposal: project files `minigames/voorstel.md`). 59a. **Bones** (S/M). 59b. **Vigil** (M/L). 59c. **The Count** (S).
     All three built 6 November 2026 (see `docs/built.md`).
+60. **Block 21: the Tests page grows** (approved 6 November 2026, thread "Testchecklist in debugmenu uitbreiden").
+    60. **The Tests page grows** (M), spec below.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
 
 ---
+
+## The Tests page grows (approved 6 November 2026, not built)
+
+Thread "Testchecklist in debugmenu uitbreiden". F12, T (the Tests page, built in round 37) is the checklist Nilio
+works through; three things make it fit a game this big. Test build and `--debug` only, not in the handbook.
+- **The older rounds get lines.** Rounds 1-5 (monsters, named enemies, guilds, jobs, seasons, sailing), weapons and
+  the bestiary, the magic schools and spell effects, stamina, realms and wars, walking the land (zones), herds and
+  hunting, nature and wonders, place names, ferries, keeping it clear, the handbook and the chronicle, the Varnish,
+  the great evils: about 50 new lines in `docs/testing.md`, each with its recipe in `debug_tests.py` (test part
+  `debug_tests` as now). A recipe that needs a debug action we lack gets it in the same round.
+- **A tick lasts.** A ✓ or ✗ stays across builds. A line opens again only when its thing changed: each heading in
+  `testing.md` may carry a line `Changed: <date>` (Claude sets it when a later round touches that thing); a tick
+  older than that date shows dim and counts as open. `u` shows the open lines (never ticked, ✗, or changed since).
+- **An overview per round.** Each heading shows its count, "3/5 ✓ 1 ✗". The first words of a ✗'s note stand after
+  its line. `x` shows only the ✗ lines with their whole notes, by heading.
 
 ## The UI rule for every new round
 
