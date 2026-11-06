@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Nothing approved is waiting: rounds 1-58 are built |
+| **To build** | Round 59, games at the inn: Bones and Vigil (approved 6 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -103,7 +103,32 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 58. **Block 19: The Counted Sky and the peoples' books** (approved 6 November 2026, thread "Lore uit The Counted Sky
     en volksboeken"). 58a. **The Varnish lore made even** (M, mostly text). 58b. **The peoples' books** (L).
     58c. **The story on the land** (M). All three built 6 November 2026 (see `docs/built.md`).
+59. **Block 20: games at the inn** (approved 6 November 2026, thread "Thematische minigames bedenken"; the Dutch
+    proposal: project files `minigames/voorstel.md`). 59a. **Bones** (S/M). 59b. **Vigil** (M/L). Spec below.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
+
+---
+
+## Games at the inn (approved 6 November 2026, not built)
+
+Two small games of the peoples. Both start by bumping someone or something (a gaming table, a player) and are played
+with the arrows, [Enter] and [Esc] only: no new letter keys. Each gets one first-time tip in `guide.TIPS`, its
+sentences in the handbook (chapter Towns, or a short one of its own) and its lines in `docs/testing.md`. Stakes stay
+small, with a limit per inn per night, so games are never a way to earn: the gain is name, a rumour, a drink, a line
+of lore. What already is: the bandits' gaming den (a theme room: catch the cheat with one key) stays and may use Bones.
+
+- **Bones** (59a). Press your luck with three knucklebones at an inn's gaming table (a tile of its own, named by the
+  data): throw, set some aside, throw the rest again or stop; a skull loses the pot of that round. Each people its
+  own name and a small twist of the rule: dwarves "Anvil and Spark", halflings "Pips", orcs "Teeth", humans "Bones".
+  Players are townsfolk at the table, in the evening. With Cunning you see a loaded bone, and may use one of your own;
+  caught, you are not served at that inn for some days and the town hears of it. Winning often at one inn is noted
+  there (a rumour, a kind word), not paid more.
+- **Vigil** (59b). A tafl-like board game on 9 x 9: the Iron That Said No (the many) against the Watch of the stars,
+  who must bring their Vael piece to an edge (the Counted Sky). Played against an elder, a monk in an abbey, a
+  prisoner, a traveller at a crossroads; a small AI in three strengths. Masters sit in places over the land, told by
+  rumour; beating them all gives a title and talk. Each people its own board and signs (the dwarves' a forge, the
+  elves' a glade); the rule stays the same. Board shown in the middle of the screen, cursor with the arrows, [Enter]
+  to pick up and set down, [Esc] to give up.
 
 ---
 
