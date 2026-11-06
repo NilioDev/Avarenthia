@@ -14,6 +14,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
 | **To build** | The bar of seven keys, with the balance measure first (round 57; approved 6 November 2026) |
+| **To build** | The Counted Sky in the game and books for every people (round 58; approved 6 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership, a house of your own |
 
@@ -100,6 +101,9 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 57. **Block 18: the bar of seven keys** (approved 6 November 2026, thread "Skillsysteem met 6 toetsen beoordelen").
     57a. **The balance measure** (M) first, so the numbers are set before the bar changes. 57b. **The bar of seven
     keys** (L): see "The bar of seven keys" below. Merge after 57b.
+58. **Block 19: The Counted Sky and the peoples' books** (approved 6 November 2026, thread "Lore uit The Counted Sky
+    en volksboeken"). 58a. **The Varnish lore made even** (M, mostly text). 58b. **The peoples' books** (L).
+    58c. **The story on the land** (M). See "The Counted Sky in the game" below. Merge after 58c.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
@@ -142,6 +146,74 @@ empty until the next rest, while camping anywhere makes "once per rest" cheap.
   `p.epic` gets its charge. Bump `SAVE_VERSION`, a step in `saves.MIGRATIONS` (not breaking).
 - **Tests:** `balance` (the new bar and charging), `classes` and `epics` (the slots, elite limit, key 7, the
   charge), `lasting_saves` (the move), `text_fits`; testing.md "The bar of seven keys".
+
+---
+
+## The Counted Sky in the game (approved 6 November 2026; not built)
+
+Approved by Nilio on 6 November 2026 (thread "Lore uit The Counted Sky en volksboeken"). The story of the Varnish,
+"The Counted Sky", in Nilio's own writing (project files `lore/The_Counted_Sky-Niels-2026-11-06.pdf`; older text
+`lore/varnish-origin.md`), is the source: its tone is the reference for every new text. The Dutch proposal with the
+sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken voor alle volken". Open (still being
+discussed): how the whole story itself shows in the game, and how a later change to the story reaches the texts.
+
+- **58a. The Varnish lore made even** with the story: the heart was Vael, the small moon, after the nine stars of her
+  Crown (riddle "How the Sky-Seat fell", A Teller's Count: nine gone in a ring round Vael, the scorch pointing at the
+  Sky-Seat; its hidden line names Master Vane and his pupil Ilo); `hidden.py` "four hundred years" becomes twelve
+  hundred; the Varnish Gladius and Pilum get names of their own; "Morrak always collects" among the Morrak lines.
+  About forty new fragments from the story (a new heading "Before the Founding": the question to the iron, Ilthrix
+  Who Was a Star, the giants, the wyrms, the fey, men out of the western sea; and Orveth, Ennis, Taur and the pits,
+  the fortieth master, the eye on the prow, the skipping rhyme). Four new Varnish books: The Ninth Day of Taur
+  (widened), Orveth's Notes (a piece of the King's riddle), The Fortieth Master (points to the Wyrm's Bones and the
+  altar stone), Ennis, On Curves (four pages his own; the hidden line, in his hand on page five: "Stop.").
+- **58b. The peoples' books**, on the Varnish books' frame (pages where they fit, gathered, bound, a hidden line that
+  does something), four or five books per people in the data and one or two per people in a world, five to seven
+  pages each. Each people writes its own way: dwarves in ledger leaves, elves in rings, halflings in recipes and
+  almanacs, gnomes in workshop notebooks, kobolds on slates, goblins in a swap ledger, orcs in a young script of
+  their own, the north in kept names; gnolls and lizardfolk do not write (carved bones, moon-stones, a verse heard
+  at full moon). **Reading goes through the people:** you read their pages if your hero is of that people, if a
+  hireling of that people is with you (one line in the log), or when one of them reads it to you in their place;
+  halflings and goblins write in common letters. **That people binds them:** the Grudge Book's keeper, the
+  loremaster under the Elder Tree, the mayor in the Keepsake Hall, a gnome house. The chronicle's Peoples chapter gets
+  a heading per people. A bound book does something of that people: one of their hidden places on the map, a recipe,
+  a feast you may now join, a favour, or a piece of a Varnish riddle seen from their side. Each people tells its own
+  "Before the Founding", so the prologue comes in pieces that contradict each other. The books (sample pages in the
+  proposal): dwarves The Account of Bardin Coalhand, The Hold That Delved Too Deep, The Sparks Owed, The Night the
+  Gates Opened; elves The First Pact, The Rings of the Tree, The Nine Names (lies in a star house), Starsong;
+  halflings The Long Table Book, Pellam's Ledger, The Almanac of Not Jutting, Second Breakfast; gnomes The Stake
+  Moved Four Paces, What the Oaks Said, The Count Kept Private, The First Winter; kobolds The Shine Tally, She Who Saw
+  the Sky, The Bridge Spikes; goblins The Honest Day Book, What We Heard Under the Collegium, Sold Twice; gnolls The
+  Last Verse; lizardfolk The Long Bone, Pressed Into the Peat; orcs When We Came Up; the north The Names Kept, The
+  Torches on the Snow; **the fey** one book, The First Pact from their side ("to the letter, never the spirit"). What
+  you have lives on the player.
+- **Each people's own voice** in everyday talk, as in the story: the elves first (sure of themselves to the point of
+  annoying, a smile from above, never a taunt: "The price is fair. I know, because I set it."; asked about the stars
+  in the north they change the subject), then dwarves curt and book-keeping, halflings hospitable and sly, gnomes
+  absent and curious. In greetings, rumours, traders, the glade elder, the loremaster (`lore.RACE_LORE` and the
+  peoples' barks).
+- **58c. The story on the land**, each a tile you step on or bump, with one outcome: (1) **Bardin Coalhand**, bound in
+  a bridge abutment in one Varnish ruin per world, carried to a dwarf hold and laid flat: the grudge stays open, but
+  every hold knows your name. (2) **The altar stone** a mile from the Wyrm's Bones: bread and oil in spring calm the
+  desert round the bones that year; binding or plundering the bones lights something in the sockets (a warning and a
+  heavy curse, no fight). (3) **Ferro**, the bound clerk in a deserted granary, who tells the measure people needed to
+  live. (4) **Tam's tally** on his wall tower, to day 3,651 and "Count me": [e] counts him (Your deeds). (5) **The
+  dark ring** on a star house's iron floor: nine lead plugs round an empty hole; who beats the King sees one light
+  come back in the north on the closing screen, and a silver dot on that floor afterwards. (6) **Aerith** chained in
+  the Hall of the Winds: breaking her chain (the storm on that floor first grows worse) lightens the first phase of
+  the last fight, like a relic. (7) **The goblins knew**: a goblin boss, well paid, tells of the drains under the
+  mud-city: a second, narrower way up in the Under-City. (8) **The north** has mostly forgotten its past but has a
+  clear culture of its own: they call you by your name once you have said it, a guest is fed before questions, they
+  still steer by the stars; only the Varnish books show why. (9) **The Northern Wall on the world map**: a broken
+  grey line in the towers' colour on the stretches you have seen (all of it after the lantern), gaps where it fell,
+  so it reads as old and not as a border.
+- **Handbook:** "The Varnish" (the peoples' books beside theirs; reading through a people or a hireling; binding by
+  that people), the Peoples chapter, the Wall's line in the world-map signs (`guide.py`). The build report quotes the
+  lines.
+- **Save data:** the peoples' pages, read and bound books on the player; new world places (Bardin, the granary, the
+  altar stone). Bump `SAVE_VERSION`, a step in `saves.MIGRATIONS` (not breaking).
+- **Tests:** `varnish` (the made-even texts, the four new books), a new part `folkbooks` (pages placed, reading by
+  people/hireling, binding, effects), `text_fits`, `lasting_saves`; testing.md "The Counted Sky in the game". The
+  wiki gets the peoples' books.
 
 ---
 

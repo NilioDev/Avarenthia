@@ -553,3 +553,16 @@ three things. Test part `boss_moves`.
   foe or a blow; elites, the epic and weapon skills refused. Debug: give tomes, spawn a foe out of sight.
 - **The balance measure** - `python tests/balance.py` prints the table; old bar against new, with and without an
   epic. Debug: none (a tool).
+
+## The Counted Sky in the game (approved 6 November 2026)
+- **The made-even lore** - the fall riddle names Vael and her Crown; the new fragments under "Before the Founding";
+  the four new Varnish books. Debug: "Varnish: all pages and the letters", a library to bind.
+- **The peoples' books** - pages of each people where they fit; read as one of that people, with a hireling of
+  that people, or read aloud in their place; bound by that people; each book's effect; the Peoples headings.
+  Debug: "Folk books: all pages", Race at start, hire a hireling of any people, Teleport to a hold, glade, hall.
+- **The peoples' voices** - elves' greetings, traders and rumours in their tone, then the others. Debug: Teleport to
+  the elven city, a glade.
+- **Bardin, the altar stone, Ferro, Tam's tally** - each place, its one outcome. Debug: Teleport to each.
+- **The dark ring, Aerith, the goblin drains** - the star floor before and after the King; breaking Aerith's chain
+  and the lighter first phase; the drain way up. Debug: "Sky-Seat: open the mist", Teleport to a star house.
+- **The Wall on the world map** - the broken line on seen stretches, all of it after the lantern. Debug: Reveal map.
