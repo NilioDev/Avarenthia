@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'The bar of seven keys'}
+NOT_BUILT = {'The bar of seven keys', 'The Counted Sky in the game'}      # on the branch, not yet on main
 
 
 # ------------------------------------------------------------------ reading testing.md
