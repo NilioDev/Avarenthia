@@ -540,3 +540,16 @@ three things. Test part `boss_moves`.
   120 x 67, 160 x 90, super wide with margin).
 - **The margin** - the random old-map stretch, a new one on a new zone or day, still in between. Debug: "Margin: new
   stretch now".
+
+## The bar of seven keys (approved 6 November 2026)
+- **Four class keys** - 3-6 hold four class skills, at most one elite among them (a second elite refused with a
+  line); an old save's elite moved to key 6 and its epic to 7. Debug: give tomes, Guild rank (q) to 4.
+- **The epic on key 7** - key 7 shows only once an epic is learnt; the tip; the ♦ filling dull to bright gold by
+  fighting, nothing from foes far below you, kept over a rest; Phoenix once per day. Debug: "Epics: rank 40, teachers,
+  deeds" (E), "Epic: fill the charge", spawn foes of your level and far below.
+- **The bar after a rest** - [z] changes the bar after an inn's bed or your camp, not before walking on elsewhere.
+  Debug: "Rested here", Teleport out of town.
+- **Casting from the book** - a known skill off the bar from the [z] list: 3 turns, its cost, broken off by a new
+  foe or a blow; elites, the epic and weapon skills refused. Debug: give tomes, spawn a foe out of sight.
+- **The balance measure** - `python tests/balance.py` prints the table; old bar against new, with and without an
+  epic. Debug: none (a tool).
