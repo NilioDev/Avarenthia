@@ -336,6 +336,7 @@ class DebugScreen(Modal):
                            ('R', 'Open a rift near you', self.do(lambda: DBG.open_rift(g()), True)),
                            ('V', 'Varnish letters and places', self.do(lambda: DBG.varnish_places(g()), True)),
                            ('P', 'Every Varnish page', self.do(lambda: DBG.varnish_pages(g()), True)),
+                           ('L', 'Folk books: all pages', self.do(lambda: DBG.folk_pages(g()), True)),
                            ('E', 'Epics: rank 40, teachers, deeds', self.do(lambda: DBG.epics(g()), True)),
                            ('K', 'Bosses...', self.boss_page),
                            ('S', 'The shadow...', self.shadow_page)]),

@@ -1467,6 +1467,18 @@ def ch_chronicle(g):
         ('p', 'Five old riddles grow in The Old Days, each under its own heading: how the Sky-Seat fell, who the '
               'Hollow King was, where the orcs came from, what lies in the vaults, why the dead were bound. With six '
               'true pieces a riddle is whole; then what was false shows up red, and the riddle points to a place.'),
+        ('h', 'The Counted Sky'),
+        ('p', 'The whole story of the Varnish, from before the Founding to the night the sky fell, is written out at '
+              'the end of the chapter The Varnish: The Counted Sky. It opens a little at a time. Each riddle you make '
+              'whole opens more of it; its beginning opens once four peoples have told you how the world began; its '
+              'end only after the Hollow King is beaten.'),
+        ('h', 'The peoples\' books'),
+        ('p', 'Every people keeps books of its own: the dwarves\' ledgers, the elves\' carved rings, the halflings\' '
+              'recipes, the gnomes\' notebooks, and the slates, bones and leaves of the others. Their pages lie at that '
+              'people\'s places, or are handed to you in their towns. Some are written in a people\'s own letters: one '
+              'of that people reads them to you, your hireling if he is one of them, or anyone in their town. With '
+              'every page, that people binds the book for you and tells you how the world began, their way. The books '
+              'of the small peoples you lay in order yourself. It all goes under Peoples, a heading for each people.'),
         ('h', 'Two hundred years'),
         ('p', 'The old folk tell of the founding of the empire, its wars and the houses that fell, where it happened '
               'near them. Some of them have it wrong; what you read later puts it right. A record may name the ruin '

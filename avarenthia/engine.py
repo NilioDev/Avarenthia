@@ -15,6 +15,7 @@ from . import ferries as _FY  # noqa: F401  (the village ferries register their 
 from . import nature as NT
 from . import oldplaces as OP
 from . import varnish as VN
+from . import folkbooks as FB
 from . import zones as ZN
 from . import wanderers as WA
 from . import war as WAR
@@ -909,6 +910,7 @@ class Game:
         NM.hand_in(self, self.world.settlements[sid])
         MS.place_clients(self, sid, m)
         GU.reveal_master(self, m)
+        FB.on_town(self, s, m)
         halls = [GU.GUILDS[k]['name'] for k in GU.halls_in(self, sid) if not GU.GUILDS[k]['secret']]
         if halls and not getattr(m, 'halls_told', False):
             m.halls_told = True
@@ -954,6 +956,7 @@ class Game:
         if site.kind == 'drawn':
             DP.on_enter(self, site, m)
         VN.on_enter(self, site, m)
+        FB.on_enter(self, site, m)
         EP.on_enter(self, site, m)
         if SH.is_shadow(site):
             SH.on_enter(self, site, m)
@@ -1509,6 +1512,8 @@ class Game:
                 self.msg('The health orb restores you.', 'good')
             elif it.k == 'vpage':
                 VN.pick_page(self, it)
+            elif it.k == 'fpage':
+                FB.pick_page(self, it)
             elif (it.k == 'gear' and getattr(it, 'thrown', False)) or it.k == 'ammo':
                 if not WP.pick_up(self, it):          # your spear back in hand, your knives back in the set
                     self.msg('Your bag is full.', 'bad')

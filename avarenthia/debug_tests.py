@@ -16,7 +16,11 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'The bar of seven keys'}
+NOT_BUILT = {'The bar of seven keys',
+             "The Counted Sky in the game :: Bardin, the altar stone, Ferro, Tam's tally",
+             'The Counted Sky in the game :: The dark ring, Aerith, the goblin drains',
+             'The Counted Sky in the game :: The Wall on the world map',
+             'The Counted Sky in the game :: The court under the hill'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -778,6 +782,13 @@ R = {
     'Feast days :: The Masking': [('feast',), SCHOOLS_NOTE],
     'The five riddles :: Each riddle in The Old Days under its title, with ': [('dbg', 'varnish_places'),
                                                                                ('dbg', 'varnish_pages'), ('to', 'vdeep')],
+    # The Counted Sky in the game
+    'The Counted Sky in the game :: The made-even lore': [('dbg', 'varnish_places'), ('dbg', 'varnish_pages'),
+                                                          ('coin', GOLD), ('to', 'city', None, 'human')],
+    "The Counted Sky in the game :: The peoples' books": [('dbg', 'folk_pages'), ('to', 'town', None, 'dwarf'),
+                                                          ('note', 'Enter again for the next dwarf town; Teleport to '
+                                                                   'a glade, a gnome hamlet, a northern hall.')],
+    "The Counted Sky in the game :: The peoples' voices": [('to', 'town', None, 'elf'), SCHOOLS_NOTE],
     # The great evils
     'The great evils as storyteller :: The servants': [('dbg', 'shadow', 'name'), ('dbg', 'shadow', 'wake'),
                                                        ('dbg', 'shadow', 'lairs')],

@@ -389,6 +389,19 @@ def varnish_pages(game):
              'books.', 'info')
 
 
+def folk_pages(game):
+    """Every page of this world's peoples' books (not the court's), read where you can read them."""
+    from . import folkbooks as FB
+    s = FB.st(game)
+    V = FB.info(game)
+    for key, where in V['pages'].items():
+        if where[0] != 'court':
+            s['pages'].add(key)
+    FB.read_carried(game)
+    game.msg(f'Debug: you carry every page of this world\'s {len(V["books"])} peoples\' books. A dwarf, elf, gnome '
+             'or orc reads their own letters to you.', 'info')
+
+
 def epics(game):
     """Rank 40 in your classes, every teacher of them on your map, and their deeds done."""
     from . import epics as EP

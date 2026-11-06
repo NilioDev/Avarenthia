@@ -2107,6 +2107,11 @@ class InventoryScreen(Modal):
             app.pop()
             VNM.read_bound(g, it)
             return
+        if it.k == 'fbook':
+            from . import folkbooks as FBK
+            app.pop()
+            FBK.read_bound(g, it)
+            return
         if it.k == 'oldbook':
             from . import chronicle as CH
             app.pop()

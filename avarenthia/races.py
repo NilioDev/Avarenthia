@@ -79,7 +79,8 @@ def price_factor(game, town_race):
         from . import powers as PW
         if PW.distrusted(game):
             k *= 1.15               # while the Gorvash marches, half-orcs and goblins pay more
-    return k
+    from . import folkbooks as FB
+    return k * FB.price_factor(game, town_race)
 
 
 # ------------------------------------------------------------------ names

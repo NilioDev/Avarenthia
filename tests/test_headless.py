@@ -11727,11 +11727,110 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def folkbooks():
+    """The peoples' books: pages of every people at their own places, read through that people (you, your hireling,
+    or the folk round you), bound by that people or laid in order yourself; their dawn tales open the prologue of
+    The Counted Sky; the Peoples chapter has a heading per people; the elves' voice; favour in their prices."""
+    from avarenthia import folkbooks as FB, folktexts as T, varnish as VN, chronicle as CH, events as EV
+    print('== folkbooks')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    V = FB.info(g)
+    peoples = {T.BOOK[bk]['people'] for bk in V['books']}
+    assert len(peoples) >= 7 and 'fey' in peoples, peoples
+    assert V['pages'][('feypact', 0)] == ('court', None)
+    assert all((bk, n) in V['pages'] for bk in V['books'] for n in range(len(T.BOOK[bk]['pages'])))
+    assert FB.info(g) is V, 'made once'
+    for b in T.BOOKS:                                  # every book is whole: pages, hidden page, chapter, people
+        assert b['people'] in T.PEOPLES and b['pages'] and b['hidden'] and b['chron'] and b['ch'], b['key']
+    for pe in T.ORDER:
+        assert pe in T.DAWN and pe in FB.HOME
+    # a page in a script you cannot read waits with your papers; one of that people reads it to you
+    p.race = 'human'
+    dbk = next((bk for bk in V['books'] if T.BOOK[bk]['people'] == 'dwarf'), None)
+    if dbk:
+        FB.pick_page(g, FB.page_item(g, (dbk, 0)))
+        s = FB.st(g)
+        assert (dbk, 0) in s['pages'] and (dbk, 0) not in s['read']
+        assert any(b[0] == 'gap' and 'cannot read' in b[1] for b in FB.blocks(g, [f for f in CH.facts(g) if f['ch'] == 'Peoples']))
+        p.race = 'dwarf'
+        assert FB.read_carried(g) == 1 and (dbk, 0) in s['read']
+        p.race = 'human'
+    # in a town of a people, a page of theirs is handed to you
+    town = next(((bk, n), lc) for (bk, n), lc in sorted(V['pages'].items()) if lc[0] == 'town')
+    to_over(g, 0)
+    g.enter_town(town[1][1])
+    g.pending = None
+    assert any(k in FB.st(g)['pages'] for k, lc in V['pages'].items() if lc == town[1]), 'handed over'
+    # at a people's place on the land, their pages lie on the ground
+    site = next((lc for lc in V['pages'].values() if lc[0] == 'site'), None)
+    if site:
+        to_over(g, 0)
+        g.enter_site(site[1])
+        g.pending = None
+        assert any(i.k == 'fpage' for i in g.map.items), 'pages on the ground'
+        it = next(i for i in g.map.items if i.k == 'fpage')
+        assert FB.display(g, it).startswith('A ') and FB.glyph(it) == '~'
+    # a book whole is bound by its people, with its dawn tale
+    if dbk:
+        s = FB.st(g)
+        for n in range(len(T.BOOK[dbk]['pages'])):
+            s['read'].add((dbk, n))
+            s['pages'].add((dbk, n))
+        dtown = next((t for t in w.settlements if t.race == 'dwarf' and not FB.north_of_wall(g, t.x, t.y)), None)
+        if dtown:
+            to_over(g, 0)
+            g.enter_town(dtown.id)
+            assert g.pending and g.pending['key'] == 'folkbind', g.pending
+            EV.RESOLVERS['folkbind'](g, 'bind', g.pending['ctx'])
+            g.pending = None
+        else:
+            FB.bind(g, dbk, 'test')
+        assert dbk in s['bound'] and 'dwarf' in s['dawn']
+        bk_it = next(i for i in p.inv if i.k == 'fbook' and i.book == dbk)
+        FB.read_bound(g, bk_it)
+        assert g.request[0] == 'dialog' and T.BOOK[dbk]['hidden'] in g.request[2]
+    # a book of a people without binders: whole, you lay it in order yourself
+    kb = next(b for b in T.BOOKS if b['people'] == 'kobold')
+    for n in range(len(kb['pages'])):
+        FB.read_page(g, (kb['key'], n))
+    assert kb['key'] in FB.st(g)['bound'] and 'kobold' in FB.st(g)['dawn']
+    # four peoples' dawn tales open the prologue
+    for pe in ('elf', 'halfling', 'gnome', 'dwarf'):
+        FB.tell_dawn(g, pe, 'test', 'test')
+    assert FB.prologue_open(g) and 'before' in VN.sky_open(g)
+    # every effect runs
+    for b in T.BOOKS:
+        FB.effect(g, b['effect'], b['title'])
+    p.folkbooks['favour'].add('gnome')
+    assert FB.price_factor(g, 'gnome') == .95 and FB.price_factor(g, 'human') == 1.0
+    # the Peoples chapter: a heading per people, old texts refreshed from the books
+    i = CH.CHAPTERS.index('Peoples')
+    bl = CH.blocks(g, i)
+    heads = [b[1] for b in bl if b[0] == 'h']
+    assert 'The kobolds' in heads and 'The dwarves' in heads, heads
+    f = next(f for f in CH.facts(g) if f['key'] == 'fd:dwarf')
+    f['text'] = 'old words'
+    CH.blocks(g, i)
+    assert f['text'] == T.DAWN['dwarf']
+    # the elves' voice, and what they say once you have read The Nine Names
+    npc = type('N', (), {'race': 'elf', 'job': 'any'})()
+    assert FB.voice(g, npc) in T.VOICES['elf'] + [T.ELF_KNOWN]
+    FB.st(g)['bound'].add('ninenames')
+    assert any(FB.voice(g, npc) == T.ELF_KNOWN for _ in range(200))
+    # a hireling reads his own people's letters
+    from avarenthia import mercs as MC
+    assert hasattr(MC.Merc('fighter', 'Test', 1), 'race')
+    print('   folkbooks ok:', len(V['books']), 'books of', len(peoples), 'peoples')
 
 
 def archaeology():

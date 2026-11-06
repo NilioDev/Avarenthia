@@ -73,6 +73,7 @@ FOOD_PER_DAY = 1
 class Merc:
     def __init__(self, kind, name, lvl):
         self.kind, self.name, self.lvl = kind, name, lvl
+        self.race = 'human'              # whose letters he reads (the peoples' books)
         self.gear = {s: None for s in SLOTS}
         self.hp = 1
         self.order = 'follow'
@@ -336,6 +337,7 @@ def r_hire(game, choice, ctx):
         return
     game.player.gold -= o['fee']
     mc = Merc(o['kind'], o['name'], o['lvl'])
+    mc.race = getattr(npc, 'race', 'human') or 'human'
     outfit(game, mc)
     mc.hp = stats(game, mc)['max_hp']
     mc.paid = game.day
@@ -345,6 +347,8 @@ def r_hire(game, choice, ctx):
     mc.body, mc.body_map = None, None
     sync(game)
     game.msg(f'{mc.name} signs on. Orders: h.', 'gold')
+    from . import folkbooks as FB
+    FB.read_carried(game)
 
 
 def place_recruits(game, m, s, buildings, names):

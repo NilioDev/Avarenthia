@@ -330,6 +330,9 @@ def blocks(game, i):
     if ch in ('The Old Days', 'The Varnish'):
         from . import varnish as VN
         return VN.blocks(game, ch, fs) or [('p', 'Nothing yet.')]
+    if ch == 'Peoples':
+        from . import folkbooks as FB
+        return FB.blocks(game, fs)
     for f in fs:
         out.append(('fact', f))
     for gp in gaps(game, ch):

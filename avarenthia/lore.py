@@ -372,6 +372,11 @@ def chatter(game, npc):
             return said
     r = random.random()
     if r < .4:
+        if random.random() < .45:
+            from . import folkbooks as FB
+            said = FB.voice(game, npc)
+            if said:
+                return said
         pool = BARKS.get(job, []) + BARKS['any']
         return random.choice(pool)
     if r < .55:
