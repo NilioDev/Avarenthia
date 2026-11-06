@@ -154,8 +154,20 @@ empty until the next rest, while camping anywhere makes "once per rest" cheap.
 Approved by Nilio on 6 November 2026 (thread "Lore uit The Counted Sky en volksboeken"). The story of the Varnish,
 "The Counted Sky", in Nilio's own writing (project files `lore/The_Counted_Sky-Niels-2026-11-06.pdf`; older text
 `lore/varnish-origin.md`), is the source: its tone is the reference for every new text. The Dutch proposal with the
-sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken voor alle volken". Open (still being
-discussed): how the whole story itself shows in the game, and how a later change to the story reaches the texts.
+sample pages: the Claude Doc "Voorstel: The Counted Sky in het spel, en boeken voor alle volken".
+
+- **The whole story shows step by step** (Nilio, 6 November 2026), never as one book to find: each people tells its
+  own "Before the Founding" in its books, so the prologue comes from them; each Varnish riddle made whole opens one or
+  two chapters of The Counted Sky as whole text in the chronicle (a heading "The Counted Sky" in The Varnish); the
+  end (chapters IX and X and the last line, one light coming back in the north) only after the Hollow King is beaten,
+  as the book the Circle of Magi writes out for you.
+- **One source for the story:** the story goes into the repo as `docs/lore/the-counted-sky.md`; every text taken
+  from it carries the chapter it comes from, so a later change to a chapter shows which fragments and pages to go
+  over. The chronicle reads such texts from the source by key, so old saves show a changed sentence too.
+- **A review document at the end** (Nilio, 6 November 2026): once 58a and 58b are built, a document like his PDF
+  with everything that went into the game: the story, all Varnish fragments and books, every people's books and
+  their "Before the Founding", the voices; Nilio reads it through and sends changes, which then go into the source
+  and the game.
 
 - **58a. The Varnish lore made even** with the story: the heart was Vael, the small moon, after the nine stars of her
   Crown (riddle "How the Sky-Seat fell", A Teller's Count: nine gone in a ring round Vael, the scorch pointing at the
