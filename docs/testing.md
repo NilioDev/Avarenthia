@@ -613,10 +613,11 @@ three things. Test part `boss_moves`.
 
 ## The land tells, and an inn in every town (approved 10 November 2026)
 
-- **Signs on the land** - smoke over a village from afar (and black over a burning one), birds before an ambush,
-  vultures over a fight, a worn path growing and growing over, fires in watchtowers and a robbers' camp by night.
-  Debug: Teleport near a village, start a raid, force an ambush, Time (days, night).
-- **The world grows** - a new hamlet, the wood coming back, the news line. Debug: Time (years on).
+- **Signs on the land** - smoke over a village from afar (and dark with a fire over a burning one), birds before an
+  ambush, vultures over a fight, a worn path growing and growing over. Debug: Teleport near a village, start a raid,
+  force an ambush, Time (days).
+- **Villages rebuilt** - a raided, plundered, burnt settlement through its stages back to whole. Debug: start a raid,
+  Time (weeks on).
 - **An inn in every town** - each city style and each people's town has an inn with a bed and a gaming table.
   Debug: Teleport to a city of each style.
 

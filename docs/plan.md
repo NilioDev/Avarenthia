@@ -205,14 +205,17 @@ cached), and a foe out of sight is gone from the screen. No sound from the speak
 ## The land tells, and an inn in every town (approved 10 November 2026, not built)
 
 The "Later" world ideas of round 5, now taken up. Each is one sign with one meaning, seen before you meet the thing:
-- **Smoke from afar**: thin grey `≈` over a village or town in the distance on the world map; black and thick when
-  it burns or was plundered.
-- **Birds flushing** `^` from a wood a few turns before an ambush there (Cunning sees them sooner).
-- **Vultures** `ˇ` circling over a field after a fight, a dead giant or a battlefield: something lies there.
+- **Smoke from afar** (animated mocks: project files `nextlevel/anim_*.gif`): over a village or town in the
+  distance on the world map light smoke rises, `§` then `°` then `·`, puffs that climb slowly and drift with the
+  wind; over one that burns or was plundered the smoke is dark, with a small red fire `*` that flickers.
+- **Birds flushing**: a few `^` `v` (wings up, down) burst up from a wood a few turns before an ambush there and fly
+  off; a log line ("Birds burst from the trees to the north-east."). Cunning sees them sooner.
+- **Vultures** `ˇ`: three circle slowly over a field after a fight, a dead giant or a battlefield: something lies there.
 - **Worn paths**: where you and the caravans walk often, grass becomes a path `·`; it grows over when no one comes.
-- **The world grows**: over years a new hamlet on a busy road, felled wood that comes back, an emptied village that
-  stays empty; told through the news.
-- **Fires in the night**: watchtowers and lighthouses lit on the world map by night; a robbers' camp one small fire.
+- **Villages rebuilt**: a settlement struck by a raid, a war, a dragon, a great evil or a fire is rebuilt over weeks,
+  seen on its map: burnt roofs first, then fresh timber, then whole again (plundered villages already heal by time
+  in `living.py`; this widens it to every harm and shows the stages).
+- Not: the world growing new hamlets, watch fires at night (Nilio, 10 November 2026).
 - **An inn in every town and city.** Some grown cities (the canal style among them) have no inn, so no bed and no
   gaming table; every town, city and metropolis of every people gets at least one, checked in test part
   `city_rules`.
