@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town (approved 10 November 2026, rounds not yet ordered) |
+| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town, camps on the road (approved 10 November 2026, rounds not yet ordered) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -232,6 +232,29 @@ lit windows at night), its name in gold and one line (kind, land, lord). Enter o
 - Once per settlement; the journal's Places tab shows it again. A settlement that burnt or was plundered shows it.
 - Not for dungeons and sites. Test part `first_sight`.
 - Not built: a boss's name in big letters (Nilio, 10 November 2026: it takes away from the play).
+
+## Camps on the road (approved 10 November 2026, not built)
+
+The Dutch proposal and mock screens: project files `nextlevel/kampen.md`, `kamp_*.png`. Hosts and caravans already
+walk the world map (`realms.march`, the wanderers); now they stop, and a camp is a place you can walk into.
+- **A host's camp.** A host on the march camps from dusk to dawn; at the end of its march it becomes a siege camp
+  before the seat for as long as the siege lasts. World map: a few tents `Λ` in the kingdom's colour, the banner `¶`
+  and a fire; the line under the map ("The host of Varn camps here tonight."); the Realms layer. Its own small map:
+  a ring of stakes, rows of tents `Λ`, in the evening a campfire `☼` for each pair of tents with a warm glow on the
+  ground (a cold fire pit `o` by day), the marshal's tent and banner, the quartermaster's wagons, a smith, the
+  wounded, horse lines, sentries at the gate.
+  - As a friend (the king's knight, or well known to his house): sell to the quartermaster (war prices, as war
+    trade), mend at the smith, be healed for a small gift, hear the war's news, sign on for the battle (the realm job
+    there is, modest pay). As a stranger: a sentry stops you; a small gift or a good word lets you to the
+    quartermaster only. As a foe: sneak in by night (noise and light count): steal the orders, burn the stores or
+    free prisoners, each weakening that host in its battle; seen, the whole camp wakes.
+  - Gone by morning; blackened fire rings and trampled ground stay a few weeks.
+- **A traders' camp.** A caravan that cannot reach a caravanserai camps by the road at night: wagons `Θ` in a ring
+  round a fire. Trade at a fair price (far goods from its town), hear the road's news (safe ways, where prices are
+  high), travel with them next day (the escort job there is), sleep safer by their fire. Robbers sometimes come in
+  the night: help and the trader remembers you (a better price).
+- Later, the same frame: pilgrims to a feast, herders to the summer pastures, a lord's hunting camp.
+- What you are to a camp lives on the player. Handbook: the realms and the trade chapters. Test part `camps`.
 
 ## The UI rule for every new round
 

@@ -627,3 +627,12 @@ three things. Test part `boss_moves`.
   its own map (wall, towers, spire, keep, roofs), by day, at night with lit windows, in winter; once only, again from
   the journal's Places; a burnt settlement. Debug: Teleport to a settlement of each people and size, Time.
 
+## Camps on the road (approved 10 November 2026)
+
+- **A host's camp** - by night on the march and as a siege camp; the signs on the world map and the line under it;
+  the camp's map with a campfire for each pair of tents by night and cold fire pits by day; as a friend, a stranger
+  and a foe (sneaking in, the orders, the stores, the prisoners); the fire rings left behind. Debug: start a war,
+  make you a knight, Time (dusk, dawn).
+- **A traders' camp** - by the road at night, trading, the road's news, travelling with them, a night raid.
+  Debug: Teleport near a road with a caravan, Time (dusk).
+
