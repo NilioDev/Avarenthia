@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered) |
+| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen and the land tells (approved 10 November 2026, rounds not yet ordered) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -171,6 +171,50 @@ sink: one system, "a home", a small map of your own with a fixed plan (walls, do
 - **Not:** ruling, fast travel home, renting out (a source of coin), free wall building tile by tile.
 - **First choices, Nilio may change them:** a home is never lost outright to the weekly roll (a stage back at worst;
   only a great evil may burn it to the stake); more than one home is allowed, each with its own upkeep.
+
+## Heard, lit and seen (approved 10 November 2026, not built)
+
+Thread "Game naar next level tillen"; the Dutch proposal and mock screens: project files `nextlevel/` (voorstel.md,
+geluid.png, hoogte.png). Found in the code: noticing is sight only (`arts.notice`: 65% a turn for any foe that can
+see you, whatever the light, the distance or your armour), light is reckoned once per map (`dress.light_map`,
+cached), and a foe out of sight is gone from the screen. No sound from the speakers (Nilio): sound is only seen.
+- **Noise.** What you do makes noise: walking 1, running 3, a fight 4-6, a spell by its school (fire loud, shadow
+  quiet), a door kicked in 8; heavy armour +1 to +3. Noise runs along halls and through doors, never through rock.
+  A foe that hears it and does not see you comes to look where it was (it does not wake the whole place at once).
+- **Seen, not heard.** A loud noise draws one pale ring of `◦` (dim silver-blue, the colour of "heard") that runs
+  out through the halls for a moment (look rule: it moves because something really happened). A foe that heard you
+  and comes to look has `?` before its name in IN SIGHT ("heard you, comes to look"). The line under the map says
+  how loud you are now (Quiet, Soft, Loud).
+- **What you hear.** A noise out of sight leaves a dim silver-blue sign in the dark about where it was (within a
+  tile or two): the creature's letter when you know its kind well enough (bestiary, Cunning), else `?`; with a log
+  line ("Heavy feet, to the east."). It fades after a few turns. Better Cunning hears further and more exactly.
+- **Noticing becomes a sum**: the light on your tile, the distance, your armour and sneak, the foe's kind (bosses,
+  wardens and beasts hear better; the undead see by no light). Sneaking past a camp in the dark becomes a way to play.
+- **Light that lives.** What burns gives light while it burns, at no cost and never carried: burning ground, a fire
+  spell for a turn, a lightning flash over the whole room, lava, a burning house in a raid. Light counts in noticing;
+  a torch put out (a foe, wind, water) darkens a room; a pillar or statue between you and a flame throws a shadow.
+  Shown only in the colour under the signs, never as new signs.
+- **Last seen.** A foe that walks out of sight leaves a dim mark of its letter where you saw it last, until you look
+  there again (with the `?` when it heard you).
+- **Where it shows:** IN SIGHT, the line under the map, the log; a first-time tip when you are first heard; the
+  handbook chapter on fighting gets noise, light and last seen. Test part `heard_lit`.
+- **High ground is not approved yet**: a mock with a few raised tiles (wall walks, rises, rocks; lighter with a dark
+  edge on the drop) is in `nextlevel/hoogte.png`; Nilio decides after seeing it.
+
+## The land tells, and an inn in every town (approved 10 November 2026, not built)
+
+The "Later" world ideas of round 5, now taken up. Each is one sign with one meaning, seen before you meet the thing:
+- **Smoke from afar**: thin grey `≈` over a village or town in the distance on the world map; black and thick when
+  it burns or was plundered.
+- **Birds flushing** `^` from a wood a few turns before an ambush there (Cunning sees them sooner).
+- **Vultures** `ˇ` circling over a field after a fight, a dead giant or a battlefield: something lies there.
+- **Worn paths**: where you and the caravans walk often, grass becomes a path `·`; it grows over when no one comes.
+- **The world grows**: over years a new hamlet on a busy road, felled wood that comes back, an emptied village that
+  stays empty; told through the news.
+- **Fires in the night**: watchtowers and lighthouses lit on the world map by night; a robbers' camp one small fire.
+- **An inn in every town and city.** Some grown cities (the canal style among them) have no inn, so no bed and no
+  gaming table; every town, city and metropolis of every people gets at least one, checked in test part
+  `city_rules`.
 
 ## The UI rule for every new round
 

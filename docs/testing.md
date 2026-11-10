@@ -597,3 +597,26 @@ three things. Test part `boss_moves`.
   wages, the baron's call in a war, losing it to a new lord. Debug: make you a knight, Coin, start a war, end it.
 - **Furnishing** - the first-time tip, placing, picking up and moving, every piece's bump, Comfort's stars and
   "well rested", the peoples' styles and a full set, dyes, delivery. Debug: give furniture of each style, Coin.
+
+## Heard, lit and seen (approved 10 November 2026)
+
+- **Noise** - walking, running, a fight, each school's spells, a kicked door, heavy armour; the ring of `◦` along
+  halls and not through rock; Quiet/Soft/Loud under the map; a foe coming to look with `?` in IN SIGHT. Debug: spawn
+  a foe behind a wall, Gear (heavy and light armour), Ranks (Cunning).
+- **What you hear** - the dim letter or `?` in the dark, the log line, fading, Cunning hearing further. Debug: spawn
+  a known and an unknown kind out of sight, Bestiary (know a kind).
+- **Noticing** - in the dark and in torchlight, near and far, with sneak, a boss and a beast. Debug: Teleport to a
+  dungeon and a hostile camp at night, Time.
+- **Light that lives** - burning ground, a fire spell, lightning, lava, a burning house lighting the room; a torch
+  put out; a shadow behind a pillar. Debug: give fire spells, start a raid on a village.
+- **Last seen** - the dim mark where a foe left your sight, gone when you look there again.
+
+## The land tells, and an inn in every town (approved 10 November 2026)
+
+- **Signs on the land** - smoke over a village from afar (and black over a burning one), birds before an ambush,
+  vultures over a fight, a worn path growing and growing over, fires in watchtowers and a robbers' camp by night.
+  Debug: Teleport near a village, start a raid, force an ambush, Time (days, night).
+- **The world grows** - a new hamlet, the wood coming back, the news line. Debug: Time (years on).
+- **An inn in every town** - each city style and each people's town has an inn with a bed and a gaming table.
+  Debug: Teleport to a city of each style.
+
