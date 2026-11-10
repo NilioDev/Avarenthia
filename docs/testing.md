@@ -638,6 +638,9 @@ three things. Test part `boss_moves`.
 - **Each people's camp** - a kingdom's host, a siege camp, a dwarf hammer band, an elven war-band (seen only from one
   cell), the Gorvash, sea raiders on the strand, riders; their signs on the world map by night and their own maps.
   Debug: "Make a camp here" by people, Time (dusk).
+- **Inside the tents** - every tent of every people walked into; the marshal's orders, the stores, the wounded, the
+  chapel, the prisoners; sleepers waking at a noise; a chest taken; a tent set burning. Debug: "Make a camp here",
+  Time (night).
 
 ## Wars that feel like wars (approved 10 November 2026)
 

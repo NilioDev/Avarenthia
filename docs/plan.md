@@ -274,6 +274,16 @@ walk the world map (`realms.march`, the wanderers); now they stop, and a camp is
     the herd outside, riders circling; no wall, gone at dawn. World map: `Ω` in a ring and the herd `h`.
   - The smaller raiding peoples (ice raiders, pass clans, wreckers, mist folk, island voyagers) camp in the frame of
     the nearest of these (sledges for ships, a stone hall's ring for a shield ring), dressed in their own colour.
+- **You walk into the tents** (mock: `nextlevel/legers/kamp_tenten.png`, `tenten_per_volk.png`, made by
+  `tenten_mock.py`). Every tent is a small room on the camp's own map, with cloth walls in the realm's colour and a
+  flap `'` for a door; no new screen. Soldiers' tents: two bedrolls, packs, sleepers by night. The marshal's
+  pavilion: the map table `π` with the orders on it, his chest, his bed, the banner at the flap with two guards. The
+  stores (crates, ale, flour), the wounded on cots with a healer, the chapel (priest, holy banner), the prisoners'
+  pen with a guard. Each people's own: the dwarves' stone-weighted hide with bunks in two tiers and a brazier; the
+  riders' round tent with rugs, the hearth in the middle and the chest across from the door; the Gorvash's hides on
+  poles with furs, bones and the loot sack; the elves' roof of woven leaves with no walls; the sea raiders' sail
+  stretched from a ship's side over the oars. By night a lamp or the hearth lights a tent from within; sleepers wake
+  at a noise; a chest, the orders or a prisoner can be taken; a tent can be set burning.
 
 ## Wars that feel like wars (approved 10 November 2026, not built)
 
