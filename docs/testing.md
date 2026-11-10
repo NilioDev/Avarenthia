@@ -620,3 +620,9 @@ three things. Test part `boss_moves`.
 - **An inn in every town** - each city style and each people's town has an inn with a bed and a gaming table.
   Debug: Teleport to a city of each style.
 
+## A first sight of a town (approved 10 November 2026)
+
+- **The skyline card** - the first time in a hamlet, village, town, city and metropolis of every people; drawn from
+  its own map (wall, towers, spire, keep, roofs), by day, at night with lit windows, in winter; once only, again from
+  the journal's Places; a burnt settlement. Debug: Teleport to a settlement of each people and size, Time.
+

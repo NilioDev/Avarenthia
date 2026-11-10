@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen and the land tells (approved 10 November 2026, rounds not yet ordered) |
+| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town (approved 10 November 2026, rounds not yet ordered) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -215,6 +215,19 @@ The "Later" world ideas of round 5, now taken up. Each is one sign with one mean
 - **An inn in every town and city.** Some grown cities (the canal style among them) have no inn, so no bed and no
   gaming table; every town, city and metropolis of every people gets at least one, checked in test part
   `city_rules`.
+
+## A first sight of a town (approved 10 November 2026, not built)
+
+Mock: project files `nextlevel/skyline.png`. The first time you come to a settlement, one quiet card before its map:
+its skyline against the sky of that hour and season, drawn in half blocks (`▀ ▄ █`) from the settlement's own map
+(the wall and its towers, gates, the temple's spire, the keep, the roofs, the mill; smoke from chimneys that smoke,
+lit windows at night), its name in gold and one line (kind, land, lord). Enter or any key goes on.
+- Every settlement of every people, each in its own shape: a hamlet a few roofs and a hedge, a halfling hill a row
+  of round doors in the green, an elven glade the crowns of the trees, a dwarf hold the gate in the mountain, an orc
+  camp the palisade and longhouse, a metropolis wide and high.
+- Once per settlement; the journal's Places tab shows it again. A settlement that burnt or was plundered shows it.
+- Not for dungeons and sites. Test part `first_sight`.
+- Not built: a boss's name in big letters (Nilio, 10 November 2026: it takes away from the play).
 
 ## The UI rule for every new round
 
