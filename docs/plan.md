@@ -198,8 +198,9 @@ cached), and a foe out of sight is gone from the screen. No sound from the speak
   there again (with the `?` when it heard you).
 - **Where it shows:** IN SIGHT, the line under the map, the log; a first-time tip when you are first heard; the
   handbook chapter on fighting gets noise, light and last seen. Test part `heard_lit`.
-- **High ground is not approved yet**: a mock with a few raised tiles (wall walks, rises, rocks; lighter with a dark
-  edge on the drop) is in `nextlevel/hoogte.png`; Nilio decides after seeing it.
+- **Not: high ground** (Nilio, 10 November 2026). Tried as lighter raised tiles, colour steps, relief shading and
+  contour signs with teeth (project files `nextlevel/hoogte_*.png`, `relief*.png`): none read well enough on a flat
+  grid, so fights stay level.
 
 ## The land tells, and an inn in every town (approved 10 November 2026, not built)
 
