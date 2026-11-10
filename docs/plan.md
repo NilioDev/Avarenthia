@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town, camps on the road (approved 10 November 2026, rounds not yet ordered) |
+| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town, camps on the road, wars that feel like wars (approved 10 November 2026, rounds not yet ordered) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -255,6 +255,72 @@ walk the world map (`realms.march`, the wanderers); now they stop, and a camp is
   the night: help and the trader remembers you (a better price).
 - Later, the same frame: pilgrims to a feast, herders to the summer pastures, a lord's hunting camp.
 - What you are to a camp lives on the player. Handbook: the realms and the trade chapters. Test part `camps`.
+- **Each people camps its own way** (mock: project files `nextlevel/legers/kampen_per_volk.png` and
+  `kampen_wereldkaart.png`, made by `legers_mock.py`). World map by night and the camp's own map:
+  - *A kingdom's host*: as above; a priest's tent `†` and, in a big host, a battle mage; siege engines `Ψ` in a siege
+    camp. On the world map tents `Λ` in rows with a fire between each pair and the banner; a siege camp's tents close
+    round the seat, with an engine `Ψ` beside them.
+  - *A dwarf hammer band*: a square of stacked stone and shields `▓` with a ditch round it, low tents `∩` in a tight
+    grid, braziers `¤` at the corners and one field forge in the middle, ale, war carts, ponies; no open fires and a
+    watch that never sleeps: the hardest camp to sneak into. World map: `∩` inside `▓` with the forge's glow.
+  - *An elven war-band*: no ring, no rows, no fires: bowers `∩` in moonlit clearings under the trees, sentries up in
+    them, the warden and a moon-well. World map: nothing at all; from one cell away a pale `∩` under the trees.
+  - *The Gorvash*: a sprawl with no ring, hide tents `Λ` every way round one great fire, the skull pole `¥`, war drums
+    (seen, as in "Heard, lit and seen"), wolf pens and cages of captives; easy to walk into, many awake round the fire.
+    World map: scattered `Λ` round a big fire and the pole.
+  - *Sea raiders*: the longships drawn up on the strand are the wall, a ring of shields `o` round the mead fire, the
+    jarl, the plunder heap and captives; gone with the tide at dawn. World map: ships `▬` on the strand and a fire.
+  - *Riders* (steppe and desert riders, canyon riders, the clans on horse): round tents `Ω` in a ring round the fire,
+    the herd outside, riders circling; no wall, gone at dawn. World map: `Ω` in a ring and the herd `h`.
+  - The smaller raiding peoples (ice raiders, pass clans, wreckers, mist folk, island voyagers) camp in the frame of
+    the nearest of these (sledges for ships, a stone hall's ring for a shield ring), dressed in their own colour.
+
+## Wars that feel like wars (approved 10 November 2026, not built)
+
+The Dutch proposal: project files `nextlevel/legers/legers.md`. Today a war sends one host `K` at a time to one seat
+and one roll settles it (`realms.war_month`, `march`, `arrive`). A war should feel like a war, but the sums behind it
+stay small: the player is one adventurer, and what counts is what they see on the map and can touch.
+- **More forces, both sides.** Each side has two to four: the king's host (marshal, banner, a priest, in a big one a
+  battle mage) and smaller hosts of the border barons in their own houses' colours. The defender marches out too:
+  where two hosts meet on the world map, the battle is there, in the field. Between them small parties: raiders `k`
+  burning border villages, foragers, messengers and scouts; each can be caught or helped. At most about eight war
+  signs per war on the map at once.
+- **A front.** The border baronies are where the war is: camps, battlefields, burnt villages (the land tells: black
+  smoke), refugees on the roads. Further off the war shows only in prices and news.
+- **Raids and sieges, few battles.** Most of a war is raiding (to shame the other lord) and sieges; a battle in the
+  field is rare and therefore big. A siege lasts days to weeks: the seat's stores run down, food can be smuggled in,
+  the garrison sallies, the engines make a breach, and then the storm.
+- **Seasons.** Hosts march from spring to the harvest; in winter they go home and the war is quiet (the seasons that
+  are there already). Raiders keep their own months (`powers.KINDS`).
+- **Levies go home.** A baron's men serve for a while, then go home to the harvest unless the king pays sellswords
+  (the mercenary companies that are there). Hunger and sickness thin a host that sits too long in one place or eats
+  a land bare. A host shrinks with every fight and must go home to fill up, or melts away into deserters, who become
+  robbers on the roads. So a war is a matter of wearing down, not one roll.
+- **Ransom.** A knight or lord taken in battle is worth coin: catch one, or buy or free one, as a realm job.
+- **The peace.** As in Crusader Kings: taken seats, won battles and captured lords make the war's score; whoever has
+  enough forces the peace (the tribute, hostage or land in `end_war`).
+- **The fantasy in it.** A battle mage or priest with the king's host: take him out and the host weighs much less. A
+  holy banner or relic goes with a host: steal it or save it. The great evils feed on war (their levers on the realms
+  are there); on a battlefield in the Lich's land the dead rise by night. Other peoples take part: dwarves hire out a
+  hammer band, and the Gorvash smell weakness and fall on a worn-out border.
+- **Each people wars its own way**, and camps its own way (above, in Camps on the road):
+  - *Kingdoms*: levies and knights, raids and sieges, ransom, the peace treaty.
+  - *Dwarves*: slow; never raid, never march far from the hills; the best at sieges (they dig under walls); a debt in
+    the grudge book is paid in full and then they go home.
+  - *Elves*: never besiege and never hold land; ambush in the wood and on its edge, then vanish; they fight only for
+    the wood (its edge, a felled grove).
+  - *The Gorvash*: one great march that grows as it wins (beaten tribes join) and burns everything; when the warlord
+    dies it falls apart into tribes again.
+  - *Sea raiders*: strike the coast in their months from the sea, burn and leave by ship; no sieges.
+  - *Riders*: fast raids deep into the land, never a siege, gone before a host can come; their herds are their wealth.
+- **For the player**: catch or guard a raiding party; carry a message through the front; smuggle food into a besieged
+  seat or open its postern; sneak into a camp by night (orders, stores, prisoners, the banner, the mage); take a lord
+  for ransom; stand in the line in a field battle as one man in the press (your corner of the fight: hold the flank,
+  save the banner, cut down a captain; what you do weighs on the roll, as a tilt, never as a win by yourself). Pay
+  stays modest; war raises prices (war trade), and what is taken from the field goes through the fence that is there.
+- The war's state lives on the world (`R.wars`); what you did in it (signed on, known to a camp, a captive you hold)
+  on the player. The Realms layer [4] shows the hosts, camps, sieges and the front. Handbook: the realms chapter
+  (war, sieges, ransom, the peoples' ways of war). Test part `wars`.
 
 ## The UI rule for every new round
 

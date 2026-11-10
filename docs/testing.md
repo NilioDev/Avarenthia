@@ -635,4 +635,24 @@ three things. Test part `boss_moves`.
   make you a knight, Time (dusk, dawn).
 - **A traders' camp** - by the road at night, trading, the road's news, travelling with them, a night raid.
   Debug: Teleport near a road with a caravan, Time (dusk).
+- **Each people's camp** - a kingdom's host, a siege camp, a dwarf hammer band, an elven war-band (seen only from one
+  cell), the Gorvash, sea raiders on the strand, riders; their signs on the world map by night and their own maps.
+  Debug: "Make a camp here" by people, Time (dusk).
+
+## Wars that feel like wars (approved 10 November 2026)
+
+- **The forces** - the king's host and the barons' hosts on both sides, the defender marching out, a battle where two
+  hosts meet; raiders, foragers, messengers and scouts between them; no more than about eight signs per war.
+  Debug: start a war, Time (days on), the Realms layer [4].
+- **The front and the seasons** - burnt border villages, refugees, prices; hosts home in winter; levies going home,
+  hosts shrinking, deserters turning robber. Debug: start a war, Time (months on), set the season.
+- **A siege** - stores running down, smuggling food in, the postern, a sally, the breach and the storm.
+  Debug: "Start a siege at the nearest seat", Time.
+- **Ransom and the peace** - take a lord in battle and sell him back; the war's score; the peace by tribute, hostage
+  or land. Debug: start a war, "Give the war a score".
+- **The fantasy** - the battle mage or priest, the holy banner, the dead rising on a field in the Lich's land, a dwarf
+  hammer band for hire, the Gorvash falling on a worn border.
+- **Each people's way** - dwarves besieging and going home, elves' ambushes in the wood, the Gorvash growing, sea
+  raiders from the sea, riders' deep raids. Debug: start a war or a raid of each people.
+- **Your part** - catch a raid, carry a message, smuggle into a siege, sneak into a camp, stand in a field battle.
 
