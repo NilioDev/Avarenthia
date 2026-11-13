@@ -803,8 +803,7 @@ def quarter(game, npc, c):
     opts = []
     for g, q in sorted(p.cargo.items()):
         if q > 0 and g in D.GOODS:
-            each = war_price(game, c, g)
-            opts.append((f'Sell {q} {D.GOODS[g]["name"]}: {fmt(each * q)}', f'sell:{g}'))
+            opts.append((f'Sell {q} {D.GOODS[g]["name"]}: {fmt(pay_for(game, c, g, q))}', f'sell:{g}'))
     if not opts:
         game.say(npc, '"Bring me grain, ale, arms or timber, and I pay better than any market. A war eats everything."')
         return
@@ -813,13 +812,56 @@ def quarter(game, npc, c):
 
 
 WAR_GOODS = {'grain': 1.5, 'ale': 1.4, 'arms': 1.6, 'tools': 1.4, 'timber': 1.3, 'medicine': 1.6, 'fish': 1.3}
+NEED, NEED_DAYS = 15, 10        # a host pays war prices for this much of a good every so many days; past it, market prices
+
+
+def _host_of(game, c):
+    return next((x for x in game.world.wanderers if x.id == c.get('wd')), None)
+
+
+def need_left(game, c, g):
+    """How much more of a good the host still pays war prices for."""
+    wd = _host_of(game, c)
+    if wd is None:
+        return NEED
+    n, day = getattr(wd, 'qm', {}).get(g, (0, game.day))
+    return NEED if game.day - day >= NEED_DAYS else max(0, NEED - n)
+
+
+def _bought(game, c, g, q):
+    wd = _host_of(game, c)
+    if wd is None:
+        return
+    qm = getattr(wd, 'qm', None)
+    if qm is None:
+        qm = wd.qm = {}
+    n, day = qm.get(g, (0, game.day))
+    if game.day - day >= NEED_DAYS:
+        n, day = 0, game.day
+    qm[g] = (n + q, day)
+
+
+def _town(game, c):
+    w = game.world
+    return min(w.settlements, key=lambda s_: cheb(s_.x, s_.y, c['x'], c['y']))
+
+
+def market_price(game, c, g):
+    """Past the host's need: a little under what the nearest market pays."""
+    from . import economy as ECO
+    return max(1, round(ECO.sell_price(_town(game, c), g) * .9))
+
+
+def pay_for(game, c, g, q):
+    """What he pays for q of a good: war prices up to the host's need, the market's price past it."""
+    dear = min(q, need_left(game, c, g)) if g in WAR_GOODS else q
+    return dear * war_price(game, c, g) + (q - dear) * market_price(game, c, g)
 
 
 def war_price(game, c, g):
+    """A war's price: what the nearest market pays, made dearer by what a host eats of it."""
     from . import economy as ECO
-    w = game.world
-    s = min(w.settlements, key=lambda s_: cheb(s_.x, s_.y, c['x'], c['y']))
-    return max(1, round(ECO.sell_price(s, g) * WAR_GOODS.get(g, 1.1)))
+    return max(1, round(ECO.sell_price(_town(game, c), g) * WAR_GOODS.get(g, 1.1)))
 
 
 def r_quarter(game, choice, ctx):
@@ -831,14 +873,18 @@ def r_quarter(game, choice, ctx):
     q = p.cargo.get(g, 0)
     if not q:
         return
-    pay = war_price(game, c, g) * q
+    pay = pay_for(game, c, g, q)
+    dear = need_left(game, c, g) if g in WAR_GOODS else 0
+    _bought(game, c, g, q)
     del p.cargo[g]
     p.cost_basis.pop(g, None) if isinstance(getattr(p, 'cost_basis', None), dict) else None
     p.gold += pay
     from . import tally as TY
     TY.add(game, 'earned_trade', pay)
     from .money import fmt
-    game.msg(f'The quartermaster counts out {fmt(pay)} for your {D.GOODS[g]["name"].lower()}: war prices.', 'good')
+    game.msg(f'The quartermaster counts out {fmt(pay)} for your {D.GOODS[g]["name"].lower()}: ' +
+             ('war prices.' if dear >= q else 'war prices for what the host needs, the market\'s for the rest.'
+              if dear else 'the host has all it needs of that, so the market\'s price.'), 'good')
 
 
 def r_sentry(game, choice, ctx):

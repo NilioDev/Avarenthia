@@ -1454,8 +1454,8 @@ def ch_realms(g):
         ('p', 'Walk into a camp, or stand by it and press [>]. Each people camps its own way: a kingdom in rows inside '
               'a ring of stakes, dwarves in a square of shields, the Gorvash round one great fire, sea raiders behind '
               'their ships, riders in a ring. Tents are walked into through their flap.'),
-        ('l', ['A friend, sworn to its king or well known to his lords, trades with the quartermaster at war prices, '
-               'is mended by the smith and healed by the healer, and may sign on with the marshal for the battle.',
+        ('l', ['A friend, sworn to its king or well known to his lords, trades with the quartermaster at war prices '
+               'for what the host needs, is mended by the smith and healed by the healer, and may sign on with the marshal for the battle.',
                'A stranger gets past the sentry with a gift or a good name, and no further than the quartermaster.',
                'A foe comes by night, quietly: noise and light give you away, and one sentry who sees you wakes the '
                'whole camp. Steal the marshal\'s orders, burn the stores or a tent, free the prisoners in the pen; '

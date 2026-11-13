@@ -12344,6 +12344,12 @@ def camps():
         cs = CM.of_wd(g, hd)
         assert cs and cs['siege'] and hd in w.wanderers
         print('siege:', cs['name'])
+        # the quartermaster pays war prices only for what the host needs
+        n = CM.NEED + 10
+        full = CM.pay_for(g, cs, 'grain', n)
+        assert full < n * CM.war_price(g, cs, 'grain'), 'past the need: market prices'
+        CM._bought(g, cs, 'grain', CM.NEED)
+        assert CM.need_left(g, cs, 'grain') == 0 and CM.pay_for(g, cs, 'grain', 5) == 5 * CM.market_price(g, cs, 'grain')
     else:
         print('no host marched in this world')
     E.save_game(g)
