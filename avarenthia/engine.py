@@ -3489,9 +3489,8 @@ class Game:
                 break
             folk = [wd for wd in w.wanderers if not wd.hostile and wd.id not in seen_folk and self.visible(wd.x, wd.y)
                     and cheb(wd.x, wd.y, p.x, p.y) <= 4]
-            if folk:
-                self.msg(f'{folk[0].name} comes along the road. You stop.', 'info')
-                break
+            if folk:                                    # friendly folk pass you by: a word, no stop
+                self.msg(f'{folk[0].name} passes you on the road.', 'info')
             seen_folk |= {wd.id for wd in w.wanderers if self.visible(wd.x, wd.y)}
             food = getattr(p, 'food', 500)
             if food < HU.HUNGRY <= food0 or food < HU.WEAK <= food0:
@@ -3516,12 +3515,14 @@ class Game:
                     break
                 else:
                     x, y = side
-            if HT.herd_at(self, x, y):                  # a herd grazing across the road: round it, not into it
+            hd = HT.herd_at(self, x, y)
+            if hd:                                      # a herd grazing across the road: round it, not into it
                 side = self._round_camp(path, x, y, herd=True)
                 if side is None:
-                    self.msg('A herd grazes across the road.', 'info')
-                    break
-                x, y = side
+                    hd.x, hd.y = p.x, p.y                   # no way round: the beasts shy aside and let you through
+                    self.msg('A herd grazing on the road shies aside to let you through.', 'info')
+                else:
+                    x, y = side
             used = self.try_move(x - p.x, y - p.y)
             if not used:
                 break

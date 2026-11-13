@@ -299,7 +299,8 @@ class Bot:
 
     def report(self):
         p = self.p
-        return dict(kind=self.kind, seed=self.seed, day=self.g.day, dead=self.g.dead, lvl=p.lvl, gold=p.gold,
+        return dict(kind=self.kind, seed=self.seed, day=self.g.day, dead=self.g.dead, cause=getattr(self.g, 'cause', None),
+                    deaths=getattr(p, 'deaths', 0), lvl=p.lvl, gold=p.gold,
                     stats=dict(self.stats), money=self.money[-40:], crashes=self.crashes, log=self.log[-60:],
                     seconds=round(time.time() - self.start))
 
@@ -948,7 +949,7 @@ def main():
             continue
         r = bot.run()
         out.append(r)
-        print(json.dumps({x: r[x] for x in ('kind', 'day', 'dead', 'lvl', 'gold', 'stats', 'seconds')}, default=str),
+        print(json.dumps({x: r.get(x) for x in ('kind', 'day', 'dead', 'cause', 'deaths', 'lvl', 'gold', 'stats', 'seconds')}, default=str),
               flush=True)
         for line in r['log'][-12:]:
             print('  ', line)
