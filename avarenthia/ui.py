@@ -330,6 +330,11 @@ class App:
             self.push(CompanyScreen(self, req[1]))
         elif req[0] == 'talkpick':
             self.push(TalkScreen(self, req[1]))
+        elif req[0] == 'homechest':                   # a chest of your own (round 64)
+            from . import homes_ui as HMU
+            self.push(HMU.ChestScreen(self, req[1], req[2]))
+        elif req[0] == 'journal':
+            self.push(JournalScreen(self, req[1]))
         elif req[0] == 'inngame':                     # games at the inn (round 59)
             from . import inngames_ui as IGU
             self.push(IGU.screen(self, req[1], req[2]))
@@ -787,6 +792,12 @@ class GameScreen(Screen):
             sw = SH.where_line(g, wx, wy) if m.kind == 'over' else None
             if sw and x + 10 + len(sw) < room:
                 cv.text(x + 9, MAP_H, f'· {sw} ', (190, 130, 230), BG)     # his coast, or a barony a servant holds
+        from . import homes as HMS
+        hl = HMS.line(g)
+        if hl:                                          # one of your homes: its state
+            hx = x + 9 if m.kind in ('over', 'wild') and not getattr(m, 'underground', False) else x
+            if hx + len(hl) + 3 <= room + 8:              # whole or not at all
+                cv.text(hx, MAP_H, f'· {hl} ', HMS.YOU, BG)
         if m.kind not in ('over', 'town'):
             from . import heard as HL
             word = HL.loudness(g)                        # how loud you are now (round 63)
@@ -824,6 +835,7 @@ class GameScreen(Screen):
         mem_fg, mem_bg = LOOK.REMEMBERED_TINT[LOOK.remembered_kind(m)] if m.kind != 'town' else ((40, 52, 96), (8, 10, 22))
         torchlit = lighting
         deco = getattr(m, 'deco', None)
+        furn = getattr(m, 'furn', None) if m.kind == 'town' else None      # your own furniture (homes.py)
         trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
         night = TW.is_night(g)
         from . import epics as EP
@@ -948,6 +960,8 @@ class GameScreen(Screen):
                     if look:
                         ch, fg, bg = look
                         self.moving = self.moving or mv
+                if furn and (mx, my) in furn:
+                    ch, fg = furn[(mx, my)]
                 if portal and (mx, my) == portal:
                     ch, fg = '0', AN.portal(t)
                     self.moving = True
@@ -1279,6 +1293,12 @@ class GameScreen(Screen):
                     if LV.plundered(g, s):
                         col, bg = scale(col, .6), (64, 16, 10)          # burnt and half empty
                     cv.put(vx, vy, ch, col, bg)
+        from . import homes as HMS
+        for hm in HMS.homes(g):                       # your homes out on the land, in your own colour
+            if hm['kind'] == 'built':
+                vx, vy = hm['x'] - ox, hm['y'] - oy
+                if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (hm['x'], hm['y']) != (p.x, p.y):
+                    cv.put(vx, vy, HMS.HOME_SIGN, HMS.YOU if hm['state'] == 'quiet' else scale(HMS.YOU, .7), (30, 40, 48))
         # strongholds in their faction colour
         for h in w.holds:
             om = g.map
@@ -1936,6 +1956,10 @@ class GameScreen(Screen):
         elif tok == 'R':
             g.log_mark = len(g.log)
             g.rest()
+        elif tok == 'H':
+            g.log_mark = len(g.log)
+            from . import homes_ui as HMU
+            HMU.furnish(app)
         elif tok in ('?', 'f1'):
             app.push(HelpScreen(app))
         elif tok in ('v', 'f2'):
@@ -2192,6 +2216,12 @@ class InventoryScreen(Modal):
             used = CH.read_book(g, it)
             if used:
                 g.end_turn(used)
+            return
+        if it.k == 'tool' and it.t == 'stake':
+            from . import homes as HMM
+            app.pop()
+            if HMM.drive_stake(g, it):
+                g.end_turn(1)
             return
         if it.k == 'tool' and it.t in ('bandage', 'net'):
             from . import lifeskills as LSM
@@ -4325,7 +4355,7 @@ def SKS_night(sh):
 class JournalScreen(Modal):
     """The journal in tabs: jobs, the road (story, rumours, news), standing, lore (what you know, every sign) and the
     log to read back. Left and right (or Tab) pick a tab; up and down move or scroll."""
-    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log', 'Shadow', 'Places']
+    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log', 'Shadow', 'Places', 'Homes']
     PICK = ('Jobs', 'Lore', 'Places')     # tabs where up and down pick a row
     tab = 0
     BW, BH = 100, 30
@@ -4447,6 +4477,10 @@ class JournalScreen(Modal):
         for st in evs:
             out += self.para(D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)')
         return out
+
+    def rows_homes(self):
+        from . import homes_ui as HMU
+        return HMU.journal_rows(self)
 
     def rows_places(self):
         """The settlements you have come to, each with its first sight (skyline.py)."""
@@ -4798,10 +4832,11 @@ class WorldMapScreen(Modal):
         log = getattr(g, 'price_log', {})
         if self.LAYERS[self.layer] != 'Trade' or st.id not in log:
             return None
-        avg = {k: sum(r['sell'][k] for r in log.values()) / len(log) for k in D.GOOD_ORDER}
         rec = log[st.id]
-        dear = max(D.GOOD_ORDER, key=lambda k: rec['sell'][k] / max(1, avg[k]))
-        cheap = min(D.GOOD_ORDER, key=lambda k: rec['buy'][k] / max(1, avg[k]))
+        gs = [k for k in D.GOOD_ORDER if all(k in r['sell'] for r in log.values())]
+        avg = {k: sum(r['sell'][k] for r in log.values()) / len(log) for k in gs}
+        dear = max(gs, key=lambda k: rec['sell'][k] / max(1, avg[k]))
+        cheap = min(gs, key=lambda k: rec['buy'][k] / max(1, avg[k]))
         return f"{st.name} ▲{D.GOODS[dear]['name']} ▼{D.GOODS[cheap]['name']}"
 
     def trade_labels(self, cv, bx, by, S, taken):
@@ -5267,7 +5302,7 @@ class MenuScreen(Modal):
                      ('E', 'Eat', 'the food that fits your hunger best'), ('F', 'Forage', 'search the wild for food and herbs'),
                      ('a', 'Fish', 'by water, with a fishing pole'), ('f', 'Shoot', 'at the nearest enemy, with a bow'),
                      ('P', 'Alchemy & brewing', 'potions, ale, wine and mead'), ('p', 'Town portal', 'read a scroll of town portal'),
-                     ('R', 'Rest', 'until you are healed')]),
+                     ('R', 'Rest', 'until you are healed'), ('H', 'Furnish', 'set out the furniture of a home of your own')]),
         ('Game', [('?', 'Help', 'keys and how things work'), ('quit', 'Save and quit', 'your hero waits for you')]),
     ]
 

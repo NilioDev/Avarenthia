@@ -49,6 +49,16 @@ def _craftguilds(g):
             s['paid'] = max(i for i, v in enumerate(GU.RANK_REP) if s.get('rep', 0) >= v)
 
 
+def _homes(g):
+    """76: a roof of your own (round 64): every market gets building stone; the homes start empty."""
+    from .economy import stone_stock
+    w = getattr(g, 'world', None)
+    for s in getattr(w, 'settlements', ()):
+        if 'stone' not in s.market:
+            t = stone_stock(s)
+            s.market['stone'] = [t, t, t]
+
+
 def _story_land(g):
     """Round 58c: the story's places in a world made before them (with dice of their own)."""
     from . import storyland as SL
@@ -87,6 +97,7 @@ MIGRATIONS = {
     72: ('The bar of seven keys: an epic on key 7, filled by fighting', _seven_keys, False),
     73: ('Games at the inn: a gaming table by the innkeeper, your games on the player', None, False),
     74: ('A first sight of a town: the settlements you saw, on the player', None, False),
+    75: ('A roof of your own: homes on the player, building stone in every market', _homes, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

@@ -367,6 +367,10 @@ def at(game, x, y):
         from .races import RACES
         return p.name, (255, 246, 220), [f"You. A {RACES[p.race]['name'].lower()} with no past, level {p.lvl}."]
     if m.kind == 'over':
+        from . import homes as HM
+        hm = HM.at(game, x, y)
+        if hm:
+            return hm['name'], HM.YOU, [HM.state_line(game, hm), 'Go in with >.']
         return over(game, x, y)
     if getattr(m, 'zone', None) is not None and (x, y) in m.marks:
         from . import zones as ZN
@@ -383,6 +387,12 @@ def at(game, x, y):
             if len(its) > 1:
                 lines.append(f'And {len(its) - 1} more thing{"s" if len(its) > 2 else ""} beneath it.')
             return it.display_name(), it.color(), lines
+    if (x, y) in (getattr(m, 'furn', None) or {}):
+        from . import homes as HM
+        _h, pc = HM.piece_at(game, x, y)
+        if pc:
+            return HM.piece_name(pc), HM.piece_look(pc)[1], [
+                'Broken: walk into it to have it mended.' if pc.get('broken') else HM.PIECES[pc['k']][5], 'Yours.']
     title, col, lines = tile(game, m, x, y)
     if not game.visible(x, y):
         lines.append('(You remember this from earlier.)')

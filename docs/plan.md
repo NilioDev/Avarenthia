@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | A roof of your own (approved 6 November 2026); camps on the road, wars that feel like wars (approved 10 November 2026); the order: block 22 below |
+| **To build** | Camps on the road, wars that feel like wars (approved 10 November 2026); the order: block 22 below |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -111,56 +111,13 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 61. **Block 22: the 10 November proposals** (Nilio, 13 November 2026: build all of the plan without waiting; the
     order chosen by Claude): 61. **A first sight of a town** (M; built 13 November 2026, see `docs/built.md`).
     62. **The land tells, and an inn in every town** (M; built 13 November 2026). 63. **Heard, lit and seen** (L; built 13 November 2026), before the camps,
-    whose sneaking it needs. 64. **A roof of your own** (XL). 65. **Camps on the road** (XL). 66. **Wars that feel like
+    whose sneaking it needs. 64. **A roof of your own** (XL; built 13 November 2026). 65. **Camps on the road** (XL). 66. **Wars that feel like
     wars** (XL), with the field battle and magic in the wars.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
 
 ---
-
-## A roof of your own (approved 6 November 2026, not built)
-
-Thread "Housing-systeem ontwerpen"; the Dutch proposal with mock screens: project files `huizen/voorstel.md`. A gold
-sink: one system, "a home", a small map of your own with a fixed plan (walls, doors) and a floor you furnish. All on
-`p.homes` (multiplayer rule). Prices are first guesses for the `money` check (level 10 keeps up to ~80s a day).
-- **A town house.** In hamlets, towns, cities and the metropolis of every people, one to a few for sale, a `$` on
-  the door; bump it, one choice (`EV.ask`), 4g (hamlet) to 40g (metropolis), cheaper in the poor quarter. Each
-  people's own kind (a hill home, a room in the rock, a house in a tree), taken from the settlement's own map, so the
-  settlement rules hold. Hearth tax each season, paid when you come in or left in a chest by the door; a year unpaid
-  and the town sells it (half back, less the debt; your things wait at the town hall).
-- **Building anywhere.** A builder's stake from a carpenter (2g); on the world map an open tile (no road, no
-  settlement, not by a hostile camp). Stages, each coin, trade goods (timber, stone) and days of building while you
-  are away: camp, hut 5g, cabin 12g, stone house 25g, holdfast 30g (a palisade round it, so the settlement rule
-  holds), keep 60g (a small stone tower-keep: the castle you build yourself). The look follows the land (log cabin
-  in woods, stone in hills, sod on the steppe, stilts in the marsh, clay in the desert, a longhouse in the north).
-- **The risk.** Each week away a roll by the region's threat (`mercs.py`), the distance to road and town and your
-  defences: theft from one chest, a broken piece (`%`, paid to mend), squatters (bandits, a beast, goblins: a small
-  fight in your own home), fire in a drought, a flood by a river, snow on a northern roof, a roused tribe or a great
-  evil. Told through the news ("A drover says smoke rose over the cabin by the Grey Fen."). Defences: a lock, the
-  palisade, a dog, a caretaker hireling on a wage, snares (Cunning), a rune on the door (Arcane); never zero in the wild.
-- **A seat.** The empty seat of a fallen lesser house (`:`) or an empty fort, bought from the baron when you are
-  his knight or well known to his house (120-300g), then restored in stages like building. Owned, never ruled
-  (Nilio, 6 November 2026: ruling is another game): no villagers, no dues, no host, no land round it. The baron may
-  call on it in a war (a realm job); if he loses, the new lord may claim it or sell it back to you. It gives room for
-  all your hirelings, a stable for your wagons, a trophy hall and a watch that mostly beats off raids; a steward and
-  guards cost a daily wage.
-- **Furnishing.** In your own home one first-time tip teaches the furnish key (to pick from the free keys when
-  built): a cursor on the floor and what you own beside it; place, pick up, move. Every piece works with a bump or is
-  decoration: bed (rest, tree points, "well rested"), chest and strongbox (storage, 10 or 20 things), weapon rack and
-  armour stand (swap a set at once), bookshelf (your books and pages, read again), hearth (cooking, warmth),
-  workbench, anvil, loom (the guild bench at home at enough rank), shrine (a small blessing once a day), herb bed
-  (herbs grow over days), kennel and stable (your beast, your wagons), trophies, rugs, tapestries, plants, lamps.
-  Comfort, one to three stars, from variety, a matching style and trophies, makes "well rested" last longer; a
-  neighbour or a house-warming remarks on it. Each people sells its own style (human oak, dwarf stone, elven wood,
-  halfling snug, orc hide), a set of one style is a star more; dyes from Needle and Loom colour a piece; rare pieces
-  from the Fair of Skell, tombs, or a boss's unchosen named things. Furniture is delivered (a few days, a small fee)
-  or carried.
-- **Where it shows.** `⌂` in your colour in the Places layer; a journal tab Homes (each home, its state, its chests);
-  the line under the map ("Your cabin. All quiet when you left."); a handbook chapter "A Roof of Your Own".
-- **Not:** ruling, fast travel home, renting out (a source of coin), free wall building tile by tile.
-- **First choices, Nilio may change them:** a home is never lost outright to the weekly roll (a stage back at worst;
-  only a great evil may burn it to the stake); more than one home is allowed, each with its own upkeep.
 
 ## Camps on the road (approved 10 November 2026, not built)
 

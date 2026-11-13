@@ -2436,7 +2436,8 @@ def offer(game, mon, us):
     us = us[:3]
     EV.ask(game, 'boss_loot', f'What {mon.name} leaves', f'Three things of {mon.name} lie where {fill("{he}", mon)} '
            'fell. One you can take; the other two break as you lift it.',
-           [(u['name'] + ', ' + D.BASES[u['base']]['name'].lower(), u['name']) for u in us], at=(mon.x, mon.y))
+           [(u['name'] + ', ' + D.BASES[u['base']]['name'].lower(), u['name']) for u in us], at=(mon.x, mon.y),
+           names=[u['name'] for u in us])
 
 
 def r_loot(game, choice, ctx):
@@ -2448,6 +2449,8 @@ def r_loot(game, choice, ctx):
     game.spill(game.map, ctx['at'][0], ctx['at'][1], it)
     game.announce(it)
     game.msg('The other two crack and fall apart.', 'info')
+    from . import homes as HM
+    HM.rare(game, [f'The broken {n}' for n in ctx.get('names', []) if n != choice])     # a home: on its wall
 
 
 # ------------------------------------------------------------------ the test build (debug.py)

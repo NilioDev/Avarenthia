@@ -675,7 +675,7 @@ What was built before the Tests page, so it can be checked from F12 too.
 - **The great evils** - a servant awake, its marks on the land, its lair, the Hollow King's coast. Debug: The shadow
   (name, wake, lairs).
 
-## A roof of your own (approved 6 November 2026)
+## A roof of your own (approved 6 November 2026, built 13 November 2026)
 
 - **A town house** - the `$` door in a settlement of each people, buying it, each people's kind of home, the hearth
   tax each season, the town selling it after a year unpaid. Debug: Teleport to a town of each people, Coin, Time

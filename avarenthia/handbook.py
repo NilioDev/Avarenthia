@@ -1083,6 +1083,55 @@ def ch_travel(g):
     ]
 
 
+from .homes import HOME_SIGN  # noqa: E402
+
+
+def ch_homes(g):
+    return [
+        ('h', 'A house in town'),
+        ('p', 'In every hamlet, village, town and city a house or a few stand for sale, a {$|242,196,74} on the door. '
+              'Walk into the door to hear the price: a few gold in a hamlet, forty in the great city, less in the poor '
+              'quarter. Each people builds its own: a hill home, a room in the rock, a house of living wood.'),
+        ('p', 'A house in town pays a hearth tax each season. It is paid when you come in, or the reeve takes it from '
+              'coin you left in the doorpost chest. A year unpaid and the town sells the house: you get half its price '
+              'back, less the debt, and your things wait at the town hall.'),
+        ('h', 'Building your own'),
+        ('p', 'A carpenter, by the market of every town, sells a builder\'s stake. Use it from your bag on open land '
+              'off the road, not by a settlement or a hostile camp: a camp with a fire, a bedroll and a chest is '
+              'yours. Your home shows on the world map as {' + HOME_SIGN + '|120,200,230}; go in with [>].'),
+        ('p', 'At the doorpost chest it grows, stage by stage: a hut, a cabin, a stone house, a holdfast with a '
+              'palisade, at last a keep of stone. Each stage costs coin, timber and dressed stone from the markets '
+              'and some days of building; the carpenter can cart the goods out, dearer. The house takes the look '
+              'of the land: logs in the woods, stone in the hills, sod on the steppe, stilts in the marsh, clay in '
+              'the desert, a longhouse in the north.'),
+        ('h', 'While you are away'),
+        ('p', 'Out on the land, each week brings a risk, the higher the wilder the country and the further from road '
+              'and town: thieves at your chests, a broken piece {%|150,120,100}, squatters to fight out of your own '
+              'home, fire in a dry summer, a flood by a river, snow on a northern roof, warriors from a roused camp. '
+              'At worst a home goes a stage '
+              'back; only a great evil burns it to the stake. You hear of it through the news.'),
+        ('p', 'A lock, the palisade, a dog, a caretaker on a wage, snares with Cunning and a rune with Arcane each '
+              'lower the risk; it is never nothing in the wild. A house in town is safe.'),
+        ('h', 'A seat'),
+        ('p', 'When a lesser house falls its seat stands empty. As the baron\'s sworn knight, or well known to his '
+              'kingdom, you may buy it from his reeve, then restore it in stages. You hold it; you do not rule it. A '
+              'steward and guards cost a daily wage, and guards beat off most trouble. In a war the baron quarters '
+              'his men there; a new lord may claim it, or let you pay to keep it.'),
+        ('h', 'Furniture'),
+        ('p', 'A carpenter sells furniture in the style of his people: human oak, dwarf stone, elven wood, halfling '
+              'snug, orc hide, or plain and cheap. It is carted to your home in a few days, or carried straight in '
+              'when your home is in that town. In your home, [H] sets things out: Tab picks a thing, [Enter] sets it '
+              'down or takes it up, [c] colours it with a dye of the Needle and Loom.'),
+        ('p', 'Every piece works when you walk into it: a bed to sleep and spend tree points, a chest or strongbox for '
+              'your things, a weapon rack and an armour stand to swap a set at once, a bookshelf, a hearth to cook '
+              'and warm you, a workbench, anvil or loom (your guild\'s own bench from Journeyman), a shrine for a '
+              'small blessing once a day, a herb bed, a kennel or stall where your beast stays. Rugs, tapestries, '
+              'plants, lamps, tables and your trophies are for the eye.'),
+        ('p', 'Comfort, one to three stars, comes from many kinds of things, a set of one people\'s style, and '
+              'trophies on the wall. The more stars, the longer you stay Well rested after a night in your own bed.'),
+    ]
+
+
 def ch_camp(g):
     return [
         ('h', 'Hunger'),
@@ -1604,7 +1653,7 @@ CHAPTERS = [
     ('First steps', ch_first_steps), ('Moving and looking', ch_moving), ('Fighting', ch_fighting),
     ('Your hero', ch_hero), ('Who you become', ch_who), ('Gear', ch_gear), ('Towns and people', ch_towns), ('Jobs and money', ch_jobs),
     ('The land', ch_land), ('Dungeons', ch_dungeons), ('Weather and seasons', ch_weather), ('Travel and sailing', ch_travel),
-    ('Camp, food and rest', ch_camp), ('Hunting and cooking', ch_hunt), ('Crafts', ch_crafts), ('Your company', ch_company),
+    ('Camp, food and rest', ch_camp), ('A roof of your own', ch_homes), ('Hunting and cooking', ch_hunt), ('Crafts', ch_crafts), ('Your company', ch_company),
     ('Guilds', ch_guilds), ('Gods', ch_gods), ('Realms and lords', ch_realms), ('The shadow', ch_shadow),
     ('Wild peoples', ch_wild_peoples), ('Death', ch_death), ('The chronicle', ch_chronicle), ('Signs', ch_signs),
     ('All the keys', ch_keys),

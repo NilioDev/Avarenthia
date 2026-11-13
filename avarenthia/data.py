@@ -343,6 +343,8 @@ TILES = [
     Tile('Φ', '#c890ff', False, True, 'sealed door', bg='#24123a'),
     Tile('*', '#c8d8ff', False, True, 'shaft of moonlight', bg='#182038'),
     Tile('π', '#f0d090', False, False, 'gaming table', bg='#3a2412'),
+    Tile('$', '#f2c44a', False, True, 'door of a house for sale'),
+    Tile('■', '#b08860', False, False, 'furniture'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -379,6 +381,7 @@ MARK = 252                       # a telling thing of a place of today (landmark
 (MIMIC, STALKER, RAFT, VENT, SHIFTWALL, SHIFTGAP, HOLE, OILBARREL, RUNE_T, RUNELIT, LIGHTOFF, LIGHTON, SCALE, ROD, RODLIT,
  SHARDPLINTH, SEAL, MOONSHAFT) = range(284, 302)                   # more of them (round C)
 GAMETABLE = 302                  # the inn's gaming table (inngames.py)
+SALEDOOR, PIECE = 303, 304       # a home of your own (homes.py): a door marked for sale, a piece of furniture
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {
@@ -629,6 +632,7 @@ GOODS = {
     'honey': dict(name='Honey', base=24, w=1),
     'wool': dict(name='Wool', base=13, w=2),
     'ice': dict(name='Ice', base=20, w=3),
+    'stone': dict(name='Dressed Stone', base=10, w=3),      # for building (homes.py): cut where the hills are
 }
 # good: (the day of the year it is cheapest, how far the price swings either way)
 SEASONAL = {'grain': (255, .3), 'fruit': (285, .35), 'wine': (290, .2), 'honey': (195, .3), 'wool': (80, .3),

@@ -37,7 +37,9 @@ def init_markets(world):
         if s.id == 0:
             s.demand = ['tools', 'salt', 'fish']
         for g in D.GOOD_ORDER:
-            if g in s.produce:
+            if g == 'stone':                  # building stone: plenty in the hills and the dwarves' halls (no dice)
+                t = stone_stock(s)
+            elif g in s.produce:
                 t = random.uniform(95, 140)
             elif g in s.demand:
                 t = random.uniform(6, 13)
@@ -46,6 +48,11 @@ def init_markets(world):
             if s.is_city:
                 t *= 1.3
             s.market[g] = [t, t, t]
+
+
+def stone_stock(s):
+    t = 120 if s.biome == 'hills' or s.kind == 'deephold' or getattr(s, 'race', '') == 'dwarf' else 30
+    return t * 1.3 if s.is_city else t
 
 
 def regional(world, s):

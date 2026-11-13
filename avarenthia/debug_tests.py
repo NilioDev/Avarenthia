@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'A roof of your own', 'Camps on the road', 'Wars that feel like wars'}
+NOT_BUILT = {'Camps on the road', 'Wars that feel like wars'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -750,6 +750,19 @@ R = {
         ('note', 'go in: burnt; Enter again: fresh timber; again: whole.')],
     'The land tells, and an inn in every town :: An inn in every town': [('to', ('city', 'town', 'metropolis', 'deephold')),
                                                                          SCHOOLS_NOTE],
+    # A roof of your own
+    'A roof of your own :: A town house': [('to', ('hamlet', 'village', 'town', 'city', 'metropolis')), ('coin', 60 * GOLD),
+                                           ('note', 'find the $ door and walk into it; Time (a season on) for the tax. '
+                                                    'Enter again: the next people.')],
+    'A roof of your own :: Building anywhere': [('dbg', 'home_stake'), ('coin', 200 * GOLD), ('dbg', 'home_goods'),
+                                                ('note', 'use the stake (i), go in (>), the doorpost chest builds; '
+                                                         'Time (days on). Enter again: elsewhere.')],
+    'A roof of your own :: The risk': [('dbgnext', 'home_roll', 'theft', 'broken', 'squatters', 'fire', 'flood', 'snow', 'raid', 'evil'),
+                                       ('note', 'go home and see; Enter again: the next outcome. Build a home first.')],
+    'A roof of your own :: A seat': [('dbg', 'home_seat'), ('dbg', 'home_goods'),
+                                     ('note', 'go in (>), buy it, restore it at the doorpost chest; a war: Realms.')],
+    'A roof of your own :: Furnishing': [('dbg', 'home_furniture'), ('coin', 20 * GOLD),
+                                         ('note', 'in your home press H; walk into each piece.')],
     # A first sight of a town
     'A first sight of a town :: The skyline card': [('dbg', 'forget_sights'),
                                                     ('to', ('hamlet', 'village', 'town', 'city', 'metropolis',

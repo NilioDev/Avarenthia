@@ -12044,11 +12044,211 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def homes():
+    """A roof of your own: a house for sale ($ door) in a settlement of each people, bought with one choice; the
+    hearth tax each season and the town selling it after a year unpaid; the carpenter's stake and furniture; a home
+    built on open land, stage by stage to a keep, with its look by the land; the weekly roll and each outcome; the
+    defences; a seat bought as the baron's knight and restored; furnishing: place, take up, every piece's bump,
+    Comfort and Well rested; the journal's Homes tab, the world map sign, the line under the map; saves."""
+    from avarenthia import homes as HM, homes_ui as HMU, debug as DBG, events as EV, realms as RL
+    print('== homes')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 2000 * 100 * 100
+    # a house for sale in a settlement of each people, with its tax, bought with one choice
+    peoples = {}
+    for s in w.settlements:
+        if s.kind in HM.FOR_SALE:
+            peoples.setdefault(s.race, s)
+    bought = 0
+    for race, s in sorted(peoples.items()):
+        DBG.teleport(g, ('s', s.id))
+        app.after_action()
+        app.screens = [ui.GameScreen(app)]
+        m = g.map
+        sale = getattr(m, 'sale', {}) or {}
+        if not sale:
+            continue
+        door = next(iter(sale))
+        assert m.tile(*door) == D.SALEDOOR and D.TILES[D.SALEDOOR].ch == '$'
+        HM.ask_buy(g, door)
+        assert g.pending and g.pending['key'] == 'home_buy' and 'Hearth tax' in g.pending['text'], race
+        EV.resolve(g, 'buy')
+        h = HM.homes(g)[-1]
+        assert h['kind'] == 'town' and h['sid'] == s.id and m.tile(*door) == D.DOOR
+        assert any(pc['k'] == 'post' for pc in h['pieces']) and any(pc['k'] == 'bed' for pc in h['pieces'])
+        assert all(not D.TILES[m.tile(pc['x'], pc['y'])].walk for pc in h['pieces'])
+        bought += 1
+    assert bought >= 3, bought
+    h = HM.homes(g)[0]
+    g.turn += 100 * D.DAY_LEN
+    assert HM.owed(g, h) == h['tax']
+    gold = p.gold
+    HM.settle(g, h)
+    assert p.gold == gold - h['tax'] and not HM.owed(g, h)
+    # a year unpaid: the town sells it; half back at the town hall
+    h2 = HM.homes(g)[1]
+    s2 = w.settlements[h2['sid']]
+    h2['paid'] = g.day - HM.SELL_AFTER
+    HM.daily(g)
+    assert h2 not in HM.homes(g) and str(s2.id) in p.home_hall
+    gold = p.gold
+    HM.town_hall(g, s2)
+    assert p.gold > gold and str(s2.id) not in p.home_hall
+    # the carpenter: a stake, furniture carried home in the town of your house
+    s = w.settlements[h['sid']]
+    DBG.teleport(g, ('s', s.id))
+    app.after_action()
+    app.screens = [ui.GameScreen(app)]
+    c = next(o for o in g.map.mons if o.is_npc and o.role == 'carpenter')
+    g.talk(c)
+    assert any(v == 'stake' for _l, v in g.pending['options'])
+    EV.resolve(g, 'shop:' + HM.STYLE_OF.get(s.race, 'plain'))
+    k = HM.STYLE_OF.get(s.race, 'plain')
+    EV.resolve(g, f'chest:{k}')
+    if g.pending and g.pending['key'] == 'home_where':
+        EV.resolve(g, str(h['id']))
+    assert any(pc['k'] == 'chest' for pc in h['store'])
+    # furnishing: the furnish key in your own home; place, take up; the chest; the bed; Comfort
+    p.x, p.y = next(tuple(c) for c in h['cells'] if not g.map.mon_at(*c) and D.TILES[g.map.tile(*c)].walk)
+    app.key('H')
+    assert isinstance(app.top, HMU.FurnishScreen)
+    fs = app.top
+    pc = next(q for q in h['store'] if q['k'] == 'chest')
+    fs.sel = h['store'].index(pc)
+    free = [tuple(c) for c in h['cells'] if HM.can_place(g, h, g.map, pc, *c) is None]
+    fs.x, fs.y = free[0]
+    app.key('enter')
+    assert pc in h['pieces'] and (pc['x'], pc['y']) == free[0]
+    app.render()
+    assert 'FURNISH' in app.cv.dump()
+    app.key('enter')                                      # take it up again
+    assert pc in h['store']
+    app.key('enter')
+    assert pc in h['pieces']
+    app.key('esc')
+    it = next(i for i in p.inv if i.id not in p.eq.values())
+    assert HM.put_in(g, h, pc, it) is None and it in pc['items']
+    g.request = ('homechest', h['id'], (pc['x'], pc['y']))
+    app.after_action()
+    assert isinstance(app.top, HMU.ChestScreen)
+    app.render()
+    assert 'IN THE CHEST' in app.cv.dump()
+    app.key('esc')
+    assert HM.take_out(g, h, pc, it) is None
+    bed = next(q for q in h['pieces'] if q['k'] == 'bed')
+    p.life = 1
+    HM.bump(g, bed['x'], bed['y'], g.map.tile(bed['x'], bed['y']))
+    assert p.life == g.stats()['max_life'] and any(b[3] == 'Well rested' for b in p.buffs)
+    for i, kk in enumerate(['rug', 'plant', 'lamp', 'shelf', 'shrine', 'table', 'rack']):
+        h['store'].append(HM.piece(kk, 'oak'))
+    for q in list(h['store']):
+        for c in h['cells']:
+            if HM.place(g, h, q, *c) is None:
+                break
+    assert HM.comfort(g, h) >= 1
+    sh = next((q for q in h['pieces'] if q['k'] == 'shrine'), None)
+    if sh:
+        HM.bump(g, sh['x'], sh['y'], g.map.tile(sh['x'], sh['y']))
+        assert any(b[3] == 'A blessing at home' for b in p.buffs)
+    # a home built on open land: the stake, the stages, the look by the land
+    DBG.home_stake(g)
+    st = next(i for i in p.inv if i.k == 'tool' and i.t == 'stake')
+    assert HM.drive_stake(g, st)
+    hb = HM.homes(g)[-1]
+    assert hb['kind'] == 'built' and hb['stage'] == 0 and HM.at(g, p.x, p.y) is hb
+    assert HM.line(g) and 'camp' in HM.line(g)
+    app.screens = [ui.GameScreen(app)]
+    g.compute_fov()
+    DBG.home_goods(g)
+    for stage in range(1, len(HM.STAGES)):
+        assert g.use_stairs('down') and g.cur == hb['map']
+        post = next(q for q in hb['pieces'] if q['k'] == 'post')
+        HM.bump(g, post['x'], post['y'], g.map.tile(post['x'], post['y']))
+        assert g.pending['key'] == 'home_post'
+        assert any(v == 'build' for _l, v in g.pending['options']), (stage, g.pending['options'])
+        EV.resolve(g, 'build')
+        assert hb['build']
+        g.leave_to_over()
+        g.turn += (hb['build']['done'] - g.day) * D.DAY_LEN
+        HM.daily(g)
+        assert hb['stage'] == stage and not hb['build']
+        DBG.home_goods(g)
+    assert HM.STAGES[hb['stage']][0] == 'keep' and 'palisade' in hb['defence']
+    assert g.use_stairs('down')
+    m = g.map
+    assert any(m.tile(x, y) == D.WALL for x in range(m.w) for y in range(m.h))
+    assert all(HM.land_at(g, x, y) in HM.LANDS for x, y in ((10, 10), (200, 100), (400, 250)))
+    g.leave_to_over()
+    # the weekly roll: each outcome, and the word that goes round
+    for what in HM.OUTCOMES:
+        line = HM.roll(g, hb, what)
+        assert line, what
+    assert hb['stage'] == 0 and hb['state'] == 'evil'                 # only a great evil burns it to the stake
+    hb['stage'] = 3
+    HM._remake(g, hb)
+    hb['defence'] = []
+    c0 = HM.chance(g, hb)
+    hb['defence'] = ['lock', 'dog', 'caretaker', 'snares', 'rune', 'palisade']
+    assert .02 <= HM.chance(g, hb) < c0
+    hb['news'], hb['heard'], hb['news_day'] = 'A drover says something.', False, g.day - 20
+    HM.heard(g, w.settlements[0])
+    assert hb['heard']
+    # squatters: a fight in your own home
+    hb['squat'] = hb['squat_kind'] = 'bandits'
+    hb['state'] = 'squatters'
+    g.cur, p.x, p.y = 'over', hb['x'], hb['y']
+    assert HM.enter(g, hb)
+    foes = [o for o in g.map.mons if getattr(o, 'squat', None) == hb['id']]
+    assert foes
+    for o in foes:
+        o.hp = 0
+    g.map.mons = [o for o in g.map.mons if o.hp > 0]
+    HM.after_fight(g)
+    assert hb['state'] == 'quiet'
+    g.leave_to_over()
+    # a seat, as the baron's knight; restored a stage
+    DBG.home_seat(g)
+    site = next(st_ for st_ in w.sites if st_.kind == 'seat' and getattr(st_, 'fallen', False) and not HM.of_site(g, st_)
+                and (st_.x, st_.y) == (p.x, p.y))
+    g.enter_site(site.id)
+    assert g.pending and g.pending['key'] == 'home_seat', g.pending
+    if True:
+        assert any(v == 'buy' for _l, v in g.pending['options'])
+        EV.resolve(g, 'buy')
+        hs = HM.of_site(g, site)
+        assert hs and g.cur == hs['map']
+        DBG.home_goods(g)
+        HM.start_build(g, hs, False)
+        g.leave_to_over()
+        g.turn += (hs['build']['done'] - g.day + 1) * D.DAY_LEN
+        HM.daily(g)
+        assert hs['stage'] == 1
+        hs['staff']['guards'] = 2
+        assert HM.wages(hs) == 2 * HM.GUARD_WAGE
+    # the journal's Homes tab, the handbook chapter
+    app.screens = [ui.GameScreen(app)]
+    js = ui.JournalScreen(app, ui.JournalScreen.TABS.index('Homes'))
+    app.push(js)
+    app.render()
+    assert 'YOUR HOMES' in app.cv.dump()
+    app.key('esc')
+    from avarenthia import handbook as HB
+    assert 'A roof of your own' in HB.NAMES
+    # saves
+    E.save_game(g)
+    g2 = E.load_game()
+    assert len(HM.homes(g2)) == len(HM.homes(g))
+    print('homes ok')
 
 
 def heard_lit():

@@ -62,6 +62,7 @@ from . import news as NW
 from . import mercs as MC
 from . import landtells as LT
 from . import heard as HL
+from . import homes as HM
 from . import behave as BH
 from . import named as NM
 from . import folk as FK
@@ -104,7 +105,8 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 75
+HM.init()
+SAVE_VERSION = 76
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -806,6 +808,11 @@ class Game:
         elif getattr(m, 'site', None) is not None:
             st = self.world.sites[m.site]
             self.over_pos = (st.x, st.y)
+        elif getattr(m, 'home', None) is not None:
+            hm = HM.get(self, m.home)
+            if hm:
+                self.over_pos = (hm['x'], hm['y'])
+                hm['left'] = self.day
         elif m.kind == 'town':
             s = self.world.settlements[m.sid]
             self.over_pos = (s.x, s.y)
@@ -920,6 +927,7 @@ class Game:
         if ECO.FEAST.get('day') != self.day:
             FE.prices(self)
         TL.on_enter(self, m)
+        HM.on_town(self, s, m)                       # houses for sale, your own house, the carpenter
         MC.restock(self)
         MS.on_enter(self, sid)
         NM.hand_in(self, self.world.settlements[sid])
@@ -945,6 +953,8 @@ class Game:
             self.over_pos = (p.x, p.y)
         if self.cur in ('over', ZN.KEY):
             CV.on_enter_place(self, site.x, site.y)
+        if HM.of_site(self, site):
+            return HM.enter(self, HM.of_site(self, site))      # your own seat (homes.py)
         if TR.is_camp(site) and TR.stale(self, site):
             self.maps.pop(site.map_key, None)          # the camp has calmed down and rebuilt what you broke
         if LM.is_mark(site):
@@ -990,6 +1000,7 @@ class Game:
             TL.on_enter(self, m)
         if ST._SEATS.is_seat(site):
             BP.sync_cages(self, site, m)
+            HM.seat_offer(self, site)                # an empty seat: the baron's reeve sells it
         if m.kind != 'town':
             from . import inngames as IG
             IG.lay(self, m)                          # an abbey's cellar keeps a gaming table too
@@ -1236,6 +1247,10 @@ class Game:
                 return spent
         if getattr(m, 'bar', None) and (nx, ny) in m.bar:
             spent = PL.barred(self, nx, ny)
+            if spent is not None:
+                return spent
+        if t == D.SALEDOOR or getattr(m, 'furn', None):
+            spent = HM.bump(self, nx, ny, t)            # a house for sale, a piece of your own furniture
             if spent is not None:
                 return spent
         if t == DOOR:
@@ -1619,6 +1634,9 @@ class Game:
             if d == 'up':
                 self.msg('You are already on the surface.')
                 return 0
+            hm = HM.at(self, p.x, p.y)
+            if hm:
+                return HM.enter(self, hm)              # your own home out on the land
             s = self.world.settlement_at(p.x, p.y)
             if s:
                 ok, why = WAR.can_enter(self, s)
@@ -2873,6 +2891,8 @@ class Game:
                 MK.daily(self)
                 LT.daily(self)
                 LT.caravans_wear(self)
+                HM.daily(self)
+                HM.war_call(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2888,6 +2908,8 @@ class Game:
                 EP.after_mons(self)
             if not self.dead and self.map.kind != 'town':
                 HL.after_turn(self)                     # what you hear out of sight, the last-seen marks
+            if not self.dead and getattr(self.map, 'furn', None) is not None:
+                HM.after_fight(self)                    # squatters in your home, beaten
             if not self.dead and self.map.kind != 'town' and not EP.time_stopped(self):
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
@@ -3557,6 +3579,9 @@ class Game:
         if RL.talk(self, npc):
             return
         if TL.talk(self, npc):
+            return
+        if role == 'carpenter':
+            HM.talk(self, npc)
             return
         if role == 'gamer':
             from . import inngames as IG

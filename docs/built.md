@@ -66,6 +66,10 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **A roof of your own** (round 64, 13 November 2026; `homes.py`, `homes_ui.py`; test part `homes`). A house for
+  sale behind a $ door in every people's settlements, with a hearth tax; a stake from the carpenter and a home built
+  on open land from a camp to a keep, its look by the land; the weekly roll and the defences; an empty seat bought as
+  the baron's knight and restored; furnishing with [H], every piece working, Comfort for Well rested. Spec below.
 - **Heard, lit and seen** (round 63, 13 November 2026; `heard.py`; test part `heard_lit`). Noise by what you do runs
   along the halls; unaware foes come to look (? in IN SIGHT); the ring; Quiet/Soft/Loud; what you hear out of sight;
   noticing as a sum of light, distance, armour and kind; living light, torches put out; the last-seen marks. Spec below.
@@ -3494,6 +3498,62 @@ The "Later" world ideas of round 5, now taken up. Each is one sign with one mean
   strike; smoke, birds, vultures, wear and their drawing), the ambush waiting on `p.ambush`, `w.vultures`, `w.wear`;
   canal cities get an inn in a house deep enough. Debug: "ambush", "burn_nearest". Test part `land_tells`, and
   `city_rules` checks the inns.
+
+## A roof of your own (built 13 November 2026; the spec)
+
+Thread "Housing-systeem ontwerpen"; the Dutch proposal with mock screens: project files `huizen/voorstel.md`. A gold
+sink: one system, "a home", a small map of your own with a fixed plan (walls, doors) and a floor you furnish. All on
+`p.homes` (multiplayer rule). Prices are first guesses for the `money` check (level 10 keeps up to ~80s a day).
+- **A town house.** In hamlets, towns, cities and the metropolis of every people, one to a few for sale, a `$` on
+  the door; bump it, one choice (`EV.ask`), 4g (hamlet) to 40g (metropolis), cheaper in the poor quarter. Each
+  people's own kind (a hill home, a room in the rock, a house in a tree), taken from the settlement's own map, so the
+  settlement rules hold. Hearth tax each season, paid when you come in or left in a chest by the door; a year unpaid
+  and the town sells it (half back, less the debt; your things wait at the town hall).
+- **Building anywhere.** A builder's stake from a carpenter (2g); on the world map an open tile (no road, no
+  settlement, not by a hostile camp). Stages, each coin, trade goods (timber, stone) and days of building while you
+  are away: camp, hut 5g, cabin 12g, stone house 25g, holdfast 30g (a palisade round it, so the settlement rule
+  holds), keep 60g (a small stone tower-keep: the castle you build yourself). The look follows the land (log cabin
+  in woods, stone in hills, sod on the steppe, stilts in the marsh, clay in the desert, a longhouse in the north).
+- **The risk.** Each week away a roll by the region's threat (`mercs.py`), the distance to road and town and your
+  defences: theft from one chest, a broken piece (`%`, paid to mend), squatters (bandits, a beast, goblins: a small
+  fight in your own home), fire in a drought, a flood by a river, snow on a northern roof, a roused tribe or a great
+  evil. Told through the news ("A drover says smoke rose over the cabin by the Grey Fen."). Defences: a lock, the
+  palisade, a dog, a caretaker hireling on a wage, snares (Cunning), a rune on the door (Arcane); never zero in the wild.
+- **A seat.** The empty seat of a fallen lesser house (`:`) or an empty fort, bought from the baron when you are
+  his knight or well known to his house (120-300g), then restored in stages like building. Owned, never ruled
+  (Nilio, 6 November 2026: ruling is another game): no villagers, no dues, no host, no land round it. The baron may
+  call on it in a war (a realm job); if he loses, the new lord may claim it or sell it back to you. It gives room for
+  all your hirelings, a stable for your wagons, a trophy hall and a watch that mostly beats off raids; a steward and
+  guards cost a daily wage.
+- **Furnishing.** In your own home one first-time tip teaches the furnish key (to pick from the free keys when
+  built): a cursor on the floor and what you own beside it; place, pick up, move. Every piece works with a bump or is
+  decoration: bed (rest, tree points, "well rested"), chest and strongbox (storage, 10 or 20 things), weapon rack and
+  armour stand (swap a set at once), bookshelf (your books and pages, read again), hearth (cooking, warmth),
+  workbench, anvil, loom (the guild bench at home at enough rank), shrine (a small blessing once a day), herb bed
+  (herbs grow over days), kennel and stable (your beast, your wagons), trophies, rugs, tapestries, plants, lamps.
+  Comfort, one to three stars, from variety, a matching style and trophies, makes "well rested" last longer; a
+  neighbour or a house-warming remarks on it. Each people sells its own style (human oak, dwarf stone, elven wood,
+  halfling snug, orc hide), a set of one style is a star more; dyes from Needle and Loom colour a piece; rare pieces
+  from the Fair of Skell, tombs, or a boss's unchosen named things. Furniture is delivered (a few days, a small fee)
+  or carried.
+- **Where it shows.** `⌂` in your colour in the Places layer; a journal tab Homes (each home, its state, its chests);
+  the line under the map ("Your cabin. All quiet when you left."); a handbook chapter "A Roof of Your Own".
+- **Not:** ruling, fast travel home, renting out (a source of coin), free wall building tile by tile.
+- **First choices, Nilio may change them:** a home is never lost outright to the weekly roll (a stage back at worst;
+  only a great evil may burn it to the stake); more than one home is allowed, each with its own upkeep.
+- Built as: `homes.py` (the rules, all on `p.homes`, `p.home_dyes`, `p.home_hall`) and `homes_ui.py` (the furnish
+  screen over the map and a chest's two lists); a new trade good, Dressed Stone, plentiful in the hills and the
+  dwarves' halls (no dice in world making); a carpenter by the market of every hamlet and town (stake, furniture in
+  his people's style or plain, the Needle and Loom's dyes where it has a hall); the doorpost chest by every home's
+  door holds its business (tax, coin for the reeve and the wages, the next stage, the defences, steward and guards).
+  The furnish key is [H] (a tip teaches it), [c] in it colours a piece with a dye. Comfort shows as ♦◊ (the
+  tileset has no stars). A seat is restored in four stages (rubble, roof, gate and wall, tower). The baron's call
+  in a war is that he quarters his men in your seat (no roll while they are there), not a realm job; a new lord
+  claims it and you pay a third of its price or leave with half. A caretaker is a hired keeper on a wage, not one of
+  your company. The kennel and the stable stall keep a tamed beast while you are away. The bookshelf opens the
+  journal's Lore. Rare pieces: a great boss's two broken named things are carted home as trophies to hang (the Fair
+  and the tombs not yet). Debug: home_stake, home_goods, home_build, home_roll, home_seat, home_furniture. Test part
+  `homes`.
 
 ## Heard, lit and seen (built 13 November 2026; the spec)
 

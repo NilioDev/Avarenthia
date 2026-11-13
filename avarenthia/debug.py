@@ -1332,3 +1332,101 @@ def _skyseat(game, what):
                 SH.seal(game, e)
     elif what == 'won':
         SK.won(game)
+
+
+# ------------------------------------------------------------------ a roof of your own (round 64)
+def home_goods(game, n=30):
+    """Timber and dressed stone in your cargo, and a wagon's room to carry them."""
+    p = game.player
+    for g in ('timber', 'stone'):
+        p.cargo[g] = p.cargo.get(g, 0) + n
+    for k in ('mule', 'cart'):
+        if k not in p.mounts:
+            p.mounts.append(k)
+    game.msg(f'Debug: {n} timber and {n} stone in your cargo.', 'info')
+
+
+def home_stake(game):
+    """A builder's stake in your bag, and onto open land near you, where it may go in."""
+    from . import homes as HM
+    from .worldgen import cheb
+    wx, wy = game.world_pos()
+    om = game.maps['over']
+    if game.cur != 'over':
+        to_over(game, wx, wy)
+    spot = next(((x, y) for r in range(2, 40) for y in range(wy - r, wy + r + 1) for x in range(wx - r, wx + r + 1)
+                 if om.inb(x, y) and max(abs(x - wx), abs(y - wy)) == r and HM.stake_spot(game, x, y) is None), None)
+    if spot is None:
+        game.msg('Debug: no open land near.', 'bad')
+        return
+    to_over(game, *spot)
+    game.add_to_inv(HM.stake_item(game))
+    game.msg(f'Debug: a stake in your bag; the land here is {HM.land_at(game, *spot)}. Use it from the bag.', 'info')
+
+
+def home_build(game):
+    """Your newest home built out on the land goes up a stage at once."""
+    from . import homes as HM
+    hs = [h for h in HM.homes(game) if h['kind'] in ('built', 'seat') and HM.need(h)]
+    if not hs:
+        game.msg('Debug: no home of yours to build on.', 'bad')
+        return
+    h = hs[-1]
+    h['build'] = dict(to=h['stage'] + 1, done=game.day)
+    HM.finish_build(game, h)
+    if game.cur == h['map']:
+        game.leave_to_over()
+        HM.enter(game, h)
+    game.msg(f'Debug: {h["name"]} is now a {HM.noun(h) if h["kind"] == "built" else HM.SEAT_STAGES[h["stage"]][0]}.', 'info')
+
+
+def home_roll(game, what):
+    """The week's roll on your newest home out on the land, with this outcome."""
+    from . import homes as HM
+    hs = [h for h in HM.homes(game) if h['kind'] != 'town']
+    if not hs:
+        game.msg('Debug: no home of yours out on the land.', 'bad')
+        return
+    line = HM.roll(game, hs[-1], what)
+    game.msg(f'Debug: {what}: {line or "nothing came of it"}', 'info')
+
+
+def home_seat(game):
+    """A lesser house falls; you are the baron's knight, with coin, at its empty seat."""
+    from . import realms as RL
+    from . import homes as HM
+    R = game.world.realm
+    hs = [h for h in R.houses if h.rank == 'lesser' and h.seat and h.seat[0] == 'site']
+    fallen = [h for h in hs if h.fallen and not HM.of_site(game, game.world.sites[h.seat[1]])]
+    h = fallen[0] if fallen else next((h for h in hs if not h.fallen), None)
+    if h is None:
+        game.msg('Debug: no lesser house with a seat.', 'bad')
+        return
+    if not h.fallen:
+        RL.fall(game, h, 'a test of the debug menu')
+    site = game.world.sites[h.seat[1]]
+    b = R.baronies.get(h.region)
+    if b is not None:
+        game.player.knight = dict(lid=b.lord, kid=b.kingdom, day=game.day, word='Ser', calls=0)
+    game.player.gold += 400 * 100 * 100
+    to_over(game, site.x, site.y)
+    game.msg(f'Debug: {site.name} stands empty; you are a sworn knight of its kingdom. [>] goes in.', 'info')
+
+
+def home_furniture(game):
+    """One of every piece, in the styles of the peoples, and every dye, for your newest home."""
+    from . import homes as HM
+    hs = HM.homes(game)
+    if not hs:
+        game.msg('Debug: you have no home yet.', 'bad')
+        return
+    h = hs[-1]
+    styles = list(HM.STYLES)
+    for i, k in enumerate(HM.SHOP_ORDER):
+        h['store'].append(HM.piece(k, styles[i % len(styles)]))
+    for st in ('stone', 'elven'):
+        h['store'] += [HM.piece(k, st) for k in ('rug', 'plant', 'lamp', 'table', 'tapestry', 'chest')]
+    for d in HM.DYES:
+        if d not in HM.dyes(game):
+            HM.dyes(game).append(d)
+    game.msg(f'Debug: furniture of every kind and style for {h["name"]}; all the dyes.', 'info')

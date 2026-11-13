@@ -85,6 +85,13 @@ def in_view(g):
     for c in getattr(m, 'slain', ()):
         if g.visible(c[1], c[2]):
             things.setdefault('Corpse', ('%', (150, 130, 110)))
+    if getattr(m, 'furn', None):
+        from . import homes as HM
+        for (x, y), look in m.furn.items():
+            if g.visible(x, y):
+                _h, pc = HM.piece_at(g, x, y)
+                if pc:
+                    things.setdefault(HM.piece_name(pc), look)
     from . import bosses as BS
     if m.kind != 'over':
         mk = BS.marks(g)
@@ -111,6 +118,9 @@ def signs(g):
     wall = SL.wall_cells(g)
     if any(i in wall for i in seen):                 # the Northern Wall's broken line (round 58c)
         rows.setdefault('The Northern Wall, long fallen', [('─', SL.WALL_FG)])
+    from . import homes as HM
+    if any(h['kind'] == 'built' for h in HM.homes(g)):
+        rows.setdefault('Your home', [(HM.HOME_SIGN, HM.YOU)])
     from . import landtells as LT
     if any(LT.worn(g, i) and om.seen[i] for i in getattr(g.world, 'wear', {})):
         rows.setdefault('A worn path through the grass', [('·', LT.WORN)])
@@ -136,6 +146,8 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 # ------------------------------------------------------------------ first-time tips
 TIPS = {
     'heard': 'Tip: they heard you. A ? before a name in IN SIGHT: it comes to look where the noise was. Walk softly.',
+    'furnish': 'Tip: in your own home, H sets out your furniture: Tab picks a thing, Enter sets it down or takes it up.',
+    'stake': 'Tip: use the stake from your bag out on the open land, off the road, to start a home there.',
     'games': 'Tip: walk into a gaming table π to play. Bones and The Count want the evening and a stake; Vigil, any hour.',
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
     'over': 'Tip: m opens the map; on it, the keys 1 to 7 show the land, danger, factions, realms, jobs, trade and the shadow.',

@@ -78,8 +78,8 @@ class Item:
                         'rope': 'Coil of Rope', 'net': 'Fishing Net'}[self.t]
             if self.t == 'bandage':
                 return (f'{self.n}x ' if self.n > 1 else '') + 'Bandage'
-            if self.t in ('barding', 'bedroll'):
-                return getattr(self, 'name', None) or {'barding': 'Barding', 'bedroll': 'Bedroll'}[self.t]
+            if self.t in ('barding', 'bedroll', 'stake'):
+                return getattr(self, 'name', None) or {'barding': 'Barding', 'bedroll': 'Bedroll', 'stake': "Builder's Stake"}[self.t]
             return (f'{self.n}x ' if self.n > 1 else '') + 'Repair Kit' if self.t == 'kit' else 'Fishing Pole'
         if self.k == 'food':
             from .hunger import FOODS
@@ -467,6 +467,9 @@ class Player:
         self.caravan = None     # your own wagons (caravan.py)
         self.ambush = None      # an ambush the birds told of: it falls on you in a few steps (landtells.py)
         self.sights = set()     # the settlements whose first sight you had (skyline.py)
+        self.homes = []         # your homes: a town house, one you built, a seat (homes.py)
+        self.home_dyes = []     # the dyes of the Needle and Loom you own, for your furniture
+        self.home_hall = {}     # what a town that sold your house keeps for you at its hall
         self.inngames = {}      # games at the inn: the night's stakes, where you are barred, masters beaten (inngames.py)
         self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
         self.deaths = 0
