@@ -1044,6 +1044,8 @@ def _spawn(game, m, keys, cells, lvl, name=None, tag=None):
         mon = make_monster(game, k, x, y, lvl)
         mon.awake = True
         mon.battle = tag or 'foe'
+        if tag in (None, 'foe', 'flank', 'banner', 'risen'):   # levies: worn by the march, they hit softer
+            mon.dmg = tuple(max(1, round(v * .7)) for v in mon.dmg)
         if name:
             mon.name = name
         m.mons.append(mon)
@@ -1052,8 +1054,8 @@ def _spawn(game, m, keys, cells, lvl, name=None, tag=None):
 
 
 def _lvl(game):
-    fd_lvl = max(3, game.player.lvl + 1)
-    return fd_lvl
+    """The common soldier of a host is a levy, well below an adventurer; captains and mages stand above him."""
+    return max(1, game.player.lvl * 2 // 3)
 
 
 def wave(game, m, kind='line'):
@@ -1065,13 +1067,13 @@ def wave(game, m, kind='line'):
     cells = [(x, y) for x in range(max(0, p.x - 8), min(m.w, p.x + 9)) for y in range(max(0, f - 6), max(1, f - 1))]
     if kind == 'flank':
         cells = [(x, y) for x in range(0, 6) for y in range(max(0, f - 4), min(m.h, f + 6))]
-        return _spawn(game, m, ['clan_rider', 'soldier', 'soldier', 'soldier', 'crossbow'], cells, lvl, tag='flank')
+        return _spawn(game, m, ['clan_rider', 'soldier', 'crossbow'], cells, lvl, tag='flank')
     if kind == 'banner':
         bx, by = bt['banner']
         cells = [(x, y) for x in range(bx - 6, bx + 7) for y in range(by - 9, by - 4)]
-        return _spawn(game, m, ['soldier'] * 4 + ['knight'], cells, lvl, tag='banner')
+        return _spawn(game, m, ['soldier', 'soldier', 'crossbow'], cells, lvl, tag='banner')
     bt['waves'] += 1
-    return _spawn(game, m, random.sample(['soldier', 'soldier', 'soldier', 'crossbow', 'knight'], 3 + min(2, bt['waves'] // 2)),
+    return _spawn(game, m, random.sample(['soldier', 'soldier', 'soldier', 'crossbow'], 2 + min(1, bt['waves'] // 3)),
                   cells, lvl)
 
 
@@ -1088,7 +1090,7 @@ def task_targets(game, m):
         foe_k = next((x.kingdom for x in game.world.wanderers if x.id == bt['foe']), None)
         lords = [lo for lo in RL.lords_of(Rl, Rl.kingdoms[foe_k]) if lo.id != Rl.kingdoms[foe_k].king] if foe_k is not None else []
         lo = random.choice(lords) if lords else None
-        cap = _spawn(game, m, ['knight'], behind, lvl + 2, name=f'Captain {lo.first}' if lo else 'Their captain', tag='captain')
+        cap = _spawn(game, m, ['knight'], behind, lvl + 1, name=f'Captain {lo.first}' if lo else 'Their captain', tag='captain')
         if cap:
             cap[0].elite = 1 if hasattr(cap[0], 'elite') else None
             cap[0].maxhp = cap[0].hp = cap[0].hp * 2
@@ -1179,7 +1181,7 @@ def turn(game):
         if n % 25 == 0:
             magic(game, m)
         for o in foes:                                # your line's spears reach the ones that come too near it
-            if o.y > bt['front'][max(0, min(m.w - 1, o.x))] + 1 and random.random() < .15:
+            if o.y > bt['front'][max(0, min(m.w - 1, o.x))] + 1 and random.random() < .35:
                 o.hp -= max(1, o.maxhp // 4)
                 if o.hp <= 0:
                     game.kill(o)
@@ -1282,6 +1284,8 @@ def decide(game, m, war, fled=False):
         for o in [o for o in m.mons if not o.is_npc and getattr(o, 'battle', None)]:
             if cheb(o.x, o.y, game.player.x, game.player.y) > 4:
                 m.mons.remove(o)
+            else:
+                o.effects['fear'] = [40, 0]           # the ones near you run too
         RL.add_favour(game, own.kingdom, 6)
         if bt['task'] == 'captain' and task_done(game, m) and bt.get('captain_lord'):
             lo = R(game).lord(bt['captain_lord'])
@@ -1336,10 +1340,13 @@ def resolve_pending(game):
         return
     for war in list(Rl.wars):
         fd = war.get('field')
-        if not fd or fd.get('state') != 'pending' or game.day < fd['day'] + 1:
+        if not fd or fd.get('state') not in ('pending', 'fighting'):
+            continue
+        if fd['state'] == 'pending' and game.day < fd['day'] + 1:
             continue
         if game.cur == f'field:{war["id"]}':
             continue
+        game.maps.pop(f'field:{war["id"]}', None)        # you fell there, or went off another way
         hs = {x.id: x for x in game.world.wanderers}
         a, b = hs.get(fd['a']), hs.get(fd['b'])
         fd['state'] = 'done'

@@ -3507,8 +3507,21 @@ class Game:
                     break
                 self.end_turn(5, True)
             if wanderer_at(self, x, y):
-                self.msg('The road ahead is blocked.', 'info')
-                break
+                side = self._round_camp(path, x, y)      # a camp on the road: step round it
+                wd = wanderer_at(self, x, y)
+                if side is None and wd is not None and not wd.hostile and wd.kind != 'escort':
+                    wd.x, wd.y = p.x, p.y                    # folk on a narrow road: you squeeze past each other
+                elif side is None:
+                    self.msg('The road ahead is blocked.', 'info')
+                    break
+                else:
+                    x, y = side
+            if HT.herd_at(self, x, y):                  # a herd grazing across the road: round it, not into it
+                side = self._round_camp(path, x, y, herd=True)
+                if side is None:
+                    self.msg('A herd grazes across the road.', 'info')
+                    break
+                x, y = side
             used = self.try_move(x - p.x, y - p.y)
             if not used:
                 break
@@ -3521,6 +3534,34 @@ class Game:
                 yield 1
         if self.cur == 'over' and (p.x, p.y) == tgt:
             self.over_step()
+
+    def _round_camp(self, path, x, y, herd=False):
+        """A camp (or a host halted for battle) sits on the road at (x, y): a free cell beside you that also
+        touches the road beyond it, or None."""
+        from .wanderers import wanderer_at
+        p = self.player
+        wd = wanderer_at(self, x, y)
+        if not herd and (wd is None or not (CM.resting(self, wd) or getattr(wd, 'halt', 0) > self.day
+                                            or wd.kind == 'caravan')):
+            return None
+        i = path.index((x, y)) if (x, y) in path else -1
+        nxt = path[i + 1] if 0 <= i < len(path) - 1 else None
+        om = self.maps['over']
+        best = None
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                c = (p.x + dx, p.y + dy)
+                if c == (p.x, p.y) or c == (x, y) or not om.inb(*c) or not D.TILES[om.tile(*c)].walk:
+                    continue
+                if wanderer_at(self, *c) or HT.herd_at(self, *c) or (nxt is not None and cheb(c[0], c[1], *nxt) > 1):
+                    continue
+                if nxt is None and cheb(c[0], c[1], x, y) > 1:
+                    continue
+                best = c
+                break
+            if best:
+                break
+        return best
 
     def deephold_name(self):
         holds = [s for s in self.world.settlements if s.kind == 'deephold']

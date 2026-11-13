@@ -1435,7 +1435,9 @@ def ch_realms(g):
         ('p', 'Once in a war two hosts meet in the field. You hear of it a day before: go to the field, press [>] and '
               'choose your side. Your captain gives you a task: hold the flank, save the banner, cut down their '
               'captain, take out their mage, or just fight; a caster is asked to meet their mage or break their front. '
-              'First the arrows, then the clash, then the rout. The hosts\' strength decides; your task can tip a '
+              'First the arrows, then the clash, then the rout. Keep near your own line: its spears reach the foes who '
+              'come too close, and the levies of a host hit softer than the soldiers of a keep. When their line breaks, '
+              'even the men round you run. The hosts\' strength decides; your task can tip a '
               'battle on a knife\'s edge. Mages set the front burning, draw walls of ice or raise roots. You can always '
               'walk off the edge of the field, but your lord remembers who left before the end.'),
         ('h', 'Ransom and peace'),

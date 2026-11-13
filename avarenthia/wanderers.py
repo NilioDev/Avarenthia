@@ -174,6 +174,23 @@ def wander(game, wd, leash):
             wd.x, wd.y = nx, ny
 
 
+def pass_by(game, wd):
+    """A free cell beside a road-walker that also touches its road beyond the player, or None."""
+    om = game.maps['over']
+    p = game.player
+    nxt = wd.path[wd.path_i + 1] if wd.path_i + 1 < len(wd.path) else None
+    if nxt is None:
+        return None
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            c = (wd.x + dx, wd.y + dy)
+            if c in ((wd.x, wd.y), (p.x, p.y)) or not om.inb(*c) or not D.TILES[om.tile(*c)].walk:
+                continue
+            if cheb(c[0], c[1], *nxt) <= 1 and not wanderer_at(game, *c):
+                return c
+    return None
+
+
 def step(game, wd):
     p = game.player
     on_over = game.cur == 'over'
@@ -224,10 +241,15 @@ def step(game, wd):
             return
         if wd.path_i < len(wd.path):
             nx, ny = wd.path[wd.path_i]
-            if on_over and (nx, ny) == (p.x, p.y):
+            gate = wd.path_i == len(wd.path) - 1 and game.world.settlement_at(nx, ny)
+            if on_over and (nx, ny) == (p.x, p.y) and not gate:
+                side = pass_by(game, wd)                 # you stand on its road: it goes round you
+                if side:
+                    wd.x, wd.y = side
+                    wd.path_i += 1
                 return
-            if not wanderer_at(game, nx, ny) or random.random() < .5:
-                wd.x, wd.y = nx, ny
+            if gate or not wanderer_at(game, nx, ny) or random.random() < .5:
+                wd.x, wd.y = nx, ny                      # into the town: no waiting on whoever stands at its gate
                 wd.path_i += 1
             return
         if wd.kind == 'caravan':
