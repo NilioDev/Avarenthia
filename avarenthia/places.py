@@ -418,12 +418,33 @@ def trail(m, a, b, t=PATH, over=None):
             m.set(x, y, t)
 
 
+def _reach(m, start):
+    from collections import deque
+    seen, q = {start}, deque([start])
+    while q:
+        x, y = q.popleft()
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                c = (x + dx, y + dy)
+                if c not in seen and m.inb(*c) and (D.TILES[m.tile(*c)].walk or m.tile(*c) in (D.DOOR, D.SECRET)):
+                    seen.add(c)
+                    q.append(c)
+    return seen
+
+
 def finish(m, door, entry_y=None):
     """The way in from the west edge of the map to the door, and everything seen (it is open land)."""
     ey = door[1] if entry_y is None else entry_y
     trail(m, (0, ey), (door[0] - 1, door[1]))
     m.set(0, ey, PATH)
     m.entry = (0, ey)
+    if (door[0] - 1, door[1]) not in _reach(m, m.entry):      # something the trail does not cross stood in the way
+        x, y = 0, ey
+        while (x, y) != (door[0] - 1, door[1]):
+            x += (door[0] - 1 > x) - (door[0] - 1 < x)
+            y += (door[1] > y) - (door[1] < y)
+            if m.inb(x, y) and not D.TILES[m.tile(x, y)].walk and m.tile(x, y) not in (D.DOOR, D.SECRET):
+                m.set(x, y, PATH)
     for i in range(len(m.seen)):
         m.seen[i] = 1
     return m

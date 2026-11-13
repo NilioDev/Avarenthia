@@ -986,6 +986,9 @@ def bump(game, x, y):
     elif t == D.TROLLSTONE:
         say('A troll, caught by the sun and turned to grey stone, one arm still raised.')
     elif t == D.CAIRN:
+        if site is None:                        # a cairn on a map that is no wonder's: only stones
+            say('A cairn of piled stones. Someone wanted this spot remembered.')
+            return 0
         return lookout(game, site)
     elif t == D.ROPEDOWN:
         return rope(game)
