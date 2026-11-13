@@ -468,6 +468,8 @@ class Player:
         self.ambush = None      # an ambush the birds told of: it falls on you in a few steps (landtells.py)
         self.sights = set()     # the settlements whose first sight you had (skyline.py)
         self.homes = []         # your homes: a town house, one you built, a seat (homes.py)
+        self.camp_rel = {}      # what each camp by the road makes of you, and caravans you saved (camps.py)
+        self.camp_let = {}      # camps whose sentry let you in as a stranger
         self.home_dyes = []     # the dyes of the Needle and Loom you own, for your furniture
         self.home_hall = {}     # what a town that sold your house keeps for you at its hall
         self.inngames = {}      # games at the inn: the night's stakes, where you are barred, masters beaten (inngames.py)

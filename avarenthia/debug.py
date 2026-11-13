@@ -1430,3 +1430,80 @@ def home_furniture(game):
         if d not in HM.dyes(game):
             HM.dyes(game).append(d)
     game.msg(f'Debug: furniture of every kind and style for {h["name"]}; all the dyes.', 'info')
+
+
+# ------------------------------------------------------------------ camps on the road (round 65)
+CAMP_STYLES = ('host', 'siege', 'dwarf', 'elf', 'gorvash', 'sea', 'riders', 'traders')
+
+
+def camp_night(game):
+    """Time runs on to an hour after dusk."""
+    from . import camps as CM
+    from .seasons import dusk
+    if CM.camping(game) and CM.hour(game) >= dusk(game.day):
+        return
+    h = CM.hour(game)
+    dh = (dusk(game.day) + 1 - h) % 24
+    days_ahead(game, dh / 24)
+
+
+def camp_here(game, style='host', rel=None):
+    """A camp of this people pitched on the cell beside you, at night; rel: 'friend', 'stranger' or 'foe' for you."""
+    from . import camps as CM
+    from .wanderers import Wanderer
+    if game.cur != 'over':
+        to_over(game, *game.over_pos)
+    camp_night(game)
+    p = game.player
+    om = game.maps['over']
+    w = game.world
+    spot = next(((p.x + dx, p.y + dy) for dx, dy in ((2, 0), (-2, 0), (0, 2), (0, -2), (2, 2), (-2, -2))
+                 if om.inb(p.x + dx, p.y + dy) and D.TILES[om.tile(p.x + dx, p.y + dy)].walk
+                 and not w.settlement_at(p.x + dx, p.y + dy)), (p.x + 1, p.y))
+    for c in [c for c in CM.state(w) if c['x'] == spot[0] and c['y'] == spot[1]]:
+        CM.state(w).remove(c)
+        game.maps.pop(c['map'], None)
+    R = getattr(w, 'realm', None)
+    kids = [k.id for k in R.kingdoms] if R and getattr(R, 'kingdoms', None) else []
+    caravan = style == 'traders'
+    wd = Wanderer(game.new_id(), 'caravan' if caravan else 'host', spot[0], spot[1])
+    s = min(w.settlements, key=lambda s_: (s_.x - spot[0]) ** 2 + (s_.y - spot[1]) ** 2)
+    wd.origin = s.id
+    if caravan:
+        wd.ch, wd.fg, wd.name = 'C', (230, 200, 120), 'A caravan'
+        wd.dest, wd.goods = s.id, ('grain', 10)
+        wd.path = []
+    else:
+        wd.ch, wd.fg = 'K', (200, 200, 220)
+        wd.kingdom = kids[0] if kids else None
+        wd.foe = kids[1] if len(kids) > 1 else None
+        wd.name = {'dwarf': 'A dwarf hammer band', 'elf': 'An elven war-band', 'gorvash': 'The Gorvash',
+                   'sea': 'Sea raiders', 'riders': 'The riders'}.get(style, 'The host of the test')
+        wd.strength = 12
+        wd.target_r = None
+        wd.siege_until = game.day + 3 if style == 'siege' else 0
+        wd.group = dict(keys=['soldier'], lvl=3, elite=0, leader=None, faction='crown')
+        if style in ('gorvash', 'sea', 'riders'):
+            wd.kingdom = wd.foe = None
+    wd.hostile = rel == 'foe'
+    w.wanderers.append(wd)
+    c = CM.make(game, wd, 'host' if style == 'siege' else style, siege=style == 'siege')
+    if rel:
+        CM.set_rel(game, c, rel)
+    om.seen[spot[1] * om.w + spot[0]] = 1
+    game.msg(f'Debug: {c["name"]} camps beside you. Walk into it or press [>] by it.', 'info')
+    return c
+
+
+def camp_in(game, style='host', rel=None):
+    """A camp beside you, and you in it."""
+    from . import camps as CM
+    c = camp_here(game, style, rel)
+    CM.enter(game, c)
+    return c
+
+
+def camp_try(game, spec):
+    """'style/rel': a camp of that people, you in it as friend, stranger or foe (the Tests page)."""
+    style, _, rel = spec.partition('/')
+    return camp_in(game, style, rel or None)

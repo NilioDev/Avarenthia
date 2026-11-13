@@ -718,7 +718,7 @@ What was built before the Tests page, so it can be checked from F12 too.
   its own map (wall, towers, spire, keep, roofs), by day, at night with lit windows, in winter; once only, again from
   the journal's Places; a burnt settlement. Debug: Teleport to a settlement of each people and size, Time.
 
-## Camps on the road (approved 10 November 2026)
+## Camps on the road (approved 10 November 2026, built 13 November 2026)
 
 - **A host's camp** - by night on the march and as a siege camp; the signs on the world map and the line under it;
   the camp's map with a campfire for each pair of tents by night and cold fire pits by day; as a friend, a stranger

@@ -98,6 +98,7 @@ MIGRATIONS = {
     73: ('Games at the inn: a gaming table by the innkeeper, your games on the player', None, False),
     74: ('A first sight of a town: the settlements you saw, on the player', None, False),
     75: ('A roof of your own: homes on the player, building stone in every market', _homes, False),
+    76: ('Camps on the road: camps of the world, what each camp makes of you on the player', None, False),
 }
 
 NOTE = []          # the one line the main menu shows when a save could not be kept (set by load)

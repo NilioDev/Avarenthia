@@ -345,6 +345,12 @@ TILES = [
     Tile('π', '#f0d090', False, False, 'gaming table', bg='#3a2412'),
     Tile('$', '#f2c44a', False, True, 'door of a house for sale'),
     Tile('■', '#b08860', False, False, 'furniture'),
+    Tile('▒', '#c8b890', False, True, 'tent cloth'),
+    Tile('o', '#7a6a5a', True, False, 'cold fire pit'),
+    Tile('Ψ', '#b08850', False, False, 'siege engine'),
+    Tile('▓', '#a0a0b0', False, True, 'shield wall'),
+    Tile('■', '#a08058', False, False, 'crates of stores'),
+    Tile('≡', '#a09070', False, False, 'cot'),
 ]
 STELE, RAFT, ROPE = 75, 76, 77
 (FALLS, FOAM, SPRAY, LEDGE, RAPIDS, BOULDER, STEPSTONE, HOTPOOL, CAUSEWAY, ICEFALL, CHAIN, AIR, STARSTAIR, SPIKE, MOUNDDOOR,
@@ -382,6 +388,7 @@ MARK = 252                       # a telling thing of a place of today (landmark
  SHARDPLINTH, SEAL, MOONSHAFT) = range(284, 302)                   # more of them (round C)
 GAMETABLE = 302                  # the inn's gaming table (inngames.py)
 SALEDOOR, PIECE = 303, 304       # a home of your own (homes.py): a door marked for sale, a piece of furniture
+CLOTH, COLDPIT, ENGINE, SHIELDWALL, CRATES, COT = range(305, 311)     # camps on the road (camps.py)
 
 # ---------------------------------------------------------------- classes and skills
 CLASSES = {

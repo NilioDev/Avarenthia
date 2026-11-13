@@ -1271,6 +1271,9 @@ def step(game, wd):
             wd.x, wd.y = nx, ny
             wd.path_i += 1
         return
+    from . import camps as CM
+    if CM.siege(game, wd):
+        return
     arrive(game, wd)
 
 

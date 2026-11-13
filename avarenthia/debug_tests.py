@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'Camps on the road', 'Wars that feel like wars'}
+NOT_BUILT = {'Wars that feel like wars'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -763,6 +763,17 @@ R = {
                                      ('note', 'go in (>), buy it, restore it at the doorpost chest; a war: Realms.')],
     'A roof of your own :: Furnishing': [('dbg', 'home_furniture'), ('coin', 20 * GOLD),
                                          ('note', 'in your home press H; walk into each piece.')],
+    # Camps on the road
+    "Camps on the road :: A host's camp": [('dbgnext', 'camp_here', 'host', 'siege'), ('dbg', 'force_event', 'realmwar'),
+                                           ('note', '[>] by it goes in; Time: Six hours for the dawn and the fire rings.')],
+    "Camps on the road :: A traders' camp": [('dbg', 'camp_in', 'traders'), ('coin', 20 * GOLD),
+                                             ('note', 'talk to the caravan master; sleep by the fire until robbers come.')],
+    "Camps on the road :: Each people's camp": [('dbgnext', 'camp_here', 'host', 'siege', 'dwarf', 'elf', 'gorvash',
+                                                 'sea', 'riders', 'traders'),
+                                                ('note', 'Enter again for the next people; the elves show only from one cell.')],
+    "Camps on the road :: Inside the tents": [('dbgnext', 'camp_try', 'host/friend', 'host/foe', 'dwarf/foe', 'gorvash/foe',
+                                                           'sea/stranger', 'riders/foe', 'elf/friend'),
+                                              ('note', 'walk into every tent; as a foe: the orders, the stores, the pen, a tent.')],
     # A first sight of a town
     'A first sight of a town :: The skyline card': [('dbg', 'forget_sights'),
                                                     ('to', ('hamlet', 'village', 'town', 'city', 'metropolis',

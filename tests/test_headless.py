@@ -12044,11 +12044,170 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, camps, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def camps():
+    """Camps on the road: every people's camp pitched by night, with its signs on the world map and the line under
+    it; walked into, its tents, folk and things; as a friend (the quartermaster's war prices, the smith, the marshal),
+    a stranger (the sentry's gift) and a foe by night (the orders, the stores, a tent set burning, the pen, the alarm);
+    the traders' camp (trade, a ride, the night by the fire, robbers); hosts camping by night and a siege at the end
+    of a march; the camp breaking at dawn and its fire rings; saves."""
+    from avarenthia import camps as CM, debug as DBG, events as EV, guide as GD
+    print('== camps')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    p.gold = 500 * 100 * 100
+    s0 = w.settlements[0]
+    DBG.to_over(g, s0.x, s0.y)
+    looks = {}
+    for st in DBG.CAMP_STYLES:
+        DBG.to_over(g, s0.x, s0.y)
+        c = DBG.camp_here(g, st, 'stranger')
+        assert CM.camping(g), st
+        app.render()
+        sg = CM.signs(g)
+        if st != 'elf':
+            assert any(abs(x - c['x']) <= 1 and abs(y - c['y']) <= 1 for x, y, ch, fg in sg), st
+        p.x, p.y = c['x'] - 1, c['y']
+        assert CM.at(g, p.x, p.y) is c and CM.line(g), st
+        g.use_stairs('down')
+        app.after_action()
+        m = g.map
+        assert getattr(m, 'camp', None) == c['id'], st
+        assert any(D.TILES[m.tile(x, y)].opaque and m.tile(x, y) in (D.CLOTH, D.SHIELDWALL) or (x, y) in m.tint
+                   for y in range(m.h) for x in range(m.w)), st
+        folk = [o for o in m.mons if getattr(o, 'camp', None) == c['id']]
+        assert folk, st
+        looks[st] = (len(m.tents), len(folk))
+        app.render()
+        for o in folk:                                  # everyone talks without a crash
+            g.pending = None
+            g.talk(o)
+            if g.pending:
+                EV.resolve(g, 'leave')
+        g.leave_to_over()
+        assert g.cur == 'over', st
+    print('camps:', looks)
+    assert GD.TIPS.get('camp')
+    # a friend: the quartermaster pays war prices
+    DBG.to_over(g, s0.x, s0.y)
+    c = DBG.camp_in(g, 'host', 'friend')
+    m = g.map
+    q = next(o for o in m.mons if getattr(o, 'role', '') == 'camp_quarter')
+    p.cargo['grain'] = 5
+    g.talk(q)
+    assert g.pending and g.pending['key'] == 'camp_quarter'
+    gold = p.gold
+    EV.resolve(g, 'sell:grain')
+    assert p.gold > gold and not p.cargo.get('grain')
+    # a stranger: the sentry lets you in for a gift
+    g.leave_to_over()
+    c = DBG.camp_in(g, 'host', 'stranger')
+    sen = next(o for o in g.map.mons if getattr(o, 'role', '') == 'camp_sentry')
+    g.talk(sen)
+    assert g.pending and g.pending['key'] == 'camp_sentry'
+    EV.resolve(g, 'gift')
+    assert str(c['id']) in p.camp_let
+    # a foe by night: orders, stores, a tent, the pen
+    g.leave_to_over()
+    c = DBG.camp_in(g, 'host', 'foe')
+    m = g.map
+    wd = next(x for x in w.wanderers if x.id == c['wd'])
+    st0 = wd.strength
+    done = []
+    for (x, y), what in list(m.cthings.items()):
+        if what in ('orders', 'stores', 'pen', 'chest') and what not in done:
+            r = CM.bump(g, x, y)
+            assert r == 1, what
+            done.append(what)
+    cloth = next(((x, y) for y in range(m.h) for x in range(m.w) if m.tile(x, y) == D.CLOTH), None)
+    if cloth:
+        CM.bump(g, *cloth)
+        assert g.pending and g.pending['key'] == 'camp_burn'
+        EV.resolve(g, 'burn')
+        assert m.tile(*cloth) == D.BURNING
+    assert wd.strength < st0 and CM.rel(g, c) == 'foe', (done, wd.strength, st0)
+    sl = next((o for o in m.mons if getattr(o, 'camp', None) == c['id'] and not o.is_npc), None)
+    if sl:                                              # one seen wakes all
+        sl.awake = True
+        p.x, p.y = sl.x - 1 if m.inb(sl.x - 1, sl.y) else sl.x + 1, sl.y
+        g.compute_fov()
+        CM.after_turn(g)
+        assert c['alarm']
+    print('a foe by night:', done, f'strength {st0} -> {wd.strength}')
+    # the traders: trade, ride, a night by the fire, robbers
+    g.leave_to_over()
+    c = DBG.camp_in(g, 'traders')
+    m = g.map
+    tr = next(o for o in m.mons if getattr(o, 'role', '') == 'camp_trader')
+    g.talk(tr)
+    assert g.pending and g.pending['key'] == 'camp_trader'
+    EV.resolve(g, 'ride')
+    assert any(b[0] == 'safe_road' for b in p.buffs)
+    g.talk(tr)
+    EV.resolve(g, 'trade')
+    assert g.request and g.request[0] == 'market'
+    app.after_action()
+    app.screens = [ui.GameScreen(app)]
+    import random as _r
+    _r.seed(3)
+    for _ in range(12):
+        CM.sleep_by_fire(g, c)
+        if p.camp_rel.get(f'robbed{c["id"]}'):
+            break
+    assert p.camp_rel.get(f'robbed{c["id"]}') == 'yes'
+    for o in [o for o in g.map.mons if getattr(o, 'robber', None) == c['id']]:
+        o.hp = 0
+    g.map.mons = [o for o in g.map.mons if o.hp > 0]
+    rep = w.settlements[c['origin']].rep
+    CM.after_turn(g)
+    assert CM.trader_friend(g, c['origin']) and w.settlements[c['origin']].rep > rep
+    g.leave_to_over()
+    # the dawn breaks the camps and leaves fire rings
+    for _ in range(30):
+        if not CM.camping(g):
+            break
+        DBG.days_ahead(g, 1 / 24)
+    assert not CM.camping(g)
+    CM.tick(g)
+    assert not [x for x in CM.state(w) if not x['siege']], CM.state(w)
+    assert w.camp_rings
+    # a real host: it camps by night and sits down before the walls at the end of its march
+    from avarenthia import realms as RL
+    R = w.realm
+    DBG.force_event(g, 'realmwar')
+    hosts = [x for x in w.wanderers if x.kind == 'host' and x.path]
+    if not hosts and R.wars:
+        war = R.wars[0]
+        RL.march(g, war, R.kingdoms[war['a']], R.kingdoms[war['b']])
+        hosts = [x for x in w.wanderers if x.kind == 'host' and x.path]
+    if hosts:
+        hd = hosts[0]
+        DBG.camp_night(g)
+        if w.settlement_at(hd.x, hd.y):
+            hd.x, hd.y = hd.path[min(len(hd.path) - 1, hd.path_i + 2)]
+        w.camp_stamp = None
+        CM.tick(g)
+        assert CM.of_wd(g, hd), ('a host camps by night', CM.wants_camp(g, hd), CM.style_for(g, hd))
+        hd.path_i = len(hd.path)
+        CM.state(w).remove(CM.of_wd(g, hd))
+        RL.step(g, hd)
+        cs = CM.of_wd(g, hd)
+        assert cs and cs['siege'] and hd in w.wanderers
+        print('siege:', cs['name'])
+    else:
+        print('no host marched in this world')
+    E.save_game(g)
+    g2 = E.load_game()
+    assert g2 is not None and isinstance(g2.world.camps, list) and isinstance(g2.player.camp_rel, dict)
+    print('camps ok')
 
 
 def homes():

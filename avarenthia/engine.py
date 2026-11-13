@@ -63,6 +63,7 @@ from . import mercs as MC
 from . import landtells as LT
 from . import heard as HL
 from . import homes as HM
+from . import camps as CM
 from . import behave as BH
 from . import named as NM
 from . import folk as FK
@@ -106,7 +107,8 @@ from .worldgen import D8, cheb
 
 CL.register()
 HM.init()
-SAVE_VERSION = 76
+CM.init()
+SAVE_VERSION = 77
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -808,6 +810,13 @@ class Game:
         elif getattr(m, 'site', None) is not None:
             st = self.world.sites[m.site]
             self.over_pos = (st.x, st.y)
+        elif getattr(m, 'camp', None) is not None:
+            c = CM.get(self, m.camp)
+            if c:
+                self.over_pos = (c['x'], c['y'] + 1) if (c['x'], c['y']) == self.over_pos else self.over_pos
+            else:
+                self.maps.pop(m.key, None)
+            walk = None
         elif getattr(m, 'home', None) is not None:
             hm = HM.get(self, m.home)
             if hm:
@@ -1249,6 +1258,10 @@ class Game:
             spent = PL.barred(self, nx, ny)
             if spent is not None:
                 return spent
+        if getattr(m, 'camp', None) is not None:
+            spent = CM.bump(self, nx, ny)               # the orders, the stores, the pen, a tent's cloth
+            if spent is not None:
+                return spent
         if t == D.SALEDOOR or getattr(m, 'furn', None):
             spent = HM.bump(self, nx, ny, t)            # a house for sale, a piece of your own furniture
             if spent is not None:
@@ -1410,6 +1423,9 @@ class Game:
         if wd.kind == 'traveler':
             EV.talk_traveller(self, wd)
             return 0
+        cmp = CM.of_wd(self, wd)
+        if cmp is not None:
+            return CM.enter(self, cmp)                 # it has made camp: you walk in
         if wd.kind == 'caravan':
             EV.talk_caravan(self, wd)
             return 0
@@ -1637,6 +1653,9 @@ class Game:
             hm = HM.at(self, p.x, p.y)
             if hm:
                 return HM.enter(self, hm)              # your own home out on the land
+            cmp = CM.at(self, p.x, p.y)
+            if cmp:
+                return CM.enter(self, cmp)             # a camp by the road
             s = self.world.settlement_at(p.x, p.y)
             if s:
                 ok, why = WAR.can_enter(self, s)
@@ -2906,10 +2925,12 @@ class Game:
             self.monsters_act()
             if not self.dead:
                 EP.after_mons(self)
-            if not self.dead and self.map.kind != 'town':
+            if not self.dead and (self.map.kind != 'town' or getattr(self.map, 'camp', None) is not None):
                 HL.after_turn(self)                     # what you hear out of sight, the last-seen marks
             if not self.dead and getattr(self.map, 'furn', None) is not None:
                 HM.after_fight(self)                    # squatters in your home, beaten
+            if not self.dead and getattr(self.map, 'camp', None) is not None:
+                CM.after_turn(self)                     # a camp by the road: the alarm, the robbers
             if not self.dead and self.map.kind != 'town' and not EP.time_stopped(self):
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
@@ -3582,6 +3603,9 @@ class Game:
             return
         if role == 'carpenter':
             HM.talk(self, npc)
+            return
+        if (role or '').startswith('camp_'):
+            CM.talk(self, npc)
             return
         if role == 'gamer':
             from . import inngames as IG

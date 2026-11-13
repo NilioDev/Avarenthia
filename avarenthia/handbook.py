@@ -1418,6 +1418,23 @@ def ch_realms(g):
               'will take your oath. You become Sir or Dame, and people call you my lord or my lady. Your liege may '
               'call the levy: the call comes as a job in your journal. Stay away twice and your name is struck from '
               'the roll. You can renounce your oath in your liege\'s hall.'),
+        ('h', 'Camps by the road'),
+        ('p', 'From dusk to dawn every host on the march, every war party and every caravan far from a town makes camp '
+              'where it stands. Its tents stand round it on the map, {Λ} for a kingdom\'s host, with its fire {☼} by '
+              'night; an elven war-band shows only from the next cell. A host at the end of its march sits down '
+              'before the walls for some days, a siege camp. When a camp breaks, old fire rings {o} stay for some weeks.'),
+        ('p', 'Walk into a camp, or stand by it and press [>]. Each people camps its own way: a kingdom in rows inside '
+              'a ring of stakes, dwarves in a square of shields, the Gorvash round one great fire, sea raiders behind '
+              'their ships, riders in a ring. Tents are walked into through their flap.'),
+        ('l', ['A friend, sworn to its king or well known to his lords, trades with the quartermaster at war prices, '
+               'is mended by the smith and healed by the healer, and may sign on with the marshal for the battle.',
+               'A stranger gets past the sentry with a gift or a good name, and no further than the quartermaster.',
+               'A foe comes by night, quietly: noise and light give you away, and one sentry who sees you wakes the '
+               'whole camp. Steal the marshal\'s orders, burn the stores or a tent, free the prisoners in the pen; '
+               'each weakens the host in its battle.',
+               'A caravan\'s camp welcomes anyone: trade at its town\'s prices, hear the road\'s news, ride along '
+               'in safety in the morning, or sleep by its fire. Robbers sometimes come in the night; drive them off, '
+               'and that caravan\'s town remembers you at its market.']),
         ('h', 'The other powers'),
         ('l', ['The Church has a holy order with a keep, the sign {╪}. Its knights hunt necromancers and witches.',
                'Where raiders come from the north, the Border Watch holds its forts, the sign {╫}.',

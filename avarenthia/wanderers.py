@@ -266,8 +266,12 @@ def tick(game, turns):
     w = game.world
     p = game.player
     px, py = (p.x, p.y) if game.cur == 'over' else game.over_pos
+    from . import camps as CM
+    CM.tick(game)
     for wd in w.wanderers[:]:
         if wd.kind == 'escort':
+            continue
+        if CM.resting(game, wd):
             continue
         if wd.kind == 'monsters' and cheb(wd.x, wd.y, px, py) > FAR:
             continue

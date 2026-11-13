@@ -121,6 +121,16 @@ def signs(g):
     from . import homes as HM
     if any(h['kind'] == 'built' for h in HM.homes(g)):
         rows.setdefault('Your home', [(HM.HOME_SIGN, HM.YOU)])
+    from . import camps as CMS
+    for _x, _y, ch, col in CMS.signs(g):
+        if ch == '☼':
+            rows.setdefault('A camp\'s fire by night', [(ch, col)])
+        elif ch == 'o' and col == (96, 84, 72):
+            rows.setdefault('Old fire rings: a camp stood here', [(ch, col)])
+        else:
+            tents = rows.setdefault('Tents of a camp by the road', [])
+            if len(tents) < 3 and (ch, col) not in tents:
+                tents.append((ch, col))
     from . import landtells as LT
     if any(LT.worn(g, i) and om.seen[i] for i in getattr(g.world, 'wear', {})):
         rows.setdefault('A worn path through the grass', [('·', LT.WORN)])
@@ -147,6 +157,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 TIPS = {
     'heard': 'Tip: they heard you. A ? before a name in IN SIGHT: it comes to look where the noise was. Walk softly.',
     'furnish': 'Tip: in your own home, H sets out your furniture: Tab picks a thing, Enter sets it down or takes it up.',
+    'camp': 'Tip: a camp lets in whom it knows. Sworn to its king, you trade and sign on; a foe comes by night, and quietly.',
     'stake': 'Tip: use the stake from your bag out on the open land, off the road, to start a home there.',
     'games': 'Tip: walk into a gaming table π to play. Bones and The Count want the evening and a stake; Vigil, any hour.',
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',

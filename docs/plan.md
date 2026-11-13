@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Camps on the road, wars that feel like wars (approved 10 November 2026); the order: block 22 below |
+| **To build** | Wars that feel like wars (approved 10 November 2026); the order: block 22 below |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -111,65 +111,13 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
 61. **Block 22: the 10 November proposals** (Nilio, 13 November 2026: build all of the plan without waiting; the
     order chosen by Claude): 61. **A first sight of a town** (M; built 13 November 2026, see `docs/built.md`).
     62. **The land tells, and an inn in every town** (M; built 13 November 2026). 63. **Heard, lit and seen** (L; built 13 November 2026), before the camps,
-    whose sneaking it needs. 64. **A roof of your own** (XL; built 13 November 2026). 65. **Camps on the road** (XL). 66. **Wars that feel like
+    whose sneaking it needs. 64. **A roof of your own** (XL; built 13 November 2026). 65. **Camps on the road** (XL; built 13 November 2026). 66. **Wars that feel like
     wars** (XL), with the field battle and magic in the wars.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
 
 ---
-
-## Camps on the road (approved 10 November 2026, not built)
-
-The Dutch proposal and mock screens: project files `nextlevel/kampen.md`, `kamp_*.png`. Hosts and caravans already
-walk the world map (`realms.march`, the wanderers); now they stop, and a camp is a place you can walk into.
-- **A host's camp.** A host on the march camps from dusk to dawn; at the end of its march it becomes a siege camp
-  before the seat for as long as the siege lasts. World map: a few tents `Λ` in the kingdom's colour, the banner `¶`
-  and a fire; the line under the map ("The host of Varn camps here tonight."); the Realms layer. Its own small map:
-  a ring of stakes, rows of tents `Λ`, in the evening a campfire `☼` for each pair of tents with a warm glow on the
-  ground (a cold fire pit `o` by day), the marshal's tent and banner, the quartermaster's wagons, a smith, the
-  wounded, horse lines, sentries at the gate.
-  - As a friend (the king's knight, or well known to his house): sell to the quartermaster (war prices, as war
-    trade), mend at the smith, be healed for a small gift, hear the war's news, sign on for the battle (the realm job
-    there is, modest pay). As a stranger: a sentry stops you; a small gift or a good word lets you to the
-    quartermaster only. As a foe: sneak in by night (noise and light count): steal the orders, burn the stores or
-    free prisoners, each weakening that host in its battle; seen, the whole camp wakes.
-  - Gone by morning; blackened fire rings and trampled ground stay a few weeks.
-- **A traders' camp.** A caravan that cannot reach a caravanserai camps by the road at night: wagons `Θ` in a ring
-  round a fire. Trade at a fair price (far goods from its town), hear the road's news (safe ways, where prices are
-  high), travel with them next day (the escort job there is), sleep safer by their fire. Robbers sometimes come in
-  the night: help and the trader remembers you (a better price).
-- Later, the same frame: pilgrims to a feast, herders to the summer pastures, a lord's hunting camp.
-- What you are to a camp lives on the player. Handbook: the realms and the trade chapters. Test part `camps`.
-- **Each people camps its own way** (mock: project files `nextlevel/legers/kampen_per_volk.png` and
-  `kampen_wereldkaart.png`, made by `legers_mock.py`). World map by night and the camp's own map:
-  - *A kingdom's host*: as above; a priest's tent `†` and, in a big host, a battle mage; siege engines `Ψ` in a siege
-    camp. On the world map tents `Λ` in rows with a fire between each pair and the banner; a siege camp's tents close
-    round the seat, with an engine `Ψ` beside them.
-  - *A dwarf hammer band*: a square of stacked stone and shields `▓` with a ditch round it, low tents `∩` in a tight
-    grid, braziers `¤` at the corners and one field forge in the middle, ale, war carts, ponies; no open fires and a
-    watch that never sleeps: the hardest camp to sneak into. World map: `∩` inside `▓` with the forge's glow.
-  - *An elven war-band*: no ring, no rows, no fires: bowers `∩` in moonlit clearings under the trees, sentries up in
-    them, the warden and a moon-well. World map: nothing at all; from one cell away a pale `∩` under the trees.
-  - *The Gorvash*: a sprawl with no ring, hide tents `Λ` every way round one great fire, the skull pole `¥`, war drums
-    (seen, as in "Heard, lit and seen"), wolf pens and cages of captives; easy to walk into, many awake round the fire.
-    World map: scattered `Λ` round a big fire and the pole.
-  - *Sea raiders*: the longships drawn up on the strand are the wall, a ring of shields `o` round the mead fire, the
-    jarl, the plunder heap and captives; gone with the tide at dawn. World map: ships `▬` on the strand and a fire.
-  - *Riders* (steppe and desert riders, canyon riders, the clans on horse): round tents `Ω` in a ring round the fire,
-    the herd outside, riders circling; no wall, gone at dawn. World map: `Ω` in a ring and the herd `h`.
-  - The smaller raiding peoples (ice raiders, pass clans, wreckers, mist folk, island voyagers) camp in the frame of
-    the nearest of these (sledges for ships, a stone hall's ring for a shield ring), dressed in their own colour.
-- **You walk into the tents** (mock: `nextlevel/legers/kamp_tenten.png`, `tenten_per_volk.png`, made by
-  `tenten_mock.py`). Every tent is a small room on the camp's own map, with cloth walls in the realm's colour and a
-  flap `'` for a door; no new screen. Soldiers' tents: two bedrolls, packs, sleepers by night. The marshal's
-  pavilion: the map table `π` with the orders on it, his chest, his bed, the banner at the flap with two guards. The
-  stores (crates, ale, flour), the wounded on cots with a healer, the chapel (priest, holy banner), the prisoners'
-  pen with a guard. Each people's own: the dwarves' stone-weighted hide with bunks in two tiers and a brazier; the
-  riders' round tent with rugs, the hearth in the middle and the chest across from the door; the Gorvash's hides on
-  poles with furs, bones and the loot sack; the elves' roof of woven leaves with no walls; the sea raiders' sail
-  stretched from a ship's side over the oars. By night a lamp or the hearth lights a tent from within; sleepers wake
-  at a noise; a chest, the orders or a prisoner can be taken; a tent can be set burning.
 
 ## Wars that feel like wars (approved 10 November 2026, not built)
 
@@ -199,7 +147,7 @@ stay small: the player is one adventurer, and what counts is what they see on th
   holy banner or relic goes with a host: steal it or save it. The great evils feed on war (their levers on the realms
   are there); on a battlefield in the Lich's land the dead rise by night. Other peoples take part: dwarves hire out a
   hammer band, and the Gorvash smell weakness and fall on a worn-out border.
-- **Each people wars its own way**, and camps its own way (above, in Camps on the road):
+- **Each people wars its own way**, and camps its own way (in Camps on the road, now in `docs/built.md`):
   - *Kingdoms*: levies and knights, raids and sieges, ransom, the peace treaty.
   - *Dwarves*: slow; never raid, never march far from the hills; the best at sieges (they dig under walls); a debt in
     the grudge book is paid in full and then they go home.

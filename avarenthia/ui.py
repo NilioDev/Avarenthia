@@ -798,7 +798,13 @@ class GameScreen(Screen):
             hx = x + 9 if m.kind in ('over', 'wild') and not getattr(m, 'underground', False) else x
             if hx + len(hl) + 3 <= room + 8:              # whole or not at all
                 cv.text(hx, MAP_H, f'· {hl} ', HMS.YOU, BG)
-        if m.kind not in ('over', 'town'):
+        from . import camps as CMS
+        cl = CMS.line(g)
+        if cl and not hl:                               # a camp by the road, here tonight
+            hx = x + 9 if m.kind == 'over' else x
+            if hx + len(cl) + 3 <= room + 8:
+                cv.text(hx, MAP_H, f'· {cl} ', (220, 190, 140), BG)
+        if m.kind not in ('over', 'town') or getattr(m, 'camp', None) is not None:
             from . import heard as HL
             word = HL.loudness(g)                        # how loud you are now (round 63)
             lx = x + (9 if m.kind == 'wild' and not getattr(m, 'underground', False) else 0)
@@ -835,7 +841,7 @@ class GameScreen(Screen):
         mem_fg, mem_bg = LOOK.REMEMBERED_TINT[LOOK.remembered_kind(m)] if m.kind != 'town' else ((40, 52, 96), (8, 10, 22))
         torchlit = lighting
         deco = getattr(m, 'deco', None)
-        furn = getattr(m, 'furn', None) if m.kind == 'town' else None      # your own furniture (homes.py)
+        furn = (getattr(m, 'furn', None) or getattr(m, 'tint', None)) if m.kind == 'town' else None   # your furniture, a camp's tents
         trail = WP.blood_at(g, m)                   # a bleeding foe's trail, for a few turns
         night = TW.is_night(g)
         from . import epics as EP
@@ -1299,6 +1305,11 @@ class GameScreen(Screen):
                 vx, vy = hm['x'] - ox, hm['y'] - oy
                 if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (hm['x'], hm['y']) != (p.x, p.y):
                     cv.put(vx, vy, HMS.HOME_SIGN, HMS.YOU if hm['state'] == 'quiet' else scale(HMS.YOU, .7), (30, 40, 48))
+        from . import camps as CMS
+        for cx_, cy_, ch, col in CMS.signs(g):        # camps by the road: their tents, their fire by night
+            vx, vy = cx_ - ox, cy_ - oy
+            if 0 <= vx < MAP_W and 0 <= vy < MAP_H and (cx_, cy_) != (p.x, p.y):
+                cv.put(vx, vy, ch, col)
         # strongholds in their faction colour
         for h in w.holds:
             om = g.map
