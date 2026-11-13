@@ -4959,11 +4959,12 @@ def market_days():
     check_colours(app)
     # rest day: the bell, the temple full, the shops shut
     at(day_of['Restday'], 9)
+    m.mood = None                                   # a war party near the town would keep half of them home
     assert TW.day_kind(g) == 'rest' and TW.shut(g)
     pews = [n for n in folk if TW.pew_spot(g, n)]
     assert pews, 'no room in the temple'
     for n in pews:
-        assert m.tile(*TW.target_for(g, n)) in TW.INDOOR
+        assert m.tile(*TW.target_for(g, n)) in TW.INDOOR, (n.name, n.job, TW.target_for(g, n))
     keeper = next(o for o in m.mons if o.is_npc and o.role in ('shop', 'market'))
     g.request = None
     g.talk(keeper)
