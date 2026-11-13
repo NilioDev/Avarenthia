@@ -1366,8 +1366,8 @@ class Game:
         if getattr(m, 'tribe', None):
             TR.on_step(self)
         if getattr(m, 'hall', None):
-            from . import halls as HL
-            HL.on_step(self)
+            from . import halls as HLS
+            HLS.on_step(self)
             if self.dead:
                 return 1
         if getattr(m, 'place', None) == 'barrow':
