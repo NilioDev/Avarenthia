@@ -234,8 +234,9 @@ def _road_cost(t):
     return None
 
 
-def dijkstra_path(m, a, b, cost_fn=_road_cost):
-    """Cheapest 8-way path from a to b on the overworld, as a list of cells after a (A* search)."""
+def dijkstra_path(m, a, b, cost_fn=_road_cost, corners=False):
+    """Cheapest 8-way path from a to b on the overworld, as a list of cells after a (A* search).
+    corners: no diagonal step squeezes between two cells it cannot use (a road must be drawable as a joined line)."""
     w, h = m.w, m.h
     costs = [cost_fn(k) for k in range(len(D.TILES))]
     floor = min((c for c in costs if c is not None), default=1)
@@ -260,6 +261,8 @@ def dijkstra_path(m, a, b, cost_fn=_road_cost):
                 ni = ny * w + nx
                 cc = costs[t[ni]]
                 if cc is None:
+                    continue
+                if corners and dx and dy and costs[t[y * w + nx]] is None and costs[t[ny * w + x]] is None:
                     continue
                 nd = d + cc + (1 if dx and dy else 0)
                 if nd < dist.get(ni, INF):
@@ -595,15 +598,16 @@ def _build_roads(m, world):
             great.append((a, b))
             tree.add(b)
     for a, b in great:
-        p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y))
+        p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y), corners=True)
         if p:
             lay_road(m, [(ss[a].x, ss[a].y)] + p, True)
     for a, b in edges:
-        p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y))
+        p = dijkstra_path(m, (ss[a].x, ss[a].y), (ss[b].x, ss[b].y), corners=True)
         if not p:
             continue
         world.road_edges.append((a, b))
         lay_road(m, [(ss[a].x, ss[a].y)] + p, ss[a].is_city and ss[b].is_city)
+    thin_roads(m, world)
 
 
 ROAD_GROUND = (GRASS, SAND, FOREST, HILLS, SWAMP, RIVER)
@@ -624,9 +628,53 @@ def orthogonal(m, p, ok=None):
     return out
 
 
+def thin_roads(m, world):
+    """Where two roads run side by side they make a block of road: take out the cells the network does not need,
+    so every road reads as one line."""
+    w = m.w
+    under = getattr(m, '_under', {})
+    J = (ROAD, TOWN, CITY, ENTR, D.CASTLE, D.FORT)
+    near = {(s.x + dx, s.y + dy) for s in world.settlements for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
+    ring = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+    def j(x, y):
+        return m.inb(x, y) and m.t[y * w + x] in J
+
+    def simple(x, y):
+        on = {(dx, dy) for dx, dy in ring if j(x + dx, y + dy)}
+        orth = [c for c in on if 0 in c]
+        if len(orth) < 2:
+            return False
+        seen, todo = {orth[0]}, [orth[0]]
+        while todo:
+            cx, cy = todo.pop()
+            for c in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                if c in on and c not in seen and c != (0, 0):
+                    seen.add(c)
+                    todo.append(c)
+        return all(c in seen for c in orth)
+    for _ in range(4):
+        cut = 0
+        for i in range(len(m.t)):
+            x, y = i % w, i // w
+            if m.t[i] != ROAD or m.river[i] or (x, y) in near or i not in under:
+                continue
+            blocks = [(ax, ay) for ax in (x - 1, x) for ay in (y - 1, y)
+                      if all(j(ax + u, ay + v) for u in (0, 1) for v in (0, 1))]
+            if blocks and simple(x, y):
+                m.set(x, y, under[i])
+                m.main_road.discard(i)
+                cut += 1
+        if not cut:
+            break
+    m.__dict__.pop('_under', None)
+
+
 def lay_road(m, p, main=False):
+    under = m.__dict__.setdefault('_under', {})
     for x, y in orthogonal(m, p):
         if m.tile(x, y) in ROAD_GROUND:
+            under[y * m.w + x] = m.tile(x, y)
             m.set(x, y, ROAD)        # over a river this is a bridge (m.river stays marked)
         if main and m.tile(x, y) == ROAD:
             m.main_road.add(y * m.w + x)
@@ -954,9 +1002,10 @@ def _place_strongholds(m, world, reach):
     for h in world.holds:
         if h.faction in ('crown', 'league', 'circle', 'clan'):
             near = min(world.settlements, key=lambda s: cheb(s.x, s.y, h.x, h.y))
-            p = dijkstra_path(m, (h.x, h.y), (near.x, near.y))
+            p = dijkstra_path(m, (h.x, h.y), (near.x, near.y), corners=True)
             if p:
                 lay_road(m, [(h.x, h.y)] + p)
+    m.__dict__.pop('_under', None)
 
 
 def flip_region(game, rid, faction):

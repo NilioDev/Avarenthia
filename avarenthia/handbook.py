@@ -765,7 +765,8 @@ def ch_land(g):
         ('h', 'Knowing the land'),
         ('p', 'At first you only know where Thornfield lies. Signposts {┬}, townsfolk and travellers tell you where '
               'places lie, but the land itself you only learn by walking it. Land you have seen but cannot see now '
-              'stays on the map, darker and dulled, with a hint of its colour: a forest dull green, water dull blue.'),
+              'stays on the map, darker and dulled, with a hint of its colour: a forest dull green, water dull blue. Roads '
+              'stay clear in your memory, on the world map and in the land itself, so you can find your way back.'),
         ('h', 'Kinds of country'),
         ('p', 'Each kind of country does one thing you notice: on the moor you see far, but the morning mist hides '
               'wolves; under old forest you see almost nothing, but the rare herbs grow there; in a canyon robbers '
