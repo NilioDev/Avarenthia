@@ -1070,6 +1070,8 @@ class GameScreen(Screen):
                             fg, bg = scale(fg, k), scale(bg, .55 + .45 * k)
                 elif not lighting and m.kind == 'over' and m.t[i] == D.ROAD:
                     fg, bg = mix(fg, (150, 124, 84), .6), (34, 28, 22)     # roads you know stay legible in the fog
+                elif not lighting and m.kind == 'wild' and m.t[i] in (D.ROAD, D.PATH, D.BRIDGE):
+                    fg, bg = scale(fg, .55), mix(scale(bg, .7), (30, 25, 19), .5)     # the road you walked stays in mind
                 elif not lighting and m.kind == 'over':
                     # fog of war: land you remember, but cannot see now; grey and veiled
                     gr = (fg[0] + fg[1] + fg[2]) // 3            # less grey than before, a little darker:

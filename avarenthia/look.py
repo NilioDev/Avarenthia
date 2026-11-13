@@ -271,6 +271,8 @@ def cell(m, i, depth=None):
     if t == SAND:
         base = _mix((214, 196, 130), (226, 180, 110), hot)
         return _pick(r, [(60, '.'), (20, ','), (12, '`'), (8, ' ')]), _jit(base, r2, .08), (34, 28, 18) if over else BG
+    if t == ROAD and m.kind == 'wild':     # the trodden middle of a road in the land: a lighter stripe of ruts
+        return _pick(r, [(70, '·'), (30, '-' if r2 % 2 else '·')]), _jit((214, 178, 116), r2, .06), _jit((70, 54, 34), r, .05)
     if t == ROAD:
         return td.ch, _jit(td.fg, r2, .06), td.bg or BG
     if t == FIELD:          # rows of crops and furrows
