@@ -2229,9 +2229,39 @@ def make(game, s):
     guards, gname = FT.WATCH.get(maker, (14 if big else 9, None))
     TW.people_city(game, m, s, buildings, names, px, py, stalls or [(px + 2, py)], streets, guards, gname)
     m.entry = m.exits[0][:2]
+    _join_gates(m)
     for i in range(len(m.seen)):
         m.seen[i] = 1
     return m
+
+
+def _join_gates(m):
+    """A gate that a river along the edge cuts off (the road came in where the water runs): a plank bridge or a
+    path from it to the nearest street that the first gate reaches."""
+    def reach():
+        q, seen = [tuple(m.entry)], {tuple(m.entry)}
+        while q:
+            x, y = q.pop()
+            for n in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if n not in seen and m.inb(*n) and D.TILES[m.tile(*n)].walk:
+                    seen.add(n)
+                    q.append(n)
+        return seen
+    got = None
+    for ex, ey, _o in m.exits[1:]:
+        got = got or reach()
+        if (ex, ey) in got:
+            continue
+        tx, ty = min(got, key=lambda c: abs(c[0] - ex) + abs(c[1] - ey))
+        x, y = ex, ey
+        while (x, y) != (tx, ty):
+            if not D.TILES[m.tile(x, y)].walk:
+                m.set(x, y, D.BRIDGE if m.tile(x, y) in (D.WATER, D.SHALLOW, D.RIVER) else D.PATH)
+            if x != tx:
+                x += 1 if tx > x else -1
+            else:
+                y += 1 if ty > y else -1
+        got = None
 
 
 def _dress(m, deck, parapet, quay, draw):

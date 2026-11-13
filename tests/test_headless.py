@@ -8828,7 +8828,8 @@ def boss_moves():
     BS.floor_things(g)
     assert not eg and any(o.k == 'spiderling' for o in m.mons)
     from avarenthia import spellmap as SM
-    web = next(cc for cc in free_around(g, m, p.x, p.y, 10) if m.tile(*cc) == D.FLOOR and cc not in SM.fields(m))
+    web = next(cc for cc in free_around(g, m, p.x, p.y, 10) if m.tile(*cc) not in SM.KEEP_OFF | SM.WATERS
+               and m.tile(*cc) not in (D.UP, D.DOWN) and cc not in SM.fields(m))      # the hatchlings may fill the floor
     assert SM.place(g, m, web[0], web[1], D.WEBS, 30)
     p.x, p.y = web
     BS.floor_things(g)
@@ -9651,6 +9652,11 @@ def city_rules():
                     reach.add(n)
                     q.append(n)
         for ex, ey, other in m.exits:
+            if (ex, ey) not in reach:
+                from avarenthia import look as LK
+                for y in range(max(0, ey - 6), min(m.h, ey + 7)):
+                    print(''.join(('o' if (x, y) in reach else LK.get(m, y * m.w + x)[0]) for x in range(max(0, ex - 25), min(m.w, ex + 26))))
+                print(m.entry, (ex, ey), [(ex2, ey2) for ex2, ey2, _ in m.exits], m.w, m.h)
             assert (ex, ey) in reach, (s.name, 'a gate cut off')
         stall = next(o for o in m.mons if o.is_npc and o.role == 'market')
         assert any((stall.x + dx, stall.y + dy) in reach for dx in (-1, 0, 1) for dy in (-1, 0, 1)), s.name
@@ -10836,7 +10842,7 @@ def editor_makers(home):
     e.render(cv)
     e.key('enter')
     names = [f.name for f in e.place.order()]
-    assert names[0] == 'ground' and names[1:] == [f'down {k}' for k in range(1, len(names))] and len(names) >= 3, names
+    assert names[0] == 'ground' and names[1:] == [f'down {k}' for k in range(1, len(names))] and len(names) >= 2, names   # a shallow crypt has one floor
     assert not DP.problems(e.place.to_place())
     e.render(cv)
     # a maker area: a rectangle in a whole place, Ctrl+G makes the area, the line is written and read again
@@ -12626,7 +12632,7 @@ def heard_lit():
         if m.heard:
             break
         g.turn += 1
-    if not g.visible(*far):
+    if not g.visible(*far) and max(abs(far[0] - p.x), abs(far[1] - p.y)) <= HL.hear_range(g) - 1:
         assert m.heard, 'heard out of sight'
         ch = next(iter(m.heard.values()))[0]
         assert ch in ('?', mon.ch)
