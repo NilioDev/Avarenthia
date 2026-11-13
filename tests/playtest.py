@@ -1,6 +1,6 @@
 """Playtest with bots of different player types, each a little careless, as a real player is.
 Run from the project folder:  python tests/playtest.py [type ...] [--days N] [--seed N]
-Types: trader, fighter, explorer, homeowner, knight, newbie (all when none is given).
+Types: trader, fighter, explorer, homeowner, knight, newbie, gambler, camper, roamer, masher (all when none is given).
 
 Each bot plays a fresh world through the real game (the engine, and the UI where a key is the way in), makes the
 small mistakes a player makes (a wrong good bought, a tax forgotten, a fight taken too low on life), and writes what
@@ -229,6 +229,7 @@ class Bot:
         else:
             st = g.world.sites[ref]
             tx, ty = st.x, st.y
+        self.goal = (tx, ty)
         for _ in range(tries):
             if g.dead:
                 return False
@@ -291,6 +292,19 @@ class Bot:
                     g.end_turn(30, True)
                 except Exception:
                     self.crash('wait')
+        elif not g.dead and g.cur == 'over' and getattr(self, 'goal', None) and \
+                any(wd.hostile and g.visible(wd.x, wd.y) for wd in g.world.wanderers):
+            try:                                           # seen far off: walk on by hand, as a player would
+                path = g.travel_route(self.goal) or []
+            except Exception:
+                self.crash('route by hand')
+                path = []
+            for x, y in path[:12]:
+                if g.dead or g.cur != 'over':
+                    break
+                self.toward(x, y)
+            self.stats['by_hand'] += 1
+            self.after_road()
 
     def town_here(self):
         if self.g.cur != 'over':
@@ -923,9 +937,320 @@ class Newbie(Bot):
             self.note(f'died: {getattr(g, "death_cause", None) or getattr(self.p, "killed_by", "?")}')
         self.stats['keys'] = i
 
+# ------------------------------------------------------------------ the gambler
+class Gambler(Bot):
+    """Goes from inn to inn and plays at the gaming table: Bones and The Count in the evening, Vigil at any hour.
+    Presses the keys a player presses at a table, and some it should not."""
+    kind = 'gambler'
+    sloppy = .35
+    TOKS = ['enter', 'enter', 'enter', 'left', 'right', 'up', 'down', 'up', 'down', 'np4', 'np6', 'np8', 'np2',
+            'space', 'tab', 'x', 'esc']
+
+    def play(self):
+        from avarenthia import inngames as IG, debug_tests as DT
+        g, p = self.g, self.p
+        self.veteran(2, 30 * 100)
+        gold0 = p.gold
+        for n in range(max(6, self.days)):
+            if g.dead or g.day >= self.days:
+                break
+            try:
+                DT.s_inn(g, n, 'master' if n % 5 == 4 else None)
+            except Exception:
+                self.crash('to an inn')
+            self.calm()
+            if getattr(g.map, 'gametable', None) is None:
+                self.stats['no_table'] += 1
+                continue
+            if n % 3:
+                h = (g.turn % D.DAY_LEN) * 24 // D.DAY_LEN
+                g.turn += ((20 - h) % 24) * D.DAY_LEN // 24
+                g.end_turn(0, quiet=True)
+                self.calm()
+            for _round in range(self.rng.randint(1, 4)):
+                if g.dead:
+                    break
+                gt = g.map.gametable
+                if max(abs(gt[0] - p.x), abs(gt[1] - p.y)) > 1:
+                    break
+                try:
+                    IG.table(g)
+                except Exception:
+                    self.crash('the table')
+                pend = g.pending
+                if not pend:
+                    break
+                opts = [v for t, v in pend.get('options', []) if v and v != 'leave']
+                v = self.rng.choice(opts) if opts else 'leave'
+                try:
+                    EV.resolve(g, v)
+                    self.app.after_action()
+                except Exception:
+                    self.crash(f'table {v}')
+                self.stats['game:' + v] += 1
+                top = self.app.top
+                for k in range(400):
+                    if isinstance(self.app.top, ui.GameScreen) or self.app.top is not top:
+                        break
+                    tok = self.rng.choice(self.TOKS[:-1] if self.rng.random() > .02 else self.TOKS)
+                    vg = getattr(self.app.top, 'v', None)
+                    if vg is not None and not vg.winner and vg.turn == vg.you and self.rng.random() < .8:
+                        mvs = vg.moves(vg.you)
+                        if mvs:                            # a move of its own on the board, by the cursor
+                            f, t = self.rng.choice(mvs)
+                            self.app.top.held = (f % IG.N, f // IG.N)
+                            self.app.top.cur = (t % IG.N, t // IG.N)
+                            tok = 'enter'
+                    try:
+                        self.app.key(tok)
+                        self.app.render()
+                    except Exception:
+                        self.crash(f'{v} key {tok}')
+                        break
+                else:
+                    self.stats['game_unended'] += 1
+                    self.note(f'{v}: 400 keys and still at the table')
+                self.calm()
+            self.money.append(dict(day=g.day, gold=p.gold))
+        self.stats['won_or_lost'] = p.gold - gold0
+        self.note(f'games: {getattr(p, "games", None) if not isinstance(getattr(p, "games", None), dict) else {k: v for k, v in p.games.items() if not isinstance(v, (dict, list))}}')
+
+
+# ------------------------------------------------------------------ the camper
+class Camper(Bot):
+    """Walks into camps of every people as friend, stranger and foe, by day and night, bumps into every telling thing
+    and tent, and leaves; sometimes it starts a fight it should not."""
+    kind = 'camper'
+    sloppy = .3
+
+    def play(self):
+        from avarenthia import debug as DBG, camps as CM
+        g, p = self.g, self.p
+        self.veteran(6, 500 * 100)
+        styles = list(CM.STYLES)
+        rels = ['friend', 'stranger', 'foe', None]
+        for n in range(max(10, self.days * 2)):
+            if g.dead or g.day >= self.days:
+                break
+            st, rel = self.rng.choice(styles), self.rng.choice(rels)
+            try:
+                c = DBG.camp_in(g, st, rel)
+            except Exception:
+                self.crash(f'camp {st}/{rel}')
+                self.calm()
+                continue
+            self.calm()
+            self.stats[f'camp:{st}'] += 1
+            m = g.map
+            for _ in range(150):
+                if g.dead or g.map is not m:
+                    break
+                things = list(getattr(m, 'cthings', {}).items())
+                if things and self.rng.random() < .3:
+                    (x, y), _what = self.rng.choice(things)
+                    for _s in range(30):
+                        if cheb(x, y, p.x, p.y) <= 1 or g.map is not m or g.dead:
+                            break
+                        ox, oy = p.x, p.y
+                        self.toward(x, y)
+                        if (ox, oy) == (p.x, p.y):
+                            self.key(DIR_TOK[self.rng.choice(list(DIR_TOK))])
+                    if cheb(x, y, p.x, p.y) <= 1 and g.map is m:
+                        try:
+                            CM.bump(g, x, y)
+                        except Exception:
+                            self.crash(f'bump {_what} in {st}')
+                        self.calm()
+                        self.stats['bumps'] += 1
+                else:
+                    self.key(self.rng.choice(list(DIR_TOK.values()) * 3 + ['>', '<', 'e', 'g', 'R']))
+                if g.visible_hostiles() and self.rng.random() < .5:
+                    self.fight(60)
+                if self.rng.random() < .03:
+                    break
+            if not g.dead and g.cur != 'over':
+                try:
+                    g.leave_to_over()
+                except Exception:
+                    self.crash(f'out of a camp {st}')
+                self.calm()
+            if self.life_frac() < .5 and not g.dead:
+                p.life = g.stats()['max_life']
+            if n % 4 == 3:
+                try:
+                    g.turn += D.DAY_LEN // 2
+                    g.end_turn(0, quiet=True)
+                except Exception:
+                    self.crash('half a day')
+                self.calm()
+
+
+# ------------------------------------------------------------------ the roamer
+class Roamer(Trader):
+    """A trader with wagons of its own, who goes far, leaves the wagons in a town now and then, and saves and loads
+    the game every few towns (as a player who quits often)."""
+    kind = 'roamer'
+    sloppy = .3
+
+    def play(self):
+        from avarenthia import caravan as CV
+        g, p = self.g, self.p
+        self.veteran(4, 3000 * 100)
+        p.mounts = list(set(list(getattr(p, 'mounts', []) or []) + ['cart']))
+        w = g.world
+        if g.cur != 'over':
+            g.leave_to_over()
+            self.calm()
+        for hop in range(40):
+            if g.dead or g.day >= self.days:
+                break
+            far = [s for s in w.settlements if 30 < cheb(s.x, s.y, p.x, p.y) < 120]
+            dest = self.rng.choice(far or w.settlements)
+            had = dict(p.cargo)
+            ok = self.travel('s', dest.id)
+            self.stats['hops'] += 1
+            if not ok:
+                self.stats['failed_trips'] += 1
+                self.note(f'did not reach {dest.name}: ' + ' | '.join(t for t, c in g.log[-3:]))
+                continue
+            s = self.town_here()
+            if s is None:
+                continue
+            try:
+                g.enter_town(s.id)
+            except Exception:
+                self.crash('enter town')
+            self.calm()
+            cv = CV.get(p)
+            if (not cv or len(cv['wagons']) < CV.most(g)) and self.rng.random() < .6:
+                try:
+                    CV.buy_wagon(g, self.rng.choice(list(CV.BEASTS)))
+                    self.stats['wagons'] += 1
+                except Exception:
+                    self.crash('buy a wagon')
+            for gk, q in list(p.cargo.items()):
+                if q > 0:
+                    try:
+                        ECO.sell(g, s, gk, q)
+                    except Exception:
+                        self.crash('sell')
+            self.provision(s)
+            self.buy(s, {})
+            if self.rng.random() < .2 and cv:
+                try:
+                    CV.leave(g, ('s', s.id))
+                    self.stats['left_wagons'] += 1
+                except Exception:
+                    self.crash('leave the wagons')
+            elif cv and cv.get('at') is not None and self.rng.random() < .7:
+                try:
+                    CV.rejoin(g)
+                except Exception:
+                    self.crash('rejoin')
+            self.calm()
+            if hop % 3 == 2:
+                try:
+                    E.save_game(g)
+                    g2 = E.load_game()
+                    assert g2 is not None
+                    self.app.game = g2
+                    self.app.screens = [ui.GameScreen(self.app)]
+                    self.g = g = g2
+                    self.p = p = g2.player
+                    self.app.render()
+                    self.stats['reloads'] += 1
+                except Exception:
+                    self.crash('save, load and play on')
+            try:
+                g.leave_to_over()
+            except Exception:
+                self.crash('out of town')
+            self.calm()
+            self.money.append(dict(day=g.day, gold=p.gold, wagons=len((CV.get(p) or {}).get('wagons', []))))
+
+
+# ------------------------------------------------------------------ the masher
+class Masher(Newbie):
+    """The newbie's keys, in every kind of place the new rounds made (a town, a camp, a home, a field battle, a deep
+    level), with the screen drawn after every key."""
+    kind = 'masher'
+    sloppy = .8
+    TOKS = Newbie.TOKS + ['f1', 'f5', 'O', 'S', 'C', 'D', 'G', 'I', 'J', 'K', 'M', 'N', 'P', 'Q', 'U', 'V', 'W',
+                          'X', 'Y', 'Z', 'space', 'backspace', 'home', 'end', 'pageup', 'pagedown', '6', '7', '0', 'l',
+                          'h', 'k', 'n', 'o', 'p', 'r', 't', 'u', 'v', 'y', ',', '.', ';', '/', '-', '=']
+
+    def play(self):
+        from avarenthia import debug as DBG, debug_tests as DT, homes as HM
+        g = self.g
+        self.veteran(5, 2000 * 100)
+        places = ['town', 'camp', 'inn', 'home', 'field', 'dungeon', 'over']
+        for i in range(max(8, self.days)):
+            if g.dead or g.day > self.days:
+                break
+            where = places[i % len(places)]
+            try:
+                if where == 'town':
+                    s = self.rng.choice(g.world.settlements)
+                    DBG.teleport(g, ('s', s.id))
+                elif where == 'camp':
+                    DBG.camp_in(g, self.rng.choice(['host', 'dwarf', 'elf', 'gorvash', 'sea', 'riders', 'traders',
+                                                    'siege']), self.rng.choice(['friend', 'stranger', 'foe']))
+                elif where == 'inn':
+                    DT.s_inn(g, i)
+                elif where == 'home':
+                    DBG.home_stake(g)
+                    if HM.homes(g):
+                        h = HM.homes(g)[-1]
+                        DBG.to_over(g, h['x'], h['y'])
+                        g.use_stairs('down')
+                elif where == 'field':
+                    from avarenthia import wars as WR
+                    war = DBG.war_start(g)
+                    if war:
+                        war['field'] = None
+                        DBG.war_field(g)
+                        fd = war.get('field')
+                        if fd:
+                            DBG.to_over(g, fd['x'], fd['y'])
+                            g.use_stairs('down')
+                elif where == 'dungeon':
+                    ds = g.world.dungeons
+                    d = self.rng.choice(list(ds.values()) if isinstance(ds, dict) else ds)
+                    DBG.teleport(g, ('d', d.id))
+                else:
+                    if g.cur != 'over':
+                        g.leave_to_over()
+            except Exception:
+                self.crash(f'to a {where}')
+            self.calm()
+            self.stats['place:' + where] += 1
+            for k in range(300):
+                if g.dead:
+                    break
+                tok = self.rng.choice(self.TOKS)
+                try:
+                    self.app.key(tok, self.rng.random() < .15)
+                    self.app.render()
+                except Exception:
+                    self.crash(f'{where}: key {tok} on {type(self.app.top).__name__}')
+                if not self.app.running:
+                    self.app.running = True
+                if g.pending and self.rng.random() < .5:
+                    self.calm()
+                if getattr(self.app, 'auto', None):
+                    try:
+                        self.app.stop_auto()
+                    except Exception:
+                        self.crash('stop auto')
+            self.calm()
+            if g.dead:
+                break
+            g.player.life = g.stats()['max_life']
+        self.stats['keys'] = i
+
 
 TYPES = {'trader': Trader, 'fighter': Fighter, 'explorer': Explorer, 'homeowner': Homeowner, 'knight': Knight,
-         'newbie': Newbie}
+         'newbie': Newbie, 'gambler': Gambler, 'camper': Camper, 'roamer': Roamer, 'masher': Masher}
 
 
 def main():

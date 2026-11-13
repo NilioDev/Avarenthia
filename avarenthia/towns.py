@@ -1721,7 +1721,7 @@ def live(game, m):
             elif npc.job == 'guard' and random.random() < .3:
                 game.random_step(npc)
             continue
-        if not npc.path or tuple(npc.path[-1]) != tuple(tgt) or random.random() < .02:
+        if not getattr(npc, 'path', None) or tuple(npc.path[-1]) != tuple(tgt) or random.random() < .02:
             npc.path = path_between(m, (npc.x, npc.y), tuple(tgt))
             if not npc.path:
                 continue

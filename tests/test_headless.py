@@ -12047,11 +12047,47 @@ def inn_games():
     print('inn games ok')
 
 
+def shadowed_imports():
+    """No function imports a module under a name the file already gives another module at its top: Python then
+    takes that name as the function's own all through it, and the other module's lines in it fail (walking a
+    dig site broke so: the arenas were imported as AR where AR is the archaeology)."""
+    import ast
+    import glob
+    print('== shadowed imports')
+    root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'avarenthia')
+    bad = []
+    for path in glob.glob(os.path.join(root, '**', '*.py'), recursive=True):
+        tree = ast.parse(open(path, encoding='utf-8').read())
+        top = {}
+        for n in tree.body:
+            if isinstance(n, (ast.Import, ast.ImportFrom)):
+                for a in n.names:
+                    top[(a.asname or a.name).split('.')[0]] = (getattr(n, 'module', None), a.name)
+
+        def body(node):
+            for c in ast.iter_child_nodes(node):
+                if isinstance(c, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+                    continue
+                yield c
+                yield from body(c)
+        for f in ast.walk(tree):
+            if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for n in body(f):
+                if isinstance(n, (ast.Import, ast.ImportFrom)):
+                    for a in n.names:
+                        nm = (a.asname or a.name).split('.')[0]
+                        if nm in top and top[nm] != (getattr(n, 'module', None), a.name):
+                            bad.append(f'{os.path.basename(path)}:{n.lineno} {f.name} imports {a.name} as {nm}')
+    assert not bad, bad
+    print('shadowed imports ok')
+
+
 def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, camps, wars, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, camps, wars, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes, shadowed_imports]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
