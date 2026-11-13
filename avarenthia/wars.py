@@ -832,7 +832,8 @@ def ransom_worth(lo):
 def take_captive(game, lo, kid):
     """You hold a lord for ransom (taken in the field)."""
     lo.held = 'you'
-    mine(game)['captives'].append(dict(lid=lo.id, kid=kid, day=game.day))
+    if not any(c['lid'] == lo.id for c in mine(game)['captives']):      # one lord, one ransom
+        mine(game)['captives'].append(dict(lid=lo.id, kid=kid, day=game.day))
 
 
 def ransom_options(game, lo_here):

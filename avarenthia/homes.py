@@ -395,7 +395,8 @@ def _move_out(game, m, pl, cells):
         if tuple(getattr(o, 'home_pos', None) or (-1, -1)) in cells and others:
             o.home_pos = random.choice(others)
         if (o.x, o.y) in cells and others:
-            o.x, o.y = o.home_pos if tuple(o.home_pos or (-1, -1)) not in cells else random.choice(others)
+            hp = getattr(o, 'home_pos', None)
+            o.x, o.y = hp if hp and tuple(hp) not in cells else random.choice(others)
             o.path = []
 
 
