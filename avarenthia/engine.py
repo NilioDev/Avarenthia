@@ -60,6 +60,8 @@ from . import sites as ST
 from . import guilds as GU
 from . import news as NW
 from . import mercs as MC
+from . import landtells as LT
+from . import heard as HL
 from . import behave as BH
 from . import named as NM
 from . import folk as FK
@@ -741,9 +743,16 @@ class Game:
                     MS.place_relic(self, self.maps[key], mi)
         m = self.map
         want = DOWN if arrive == 'down' else UP
-        if want in m.t:
-            i = m.t.index(want)
-            p.x, p.y = i % m.w, i // m.w
+        for st_ in (want, UP if want == DOWN else DOWN):      # the bottom has no stairs down: the stairs up then
+            if st_ in m.t:
+                i = m.t.index(st_)
+                p.x, p.y = i % m.w, i // m.w
+                break
+        else:
+            if p.x < 0:
+                c = W.rand_free(self, m, lambda t: D.TILES[t].walk)
+                if c:
+                    p.x, p.y = c
         BS.arrive(self, follow)
         first = self.max_depth.get(did, 0) < depth
         if first:
@@ -866,6 +875,7 @@ class Game:
 
     def enter_town(self, sid, from_portal=False):
         self.mark_visit('s', sid)
+        LT.calm(self)
         p = self.player
         s = self.world.settlements[sid]
         if self.cur == 'over':
@@ -903,8 +913,8 @@ class Game:
         if esc:
             esc.x, esc.y = s.x, s.y
         self.msg(f'You enter {s.name}.', 'info')
-        from . import skyline as SKY
-        SKY.on_enter(self, s)                        # the first sight of it: one card before its map
+        from . import skyline as SKL
+        SKL.on_enter(self, s)                        # the first sight of it: one card before its map
         TG.at_gate(self, s)
         LV.on_enter_town(self, s, m)
         if ECO.FEAST.get('day') != self.day:
@@ -928,6 +938,7 @@ class Game:
 
     def enter_site(self, sid):
         self.mark_visit('site', sid)
+        LT.calm(self)
         p = self.player
         site = self.world.sites[sid]
         if self.cur == 'over':
@@ -951,8 +962,8 @@ class Game:
         TW.sync_lamps(self, m)
         self.msg(f'You come to {site.name}.', 'info')
         if site.kind in ('glade', 'gnomes'):
-            from . import skyline as SKY
-            SKY.on_enter(self, site)                 # an elven glade, a gnome hamlet: a first sight too
+            from . import skyline as SKL
+            SKL.on_enter(self, site)                 # an elven glade, a gnome hamlet: a first sight too
         if TR.is_camp(site):
             TR.on_enter(self, site, m)
         LN.on_enter(self, site, m)
@@ -1229,6 +1240,8 @@ class Game:
                 return spent
         if t == DOOR:
             m.set(nx, ny, ODOOR)
+            if m.kind != 'town':
+                HL.door(self, nx, ny)
             return 1
         if t == D.SMALLDOOR and p.race != 'gnome':
             self.msg('The door is too small for you. Only a gnome could get through it.')
@@ -1333,6 +1346,8 @@ class Game:
             if self.dead:
                 return 1
             BH.spot_traps(self)
+        if m.kind != 'town':
+            HL.walked(self)                             # footsteps, and armour that clinks (round 63)
         if getattr(m, 'tribe', None):
             TR.on_step(self)
         if getattr(m, 'hall', None):
@@ -1476,12 +1491,18 @@ class Game:
             chance = 0
         if NM.step(self):
             return 1
-        if random.random() < chance:
+        if t != ROAD:
+            LT.wear(self, p.x, p.y)                     # the grass wears where people walk (round 62)
+        if LT.step(self):                               # the ambush the birds told of falls on you
+            return 1
+        if random.random() < chance and not getattr(p, 'ambush', None):
             lvl = w.danger_at(p.x, p.y) + (1 if night else 0)
             keys = SH.wild_keys(self, p.x, p.y, lvl) or EVL.wild_keys(self, p.x, p.y, lvl) or LN.pack(self, lvl) or \
                 WA.wild_pack(reg.biome, lvl, night, getattr(reg, 'climate', None))
             r = random.random()
             elite = 1 if r < .06 + off * .003 else 0
+            if LT.flush(self, lvl, keys, elite, t):     # by a wood: birds burst up first
+                return cost
             self.start_encounter(None, t, lvl, keys, elite)
             return 1
         if cheb(p.x, p.y, *self._home_xy()) > 4:
@@ -2201,6 +2222,7 @@ class Game:
     def melee(self, mon):
         if BP.try_bind(self, mon):
             return
+        HL.fought(self)                                 # the din of a fight runs down the halls
         s = self.stats()
         self.player.last_target = mon.id
         self.player.strained = self.turn
@@ -2742,11 +2764,13 @@ class Game:
                 if still:
                     continue
                 if still is None:
-                    if self.visible(mon.x, mon.y) and random.random() < ART.notice(self, mon):
+                    if self.visible(mon.x, mon.y) and random.random() < HL.notice(self, mon, ART.notice(self, mon)):
                         mon.awake = True
+                        mon.look_at = None
                         self.wake_pack(mon)
                         AI.on_wake(self, mon)
                     else:
+                        HL.look_turn(self, mon)          # it heard something and comes to look
                         continue
             if (d['slow'] or 'slow' in mon.effects) and self.turn % 2 == 0:
                 continue
@@ -2847,6 +2871,8 @@ class Game:
                 FE.daily(self)
                 LM.daily(self)
                 MK.daily(self)
+                LT.daily(self)
+                LT.caravans_wear(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2860,6 +2886,8 @@ class Game:
             self.monsters_act()
             if not self.dead:
                 EP.after_mons(self)
+            if not self.dead and self.map.kind != 'town':
+                HL.after_turn(self)                     # what you hear out of sight, the last-seen marks
             if not self.dead and self.map.kind != 'town' and not EP.time_stopped(self):
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
@@ -3059,6 +3087,11 @@ class Game:
             self.msg('A toad has no skills. You can only hop.', 'bad')
             return 0
         spent = SK.use(self, n)
+        if spent:
+            from . import classes as CL
+            sid_ = CL.slot_skill(self, n)
+            if sid_ in SK.SKILLS:
+                HL.spell(self, SK.SKILLS[sid_].line)    # fire roars, shadow whispers (round 63)
         if spent and getattr(self.map, 'things', None):
             from . import classes as CL, puzzles as PZ
             sid = CL.slot_skill(self, n)
@@ -3102,6 +3135,7 @@ class Game:
             WP.after_shot(self, t, False)
             return 1
         crit = random.random() < self.crit_vs(t, s) / 100
+        HL.fought(self, True)
         WP.after_shot(self, t, True)
         self.damage_mon(t, random.randint(*s['dmg']) + self.weapon_extra(t, s), crit, weapon=True, ranged=True)
         SK.gain(self, s['line'], 1, t)

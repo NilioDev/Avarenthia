@@ -1259,7 +1259,8 @@ def do_guide(game, m, choice):
         fx(game, town=[(v.id, 8)])
         return
     from .living import PLUNDER_DAYS
-    v.plundered = game.day + PLUNDER_DAYS
+    from . import landtells as LT
+    LT.harm(game, v, 'war')          # burnt, then rebuilt over weeks (round 62)
     v.event = ('war', 6)
     fx(game, town=[(v.id, -25)], faction=[('crown', -8)], crime=(10, 'guiding raiders to a village', .4))
     turnin(game, m, f'The sledges go howling into {v.name}.')

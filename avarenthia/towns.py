@@ -225,7 +225,7 @@ def furnish(m, pl):
         for xx in range(ix0 + 1, ix1):
             put((xx, iy0 + 1), STALL)
         for _ in range(max(2, pl.w * pl.h // 16)):
-            c = (random.randint(ix0 + 1, ix1 - 1), random.randint(iy0 + 3, iy1))
+            c = (random.randint(min(ix0 + 1, ix1), max(ix0 + 1, ix1 - 1)), random.randint(min(iy0 + 3, iy1), iy1))
             put(c, TABLE)
         put((ix0, iy0), BARREL)
         put((ix1, iy0), BARREL)

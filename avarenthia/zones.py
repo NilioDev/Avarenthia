@@ -751,7 +751,10 @@ def tick(game):
 
 
 def end_fight(game, m):
-    """The fight in this zone is over: those who are left of it go their way."""
+    """The fight in this zone is over: those who are left of it go their way; over the dead the vultures come."""
+    if any(getattr(o, 'enc', False) and o.hp <= 0 and not o.is_npc for o in m.mons) or getattr(m, 'slain', None):
+        from . import landtells as LT
+        LT.vultures(game, *m.zone)
     m.mons = [o for o in m.mons if not (getattr(o, 'enc', False) and (o.is_npc or o.hp > 0))
               and getattr(o, 'role', '') != 'escort']
     for o in m.mons:

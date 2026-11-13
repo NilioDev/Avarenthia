@@ -9653,6 +9653,13 @@ def city_rules():
             assert (ex, ey) in reach, (s.name, 'a gate cut off')
         stall = next(o for o in m.mons if o.is_npc and o.role == 'market')
         assert any((stall.x + dx, stall.y + dy) in reach for dx in (-1, 0, 1) for dy in (-1, 0, 1)), s.name
+    # an inn in every town, city and great city of every people (round 62): its building and its keeper
+    for s in g.world.settlements:
+        if s.kind in ('town', 'city', 'metropolis', 'deephold'):
+            m = g.maps.get(s.map_key) or TW.gen_settlement_map(g, s)
+            ms = [m] + [g.maps[k] for k in (s.map_key + ':crown',) if k in g.maps]     # the elven city's inn is up in the crown
+            assert 'inn' in s.services and any(o.is_npc and o.role == 'inn' for x in ms for o in x.mons), (s.name, s.kind, s.race)
+            assert s.kind == 'deephold' or any(b['kind'] == 'inn' for x in ms for b in getattr(x, 'buildings', [])), (s.name, s.race)
     print('kinds in this world:', sorted(seen))
     assert {'orc', 'grown'} <= seen
     # bridges on the land: laid straight from bank to bank, in the style of whose land it is
@@ -12037,11 +12044,197 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def heard_lit():
+    """Heard, lit and seen: noise by what you do (steps, armour, a fight, a spell by its school, a door) runs along the
+    halls and not through rock; a foe that heard you comes to look with ? in IN SIGHT; the ring; Quiet/Soft/Loud;
+    what you hear out of sight (letter or ?) fades; noticing as a sum of light, distance, armour, kind; living
+    light; a torch put out; the last-seen mark."""
+    from avarenthia import heard as HL, debug as DBG, debug_tests as DT, arts as ART
+    print('== heard_lit')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    DT.s_deep(g, 0, 'dungeon (rooms)', 1)
+    m = g.map
+    m.mons = [o for o in m.mons if o.is_npc]
+    g.compute_fov()
+    # a noise runs along the halls, not through rock
+    f = HL.spread(m, p.x, p.y, 10)
+    assert f[(p.x, p.y)] == 0 and all(D.TILES[m.tile(x, y)].walk or D.TILES[m.tile(x, y)].door for x, y in f)
+    rock = next(((x, y) for y in range(m.h) for x in range(m.w) if not D.TILES[m.tile(x, y)].walk
+                 and max(abs(x - p.x), abs(y - p.y)) <= 3), None)
+    assert rock is None or rock not in f
+    # a foe out of sight that hears a loud noise comes to look; it does not wake
+    far = max(((x, y) for (x, y), d in f.items() if 5 <= d <= 9 and not g.visible(x, y)), key=lambda c: f[c], default=None)
+    if far is None:
+        far = max(f, key=f.get)
+    mon = DBG.spawn(g, 'goblin')
+    mon.x, mon.y = far
+    mon.awake = False
+    HL.make(g, p.x, p.y, 6)
+    assert mon.look_at == (p.x, p.y) and not mon.awake and HL.coming(mon)
+    assert any(e[0] == 'ring' for e in g.events), 'a loud noise draws the ring'
+    app.after_action()
+    app.render()
+    from avarenthia import ui as U
+    assert U.intent(g, mon)[0] == 'heard you, comes to look'
+    d0 = max(abs(mon.x - p.x), abs(mon.y - p.y))
+    for _ in range(4):
+        HL.look_turn(g, mon)
+    assert max(abs(mon.x - p.x), abs(mon.y - p.y)) < d0 or mon.look_at is None, 'it walks to the noise'
+    # how loud you are: a step in leather is quiet, in plate loud; a fight loud
+    p.loud = None
+    HL.walked(g)
+    assert HL.loudness(g) == 'Quiet'
+    HL.fought(g)
+    assert HL.loudness(g) == 'Loud'
+    app.render()
+    assert 'Loud' in app.cv.dump()
+    assert HL.SCHOOL['fire'] > HL.SCHOOL['shadow']
+    # noticing is a sum: light, distance, armour, kind; the undead see by no light
+    mon.x, mon.y = p.x + 1, p.y
+    near = HL.notice(g, mon, .65)
+    mon.x, mon.y = far
+    assert HL.notice(g, mon, .65) < near
+    lit = HL.light_on(g, p.x, p.y)
+    HL.flare(g, p.x, p.y, 5, (255, 150, 60), 2)
+    assert HL.light_on(g, p.x, p.y) > lit and HL.glows(g)
+    # what you hear: a foe moving out of sight leaves a sign; it fades
+    mon.awake = True
+    near_far = [c for c in f if not g.visible(*c) and max(abs(c[0] - p.x), abs(c[1] - p.y)) <= HL.hear_range(g) - 1]
+    if near_far:
+        far = max(near_far, key=lambda c: max(abs(c[0] - p.x), abs(c[1] - p.y)))
+    mon.x, mon.y = far
+    m.heard = {}
+    for _ in range(12):
+        HL.after_turn(g)
+        if m.heard:
+            break
+        g.turn += 1
+    if not g.visible(*far):
+        assert m.heard, 'heard out of sight'
+        ch = next(iter(m.heard.values()))[0]
+        assert ch in ('?', mon.ch)
+        g.turn += HL.HEAR_FADE + 2
+        mon.awake = False
+        mon.look_at = None
+        HL.after_turn(g)
+        assert not m.heard, 'it fades'
+    # last seen: a foe that walks out of sight leaves its mark until you look there
+    mon.x, mon.y = next((x, y) for (x, y), d in f.items() if 1 < d <= 3 and g.visible(x, y))
+    HL.after_turn(g)
+    vx, vy = mon.x, mon.y
+    mon.x, mon.y = far
+    HL.after_turn(g)
+    if not g.visible(*far):
+        assert mon.id in m.last_seen and tuple(m.last_seen[mon.id][:2]) == (vx, vy)
+        app.render()
+    # a torch put out darkens the room
+    if getattr(m, 'lights', None):
+        lx, ly = m.lights[0][0], m.lights[0][1]
+        n = len(m.lights)
+        assert HL.put_out(g, lx, ly, 0) and len(m.lights) < n
+    # the handbook
+    from avarenthia import handbook as HB
+    assert any('makes noise' in str(b) for b in HB.ch_fighting(g))
+    import pickle
+    pickle.dumps(g)
+    print('heard_lit ok')
+
+
+def land_tells():
+    """The land tells: smoke over towns from afar (dark with a fire over a burnt one), birds before an ambush by a
+    wood (sooner with Cunning), vultures over a fight and a battlefield, worn paths that grow over, settlements
+    rebuilt in stages after every harm."""
+    from avarenthia import landtells as LT, living as LV, debug as DBG
+    print('== land_tells')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    s = next(t for t in w.settlements if t.kind == 'village' and t.id != 0)
+    DBG.to_over(g, s.x, s.y + 6)
+    g.turn = g.turn - g.turn % D.DAY_LEN + D.DAY_LEN // 2                # midday
+    puffs = LT.smoke(g, s, 1.0, False)
+    assert puffs and all(y < s.y for _x, y, _c, _col in puffs[:-1]) and puffs[0][3] != LT.DARK
+    assert not LT.smoke(g, s, 1.0, True), 'no light smoke seen by night'
+    # a harm: dark smoke and a fire, by night too; burnt, then timber, then whole
+    LT.harm(g, s, 'raid')
+    assert LT.stage(g, s) == 'burnt' and LV.plundered(g, s)
+    dark = LT.smoke(g, s, 1.0, True)
+    assert dark and any(ch == '*' for _x, _y, ch, _c in dark)
+    s.harm_day -= 15
+    s.plundered -= 15                                   # fifteen days on
+    assert LT.stage(g, s) == 'timber'
+    s.harm_day, s.plundered = g.day, g.day + 25
+    DBG.teleport(g, ('s', s.id))
+    m = g.map
+    assert m.burnt_cells and m.burnt_stage == 'burnt'
+    assert any('raiders' in t for t, _c in g.log[-6:]), g.log[-6:]
+    to_over(g, s.id)
+    s.harm_day -= 15
+    s.plundered -= 15
+    g.enter_town(s.id)
+    assert g.map.burnt_stage == 'timber' and any('fresh timber' in t for t, _c in g.log[-6:])
+    to_over(g, s.id)
+    s.plundered, s.harm_day = g.day, g.day - 30
+    g.enter_town(s.id)
+    assert not g.map.burnt_cells and LT.stage(g, s) is None
+    # drawn on the world map: smoke by day, vultures over a battlefield, a worn path
+    to_over(g, s.id)
+    DBG.to_over(g, s.x, s.y + 4)
+    LV.battle(g, s.x + 3, s.y + 3, 'test')
+    om = g.maps['over']
+    x, y = next((x, y) for y in range(s.y - 8, s.y + 8) for x in range(s.x - 8, s.x + 8)
+                if om.inb(x, y) and om.t[y * om.w + x] == D.GRASS)
+    for _ in range(12):
+        LT.wear(g, x, y)
+    assert LT.worn(g, y * om.w + x)
+    g.compute_fov()
+    app.render()
+    dump = app.cv.dump()
+    assert 'ˇ' in dump and ('§' in dump or '°' in dump), 'vultures and smoke on the world map'
+    for _ in range(40):
+        LT.daily(g)
+    assert not LT.worn(g, y * om.w + x), 'the grass grows back'
+    LT.vultures(g, s.x - 3, s.y)
+    assert w.vultures
+    # birds before an ambush by a wood: a few steps of warning, more with Cunning
+    wood = next((x, y) for y in range(5, om.h - 5) for x in range(5, om.w - 5) if om.t[y * om.w + x] == D.GRASS
+                and LT.woods_near(g, x, y) and w.settlement_at(x, y) is None)
+    DBG.to_over(g, *wood)
+    p.disc.setdefault('cunning', [0, 0])
+    p.disc['cunning'][0] = 0
+    assert LT.warning(g) == 2
+    p.disc['cunning'][0] = 40
+    assert LT.warning(g) == 4
+    p.disc['cunning'][0] = 0
+    keys = ['wolf', 'wolf']
+    assert LT.flush(g, 1, keys, 0, D.GRASS)
+    assert p.ambush and any('Birds burst from the trees' in t for t, _c in g.log[-3:])
+    assert any(e[0] == 'birds' for e in g.events)
+    app.after_action()
+    app.render()
+    assert not LT.step(g) and p.ambush['n'] == 1
+    assert LT.step(g) and p.ambush is None, 'the ambush falls'
+    assert g.zone_fight or g.encounter or g.cur != 'over'
+    # an ambush waiting lets you go when you go into a town
+    p.ambush = dict(n=2, lvl=1, keys=keys, elite=0, terrain=D.GRASS, at=wood)
+    LT.calm(g)
+    assert p.ambush is None
+    # the look legend names them
+    from avarenthia import guide as GDE, handbook as HB
+    assert any('Birds burst' in str(b) or 'vultures' in str(b).lower() for b in HB.ch_land(g))
+    import pickle
+    pickle.dumps(g)
+    print('land_tells ok')
 
 
 def first_sight():

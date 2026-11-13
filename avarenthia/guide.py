@@ -69,6 +69,9 @@ def in_view(g):
                 ch, fg = HT.look(g, h)
                 row = crs.setdefault(HT.herd_name(h), [ch, fg, 0])
                 row[2] += 1
+        from . import landtells as LT
+        for (ch, fg), nm in LT.view_signs(g):
+            crs.setdefault(nm, [ch, fg, 1])
     else:
         for o in m.mons:
             if g.visible(o.x, o.y) and not getattr(o, 'lurk', False) and not getattr(o, 'invis', 0):
@@ -108,6 +111,9 @@ def signs(g):
     wall = SL.wall_cells(g)
     if any(i in wall for i in seen):                 # the Northern Wall's broken line (round 58c)
         rows.setdefault('The Northern Wall, long fallen', [('─', SL.WALL_FG)])
+    from . import landtells as LT
+    if any(LT.worn(g, i) and om.seen[i] for i in getattr(g.world, 'wear', {})):
+        rows.setdefault('A worn path through the grass', [('·', LT.WORN)])
     for poi in g.world.pois:
         if poi.found:
             rows.setdefault(NAMED_KIND.get(poi.kind, poi.name), [(poi.glyph[0], poi.glyph[1])])
@@ -129,6 +135,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 
 # ------------------------------------------------------------------ first-time tips
 TIPS = {
+    'heard': 'Tip: they heard you. A ? before a name in IN SIGHT: it comes to look where the noise was. Walk softly.',
     'games': 'Tip: walk into a gaming table π to play. Bones and The Count want the evening and a stake; Vigil, any hour.',
     'foe': 'Tip: Tab picks a target, and the keys 1 to 6 use your skills on it.',
     'over': 'Tip: m opens the map; on it, the keys 1 to 7 show the land, danger, factions, realms, jobs, trade and the shadow.',

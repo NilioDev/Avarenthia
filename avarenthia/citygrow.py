@@ -2329,9 +2329,19 @@ def _buildings(game, m, s, c, to, big, plots):
         sv = s.services
         n_inn, n_shop, n_stab = (n_inn if 'inn' in sv else 0), (n_shop if 'shop' in sv else 0), \
             (n_stab if 'stables' in sv else 0)
+    if s.kind in ('town', 'city', 'metropolis'):     # an inn in every town and city (round 62): a bed, a table
+        n_inn = max(1, n_inn)
+        if 'inn' not in s.services:
+            s.services = list(s.services) + ['inn'] if isinstance(s.services, list) else s.services | {'inn'}
     for i in range(n_inn):
         g = gates[i % len(gates)]
         for h in pick(1, lambda h: dist(h, g), 20, 4):
+            want.append(('inn', h, None))
+    if n_inn and not any(k == "inn" for k, _h, _g in want):   # narrow canal houses: one deep enough, by the market
+        fit = [h for h in houses if id(h) not in taken and h[2] - h[0] - 1 >= 3 and h[3] - h[1] - 1 >= 4]
+        if fit:
+            h = min(fit, key=lambda h: dist(h, (mx, my)) - area(h) * 3)
+            taken.add(id(h))
             want.append(('inn', h, None))
     for h in pick(n_shop, lambda h: dist(h, (mx, my)), 12 if folk else 16):
         want.append(('shop', h, None))

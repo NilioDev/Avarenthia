@@ -1320,7 +1320,8 @@ def burn_village(game, rid, who):
     if not cands or random.random() < .5:
         return
     s = random.choice(cands)
-    s.plundered = game.day + PLUNDER_DAYS
+    from . import landtells as LT
+    LT.harm(game, s, 'war')          # burnt, then rebuilt over weeks (round 62)
     s.event = ('war', random.randint(6, 9))
     for g in ('grain', 'ale', 'cloth'):
         s.market[g][0] = min(s.market[g][0], 4)

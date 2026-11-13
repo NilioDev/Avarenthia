@@ -76,7 +76,8 @@ def plunder(game, region, faction):
     if not cands or random.random() < .5:
         return
     s = random.choice(cands)
-    s.plundered = game.day + PLUNDER_DAYS
+    from . import landtells as LT
+    LT.harm(game, s, 'plunder')          # burnt, then rebuilt over weeks (round 62)
     s.event = ('war', random.randint(6, 9))
     for g in ('grain', 'ale', 'cloth'):
         s.market[g][0] = min(s.market[g][0], 4)
@@ -114,12 +115,21 @@ def on_enter_town(game, s, m):
                                 over[i] = (ch, (84, 74, 66) if t == D.WALL else (70, 62, 56), (18, 14, 12))
                                 cells.append(i)
             m.burnt_cells = cells
+            m.burnt_stage = 'burnt'
             m._look = None
-        game.msg(f'{s.name} was plundered not long ago: burnt roofs, empty stalls. The folk are rebuilding.', 'bad')
+        from . import landtells as LT
+        LT.town_look(game, s, m)                     # fresh timber once the rebuilding is well on (round 62)
+        if LT.stage(game, s) == 'timber':
+            game.msg(f'{s.name} is being rebuilt: fresh timber on the burnt walls, planks stacked in the lanes.', 'info')
+        else:
+            who = LT.HARM_WORDS.get(getattr(s, 'harm', None), 'raiders')
+            game.msg(f'{s.name} was burnt by {who} not long ago: burnt roofs, empty stalls. The folk are rebuilding.',
+                     'bad')
     elif burnt:
         for i in burnt:
             m.over.pop(i, None)
         m.burnt_cells = None
+        m.burnt_stage = None
         m._look = None
         game.msg(f'{s.name} has been rebuilt. New thatch shines on the roofs.', 'info')
 

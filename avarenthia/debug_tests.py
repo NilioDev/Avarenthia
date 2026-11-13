@@ -16,8 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'A roof of your own', 'Heard, lit and seen', 'The land tells, and an inn in every town',
-             'Camps on the road', 'Wars that feel like wars'}
+NOT_BUILT = {'A roof of your own', 'Camps on the road', 'Wars that feel like wars'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -729,6 +728,28 @@ SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
 
 # ------------------------------------------------------------------ the recipes, one per line of testing.md
 R = {
+    # Heard, lit and seen
+    'Heard, lit and seen :: Noise': [('deep', 'dungeon (rooms)', 1), ('dbg', 'foe_behind_wall'), ('give', 'Plate Mail'),
+                                     ('note', 'walk, fight, cast, open doors; watch the ring and Quiet/Soft/Loud.')],
+    'Heard, lit and seen :: What you hear': [('deep', 'dungeon (cave)', 1), ('dbg', 'foe_behind_wall', True),
+                                             ('rank', 'cunning', 30), ('note', 'wait (5) and listen: the log, the sign.')],
+    'Heard, lit and seen :: Noticing': [('deep', 'dungeon', 1), ('class', 'cunning', 20), ('tome', 'cunning', 1),
+                                        ('spawn', 'goblin', 'skeleton', 'wolf', {'sleep': True}),
+                                        ('note', 'sneak near it in the dark and in torchlight.')],
+    'Heard, lit and seen :: Light that lives': [('deep', 'dungeon (rooms)', 1), ('class', 'fire', 20),
+                                                ('tome', 'fire', 1), ('spawn', 'goblin'),
+                                                ('note', 'cast fire in a dark hall; a storm tome puts out torches.')],
+    'Heard, lit and seen :: Last seen': [('deep', 'dungeon (rooms)', 1), ('spawn', 'goblin'),
+                                         ('note', 'step back round a corner: its dim letter stays.')],
+    # The land tells
+    'The land tells, and an inn in every town :: Signs on the land': [
+        ('near', 'village'), ('hour', 11), ('dbg', 'ambush'),
+        ('note', 'smoke over the village; walk on for the ambush; F12 [e] raid, then Time (days) for vultures and paths.')],
+    'The land tells, and an inn in every town :: Villages rebuilt': [
+        ('near', 'village'), ('dbgnext', 'burn_nearest', 0, 14, 30),
+        ('note', 'go in: burnt; Enter again: fresh timber; again: whole.')],
+    'The land tells, and an inn in every town :: An inn in every town': [('to', ('city', 'town', 'metropolis', 'deephold')),
+                                                                         SCHOOLS_NOTE],
     # A first sight of a town
     'A first sight of a town :: The skyline card': [('dbg', 'forget_sights'),
                                                     ('to', ('hamlet', 'village', 'town', 'city', 'metropolis',

@@ -179,7 +179,8 @@ def daily(game):
     if not near:
         return
     s = min(near, key=lambda q: cheb(q.x, q.y, r['x'], r['y']) + random.randint(0, 12))
-    s.plundered = game.day + PLUNDER_DAYS
+    from . import landtells as LT
+    LT.harm(game, s, 'rift')          # burnt, then rebuilt over weeks (round 62)
     s.event = ('war', random.randint(4, 7))
     r['raids'] += 1
     taken = random.choice(TAKEN).format(v=s.name)

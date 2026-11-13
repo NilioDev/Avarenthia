@@ -648,6 +648,53 @@ def reset_room(game):
     game.msg(f'Debug: "{m.rooms[rid][2]}" is back as drawn.', 'info')
 
 
+def burn_nearest(game, days_on=0):
+    """The nearest settlement (not your home town) burns, and days_on days of its rebuilding pass."""
+    from . import landtells as LT
+    from .worldgen import cheb
+    wx, wy = game.world_pos()
+    s = min((t for t in game.world.settlements if t.id != 0 and t.kind in ('hamlet', 'village', 'town')),
+            key=lambda t: cheb(t.x, t.y, wx, wy))
+    LT.harm(game, s, 'raid')
+    s.harm_day -= days_on
+    s.plundered -= days_on
+    game.msg(f'Debug: {s.name} burns ({LT.stage(game, s) or "whole"}).', 'info')
+    return s
+
+
+def ambush(game):
+    """Onto the world map by a wood, where the birds burst up before an ambush."""
+    from . import landtells as LT
+    om = game.maps['over']
+    wx, wy = game.world_pos()
+    spots = [(x, y) for y in range(max(2, wy - 40), min(om.h - 2, wy + 40)) for x in range(max(2, wx - 40), min(om.w - 2, wx + 40))
+             if om.t[y * om.w + x] == D.GRASS and game.world.settlement_at(x, y) is None and LT.woods_near(game, x, y, 2)]
+    if not spots:
+        game.msg('Debug: no wood near.', 'bad')
+        return
+    x, y = min(spots, key=lambda q: abs(q[0] - wx) + abs(q[1] - wy))
+    to_over(game, x, y)
+    lvl = game.world.danger_at(x, y)
+    LT.flush(game, lvl, ['wolf', 'wolf'], 0, D.GRASS)
+
+
+def foe_behind_wall(game, awake=False):
+    """A goblin out of sight, a few rooms off along the halls (for noise and hearing)."""
+    from . import heard as HL
+    m, p = game.map, game.player
+    f = HL.spread(m, p.x, p.y, 16)
+    far = [c for c, d in f.items() if 6 <= d <= 14 and not game.visible(*c) and not game.occupied(m, *c)]
+    if not far:
+        game.msg('Debug: no hall out of sight here.', 'bad')
+        return
+    x, y = max(far, key=lambda c: f[c])
+    from .entities import make_monster
+    mon = make_monster(game, 'goblin', x, y, max(1, p.lvl))
+    mon.awake = awake
+    m.mons.append(mon)
+    game.msg(f'Debug: a goblin {"walks" if awake else "sleeps"} out of sight, {f[(x, y)]} steps off.', 'info')
+
+
 def forget_sights(game):
     """Forget the settlements you have seen, so each one's first sight comes again."""
     game.player.sights = set()

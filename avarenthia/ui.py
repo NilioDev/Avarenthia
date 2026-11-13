@@ -657,6 +657,9 @@ def intent(g, o):
     if o.hold or getattr(o, 'frozen', False):
         return 'stunned', INFO
     if not o.awake:
+        from . import heard as HL
+        if HL.coming(o):
+            return 'heard you, comes to look', GOLD
         return 'unaware of you', GOOD
     d = cheb(o.x, o.y, p.x, p.y)
     if d <= 1:
@@ -784,6 +787,11 @@ class GameScreen(Screen):
             sw = SH.where_line(g, wx, wy) if m.kind == 'over' else None
             if sw and x + 10 + len(sw) < room:
                 cv.text(x + 9, MAP_H, f'· {sw} ', (190, 130, 230), BG)     # his coast, or a barony a servant holds
+        if m.kind not in ('over', 'town'):
+            from . import heard as HL
+            word = HL.loudness(g)                        # how loud you are now (round 63)
+            lx = x + (9 if m.kind == 'wild' and not getattr(m, 'underground', False) else 0)
+            cv.text(lx, MAP_H, f'· {word} ', HL.HEARD if word != 'Loud' else GOLD, BG)
         if DBG.has(g, 'coords'):
             cv.text_right(MAP_W - 2, MAP_H, DBG.status_bits(g), INFO, BG)
         elif right:
@@ -857,6 +865,9 @@ class GameScreen(Screen):
         # fire beetles and ember spiders light the dark around them
         glows = [(o.x, o.y, o.fg) for o in m.mons if lighting and not o.is_npc and 'glow' in o.tpl.get('beh', ())
                  and not getattr(o, 'lurk', False)]
+        if lighting:
+            from . import heard as HL
+            glows += HL.glows(g)                     # light that lives: a fire spell's flash, lightning (round 63)
         birds = {(x, y): (ch, col) for x, y, ch, col in TOW.sky(m, t, night)} if sky else None
         aura, wisps = AUR.auras(g, m, t)            # the wan glow of the ghostly, the faint fire of fiends
         seeall = any(b[0] == 'seeall' for b in g.player.buffs)
@@ -948,10 +959,12 @@ class GameScreen(Screen):
                     dd = ((mx - p.x) ** 2 + (my - p.y) ** 2) ** .5
                     # you carry a torch underground; in town at night only the lamps and windows give light
                     k = max(0.0, 1 - dd / 7.5) * .95 if torchlit else 0.0
-                    for gx, gy, gc in glows:
+                    for gl in glows:
+                        gx, gy, gc = gl[0], gl[1], gl[2]
+                        gr = gl[3] if len(gl) > 3 else 3
                         gd = max(abs(mx - gx), abs(my - gy))
-                        if gd <= 3:
-                            gk = (1 - gd / 4) * .8
+                        if gd <= gr:
+                            gk = (1 - gd / (gr + 1)) * .8
                             lr, lg, lb = lr + gk * gc[0] / 255, lg + gk * gc[1] / 255, lb + gk * gc[2] / 255
                     ch, fg, bg = DR.lit((ch, fg, bg), (lr + k, lg + k * .82, lb + k * .55))
                     if beam:
@@ -1096,6 +1109,11 @@ class GameScreen(Screen):
             WX.apply(cv, 0, 0, MAP_W, MAP_H, wk, t, centre=(p.x - ox, p.y - oy), sheltered=shelter)
         elif wk != 'clear':
             WX.passes(cv, 0, 0, MAP_W, MAP_H, wk, t)
+        if m.kind != 'over':                        # heard out of sight, and where a foe was seen last (round 63)
+            from . import heard as HL
+            for hx, hy, hch, hcol in HL.marks(g):
+                if m.inb(hx, hy) and (hx, hy) != (p.x, p.y) and (hx, hy) not in mons:
+                    self._put_map(cv, hx, hy, hch, hcol)
         self.draw_labels(cv, m, p, ox, oy, mons)
         # effects
         for kind, t0, ev in app.effects:
@@ -1105,6 +1123,19 @@ class GameScreen(Screen):
                 for x, y in cells:
                     if g.visible(x, y):
                         self._put_map(cv, x, y, ch, col)
+            elif kind == 'ring' and m.kind != 'over':     # a loud noise runs out through the halls (round 63)
+                _k, rr, cells = ev
+                front = int(age / .7 * rr)
+                for cx_, cy_, d_ in cells:
+                    if d_ == front and (cx_, cy_) != (p.x, p.y) and not m.mon_at(cx_, cy_):
+                        self._put_map(cv, cx_, cy_, '◦', scale((176, 192, 226), .5 + .5 * (1 - front / max(1, rr))))
+                self.moving = True
+            elif kind == 'birds' and m.kind == 'over':    # birds bursting from a wood before an ambush (round 62)
+                from . import landtells as LT
+                for bx, by, ch in LT.birds(ev, age):
+                    if m.inb(bx, by) and m.seen[by * m.w + bx]:
+                        self._put_map(cv, bx, by, ch, LT.BIRD)
+                self.moving = True
             elif kind == 'fx' and ev[1] == 'sky':          # one white frame for a great lightning stroke
                 if not app.reduced_motion and hasattr(cv, 'lighten') and AN.sky_on(ev[2], age * app.fx_speed()):
                     cv.lighten(MAP_W, MAP_H, .55)
@@ -1232,6 +1263,10 @@ class GameScreen(Screen):
                         bg = AN.camp_glow(time.monotonic(), st.x, st.y)     # their fires, seen from afar
                         self.moving = True
                     cv.put(vx, vy, ch, col, bg)
+        # smoke over the towns, vultures over the dead, worn paths (the land tells, round 62)
+        from . import landtells as LT
+        if LT.draw_over(self, cv, ox, oy, MAP_W, MAP_H):
+            self.moving = True
         # settlements, by size; dwarven holds are a gate in the mountainside
         LOOKS = {'metropolis': ('█', (255, 232, 150), (90, 70, 30)), 'city': ('■', (255, 216, 96), (60, 44, 20)),
                  'town': ('⌂', (250, 206, 90), (52, 38, 18)), 'village': ('⌂', (226, 186, 90), None),
@@ -1636,7 +1671,12 @@ class GameScreen(Screen):
             if o.id == tid:
                 cv.fill(x, yy, PW, 2, ' ', FG, bg)
             cv.put(x, yy, o.ch, o.fg, bg)
-            cv.text(x + 2, yy, short_name(o.name, PW - 13), FG, bg)
+            from . import heard as HL
+            if HL.coming(o):                            # it heard you and comes to look (round 63)
+                cv.put(x + 2, yy, '?', HL.HEARD, bg)
+                cv.text(x + 4, yy, short_name(o.name, PW - 15), FG, bg)
+            else:
+                cv.text(x + 2, yy, short_name(o.name, PW - 13), FG, bg)
             fr = max(0, o.hp) / max(1, o.maxhp)
             n = int(10 * fr + .99) if o.hp > 0 else 0
             for j in range(10):

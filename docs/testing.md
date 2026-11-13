@@ -689,7 +689,7 @@ What was built before the Tests page, so it can be checked from F12 too.
 - **Furnishing** - the first-time tip, placing, picking up and moving, every piece's bump, Comfort's stars and
   "well rested", the peoples' styles and a full set, dyes, delivery. Debug: give furniture of each style, Coin.
 
-## Heard, lit and seen (approved 10 November 2026)
+## Heard, lit and seen (approved 10 November 2026, built 13 November 2026)
 
 - **Noise** - walking, running, a fight, each school's spells, a kicked door, heavy armour; the ring of `◦` along
   halls and not through rock; Quiet/Soft/Loud under the map; a foe coming to look with `?` in IN SIGHT. Debug: spawn
@@ -702,7 +702,7 @@ What was built before the Tests page, so it can be checked from F12 too.
   put out; a shadow behind a pillar. Debug: give fire spells, start a raid on a village.
 - **Last seen** - the dim mark where a foe left your sight, gone when you look there again.
 
-## The land tells, and an inn in every town (approved 10 November 2026)
+## The land tells, and an inn in every town (approved 10 November 2026, built 13 November 2026)
 
 - **Signs on the land** - smoke over a village from afar (and dark with a fire over a burning one), birds before an
   ambush, vultures over a fight, a worn path growing and growing over. Debug: Teleport near a village, start a raid,

@@ -725,7 +725,8 @@ def raided(game, wd):
         return
     if plundered(game, s):
         return
-    s.plundered = game.day + PLUNDER_DAYS
+    from . import landtells as LT
+    LT.harm(game, s, 'raid')          # burnt, then rebuilt over weeks (round 62)
     s.event = ('war', random.randint(5, 8))
     for g in ('grain', 'ale', 'cloth'):
         s.market[g][0] = min(s.market[g][0], 4)

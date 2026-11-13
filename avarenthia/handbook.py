@@ -110,6 +110,22 @@ def ch_fighting(g):
         ('p', 'You fight by walking into an enemy. Every step and every blow is one turn, and the enemies move when '
               'you do: nothing happens while you think.'),
         ('map', 'fight'),
+        ('h', 'Noise, light, hearing'),
+        ('p', 'What you do makes noise. A step is quiet, but chain clinks and plate clanks; a fight is loud, a spell '
+              'as loud as its school (fire roars, shadow only whispers), a door kicked in loudest of all. Noise runs '
+              'along the halls and through doors, never through rock. When it is loud you see it run out, a pale '
+              'ring {◦|176,192,226}. The line under the map says how loud you are now: Quiet, Soft or Loud.'),
+        ('p', 'A foe that hears you and does not see you comes to look where the noise was; IN SIGHT puts a '
+              '{?|150,170,210} before its name. Whether a foe notices you is a sum: the light where you stand, how '
+              'near it is, your armour and your sneaking, and what it is. Bosses, wardens and beasts hear better; the '
+              'undead see by no light. In the dark of a camp at night you can slip past.'),
+        ('p', 'You hear what you cannot see: a dim sign in the dark about where something moved, its letter when you '
+              'know its kind well, else {?|150,170,210}, and the log says what you heard. It fades after a few turns. '
+              'With more Cunning you hear further. A foe that walked out of your sight leaves a dim mark of its '
+              'letter where you saw it last, until you look there again.'),
+        ('p', 'What burns gives light while it burns: burning ground, a fire spell for a moment, lightning over a '
+              'whole room, lava. A torch put out by a storm\'s gust or by a thing of the dark leaves its room darker, and a '
+              'pillar between you and a flame throws a shadow.'),
         ('h', 'Picking a target'),
         ('k', '[Tab]', 'the next enemy in sight; [Shift+Tab] the one before.'),
         ('k', '[Esc]', 'let go of your target.'),
@@ -736,6 +752,16 @@ def ch_land(g):
         ('p', 'Roads are patrolled and fairly safe. The further you stray from them, the worse it gets. The line under '
               'the map shows the danger where you stand, {■■□□□}; the Danger layer of the map [2] shows it everywhere '
               'you know.'),
+        ('h', 'The land tells'),
+        ('p', 'Smoke rises over a village or town you know, {§|196,192,184} then {°|196,192,184} then '
+              '{·|196,192,184}, and drifts with the day\'s wind; you see it from afar by day. Over a place that burns, or '
+              'was burnt not long ago, the smoke is dark, {§|90,80,74}, with a small red fire {*|236,92,30}.'),
+        ('p', 'Birds burst from a wood, {^|186,180,168} {v|186,180,168}, a few steps before something there falls on '
+              'you: the log says where. With Cunning you see them sooner. Three vultures, {ˇ|150,128,112}, circle '
+              'over a field where a fight was or a battle: something lies dead there.'),
+        ('p', 'Where you and the caravans walk often the grass wears to a path, {·|150,132,96}; it grows over when no '
+              'one comes. A village burnt by raiders, a war, a dragon or a great evil is rebuilt over some weeks: '
+              'burnt roofs first, then fresh timber, then whole again.'),
         ('h', 'Knowing the land'),
         ('p', 'At first you only know where Thornfield lies. Signposts {┬}, townsfolk and travellers tell you where '
               'places lie, but the land itself you only learn by walking it. Land you have seen but cannot see now '

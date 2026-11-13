@@ -66,6 +66,13 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **Heard, lit and seen** (round 63, 13 November 2026; `heard.py`; test part `heard_lit`). Noise by what you do runs
+  along the halls; unaware foes come to look (? in IN SIGHT); the ring; Quiet/Soft/Loud; what you hear out of sight;
+  noticing as a sum of light, distance, armour and kind; living light, torches put out; the last-seen marks. Spec below.
+- **The land tells, and an inn in every town** (round 62, 13 November 2026; `landtells.py`; test parts
+  `land_tells`, `city_rules`). Smoke over towns from afar, dark with a fire over a burnt one; birds before an ambush
+  by a wood; vultures over fights and battlefields; worn paths that grow over; every harm rebuilt in stages; an inn
+  in every town and city. Spec below.
 - **The Tests page grows** (round 60, 13 November 2026; `debug_tests.py`, `debug_ui.py`; test part `debug_tests`).
   The older rounds have their lines; a tick lasts across builds until a heading's `Changed:` date; each heading
   shows "3/5 ✓ 1 ×"; `u` the open lines, `x` the × lines with their notes. Spec below.
@@ -3465,3 +3472,60 @@ lit windows at night), its name in gold and one line (kind, land, lord). Enter o
 Built as: `skyline.py` (the card, `p.sights`), `ui.SkylineScreen`, the journal's new Places tab, `debug.forget_sights`;
 the elven glades and gnome hamlets (sites, not settlements) get their card too. The tests turn the card off
 (`ui.App.first_sight_cards`), as it would take the next key; part `first_sight` turns it on.
+
+## The land tells, and an inn in every town (built 13 November 2026; the spec)
+
+The "Later" world ideas of round 5, now taken up. Each is one sign with one meaning, seen before you meet the thing:
+- **Smoke from afar** (animated mocks: project files `nextlevel/anim_*.gif`): over a village or town in the
+  distance on the world map light smoke rises, `§` then `°` then `·`, puffs that climb slowly and drift with the
+  wind; over one that burns or was plundered the smoke is dark, with a small red fire `*` that flickers.
+- **Birds flushing**: a few `^` `v` (wings up, down) burst up from a wood a few turns before an ambush there and fly
+  off; a log line ("Birds burst from the trees to the north-east."). Cunning sees them sooner.
+- **Vultures** `ˇ`: three circle slowly over a field after a fight, a dead giant or a battlefield: something lies there.
+- **Worn paths**: where you and the caravans walk often, grass becomes a path `·`; it grows over when no one comes.
+- **Villages rebuilt**: a settlement struck by a raid, a war, a dragon, a great evil or a fire is rebuilt over weeks,
+  seen on its map: burnt roofs first, then fresh timber, then whole again (plundered villages already heal by time
+  in `living.py`; this widens it to every harm and shows the stages).
+- Not: the world growing new hamlets, watch fires at night (Nilio, 10 November 2026).
+- **An inn in every town and city.** Some grown cities (the canal style among them) have no inn, so no bed and no
+  gaming table; every town, city and metropolis of every people gets at least one, checked in test part
+  `city_rules`.
+- Built as: `landtells.py` (`harm`/`stage` for every harm: raids, wars, the rift, a dragon's or a great evil's
+  strike; smoke, birds, vultures, wear and their drawing), the ambush waiting on `p.ambush`, `w.vultures`, `w.wear`;
+  canal cities get an inn in a house deep enough. Debug: "ambush", "burn_nearest". Test part `land_tells`, and
+  `city_rules` checks the inns.
+
+## Heard, lit and seen (built 13 November 2026; the spec)
+
+Thread "Game naar next level tillen"; the Dutch proposal and mock screens: project files `nextlevel/` (voorstel.md,
+geluid.png, hoogte.png). Found in the code: noticing is sight only (`arts.notice`: 65% a turn for any foe that can
+see you, whatever the light, the distance or your armour), light is reckoned once per map (`dress.light_map`,
+cached), and a foe out of sight is gone from the screen. No sound from the speakers (Nilio): sound is only seen.
+- **Noise.** What you do makes noise: walking 1, running 3, a fight 4-6, a spell by its school (fire loud, shadow
+  quiet), a door kicked in 8; heavy armour +1 to +3. Noise runs along halls and through doors, never through rock.
+  A foe that hears it and does not see you comes to look where it was (it does not wake the whole place at once).
+- **Seen, not heard.** A loud noise draws one pale ring of `◦` (dim silver-blue, the colour of "heard") that runs
+  out through the halls for a moment (look rule: it moves because something really happened). A foe that heard you
+  and comes to look has `?` before its name in IN SIGHT ("heard you, comes to look"). The line under the map says
+  how loud you are now (Quiet, Soft, Loud).
+- **What you hear.** A noise out of sight leaves a dim silver-blue sign in the dark about where it was (within a
+  tile or two): the creature's letter when you know its kind well enough (bestiary, Cunning), else `?`; with a log
+  line ("Heavy feet, to the east."). It fades after a few turns. Better Cunning hears further and more exactly.
+- **Noticing becomes a sum**: the light on your tile, the distance, your armour and sneak, the foe's kind (bosses,
+  wardens and beasts hear better; the undead see by no light). Sneaking past a camp in the dark becomes a way to play.
+- **Light that lives.** What burns gives light while it burns, at no cost and never carried: burning ground, a fire
+  spell for a turn, a lightning flash over the whole room, lava, a burning house in a raid. Light counts in noticing;
+  a torch put out (a foe, wind, water) darkens a room; a pillar or statue between you and a flame throws a shadow.
+  Shown only in the colour under the signs, never as new signs.
+- **Last seen.** A foe that walks out of sight leaves a dim mark of its letter where you saw it last, until you look
+  there again (with the `?` when it heard you).
+- **Where it shows:** IN SIGHT, the line under the map, the log; a first-time tip when you are first heard; the
+  handbook chapter on fighting gets noise, light and last seen. Test part `heard_lit`.
+- **Not: high ground** (Nilio, 10 November 2026). Tried as lighter raised tiles, colour steps, relief shading and
+  contour signs with teeth (project files `nextlevel/hoogte_*.png`, `relief*.png`): none read well enough on a flat
+  grid, so fights stay level.
+- Built as: `heard.py` (noise and its spread, foes that come to look on `look_at`, noticing as a sum on top of
+  `arts.notice`, flares and `put_out`, what you hear on `m.heard`, the last-seen marks on `m.last_seen`, how loud you
+  were on `p.loud`); the ring as a UI effect; a tip 'heard'. Awake foes still find you as before (only the unaware
+  ones come to look). Debug: "foe_behind_wall". Found on the way: a debug teleport into a one-level dungeon left you
+  off the map (no stairs down on the bottom); you now stand on the stairs up.

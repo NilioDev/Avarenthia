@@ -382,6 +382,9 @@ def daily(game):
                         s.market[g][1] = ev['target']
                         s.market[g][0] = min(s.market[g][0], ev['target'] * 2)
                 who = e.name if e.known else 'Something'
+                if key in ('fire', 'war') and s.kind in ('hamlet', 'village', 'town') and s.id != 0:
+                    from . import landtells as LT
+                    LT.harm(game, s, 'dragon' if key == 'fire' else 'evil')     # it burns, and is rebuilt
                 NW.post(game, 'danger', f'{who} struck at {s.name}! ' + ev['text'].format(town=s.name), s.x, s.y)
 
 
