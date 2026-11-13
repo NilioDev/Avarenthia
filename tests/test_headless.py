@@ -12711,6 +12711,7 @@ def land_tells():
     for _ in range(12):
         LT.wear(g, x, y)
     assert LT.worn(g, y * om.w + x)
+    g.turn = (g.turn // D.DAY_LEN) * D.DAY_LEN + D.DAY_LEN // 2      # midday: by night there are no vultures
     g.compute_fov()
     app.render()
     dump = app.cv.dump()
