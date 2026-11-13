@@ -16,7 +16,8 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'A roof of your own'}
+NOT_BUILT = {'A roof of your own', 'Heard, lit and seen', 'The land tells, and an inn in every town',
+             'A first sight of a town', 'Camps on the road', 'Wars that feel like wars'}
 
 
 # ------------------------------------------------------------------ reading testing.md
