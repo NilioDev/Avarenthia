@@ -733,7 +733,7 @@ What was built before the Tests page, so it can be checked from F12 too.
   chapel, the prisoners; sleepers waking at a noise; a chest taken; a tent set burning. Debug: "Make a camp here",
   Time (night).
 
-## Wars that feel like wars (approved 10 November 2026)
+## Wars that feel like wars (approved 10 November 2026, built 13 November 2026)
 
 - **The forces** - the king's host and the barons' hosts on both sides, the defender marching out, a battle where two
   hosts meet; raiders, foragers, messengers and scouts between them; no more than about eight signs per war.

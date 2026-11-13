@@ -16,7 +16,7 @@ from . import debug as DBG
 
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
-NOT_BUILT = {'Wars that feel like wars'}
+NOT_BUILT = set()
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -464,6 +464,11 @@ def s_rank(game, n, key, rank):
     DBG.set_rank(game, key, kind, rank)
 
 
+def s_cargo(game, n, good, q):
+    """Trade goods in your cargo."""
+    game.player.cargo[good] = game.player.cargo.get(good, 0) + q
+
+
 def s_coin(game, n, copper):
     DBG.give_coin(game, copper)
 
@@ -718,7 +723,7 @@ def s_marked(game, n, k='orc', elite=1, every=True):
 STEPS = {'to': s_to, 'near': s_near, 'crossing': s_crossing, 'over': s_over, 'deep': s_deep, 'bossfloor': s_boss_dungeon,
          'days': s_days, 'month': s_month, 'hour': s_hour, 'weekday': s_weekday, 'feast': s_feast, 'fair': s_fair,
          'weather': s_weather, 'spawn': s_spawn, 'give': s_give, 'tome': s_tome, 'class': s_class, 'rank': s_rank,
-         'coin': s_coin, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
+         'coin': s_coin, 'cargo': s_cargo, 'lvl': s_lvl, 'flag': s_flag, 'event': s_event, 'standing': s_standing, 'guild': s_guild,
          'hire': s_hire, 'job': s_job, 'dbg': s_dbg, 'dbgnext': s_cycle_dbg, 'theme': s_theme, 'peopleroom': s_people_room, 'entry': s_entry, 'puzzle': s_puzzle,
          'boss': s_boss, 'note': s_note, 'first': s_first, 'marked': s_marked, 'hall': s_hall,
          'maker': s_maker, 'inn': s_inn}
@@ -774,6 +779,25 @@ R = {
     "Camps on the road :: Inside the tents": [('dbgnext', 'camp_try', 'host/friend', 'host/foe', 'dwarf/foe', 'gorvash/foe',
                                                            'sea/stranger', 'riders/foe', 'elf/friend'),
                                               ('note', 'walk into every tent; as a foe: the orders, the stores, the pen, a tent.')],
+    # Wars that feel like wars
+    'Wars that feel like wars :: The forces': [('dbg', 'war_start'),
+                                              ('note', 'the Realms layer [4]; Time: a day at a time; walk into a k.')],
+    'Wars that feel like wars :: The front and the seasons': [('dbg', 'war_start'),
+                                                              ('note', 'Time: months on; to the first of winter for the hosts going home.')],
+    'Wars that feel like wars :: A siege': [('dbg', 'war_siege'), ('cargo', 'grain', 20),
+                                           ('note', '[>] at the seat by night; Time: a day at a time to the storm.')],
+    'Wars that feel like wars :: Ransom and the peace': [('dbg', 'war_field'), ('dbgnext', 'war_score', 3, 6),
+                                                         ('note', 'cut down their captain, then ransom him at a lord of his.')],
+    'Wars that feel like wars :: The fantasy': [('dbg', 'war_field'),
+                                               ('note', 'in their camp by night: the mage\'s books, the holy banner.')],
+    "Wars that feel like wars :: Each people's way": [('dbgnext', 'war_party', 'raid', 'forage', 'message', 'scout'),
+                                                       ('note', 'Events: a raid of the raiders for the sea and the riders.')],
+    'Wars that feel like wars :: Your part': [('dbgnext', 'war_party', 'raid', 'message'), ('dbg', 'war_field'),
+                                             ('note', 'a lord at war: Orders through the front.')],
+    'Wars that feel like wars :: The field battle': [('dbg', 'war_field'),
+                                                    ('note', 'stand by the hosts, [>]; try each task; walk off the edge once.')],
+    'Wars that feel like wars :: Magic in the wars': [('dbg', 'war_field'),
+                                                     ('note', 'Take out their mage, if they have one; as a caster: Break their front.')],
     # A first sight of a town
     'A first sight of a town :: The skyline card': [('dbg', 'forget_sights'),
                                                     ('to', ('hamlet', 'village', 'town', 'city', 'metropolis',

@@ -64,6 +64,7 @@ from . import landtells as LT
 from . import heard as HL
 from . import homes as HM
 from . import camps as CM
+from . import wars as WR
 from . import behave as BH
 from . import named as NM
 from . import folk as FK
@@ -108,7 +109,8 @@ from .worldgen import D8, cheb
 CL.register()
 HM.init()
 CM.init()
-SAVE_VERSION = 77
+WR.init()
+SAVE_VERSION = 78
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -810,6 +812,9 @@ class Game:
         elif getattr(m, 'site', None) is not None:
             st = self.world.sites[m.site]
             self.over_pos = (st.x, st.y)
+        elif getattr(m, 'battle', None) is not None:
+            WR.leave(self)                              # off the edge of the field
+            walk = None
         elif getattr(m, 'camp', None) is not None:
             c = CM.get(self, m.camp)
             if c:
@@ -886,6 +891,7 @@ class Game:
             else:
                 self.msg(f'You have dealt with {(wd.name[:1].lower() + wd.name[1:]) or "them"}.', 'good')
             MS.on_group_defeated(self, wd)
+            WR.beaten(self, wd)
         else:
             wd.cooldown = 4
 
@@ -1426,6 +1432,8 @@ class Game:
         cmp = CM.of_wd(self, wd)
         if cmp is not None:
             return CM.enter(self, cmp)                 # it has made camp: you walk in
+        if wd.kind == 'warparty':
+            return WR.talk(self, wd)
         if wd.kind == 'caravan':
             EV.talk_caravan(self, wd)
             return 0
@@ -1653,6 +1661,11 @@ class Game:
             hm = HM.at(self, p.x, p.y)
             if hm:
                 return HM.enter(self, hm)              # your own home out on the land
+            fw = WR.field_at(self, p.x, p.y)
+            if fw is not None:
+                return WR.ask_field(self, fw)          # two hosts across a field: choose your side
+            if WR.besieging(self, p.x, p.y):
+                return WR.at_seat(self, p.x, p.y)      # a besieged seat: the postern
             cmp = CM.at(self, p.x, p.y)
             if cmp:
                 return CM.enter(self, cmp)             # a camp by the road
@@ -2340,6 +2353,8 @@ class Game:
             return
         m.mons.remove(mon)
         TY.kill(self, mon)
+        if getattr(m, 'battle', None) is not None:
+            WR.after_kill(self, mon)
         if getattr(mon, 'carries', None) is not None:     # a key it kept (puzzles.py)
             self.spill(m, mon.x, mon.y, mon.carries)
             self.msg(f'{mon.the()[0].upper() + mon.the()[1:]} drops a key.', 'good')
@@ -2912,6 +2927,8 @@ class Game:
                 LT.caravans_wear(self)
                 HM.daily(self)
                 HM.war_call(self)
+                WR.daily(self)                          # the wars: levies home, sieges, the risen dead
+                WR.resolve_pending(self)
             self.last_day = self.day
         SE.midsummer_note(self)
         JB.pump(self)
@@ -2925,13 +2942,16 @@ class Game:
             self.monsters_act()
             if not self.dead:
                 EP.after_mons(self)
-            if not self.dead and (self.map.kind != 'town' or getattr(self.map, 'camp', None) is not None):
+            battle = getattr(self.map, 'battle', None) is not None
+            if not self.dead and (self.map.kind != 'town' or getattr(self.map, 'camp', None) is not None or battle):
                 HL.after_turn(self)                     # what you hear out of sight, the last-seen marks
             if not self.dead and getattr(self.map, 'furn', None) is not None:
                 HM.after_fight(self)                    # squatters in your home, beaten
             if not self.dead and getattr(self.map, 'camp', None) is not None:
                 CM.after_turn(self)                     # a camp by the road: the alarm, the robbers
-            if not self.dead and self.map.kind != 'town' and not EP.time_stopped(self):
+            if not self.dead and battle:
+                WR.turn(self)                           # a field battle: its phases, waves and end
+            if not self.dead and (self.map.kind != 'town' or battle) and not EP.time_stopped(self):
                 SM.tick(self)
             if not self.dead and getattr(self.map, 'rift', False):
                 RF.turn(self)

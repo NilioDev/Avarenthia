@@ -157,6 +157,7 @@ NAMED_KIND = {'shrine': 'Shrine', 'camp': 'Outlaw camp', 'orccamp': 'Orc war cam
 TIPS = {
     'heard': 'Tip: they heard you. A ? before a name in IN SIGHT: it comes to look where the noise was. Walk softly.',
     'furnish': 'Tip: in your own home, H sets out your furniture: Tab picks a thing, Enter sets it down or takes it up.',
+    'field': 'Tip: the battle is settled by the hosts; your part can tip it. Walk off the edge of the field to leave it.',
     'camp': 'Tip: a camp lets in whom it knows. Sworn to its king, you trade and sign on; a foe comes by night, and quietly.',
     'stake': 'Tip: use the stake from your bag out on the open land, off the road, to start a home there.',
     'games': 'Tip: walk into a gaming table π to play. Bones and The Count want the evening and a stake; Vigil, any hour.',

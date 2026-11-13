@@ -1199,7 +1199,12 @@ def summon(game, kg, foe):
 
 
 def war_month(game, war):
-    """A month of a war: a host marches from a seat to the enemy's, or the war ends."""
+    """A month of a war: its forces muster or go home, or the war ends (wars.month, round 66)."""
+    from . import wars as WS
+    WS.month(game, war)
+
+
+def _old_war_month(game, war):
     R = get(game)
     a, b = R.kingdoms[war['a']], R.kingdoms[war['b']]
     age = game.day - war['since']
@@ -1260,6 +1265,8 @@ def step(game, wd):
     """A host on the march; at the end of its road, the battle for the seat."""
     from .wanderers import wanderer_at, greedy_step
     p = game.player
+    if getattr(wd, 'halt', 0) > game.day:
+        return                                        # facing the enemy across a field till first light
     if wd.hostile and game.cur == 'over' and wd.cooldown == 0 and cheb(wd.x, wd.y, p.x, p.y) <= 5 and game.visible(wd.x, wd.y):
         greedy_step(game, wd, p.x, p.y)
         return
@@ -1271,6 +1278,12 @@ def step(game, wd):
             wd.x, wd.y = nx, ny
             wd.path_i += 1
         return
+    if getattr(wd, 'homebound', False):
+        if wd in game.world.wanderers:
+            game.world.wanderers.remove(wd)           # home to fill up the ranks
+        return
+    if getattr(wd, 'defending', False) or wd.target_r is None:
+        return                                        # waiting for the enemy on its own ground
     from . import camps as CM
     if CM.siege(game, wd):
         return
@@ -1291,7 +1304,7 @@ def arrive(game, wd):
     w = game.world
     if wd in w.wanderers:
         w.wanderers.remove(wd)
-    war = next((x for x in R.wars if x.get('host') == wd.id), None)
+    war = next((x for x in R.wars if x.get('host') == wd.id or wd.id in x.get('hosts', ())), None)
     tb = R.baronies.get(wd.target_r)
     if not war or not tb or tb.kingdom != wd.foe:
         return
@@ -1303,7 +1316,8 @@ def arrive(game, wd):
     att = R.kingdoms[wd.kingdom]
     sign = 1 if war['a'] == att.id else -1
     x, y = seat_pos(w, tb.seat)
-    if wd.strength * random.uniform(.7, 1.4) > defend:
+    from . import wars as WS
+    if wd.strength * WS.storm_bonus(wd) * random.uniform(.7, 1.4) > defend:
         war['score'] += sign
         burn_village(game, tb.rid, att.short)
         if abs(war['score']) >= 2 and random.random() < .6:
@@ -1385,7 +1399,8 @@ def end_war(game, war):
     if not win:
         text = f'Peace between {a.short} and {b.short}: nothing won, many dead.'
     else:
-        how = random.choice(['tribute', 'hostage', 'land'])
+        from . import wars as WS
+        how = WS.peace_how(war)                      # by the war's score (round 66)
         if how == 'land':
             near = [R.baronies[o] for rid in R.baronies if R.baronies[rid].kingdom == win.id
                     for o in R.adj.get(rid, []) if o in R.baronies and R.baronies[o].kingdom == lose.id]
@@ -1402,6 +1417,11 @@ def end_war(game, war):
             who = f'{heir.first}, the heir of {lose.short},' if heir and heir.alive else 'a royal child'
             text = f'Peace between {a.short} and {b.short}: {who} goes to the court of {win.short} as a hostage.'
     news(game, text, x, y, title=f'The peace of {a.short} and {b.short}')
+    from . import wars as WS
+    WS.free_held(game, war)
+    for wd in WS.forces(game, war):
+        if wd in game.world.wanderers:
+            game.world.wanderers.remove(wd)
     if win:
         win.won_day = game.day                       # its towns keep a feast (townlife.py)
     for kg in (a, b):
@@ -1579,6 +1599,10 @@ def talk(game, npc):
     opts += FQ.option(game, 'lord')
     from . import craftguilds as CG
     opts += CG.trophy_option(game)
+    from . import wars as WS
+    from .money import fmt
+    for cap, worth in WS.ransom_options(game, lo)[:3]:          # a lord of yours taken in battle, sold back
+        opts.append((f'Ransom {style(R, cap, False)}: {fmt(worth)}', f'ransom:{cap.id}'))
     opts.append(('Goodbye', 'bye'))
     EV.ask(game, 'lord', style(R, lo, False), f'{greeting(game, lo)}\n\n{describe_lord(R, lo)} The arms of House {h.name}: '
            f'{arms_words(h.arms)}. "{h.motto}."', opts, lid=lo.id, npc=npc.id)
@@ -1625,6 +1649,9 @@ def r_lord(game, choice, ctx):
             kg = kingdom_of_lord(R, lo)
             add_favour(game, kg.id if kg else None, 6)
             game.say(npc, 'So you helped my people. Good. I will remember it.')
+    elif choice and choice.startswith('ransom:'):
+        from . import wars as WS
+        WS.ransom(game, int(choice[7:]))
     elif choice == 'trophy':
         from . import craftguilds as CG
         if CG.give_trophy(game):

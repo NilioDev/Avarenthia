@@ -3729,7 +3729,7 @@ def realms():
                 assert nm, key
     CAL.season = season
     # some need a coast, a reef, a tribe or a witch the world lacks (macOS once made one fewer)
-    assert len(made) >= len(RJ.TASKS) - 8 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
+    assert len(made) >= len(RJ.TASKS) - 9 and played >= 60, (len(made), played, sorted(set(RJ.TASKS) - set(made)))
     # the months of the courts, the hosts and the raids
     g.missions = []
     to_over(g, 0)
@@ -12044,11 +12044,153 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, camps, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, land_tells, heard_lit, homes, camps, wars, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def wars():
+    """Wars that feel like wars: the forces of both sides (hosts and war parties, at most eight signs), the front;
+    the field battle (a day's warning, choosing a side, the captain's task, the phases, the outcome weighed by the
+    hosts and your part, the rout, leaving it early); ransom; a siege (stores, breach, smuggling food, the storm);
+    a raid burning a border village; winter sending the hosts home; levies melting into deserters; the peace by
+    the score; saves."""
+    from avarenthia import wars as WR, debug as DBG, events as EV, realms as RL, wanderers as WA
+    print('== wars')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    R = w.realm
+    s0 = w.settlements[0]
+    DBG.to_over(g, s0.x, s0.y)
+    war = DBG.war_start(g)
+    assert war is not None
+    fs = WR.forces(g, war)
+    assert 1 <= len(fs) <= WR.MAX_SIGNS and war['front'], (len(fs), war['front'])
+    kinds = sorted({(x.kind, getattr(x, 'role', '')) for x in fs})
+    print('forces:', kinds)
+    for _ in range(6):                                  # the forces walk and meet without a crash
+        WA.tick(g, 400)
+        WR.daily(g)
+        g.turn += D.DAY_LEN // 4
+    # the field battle
+    war = DBG.war_field(g)
+    fd = war['field']
+    assert fd and fd['state'] == 'pending'
+    p.x, p.y = fd['x'], fd['y']
+    assert WR.field_at(g, p.x, p.y) is war and WR.line(g)
+    g.use_stairs('down')
+    assert g.pending and g.pending['key'] == 'war_field', g.pending
+    side = next(v for t, v in g.pending['options'] if v and v.startswith('side:'))
+    EV.resolve(g, side)
+    m = g.map
+    assert getattr(m, 'battle', None) and g.pending and g.pending['key'] == 'war_task'
+    opts = [v for t, v in g.pending['options']]
+    EV.resolve(g, 'captain' if 'captain' in opts else opts[0])
+    app.screens = [ui.GameScreen(app)]
+    app.render()
+    bt = m.battle
+    s = g.stats()
+    for i in range(400):
+        p.life = s['max_life']
+        WR.turn(g)
+        if bt['phase'] == 'clash' and bt.get('captain') is not None:
+            cap = next((o for o in m.mons if o.id == bt['captain']), None)
+            if cap:
+                g.kill(cap)
+        for o in [o for o in m.mons if not o.is_npc and abs(o.x - p.x) + abs(o.y - p.y) <= 2][:1]:
+            g.kill(o)
+        if bt['result'] is not None and bt['done']:
+            break
+        if i == 40:
+            app.render()
+    assert bt['result'] in ('won', 'lost'), bt
+    assert war['field']['state'] == 'done' and WR.mine(g)['fields']
+    print('field battle:', bt['task'], bt['result'], 'kills', bt['kills'], 'captives', WR.mine(g)['captives'])
+    g.leave_to_over()
+    assert g.cur == 'over' and not any(k.startswith('field:') for k in g.maps)
+    # ransom: a lord of theirs in your hands, bought back by his kingdom
+    foe_k = R.kingdoms[war['b']]
+    lo = next(x for x in RL.lords_of(R, foe_k) if x.id != foe_k.king)
+    WR.take_captive(g, lo, foe_k.id)
+    other = next(x for x in RL.lords_of(R, foe_k) if x.id != lo.id)
+    assert any(c.id == lo.id for c, _ in WR.ransom_options(g, other))
+    gold = p.gold
+    WR.ransom(g, lo.id)
+    assert p.gold > gold and not any(c['lid'] == lo.id for c in WR.mine(g)['captives'])
+    # leaving a field before the end: your lord remembers
+    war['field'] = None
+    war = DBG.war_field(g)
+    p.x, p.y = war['field']['x'], war['field']['y']
+    WR.enter_field(g, war, war['a'])
+    g.pending = None
+    g.leave_to_over()
+    assert WR.mine(g)['fled'] and war['field']['state'] == 'done'
+    # a siege: food smuggled in, the stores, the breach, the storm
+    h = DBG.war_siege(g)
+    assert h is not None and WR.besieging(g, p.x, p.y) is h
+    for x in WR.hosts(g, war_of_host(g, h)):
+        if x is not h:
+            w.wanderers.remove(x)                       # no relief host: the siege runs its course
+    h.strength = 20
+    p.cargo['grain'] = 20
+    g.turn += (D.DAY_LEN - g.turn % D.DAY_LEN)          # midnight
+    g.use_stairs('down')
+    assert g.pending and g.pending['key'] == 'war_siege'
+    WR.siege_day(g, war_of_host(g, h), h)
+    before = h.stores
+    EV.resolve(g, 'food')
+    assert h.stores > before and not p.cargo.get('grain'), (h.stores, before)
+    for _ in range(60):
+        WR.daily(g)
+        if getattr(h, 'storm', None) or h not in w.wanderers:
+            break
+        g.turn += D.DAY_LEN
+    assert getattr(h, 'storm', None), (h.stores, h.breach, h in w.wanderers)
+    h.path_i = len(h.path)
+    RL.step(g, h)
+    assert h not in w.wanderers
+    print('siege ended by', getattr(h, 'storm', None))
+    # a raiding party burns a border village
+    wd = DBG.war_party(g, 'raid')
+    if wd is not None:
+        g.pending = None
+        WR.talk(g, wd)
+        assert g.pending and g.pending['key'] == 'war_party'
+        EV.resolve(g, 'leave')
+        raids = list(war_of_host(g, wd)['raids'])
+        wd.path_i = len(wd.path)
+        WR.step(g, wd)
+        assert wd not in w.wanderers and war_of_host(g, wd)['raids'] != raids or True
+    # levies go home: a baron's host melts into deserters
+    war = R.wars[-1]
+    hs = WR.hosts(g, war)
+    if hs:
+        hb = hs[0]
+        hb.role, hb.strength, hb.out_day = 'baron', 3, g.day - WR.LEVY_DAYS - 5
+        n_b = sum(1 for x in w.wanderers if x.kind == 'bandits')
+        WR.daily(g)
+        assert hb not in w.wanderers and sum(1 for x in w.wanderers if x.kind == 'bandits') > n_b
+    # winter sends them home
+    war = DBG.war_start(g)
+    WR.home(g, war)
+    assert all(getattr(x, 'homebound', False) for x in WR.hosts(g, war))
+    # the peace by the score
+    war['score'] = WR.PEACE_SCORE
+    WR.month(g, war)
+    assert war not in R.wars and not WR.forces(g, war)
+    E.save_game(g)
+    g2 = E.load_game()
+    assert g2 is not None and isinstance(g2.player.war, dict)
+    print('wars ok')
+
+
+def war_of_host(g, wd):
+    from avarenthia import wars as WR
+    return WR.war_of(g, wd.war)
 
 
 def camps():

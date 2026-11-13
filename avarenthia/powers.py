@@ -629,7 +629,7 @@ def raid(game, idx, rd):
     w = game.world
     om = game.maps['over']
     R = w.realm
-    rng = 140 if rd['kind'] == 'sea' else 70
+    rng = 140 if rd['kind'] == 'sea' else 110 if rd['kind'] in ('desert', 'barbarian', 'canyon') else 70
     cands = coast_villages(game, rd['x'], rd['y'], rng) if rd['kind'] in ('sea', 'island') else \
         [s for s in w.settlements if s.kind in ('hamlet', 'village', 'town') and s.id != 0 and cheb(s.x, s.y, rd['x'], rd['y']) <= rng
          and w.regions[s.region].faction == 'crown']
@@ -655,7 +655,7 @@ def raid(game, idx, rd):
     wd.ch, wd.fg = 'R', rd['fg']
     wd.name = f'A war party of the {rd["people"]}'
     wd.path = path[:-1]
-    wd.speed = 11
+    wd.speed = 8 if rd['kind'] in ('desert', 'barbarian', 'canyon') else 11     # riders strike fast and deep
     wd.raider, wd.target_s = idx, s.id
     t = KINDS[rd['kind']]
     wd.group = dict(keys=[random.choice(t['troops']) for _ in range(min(6, 2 + rd['strength'] // 2))],

@@ -48,7 +48,9 @@ new or changed handbook lines (Nilio reads them there). Style: plain short Engli
   named stretches of country (`world.areas`), oasis camps and herders' huts.
   `seasons.py` the year on the world map (snow, ice, passes, leaves, fires; dusk/dawn by season); `living.py` battlefields,
   plundered villages, rivals, ferries, crossroads shrines, ships; `sailing.py` skippers, voyages, pirates, the cove;
-  `realms.py` the empire, kings, barons, houses and wars; `powers.py` the other powers (grudges, the wood, the Gorvash,
+  `realms.py` the empire, kings, barons, houses and wars; `wars.py` the wars' forces, front, sieges, field battle and
+  ransom (round 66); `camps.py` camps on the road (round 65); `homes.py` + `homes_ui.py` a roof of your own (round 64);
+  `heard.py` noise, light and last-seen marks (round 63); `landtells.py` the land telling what passed (round 62); `powers.py` the other powers (grudges, the wood, the Gorvash,
   raiders, church, Watch, companies, revolts, pretender, witches); `seats.py` their places' maps; `realmjobs.py` the
   'realm' jobs; `history.py` the made history and the libraries;
   `k5.py` the maker of classic dungeon levels (Brogue-like); `pieces.py` the drawn pieces (`pieces/*.des`, format in

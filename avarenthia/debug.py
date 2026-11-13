@@ -1507,3 +1507,116 @@ def camp_try(game, spec):
     """'style/rel': a camp of that people, you in it as friend, stranger or foe (the Tests page)."""
     style, _, rel = spec.partition('/')
     return camp_in(game, style, rel or None)
+
+
+# ------------------------------------------------------------------ wars that feel like wars (round 66)
+def war_start(game):
+    """A war between two realms side by side, its forces mustered at once."""
+    from . import realms as RL
+    from . import wars as WR
+    R = RL.get(game)
+    if not R.wars:
+        force_event(game, 'realmwar')
+    if not R.wars:
+        return None
+    war = R.wars[-1]
+    a, b = R.kingdoms[war['a']], R.kingdoms[war['b']]
+    WR.muster(game, war, a, b)
+    game.msg(f'Debug: the war of {a.short} and {b.short}: {len(WR.forces(game, war))} signs on the map.', 'info')
+    return war
+
+
+def war_field(game):
+    """Two hosts of a war face each other beside you: the field battle at first light ([>] by it)."""
+    from . import wars as WR
+    from . import realms as RL
+    war = war_start(game)
+    if war is None:
+        return None
+    if game.cur != 'over':
+        to_over(game, *game.over_pos)
+    R = RL.get(game)
+    p = game.player
+    om = game.maps['over']
+    a, b = R.kingdoms[war['a']], R.kingdoms[war['b']]
+    hs = []
+    for kg, foe, dx in ((a, b, 2), (b, a, 4)):
+        h = next(iter(WR.hosts(game, war, kg.id)), None)
+        if h is None:
+            h = WR.raise_host(game, war, kg, foe, 'king', to=(p.x + 9, p.y))
+        if h is None:
+            continue
+        x, y = p.x + dx, p.y
+        if not (om.inb(x, y) and D.TILES[om.tile(x, y)].walk):
+            x, y = p.x, p.y + dx // 2
+        h.x, h.y = x, y
+        hs.append(h)
+    war['field'] = None
+    if len(hs) == 2:
+        WR.meet(game, war, hs[0], hs[1])
+        fd = war['field']
+        fd['x'], fd['y'] = p.x + 3, p.y
+        game.msg('Debug: two hosts face each other beside you. Stand by them and press [>].', 'info')
+    return war
+
+
+def war_siege(game):
+    """A host of a war besieges the nearest seat of its enemy; you stand at the walls."""
+    from . import wars as WR
+    from . import realms as RL
+    from . import camps as CM
+    war = war_start(game)
+    if war is None:
+        return None
+    R = RL.get(game)
+    w = game.world
+    p = game.player
+    seats = [b for b in R.baronies.values() if b.kingdom == war['b'] and b.seat and RL.seat_pos(w, b.seat)]
+    if not seats:
+        return None
+    tb = min(seats, key=lambda b: (lambda q: abs(q[0] - p.x) + abs(q[1] - p.y))(RL.seat_pos(w, b.seat)))
+    sx, sy = RL.seat_pos(w, tb.seat)
+    h = next(iter(WR.hosts(game, war, war['a'])), None)
+    if h is None:
+        h = WR.raise_host(game, war, R.kingdoms[war['a']], R.kingdoms[war['b']], 'king', target_r=tb.rid)
+    if h is None:
+        return None
+    h.target_r = tb.rid
+    h.x, h.y = sx + 1, sy + 1
+    h.path, h.path_i = [(h.x, h.y)], 1
+    h.siege_until = None
+    CM.siege(game, h)
+    to_over(game, sx, sy)
+    game.msg(f'Debug: {h.name} besieges the {tb.name}. [>] at the seat; Time runs the siege on.', 'info')
+    return h
+
+
+def war_score(game, n=3):
+    """The newest war's score moves n toward its first side."""
+    from . import realms as RL
+    R = RL.get(game)
+    if not R.wars:
+        war_start(game)
+    if R.wars:
+        R.wars[-1]['score'] += n
+        game.msg(f'Debug: the war\'s score is {R.wars[-1]["score"]}. A month on brings the peace nearer.', 'info')
+
+
+def war_party(game, kind='raid'):
+    """A war party of the newest war, right beside you."""
+    from . import wars as WR
+    from . import realms as RL
+    war = war_start(game)
+    if war is None:
+        return None
+    R = RL.get(game)
+    wd = WR.raise_party(game, war, R.kingdoms[war['a']], R.kingdoms[war['b']], kind)
+    if wd is None:
+        game.msg('Debug: no road for that party here.', 'bad')
+        return None
+    if game.cur != 'over':
+        to_over(game, *game.over_pos)
+    p = game.player
+    wd.x, wd.y = p.x + 1, p.y
+    game.msg(f'Debug: {wd.name} beside you.', 'info')
+    return wd

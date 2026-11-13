@@ -43,6 +43,9 @@ class Wanderer:
         if self.kind in ('host', 'raid'):
             from . import realms as RL, powers as PW
             return (RL if self.kind == 'host' else PW).describe(self, game) or self.name + '.'
+        if self.kind == 'warparty':
+            from . import wars as WS
+            return WS.describe(self, game)
         if self.kind == 'caravan':
             g, q = self.goods
             return f"A merchant caravan carrying {q} {D.GOODS[g]['name']} to {w.settlements[self.dest].name}."
@@ -179,6 +182,10 @@ def step(game, wd):
     if wd.kind in LV.KINDS:
         LV.step(game, wd)
         return
+    if wd.kind == 'warparty':
+        from . import wars as WS
+        WS.step(game, wd)
+        return
     if wd.kind in ('host', 'raid'):
         from . import realms as RL, powers as PW
         (RL if wd.kind == 'host' else PW).step(game, wd)
@@ -268,6 +275,8 @@ def tick(game, turns):
     px, py = (p.x, p.y) if game.cur == 'over' else game.over_pos
     from . import camps as CM
     CM.tick(game)
+    from . import wars as WS
+    WS.tick(game)
     for wd in w.wanderers[:]:
         if wd.kind == 'escort':
             continue

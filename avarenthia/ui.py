@@ -799,7 +799,8 @@ class GameScreen(Screen):
             if hx + len(hl) + 3 <= room + 8:              # whole or not at all
                 cv.text(hx, MAP_H, f'· {hl} ', HMS.YOU, BG)
         from . import camps as CMS
-        cl = CMS.line(g)
+        from . import wars as WRS
+        cl = CMS.line(g) or WRS.line(g)                 # a camp here tonight; the front, a siege, a field battle
         if cl and not hl:                               # a camp by the road, here tonight
             hx = x + 9 if m.kind == 'over' else x
             if hx + len(cl) + 3 <= room + 8:

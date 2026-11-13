@@ -96,11 +96,13 @@ def style_for(game, wd):
     w = game.world
     if wd.kind == 'host':
         R = getattr(w, 'realm', None)
-        try:
-            kg = R.kingdoms[wd.kingdom]
-            people = R.houses[R.lord(kg.king).house].people
-        except Exception:
-            people = 'human'
+        people = getattr(wd, 'people', None)
+        if not people:
+            try:
+                kg = R.kingdoms[wd.kingdom]
+                people = R.houses[R.lord(kg.king).house].people
+            except Exception:
+                people = 'human'
         return {'dwarf': 'dwarf', 'elf': 'elf'}.get(people, 'host')
     if wd.kind == 'raid':
         try:
@@ -138,7 +140,8 @@ def make(game, wd, style, siege=False):
     c = dict(id=cid, wd=wd.id, kind=wd.kind, style='siege' if siege else style, people=style, x=wd.x, y=wd.y,
              day=game.day, name=_name(game, wd, style, siege), fg=tuple(wd.fg), kingdom=getattr(wd, 'kingdom', None),
              foe=getattr(wd, 'foe', None), hostile=bool(wd.hostile), map=f'camp:{cid}', done=[], alarm=False,
-             siege=siege, origin=getattr(wd, 'origin', None))
+             siege=siege, origin=getattr(wd, 'origin', None), mage=getattr(wd, 'mage', None),
+             holy=getattr(wd, 'banner', None) == 'holy')
     cs.append(c)
     return c
 
@@ -180,8 +183,11 @@ def tick(game):
 
 def siege(game, wd):
     """A host at the end of its march sits down before the seat: True while the siege lasts."""
+    from . import wars as WS
+    if not WS.WAYS.get(getattr(wd, 'people', 'human'), WS.WAYS['human'])['siege']:
+        return False                                # elves never besiege: they strike and are gone
     if getattr(wd, 'siege_until', None) is None:
-        wd.siege_until = game.day + random.randint(3, 5)
+        wd.siege_until = game.day + 30                # till the stores run out or the walls are breached (wars.py)
         c = of_wd(game, wd)
         if c:
             state(game.world).remove(c)
@@ -410,7 +416,10 @@ def _furnish(m, t, kind, rnd):
             _put(m, [c], D.COT)
     elif kind == 'chapel':
         _put(m, inner[len(inner) // 2:], D.ALTAR)
-        _put(m, inner[:1], D.BANNER)
+        _put(m, inner[:1], D.BANNER, 'holy' if getattr(m, 'holy', False) else None)
+    elif kind == 'mage':
+        _put(m, inner[:1], D.BED)
+        _put(m, inner[len(inner) // 2:], D.SHELVES, 'books')
     elif kind == 'smith':
         _put(m, inner[len(inner) // 2:], D.ANVIL)
     elif kind == 'bower':
@@ -449,7 +458,8 @@ def _host(game, c, m, rnd, cx, cy, night, siege):
     for row_y in (6, 12, 21, 27):
         for x in range(13, CW - 14, 9):
             rows.append((x, row_y))
-    kinds = ['marshal', 'stores', 'wounded', 'chapel', 'smith'] + ['soldiers'] * 20
+    m.holy = c.get('holy', False)
+    kinds = ['marshal', 'stores', 'wounded', 'chapel', 'smith'] + (['mage'] if c.get('mage') else []) + ['soldiers'] * 20
     for (x, y), kind in zip(rows, kinds):
         w, h = (7, 5) if kind == 'marshal' else (6, 4)
         t = tent(m, x, y, w, h, kind, fg, 's' if y < cy else 'n')
@@ -673,6 +683,8 @@ def _folk(game, c, m, rnd, night, foe):
             person('A priest of the host', 'camp_priest', t['inside'])
         elif k == 'smith':
             person(f'{names.pop()} the Smith', 'camp_smith', t['inside'])
+        elif k == 'mage':
+            person('The battle mage', 'camp_mage', t['inside'])
         elif k in ('soldiers', 'bower'):
             if night:
                 for _ in range(2):
@@ -757,6 +769,9 @@ def talk(game, npc):
         p.gold -= gift
         p.life, p.poison = s['max_life'], None
         game.msg(f'The healer binds your wounds for a small gift ({fmt(gift)}) to the wounded.', 'good')
+        return
+    if role == 'camp_mage':
+        game.say(npc, '"Do not touch the books. The last man who did still smells of smoke."')
         return
     if role == 'camp_priest':
         game.say(npc, '"May the gods hold your shield arm steady."')
@@ -952,8 +967,10 @@ def bump(game, x, y):
         sleep_by_fire(game, c)
         return 1
     if not foe:
-        if what in ('orders', 'stores', 'pen', 'chest'):
-            game.msg({'orders': 'The marshal\'s map and orders. Not for you to read.',
+        if what in ('orders', 'stores', 'pen', 'chest', 'books', 'holy'):
+            game.msg({'books': "The battle mage's books and reagents. He would know if a page went missing.",
+                      'holy': 'The holy banner of the host, blessed at the cathedral.',
+                      'orders': 'The marshal\'s map and orders. Not for you to read.',
                       'stores': 'Crates of flour, salt pork, ale. The quartermaster keeps count.',
                       'pen': 'The prisoners\' pen. A guard watches it.',
                       'chest': 'The marshal\'s chest, locked.'}[what], 'info')
@@ -971,6 +988,20 @@ def bump(game, x, y):
         from . import heard as HL
         HL.make(game, x, y, 6)
         return _deed(game, c, 'stores', 'The stores catch: flour, pork and ale go up in a roar of fire.', 3)
+    if what == 'books':
+        wd = next((x for x in game.world.wanderers if x.id == c['wd']), None)
+        if wd is not None:
+            wd.mage = None
+        m.cthings.pop((x, y))
+        return _deed(game, c, 'books', "You sweep the battle mage's books and reagents into the fire. Without them "
+                                       'he is only a man with a staff.', 3)
+    if what == 'holy':
+        wd = next((x for x in game.world.wanderers if x.id == c['wd']), None)
+        if wd is not None:
+            wd.banner = 'plain'
+        m.set(x, y, D.FLOOR)
+        m.cthings.pop((x, y))
+        return _deed(game, c, 'holy', 'You roll up the holy banner and carry it off. The host will wake to an empty pole.', 2)
     if what == 'pen':
         for o in [o for o in m.mons if o.is_npc and o.role == 'camp_captive']:
             m.mons.remove(o)

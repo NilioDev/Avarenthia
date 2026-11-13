@@ -1418,6 +1418,31 @@ def ch_realms(g):
               'will take your oath. You become Sir or Dame, and people call you my lord or my lady. Your liege may '
               'call the levy: the call comes as a job in your journal. Stay away twice and your name is struck from '
               'the roll. You can renounce your oath in your liege\'s hall.'),
+        ('h', 'War'),
+        ('p', 'A war is fought by several hosts on each side: the king\'s host with its marshal and priest, in a big '
+              'one a battle mage, sometimes a holy banner, and the hosts of the border barons in their houses\' colours. '
+              'The defender marches out to meet the attacker. Between them go small war parties: raiders who burn '
+              'border villages, foragers, messengers and scouts. Walk into one to fall on it, or let it pass.'),
+        ('p', 'The war is on the front, the baronies along the border: burnt villages, refugees, dear bread. Most of '
+              'it is raiding and sieges. Hosts march from spring to the harvest and go home for the winter. A baron\'s '
+              'levies go home after some weeks unless the king pays sellswords, a rich king may hire a dwarf hammer band, '
+              'and a host worn down to nothing melts into deserters who rob the roads.'),
+        ('h', 'Sieges'),
+        ('p', 'A host at the end of its march besieges the seat. The stores inside run down, the engines work at the '
+              'walls, the garrison sallies by night; then the storm. Stand at a besieged seat and press [>]: smuggle '
+              'food in by night, open the postern for the besiegers if you are sworn to them, or slip in.'),
+        ('h', 'The field battle'),
+        ('p', 'Once in a war two hosts meet in the field. You hear of it a day before: go to the field, press [>] and '
+              'choose your side. Your captain gives you a task: hold the flank, save the banner, cut down their '
+              'captain, take out their mage, or just fight; a caster is asked to meet their mage or break their front. '
+              'First the arrows, then the clash, then the rout. The hosts\' strength decides; your task can tip a '
+              'battle on a knife\'s edge. Mages set the front burning, draw walls of ice or raise roots. You can always '
+              'walk off the edge of the field, but your lord remembers who left before the end.'),
+        ('h', 'Ransom and peace'),
+        ('p', 'Lords taken in battle are held for ransom. A captain you cut down in a won battle may be yours: any lord '
+              'of his kingdom buys him back. Won battles, taken seats, raids and captives make the war\'s score; '
+              'enough of it forces the peace: tribute, a hostage, or land. On a battlefield in the Lich\'s land the '
+              'dead rise by night.'),
         ('h', 'Camps by the road'),
         ('p', 'From dusk to dawn every host on the march, every war party and every caravan far from a town makes camp '
               'where it stands. Its tents stand round it on the map, {Λ} for a kingdom\'s host, with its fire {☼} by '

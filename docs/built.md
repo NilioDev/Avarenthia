@@ -66,6 +66,9 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **Wars that feel like wars** (round 66, 13 November 2026; `wars.py`; test part `wars`). Several hosts and war
+  parties a side, the front, raids and sieges you can smuggle into, winter and levies going home, deserters, the
+  field battle with your captain's task and magic, ransom, the peace by the war's score, each people's way. Spec below.
 - **Camps on the road** (round 65, 13 November 2026; `camps.py`; test part `camps`). Hosts, war parties and
   caravans camp from dusk to dawn, a host sits as a siege camp at the end of its march; each people's camp on the
   world map and on its own map, tents walked into; friend, stranger or foe; the traders' camp with its fire and
@@ -3653,3 +3656,85 @@ walk the world map (`realms.march`, the wanderers); now they stop, and a camp is
   price). The tents are cloth walls (tile CLOTH, drawn in each people's sign by an overlay `m.tint`). The smaller
   raiding peoples camp in the frame of sea raiders, riders, dwarves or elves. Debug: "camp_here"/"camp_in" by
   people and "camp_night" (on the Tests page). Tip 'camp'.
+
+## Wars that feel like wars (built 13 November 2026; the spec)
+
+The Dutch proposal: project files `nextlevel/legers/legers.md`. Today a war sends one host `K` at a time to one seat
+and one roll settles it (`realms.war_month`, `march`, `arrive`). A war should feel like a war, but the sums behind it
+stay small: the player is one adventurer, and what counts is what they see on the map and can touch.
+- **More forces, both sides.** Each side has two to four: the king's host (marshal, banner, a priest, in a big one a
+  battle mage) and smaller hosts of the border barons in their own houses' colours. The defender marches out too:
+  where two hosts meet on the world map, the battle is there, in the field. Between them small parties: raiders `k`
+  burning border villages, foragers, messengers and scouts; each can be caught or helped. At most about eight war
+  signs per war on the map at once.
+- **A front.** The border baronies are where the war is: camps, battlefields, burnt villages (the land tells: black
+  smoke), refugees on the roads. Further off the war shows only in prices and news.
+- **Raids and sieges, few battles.** Most of a war is raiding (to shame the other lord) and sieges; a battle in the
+  field is rare and therefore big. A siege lasts days to weeks: the seat's stores run down, food can be smuggled in,
+  the garrison sallies, the engines make a breach, and then the storm.
+- **Seasons.** Hosts march from spring to the harvest; in winter they go home and the war is quiet (the seasons that
+  are there already). Raiders keep their own months (`powers.KINDS`).
+- **Levies go home.** A baron's men serve for a while, then go home to the harvest unless the king pays sellswords
+  (the mercenary companies that are there). Hunger and sickness thin a host that sits too long in one place or eats
+  a land bare. A host shrinks with every fight and must go home to fill up, or melts away into deserters, who become
+  robbers on the roads. So a war is a matter of wearing down, not one roll.
+- **Ransom.** A knight or lord taken in battle is worth coin: catch one, or buy or free one, as a realm job.
+- **The peace.** As in Crusader Kings: taken seats, won battles and captured lords make the war's score; whoever has
+  enough forces the peace (the tribute, hostage or land in `end_war`).
+- **The fantasy in it.** A battle mage or priest with the king's host: take him out and the host weighs much less. A
+  holy banner or relic goes with a host: steal it or save it. The great evils feed on war (their levers on the realms
+  are there); on a battlefield in the Lich's land the dead rise by night. Other peoples take part: dwarves hire out a
+  hammer band, and the Gorvash smell weakness and fall on a worn-out border.
+- **Each people wars its own way**, and camps its own way (in Camps on the road, now in `docs/built.md`):
+  - *Kingdoms*: levies and knights, raids and sieges, ransom, the peace treaty.
+  - *Dwarves*: slow; never raid, never march far from the hills; the best at sieges (they dig under walls); a debt in
+    the grudge book is paid in full and then they go home.
+  - *Elves*: never besiege and never hold land; ambush in the wood and on its edge, then vanish; they fight only for
+    the wood (its edge, a felled grove).
+  - *The Gorvash*: one great march that grows as it wins (beaten tribes join) and burns everything; when the warlord
+    dies it falls apart into tribes again.
+  - *Sea raiders*: strike the coast in their months from the sea, burn and leave by ship; no sieges.
+  - *Riders*: fast raids deep into the land, never a siege, gone before a host can come; their herds are their wealth.
+- **For the player**: catch or guard a raiding party; carry a message through the front; smuggle food into a besieged
+  seat or open its postern; sneak into a camp by night (orders, stores, prisoners, the banner, the mage); take a lord
+  for ransom; stand in the line in a field battle as one man in the press (your corner of the fight: hold the flank,
+  save the banner, cut down a captain; see The field battle below). Pay
+  stays modest; war raises prices (war trade), and what is taken from the field goes through the fence that is there.
+- The war's state lives on the world (`R.wars`); what you did in it (signed on, known to a camp, a captive you hold)
+  on the player. The Realms layer [4] shows the hosts, camps, sieges and the front. Handbook: the realms chapter
+  (war, sieges, ransom, the peoples' ways of war). Test part `wars`.
+- **The field battle** (approved 13 November 2026). At most one per war, so it stays a big moment. Its own zone
+  map: two lines across the whole width, you in one corner of yours. Real soldiers fight only near you; further off
+  the battle is a shifting front line of signs, so it looks big and stays light. Three phases of a few hundred turns
+  each: the arrows, the clash, the rout of the side that breaks. At the start your captain gives you one task: hold
+  the flank, save the banner, cut down their captain or take out their mage; or you just fight. The outcome stays
+  honest: the hosts' strength decides, and your task weighs at most about 15%: a strong host mostly wins anyway, and
+  a task done well only saves a battle on a knife's edge. The news tells what you did, also when your side lost.
+  Getting out: you can always walk off the map's edge, but your lord remembers you left; if your side breaks, the
+  rout begins and riders chase you to the edge. Death is as everywhere in the game.
+- **Magic in the wars** (approved 13 November 2026). Rare and dear, but plain to see when it is there. A big host has
+  one or two mages at most, behind the line with a bodyguard; a small host none. A priest blesses and heals, never
+  strikes. On the battlefield each school does what its map rule does: fire sets a stretch of the front burning,
+  frost draws an ice wall across a flank, storm strikes in rain or by water, nature lays roots and thorns, necromancy
+  raises the day's dead. A mage counts in his host's strength; take him out and that is gone (the task "take out
+  their mage"). Each people its own: kingdoms a court mage from a tower or guild, and the Church's priests; dwarves
+  no mages but rune-smiths (runes on shields and gates make their sieges and camps tougher still); elves the Circle's
+  druids (roots, thorns, mist in the wood); the Gorvash shamans (curses, the drums); sea raiders a storm-caller who
+  gives their ships the wind; riders a wind-singer or a beast-master. Necromancy is forbidden: who uses it in a war
+  stirs the Church and the great evils. If you are a mage, your captain gives you a mage's task (meet their mage, or
+  break the front), pay a little higher, and their archers look for you first. In the camp the mage has a tent of
+  his own with books and reagents: something to steal, kept modest (the loot rule).
+- Built as: `wars.py` (the war's forces, front, sieges, captives and field on its dict in `R.wars`; what you did on
+  `p.war`). `realms.war_month` hands the month to `wars.month` (peace at a score of 6 or after a year, winter sends
+  the hosts home, the musters with at most 8 signs); hosts are kind 'host' with a role (king, baron), war parties kind
+  'warparty' (raid, forage, message, scout). A siege runs in `wars.siege_day` (stores 6-18 days, the engines 1 a day,
+  2 for dwarves; elves never besiege) and ends in the storm of `realms.arrive`, a breach x1.3 and hunger x1.5. The
+  first meeting of two hosts in a war is the field battle (a day's halt, a job 'field', `[>]` on the field), later
+  ones skirmishes. The field: its own map (90 x 44) with both lines drawn as signs and real foes only near you; the
+  arrows (30 actions), the clash (to 150, or 90 when your task is settled), the rout (40). Your task: +15% done, -5%
+  for a lost banner, a little for kills. Ransom: king 6g, baron 2g, lord 90s, heir 1g20s, at any lord of the
+  captive's kingdom. Magic: a king's host of 14+ or a rich house has a mage (fire, frost, storm; 5% necromancy, and
+  the Church answers), dwarves a rune-smith, elves a druid, the Gorvash a shaman; stealing the mage's books or the
+  holy banner in their camp weakens the host. A new realm job 'warletter' (orders through the front). Riders raid
+  faster and further (powers.raid). Debug: war_start, war_field, war_siege, war_score, war_party; a step 'cargo'
+  on the Tests page.
