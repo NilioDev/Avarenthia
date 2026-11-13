@@ -1703,6 +1703,7 @@ def live(game, m):
     from . import townlife as TL
     TL.market_day(game, m)
     TL.tick(game, m)
+    budget = 8
     for npc in m.mons:
         if npc.is_npc and npc.role == 'livestock' and random.random() < .25:
             game.random_step(npc)
@@ -1721,9 +1722,19 @@ def live(game, m):
             elif npc.job == 'guard' and random.random() < .3:
                 game.random_step(npc)
             continue
-        if not getattr(npc, 'path', None) or tuple(npc.path[-1]) != tuple(tgt) or random.random() < .02:
-            npc.path = path_between(m, (npc.x, npc.y), tuple(tgt))
+        tgt = tuple(tgt)
+        if not getattr(npc, 'path', None) or getattr(npc, 'path_to', None) != tgt or random.random() < .02:
+            # a route is only the first 60 steps, so it is kept by where it leads, not by its last step; a target
+            # out of reach is tried again only after a while (a full search each turn made big towns slow)
+            if getattr(npc, 'path_to', None) == tgt and getattr(npc, 'path_wait', 0) > game.turn:
+                continue
+            if budget <= 0:                          # a few new routes a turn; the others set off next turn
+                continue
+            budget -= 1
+            npc.path = path_between(m, (npc.x, npc.y), tgt)
+            npc.path_to = tgt
             if not npc.path:
+                npc.path_wait = game.turn + random.randint(40, 80)
                 continue
         nx, ny = npc.path[0]
         if (nx, ny) == (p.x, p.y) or (m.mon_at(nx, ny) and m.mon_at(nx, ny) is not npc):
