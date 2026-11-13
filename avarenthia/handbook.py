@@ -1068,7 +1068,8 @@ def ch_travel(g):
               'come and go there with the seasons, and what you leave lying stays where you left it.'),
         ('h', 'Travelling far'),
         ('p', 'On the map [m], [Tab] picks a place you have been to and shows the way; [Enter] sets out along the '
-              'roads. Enemies, travellers, events, hunger, wounds or any key stop you on the way.'),
+              'roads. Enemies, events, hunger, wounds or any key stop you on the way; friendly travellers only pass you '
+              'by, and you step round a camp or a herd on the road.'),
         ('h', 'Rivers'),
         ('p', 'Fords are where the road crosses. Ferrymen take you over for a few coppers, even when the fords run '
               'high.'),
