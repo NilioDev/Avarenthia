@@ -445,6 +445,11 @@ def ch_towns(g):
         ('p', 'Woodpiles stand against the houses, the sign {≡|168,120,70}: low in spring, highest before winter, '
               'burnt down by its end. The fields round a village are furrows in early spring, then green, then gold, '
               'stubble after the harvest, and bare in winter.'),
+        ('h', 'A first sight'),
+        ('p', 'The first time you come to a settlement you see it whole, against the sky of that hour and season: '
+              'its wall and towers, the temple\'s spire, the keep, the roofs and the smoke over them, lit windows by '
+              'night. Its name stands under it, with what it is, the land it lies in and the lord who holds it. The '
+              'journal\'s Places tab shows each one again: press [Enter] on its name.'),
         ('h', 'A town that lives'),
         ('p', 'A town feels the world. With raiders on the roads, a war or the mark of a great evil near, more guards '
               'stand at the gates, doors stay barred and half the folk keep indoors. After a war its king won, it '

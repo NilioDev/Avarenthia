@@ -66,6 +66,12 @@ specs of rounds 1-4 are in the git history of `docs/plan.md` (before 16 October 
 
 ## Built
 
+- **The Tests page grows** (round 60, 13 November 2026; `debug_tests.py`, `debug_ui.py`; test part `debug_tests`).
+  The older rounds have their lines; a tick lasts across builds until a heading's `Changed:` date; each heading
+  shows "3/5 ✓ 1 ×"; `u` the open lines, `x` the × lines with their notes. Spec below.
+- **A first sight of a town** (round 61, 13 November 2026; `skyline.py`; test part `first_sight`). The first time in
+  a settlement, an elven glade or a gnome hamlet: its skyline in half blocks from its own map, against the sky of
+  the hour and season, with its name and one line; again from the journal's Places tab. Spec below.
 - **Games at the inn** (round 59, 6 November 2026; `inngames.py`, `inngames_ui.py`; test part `inn_games`). A gaming
   table by the innkeeper with two regulars; Bones, The Count and Vigil in their own windows, arrows, Enter and Esc
   only; masters of Vigil told by rumour and the deed for beating them all. Spec below.
@@ -3424,3 +3430,38 @@ out without an inn), told by rumour (`engine.rumor`); beating them all is the de
 from the spec: Vigil with an elder, a prisoner or a traveller at a crossroads (it is played at the gaming tables).
 Code `inngames.py` (rules, the table, the masters) and `inngames_ui.py` (the three screens); state `p.inngames`;
 test part `inn_games`. SAVE_VERSION 74.
+
+## The Tests page grows (built 13 November 2026; the spec)
+
+Thread "Testchecklist in debugmenu uitbreiden". F12, T (the Tests page, built in round 37) is the checklist Nilio
+works through; three things make it fit a game this big. Test build and `--debug` only, not in the handbook.
+- **The older rounds get lines.** Rounds 1-5 (monsters, named enemies, guilds, jobs, seasons, sailing), weapons and
+  the bestiary, the magic schools and spell effects, stamina, realms and wars, walking the land (zones), herds and
+  hunting, nature and wonders, place names, ferries, keeping it clear, the handbook and the chronicle, the Varnish,
+  the great evils: about 50 new lines in `docs/testing.md`, each with its recipe in `debug_tests.py` (test part
+  `debug_tests` as now). A recipe that needs a debug action we lack gets it in the same round.
+- **A tick lasts.** A ✓ or ✗ stays across builds. A line opens again only when its thing changed: each heading in
+  `testing.md` may carry a line `Changed: <date>` (Claude sets it when a later round touches that thing); a tick
+  older than that date shows dim and counts as open. `u` shows the open lines (never ticked, ✗, or changed since).
+- **An overview per round.** Each heading shows its count, "3/5 ✓ 1 ✗". The first words of a ✗'s note stand after
+  its line. `x` shows only the ✗ lines with their whole notes, by heading.
+
+Built as: `debug_tests.state/counts/iso`, `CHANGED` from the `Changed:` lines, the tick's `date`; 66 new lines under
+"The older rounds" in `testing.md`, each with a recipe. The ✗ is drawn as × (the tileset has no ✗).
+
+## A first sight of a town (built 13 November 2026; the spec)
+
+Mock: project files `nextlevel/skyline.png`. The first time you come to a settlement, one quiet card before its map:
+its skyline against the sky of that hour and season, drawn in half blocks (`▀ ▄ █`) from the settlement's own map
+(the wall and its towers, gates, the temple's spire, the keep, the roofs, the mill; smoke from chimneys that smoke,
+lit windows at night), its name in gold and one line (kind, land, lord). Enter or any key goes on.
+- Every settlement of every people, each in its own shape: a hamlet a few roofs and a hedge, a halfling hill a row
+  of round doors in the green, an elven glade the crowns of the trees, a dwarf hold the gate in the mountain, an orc
+  camp the palisade and longhouse, a metropolis wide and high.
+- Once per settlement; the journal's Places tab shows it again. A settlement that burnt or was plundered shows it.
+- Not for dungeons and sites. Test part `first_sight`.
+- Not built: a boss's name in big letters (Nilio, 10 November 2026: it takes away from the play).
+
+Built as: `skyline.py` (the card, `p.sights`), `ui.SkylineScreen`, the journal's new Places tab, `debug.forget_sights`;
+the elven glades and gnome hamlets (sites, not settlements) get their card too. The tests turn the card off
+(`ui.App.first_sight_cards`), as it would take the next key; part `first_sight` turns it on.

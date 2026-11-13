@@ -15,6 +15,7 @@ from avarenthia.worldgen import cheb  # noqa: E402
 
 _RUN_DIR = tempfile.mkdtemp(prefix=f'avarenthia_test_{os.getpid()}_')          # runs side by side keep apart: the save,
 E.save_path = lambda: os.path.join(_RUN_DIR, 'avarenthia_test.dat')              # snapshots and notes each in their own
+ui.App.first_sight_cards = False      # the skyline card on a first visit would eat the next key; first_sight turns it on
 
 TOKENS = ['up', 'down', 'left', 'right', 'np7', 'np9', 'np1', 'np3', 'h', 'np5', 'g', 'R', '1', '2', '3', 'q', 'w', 'p', 'x', 't',
           '>', '<', 'enter', 'i', 'c', 'd', 'esc', 'a', 'b', 'tab', 'H', 'L', 'D', '?', '4', 'down', 'enter', 'm', 'e',
@@ -5265,7 +5266,7 @@ def debug_tests():
         assert 'no bell' in note and 'Temples of every people' in note and 'What to check:' in note, note
         DT.tick(key, None)
         assert key not in DT.ticks()
-        # an old build's tick shows, but dim, and counts as open
+        # a tick lasts across builds: an older build's tick still counts
         DT.tick(key, 'ok')
         tks = DT.ticks()
         tks[key]['commit'] = 'older'
@@ -5275,7 +5276,32 @@ def debug_tests():
         app.key('T')
         page = app.top.pages[-1]
         page.only_open = True
+        assert all(r[1][1] != key for r in page.shown() if r[0] == 'line'), 'a tick lasts across builds'
+        # a Changed: date newer than the tick opens it again, dim
+        row = next(r for r in DT.lines() if r[1] == key)
+        DT.CHANGED[row[0]] = '2999-01-01'
+        assert DT.state(row, DT.ticks()[key]) == 'stale'
         assert any(r[1][1] == key for r in page.shown() if r[0] == 'line')
+        del DT.CHANGED[row[0]]
+        assert DT.iso('13 November 2026') == '2026-11-13' and DT.iso('Changed') is None
+        lns = DT.parse('## A thing (built)\nChanged: 2 December 2026\n\n- **One** - check. Debug: x.\n')
+        assert lns[0][0] == 'A thing' and DT.CHANGED == {'A thing': '2026-12-02'}
+        DT.lines()                                         # CHANGED back from the real testing.md
+        # each heading has its count; a ✗ shows the first words of its note; x shows only the ✗ ones with the notes
+        DT.tick(key, 'bad', 'the bell does not ring at all at night')
+        page.only_open = False
+        heads = [r for r in page.shown() if r[0] == 'head' and r[1] == row[0]]
+        assert heads and heads[0][2][2] == 1, heads
+        page.sel = pick
+        app.render()
+        assert 'the bell does not ...' in app.cv.dump()
+        app.key('x')
+        shown = page.shown()
+        assert [r[1][1] for r in shown if r[0] == 'line'] == [key]
+        assert any(r[0] == 'note' and 'night' in r[1] for r in shown)
+        app.render()
+        assert '1 ×' in app.cv.dump()
+        DT.tick(key, None)
         app.key('esc')
         app.key('esc')
     finally:
@@ -12011,11 +12037,84 @@ def main():
     random.seed(int(os.environ.get('TEST_SEED', '1')))
     parts = [animations, seasons, lands, peoples, camps_and_holds, wonders, world_life, thornfield_and_faith, countryside, start_and_survival, crime_and_coin, world_and_people,
              items_skills_curse, smoke, trade_and_jobs, factions_and_death, wilds, ways_and_wares, hirelings_and_camp,
-             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
+             creatures_and_hunts, new_guilds, more_jobs, text_fits, overview, chronicle, ferries, place_names, nature_sites, zones, herds_and_cooking, realms, stamina, schools, visible, market_days, debug_menu, debug_tests, lasting_saves, money, first_steps, what_you_met, belt_and_tally, finer_look, affixes, folk, craftguilds, guild_jobs, more_makers, more_makers2, maker_states, boss_rest, weapons, classes, trees, pairs, balance, k5, places, halls, aurora, rift, old_places, varnish, folkbooks, story_land, epics, money_fixes, bosses, boss_moves, shadow, skyseat, crafts, masters, archaeology, trade_goods, boss_maker, city_rules, caravans, town_life, feasts, inn_games, first_sight, landmarks, year_places, servants, editor, pieces, puzzles, drawn_places, window_sizes]
     only = os.environ.get('TEST_ONLY')             # e.g. TEST_ONLY=smoke,wilds to run a part of the suite
     for f in parts:
         if not only or f.__name__ in only.split(','):
             f()
+
+
+def first_sight():
+    """A first sight of a town: the first time in a settlement of each people and size (and an elven glade, a gnome
+    hamlet) a card with its skyline drawn from its own map, its name and one line; once only; again from the
+    journal's Places tab; at night lit windows and stars; a burnt one shows it."""
+    from avarenthia import skyline as SKY, debug as DBG
+    print('== first_sight')
+    app = new_app('soft')
+    g = app.game
+    p = g.player
+    w = g.world
+    ui.App.first_sight_cards = True
+    try:
+        p.sights = set()
+        kinds = {}
+        for s in w.settlements:
+            kinds.setdefault((s.kind, s.race), s)
+        for (kind, race), s in sorted(kinds.items()):
+            DBG.teleport(g, ('s', s.id))
+            app.after_action()
+            assert isinstance(app.top, ui.SkylineScreen), (kind, race, app.top)
+            app.render()
+            dump = app.cv.dump()
+            assert s.name in dump and SKY.PEOPLE[race] in dump, (kind, race)
+            assert '▀' in dump, 'drawn in half blocks'
+            app.key('enter')
+            assert isinstance(app.top, ui.GameScreen)
+            DBG.to_over(g, s.x, s.y)
+            g.enter_town(s.id)
+            app.after_action()
+            assert isinstance(app.top, ui.GameScreen), 'once only'
+        # a walled city has a wall and towers, a temple a spire: the picture differs from a hamlet's
+        city = next(s for s in w.settlements if s.kind == 'city' and s.race == 'human')
+        ham = next(s for s in w.settlements if s.kind == 'hamlet')
+        a, b = SKY.card(g, f's{city.id}'), SKY.card(g, f's{ham.id}')
+        assert a['pic'].px != b['pic'].px
+        assert 'held by' in a['line'] or a['line'].endswith('.'), a['line']
+        # the peoples' own homes on the land
+        for kind in ('glade', 'gnomes'):
+            site = next((q for q in w.sites if q.kind == kind), None)
+            if site:
+                DBG.teleport(g, ('site', site.id))
+                app.after_action()
+                assert isinstance(app.top, ui.SkylineScreen), kind
+                app.render()
+                assert site.name in app.cv.dump()
+                app.key('enter')
+        # by night: stars and lit windows; a burnt one: dark smoke and fire, and its line says so
+        night = g.turn - g.turn % D.DAY_LEN + D.DAY_LEN * 23 // 24
+        g.turn = night
+        c = SKY.card(g, f's{city.id}')
+        assert any(ch == '·' for ch, _c in c['pic'].marks.values()), 'stars'
+        assert any(col == (240, 200, 110) for row in c['pic'].px for col in row), 'lit windows'
+        ham.plundered = g.day + 20
+        c = SKY.card(g, f's{ham.id}')
+        assert 'burnt' in c['line'] and any(ch == '§' for ch, _c in c['pic'].marks.values())
+        ham.plundered = 0
+        # the journal's Places tab: each one again
+        app.screens = [ui.GameScreen(app), ui.JournalScreen(app, ui.JournalScreen.TABS.index('Places'))]
+        app.render()
+        assert ham.name in app.cv.dump() or len(SKY.places(g)) > 25
+        app.key('enter')
+        assert isinstance(app.top, ui.SkylineScreen)
+        app.render()
+        app.key('esc')
+        app.key('esc')
+        # handbook
+        from avarenthia import handbook as HB
+        assert any('first time you come to a settlement' in str(b) for b in HB.ch_towns(g))
+    finally:
+        ui.App.first_sight_cards = False
+    print('first_sight ok')
 
 
 def folkbooks():

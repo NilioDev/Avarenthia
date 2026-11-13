@@ -465,6 +465,7 @@ class Player:
         self.parcels = []       # job cargo: dict(mid, name, w)
         self.mounts = []        # 'mule', 'cart'
         self.caravan = None     # your own wagons (caravan.py)
+        self.sights = set()     # the settlements whose first sight you had (skyline.py)
         self.inngames = {}      # games at the inn: the night's stakes, where you are barred, masters beaten (inngames.py)
         self.rep = {k: v['start'] for k, v in D.FACTIONS.items()}
         self.deaths = 0

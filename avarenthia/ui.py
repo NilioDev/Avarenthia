@@ -115,6 +115,8 @@ ORB_MASK = ['  #####  ', ' ####### ', '#########', '#########', '#########', '##
 
 
 class App:
+    first_sight_cards = True     # the skyline card on a first visit (the tests turn it off)
+
     def __init__(self, canvas, rect=None):
         self.resize(canvas, rect)
         self.zoom = E.load_settings().get('zoom', 'auto')         # the window's scale: auto or 1x-4x (main.py)
@@ -284,6 +286,9 @@ class App:
             from . import guide as GD
             GD.check(g)
         req, g.request = g.request, None
+        fs, g.first_sight = getattr(g, 'first_sight', None), None
+        if fs is not None and self.first_sight_cards and not g.dead:
+            self.push(SkylineScreen(self, fs))      # a first sight of a town: one card before its map
         if g.dead and not isinstance(self.top, DeathScreen):
             E.delete_save()
             self.screens = [GameScreen(self), DeathScreen(self)]
@@ -293,7 +298,10 @@ class App:
         if req[0] == 'save':
             E.save_game(g)
             if g.pending and not any(isinstance(s_, ChoiceScreen) for s_ in self.screens):
-                self.push(ChoiceScreen(self))            # a choice asked on the way in, before the save
+                if isinstance(self.top, SkylineScreen):    # the first sight first, then the choice
+                    self.screens.insert(-1, ChoiceScreen(self))
+                else:
+                    self.push(ChoiceScreen(self))            # a choice asked on the way in, before the save
         elif req[0] == 'shop':
             self.push(ShopScreen(self, req[1]))
         elif req[0] == 'quarter':
@@ -3123,6 +3131,34 @@ def _h2(x, y, s=0):
     return ((n ^ (n >> 16)) & 0xFFFF) / 65536
 
 
+class SkylineScreen(Modal):
+    """A first sight of a town: its skyline against the sky of this hour and season, its name and one line
+    (skyline.py). Enter or any key goes on."""
+    overlay = False
+    tall = False
+
+    def __init__(self, app, key):
+        super().__init__(app)
+        from . import skyline as SKY
+        self.SKY = SKY
+        self.c = SKY.card(app.game, key)
+
+    def render(self, cv):
+        SKY = self.SKY
+        cv.clear((0, 0, 0))
+        bw, bh = SKY.CW + 6, SKY.CH + 9
+        x, y = (W - bw) // 2, (cv.h - bh) // 2
+        cv.frame(x, y, bw, bh, LINE, PANEL)
+        SKY.draw(cv, x + 3, y + 2, self.c['pic'])
+        cv.text_center(W // 2, y + SKY.CH + 3, self.c['name'], GOLD, PANEL)
+        for i, ln in enumerate(wrap_text(self.c['line'], bw - 8)[:2]):
+            cv.text_center(W // 2, y + SKY.CH + 5 + i, ln, FG, PANEL)
+        cv.text_center(W // 2, y + bh - 1, ' Enter ', DIM, PANEL)
+
+    def on_key(self, tok, shift):
+        self.app.pop()
+
+
 class DialogScreen(Modal):
     def __init__(self, app, title, text):
         super().__init__(app)
@@ -4249,7 +4285,8 @@ def SKS_night(sh):
 class JournalScreen(Modal):
     """The journal in tabs: jobs, the road (story, rumours, news), standing, lore (what you know, every sign) and the
     log to read back. Left and right (or Tab) pick a tab; up and down move or scroll."""
-    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log', 'Shadow']
+    TABS = ['Jobs', 'Road', 'Standing', 'Lore', 'Log', 'Shadow', 'Places']
+    PICK = ('Jobs', 'Lore', 'Places')     # tabs where up and down pick a row
     tab = 0
     BW, BH = 100, 30
 
@@ -4270,7 +4307,7 @@ class JournalScreen(Modal):
             lab = f' {nm} '
             cv.text(xx, y + 1, lab, (20, 16, 12) if on else FG, GOLD if on else (34, 28, 22))
             xx += len(lab) + 1
-        rows = [self.rows_jobs, self.rows_road, self.rows_standing, self.rows_lore, self.rows_log, self.rows_shadow][self.tab]()
+        rows = getattr(self, 'rows_' + self.TABS[self.tab].lower())()
         room = self.BH - 5
         self.scroll = max(0, min(self.scroll, len(rows) - room))
         for i, row in enumerate(rows[self.scroll:self.scroll + room]):
@@ -4285,8 +4322,9 @@ class JournalScreen(Modal):
                     cv.text_right(x + self.BW + cx, yy, text, col, bg)
         if len(rows) > room:
             cv.text_right(x + self.BW - 2, y + 2, f'{self.scroll + 1}-{min(len(rows), self.scroll + room)} of {len(rows)}', DIM, PANEL)
-        hint = {0: ' ↑↓ job · Enter: follow it on the map', 3: ' ↑↓ chapter · Enter: open the chronicle', 4: ' ↑↓ PgUp PgDn: read back'}
-        cv.text_center(W // 2, y + self.BH - 1, f"{hint.get(self.tab, ' ↑↓ scroll')} · ←→ tab · Esc: close ", DIM, PANEL)
+        hint = {'Jobs': ' ↑↓ job · Enter: follow it on the map', 'Lore': ' ↑↓ chapter · Enter: open the chronicle',
+                'Log': ' ↑↓ PgUp PgDn: read back', 'Places': ' ↑↓ place · Enter: the first sight again'}
+        cv.text_center(W // 2, y + self.BH - 1, f"{hint.get(self.TABS[self.tab], ' ↑↓ scroll')} · ←→ tab · Esc: close ", DIM, PANEL)
 
     # each tab is a list of rows: {'parts': [(x, text, colour)...]} (x < 0: from the right edge); long text wraps
     @staticmethod
@@ -4368,6 +4406,20 @@ class JournalScreen(Modal):
             out += self.para('All quiet across the land.', DIM)
         for st in evs:
             out += self.para(D.EVENTS[st.event[0]]['text'].format(town=st.name) + f' ({st.event[1]} days)')
+        return out
+
+    def rows_places(self):
+        """The settlements you have come to, each with its first sight (skyline.py)."""
+        g = self.game
+        from . import skyline as SKY
+        seen = SKY.places(g)
+        out = [self.head('PLACES YOU HAVE COME TO')]
+        if not seen:
+            return out + self.para('None yet. The first time you come to a town, you see it whole.', DIM)
+        self.sel = max(0, min(self.sel, len(seen) - 1))
+        for n, s_ in enumerate(seen):
+            what = f"{SKY.PEOPLE.get(s_.race, s_.race)} {SKY.KINDS.get(s_.kind, s_.kind)}"
+            out.append({'sel': n == self.sel, 'parts': [(3, '•', GOLD), (5, s_.name[:30], FG), (37, what[:50], DIM)]})
         return out
 
     def rows_shadow(self):
@@ -4499,7 +4551,7 @@ class JournalScreen(Modal):
             self.sel, self.scroll = 0, 10 ** 6 if self.tab == 4 else 0
         elif tok in ('up', 'np8', 'down', 'np2'):
             step = -1 if tok in ('up', 'np8') else 1
-            if self.tab in (0, 3):
+            if self.TABS[self.tab] in self.PICK:
                 self.sel += step
             else:
                 self.scroll = max(0, self.scroll + step)
@@ -4514,6 +4566,11 @@ class JournalScreen(Modal):
                     g.track = None if getattr(g, 'track', None) == mi.id else mi.id
             elif self.tab == 3:
                 self.app.push(ChronicleScreen(self.app, self.sel))
+            elif self.TABS[self.tab] == 'Places':
+                from . import skyline as SKY
+                seen = SKY.places(g)
+                if seen:
+                    self.app.push(SkylineScreen(self.app, seen[max(0, min(self.sel, len(seen) - 1))].key))
             else:
                 self.app.pop()
 

@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Round 60: the Tests page grows (approved 6 November 2026); a roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, a first sight of a town, camps on the road, wars that feel like wars (approved 10 November 2026, rounds not yet ordered) |
+| **To build** | A roof of your own (approved 6 November 2026, rounds not yet ordered); heard, lit and seen, the land tells, camps on the road, wars that feel like wars (approved 10 November 2026, rounds not yet ordered) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -107,27 +107,17 @@ part 2, L like herds and hunting, XL like the magic schools. No play builds in b
     proposal: project files `minigames/voorstel.md`). 59a. **Bones** (S/M). 59b. **Vigil** (M/L). 59c. **The Count** (S).
     All three built 6 November 2026 (see `docs/built.md`).
 60. **Block 21: the Tests page grows** (approved 6 November 2026, thread "Testchecklist in debugmenu uitbreiden").
-    60. **The Tests page grows** (M), spec below.
+    60. **The Tests page grows** (M; built 13 November 2026, see `docs/built.md`).
+61. **Block 22: the 10 November proposals** (Nilio, 13 November 2026: build all of the plan without waiting; the
+    order chosen by Claude): 61. **A first sight of a town** (M; built 13 November 2026, see `docs/built.md`).
+    62. **The land tells, and an inn in every town** (M). 63. **Heard, lit and seen** (L), before the camps, whose
+    sneaking it needs. 64. **A roof of your own** (XL). 65. **Camps on the road** (XL). 66. **Wars that feel like
+    wars** (XL), with the field battle and magic in the wars.
 No play build in between (Nilio, 2 November 2026): he plays when the last block, now 16, is built. After that: Multiplayer (parked).
 
 ---
 
 ---
-
-## The Tests page grows (approved 6 November 2026, not built)
-
-Thread "Testchecklist in debugmenu uitbreiden". F12, T (the Tests page, built in round 37) is the checklist Nilio
-works through; three things make it fit a game this big. Test build and `--debug` only, not in the handbook.
-- **The older rounds get lines.** Rounds 1-5 (monsters, named enemies, guilds, jobs, seasons, sailing), weapons and
-  the bestiary, the magic schools and spell effects, stamina, realms and wars, walking the land (zones), herds and
-  hunting, nature and wonders, place names, ferries, keeping it clear, the handbook and the chronicle, the Varnish,
-  the great evils: about 50 new lines in `docs/testing.md`, each with its recipe in `debug_tests.py` (test part
-  `debug_tests` as now). A recipe that needs a debug action we lack gets it in the same round.
-- **A tick lasts.** A ✓ or ✗ stays across builds. A line opens again only when its thing changed: each heading in
-  `testing.md` may carry a line `Changed: <date>` (Claude sets it when a later round touches that thing); a tick
-  older than that date shows dim and counts as open. `u` shows the open lines (never ticked, ✗, or changed since).
-- **An overview per round.** Each heading shows its count, "3/5 ✓ 1 ✗". The first words of a ✗'s note stand after
-  its line. `x` shows only the ✗ lines with their whole notes, by heading.
 
 ## A roof of your own (approved 6 November 2026, not built)
 
@@ -219,19 +209,6 @@ The "Later" world ideas of round 5, now taken up. Each is one sign with one mean
 - **An inn in every town and city.** Some grown cities (the canal style among them) have no inn, so no bed and no
   gaming table; every town, city and metropolis of every people gets at least one, checked in test part
   `city_rules`.
-
-## A first sight of a town (approved 10 November 2026, not built)
-
-Mock: project files `nextlevel/skyline.png`. The first time you come to a settlement, one quiet card before its map:
-its skyline against the sky of that hour and season, drawn in half blocks (`▀ ▄ █`) from the settlement's own map
-(the wall and its towers, gates, the temple's spire, the keep, the roofs, the mill; smoke from chimneys that smoke,
-lit windows at night), its name in gold and one line (kind, land, lord). Enter or any key goes on.
-- Every settlement of every people, each in its own shape: a hamlet a few roofs and a hedge, a halfling hill a row
-  of round doors in the green, an elven glade the crowns of the trees, a dwarf hold the gate in the mountain, an orc
-  camp the palisade and longhouse, a metropolis wide and high.
-- Once per settlement; the journal's Places tab shows it again. A settlement that burnt or was plundered shows it.
-- Not for dungeons and sites. Test part `first_sight`.
-- Not built: a boss's name in big letters (Nilio, 10 November 2026: it takes away from the play).
 
 ## Camps on the road (approved 10 November 2026, not built)
 

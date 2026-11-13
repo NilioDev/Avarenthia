@@ -7,6 +7,11 @@ it up with one key; its setup is a recipe in `avarenthia/debug_tests.py`, keyed 
 `debug_tests`); a heading of a thing not built yet stands in `debug_tests.NOT_BUILT`. When a round is built, its lines stay here as long as they are useful for testing.
 Each line: **what** - what to check - what the debug menu should offer.
 
+A tick (✓ or ✗) lasts across builds. When a later round changes a thing, Claude puts a line `Changed: <date>` under
+its heading (e.g. `Changed: 13 November 2026`); a tick older than that date shows dim and counts as open again. On the
+page, `u` shows the open lines (never ticked, ✗, or changed since), `x` only the ✗ lines with their whole notes, and
+each heading shows its count, "3/5 ✓ 1 ✗".
+
 ## Classes (built 23 October 2026)
 
 - **First class** - read a class tome while blank: the question, the name, the tip, the chronicle line. Debug: give a
@@ -584,6 +589,92 @@ three things. Test part `boss_moves`.
 - **The Count** - draw or stop, the three suits, Water face down till the end, the dealer, the limit per night,
   counting with Cunning and being shown the door. Debug: Teleport to an inn, Time (evening), Coin, Ranks.
 
+## The older rounds (lines added 13 November 2026)
+
+What was built before the Tests page, so it can be checked from F12 too.
+
+### Rounds 1-5: the first world
+
+- **Monsters of each kind** - goblins, orcs, undead, beasts and spiders each fight their own way; IN SIGHT names
+  them. Debug: Spawn (goblin, orc, skeleton, wolf, spider) in a dungeon.
+- **Named enemies** - a named foe with its title and its drop. Debug: Teleport to a lieutenant.
+- **Guilds** - the guild masters, ranks, their jobs and their skills. Debug: Teleport to a city, Guild rank (q), Coin.
+- **Jobs** - taking a job from a board, following it, its end and pay. Debug: Jobs (a bounty, a courier).
+- **Seasons on the world map** - snow, ice on the rivers, passes shut, leaves, fires in a drought. Debug: Time
+  (month 1, 7, 10).
+- **Sailing** - a skipper in a harbour, a voyage, pirates on the way, the cove. Debug: Teleport to a harbour city,
+  Force an event (pirates).
+
+### Weapons and the bestiary
+
+- **Each weapon kind** - reach, crossbows, two weapons, fists, the armoured rule. Debug: Give item (spear,
+  crossbow, two daggers), Spawn.
+- **The bestiary grows** - three steps of knowing a kind, what each step shows in look and IN SIGHT. Debug: Spawn
+  a wolf, kill it a few times.
+
+### Magic
+
+- **The schools** - each school's tomes, its spells on the bar, mana. Debug: Give a tome of each school, Ranks.
+- **Spell effects on the ground** - burning ground, ice walls, roots, corpses for necromancy. Debug: Fire, Frost,
+  Nature and Necromancy tomes, Spawn.
+- **Stamina** - running, heavy blows and armour spending it, resting giving it back. Debug: Give heavy armour.
+
+### Realms and the land
+
+- **Realms and wars** - kingdoms, barons, houses, a war and its end, the Realms layer [4]. Debug: Force an event
+  (realm war), Time (months on).
+- **Walking the land** - the zones under the world map, [>] into the land and out at the edge. Debug: Teleport to
+  the world map, a road over a river.
+- **Herds and hunting** - herds on the land, the wind, the hunt, skinning. Debug: Ranks (hunting, skinning), Time.
+- **Nature and wonders** - each wonder on the land and what it gives. Debug: Teleport to a wonder.
+- **Place names** - names of the stretches of land on the line under the map. Debug: Teleport to the world map.
+- **Ferries** - the ferryman's hut, the fare, the crossing. Debug: Teleport to a ferry hut.
+- **Keeping it clear** - the look legend, the journal's Signs, the first-time tips. Debug: reset the tips.
+- **The handbook and the chronicle** - [?] and every chapter, the journal's chronicle. Debug: none needed.
+
+### Life on the road
+
+- **Hirelings** - hiring one, the wage, their gear, threat, leaving. Debug: Add a hireling (each kind), Coin.
+- **Hunger and cooking** - getting hungry, a meal at a fire, dishes and their buffs. Debug: Ranks (cooking), Time.
+- **Fishing** - a rod by the water, the fish by season and weather. Debug: Give a rod, Teleport to a village.
+- **Crime and the Watch** - stealing, being seen, the bounty, the gaol or a fine. Debug: Teleport to a town.
+- **The temple and the gods** - prayer, blessings, healing, the price of a curse lifted. Debug: Teleport to a
+  temple, Coin.
+- **Weather** - each kind of weather and what it does to sight, fire and travel. Debug: Weather (rain, storm, fog,
+  snow).
+- **Day and night** - dusk and dawn by season, night sight, sleeping at an inn. Debug: Time (hour 21, hour 5).
+- **Death and the chronicle** - dying, the tally, the chronicle of your life. Debug: Fill the tally and open it.
+- **Trade at a market** - buying low and selling high, the stock and the price going back. Debug: Coin, Teleport
+  to a city.
+- **Herbs and potions at a shop** - the healer, potions by grade, selling herbs. Debug: Coin, Give a plant.
+- **Factions** - standing with the Crown, the League, the Circle, the Black Hand and the Cult, and what it opens.
+  Debug: Standing (each faction).
+- **Hostile camps of the tribes** - the warning, the rousing, captives, the kobold toll. Debug: Teleport to an orc
+  camp, a kobold warren.
+- **Dwarf holds and mines** - the hold's gate, digging with mining, the cart line. Debug: Teleport to a dwarf
+  hold, Ranks (mining).
+- **The peoples' lands** - halfling hills, elven glades, the city under the Elder Tree, gnome hamlets. Debug:
+  Teleport to a glade, gnome hamlet.
+- **Old ways** - hidden roads and their entrances. Debug: Show the whole map.
+- **The harbour** - ships coming in, the harbour master, goods by sea. Debug: Teleport to a harbour city.
+- **News through people** - rumours at the inn, news walking from town to town. Debug: Force an event (raid),
+  Time (days on).
+- **Libraries and the made history** - the libraries' books, the history of the world in the chronicle. Debug:
+  Teleport to a city.
+- **The underground rivers** - swimming, water and fire rivers in a dungeon. Debug: Theme room or river.
+- **The Sky-Seat** - the mist, the skipper, the chain climb, the five floors. Debug: The shadow (reveal, chain).
+- **Ships on the land's waters** - ships and pirates passing, the battlefields and rivals of living.py. Debug: Force
+  an event (ship, rivals).
+- **Arts of Cunning and Arcane** - snares, runes, gates, dispel, the first blow. Debug: Ranks (cunning, arcane),
+  their tomes, Spawn a sleeping foe.
+
+### The Varnish and the great evils
+
+- **The Varnish on the land** - its ruined cities, the Northern Wall, league stones. Debug: Varnish letters and
+  places, Teleport to a Varnish city.
+- **The great evils** - a servant awake, its marks on the land, its lair, the Hollow King's coast. Debug: The shadow
+  (name, wake, lairs).
+
 ## A roof of your own (approved 6 November 2026)
 
 - **A town house** - the `$` door in a settlement of each people, buying it, each people's kind of home, the hearth
@@ -621,7 +712,7 @@ three things. Test part `boss_moves`.
 - **An inn in every town** - each city style and each people's town has an inn with a bed and a gaming table.
   Debug: Teleport to a city of each style.
 
-## A first sight of a town (approved 10 November 2026)
+## A first sight of a town (approved 10 November 2026, built 13 November 2026)
 
 - **The skyline card** - the first time in a hamlet, village, town, city and metropolis of every people; drawn from
   its own map (wall, towers, spire, keep, roofs), by day, at night with lit windows, in winter; once only, again from

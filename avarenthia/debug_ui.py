@@ -172,8 +172,10 @@ class AskPage(Page):
 
 
 class TestsPage(Page):
-    """F12, T: the lines of docs/testing.md by heading. Enter sets one up (again: the next of its kind); y ticks it
-    right, n wrong (with a note for Claude), c takes the tick off, u shows only what is not ticked in this build."""
+    """F12, T: the lines of docs/testing.md by heading, each heading with its count ('3/5 ✓ 1 ✗'). Enter sets one up
+    (again: the next of its kind); y ticks it right, n wrong (with a note for Claude), c takes the tick off. A tick
+    lasts across builds; a heading's 'Changed:' date newer than the tick opens it again (dim). u shows only the
+    open lines (never ticked, ✗, or changed since); x only the ✗ lines with their whole notes."""
     title = 'Tests'
     SHOW = 16
 
@@ -184,19 +186,27 @@ class TestsPage(Page):
         self.rows = DT.lines()
         self.sel = 0
         self.only_open = False
+        self.only_bad = False
 
     def shown(self):
         ticks = self.DT.ticks()
-        build = self.DT.commit()
+        cnt = self.DT.counts(self.rows, ticks)
         rows, head = [], None
         for r in self.rows:
             t = ticks.get(r[1])
-            if self.only_open and t and t.get('commit') == build:
+            st = self.DT.state(r, t)
+            if self.only_open and not self.DT.is_open(r, t):
+                continue
+            if self.only_bad and st != 'bad':
                 continue
             if r[0] != head:
                 head = r[0]
-                rows.append(('head', head))
+                rows.append(('head', head, cnt.get(head)))
             rows.append(('line', r, t))
+            if self.only_bad and t and t.get('note'):
+                from .canvas import wrap_text
+                for ln in wrap_text(t['note'], BOX_W - 12):
+                    rows.append(('note', ln))
         return rows
 
     def lines_only(self, rows):
@@ -214,30 +224,43 @@ class TestsPage(Page):
         build = self.DT.commit()
         idx = self.lines_only(rows)
         cur = self.current(rows)
-        done = sum(1 for r in rows if r[0] == 'line' and r[2] and r[2].get('commit') == build)
-        cv.text(x + 3, y + 2, f'{len(idx)} lines', DIM, PANEL)
-        cv.text_right(x + BOX_W - 3, y + 2, f'ticked in this build ({build}): {done}' +
-                      (' · only the open ones' if self.only_open else ''), DIM, PANEL)
+        ticks = self.DT.ticks()
+        allc = self.DT.counts(self.rows, ticks).values()
+        ok, bad = sum(c[1] for c in allc), sum(c[2] for c in allc)
+        cv.text(x + 3, y + 2, f'{len(self.rows)} lines, {ok} ✓ {bad} ×', DIM, PANEL)
+        cv.text_right(x + BOX_W - 3, y + 2, f'build {build}' + (' · only the open ones' if self.only_open else '')
+                      + (' · only the × ones' if self.only_bad else ''), DIM, PANEL)
         if not idx:
-            cv.text(x + 3, y + 4, 'Nothing here: testing.md was not found, or every line is ticked.', DIM, PANEL)
+            cv.text(x + 3, y + 4, 'Nothing here: testing.md was not found, or no line is left to show.', DIM, PANEL)
             return
         at = idx[self.sel]
         top = max(0, min(at - self.SHOW // 2, len(rows) - self.SHOW))
         for i, r in enumerate(rows[top:top + self.SHOW]):
             yy = y + 4 + i
             if r[0] == 'head':
-                cv.text(x + 3, yy, r[1].upper(), DIM, PANEL, maxw=BOX_W - 6)
+                cv.text(x + 3, yy, r[1].upper(), DIM, PANEL, maxw=BOX_W - 22)
+                c = r[2] or (0, 0, 0)
+                cv.text_right(x + BOX_W - 3, yy, f'{c[1]}/{c[0]} ✓' + (f' {c[2]} ×' if c[2] else ''),
+                              BAD if c[2] else DIM, PANEL)
+                continue
+            if r[0] == 'note':
+                cv.text(x + 8, yy, r[1], DIM, PANEL, maxw=BOX_W - 12)
                 continue
             sel = top + i == at
             bg = SEL_BG if sel else PANEL
             if sel:
                 cv.fill(x + 2, yy, BOX_W - 4, 1, ' ', FG, bg)
             t = r[2]
+            st = self.DT.state(r[1], t)
             if t:
-                old = t.get('commit') != build
-                mark, col = ('✓', GOOD) if t['mark'] == 'ok' else ('✗', BAD)
-                cv.text(x + 4, yy, mark, DIM if old else col, bg)
-            cv.text(x + 6, yy, r[1][2], GOLD if sel else FG, bg, maxw=BOX_W - 10)
+                mark, col = ('✓', GOOD) if t['mark'] == 'ok' else ('×', BAD)
+                cv.text(x + 4, yy, mark, DIM if st == 'stale' else col, bg)
+            name = r[1][2]
+            cv.text(x + 6, yy, name, GOLD if sel else (DIM if st == 'stale' else FG), bg, maxw=BOX_W - 10)
+            if st == 'bad' and t.get('note') and not self.only_bad:
+                room = BOX_W - 10 - len(name) - 3
+                if room > 8:
+                    cv.text(x + 6 + len(name) + 2, yy, self.DT.first_words(t['note']), BAD, bg, maxw=room)
         # what to check, and what the setup does, under the list
         yy = y + 5 + self.SHOW
         n = cv.wrap(x + 3, yy, BOX_W - 6, cur[3], FG, PANEL)
@@ -245,7 +268,8 @@ class TestsPage(Page):
             cv.wrap(x + 3, yy + n, BOX_W - 6, 'Setup: ' + cur[4], DIM, PANEL)
 
     def help(self):
-        return 'Up/Down · Enter: set it up (again: the next one) · y: right · n: wrong · c: clear · u: open only · Esc'
+        return ('Up/Down · Enter: set it up (again: the next one) · y: right · n: wrong · c: clear · u: open only · '
+                'x: × only · Esc')
 
     def on_key(self, tok, shift):
         rows = self.shown()
@@ -260,7 +284,10 @@ class TestsPage(Page):
         elif tok == 'pagedown':
             self.sel += self.SHOW
         elif tok == 'u':
-            self.only_open = not self.only_open
+            self.only_open, self.only_bad = not self.only_open, False
+            self.sel = 0
+        elif tok == 'x':
+            self.only_bad, self.only_open = not self.only_bad, False
             self.sel = 0
         elif cur is None:
             return None

@@ -102,7 +102,7 @@ from .entities import Item, Player, make_gear, make_unique, random_gear, make_mo
 from .worldgen import D8, cheb
 
 CL.register()
-SAVE_VERSION = 74
+SAVE_VERSION = 75
 SAVE_MAGIC = b"AVZ1"   # the save is packed with zlib behind these four bytes
 
 C_DMG = (244, 234, 208)
@@ -300,6 +300,7 @@ class Game:
         self.low_warned = False
         self.events = []        # transient effects for the UI
         self.request = None     # transient: a screen the UI should open
+        self.first_sight = None  # transient: a settlement whose first-sight card the UI shows (skyline.py)
         self.vis = bytearray()
         self.dist = None
         self.pending = None     # an open choice (travel events, places, travellers)
@@ -902,6 +903,8 @@ class Game:
         if esc:
             esc.x, esc.y = s.x, s.y
         self.msg(f'You enter {s.name}.', 'info')
+        from . import skyline as SKY
+        SKY.on_enter(self, s)                        # the first sight of it: one card before its map
         TG.at_gate(self, s)
         LV.on_enter_town(self, s, m)
         if ECO.FEAST.get('day') != self.day:
@@ -947,6 +950,9 @@ class Game:
         p.x, p.y = m.entry[0] + 1, m.entry[1]
         TW.sync_lamps(self, m)
         self.msg(f'You come to {site.name}.', 'info')
+        if site.kind in ('glade', 'gnomes'):
+            from . import skyline as SKY
+            SKY.on_enter(self, site)                 # an elven glade, a gnome hamlet: a first sight too
         if TR.is_camp(site):
             TR.on_enter(self, site, m)
         LN.on_enter(self, site, m)

@@ -17,7 +17,7 @@ from . import debug as DBG
 # Headings of testing.md whose things are not built yet: their lines stay hidden. A round that builds one takes it out.
 # A heading hides all its lines; 'heading :: name' hides one line.
 NOT_BUILT = {'A roof of your own', 'Heard, lit and seen', 'The land tells, and an inn in every town',
-             'A first sight of a town', 'Camps on the road', 'Wars that feel like wars'}
+             'Camps on the road', 'Wars that feel like wars'}
 
 
 # ------------------------------------------------------------------ reading testing.md
@@ -42,12 +42,36 @@ def name_of(text):
     return m.group(1) if m else re.split(r'[.;:]| - ', text)[0][:50]
 
 
+MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october',
+          'november', 'december']
+CHANGED = {}       # heading -> the day its thing last changed ('2026-11-13'), from its 'Changed: <date>' line
+
+
+def iso(text):
+    """'13 November 2026' (or '2026-11-13') as '2026-11-13'; None when it is not a date."""
+    t = text.strip().rstrip('.')
+    m = re.match(r'(\d{4})-(\d{2})-(\d{2})$', t)
+    if m:
+        return t
+    m = re.match(r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$', t)
+    if m and m.group(2).lower() in MONTHS:
+        return f'{m.group(3)}-{MONTHS.index(m.group(2).lower()) + 1:02d}-{int(m.group(1)):02d}'
+    return None
+
+
 def parse(text):
-    """The lines of testing.md: [(group, key, name, what to check, what the debug menu offers)]."""
+    """The lines of testing.md: [(group, key, name, what to check, what the debug menu offers)]. A line
+    'Changed: <date>' under a heading says when its thing last changed (kept in CHANGED)."""
     out, sec, cur = [], None, None
+    CHANGED.clear()
     for ln in text.split('\n'):
         if ln.startswith('## ') or ln.startswith('### '):
             sec, cur = heading(ln.lstrip('#').strip()), None
+            continue
+        if sec and ln.startswith('Changed:'):
+            d = iso(ln[8:])
+            if d:
+                CHANGED[sec] = max(d, CHANGED.get(sec, d))
             continue
         if ln.startswith('- ') and sec:
             cur = [sec, ln[2:].strip()]
@@ -117,7 +141,9 @@ def tick(key, mark, note='', day=None):
     if mark is None:
         t.pop(key, None)
     else:
-        t[key] = {'mark': mark, 'commit': commit(), 'note': note, 'day': day}
+        import datetime
+        t[key] = {'mark': mark, 'commit': commit(), 'note': note, 'day': day,
+                  'date': datetime.date.today().isoformat()}
     try:
         with open(ticks_path() + '.tmp', 'w', encoding='utf-8') as f:
             json.dump(t, f, indent=1, sort_keys=True)
@@ -125,6 +151,40 @@ def tick(key, mark, note='', day=None):
     except OSError:
         pass
     return t
+
+
+def state(row, t):
+    """What a line is now: 'open' (never ticked), 'ok', 'bad', or 'stale' (ticked before its thing changed).
+    A tick lasts across builds; only a newer 'Changed:' date under its heading opens it again."""
+    if not t:
+        return 'open'
+    ch = CHANGED.get(row[0])
+    if ch and (t.get('date') or '') < ch:
+        return 'stale'
+    return 'ok' if t.get('mark') == 'ok' else 'bad'
+
+
+def is_open(row, t):
+    return state(row, t) in ('open', 'bad', 'stale')
+
+
+def counts(rows, ticks_now):
+    """Per heading: (lines, right, wrong) for the overview '3/5 ✓ 1 ✗' (a stale tick counts as open)."""
+    out = {}
+    for r in rows:
+        c = out.setdefault(r[0], [0, 0, 0])
+        c[0] += 1
+        st = state(r, ticks_now.get(r[1]))
+        if st == 'ok':
+            c[1] += 1
+        elif st == 'bad':
+            c[2] += 1
+    return out
+
+
+def first_words(note, n=4):
+    words = (note or '').split()
+    return ' '.join(words[:n]) + (' ...' if len(words) > n else '')
 
 
 # ------------------------------------------------------------------ the steps
@@ -669,6 +729,64 @@ SCHOOLS_NOTE = ('note', 'Enter again for the next one.')
 
 # ------------------------------------------------------------------ the recipes, one per line of testing.md
 R = {
+    # A first sight of a town
+    'A first sight of a town :: The skyline card': [('dbg', 'forget_sights'),
+                                                    ('to', ('hamlet', 'village', 'town', 'city', 'metropolis',
+                                                            'deephold', 'glade', 'gnomes')),
+                                                    ('note', 'Enter again for the next settlement; Time for the night.')],
+    # The older rounds (lines added 13 November 2026)
+    'Rounds 1-5: the first world :: Monsters of each kind': [('deep', 'dungeon', 1),
+                                                             ('spawn', 'goblin', 'orc', 'skeleton', 'wolf', 'spider'),
+                                                             SCHOOLS_NOTE],
+    'Rounds 1-5: the first world :: Named enemies': [('to', 'lieutenant'), SCHOOLS_NOTE],
+    'Rounds 1-5: the first world :: Guilds': [('to', 'city', None, 'human'), ('guild', 'magi', 2), ('coin', GOLD)],
+    'Rounds 1-5: the first world :: Jobs': [('to', 'town', None, 'human'), ('job', 'bounty', 'courier'), SCHOOLS_NOTE],
+    'Rounds 1-5: the first world :: Seasons on the world map': [('over',), ('month', 1), SCHOOLS_NOTE],
+    'Rounds 1-5: the first world :: Sailing': [('to', 'city', None, 'harbour'), ('event', 'pirates')],
+    'Weapons and the bestiary :: Each weapon kind': [('give', 'Spear', 'Light Crossbow', 'Dagger', 'Dagger'),
+                                                     ('deep', 'dungeon', 1), ('spawn', 'goblin')],
+    'Weapons and the bestiary :: The bestiary grows': [('deep', 'dungeon', 1), ('spawn', 'wolf'),
+                                                       ('note', 'kill it, Enter again for another.')],
+    'Magic :: The schools': [('tome', None), ('class', None, 20), SCHOOLS_NOTE],
+    'Magic :: Spell effects on the ground': [('give', 'Tome of Firebolt', 'Tome of Frost Shard'), ('class', 'fire', 20),
+                                             ('deep', 'dungeon', 1), ('spawn', 'goblin', 'orc')],
+    'Magic :: Stamina': [('give', 'Plate Mail', 'Heavy Boots'), ('deep', 'dungeon', 1), ('spawn', 'goblin')],
+    'Realms and the land :: Realms and wars': [('event', 'realmwar'), ('over',), ('days', 60)],
+    'Realms and the land :: Walking the land': [('crossing',)],
+    'Realms and the land :: Herds and hunting': [('rank', 'hunting', 30), ('rank', 'skinning', 30), ('over',),
+                                                 ('days', 2)],
+    'Realms and the land :: Nature and wonders': [('to', 'wonder'), SCHOOLS_NOTE],
+    'Realms and the land :: Place names': [('over',), ('dbg', 'reveal_map')],
+    'Realms and the land :: Ferries': [('to', 'ferryhut'), SCHOOLS_NOTE],
+    'Realms and the land :: Keeping it clear': [('dbg', 'reset_tips'), ('deep', 'dungeon', 1), ('spawn', 'goblin')],
+    'Realms and the land :: The handbook and the chronicle': [('note', 'press [?] for the handbook, [e] for the chronicle.')],
+    'Life on the road :: Hirelings': [('hire', 'defender', 'warrior', 'archer', 'healer', 'mage'), ('coin', GOLD),
+                                      SCHOOLS_NOTE],
+    'Life on the road :: Hunger and cooking': [('rank', 'cooking', 20), ('give', 'plant'), ('over',), ('days', 2)],
+    'Life on the road :: Fishing': [('give', 'Fishing Rod'), ('rank', 'fishing', 10), ('to', 'village')],
+    'Life on the road :: Crime and the Watch': [('to', 'town', None, 'human'), ('hour', 23)],
+    'Life on the road :: The temple and the gods': [('to', 'temple'), ('coin', GOLD), SCHOOLS_NOTE],
+    'Life on the road :: Weather': [('over',), ('weather', 'rain'), ('note', 'F12, [w] for each other kind.')],
+    'Life on the road :: Day and night': [('over',), ('hour', 21)],
+    'Life on the road :: Death and the chronicle': [('dbgnext', 'tally_look', 'tally', 'death')],
+    'Life on the road :: Trade at a market': [('coin', GOLD), ('to', 'city', None, 'human')],
+    'Life on the road :: Herbs and potions at a shop': [('coin', GOLD), ('give', 'plant'), ('to', 'town', None, 'human')],
+    'Life on the road :: Factions': [('standing', 'league', 60), ('standing', 'blackhand', 60), ('to', 'city', None, 'human')],
+    'Life on the road :: Hostile camps of the tribes': [('to', ('poi orccamp', 'kobolds', 'gnolls')), SCHOOLS_NOTE],
+    'Life on the road :: Dwarf holds and mines': [('rank', 'mining', 30), ('to', ('deephold', 'oldmine')), SCHOOLS_NOTE],
+    "Life on the road :: The peoples' lands": [('to', ('glade', 'gnomes', 'town')), SCHOOLS_NOTE],
+    'Life on the road :: Old ways': [('over',), ('dbg', 'reveal_map')],
+    'Life on the road :: The harbour': [('to', 'city', None, 'harbour')],
+    'Life on the road :: News through people': [('event', 'raid'), ('days', 3), ('to', 'town', None, 'human')],
+    'Life on the road :: Libraries and the made history': [('to', 'city', None, 'human')],
+    'Life on the road :: The underground rivers': [('dbgnext', 'theme_level', 'river:water', 'river:fire')],
+    'Life on the road :: The Sky-Seat': [('dbg', 'shadow', 'reveal'), ('dbg', 'shadow', 'chain')],
+    "Life on the road :: Ships on the land's waters": [('event', 'ship', 'rivals')],
+    'Life on the road :: Arts of Cunning and Arcane': [('class', 'cunning', 20), ('tome', 'cunning', 1),
+                                                       ('deep', 'dungeon', 1), ('spawn', 'goblin', {'sleep': True})],
+    'The Varnish and the great evils :: The Varnish on the land': [('dbg', 'varnish_places'), ('to', 'vcity')],
+    'The Varnish and the great evils :: The great evils': [('dbg', 'shadow', 'name'), ('dbg', 'shadow', 'wake'),
+                                                           ('dbg', 'shadow', 'lairs')],
     # Games at the inn
     'Games at the inn :: Bones': [('inn',), ('hour', 19), ('coin', GOLD), ('class', 'cunning', 30),
                                   ('note', 'Enter again for the inn of the next people.')],

@@ -648,6 +648,12 @@ def reset_room(game):
     game.msg(f'Debug: "{m.rooms[rid][2]}" is back as drawn.', 'info')
 
 
+def forget_sights(game):
+    """Forget the settlements you have seen, so each one's first sight comes again."""
+    game.player.sights = set()
+    game.msg('Debug: every first sight comes again.', 'info')
+
+
 def days_ahead(game, n):
     """Time runs on n days (a fraction for hours); the days pass as they would (markets, news, seasons)."""
     game.turn += round(n * D.DAY_LEN)
