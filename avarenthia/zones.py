@@ -185,6 +185,14 @@ def _line(a, b, s):
     return px, py, f
 
 
+def _joined(px, py):
+    """The points of a line with every diagonal step filled in by a straight one, so a one-wide lane is unbroken."""
+    if len(px) < 2:
+        return px, py
+    turn = (px[1:] != px[:-1]) & (py[1:] != py[:-1])
+    return np.concatenate([px, px[1:][turn]]), np.concatenate([py, py[:-1][turn]])
+
+
 def _paint(mask, px, py, width, ox, oy):
     H, W = mask.shape
     for dy in range(-(width // 2), width - width // 2):
@@ -267,7 +275,7 @@ def make(game, cx0, cy0, nx=3, ny=3):
                     if road(cx + dx, cy + dy):
                         px, py, f = _line(m0, edge_point(cx, cy, cx + dx, cy + dy, s + 22), s + 41)
                         _paint(path, px, py, 3, ox, oy)
-                        _paint(lane, px, py, 1, ox, oy)
+                        _paint(lane, *_joined(px, py), 1, ox, oy)
     t[shallow] = D.SHALLOW
     t[deep & ~ford] = D.WATER
     wetnow = (t == D.WATER) | (t == D.SHALLOW)

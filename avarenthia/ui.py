@@ -1028,6 +1028,8 @@ class GameScreen(Screen):
                             fg, bg = scale(fg, k), scale(bg, .55 + .45 * k)
                 elif not lighting and m.kind == 'over' and m.t[i] == D.ROAD:
                     fg, bg = mix(fg, (150, 124, 84), .6), (34, 28, 22)     # roads you know stay legible in the fog
+                elif not lighting and m.kind == 'wild' and m.t[i] in (D.ROAD, D.PATH, D.BRIDGE):
+                    fg, bg = scale(fg, .55), mix(scale(bg, .7), (30, 25, 19), .5)     # the road you walked stays in mind
                 elif not lighting and m.kind == 'over':
                     # fog of war: land you remember, but cannot see now; grey and veiled
                     gr = (fg[0] + fg[1] + fg[2]) // 3            # less grey than before, a little darker:
@@ -4518,6 +4520,36 @@ class JournalScreen(Modal):
                 self.app.pop()
 
 
+def road_overview(om, f, cx, cy, ch, fg, bg):
+    """A road on the whole-realm map, where each character covers several cells: it joins the characters
+    next to it only where a road truly crosses from one block into the other."""
+    J = LOOK.ROAD_JOIN
+    w = om.w
+
+    def span(c, n):
+        return int(c * f), min(n, int((c + 1) * f))
+
+    def crosses(ax, ay, bx, by):
+        if not (0 <= bx < int(om.w / f) and 0 <= by < int(om.h / f)):
+            return 0
+        if ax != bx:                         # the columns on both sides of the boundary
+            xa = span(ax, om.w)[1] - 1 if bx > ax else span(ax, om.w)[0]
+            xb = xa + (1 if bx > ax else -1)
+            ys = range(*span(ay, om.h))
+            return 1 if any(om.t[y * w + xa] in J and om.t[y * w + xb] in J and om.seen[y * w + xb] for y in ys) else 0
+        ya = span(ay, om.h)[1] - 1 if by > ay else span(ay, om.h)[0]
+        yb = ya + (1 if by > ay else -1)
+        xs = range(*span(ax, om.w))
+        return 1 if any(om.t[ya * w + x] in J and om.t[yb * w + x] in J and om.seen[yb * w + x] for x in xs) else 0
+    key = (crosses(cx, cy, cx, cy - 1), crosses(cx, cy, cx, cy + 1), crosses(cx, cy, cx - 1, cy), crosses(cx, cy, cx + 1, cy))
+    main = getattr(om, 'main_road', ())
+    x0, x1 = span(cx, om.w)
+    y0, y1 = span(cy, om.h)
+    if any(y * w + x in main for y in range(y0, y1) for x in range(x0, x1)):
+        return LOOK.WALL_GLYPH.get(key, '═').replace('■', '═'), LOOK.MAIN_FG, LOOK.MAIN_BG
+    return LOOK.FENCE_GLYPH.get(key, '─'), LOOK.ROAD_FG, LOOK.ROAD_BG
+
+
 class WorldMapScreen(Modal):
     tall = False
     """The overworld: a scrollable close-up, or the whole realm with each character covering 2x2 cells."""
@@ -4864,6 +4896,8 @@ class WorldMapScreen(Modal):
                 if bt is None:
                     continue
                 ch, fg, bg = SE.look(g, om, bi, LOOK.get(om, bi), season)
+                if bt == D.ROAD:            # the road's line drawn at this scale: joined to the next character it runs into
+                    ch, fg, bg = road_overview(om, f, cx, cy, ch, fg, bg)
                 if bg == LOOK.BG:
                     bg = PANEL
                 if nbl:
