@@ -6593,7 +6593,7 @@ def folk():
     assert 20 <= len(w.folk_seeds) <= 25 and set(ws) <= set(w.folk_seeds)
     seeded = [FQ.make(g, s, seed=i) for i in range(len(FD.SEEDS))]
     seeded = [x for x in seeded if x]
-    assert len(seeded) > 30 and all(x['seed'] for x in seeded)
+    assert sum(1 for x in seeded if x["seed"]) > 30, len(seeded)      # a hunt seed with no named beast left falls back
     beast = next(x for x in w.wanderers if x.kind == 'monsters' and x.group and x.mission is None)
     mi, n = new([dict(v='kill', wd=beast.id, x=beast.x, y=beast.y, name=beast.name)])
     mi.data['twist'] = 'young'
