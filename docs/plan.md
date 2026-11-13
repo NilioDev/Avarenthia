@@ -326,11 +326,32 @@ stay small: the player is one adventurer, and what counts is what they see on th
 - **For the player**: catch or guard a raiding party; carry a message through the front; smuggle food into a besieged
   seat or open its postern; sneak into a camp by night (orders, stores, prisoners, the banner, the mage); take a lord
   for ransom; stand in the line in a field battle as one man in the press (your corner of the fight: hold the flank,
-  save the banner, cut down a captain; what you do weighs on the roll, as a tilt, never as a win by yourself). Pay
+  save the banner, cut down a captain; see The field battle below). Pay
   stays modest; war raises prices (war trade), and what is taken from the field goes through the fence that is there.
 - The war's state lives on the world (`R.wars`); what you did in it (signed on, known to a camp, a captive you hold)
   on the player. The Realms layer [4] shows the hosts, camps, sieges and the front. Handbook: the realms chapter
   (war, sieges, ransom, the peoples' ways of war). Test part `wars`.
+- **The field battle** (approved 13 November 2026). At most one per war, so it stays a big moment. Its own zone
+  map: two lines across the whole width, you in one corner of yours. Real soldiers fight only near you; further off
+  the battle is a shifting front line of signs, so it looks big and stays light. Three phases of a few hundred turns
+  each: the arrows, the clash, the rout of the side that breaks. At the start your captain gives you one task: hold
+  the flank, save the banner, cut down their captain or take out their mage; or you just fight. The outcome stays
+  honest: the hosts' strength decides, and your task weighs at most about 15%: a strong host mostly wins anyway, and
+  a task done well only saves a battle on a knife's edge. The news tells what you did, also when your side lost.
+  Getting out: you can always walk off the map's edge, but your lord remembers you left; if your side breaks, the
+  rout begins and riders chase you to the edge. Death is as everywhere in the game.
+- **Magic in the wars** (approved 13 November 2026). Rare and dear, but plain to see when it is there. A big host has
+  one or two mages at most, behind the line with a bodyguard; a small host none. A priest blesses and heals, never
+  strikes. On the battlefield each school does what its map rule does: fire sets a stretch of the front burning,
+  frost draws an ice wall across a flank, storm strikes in rain or by water, nature lays roots and thorns, necromancy
+  raises the day's dead. A mage counts in his host's strength; take him out and that is gone (the task "take out
+  their mage"). Each people its own: kingdoms a court mage from a tower or guild, and the Church's priests; dwarves
+  no mages but rune-smiths (runes on shields and gates make their sieges and camps tougher still); elves the Circle's
+  druids (roots, thorns, mist in the wood); the Gorvash shamans (curses, the drums); sea raiders a storm-caller who
+  gives their ships the wind; riders a wind-singer or a beast-master. Necromancy is forbidden: who uses it in a war
+  stirs the Church and the great evils. If you are a mage, your captain gives you a mage's task (meet their mage, or
+  break the front), pay a little higher, and their archers look for you first. In the camp the mage has a tent of
+  his own with books and reagents: something to steal, kept modest (the loot rule).
 
 ## The UI rule for every new round
 

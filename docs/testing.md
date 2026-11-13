@@ -658,4 +658,12 @@ three things. Test part `boss_moves`.
 - **Each people's way** - dwarves besieging and going home, elves' ambushes in the wood, the Gorvash growing, sea
   raiders from the sea, riders' deep raids. Debug: start a war or a raid of each people.
 - **Your part** - catch a raid, carry a message, smuggle into a siege, sneak into a camp, stand in a field battle.
+- **The field battle** - the battlefield zone with both lines and the moving front; the arrows, the clash, the rout;
+  each of the captain's tasks done and failed; the outcome on a knife's edge and lopsided; walking off the edge (your
+  lord remembers); the rout with riders after you; the news of what you did. Debug: "Start a field battle here",
+  set the hosts' strength.
+- **Magic in the wars** - a big host's mage and priest, each school on the front (fire, frost wall, storm in rain,
+  roots, the dead rising), taking out the mage; each people's own (rune-smiths, druids, shamans, the storm-caller,
+  the wind-singer); a host using necromancy and the Church's answer; a mage player's task; the mage's tent.
+  Debug: "Start a field battle here" by people, the weather.
 
