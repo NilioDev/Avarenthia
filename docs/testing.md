@@ -757,4 +757,6 @@ What was built before the Tests page, so it can be checked from F12 too.
   roots, the dead rising), taking out the mage; each people's own (rune-smiths, druids, shamans, the storm-caller,
   the wind-singer); a host using necromancy and the Church's answer; a mage player's task; the mage's tent.
   Debug: "Start a field battle here" by people, the weather.
-
+- **Bridges that join** - a city, a metropolis, a canal town and a fortress town each with a river (every bridge and
+  every gate, walked over); a village and a town with a stream, a river and a broad river (bridge, ford, ferry); each
+  people's bridge. Debug: teleport to a settlement by kind and river size, "Remake this town's map" with a seed.

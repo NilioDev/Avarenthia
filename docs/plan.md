@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | Nothing approved is left to build: all of block 22 is built (13 November 2026) |
+| **To build** | **Bridges that join** (approved 14 November 2026, spec below); all of block 22 is built (13 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -118,6 +118,39 @@ No play build in between (Nilio, 2 November 2026): he plays when the last block,
 ---
 
 ---
+
+## Bridges that join (approved 14 November 2026)
+
+Nilio, thread "Bruggen in steden en dorpen ontwerpen": the bridges must join their roads; earlier tries were ragged.
+The Dutch proposal with the mock-ups: project files `steden/bruggen-voorstel-2026-11-14.md`; a working trial on the
+game's own city maker `steden/mockup_bruggen.py`, its pictures in `steden/bruggen/`. Replaces the painted bridges of
+`citygrow` (`plan_bridge`, `stone_bridges`, `drawbridges`, `through_bridges`) and `towns.lay_bridges`.
+
+- **The order.** Choose the crossings; lay the water straight there; set the bridge down as one piece; then the ways,
+  from the bridgeheads; then the wall and its gates; then lanes and houses. In a village the river comes first (the
+  land gives it), then the crossing, then the road, then the houses.
+- **Straight water at a crossing.** A river or moat runs dead level or upright for the breadth of the bridge and 15
+  cells each side, one width; its turns of 45 degrees lie between the bridges. In a village the river is drawn
+  straight for the breadth of the bridge and a little more.
+- **No bridge at 45 degrees inside a settlement.** On the open land they stay.
+- **The bridge is a drawn piece**, never painted from a line: deck, a parapet each side its whole length, piers with
+  cutwaters on both sides, a lamp on each corner (statues on the market bridge), and a bridgehead at each end where
+  the quay street crosses the way square. Pieces live with the other drawn pieces (`pieces/*.des`), with a middle
+  that repeats to the breadth of the water, so Nilio can redraw them in the Editor (as an option; the game ships
+  its own).
+- **One width.** A great way is 5 broad and so is its deck, from gate to market; a ring road 3 and its deck 3. The way
+  runs straight and in line for 6 cells at each end (4 in a village).
+- **Gates.** The wall may wander, but at every gate it runs straight (north, east, south or west) for some 27 cells,
+  so the moat is straight there. Gate, a tower each side, the bridge over the moat and the forecourt are one piece. A
+  road of the land that comes in aslant bends outside the town. A gate south of the river takes its way from the
+  nearest bridge.
+- **Canal towns** keep their plan; canal bridges only on the straight reaches, not on the slanting corners.
+- **Villages and towns.** A timber bridge with a rail and a post on each corner, as broad as its road; stone in a
+  town; a ford or one plank over a hamlet's brook. Ferries stay as they are. Each people's own style stays, as a piece.
+- **The checker** (`city_rules`) gains the shape rules, each counted to 0: the deck is a clean rectangle; the parapet
+  is whole and the same on both sides; both banks run straight at the bridge; the way is as broad as its deck and in
+  line; no bridge at 45 degrees inside a settlement; every gate is one piece.
+- Size: L. Saves: town maps are made anew, so a `SAVE_VERSION` step that remakes settlement maps.
 
 ## The UI rule for every new round
 
