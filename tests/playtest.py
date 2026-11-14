@@ -971,8 +971,8 @@ class Gambler(Bot):
             for _round in range(self.rng.randint(1, 4)):
                 if g.dead:
                     break
-                gt = g.map.gametable
-                if max(abs(gt[0] - p.x), abs(gt[1] - p.y)) > 1:
+                gt = getattr(g.map, 'gametable', None)
+                if gt is None or max(abs(gt[0] - p.x), abs(gt[1] - p.y)) > 1:
                     break
                 try:
                     IG.table(g)
@@ -1216,7 +1216,8 @@ class Masher(Newbie):
                             g.use_stairs('down')
                 elif where == 'dungeon':
                     ds = g.world.dungeons
-                    d = self.rng.choice(list(ds.values()) if isinstance(ds, dict) else ds)
+                    d = self.rng.choice([d for d in (ds.values() if isinstance(ds, dict) else ds)
+                                         if getattr(d, 'site', None) is None])     # as the debug menu offers them
                     DBG.teleport(g, ('d', d.id))
                 else:
                     if g.cur != 'over':
