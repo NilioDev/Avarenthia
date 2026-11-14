@@ -704,6 +704,7 @@ class Homeowner(Bot):
         from avarenthia import homes as HM
         g, p = self.g, self.p
         w = g.world
+        self.veteran(4)
         p.gold += 400 * 100 * 100                          # the savings of a career
         towns = sorted([s for s in w.settlements if s.kind in HM.FOR_SALE], key=lambda s: cheb(s.x, s.y, p.x, p.y))
         bought = None
