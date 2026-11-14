@@ -13,7 +13,7 @@ WoW. Take the ideas, never the text, stat blocks or invented names.
 | Status | What |
 |---|---|
 | **Built** | Everything up to the magic schools, the debug menu, the weapons and the classes: see `docs/built.md` (summaries and the specs of built rounds) |
-| **To build** | **Bridges that join** (approved 14 November 2026, spec below); all of block 22 is built (13 November 2026) |
+| **To build** | **Bridges that join** and **Fuller cities and their defences** (both approved 14 November 2026, specs below); all of block 22 is built (13 November 2026) |
 | **Parked** | Multiplayer; the bard; the werewolf's and the vampire's curse (docs/parked.md) |
 | **Later** | Leadership |
 
@@ -138,7 +138,7 @@ game's own city maker `steden/mockup_bruggen.py`, its pictures in `steden/brugge
   the quay street crosses the way square. Pieces live with the other drawn pieces (`pieces/*.des`), with a middle
   that repeats to the breadth of the water, so Nilio can redraw them in the Editor (as an option; the game ships
   its own).
-- **One width.** A great way is 5 broad and so is its deck, from gate to market; a ring road 3 and its deck 3. The way
+- **One width.** A great way and its deck are one width from gate to market (5 in the metropolis, 3 in a city); a ring road 3 and its deck 3. The way
   runs straight and in line for 6 cells at each end (4 in a village).
 - **Gates.** The wall may wander, but at every gate it runs straight (north, east, south or west) for some 27 cells,
   so the moat is straight there. Gate, a tower each side, the bridge over the moat and the forecourt are one piece. A
@@ -147,10 +147,47 @@ game's own city maker `steden/mockup_bruggen.py`, its pictures in `steden/brugge
 - **Canal towns** keep their plan; canal bridges only on the straight reaches, not on the slanting corners.
 - **Villages and towns.** A timber bridge with a rail and a post on each corner, as broad as its road; stone in a
   town; a ford or one plank over a hamlet's brook. Ferries stay as they are. Each people's own style stays, as a piece.
+  The deck lies the way the road runs (never along the flow); the river is straight under it and eases back into its
+  course over four rows; two crossings within 16 cells share one bridge.
 - **The checker** (`city_rules`) gains the shape rules, each counted to 0: the deck is a clean rectangle; the parapet
   is whole and the same on both sides; both banks run straight at the bridge; the way is as broad as its deck and in
   line; no bridge at 45 degrees inside a settlement; every gate is one piece.
 - Size: L. Saves: town maps are made anew, so a `SAVE_VERSION` step that remakes settlement maps.
+
+## Fuller cities and their defences (approved 14 November 2026)
+
+Nilio, same thread: too much idle green inside the walls; cities should be fortress towns as the Dutch built them; the
+street along the wall runs the whole round; no lane ends blind. Built together with "Bridges that join". The trial
+(`steden/mockup_bruggen.py`: `build`, `wall_street`, `split_blocks`, `thin`, `prune`, `green_uses`, `stamp_gate`) and
+its pictures (`steden/nieuw/`, now beside new) are the reference; on its maps every old and new rule counts 0.
+
+**Who gets what.** The human cities and the metropolis: all of it. The canal city: only the bridge and gate pieces
+(no bridge on a slanting reach, a way that comes aslant still crosses square, nothing laid along the water; one gate
+moves beside the harbour where a bastion stood). Hamlets, villages and towns: only the new bridge. Dwarves,
+halflings, orcs and the other peoples stay as they are.
+
+- **Built up as old towns were.** The core is full, the middle built along every street with yards and kitchen
+  gardens behind, the edge has room. A block too big for its part of town gets a back lane through its middle, across
+  its long side, from street to street, until it is small enough (core about 250 cells, middle 400, edge 500 to 800).
+  A lane that runs beside another street with only a sliver between is taken out rather than paved over. Aim inside
+  the walls: about half built, idle green near a tenth (the trial: built 39% to 48%, idle green 30% to 12%).
+- **No idle green.** What is left inside the walls gets a use and looks it: yard, kitchen gardens (beds), orchard
+  (trees in rows), vineyard, bleachfield, graveyard, one drill ground, one cattle market; the big ones hedged with one
+  gate. Never open grass with stray trees.
+- **The wall street** runs the whole round along the inside of the wall, two broad: it crosses each great way behind
+  the gate towers, passes behind the throat of every bastion, and where the river comes in and goes out it crosses on
+  a small bridge of its own (deck 3) hard by the wall at the water gate. Nothing is built on it. A metropolis so has
+  five bridges, a city three.
+- **No lane ends blind**: a lane that leads nowhere is taken back to where it left a street.
+- **Fortress works.** Bastions between the gates (bare platforms, faces at 45 degrees, nothing built on them), a
+  broader moat (6), and before every gate a ravelin: an island with its own low wall, the gate bridge onto it and a
+  second bridge off it, then the forecourt. An east or west gate keeps well clear of the river so a block of houses
+  stands between its way and the quay.
+- **Room on the map.** The works need a margin round the wall: the trial uses 268 x 172 for a city (was 240 x 140)
+  and 384 x 252 for the metropolis (was 360 x 220), the town itself as big as before.
+- **Widths.** In the metropolis a great way and its deck are 5; in a city 3 (its river is 7 broad, the metropolis's 11).
+- **The checker** gains: lanes that end blind 0; the wall street one piece and nowhere built over; a bastion bare.
+- Size: L, in one round with the bridges.
 
 ## The UI rule for every new round
 

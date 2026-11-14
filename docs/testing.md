@@ -760,3 +760,7 @@ What was built before the Tests page, so it can be checked from F12 too.
 - **Bridges that join** - a city, a metropolis, a canal town and a fortress town each with a river (every bridge and
   every gate, walked over); a village and a town with a stream, a river and a broad river (bridge, ford, ferry); each
   people's bridge. Debug: teleport to a settlement by kind and river size, "Remake this town's map" with a seed.
+- **Fuller cities and their defences** - a city and the metropolis: the wall street walked the whole round (over both
+  water-gate bridges), a ravelin crossed at each gate, a bastion stood on, each use of green found (orchard,
+  vineyard, bleachfield, graveyard, drill ground, cattle market); no lane that ends blind. Debug: "Remake this town's
+  map" with a seed, a line with what lies inside the walls in percent.
