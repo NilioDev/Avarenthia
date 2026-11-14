@@ -25,6 +25,17 @@ _RUN_DIR = tempfile.mkdtemp(prefix=f'avarenthia_play_{os.getpid()}_')
 E.save_path = lambda: os.path.join(_RUN_DIR, 'avarenthia_play.dat')
 ui.App.first_sight_cards = False
 
+DEATHS = collections.Counter()                     # what killed the bot that is playing, by cause
+_respawn = E.Game.respawn
+
+
+def _noted_respawn(game, cause):
+    DEATHS[str(cause)[:40]] += 1
+    return _respawn(game, cause)
+
+
+E.Game.respawn = _noted_respawn
+
 DIR_TOK = {(0, -1): 'up', (0, 1): 'down', (-1, 0): 'left', (1, 0): 'right',
            (-1, -1): 'np7', (1, -1): 'np9', (-1, 1): 'np1', (1, 1): 'np3'}
 
@@ -47,6 +58,7 @@ class Bot:
         self.stats = collections.Counter()
         self.money = []
         self.start = time.time()
+        DEATHS.clear()
         self.app = self.new_app(seed)
         self.g = self.app.game
         self.p = self.g.player
@@ -314,7 +326,7 @@ class Bot:
     def report(self):
         p = self.p
         return dict(kind=self.kind, seed=self.seed, day=self.g.day, dead=self.g.dead, cause=getattr(self.g, 'cause', None),
-                    deaths=getattr(p, 'deaths', 0), lvl=p.lvl, gold=p.gold,
+                    deaths=getattr(p, 'deaths', 0), killers=dict(DEATHS.most_common(6)), lvl=p.lvl, gold=p.gold,
                     stats=dict(self.stats), money=self.money[-40:], crashes=self.crashes, log=self.log[-60:],
                     seconds=round(time.time() - self.start))
 
@@ -1276,7 +1288,7 @@ def main():
             continue
         r = bot.run()
         out.append(r)
-        print(json.dumps({x: r.get(x) for x in ('kind', 'day', 'dead', 'cause', 'deaths', 'lvl', 'gold', 'stats', 'seconds')}, default=str),
+        print(json.dumps({x: r.get(x) for x in ('kind', 'day', 'dead', 'cause', 'deaths', 'killers', 'lvl', 'gold', 'stats', 'seconds')}, default=str),
               flush=True)
         for line in r['log'][-12:]:
             print('  ', line)
